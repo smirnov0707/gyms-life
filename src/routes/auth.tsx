@@ -63,7 +63,14 @@ function AuthPage() {
   const { t } = useI18n();
   const { user, loading, refresh } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up" | "forgot">("in");
+  const [mode, setMode] = useState<"in" | "up" | "forgot">(() => {
+    if (typeof window !== "undefined") {
+      const urlMode = new URLSearchParams(window.location.search).get("mode");
+      if (urlMode === "up") return "up";
+      if (urlMode === "forgot") return "forgot";
+    }
+    return "in";
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
