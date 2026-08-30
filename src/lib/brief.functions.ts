@@ -69,8 +69,8 @@ export const getDailyBrief = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { buildUserSnapshot, snapshotToPrompt } = await import("./user-context.server");
-    const snapshot = await buildUserSnapshot(supabase, userId);
+    const { buildUserContext, contextForAi } = await import("./user-context.server");
+    const snapshot = await buildUserContext(supabase, userId);
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
@@ -106,7 +106,7 @@ RULES
 - No medical claims. No generic motivational filler.
 
 USER SNAPSHOT
-${snapshotToPrompt(snapshot)}
+${contextForAi(snapshot)}
 
 RETURN EXACTLY THIS JSON SHAPE:
 {"headline":"string","summary":"string","focus":"string","signals":[{"label":"string","value":"string","note":"string","tone":"good"}],"actions":[{"title":"string","reason":"string","evidence":"string","route":"/readiness","cta":"string","priority":"high"}],"watchouts":["string"]}`;

@@ -102,3 +102,6 @@ export function contextForAi(
 ) {
   return JSON.stringify(context);
 }
+
+export const buildUserSnapshot = buildUserContext;
+export const snapshotToPrompt = contextForAi;

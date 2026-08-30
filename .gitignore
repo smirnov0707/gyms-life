@@ -42,3 +42,6 @@ supabase/.temp/
 
 # Migration backups
 supabase/migrations_backup_v6/
+
+# Local Netlify folder
+.netlify

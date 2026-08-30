@@ -190,9 +190,9 @@ export const askCoach = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { buildUserSnapshot, snapshotToPrompt } = await import("./user-context.server");
+    const { buildUserContext, contextForAi } = await import("./user-context.server");
     const [snapshot, { data: history }] = await Promise.all([
-      buildUserSnapshot(supabase, userId),
+      buildUserContext(supabase, userId),
       supabase
         .from("coach_messages")
         .select("role, content")
@@ -220,7 +220,7 @@ Never give medical diagnoses; recommend a doctor for pain or injuries.
 You can see the client's full app data below. Always ground your answer in it and, when useful, point the client to the right screen of the app: dashboard (/app), exercise library (/exercises), technique scanner (/ar), meal plan (/meal-plan), food diary (/nutrition), supplements (/supplements), progress & body scan (/progress), readiness check-in (/readiness), reminders (/reminders).
 
 CLIENT DATA
-${snapshotToPrompt(snapshot)}
+${contextForAi(snapshot)}
 ${priorTurns ? `\nRecent conversation:\n${priorTurns}` : ""}`,
       prompt: data.question,
     });
