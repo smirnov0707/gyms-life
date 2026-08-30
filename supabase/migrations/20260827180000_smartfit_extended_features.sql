@@ -1,0 +1,4 @@
+-- Duplicate migration intentionally made a no-op.
+-- The vbt_logs and vision_meal_scans schema/policies are already
+-- created by migration 20260827164933.
+-- This migration version is already recorded as applied remotely.

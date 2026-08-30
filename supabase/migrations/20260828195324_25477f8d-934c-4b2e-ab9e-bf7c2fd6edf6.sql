@@ -1,0 +1,1 @@
+ALTER TABLE public.set_logs ADD COLUMN IF NOT EXISTS rpe numeric;

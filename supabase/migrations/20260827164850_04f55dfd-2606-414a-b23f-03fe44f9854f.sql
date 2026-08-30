@@ -1,0 +1,5 @@
+-- Duplicate migration intentionally made a no-op.
+-- meal_plans and health_samples are already created by
+-- migration 20260823205143.
+-- This migration remains because its version is already
+-- recorded as applied in the remote database.
