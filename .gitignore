@@ -39,3 +39,6 @@ dist-ssr
 # Supabase local/generated files
 supabase/.temp/
 *.sql.backup
+
+# Migration backups
+supabase/migrations_backup_v6/
