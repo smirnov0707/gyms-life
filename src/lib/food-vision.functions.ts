@@ -24,30 +24,33 @@ export const analyzeMealPhoto = createServerFn({ method: "POST" })
       const langName = data.lang === "lt" ? "lietuvių" : "anglų";
 
       const systemPrompt = `Tu esi pažangus maisto atpažinimo ir sporto dietologijos AI asistentas.
-Pirmiausia GRIEŽTAI įvertink, ar nuotraukoje matomas valgomas maistas ar patiekalas.
-Jeigu nuotraukoje yra daiktas, gyvūnas, drabužis, elektronika ar bet koks NEMAISTINIS objektas:
-grąžink TIKSLIAI tokį JSON:
+Nuodugniai išanalizuok pateiktą nuotrauką.
+
+1. Jei nuotraukoje NĖRA maisto (tai daiktas, elektronika, kambarys, automobilis, drabužis, gyvūnas, žmogaus veidas ir pan.):
+Nustatyk, kas tiksliai matoma nuotraukoje, ir grąžink TIKSLIAI šį JSON formatą:
 {
   "ok": false,
-  "reason": "${data.lang === "lt" ? "Nuotraukoje maistas neatpažintas. Prašome nukreipti kamerą į paruoštą patiekalą ar maisto produktą." : "No food detected. Please scan a prepared dish or food item."}"
+  "detectedObject": "Konkretus matomas objektas ${langName} kalba (pvz. Kompiuterio klaviatūra, Automobilio salonas, Sportiniai bateliai)",
+  "reason": "${data.lang === "lt" ? "Nuotraukoje matomas objektas nėra valgomas maistas. Nukreipkite kamerą į paruoštą patiekalą ar produktą." : "The detected object is not food. Please point your camera at a meal or food item."}"
 }
 
-Jei nuotraukoje YRA maistas, apskaičiuok tikslias maistines vertes ir grąžink:
+2. Jei nuotraukoje YRA valgomas maistas ar gėrimas:
+Apskaičiuok realistiškas maistines vertes (kalorijas, baltymus, angliavandenius, riebalus) pagal matomą porcijos dydį ir grąžink:
 {
   "ok": true,
   "dishName": "Tikslus patiekalo pavadinimas ${langName} kalba",
-  "calories": 480,
-  "protein": 36,
-  "carbs": 42,
-  "fat": 14,
+  "calories": 450,
+  "protein": 35,
+  "carbs": 40,
+  "fat": 15,
   "items": ["Ingredientas 1", "Ingredientas 2", "Ingredientas 3"],
   "confidence": 94,
-  "note": "Komentaras apie baltymų ir skaidulų balansą"
-}`;
+  "note": "Komentaras apie patiekalo maistinę vertę ir porciją"
+}
 
-      // Naudojame oficialų Google Gemini v1beta endpointą
+Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
+
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-      
       const payload = {
         contents: [
           {
@@ -69,38 +72,37 @@ Jei nuotraukoje YRA maistas, apskaičiuok tikslias maistines vertes ir grąžink
         },
       };
 
-      const response = await fetch(endpoint, {
+      let response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        // Fallback į gemini-2.0-flash jei 2.5 endpointas grąžina klaidą
+        // Atsarginis modelio kreipinys
         const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
-        const fallbackRes = await fetch(fallbackEndpoint, {
+        response = await fetch(fallbackEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+      }
 
-        if (!fallbackRes.ok) {
-          const errText = await fallbackRes.text();
-          console.error("Gemini Vision klaida:", errText);
-          return { ok: false, reason: data.lang === "lt" ? "Nepavyko apdoroti vaizdo. Bandykite dar kartą." : "Image processing failed." };
-        }
-
-        const dataRes = await fallbackRes.json();
-        const text = dataRes.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) return { ok: false, reason: "Negautas atsakymas." };
-        return JSON.parse(text.replace(/```json/g, "").replace(/```/g, "").trim());
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("Gemini Vision error:", errText);
+        return {
+          ok: false,
+          reason: data.lang === "lt" ? "Nepavyko atlikti analizės. Pabandykite dar kartą." : "Analysis failed. Please try again.",
+        };
       }
 
       const result = await response.json();
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas iš modelio." };
 
-      return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
+      const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+      return JSON.parse(cleanJson);
     } catch (err: any) {
       console.error("Food vision handler error:", err);
       return { ok: false, reason: err.message || "Apdorojimo klaida." };
@@ -156,23 +158,9 @@ export const recommendMenu = createServerFn({ method: "POST" })
       const base64Data = data.image.includes(",") ? data.image.split(",")[1] : data.image;
       const mimeType = data.image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
-      const prompt = `Analizuok šį restoranų meniu. Išrink geriausius patiekalus sportininkui.
-Atsakyk TIK JSON formatu:
-{
-  "ok": true,
-  "recommendations": [
-    {
-      "dishName": "Patiekalo pavadinimas",
-      "calories": 520,
-      "protein": 40,
-      "carbs": 45,
-      "fat": 12,
-      "reason": "Geras baltymų ir angliavandenių balansas"
-    }
-  ]
-}`;
-
+      const prompt = `Analizuok šį restoranų meniu. Išrink geriausius patiekalus sportininkui. Atsakyk TIK JSON formatu.`;
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,10 +186,7 @@ Atsakyk TIK JSON formatu:
         }),
       });
 
-      if (!response.ok) {
-        return { ok: false, reason: "Meniu apdorojimo klaida." };
-      }
-
+      if (!response.ok) return { ok: false, reason: "Meniu apdorojimo klaida." };
       const result = await response.json();
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
