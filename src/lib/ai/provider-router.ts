@@ -1,7 +1,8 @@
 import {
-  getConfiguredProviders,
+  getConfiguredModels,
+  getProvider,
   type AiCapability,
-  type AiProviderDefinition,
+  type AiModelDefinition,
 } from "./provider-registry";
 
 export interface AiMessage {
@@ -24,10 +25,15 @@ export interface AiResponse {
   text: string;
 }
 
-async function callProvider(
-  provider: AiProviderDefinition,
+async function callModel(
+  model: AiModelDefinition,
   request: AiRequest,
 ): Promise<AiResponse> {
+  if (model.accessTier !== "free-tier") {
+    throw new Error(`Blocked paid AI model: ${model.id}`);
+  }
+
+  const provider = getProvider(model.providerId);
   const apiKey = process.env[provider.envKey];
   if (!apiKey) throw new Error(`${provider.envKey} is not configured.`);
 
@@ -44,7 +50,7 @@ async function callProvider(
         : {}),
     },
     body: JSON.stringify({
-      model: provider.model,
+      model: model.model,
       messages: request.messages,
       temperature: request.temperature ?? 0.4,
       max_tokens: request.maxTokens ?? 1200,
@@ -57,7 +63,7 @@ async function callProvider(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(`${provider.id} ${response.status}: ${detail.slice(0, 500)}`);
+    throw new Error(`${model.id} ${response.status}: ${detail.slice(0, 500)}`);
   }
 
   const payload = (await response.json()) as {
@@ -65,29 +71,33 @@ async function callProvider(
     model?: string;
   };
   const text = payload.choices?.[0]?.message?.content;
-  if (!text) throw new Error(`${provider.id} returned an empty response.`);
+  if (!text) throw new Error(`${model.id} returned an empty response.`);
 
-  return { provider: provider.id, model: payload.model ?? provider.model, text };
+  return {
+    provider: provider.id,
+    model: payload.model ?? model.model,
+    text,
+  };
 }
 
 /**
- * Provider routing is owned by GYMS.LIFE. A paid provider can never enter this
- * function because the registry exposes only cost: "free" providers.
+ * GYMS.LIFE is the orchestrator. Models are replaceable workers.
+ * Only explicitly configured free-tier models may be selected.
  */
 export async function generateAiResponse(request: AiRequest): Promise<AiResponse> {
-  const providers = getConfiguredProviders(request.capability ?? "text");
-  if (!providers.length) {
-    throw new Error("No free AI provider is configured for this request.");
+  const models = getConfiguredModels(request.capability ?? "text");
+  if (!models.length) {
+    throw new Error("No free AI model is configured for this request.");
   }
 
   const errors: string[] = [];
-  for (const provider of providers) {
+  for (const model of models) {
     try {
-      return await callProvider(provider, request);
+      return await callModel(model, request);
     } catch (error) {
-      errors.push(`${provider.id}: ${error instanceof Error ? error.message : String(error)}`);
+      errors.push(`${model.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  throw new Error(`All free AI providers failed. ${errors.join(" | ")}`);
+  throw new Error(`All free AI models failed. ${errors.join(" | ")}`);
 }
