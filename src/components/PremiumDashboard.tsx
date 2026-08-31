@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ArrowRight, BarChart3, Flame, HeartPulse, Play, Sparkles, Trophy, Utensils, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, Flame, HeartPulse, Play, Sparkles, Trophy, Utensils, Zap, type LucideIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Overview } from "@/components/Overview";
@@ -13,7 +13,7 @@ const cards = [
   ["BODYWEIGHT", "PULL-UP", "/assets/videos/exercise-pullup.mp4"],
 ] as const;
 
-function Stat({ label, value, meta, Icon }: { label: string; value: string; meta: string; Icon: typeof Flame }) {
+function Stat({ label, value, meta, Icon }: { label: string; value: string; meta: string; Icon: LucideIcon }) {
   return (
     <div className="premium-stat">
       <div className="premium-stat-icon"><Icon className="size-5" /></div>
@@ -110,7 +110,7 @@ export function PremiumDashboard() {
           <h2 className="premium-card-title">Not another AI chatbot</h2>
           <p className="premium-card-copy">GYMS.LIFE remembers your training. That is why every next session gets smarter.</p>
           <div className="premium-chip-row">
-            {["Your weights", "Your sets", "Your records", "Your progress", "Your goal"].map((x, i) => <span key={x}><Zap className="size-3.5" />{x}</span>)}
+            {["Your weights", "Your sets", "Your records", "Your progress", "Your goal"].map((x) => <span key={x}><Zap className="size-3.5" />{x}</span>)}
           </div>
         </div>
 
