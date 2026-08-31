@@ -118,7 +118,7 @@ RETURN EXACTLY THIS JSON SHAPE (all keys required):
 
     let plan: GeneratedPlan;
     try {
-      plan = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      plan = await generateJson(gateway("google/gemini-2.5-flash"), {
         prompt,
         schema: PlanSchema,
       });
@@ -213,7 +213,7 @@ export const askCoach = createServerFn({ method: "POST" })
 
     const { LANG_NAMES } = await import("./plan-i18n.server");
     const result = streamText({
-      model: gateway("google/gemini-3.1-flash-lite"),
+      model: gateway("google/gemini-2.5-flash"),
       system: `You are GYMS.LIFE, a friendly but rigorous strength coach inside a training app.
 Answer in ${LANG_NAMES[data.lang] ?? "English"}. Be concise (max ~180 words), concrete and practical.
 Never give medical diagnoses; recommend a doctor for pain or injuries.
