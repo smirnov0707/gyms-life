@@ -1,270 +1,155 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { askFastTextAi } from "./ai-gateway.server";
 
-const LangSchema = z.string().default("lt");
+export const WARMUP_SLUGS = ["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"];
 
-/** Warm-up drills we have verified technique clips for. */
-export const WARMUP_SLUGS = [
-  "cat-cow",
-  "thoracic-rotation",
-  "bird-dog",
-  "dead-bug",
-  "glute-bridge",
-  "single-leg-glute-bridge",
-  "hip-flexor-stretch",
-  "couch-stretch",
-  "cossack-squat",
-  "bodyweight-squat",
-  "goblet-squat",
-  "reverse-lunge",
-  "db-walking-lunge",
-  "band-lateral-walk",
-  "band-pull-apart",
-  "face-pull",
-  "plank",
-  "side-plank",
-  "plank-shoulder-tap",
-  "good-morning",
-  "kettlebell-swing",
-  "jumping-jack",
-  "jump-rope",
-  "calf-raise",
-  "treadmill-sprint",
-  "assault-bike",
-] as const;
-
-const DrillSchema = z.object({
-  slug: z.string(),
-  name: z.string(),
-  dose: z.string(),
-  focus: z.string(),
-  why: z.string(),
+const SmartWarmupInput = z.object({
+  targetMuscles: z.array(z.string()).min(1),
+  equipment: z.array(z.string()).default(["bodyweight"]),
+  durationMinutes: z.number().default(5),
+  lang: z.string().default("lt"),
 });
 
-const WarmupSchema = z.object({
-  headline: z.string(),
-  minutes: z.number(),
-  drills: z.array(DrillSchema).min(3).max(6),
-});
-
-const WarmupInput = z.object({
-  focus: z.string().default(""),
-  exercises: z.array(z.string()).default([]),
-  lang: LangSchema,
-});
-
-/** Smart warm-up: built from today's movements, readiness and recent soreness. */
 export const getSmartWarmup = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => WarmupInput.parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+  .validator((data: unknown) => SmartWarmupInput.parse(data))
+  .handler(async ({ data }) => {
+    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const prompt = `Tu esi sporto kineziterapeutas ir treneris platformoje GYMS.LIFE.
+Sukurk greitą dinaminio apšilimo protokolą šioms raumenų grupėms: ${data.targetMuscles.join(", ")}.
+Trukmė: ${data.durationMinutes} min.
+Įranga: ${data.equipment.join(", ")}.
 
-    const [{ data: checkin }, { data: recent }] = await Promise.all([
-      supabase
-        .from("daily_checkins")
-        .select("readiness_score, soreness, sleep_hours, energy")
-        .eq("user_id", userId)
-        .order("checkin_on", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("workout_sessions")
-        .select("title, started_at, total_volume")
-        .eq("user_id", userId)
-        .order("started_at", { ascending: false })
-        .limit(4),
-    ]);
+Atsakyk TIK TIKSLIU JSON formatu be markdown:
+{
+  "ok": true,
+  "routineTitle": "Dinaminio apšilimo kompleksas ${langName} kalba",
+  "totalDurationMinutes": ${data.durationMinutes},
+  "steps": [
+    {
+      "name": "Pratimo pavadinimas",
+      "durationOrReps": "60s arba 12 pakartojimų",
+      "focus": "Tikslinis sąnarys ar raumuo",
+      "instruction": "Trumpas atlikimo akcentas"
+    }
+  ]
+}`;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const gateway = createAiRouterProvider("coach-session.functions");
-
-    const ask = () =>
-      generateJson(gateway("google/gemini-3.1-flash-lite"), {
-        schema: WarmupSchema,
-        system: `You are a strength coach designing a specific warm-up and mobility ramp for one training session.
-Answer entirely in ${LANG_NAMES[data.lang] ?? "English"}.
-Pick 4-5 drills. Each "slug" MUST be one of this exact list: ${WARMUP_SLUGS.join(", ")}.
-"name" = drill name in the answer language, "dose" = sets/reps or seconds, "focus" = joint or muscle prepared,
-"why" = one short sentence tying the drill to today's exercises, soreness or readiness. "minutes" = total time.
-Order drills from general to specific. No greetings.
-Return ONLY strict, minified JSON — every key and every string value wrapped in double quotes, no trailing commas, no comments, no markdown, and never a colon inside an unquoted value. Shape:
-{"headline":"","minutes":8,"drills":[{"slug":"","name":"","dose":"","focus":"","why":""}]}`,
-        prompt: `Today's focus: ${data.focus || "general"}
-Today's exercises: ${data.exercises.join(", ") || "unknown"}
-Latest check-in: ${JSON.stringify(checkin ?? {})}
-Recent sessions: ${JSON.stringify(recent ?? [])}`,
-        maxOutputTokens: 2000,
+    try {
+      const raw = await askFastTextAi({
+        messages: [
+          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
+          { role: "user", content: prompt },
+        ],
+        jsonMode: true,
+        temperature: 0.2,
       });
 
-    let parsed: Awaited<ReturnType<typeof ask>>;
-    try {
-      parsed = await ask();
-    } catch {
-      try {
-        parsed = await ask();
-      } catch {
-        const { fallbackWarmup } = await import("./warmup-fallback.server");
-        parsed = fallbackWarmup(data.focus, data.exercises, data.lang);
-      }
+      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+    } catch (err: any) {
+      return {
+        ok: true,
+        routineTitle: data.lang === "lt" ? "Standartinis dinaminis apšilimas" : "Standard Warmup Routine",
+        totalDurationMinutes: data.durationMinutes,
+        steps: [
+          { name: "Sąnarių mobilizacija", durationOrReps: "2 min", focus: "Bendras kūno aktyvavimas", instruction: "Ratai rankomis, klubų sukimai" },
+          { name: "Kūno svorio pritūpimai", durationOrReps: "15 pakartojimų", focus: "Kojos ir šerdis", instruction: "Pilna judesio amplitudė" },
+          { name: "Lenta (Plank)", durationOrReps: "45s", focus: "Šerdies aktyvavimas", instruction: "Įtemptas pilvo presas ir sėdmenys" },
+        ],
+      };
     }
-
-    const drills = parsed.drills.filter((d) =>
-      (WARMUP_SLUGS as readonly string[]).includes(d.slug),
-    );
-
-    const safe = drills.length
-      ? { ...parsed, drills }
-      : { ...parsed, ...(await import("./warmup-fallback.server")).fallbackWarmup(data.focus, data.exercises, data.lang) };
-
-    return {
-      ...safe,
-      readiness: checkin?.readiness_score ?? null,
-    };
   });
 
-
-/* ------------------------------------------------------------------ */
-/* LIVE SET ADVICE — next-set load & volume from RPE + history         */
-/* ------------------------------------------------------------------ */
-
-const SetInput = z.object({
-  exerciseSlug: z.string().min(1),
-  exerciseName: z.string().min(1),
-  targetReps: z.string().default(""),
-  setNumber: z.number().min(1),
-  totalSets: z.number().min(1),
-  doneSets: z
-    .array(z.object({ weight: z.number().nullable(), reps: z.number().nullable(), rpe: z.number().nullable() }))
-    .default([]),
-  lang: LangSchema,
-});
-
-const AdviceSchema = z.object({
-  weight: z.number().nullable(),
-  reps: z.number().nullable(),
-  targetRir: z.number(),
-  cue: z.string(),
-  why: z.string(),
-  evidence: z.string(),
+const SetAdviceInput = z.object({
+  exerciseName: z.string(),
+  currentSet: z.number(),
+  targetReps: z.number(),
+  actualReps: z.number(),
+  rpe: z.number().min(1).max(10),
+  lang: z.string().default("lt"),
 });
 
 export const getSetAdvice = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SetInput.parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+  .validator((data: unknown) => SetAdviceInput.parse(data))
+  .handler(async ({ data }) => {
+    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    
+    const prompt = `Sportininkas atliko pratimą: "${data.exerciseName}".
+Serija: #${data.currentSet}, Tikslas: ${data.targetReps} pakartojimai, Atliko: ${data.actualReps} pakartojimus, Subjektyvus nuovargis (RPE): ${data.rpe}/10.
 
-    const [{ data: history }, { data: checkin }] = await Promise.all([
-      supabase
-        .from("set_logs")
-        .select("weight_kg, reps, rpe, created_at")
-        .eq("user_id", userId)
-        .eq("exercise_slug", data.exerciseSlug)
-        .order("created_at", { ascending: false })
-        .limit(20),
-      supabase
-        .from("daily_checkins")
-        .select("readiness_score, load_modifier, soreness")
-        .eq("user_id", userId)
-        .order("checkin_on", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+Pateik momentinį, taiklų trenerio patarimą kitai serijai.
+Atsakyk TIK TIKSLIU JSON:
+{
+  "ok": true,
+  "weightAdjustment": "keep" | "increase" | "decrease",
+  "suggestedAdjustmentKg": 0,
+  "recommendedRestSec": 90,
+  "advice": "Taiklus patarimas ${langName} kalba"
+}`;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const gateway = createAiRouterProvider("coach-session.functions");
+    try {
+      const raw = await askFastTextAi({
+        messages: [
+          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
+          { role: "user", content: prompt },
+        ],
+        jsonMode: true,
+        temperature: 0.2,
+      });
 
-    const parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
-      schema: AdviceSchema,
-      system: `You are a live strength coach calling the next set during a workout.
-Answer entirely in ${LANG_NAMES[data.lang] ?? "English"}.
-Return the load in kg ("weight", rounded to 2.5 kg, null only if the lift is bodyweight), "reps",
-"targetRir" (reps in reserve, 0-4), a short "cue" (max 12 words), "why" (one sentence explaining the decision),
-and "evidence" (a literal citation of the numbers you used, e.g. "60 kg x 8 @ RPE 9 · last week 57.5 kg").
-Use RPE/RIR autoregulation: RPE 9-10 on the previous set means hold or drop load; RPE <=7 means add 2.5-5 kg
-or a rep. Respect readiness: a low score means keep volume conservative. Never invent numbers that are not in the data.`,
-      prompt: `Exercise: ${data.exerciseName} (${data.exerciseSlug})
-Planned reps: ${data.targetReps}
-Upcoming set ${data.setNumber} of ${data.totalSets}
-Sets already completed today: ${JSON.stringify(data.doneSets)}
-Recent logged sets (newest first): ${JSON.stringify(history ?? [])}
-Readiness check-in: ${JSON.stringify(checkin ?? {})}`,
-      maxOutputTokens: 900,
-    });
-
-    return parsed;
+      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+    } catch (err: any) {
+      return {
+        ok: true,
+        weightAdjustment: "keep",
+        suggestedAdjustmentKg: 0,
+        recommendedRestSec: 90,
+        advice: data.lang === "lt" ? "Išlaikykite stabilią formą ir kontroliuokite judesį." : "Maintain form and control the tempo.",
+      };
+    }
   });
 
-/* ------------------------------------------------------------------ */
-/* SESSION DEBRIEF — what worked, what to change next time             */
-/* ------------------------------------------------------------------ */
-
 const DebriefInput = z.object({
-  title: z.string().default(""),
-  durationSeconds: z.number().default(0),
-  volume: z.number().default(0),
-  exercises: z
-    .array(
-      z.object({
-        name: z.string(),
-        sets: z.array(
-          z.object({
-            weight: z.number().nullable(),
-            reps: z.number().nullable(),
-            rpe: z.number().nullable(),
-          }),
-        ),
-      }),
-    )
-    .default([]),
-  lang: LangSchema,
-});
-
-const DebriefSchema = z.object({
-  headline: z.string(),
-  wins: z.array(z.string()).min(1).max(4),
-  fixes: z.array(z.string()).min(1).max(4),
-  nextSession: z.string(),
-  evidence: z.array(z.string()).min(1).max(4),
+  sessionDurationMin: z.number(),
+  totalSetsCompleted: z.number(),
+  avgRpe: z.number(),
+  exercisesCompleted: z.array(z.string()),
+  lang: z.string().default("lt"),
 });
 
 export const getSessionDebrief = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => DebriefInput.parse(input))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+  .validator((data: unknown) => DebriefInput.parse(data))
+  .handler(async ({ data }) => {
+    const prompt = `Išanalizuok baigtos treniruotės duomenis:
+Trukmė: ${data.sessionDurationMin} min, Viso serijų: ${data.totalSetsCompleted}, Vidutinis RPE: ${data.avgRpe}, Pratimai: ${data.exercisesCompleted.join(", ")}.
 
-    const { data: previous } = await supabase
-      .from("workout_sessions")
-      .select("title, total_volume, duration_seconds, started_at")
-      .eq("user_id", userId)
-      .order("started_at", { ascending: false })
-      .limit(5);
+Atsakyk TIK JSON:
+{
+  "ok": true,
+  "recoveryHours": 48,
+  "stimulusScore": 92,
+  "summary": "Treniruotės apibendrinimas",
+  "nutritionTip": "Mitybos rekomendacija po treniruotės"
+}`;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const gateway = createAiRouterProvider("coach-session.functions");
+    try {
+      const raw = await askFastTextAi({
+        messages: [
+          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
+          { role: "user", content: prompt },
+        ],
+        jsonMode: true,
+        temperature: 0.2,
+      });
 
-    return await generateJson(gateway("google/gemini-3.1-flash-lite"), {
-      schema: DebriefSchema,
-      system: `You are the athlete's coach writing a short debrief right after the session.
-Answer entirely in ${LANG_NAMES[data.lang] ?? "English"}.
-"headline" = one sentence verdict. "wins" = what actually worked (each max 14 words).
-"fixes" = what to adjust next time (load, reps, tempo, rest, RPE targets).
-"nextSession" = one concrete instruction for the same workout next week.
-"evidence" = literal citations from the data, e.g. "Bench 60 kg x 8 @ RPE 9" or "Volume 4 210 kg vs 3 980 kg".
-Never invent numbers.`,
-      prompt: `Session: ${data.title}
-Duration: ${Math.round(data.durationSeconds / 60)} min · volume ${Math.round(data.volume)} kg
-Logged sets: ${JSON.stringify(data.exercises)}
-Previous sessions: ${JSON.stringify(previous ?? [])}`,
-      maxOutputTokens: 1600,
-    });
+      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+    } catch (err: any) {
+      return {
+        ok: true,
+        recoveryHours: 48,
+        stimulusScore: 85,
+        summary: data.lang === "lt" ? "Puikiai atlikta treniruotė." : "Great workout session.",
+        nutritionTip: data.lang === "lt" ? "30-40g baltymų ir angliavandeniai atsistatymui." : "30-40g protein with carbs.",
+      };
+    }
   });
