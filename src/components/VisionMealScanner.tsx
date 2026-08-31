@@ -143,7 +143,7 @@ export const VisionMealScanner: React.FC = () => {
 
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 border border-emerald-500/30">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-mono text-emerald-300 font-bold">GEMINI FLASH</span>
+          <span className="text-[10px] font-mono text-emerald-300 font-bold">NEURAL VISION</span>
         </div>
       </div>
 

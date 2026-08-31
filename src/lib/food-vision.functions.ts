@@ -14,7 +14,7 @@ export const analyzeMealPhoto = createServerFn({ method: "POST" })
     if (!geminiKey) {
       return {
         ok: false,
-        reason: data.lang === "lt" ? "GEMINI_API_KEY nerastas serveryje." : "GEMINI_API_KEY not configured.",
+        reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas serveryje." : "AI engine not configured.",
       };
     }
 
@@ -23,60 +23,86 @@ export const analyzeMealPhoto = createServerFn({ method: "POST" })
       const mimeType = data.image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
       const langName = data.lang === "lt" ? "lietuvių" : "anglų";
 
-      const prompt = `Tu esi profesionalus sporto dietologas ir AI maisto skeneris.
-Išanalizuok šią patiekalo nuotrauką.
-Atsakyk TIKTAI griežtu JSON formatu (be jokių markdown blokų):
+      const systemPrompt = `Tu esi pažangus maisto atpažinimo ir sporto dietologijos AI asistentas.
+Pirmiausia GRIEŽTAI įvertink, ar nuotraukoje matomas valgomas maistas ar patiekalas.
+Jeigu nuotraukoje yra daiktas, gyvūnas, drabužis, elektronika ar bet koks NEMAISTINIS objektas:
+grąžink TIKSLIAI tokį JSON:
+{
+  "ok": false,
+  "reason": "${data.lang === "lt" ? "Nuotraukoje maistas neatpažintas. Prašome nukreipti kamerą į paruoštą patiekalą ar maisto produktą." : "No food detected. Please scan a prepared dish or food item."}"
+}
+
+Jei nuotraukoje YRA maistas, apskaičiuok tikslias maistines vertes ir grąžink:
 {
   "ok": true,
-  "dishName": "Patiekalo pavadinimas ${langName} kalba",
-  "calories": 450,
-  "protein": 35,
-  "carbs": 40,
-  "fat": 15,
-  "items": ["Ingredientas 1", "Ingredientas 2"],
-  "confidence": 92,
-  "note": "Trumpas dietologo komentaras"
-}
-Jei nuotraukoje NĖRA maisto, grąžink: {"ok": false, "reason": "Nuotraukoje maistas neatpažintas."}`;
+  "dishName": "Tikslus patiekalo pavadinimas ${langName} kalba",
+  "calories": 480,
+  "protein": 36,
+  "carbs": 42,
+  "fat": 14,
+  "items": ["Ingredientas 1", "Ingredientas 2", "Ingredientas 3"],
+  "confidence": 94,
+  "note": "Komentaras apie baltymų ir skaidulų balansą"
+}`;
 
+      // Naudojame oficialų Google Gemini v1beta endpointą
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+      
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: systemPrompt },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Data,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        },
+      };
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: mimeType,
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorDetails = await response.text();
-        console.error("Gemini Error:", errorDetails);
-        return { ok: false, reason: "Gemini klaida: " + response.statusText };
+        // Fallback į gemini-2.0-flash jei 2.5 endpointas grąžina klaidą
+        const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+        const fallbackRes = await fetch(fallbackEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!fallbackRes.ok) {
+          const errText = await fallbackRes.text();
+          console.error("Gemini Vision klaida:", errText);
+          return { ok: false, reason: data.lang === "lt" ? "Nepavyko apdoroti vaizdo. Bandykite dar kartą." : "Image processing failed." };
+        }
+
+        const dataRes = await fallbackRes.json();
+        const text = dataRes.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) return { ok: false, reason: "Negautas atsakymas." };
+        return JSON.parse(text.replace(/```json/g, "").replace(/```/g, "").trim());
       }
 
       const result = await response.json();
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas iš modelio." };
 
-      const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-      return JSON.parse(cleanJson);
+      return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
     } catch (err: any) {
+      console.error("Food vision handler error:", err);
       return { ok: false, reason: err.message || "Apdorojimo klaida." };
     }
   });
@@ -106,7 +132,7 @@ export const savePhotoMeal = createServerFn({ method: "POST" })
       protein_g: data.protein,
       carbs_g: data.carbs,
       fat_g: data.fat,
-      notes: data.note ?? "Nuskaityta su Food Vision AI",
+      notes: data.note ?? "Nuskaityta su AI Vision Scanner",
     });
 
     if (error) throw new Error(error.message);
@@ -123,29 +149,28 @@ export const recommendMenu = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
-      return { ok: false, reason: data.lang === "lt" ? "GEMINI_API_KEY nerastas serveryje." : "GEMINI_API_KEY not configured." };
+      return { ok: false, reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas." : "AI engine not configured." };
     }
 
     try {
       const base64Data = data.image.includes(",") ? data.image.split(",")[1] : data.image;
       const mimeType = data.image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
-      const prompt = `Tu esi profesionalus sporto dietologas. Analizuok restorano meniu nuotrauką ir pateik geriausius pasirinkimus sportininkui.
-Atsakyk TIKTAI griežtu JSON formatu (be markdown):
+      const prompt = `Analizuok šį restoranų meniu. Išrink geriausius patiekalus sportininkui.
+Atsakyk TIK JSON formatu:
 {
   "ok": true,
   "recommendations": [
     {
       "dishName": "Patiekalo pavadinimas",
-      "calories": 550,
-      "protein": 42,
+      "calories": 520,
+      "protein": 40,
       "carbs": 45,
-      "fat": 14,
-      "reason": "Aukštas baltymų kiekis, subalansuoti angliavandeniai"
+      "fat": 12,
+      "reason": "Geras baltymų ir angliavandenių balansas"
     }
   ]
-}
-Jei meniu neįskaitomas: {"ok": false, "reason": "Meniu nuotrauka neįskaitoma."}`;
+}`;
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
       const response = await fetch(endpoint, {
@@ -154,6 +179,7 @@ Jei meniu neįskaitomas: {"ok": false, "reason": "Meniu nuotrauka neįskaitoma."
         body: JSON.stringify({
           contents: [
             {
+              role: "user",
               parts: [
                 { text: prompt },
                 {
@@ -167,18 +193,18 @@ Jei meniu neįskaitomas: {"ok": false, "reason": "Meniu nuotrauka neįskaitoma."
           ],
           generationConfig: {
             responseMimeType: "application/json",
-            temperature: 0.2,
+            temperature: 0.1,
           },
         }),
       });
 
       if (!response.ok) {
-        return { ok: false, reason: "Gemini klaida: " + response.statusText };
+        return { ok: false, reason: "Meniu apdorojimo klaida." };
       }
 
       const result = await response.json();
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) return { ok: false, reason: "Negautas atsakymas iš modelio." };
+      if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
 
       return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
     } catch (err: any) {
