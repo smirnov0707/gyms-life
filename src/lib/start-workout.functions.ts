@@ -5,6 +5,19 @@ import { getTodaysWorkout } from "./todays-workout.functions";
 
 const Input = z.object({ day: z.coerce.number().int().min(1) });
 
+const sessionSelect = "id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume";
+const setSelect = "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
+
+async function getSessionLogs(supabase: any, sessionId: string) {
+  const { data, error } = await supabase
+    .from("set_logs")
+    .select(setSelect)
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`Workout set lookup failed: ${error.message}`);
+  return data ?? [];
+}
+
 export const startWorkout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
@@ -18,7 +31,7 @@ export const startWorkout = createServerFn({ method: "POST" })
 
     const { data: existing, error: existingError } = await supabase
       .from("workout_sessions")
-      .select("id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume")
+      .select(sessionSelect)
       .eq("user_id", userId)
       .eq("plan_id", workout.plan.id)
       .eq("day_index", data.day - 1)
@@ -28,7 +41,10 @@ export const startWorkout = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existingError) throw new Error(`Workout session lookup failed: ${existingError.message}`);
-    if (existing) return { ok: true as const, session: existing, workout: workout.workout, resumed: true as const };
+    if (existing) {
+      const logs = await getSessionLogs(supabase, existing.id);
+      return { ok: true as const, session: existing, workout: workout.workout, logs, resumed: true as const };
+    }
 
     const { data: session, error } = await supabase
       .from("workout_sessions")
@@ -38,10 +54,10 @@ export const startWorkout = createServerFn({ method: "POST" })
         day_index: data.day - 1,
         title: workout.workout.title,
       })
-      .select("id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume")
+      .select(sessionSelect)
       .single();
 
     if (error || !session) throw new Error(`Could not start workout session: ${error?.message ?? "unknown error"}`);
 
-    return { ok: true as const, session, workout: workout.workout, resumed: false as const };
+    return { ok: true as const, session, workout: workout.workout, logs: [], resumed: false as const };
   });
