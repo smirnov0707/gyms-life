@@ -10,9 +10,7 @@ import { startWorkout } from "@/lib/start-workout.functions";
 import { logWorkoutSet } from "@/lib/set-log.functions";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/workout/$day")({
-  component: WorkoutPage,
-});
+export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
 
 function WorkoutPage() {
   const { day } = Route.useParams();
@@ -28,7 +26,7 @@ function WorkoutPage() {
 
   const workoutQuery = useQuery({ queryKey: ["workout", dayNumber], queryFn: () => getTodaysWorkout({ data: { day: dayNumber } }), enabled: Number.isInteger(dayNumber) && dayNumber > 0 });
   const startMutation = useMutation({ mutationFn: () => startWorkout({ data: { day: dayNumber } }), onSuccess: (result) => setSessionId(result.session.id), onError: (error) => toast.error(error instanceof Error ? error.message : "Nepavyko pradėti treniruotės") });
-  const logMutation = useMutation({ mutationFn: () => { if (!sessionId) throw new Error("Workout session is not started."); const exercise = workoutQuery.data?.status === "READY" ? workoutQuery.data.workout.exercises[exerciseIndex] : null; if (!exercise) throw new Error("Exercise not found."); return logWorkoutSet({ data: { sessionId, exerciseSlug: exercise.slug, exerciseName: exercise.name, setNumber, reps: reps ? Number(reps) : null, weightKg: weight ? Number(weight) : null, rpe: rpe ? Number(rpe) : null, done: true } }); }, onSuccess: (_, variables) => { setReps(""); setWeight(""); setRpe(""); setRest(workoutQuery.data?.status === "READY" ? workoutQuery.data.workout.exercises[exerciseIndex]?.rest_seconds ?? 0 : 0); setSetNumber((n) => n + 1); }, onError: (error) => toast.error(error instanceof Error ? error.message : "Nepavyko išsaugoti seto") });
+  const logMutation = useMutation({ mutationFn: () => { if (!sessionId) throw new Error("Workout session is not started."); const exercise = workoutQuery.data?.status === "READY" ? workoutQuery.data.workout.exercises[exerciseIndex] : null; if (!exercise) throw new Error("Exercise not found."); return logWorkoutSet({ data: { sessionId, exerciseSlug: exercise.slug, exerciseName: exercise.name, setNumber, reps: reps ? Number(reps) : null, weightKg: weight ? Number(weight) : null, rpe: rpe ? Number(rpe) : null, done: true } }); }, onSuccess: () => { setReps(""); setWeight(""); setRpe(""); setRest(workoutQuery.data?.status === "READY" ? workoutQuery.data.workout.exercises[exerciseIndex]?.rest_seconds ?? 0 : 0); setSetNumber((n) => n + 1); }, onError: (error) => toast.error(error instanceof Error ? error.message : "Nepavyko išsaugoti seto") });
 
   const workout = workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null;
   const exercise = workout?.exercises[exerciseIndex];
