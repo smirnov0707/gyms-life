@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Camera, Upload, Sparkles, Loader2, AlertTriangle, Plus } from "lucide-react";
+import { Camera, Upload, Sparkles, Loader2, AlertTriangle, Plus, CheckCircle2, RefreshCw } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,223 +7,246 @@ import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { analyzeMealPhoto, savePhotoMeal } from "@/lib/food-vision.functions";
-import { aiErrorMessage } from "@/lib/ai-error";
-
-type Result = {
-  dishName: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  items: string[];
-  confidence: number;
-  note: string;
-};
-
-/** Downscale so the upload stays small and the model sees a clean frame. */
-async function toCompactDataUrl(file: File): Promise<string> {
-  const dataUrl: string = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("read failed"));
-    reader.readAsDataURL(file);
-  });
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error("decode failed"));
-      el.src = dataUrl;
-    });
-    const max = 1024;
-    const scale = Math.min(1, max / Math.max(img.width, img.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(img.width * scale);
-    canvas.height = Math.round(img.height * scale);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return dataUrl;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.85);
-  } catch {
-    return dataUrl;
-  }
-}
 
 export const VisionMealScanner: React.FC = () => {
-  const { t, lang } = useI18n();
+  const { lang } = useI18n();
   const { user } = useAuth();
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [rejected, setRejected] = useState<string | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
 
-  const analyze = useServerFn(analyzeMealPhoto);
-  const save = useServerFn(savePhotoMeal);
+  const analyzeFn = useServerFn(analyzeMealPhoto);
+  const saveFn = useServerFn(savePhotoMeal);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [scanResult, setScanResult] = useState<{
+    ok: boolean;
+    dishName?: string;
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+    items?: string[];
+    confidence?: number;
+    note?: string;
+    reason?: string;
+  } | null>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = "";
 
-    const image = await toCompactDataUrl(file);
-    setPreview(image);
-    setResult(null);
-    setRejected(null);
-    setAnalyzing(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      setImagePreview(base64);
+      setScanResult(null);
+      await runAnalysis(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const runAnalysis = async (base64: string) => {
+    setIsScanning(true);
     try {
-      const res = await analyze({ data: { image, lang } });
-      if (!res.ok) setRejected(res.reason);
-      else setResult(res);
-    } catch (err) {
-      toast.error(aiErrorMessage(err, t));
+      const res = await analyzeFn({ data: { image: base64, lang: lang || "lt" } });
+      setScanResult(res);
+      if (res.ok) {
+        toast.success(lang === "lt" ? "Patiekalas sėkmingai atpažintas!" : "Meal recognized!");
+      } else {
+        toast.error(res.reason || (lang === "lt" ? "Nepavyko atpažinti maisto" : "Failed to detect food"));
+      }
+    } catch (err: any) {
+      toast.error(err?.message || (lang === "lt" ? "Klaida analizuojant nuotrauką" : "Analysis error"));
     } finally {
-      setAnalyzing(false);
+      setIsScanning(false);
     }
   };
 
   const handleSave = async () => {
-    if (!result) return;
-    setSaving(true);
+    if (!scanResult || !scanResult.ok || !scanResult.dishName) return;
+    setIsSaving(true);
     try {
-      await save({
+      await saveFn({
         data: {
-          dishName: result.dishName,
-          calories: result.calories,
-          protein: result.protein,
-          carbs: result.carbs,
-          fat: result.fat,
-          note: result.note,
+          dishName: scanResult.dishName,
+          calories: scanResult.calories || 0,
+          protein: scanResult.protein || 0,
+          carbs: scanResult.carbs || 0,
+          fat: scanResult.fat || 0,
+          note: scanResult.note || "",
         },
       });
-      qc.invalidateQueries({ queryKey: ["nutrition", user?.id] });
-      toast.success(t("sc.vision.saved"));
-    } catch (err) {
-      toast.error(aiErrorMessage(err, t));
+      toast.success(lang === "lt" ? "Patiekalas išsaugotas į mitybos dienoraštį!" : "Meal saved to log!");
+      queryClient.invalidateQueries({ queryKey: ["nutrition-logs"] });
+      setImagePreview(null);
+      setScanResult(null);
+    } catch (err: any) {
+      toast.error(err?.message || (lang === "lt" ? "Nepavyko išsaugoti" : "Failed to save"));
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="p-6 rounded-3xl border border-border bg-surface backdrop-blur-xl shadow-2xl space-y-4">
-      <div className="flex items-center gap-2.5">
-        <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-foreground shadow-lg shadow-indigo-500/20">
-          <Camera className="w-5 h-5" />
+    <div className="relative overflow-hidden rounded-2xl bg-neutral-900/80 border border-white/10 p-4 sm:p-6 backdrop-blur-xl shadow-2xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <Camera className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+              {lang === "lt" ? "Food Vision AI Skeneris" : "Food Vision AI Scanner"}
+            </h3>
+            <p className="text-xs font-mono text-neutral-400">
+              {lang === "lt" ? "Momentinė makroelementų analizė" : "Real-time macro breakdown"}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-            {t("sc.vision.title")} <Sparkles className="w-4 h-4 text-accent" />
-          </h3>
-          <p className="text-xs text-muted-foreground">{t("sc.vision.subtitle")}</p>
+
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 border border-emerald-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[10px] font-mono text-emerald-300 font-bold">GEMINI VISION</span>
         </div>
       </div>
 
       <input
-        ref={fileInputRef}
         type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
         accept="image/*"
         capture="environment"
-        onChange={handleImageUpload}
         className="hidden"
       />
 
-      {!preview ? (
+      {/* Nuotraukos peržiūra arba įkėlimo zona */}
+      {!imagePreview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-border hover:border-indigo-500/50 rounded-2xl p-8 text-center cursor-pointer transition-all bg-surface"
+          className="relative group cursor-pointer flex flex-col items-center justify-center p-8 sm:p-12 rounded-xl border-2 border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-950/10 transition-all duration-300 text-center"
         >
-          <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm font-semibold text-foreground">{t("sc.vision.uploadTitle")}</p>
-          <p className="text-xs text-muted-foreground mt-1">{t("sc.vision.uploadFormats")}</p>
+          <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-emerald-500/40 transition-transform">
+            <Upload className="w-6 h-6 text-neutral-300 group-hover:text-emerald-400 transition-colors" />
+          </div>
+          <span className="text-sm font-semibold text-neutral-200 mb-1">
+            {lang === "lt" ? "Nufotografuok arba įkelk patiekalo nuotrauką" : "Snap or upload a meal photo"}
+          </span>
+          <span className="text-xs font-mono text-neutral-500">
+            {lang === "lt" ? "JPG, PNG • Automatinis porcijos ir makro nustatymas" : "JPG, PNG • Auto weight & macro detection"}
+          </span>
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-border">
-            <img src={preview} alt="Meal preview" className="w-full h-full object-cover" />
-            {analyzing && (
-              <div className="absolute inset-0 bg-surface/80 backdrop-blur-sm flex flex-col items-center justify-center text-foreground gap-2">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-                <span className="text-xs font-mono">{t("sc.vision.analyzing")}</span>
+          {/* Lazerinis HUD Skenerio rėmelis */}
+          <div className="relative aspect-video max-h-72 w-full overflow-hidden rounded-xl bg-black border border-white/15">
+            <img src={imagePreview} alt="Meal Preview" className="w-full h-full object-cover" />
+
+            {/* Skenavimo lazerinė linija */}
+            {isScanning && (
+              <div className="absolute inset-0 bg-emerald-500/10 backdrop-blur-[1px] pointer-events-none flex flex-col items-center justify-center">
+                <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#10b981] animate-scan-laser absolute top-0" />
+                <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-emerald-500/40">
+                  <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                  <span className="text-xs font-mono font-bold text-emerald-300">
+                    {lang === "lt" ? "ANALIZUOJAMA BIOMECHANIKA..." : "ANALYZING MEAL COMPOSITION..."}
+                  </span>
+                </div>
               </div>
             )}
           </div>
 
-          {rejected && (
-            <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 space-y-3">
-              <div className="flex items-start gap-2 text-xs text-foreground">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-accent" />
-                <span>{rejected}</span>
-              </div>
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-              >
-                {t("sc.vision.newPhoto")}
-              </Button>
-            </div>
-          )}
-
-          {result && (
-            <div className="p-4 rounded-2xl bg-surface border border-border space-y-3 animate-in fade-in">
-              <div className="flex justify-between items-start gap-3">
-                <div className="min-w-0">
-                  <h4 className="font-bold text-foreground text-sm">{result.dishName}</h4>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {result.items.map((it, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] px-2 py-0.5 rounded-md bg-surface-2 text-foreground font-mono"
-                      >
-                        {it}
+          {/* Rezultatų HUD blokas */}
+          {scanResult && (
+            <div className="p-4 rounded-xl bg-black/60 border border-white/10 space-y-3">
+              {scanResult.ok ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">
+                        {lang === "lt" ? "ATPAŽINTAS PATIEKALAS" : "IDENTIFIED DISH"}
                       </span>
-                    ))}
+                      <h4 className="text-base sm:text-lg font-bold text-white">{scanResult.dishName}</h4>
+                    </div>
+                    {scanResult.confidence && (
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                        {scanResult.confidence}% {lang === "lt" ? "TIKSLUMAS" : "CONFIDENCE"}
+                      </span>
+                    )}
                   </div>
-                </div>
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0 text-xs border-border text-foreground"
-                >
-                  {t("sc.vision.newPhoto")}
-                </Button>
-              </div>
 
-              <div className="grid grid-cols-4 gap-2 text-center pt-2">
-                <div className="p-2 rounded-xl bg-surface border border-border">
-                  <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.vision.kcal")}</span>
-                  <span className="font-bold text-sm text-foreground">{result.calories}</span>
-                </div>
-                <div className="p-2 rounded-xl bg-surface border border-border">
-                  <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.vision.protein")}</span>
-                  <span className="font-bold text-sm text-primary">{result.protein}g</span>
-                </div>
-                <div className="p-2 rounded-xl bg-surface border border-border">
-                  <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.vision.carbs")}</span>
-                  <span className="font-bold text-sm text-accent">{result.carbs}g</span>
-                </div>
-                <div className="p-2 rounded-xl bg-surface border border-border">
-                  <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.vision.fat")}</span>
-                  <span className="font-bold text-sm text-rose-400">{result.fat}g</span>
-                </div>
-              </div>
+                  {/* Makroelementų matrica */}
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
+                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
+                      <span className="block text-[10px] font-mono text-neutral-400">KCAL</span>
+                      <span className="text-sm sm:text-base font-bold text-white">{scanResult.calories}</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
+                      <span className="block text-[10px] font-mono text-blue-400">{lang === "lt" ? "BALTYMAI" : "PROT"}</span>
+                      <span className="text-sm sm:text-base font-bold text-blue-300">{scanResult.protein}g</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
+                      <span className="block text-[10px] font-mono text-amber-400">{lang === "lt" ? "ANGLIAV." : "CARB"}</span>
+                      <span className="text-sm sm:text-base font-bold text-amber-300">{scanResult.carbs}g</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
+                      <span className="block text-[10px] font-mono text-rose-400">{lang === "lt" ? "RIEBALAI" : "FAT"}</span>
+                      <span className="text-sm sm:text-base font-bold text-rose-300">{scanResult.fat}g</span>
+                    </div>
+                  </div>
 
-              {result.note && <p className="text-xs text-primary/80">{result.note}</p>}
+                  {/* Ingredientų sąrašas */}
+                  {scanResult.items && scanResult.items.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {scanResult.items.map((it, idx) => (
+                        <span key={idx} className="text-[11px] font-mono bg-white/5 px-2 py-0.5 rounded text-neutral-300 border border-white/5">
+                          {it}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <span className="text-[10px] font-mono uppercase text-muted-foreground">
-                  {t("sc.vision.confidence").replace("{n}", String(result.confidence))}
-                </span>
-                <Button size="sm" className="h-8 rounded-full text-xs" disabled={saving} onClick={handleSave}>
-                  {saving ? <Loader2 className="mr-1.5 w-3.5 h-3.5 animate-spin" /> : <Plus className="mr-1.5 w-3.5 h-3.5" />}
-                  {t("sc.vision.saveToDiary")}
-                </Button>
-              </div>
+                  {/* Trenerio pastaba */}
+                  {scanResult.note && (
+                    <p className="text-xs text-neutral-400 italic bg-neutral-950/50 p-2.5 rounded-lg border border-white/5">
+                      💡 {scanResult.note}
+                    </p>
+                  )}
+
+                  {/* Veiksmų mygtukai */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-2"
+                    >
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {lang === "lt" ? "Įrašyti į mitybos dienoraštį" : "Save to Nutrition Log"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-white/10 hover:bg-white/5"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-3 space-y-2">
+                  <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto" />
+                  <p className="text-xs font-mono text-neutral-300">{scanResult.reason}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-white/10 text-xs"
+                  >
+                    {lang === "lt" ? "Bandykite dar kartą" : "Try Again"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -231,3 +254,5 @@ export const VisionMealScanner: React.FC = () => {
     </div>
   );
 };
+
+export default VisionMealScanner;
