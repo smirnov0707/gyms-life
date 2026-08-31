@@ -1,7 +1,8 @@
 export type AiProviderId = "groq" | "gemini" | "openrouter-free";
 
 export type AiModelId =
-  | "gemini-2.5-flash-lite"
+  | "gemini-3.1-flash-lite"
+  | "gemini-3.5-flash-lite"
   | "openrouter-free-general"
   | "openrouter-free-vision"
   | "openrouter-free-reasoning";
@@ -46,23 +47,28 @@ export const AI_PROVIDERS: readonly AiProviderDefinition[] = [
 /**
  * Strict zero-cost catalog.
  *
- * A provider may offer a free tier while still exposing paid models. Such
- * models are intentionally excluded here. Only models/routes documented as
- * free-of-charge are eligible for automatic GYMS.LIFE routing.
- *
- * OpenRouter's `openrouter/free` is a true $0 router that dynamically selects
- * from its current free model pool, including free Llama-family, Gemma,
- * Nemotron and other models when their capabilities match the request.
+ * Gemini 3.1 Flash-Lite is the primary current free-tier worker for text,
+ * vision and structured generation. Gemini 3.5 Flash-Lite is the secondary
+ * free-tier worker. Paid models are deliberately excluded.
  */
 export const AI_MODELS: readonly AiModelDefinition[] = [
   {
-    id: "gemini-2.5-flash-lite",
+    id: "gemini-3.1-flash-lite",
     providerId: "gemini",
-    model: "gemini-2.5-flash-lite",
+    model: "gemini-3.1-flash-lite",
     accessTier: "free-tier",
     capabilities: ["text", "vision", "structured"],
     priority: 10,
     role: "vision",
+  },
+  {
+    id: "gemini-3.5-flash-lite",
+    providerId: "gemini",
+    model: "gemini-3.5-flash-lite",
+    accessTier: "free-tier",
+    capabilities: ["text", "vision", "structured"],
+    priority: 11,
+    role: "general",
   },
   {
     id: "openrouter-free-general",
