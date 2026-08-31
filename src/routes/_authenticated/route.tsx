@@ -66,6 +66,7 @@ function AuthenticatedLayout() {
   }
 
   const activationGate = workoutPath && draftPlanId && !activationDone;
+  const startGate = workoutPath && draftPlanId && activationDone;
 
   return (
     <AppShell>
@@ -77,7 +78,7 @@ function AuthenticatedLayout() {
               <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-primary">GYMS.LIFE PROGRAM</p>
               <h1 className="mt-3 text-4xl font-bold">Activate your program</h1>
               <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                Review the generated program first. Activation makes it your current training program and enables the workout flow.
+                Your generated program is ready. Activate it to make it your current training program.
               </p>
               <div className="mt-7 flex justify-center">
                 <ProgramActivationActions
@@ -88,6 +89,24 @@ function AuthenticatedLayout() {
               </div>
             </div>
           </div>
+        ) : startGate ? (
+          <div className="mx-auto flex min-h-[60vh] max-w-2xl items-center justify-center px-4">
+            <div className="panel w-full p-8 text-center md:p-10">
+              <CheckIcon />
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-primary">GYMS.LIFE PROGRAM</p>
+              <h1 className="mt-3 text-4xl font-bold">Program activated</h1>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                Your program is active. You are ready to start today's workout.
+              </p>
+              <div className="mt-7 flex justify-center">
+                <Button asChild size="lg" className="hard-shadow rounded-none px-8 font-bold">
+                  <Link to="/workout/$day" params={{ day: "0" }} reloadDocument>
+                    <Play className="mr-1 size-4" /> Start Workout
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
         ) : (
           <Outlet />
         )}
@@ -95,6 +114,10 @@ function AuthenticatedLayout() {
       </AccessGate>
     </AppShell>
   );
+}
+
+function CheckIcon() {
+  return <div className="mx-auto grid size-12 place-items-center rounded-full bg-primary/10 text-primary">✓</div>;
 }
 
 /** Cross-feature links rendered under every authenticated page. */
