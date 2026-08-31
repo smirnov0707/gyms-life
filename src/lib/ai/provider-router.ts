@@ -14,6 +14,7 @@ export interface AiRequest {
   capability?: AiCapability;
   temperature?: number;
   maxTokens?: number;
+  jsonMode?: boolean;
   signal?: AbortSignal;
 }
 
@@ -47,6 +48,9 @@ async function callProvider(
       messages: request.messages,
       temperature: request.temperature ?? 0.4,
       max_tokens: request.maxTokens ?? 1200,
+      ...(request.jsonMode
+        ? { response_format: { type: "json_object" } }
+        : {}),
     }),
     signal: request.signal,
   });
