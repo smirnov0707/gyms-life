@@ -4,19 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTodaysWorkout } from "./todays-workout.functions";
 
 const Input = z.object({ day: z.coerce.number().int().min(1) });
-
 const sessionSelect = "id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume";
 const setSelect = "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
-
-async function getSessionLogs(supabase: any, sessionId: string) {
-  const { data, error } = await supabase
-    .from("set_logs")
-    .select(setSelect)
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true });
-  if (error) throw new Error(`Workout set lookup failed: ${error.message}`);
-  return data ?? [];
-}
 
 export const startWorkout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -41,23 +30,22 @@ export const startWorkout = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existingError) throw new Error(`Workout session lookup failed: ${existingError.message}`);
-    if (existing) {
-      const logs = await getSessionLogs(supabase, existing.id);
-      return { ok: true as const, session: existing, workout: workout.workout, logs, resumed: true as const };
-    }
 
-    const { data: session, error } = await supabase
+    const session = existing ?? (await supabase
       .from("workout_sessions")
-      .insert({
-        user_id: userId,
-        plan_id: workout.plan.id,
-        day_index: data.day - 1,
-        title: workout.workout.title,
-      })
+      .insert({ user_id: userId, plan_id: workout.plan.id, day_index: data.day - 1, title: workout.workout.title })
       .select(sessionSelect)
-      .single();
+      .single()).data;
 
-    if (error || !session) throw new Error(`Could not start workout session: ${error?.message ?? "unknown error"}`);
+    if (!session) throw new Error("Could not start workout session.");
 
-    return { ok: true as const, session, workout: workout.workout, logs: [], resumed: false as const };
+    const { data: logs, error: logsError } = await supabase
+      .from("set_logs")
+      .select(setSelect)
+      .eq("session_id", session.id)
+      .order("created_at", { ascending: true });
+
+    if (logsError) throw new Error(`Workout set lookup failed: ${logsError.message}`);
+
+    return { ok: true as const, session, workout: workout.workout, logs: logs ?? [], resumed: Boolean(existing) };
   });
