@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Overview } from "@/components/Overview";
+import { PremiumDashboard } from "@/components/PremiumDashboard";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -10,5 +10,5 @@ export const Route = createFileRoute("/_authenticated/app")({
       { property: "og:description", content: "Šios dienos treniruotė ir progresas vienoje vietoje." },
     ],
   }),
-  component: Overview,
+  component: PremiumDashboard,
 });
