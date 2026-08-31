@@ -15,6 +15,7 @@ import type { PlanData } from "@/lib/plan-types";
 import { useLocalizedPlan } from "@/lib/use-localized-plan";
 import { SmartExerciseSwap } from "@/components/SmartExerciseSwap";
 import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
+import { VoiceSetLogger } from "@/components/VoiceSetLogger";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { adaptSets, adaptWeight, getAppliedAdaptation } from "@/lib/readiness-adapt";
 import { getSetAdvice, getSessionDebrief } from "@/lib/coach-session.functions";
@@ -336,7 +337,8 @@ function WorkoutPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <DynamicWarmupGenerator
+        <VoiceSetLogger />
+      <DynamicWarmupGenerator
           focus={dayPlan.focus}
           exercises={dayPlan.exercises.map((ex) => swaps[ex.slug]?.name ?? ex.name)}
         />
