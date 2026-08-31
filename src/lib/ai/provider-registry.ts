@@ -3,7 +3,9 @@ export type AiProviderId = "groq" | "gemini" | "openrouter-free";
 export type AiModelId =
   | "gpt-oss-120b"
   | "gemini-2.5-flash-lite"
-  | "openrouter-free";
+  | "openrouter-free-general"
+  | "openrouter-free-vision"
+  | "openrouter-free-reasoning";
 
 export type AiCapability = "text" | "vision" | "structured";
 export type AiAccessTier = "free-tier" | "paid";
@@ -14,6 +16,8 @@ export interface AiModelDefinition {
   model: string;
   accessTier: AiAccessTier;
   capabilities: AiCapability[];
+  priority: number;
+  role: "general" | "vision" | "reasoning";
 }
 
 export interface AiProviderDefinition {
@@ -40,6 +44,13 @@ export const AI_PROVIDERS: readonly AiProviderDefinition[] = [
   },
 ];
 
+/**
+ * Curated free-model catalog.
+ *
+ * OpenRouter's `openrouter/free` is intentionally represented as role-specific
+ * workers rather than pretending it is one fixed model. OpenRouter dynamically
+ * filters its free pool for the requested capabilities.
+ */
 export const AI_MODELS: readonly AiModelDefinition[] = [
   {
     id: "gpt-oss-120b",
@@ -47,6 +58,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     model: "openai/gpt-oss-120b",
     accessTier: "free-tier",
     capabilities: ["text", "structured"],
+    priority: 10,
+    role: "general",
   },
   {
     id: "gemini-2.5-flash-lite",
@@ -54,23 +67,52 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     model: "gemini-2.5-flash-lite",
     accessTier: "free-tier",
     capabilities: ["text", "vision", "structured"],
+    priority: 20,
+    role: "vision",
   },
   {
-    id: "openrouter-free",
+    id: "openrouter-free-general",
     providerId: "openrouter-free",
     model: "openrouter/free",
     accessTier: "free-tier",
-    capabilities: ["text", "vision", "structured"],
+    capabilities: ["text", "structured"],
+    priority: 30,
+    role: "general",
+  },
+  {
+    id: "openrouter-free-vision",
+    providerId: "openrouter-free",
+    model: "openrouter/free",
+    accessTier: "free-tier",
+    capabilities: ["vision", "text", "structured"],
+    priority: 30,
+    role: "vision",
+  },
+  {
+    id: "openrouter-free-reasoning",
+    providerId: "openrouter-free",
+    model: "openrouter/free",
+    accessTier: "free-tier",
+    capabilities: ["text", "structured"],
+    priority: 30,
+    role: "reasoning",
   },
 ];
 
 export function getConfiguredModels(capability: AiCapability = "text") {
-  return AI_MODELS.filter(
-    (model) =>
-      model.accessTier === "free-tier" &&
-      model.capabilities.includes(capability) &&
-      Boolean(process.env[AI_PROVIDERS.find((p) => p.id === model.providerId)?.envKey ?? ""]),
-  );
+  return AI_MODELS
+    .filter(
+      (model) =>
+        model.accessTier === "free-tier" &&
+        model.capabilities.includes(capability) &&
+        Boolean(
+          process.env[
+            AI_PROVIDERS.find((provider) => provider.id === model.providerId)
+              ?.envKey ?? ""
+          ],
+        ),
+    )
+    .sort((a, b) => a.priority - b.priority);
 }
 
 export function getProvider(id: AiProviderId): AiProviderDefinition {
