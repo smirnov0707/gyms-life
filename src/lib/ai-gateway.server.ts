@@ -1,106 +1,82 @@
+import { createGroq } from "@ai-sdk/groq";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+
+const groqClient = createGroq({
+  apiKey: process.env.GROQ_API_KEY || "",
+});
+
+const googleClient = createGoogleGenerativeAI({
+  apiKey: process.env.GEMINI_API_KEY || "",
+});
+
+export function isAiConfigured(): boolean {
+  return Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY);
+}
+
 /**
- * GYMS.LIFE Hybrid AI Engine Orchestrator
- * Groq LPU (GPT-OSS 120B / Compound) + Google Gemini Vision Flash
+ * Universalus AI modelių parinkiklis
  */
-
-export interface AiMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
-
-export interface AiRequestOptions {
-  messages: AiMessage[];
-  temperature?: number;
-  maxTokens?: number;
-  jsonMode?: boolean;
-}
-
-export const getActiveAiConfig = () => {
-  const groqKey = process.env.GROQ_API_KEY;
-  const geminiKey = process.env.GEMINI_API_KEY;
-  return {
-    hasGroq: Boolean(groqKey && groqKey.startsWith("gsk_")),
-    hasGemini: Boolean(geminiKey && geminiKey.length > 10),
-    groqKey,
-    geminiKey,
+export function createAiRouterProvider(sourceModule = "general") {
+  return (modelName: string) => {
+    if (modelName.includes("gemini") && process.env.GEMINI_API_KEY) {
+      const cleanName = modelName.replace("google/", "");
+      return googleClient(cleanName);
+    }
+    return groqClient("llama-3.3-70b-versatile");
   };
-};
+}
 
-export const isAiConfigured = (): boolean => {
-  const { hasGroq, hasGemini } = getActiveAiConfig();
-  return hasGroq || hasGemini;
-};
+/**
+ * Greitasis teksto AI modelis (Groq LPU <200ms)
+ */
+export async function askFastTextAi({
+  messages,
+  jsonMode = false,
+  temperature = 0.2,
+}: {
+  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+  jsonMode?: boolean;
+  temperature?: number;
+}): Promise<string> {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey) {
+    // Atsarginis variantas per Gemini, jei nėra Groq rakto
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) throw new Error("Nėra sukonfigūruotas nei GROQ_API_KEY, nei GEMINI_API_KEY");
 
-export async function askFastTextAi(options: AiRequestOptions): Promise<string> {
-  const { groqKey, geminiKey } = getActiveAiConfig();
-
-  // 1. Prioritetas: Groq GPT-OSS 120B / Compound Mini (momentinis atsakas)
-  if (groqKey) {
-    const models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "groq/compound-mini"];
-    for (const model of models) {
-      try {
-        const body: any = {
-          model,
-          messages: options.messages,
-          temperature: options.temperature ?? 0.3,
-          max_tokens: options.maxTokens ?? 1024,
-        };
-        if (options.jsonMode) {
-          body.response_format = { type: "json_object" };
-        }
-
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${groqKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.choices?.[0]?.message?.content;
-          if (text) return text;
-        }
-      } catch (err) {
-        console.warn(`Groq ${model} failover:`, err);
-      }
-    }
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+    const promptText = messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: promptText }] }],
+        generationConfig: jsonMode ? { responseMimeType: "application/json", temperature } : { temperature },
+      }),
+    });
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
   }
 
-  // 2. Fallback: Google Gemini 2.5 Flash / 2.0 Flash
-  if (geminiKey) {
-    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash"];
-    const prompt = options.messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${groqKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages,
+      temperature,
+      response_format: jsonMode ? { type: "json_object" } : undefined,
+    }),
+  });
 
-    for (const gModel of geminiModels) {
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${gModel}:generateContent?key=${geminiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: options.temperature ?? 0.3,
-                responseMimeType: options.jsonMode ? "application/json" : "text/plain",
-              },
-            }),
-          }
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) return text;
-        }
-      } catch (err) {
-        console.warn(`Gemini ${gModel} failover:`, err);
-      }
-    }
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Groq API klaida: ${err}`);
   }
 
-  throw new Error("AI paslauga šiuo metu nepasiekiama. Patikrinkite API raktus.");
+  const json = await res.json();
+  return json.choices?.[0]?.message?.content || "";
 }
