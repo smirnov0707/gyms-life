@@ -1,0 +1,562 @@
+{
+  "ab-wheel": {
+    "exerciseId": "Ab_Roller",
+    "name": "Ab Roller",
+    "equipment": "other",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/ab-wheel/0.jpg",
+      "/assets/exercise-db/ab-wheel/1.jpg"
+    ]
+  },
+  "abductor-machine": {
+    "exerciseId": "Thigh_Abductor",
+    "name": "Thigh Abductor",
+    "equipment": "machine",
+    "primaryMuscles": [
+      "abductors"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/abductor-machine/0.jpg",
+      "/assets/exercise-db/abductor-machine/1.jpg"
+    ]
+  },
+  "adductor-machine": {
+    "exerciseId": "Thigh_Adductor",
+    "name": "Thigh Adductor",
+    "equipment": "machine",
+    "primaryMuscles": [
+      "adductors"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/adductor-machine/0.jpg",
+      "/assets/exercise-db/adductor-machine/1.jpg"
+    ]
+  },
+  "arnold-press": {
+    "exerciseId": "Arnold_Dumbbell_Press",
+    "name": "Arnold Dumbbell Press",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/arnold-press/0.jpg",
+      "/assets/exercise-db/arnold-press/1.jpg"
+    ]
+  },
+  "barbell-row": {
+    "exerciseId": "Bent_Over_Barbell_Row",
+    "name": "Bent Over Barbell Row",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/barbell-row/0.jpg",
+      "/assets/exercise-db/barbell-row/1.jpg"
+    ]
+  },
+  "barbell-step-up": {
+    "exerciseId": "Barbell_Step_Ups",
+    "name": "Barbell Step Ups",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/barbell-step-up/0.jpg",
+      "/assets/exercise-db/barbell-step-up/1.jpg"
+    ]
+  },
+  "battle-ropes": {
+    "exerciseId": "Battling_Ropes",
+    "name": "Battling Ropes",
+    "equipment": "other",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/battle-ropes/0.jpg",
+      "/assets/exercise-db/battle-ropes/1.jpg"
+    ]
+  },
+  "bench-dip": {
+    "exerciseId": "Weighted_Bench_Dip",
+    "name": "Weighted Bench Dip",
+    "equipment": "other",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/bench-dip/0.jpg",
+      "/assets/exercise-db/bench-dip/1.jpg"
+    ]
+  },
+  "cable-kickback": {
+    "exerciseId": "One-Legged_Cable_Kickback",
+    "name": "One-Legged Cable Kickback",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "glutes"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/cable-kickback/0.jpg",
+      "/assets/exercise-db/cable-kickback/1.jpg"
+    ]
+  },
+  "cable-lateral-raise": {
+    "exerciseId": "Cable_Seated_Lateral_Raise",
+    "name": "Cable Seated Lateral Raise",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/cable-lateral-raise/0.jpg",
+      "/assets/exercise-db/cable-lateral-raise/1.jpg"
+    ]
+  },
+  "close-grip-bench-press": {
+    "exerciseId": "Close-Grip_Barbell_Bench_Press",
+    "name": "Close-Grip Barbell Bench Press",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/close-grip-bench-press/0.jpg",
+      "/assets/exercise-db/close-grip-bench-press/1.jpg"
+    ]
+  },
+  "db-bulgarian-split-squat": {
+    "exerciseId": "Split_Squat_with_Dumbbells",
+    "name": "Split Squat with Dumbbells",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/db-bulgarian-split-squat/0.jpg",
+      "/assets/exercise-db/db-bulgarian-split-squat/1.jpg"
+    ]
+  },
+  "db-calf-raise": {
+    "exerciseId": "Standing_Dumbbell_Calf_Raise",
+    "name": "Standing Dumbbell Calf Raise",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/db-calf-raise/0.jpg",
+      "/assets/exercise-db/db-calf-raise/1.jpg"
+    ]
+  },
+  "db-incline-press": {
+    "exerciseId": "Incline_Dumbbell_Press",
+    "name": "Incline Dumbbell Press",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/db-incline-press/0.jpg",
+      "/assets/exercise-db/db-incline-press/1.jpg"
+    ]
+  },
+  "db-pullover": {
+    "exerciseId": "Straight-Arm_Dumbbell_Pullover",
+    "name": "Straight-Arm Dumbbell Pullover",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/db-pullover/0.jpg",
+      "/assets/exercise-db/db-pullover/1.jpg"
+    ]
+  },
+  "db-shoulder-press": {
+    "exerciseId": "Dumbbell_Shoulder_Press",
+    "name": "Dumbbell Shoulder Press",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/db-shoulder-press/0.jpg",
+      "/assets/exercise-db/db-shoulder-press/1.jpg"
+    ]
+  },
+  "db-shrug": {
+    "exerciseId": "Dumbbell_Shrug",
+    "name": "Dumbbell Shrug",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "traps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/db-shrug/0.jpg",
+      "/assets/exercise-db/db-shrug/1.jpg"
+    ]
+  },
+  "decline-bench-press": {
+    "exerciseId": "Decline_Barbell_Bench_Press",
+    "name": "Decline Barbell Bench Press",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/decline-bench-press/0.jpg",
+      "/assets/exercise-db/decline-bench-press/1.jpg"
+    ]
+  },
+  "front-raise": {
+    "exerciseId": "Front_Dumbbell_Raise",
+    "name": "Front Dumbbell Raise",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/front-raise/0.jpg",
+      "/assets/exercise-db/front-raise/1.jpg"
+    ]
+  },
+  "front-squat": {
+    "exerciseId": "Front_Barbell_Squat",
+    "name": "Front Barbell Squat",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/front-squat/0.jpg",
+      "/assets/exercise-db/front-squat/1.jpg"
+    ]
+  },
+  "hammer-curl": {
+    "exerciseId": "Cross_Body_Hammer_Curl",
+    "name": "Cross Body Hammer Curl",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/hammer-curl/0.jpg",
+      "/assets/exercise-db/hammer-curl/1.jpg"
+    ]
+  },
+  "incline-bench-press": {
+    "exerciseId": "Barbell_Incline_Bench_Press_-_Medium_Grip",
+    "name": "Barbell Incline Bench Press - Medium Grip",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/incline-bench-press/0.jpg",
+      "/assets/exercise-db/incline-bench-press/1.jpg"
+    ]
+  },
+  "incline-db-curl": {
+    "exerciseId": "Incline_Dumbbell_Curl",
+    "name": "Incline Dumbbell Curl",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/incline-db-curl/0.jpg",
+      "/assets/exercise-db/incline-db-curl/1.jpg"
+    ]
+  },
+  "lat-pulldown": {
+    "exerciseId": "Wide-Grip_Lat_Pulldown",
+    "name": "Wide-Grip Lat Pulldown",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/lat-pulldown/0.jpg",
+      "/assets/exercise-db/lat-pulldown/1.jpg"
+    ]
+  },
+  "mountain-climber": {
+    "exerciseId": "Mountain_Climbers",
+    "name": "Mountain Climbers",
+    "equipment": null,
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/mountain-climber/0.jpg",
+      "/assets/exercise-db/mountain-climber/1.jpg"
+    ]
+  },
+  "one-arm-db-row": {
+    "exerciseId": "One-Arm_Dumbbell_Row",
+    "name": "One-Arm Dumbbell Row",
+    "equipment": "dumbbell",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/one-arm-db-row/0.jpg",
+      "/assets/exercise-db/one-arm-db-row/1.jpg"
+    ]
+  },
+  "overhead-press": {
+    "exerciseId": "Standing_Military_Press",
+    "name": "Standing Military Press",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/overhead-press/0.jpg",
+      "/assets/exercise-db/overhead-press/1.jpg"
+    ]
+  },
+  "overhead-triceps-extension": {
+    "exerciseId": "Triceps_Overhead_Extension_with_Rope",
+    "name": "Triceps Overhead Extension with Rope",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/overhead-triceps-extension/0.jpg",
+      "/assets/exercise-db/overhead-triceps-extension/1.jpg"
+    ]
+  },
+  "rear-delt-fly": {
+    "exerciseId": "Cable_Rear_Delt_Fly",
+    "name": "Cable Rear Delt Fly",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/rear-delt-fly/0.jpg",
+      "/assets/exercise-db/rear-delt-fly/1.jpg"
+    ]
+  },
+  "rope-pushdown": {
+    "exerciseId": "Triceps_Pushdown_-_Rope_Attachment",
+    "name": "Triceps Pushdown - Rope Attachment",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/rope-pushdown/0.jpg",
+      "/assets/exercise-db/rope-pushdown/1.jpg"
+    ]
+  },
+  "seated-cable-row": {
+    "exerciseId": "Seated_Cable_Rows",
+    "name": "Seated Cable Rows",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/seated-cable-row/0.jpg",
+      "/assets/exercise-db/seated-cable-row/1.jpg"
+    ]
+  },
+  "skullcrusher": {
+    "exerciseId": "EZ-Bar_Skullcrusher",
+    "name": "EZ-Bar Skullcrusher",
+    "equipment": "e-z curl bar",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/skullcrusher/0.jpg",
+      "/assets/exercise-db/skullcrusher/1.jpg"
+    ]
+  },
+  "smith-squat": {
+    "exerciseId": "Smith_Machine_Squat",
+    "name": "Smith Machine Squat",
+    "equipment": "machine",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/smith-squat/0.jpg",
+      "/assets/exercise-db/smith-squat/1.jpg"
+    ]
+  },
+  "t-bar-row": {
+    "exerciseId": "T-Bar_Row_with_Handle",
+    "name": "T-Bar Row with Handle",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/t-bar-row/0.jpg",
+      "/assets/exercise-db/t-bar-row/1.jpg"
+    ]
+  },
+  "trx-fallout": {
+    "exerciseId": "Suspended_Fallout",
+    "name": "Suspended Fallout",
+    "equipment": "other",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/trx-fallout/0.jpg",
+      "/assets/exercise-db/trx-fallout/1.jpg"
+    ]
+  },
+  "trx-push-up": {
+    "exerciseId": "Suspended_Push-Up",
+    "name": "Suspended Push-Up",
+    "equipment": "other",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/trx-push-up/0.jpg",
+      "/assets/exercise-db/trx-push-up/1.jpg"
+    ]
+  },
+  "trx-row": {
+    "exerciseId": "Suspended_Row",
+    "name": "Suspended Row",
+    "equipment": "other",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/trx-row/0.jpg",
+      "/assets/exercise-db/trx-row/1.jpg"
+    ]
+  },
+  "upright-row": {
+    "exerciseId": "Upright_Barbell_Row",
+    "name": "Upright Barbell Row",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/upright-row/0.jpg",
+      "/assets/exercise-db/upright-row/1.jpg"
+    ]
+  },
+  "wide-grip-pulldown": {
+    "exerciseId": "Wide-Grip_Lat_Pulldown",
+    "name": "Wide-Grip Lat Pulldown",
+    "equipment": "cable",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/wide-grip-pulldown/0.jpg",
+      "/assets/exercise-db/wide-grip-pulldown/1.jpg"
+    ]
+  },
+  "zercher-squat": {
+    "exerciseId": "Zercher_Squats",
+    "name": "Zercher Squats",
+    "equipment": "barbell",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "confidence": "HIGH",
+    "reason": "manual exact movement match",
+    "images": [
+      "/assets/exercise-db/zercher-squat/0.jpg",
+      "/assets/exercise-db/zercher-squat/1.jpg"
+    ]
+  }
+}

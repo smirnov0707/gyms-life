@@ -1,0 +1,274 @@
+{
+  "band-pull-apart": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Band_Pull_Apart",
+    "images": [
+      "/assets/exercise-db/band-pull-apart/0.jpg",
+      "/assets/exercise-db/band-pull-apart/1.jpg"
+    ]
+  },
+  "barbell-curl": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Barbell_Curl",
+    "images": [
+      "/assets/exercise-db/barbell-curl/0.jpg",
+      "/assets/exercise-db/barbell-curl/1.jpg"
+    ]
+  },
+  "barbell-lunge": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Barbell_Lunge",
+    "images": [
+      "/assets/exercise-db/barbell-lunge/0.jpg",
+      "/assets/exercise-db/barbell-lunge/1.jpg"
+    ]
+  },
+  "barbell-shrug": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Barbell_Shrug",
+    "images": [
+      "/assets/exercise-db/barbell-shrug/0.jpg",
+      "/assets/exercise-db/barbell-shrug/1.jpg"
+    ]
+  },
+  "bodyweight-squat": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Bodyweight_Squat",
+    "images": [
+      "/assets/exercise-db/bodyweight-squat/0.jpg",
+      "/assets/exercise-db/bodyweight-squat/1.jpg"
+    ]
+  },
+  "box-squat": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Box_Squat",
+    "images": [
+      "/assets/exercise-db/box-squat/0.jpg",
+      "/assets/exercise-db/box-squat/1.jpg"
+    ]
+  },
+  "cable-crossover": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Cable_Crossover",
+    "images": [
+      "/assets/exercise-db/cable-crossover/0.jpg",
+      "/assets/exercise-db/cable-crossover/1.jpg"
+    ]
+  },
+  "cable-crunch": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Cable_Crunch",
+    "images": [
+      "/assets/exercise-db/cable-crunch/0.jpg",
+      "/assets/exercise-db/cable-crunch/1.jpg"
+    ]
+  },
+  "chin-up": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Chin-Up",
+    "images": [
+      "/assets/exercise-db/chin-up/0.jpg",
+      "/assets/exercise-db/chin-up/1.jpg"
+    ]
+  },
+  "clean-and-press": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Clean_and_Press",
+    "images": [
+      "/assets/exercise-db/clean-and-press/0.jpg",
+      "/assets/exercise-db/clean-and-press/1.jpg"
+    ]
+  },
+  "dead-bug": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Dead_Bug",
+    "images": [
+      "/assets/exercise-db/dead-bug/0.jpg",
+      "/assets/exercise-db/dead-bug/1.jpg"
+    ]
+  },
+  "decline-push-up": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Decline_Push-Up",
+    "images": [
+      "/assets/exercise-db/decline-push-up/0.jpg",
+      "/assets/exercise-db/decline-push-up/1.jpg"
+    ]
+  },
+  "ez-bar-curl": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "EZ-Bar_Curl",
+    "images": [
+      "/assets/exercise-db/ez-bar-curl/0.jpg",
+      "/assets/exercise-db/ez-bar-curl/1.jpg"
+    ]
+  },
+  "face-pull": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Face_Pull",
+    "images": [
+      "/assets/exercise-db/face-pull/0.jpg",
+      "/assets/exercise-db/face-pull/1.jpg"
+    ]
+  },
+  "goblet-squat": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Goblet_Squat",
+    "images": [
+      "/assets/exercise-db/goblet-squat/0.jpg",
+      "/assets/exercise-db/goblet-squat/1.jpg"
+    ]
+  },
+  "good-morning": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Good_Morning",
+    "images": [
+      "/assets/exercise-db/good-morning/0.jpg",
+      "/assets/exercise-db/good-morning/1.jpg"
+    ]
+  },
+  "hack-squat": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Hack_Squat",
+    "images": [
+      "/assets/exercise-db/hack-squat/0.jpg",
+      "/assets/exercise-db/hack-squat/1.jpg"
+    ]
+  },
+  "hanging-leg-raise": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Hanging_Leg_Raise",
+    "images": [
+      "/assets/exercise-db/hanging-leg-raise/0.jpg",
+      "/assets/exercise-db/hanging-leg-raise/1.jpg"
+    ]
+  },
+  "inverted-row": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Inverted_Row",
+    "images": [
+      "/assets/exercise-db/inverted-row/0.jpg",
+      "/assets/exercise-db/inverted-row/1.jpg"
+    ]
+  },
+  "leg-press": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Leg_Press",
+    "images": [
+      "/assets/exercise-db/leg-press/0.jpg",
+      "/assets/exercise-db/leg-press/1.jpg"
+    ]
+  },
+  "pallof-press": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Pallof_Press",
+    "images": [
+      "/assets/exercise-db/pallof-press/0.jpg",
+      "/assets/exercise-db/pallof-press/1.jpg"
+    ]
+  },
+  "plank": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Plank",
+    "images": [
+      "/assets/exercise-db/plank/0.jpg",
+      "/assets/exercise-db/plank/1.jpg"
+    ]
+  },
+  "preacher-curl": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Preacher_Curl",
+    "images": [
+      "/assets/exercise-db/preacher-curl/0.jpg",
+      "/assets/exercise-db/preacher-curl/1.jpg"
+    ]
+  },
+  "romanian-deadlift": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Romanian_Deadlift",
+    "images": [
+      "/assets/exercise-db/romanian-deadlift/0.jpg",
+      "/assets/exercise-db/romanian-deadlift/1.jpg"
+    ]
+  },
+  "russian-twist": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Russian_Twist",
+    "images": [
+      "/assets/exercise-db/russian-twist/0.jpg",
+      "/assets/exercise-db/russian-twist/1.jpg"
+    ]
+  },
+  "seated-calf-raise": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Seated_Calf_Raise",
+    "images": [
+      "/assets/exercise-db/seated-calf-raise/0.jpg",
+      "/assets/exercise-db/seated-calf-raise/1.jpg"
+    ]
+  },
+  "single-leg-glute-bridge": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Single_Leg_Glute_Bridge",
+    "images": [
+      "/assets/exercise-db/single-leg-glute-bridge/0.jpg",
+      "/assets/exercise-db/single-leg-glute-bridge/1.jpg"
+    ]
+  },
+  "sit-up": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Sit-Up",
+    "images": [
+      "/assets/exercise-db/sit-up/0.jpg",
+      "/assets/exercise-db/sit-up/1.jpg"
+    ]
+  },
+  "sled-push": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Sled_Push",
+    "images": [
+      "/assets/exercise-db/sled-push/0.jpg",
+      "/assets/exercise-db/sled-push/1.jpg"
+    ]
+  },
+  "straight-arm-pulldown": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Straight-Arm_Pulldown",
+    "images": [
+      "/assets/exercise-db/straight-arm-pulldown/0.jpg",
+      "/assets/exercise-db/straight-arm-pulldown/1.jpg"
+    ]
+  },
+  "sumo-deadlift": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Sumo_Deadlift",
+    "images": [
+      "/assets/exercise-db/sumo-deadlift/0.jpg",
+      "/assets/exercise-db/sumo-deadlift/1.jpg"
+    ]
+  },
+  "superman": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Superman",
+    "images": [
+      "/assets/exercise-db/superman/0.jpg",
+      "/assets/exercise-db/superman/1.jpg"
+    ]
+  },
+  "triceps-pushdown": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Triceps_Pushdown",
+    "images": [
+      "/assets/exercise-db/triceps-pushdown/0.jpg",
+      "/assets/exercise-db/triceps-pushdown/1.jpg"
+    ]
+  },
+  "worlds-greatest-stretch": {
+    "source": "yuhonas/free-exercise-db",
+    "folder": "Worlds_Greatest_Stretch",
+    "images": [
+      "/assets/exercise-db/worlds-greatest-stretch/0.jpg",
+      "/assets/exercise-db/worlds-greatest-stretch/1.jpg"
+    ]
+  }
+}
