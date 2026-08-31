@@ -1,0 +1,241 @@
+/* GYMS.LIFE Premium Visual System
+ * Loaded after the legacy utility stylesheet so the visual layer can evolve
+ * without rewriting the application's functional components.
+ */
+
+:root {
+  --premium-bg: #f4f6f3;
+  --premium-bg-2: #edf1ec;
+  --premium-surface: rgba(255, 255, 255, 0.86);
+  --premium-surface-solid: #ffffff;
+  --premium-surface-2: #f7f9f6;
+  --premium-text: #111612;
+  --premium-muted: #66716a;
+  --premium-border: rgba(17, 22, 18, 0.09);
+  --premium-border-strong: rgba(17, 22, 18, 0.15);
+  --premium-accent: #79b51c;
+  --premium-accent-strong: #5d940e;
+  --premium-accent-soft: rgba(121, 181, 28, 0.12);
+  --premium-glow: rgba(121, 181, 28, 0.18);
+  --premium-shadow: 0 18px 55px rgba(26, 38, 29, 0.10);
+}
+
+html.light {
+  color-scheme: light;
+  --background: var(--premium-bg);
+  --foreground: var(--premium-text);
+  --surface: var(--premium-surface-solid);
+  --surface-2: var(--premium-surface-2);
+  --card: var(--premium-surface-solid);
+  --card-foreground: var(--premium-text);
+  --popover: var(--premium-surface-solid);
+  --popover-foreground: var(--premium-text);
+  --primary: var(--premium-accent-strong);
+  --primary-foreground: #ffffff;
+  --primary-dim: var(--premium-accent-soft);
+  --primary-glow: var(--premium-glow);
+  --secondary: #e9eee8;
+  --secondary-foreground: var(--premium-text);
+  --muted: #edf1ec;
+  --muted-foreground: var(--premium-muted);
+  --accent: #edf5df;
+  --accent-foreground: #31500b;
+  --border: var(--premium-border);
+  --input: rgba(17, 22, 18, 0.12);
+  --ring: rgba(93, 148, 14, 0.32);
+  --sidebar: #f0f3ef;
+  --sidebar-foreground: var(--premium-text);
+  --sidebar-primary: var(--premium-accent-strong);
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: #e8eee6;
+  --sidebar-accent-foreground: var(--premium-text);
+  --sidebar-border: var(--premium-border);
+  --sidebar-ring: rgba(93, 148, 14, 0.28);
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: #111411;
+  --foreground: #f3f7f0;
+  --surface: #181c18;
+  --surface-2: #202520;
+  --card: #181c18;
+  --card-foreground: #f3f7f0;
+  --popover: #181c18;
+  --popover-foreground: #f3f7f0;
+  --primary: #b8ed46;
+  --primary-foreground: #111411;
+  --primary-dim: rgba(184, 237, 70, 0.20);
+  --primary-glow: rgba(184, 237, 70, 0.24);
+  --secondary: #222722;
+  --secondary-foreground: #f3f7f0;
+  --muted: #202520;
+  --muted-foreground: #9aa59a;
+  --accent: #293025;
+  --accent-foreground: #d8f6a3;
+  --border: rgba(236, 247, 233, 0.085);
+  --input: rgba(236, 247, 233, 0.11);
+  --ring: rgba(184, 237, 70, 0.36);
+  --sidebar: #151915;
+  --sidebar-foreground: #f3f7f0;
+  --sidebar-primary: #b8ed46;
+  --sidebar-primary-foreground: #111411;
+  --sidebar-accent: #202520;
+  --sidebar-accent-foreground: #f3f7f0;
+  --sidebar-border: rgba(236, 247, 233, 0.085);
+  --sidebar-ring: rgba(184, 237, 70, 0.30);
+}
+
+html,
+body {
+  background: var(--background) !important;
+}
+
+body {
+  color: var(--foreground);
+  background-image:
+    radial-gradient(70rem 35rem at 0% -10%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 62%),
+    radial-gradient(55rem 30rem at 100% 0%, rgba(66, 153, 225, 0.045), transparent 65%),
+    linear-gradient(180deg, var(--background) 0%, var(--background) 100%);
+}
+
+html.dark body {
+  background-image:
+    radial-gradient(65rem 32rem at 4% -10%, rgba(184, 237, 70, 0.055), transparent 62%),
+    radial-gradient(50rem 28rem at 100% 5%, rgba(51, 168, 153, 0.045), transparent 66%),
+    linear-gradient(180deg, #111411 0%, #0f120f 100%);
+}
+
+html.light body {
+  background-image:
+    radial-gradient(65rem 34rem at 0% -10%, rgba(121, 181, 28, 0.075), transparent 62%),
+    radial-gradient(50rem 28rem at 100% 0%, rgba(71, 130, 180, 0.045), transparent 66%),
+    linear-gradient(180deg, #f7f9f6 0%, #eef2ed 100%);
+}
+
+/* Premium cards: soft depth instead of harsh black rectangles. */
+.panel,
+.glass-card,
+[data-slot="card"] {
+  border-color: var(--border) !important;
+  box-shadow: var(--premium-shadow);
+}
+
+html.light .panel,
+html.light .glass-card,
+html.light [data-slot="card"] {
+  background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(247,249,246,.84)) !important;
+  box-shadow: 0 16px 48px rgba(30, 45, 32, 0.075), inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+html.dark .panel,
+html.dark .glass-card,
+html.dark [data-slot="card"] {
+  background: linear-gradient(145deg, rgba(28,33,28,.94), rgba(20,24,20,.90)) !important;
+  box-shadow: 0 22px 55px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+html.light .glass-card {
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+}
+
+html.dark .glass-card {
+  background: linear-gradient(145deg, rgba(31,36,31,.82), rgba(19,23,19,.78)) !important;
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+}
+
+/* Make the main dashboard canvas breathe. */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+main > * {
+  position: relative;
+}
+
+/* Refined buttons and interactive surfaces. */
+button,
+a[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.light button.bg-primary,
+html.light a.bg-primary {
+  box-shadow: 0 8px 22px rgba(93, 148, 14, 0.18);
+}
+
+html.dark button.bg-primary,
+html.dark a.bg-primary {
+  box-shadow: 0 8px 25px rgba(184, 237, 70, 0.12);
+}
+
+/* Inputs should feel like product controls, not browser fields. */
+input,
+textarea,
+select {
+  border-color: var(--input);
+}
+
+html.light input,
+html.light textarea,
+html.light select {
+  background: rgba(255,255,255,.72);
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: rgba(10,14,10,.26);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+
+/* Keep the existing aurora effect subtle and theme-aware. */
+.aurora {
+  opacity: .24;
+  filter: blur(48px);
+}
+
+html.light .aurora {
+  opacity: .18;
+}
+
+/* Avoid accidental pure-black page regions in the premium shell. */
+html.light .bg-black {
+  background-color: #111612 !important;
+}
+
+/* Selection and scrollbar polish. */
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(17, 22, 18, .18);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(236, 247, 233, .16);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary) !important;
+}
+
+@media (max-width: 640px) {
+  .panel,
+  .glass-card,
+  [data-slot="card"] {
+    border-radius: 1.15rem !important;
+  }
+}
