@@ -1,10 +1,10 @@
 import React, { useState, useRef } from "react";
-import { ShieldCheck, Camera, Loader2, RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, Camera, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
-import { useI18n } from "@/lib/i18n";
-import { analyzeExerciseForm } from "@/lib/biomechanics.functions";
+import { useI18n } from "../lib/i18n";
+import { analyzeExerciseForm } from "../lib/biomechanics.functions";
 
 export const BiomechanicsScanner: React.FC = () => {
   const { lang } = useI18n();
@@ -58,7 +58,7 @@ export const BiomechanicsScanner: React.FC = () => {
               {lang === "lt" ? "AI Biomechanikos & Formos Skeneris" : "AI Form & Biomechanics Scanner"}
             </h3>
             <p className="text-xs font-mono text-neutral-400">
-              {lang === "lt" ? "Sąnarių kampų, stuburo ir technikos analizė" : "Joint angle & spine safety check"}
+              {lang === "lt" ? "Sąnarių kampų, stuburo ir saugumo įvertinimas" : "Joint angle & spine safety check"}
             </p>
           </div>
         </div>
