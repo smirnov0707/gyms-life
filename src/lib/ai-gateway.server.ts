@@ -14,25 +14,22 @@ export function isAiConfigured(): boolean {
 /**
  * Universalus AI gateway.
  *
- * GYMS.LIFE orchestrator owns provider routing and policy; individual AI
- * providers are replaceable workers and never receive user context directly
- * from the application outside this gateway.
+ * GYMS.LIFE orchestratorius valdo routingą ir politiką; AI provideriai yra
+ * keičiami workeriai. Providerio pasirinkimas niekada neįvyksta šiame facade.
  */
 export function createAiRouterProvider(sourceModule = "general") {
-  return (modelName: string) => {
-    void sourceModule;
-    return {
-      modelName,
-      generate: (messages: AiMessage[]) =>
-        generateAiResponse({ messages, capability: "text" }),
-    };
-  };
+  void sourceModule;
+
+  return (modelName: string) => ({
+    modelName,
+    generate: (messages: AiMessage[]) =>
+      generateAiResponse({ messages, capability: "text" }),
+  });
 }
 
 /**
  * Greitasis tekstinis AI per GYMS.LIFE orchestratorių.
- * Provideris parenkamas centralizuotai, o gedimo atveju naudojamas kitas
- * sukonfigūruotas free-tier provideris.
+ * Structured/JSON užklausos išlaiko ankstesnį jsonMode kontraktą.
  */
 export async function askFastTextAi({
   messages,
