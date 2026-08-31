@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Camera, Upload, Sparkles, Loader2, AlertTriangle, Plus, CheckCircle2, RefreshCw } from "lucide-react";
+import { Camera, Upload, Loader2, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -33,18 +33,53 @@ export const VisionMealScanner: React.FC = () => {
     reason?: string;
   } | null>(null);
 
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 900;
+          const MAX_HEIGHT = 900;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
+    try {
+      const base64 = await resizeImage(file);
       setImagePreview(base64);
       setScanResult(null);
       await runAnalysis(base64);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      toast.error(err?.message || "Klaida apdorojant nuotrauką");
+    }
   };
 
   const runAnalysis = async (base64: string) => {
@@ -108,7 +143,7 @@ export const VisionMealScanner: React.FC = () => {
 
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 border border-emerald-500/30">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-mono text-emerald-300 font-bold">GEMINI VISION</span>
+          <span className="text-[10px] font-mono text-emerald-300 font-bold">GEMINI FLASH</span>
         </div>
       </div>
 
@@ -121,7 +156,6 @@ export const VisionMealScanner: React.FC = () => {
         className="hidden"
       />
 
-      {/* Nuotraukos peržiūra arba įkėlimo zona */}
       {!imagePreview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
@@ -139,25 +173,22 @@ export const VisionMealScanner: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Lazerinis HUD Skenerio rėmelis */}
           <div className="relative aspect-video max-h-72 w-full overflow-hidden rounded-xl bg-black border border-white/15">
             <img src={imagePreview} alt="Meal Preview" className="w-full h-full object-cover" />
 
-            {/* Skenavimo lazerinė linija */}
             {isScanning && (
               <div className="absolute inset-0 bg-emerald-500/10 backdrop-blur-[1px] pointer-events-none flex flex-col items-center justify-center">
                 <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#10b981] animate-scan-laser absolute top-0" />
                 <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-emerald-500/40">
                   <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
                   <span className="text-xs font-mono font-bold text-emerald-300">
-                    {lang === "lt" ? "ANALIZUOJAMA BIOMECHANIKA..." : "ANALYZING MEAL COMPOSITION..."}
+                    {lang === "lt" ? "SKENUOTAS PATIEKALAS • SKAIČIUOJAMI MAKROELEMENTAI..." : "SCANNING MEAL • CALCULATING MACROS..."}
                   </span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Rezultatų HUD blokas */}
           {scanResult && (
             <div className="p-4 rounded-xl bg-black/60 border border-white/10 space-y-3">
               {scanResult.ok ? (
@@ -176,7 +207,6 @@ export const VisionMealScanner: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Makroelementų matrica */}
                   <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
                     <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
                       <span className="block text-[10px] font-mono text-neutral-400">KCAL</span>
@@ -196,7 +226,6 @@ export const VisionMealScanner: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Ingredientų sąrašas */}
                   {scanResult.items && scanResult.items.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {scanResult.items.map((it, idx) => (
@@ -207,14 +236,12 @@ export const VisionMealScanner: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Trenerio pastaba */}
                   {scanResult.note && (
                     <p className="text-xs text-neutral-400 italic bg-neutral-950/50 p-2.5 rounded-lg border border-white/5">
                       💡 {scanResult.note}
                     </p>
                   )}
 
-                  {/* Veiksmų mygtukai */}
                   <div className="flex items-center gap-2 pt-2">
                     <Button
                       onClick={handleSave}
