@@ -49,8 +49,8 @@ Jei nuotraukoje NĖRA maisto, grąžink: {"ok": false, "reason": "Nuotraukoje ma
               parts: [
                 { text: prompt },
                 {
-                  inline_data: {
-                    mime_type: mimeType,
+                  inlineData: {
+                    mimeType: mimeType,
                     data: base64Data,
                   },
                 },
@@ -58,13 +58,15 @@ Jei nuotraukoje NĖRA maisto, grąžink: {"ok": false, "reason": "Nuotraukoje ma
             },
           ],
           generationConfig: {
-            response_mime_type: "application/json",
+            responseMimeType: "application/json",
             temperature: 0.2,
           },
         }),
       });
 
       if (!response.ok) {
+        const errorDetails = await response.text();
+        console.error("Gemini Error:", errorDetails);
         return { ok: false, reason: "Gemini klaida: " + response.statusText };
       }
 
@@ -155,8 +157,8 @@ Jei meniu neįskaitomas: {"ok": false, "reason": "Meniu nuotrauka neįskaitoma."
               parts: [
                 { text: prompt },
                 {
-                  inline_data: {
-                    mime_type: mimeType,
+                  inlineData: {
+                    mimeType: mimeType,
                     data: base64Data,
                   },
                 },
@@ -164,7 +166,7 @@ Jei meniu neįskaitomas: {"ok": false, "reason": "Meniu nuotrauka neįskaitoma."
             },
           ],
           generationConfig: {
-            response_mime_type: "application/json",
+            responseMimeType: "application/json",
             temperature: 0.2,
           },
         }),
@@ -178,8 +180,7 @@ Jei meniu neįskaitomas: {"ok": false, "reason": "Meniu nuotrauka neįskaitoma."
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas iš modelio." };
 
-      const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-      return JSON.parse(cleanJson);
+      return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
     } catch (err: any) {
       return { ok: false, reason: err.message || "Apdorojimo klaida." };
     }
