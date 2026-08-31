@@ -263,6 +263,8 @@ function ExercisesPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["exercises"],
+    staleTime: 1000 * 60 * 60, // 1 valanda talpykloje
+    gcTime: 1000 * 60 * 60 * 24,
     queryFn: async () => {
       const page = 1000;
       const all: NonNullable<Awaited<ReturnType<typeof fetchPage>>> = [];
