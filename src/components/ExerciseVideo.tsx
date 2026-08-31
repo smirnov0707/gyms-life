@@ -1,177 +1,159 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Play, VolumeX } from "lucide-react";
 import { getExerciseMedia } from "../lib/exercise-media";
 
 interface ExerciseVideoProps {
   slug: string;
   title?: string;
+  name?: string;
+  muscleGroup?: string;
+  equipment?: string | null;
+  mistakes?: string;
+  instructions?: string;
   className?: string;
   autoPlay?: boolean;
   isHovered?: boolean;
 }
 
+/**
+ * Premium exercise media card.
+ *
+ * Real local technique clips are preferred. Exercise-database frame sequences
+ * are animated when a clip is not available. The component is intentionally
+ * presentation-focused so the same media treatment can be reused across the
+ * dashboard, exercise library and quick-preview modal.
+ */
 export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
   slug,
-  title = "",
+  title,
+  name,
+  muscleGroup,
+  equipment,
+  mistakes,
+  instructions,
   className = "",
   autoPlay = true,
   isHovered,
 }) => {
   const media = getExerciseMedia(slug);
   const [frameIndex, setFrameIndex] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-  const [isInteractive, setIsInteractive] = useState(false);
   const [isInViewport, setIsInViewport] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Matomumo sekimas telefonams (Intersection Observer)
+  const displayName = name || title || slug.replace(/-/g, " ");
+  const hasVideo = media.type === "video" && Boolean(media.videoUrl);
+
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInViewport(entry.isIntersecting);
-      },
-      { threshold: 0.4 }
+      ([entry]) => setIsInViewport(Boolean(entry?.isIntersecting)),
+      { threshold: 0.25 },
     );
 
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // 2. Kadrų animacijos ciklas
   useEffect(() => {
     if (media.type !== "frames" || !media.frames || media.frames.length <= 1) return;
 
-    const shouldRun = isHovered !== undefined 
-      ? isHovered 
-      : (autoPlay && (isInViewport || isInteractive));
+    const shouldRun =
+      isHovered !== undefined
+        ? isHovered
+        : autoPlay && (isInViewport || isInteractive);
 
     if (!shouldRun) {
       setFrameIndex(0);
       return;
     }
 
-    const interval = setInterval(() => {
-      setFrameIndex((prev) => (prev + 1) % (media.frames?.length || 1));
-    }, 850);
+    const interval = window.setInterval(() => {
+      setFrameIndex((prev) => (prev + 1) % media.frames!.length);
+    }, 700);
 
-    return () => clearInterval(interval);
-  }, [media, autoPlay, isHovered, isInViewport, isInteractive]);
+    return () => window.clearInterval(interval);
+  }, [autoPlay, isHovered, isInViewport, isInteractive, media]);
 
-  // Pelės judėjimas (Desktop)
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setMousePos({
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
-    });
-  };
-
-  // Liečiamasis valdymas (Mobile)
-  const handleTouchStart = () => {
+  const handleTouch = () => {
     setIsInteractive(true);
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(12); // Haptinis paspaudimo atsakas telefone
-    }
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
   };
 
-  const isEccentric = frameIndex === 0;
+  const videoShouldPlay =
+    isHovered !== undefined ? isHovered : autoPlay && (isInViewport || isInteractive);
 
   return (
     <div
       ref={containerRef}
-      onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsInteractive(true)}
-      onMouseLeave={() => {
-        setIsInteractive(false);
-        setMousePos({ x: 0.5, y: 0.5 });
-      }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={() => setTimeout(() => setIsInteractive(false), 2000)}
-      style={{
-        transform: isInteractive
-          ? `perspective(1000px) rotateX(${(mousePos.y - 0.5) * -10}deg) rotateY(${(mousePos.x - 0.5) * 10}deg) scale3d(1.015, 1.015, 1.015)`
-          : "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)",
-        transition: "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
-      }}
-      className={`relative w-full h-full overflow-hidden rounded-xl bg-neutral-950 border border-white/10 shadow-2xl group select-none touch-manipulation ${className}`}
+      onMouseLeave={() => setIsInteractive(false)}
+      onTouchStart={handleTouch}
+      onTouchEnd={() => window.setTimeout(() => setIsInteractive(false), 1200)}
+      className={`group relative isolate h-full w-full overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#101411] shadow-[0_24px_70px_rgba(0,0,0,0.32)] ${className}`}
     >
-      {/* Medijos atvaizdavimas */}
-      {media.type === "video" && media.videoUrl ? (
+      {hasVideo ? (
         <video
           src={media.videoUrl}
           poster={media.posterUrl}
-          autoPlay={autoPlay}
+          autoPlay={videoShouldPlay}
           loop
           muted
           playsInline
-          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          preload="metadata"
+          aria-label={`${displayName} technique video`}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
         />
-      ) : media.type === "frames" && media.frames && media.frames.length > 0 ? (
-        <div className="relative w-full h-full">
-          <img
-            src={media.frames[frameIndex]}
-            alt={title || slug}
-            className="w-full h-full object-cover transition-opacity duration-300 pointer-events-none"
-            loading="lazy"
-          />
-        </div>
+      ) : media.type === "frames" && media.frames?.length ? (
+        <img
+          src={media.frames[frameIndex]}
+          alt={displayName}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.035]"
+        />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-neutral-900 text-neutral-600">
-          <span className="text-xs font-mono">{title || slug}</span>
-        </div>
+        <img
+          src={media.posterUrl || "/assets/ai/ex-default.jpg"}
+          alt={displayName}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.035]"
+        />
       )}
 
-      {/* Biomechaninis HUD Telemetrijos sluoksnis */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/90 via-black/25 to-transparent flex flex-col justify-between p-3 sm:p-4">
-        {/* Viršutinis statusas */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-emerald-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[8px] sm:text-[9px] font-mono tracking-widest text-emerald-300 uppercase">
-              AI OPTIMIZED
-            </span>
-          </div>
-          
-          <div className="text-[9px] sm:text-[10px] font-mono text-neutral-300 bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded border border-white/10">
-            {isEccentric ? "ECCENTRIC" : "CONCENTRIC"}
-          </div>
-        </div>
+      {/* Cinematic readability layer — never a flat black card. */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,6,0.04)_20%,rgba(5,8,6,0.12)_45%,rgba(5,8,6,0.88)_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/55 to-transparent" />
 
-        {/* Vidurinis tinklelis (Desktop hover arba Mobile touch) */}
-        <div className={`transition-opacity duration-300 ${isInteractive ? "opacity-100" : "opacity-0"} absolute inset-0 flex items-center justify-center pointer-events-none`}>
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-dashed border-emerald-500/30 flex items-center justify-center animate-spin-slow">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/10" />
-          </div>
-          <div className="absolute top-1/2 left-3 sm:left-4 text-[8px] sm:text-[9px] font-mono text-emerald-400 -translate-y-1/2">
-            VECT: {isEccentric ? "0.0°" : "+45.0°"}
-          </div>
-        </div>
-
-        {/* Apatinis pavadinimas ir pozicijos fazė */}
-        <div className="flex items-end justify-between gap-2">
-          <div className="min-w-0 flex-1 pr-2">
-            <div className="text-[8px] sm:text-[9px] font-mono text-neutral-400 tracking-wider uppercase">LOAD MATRIX</div>
-            <div className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">{title || slug.replace(/-/g, " ").toUpperCase()}</div>
-          </div>
-          
-          <div className="flex items-center shrink-0 bg-black/70 backdrop-blur-md px-2 py-0.5 sm:py-1 rounded-md border border-white/10">
-            <span className={`text-[9px] sm:text-[10px] font-mono font-bold ${isEccentric ? "text-neutral-400" : "text-emerald-400"}`}>
-              {isEccentric ? "POS 0" : "POS 1"}
-            </span>
-          </div>
-        </div>
+      <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+        <span className="rounded-full border border-white/15 bg-black/25 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-xl">
+          Technique guide
+        </span>
+        <span className="grid size-9 place-items-center rounded-full border border-primary/60 bg-black/30 text-primary shadow-[0_0_24px_rgba(160,220,40,0.18)] backdrop-blur-xl">
+          {hasVideo ? <Play className="size-3.5 fill-current" /> : <VolumeX className="size-3.5" />}
+        </span>
       </div>
 
-      {/* Dinaminis šviesos atspindys (tik Desktop pele) */}
-      <div
-        className="hidden sm:block absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: `radial-gradient(circle 200px at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.08), transparent 70%)`,
-        }}
-      />
+      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+        <div className="mb-1 text-[9px] font-bold uppercase tracking-[0.22em] text-primary/90">
+          {muscleGroup ? muscleGroup.replace(/[_-]/g, " ") : "Movement"}
+        </div>
+        <h3 className="text-xl font-black uppercase leading-[0.95] tracking-tight text-white sm:text-2xl">
+          {displayName}
+        </h3>
+        {equipment && (
+          <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">
+            {equipment.replace(/[_-]/g, " ")}
+          </p>
+        )}
+      </div>
+
+      {(mistakes || instructions) && (
+        <div className="pointer-events-none absolute bottom-4 right-4 hidden max-w-[55%] rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-[9px] leading-relaxed text-white/75 backdrop-blur-xl sm:block">
+          {instructions || mistakes}
+        </div>
+      )}
     </div>
   );
 };
