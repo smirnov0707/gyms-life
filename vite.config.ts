@@ -11,7 +11,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     tsconfigPaths(),
-    netlify(),
+    netlify({
+  dev: {
+    edgeFunctions: {
+      enabled: false,
+    },
+  },
+}),
   ],
   optimizeDeps: {
     include: [

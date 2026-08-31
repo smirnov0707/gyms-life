@@ -202,7 +202,7 @@ function Landing() {
   /** "Start now": if the user already has an active plan, ask before regenerating. */
   const startNow = async () => {
     if (!user) {
-      navigate({ to: "/auth" });
+      navigate({ to: "/auth?mode=up" });
       return;
     }
     setCheckingPlan(true);

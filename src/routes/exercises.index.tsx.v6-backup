@@ -35,65 +35,33 @@ export const Route = createFileRoute("/exercises/")({
   component: ExercisesPage,
 });
 
-/** V6 media-first exercise card.
- * Poster is the instant visual; the exact technique clip plays on hover.
- * Mobile/touch devices keep the poster and use Quick Preview.
- */
+/** Poster by default, real technique clip on hover — keeps the browser's
+ *  media-element budget free so the quick-preview player always loads. */
 function CardMedia({ video, poster, name }: { video: string | null; poster: string; name: string }) {
   const [hover, setHover] = useState(false);
-  const [activated, setActivated] = useState(false);
-
-  const handleMouseEnter = () => {
-    setActivated(true);
-    setHover(true);
-  };
-
   return (
     <div
       className="absolute inset-0"
-      onMouseEnter={handleMouseEnter}
+      onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
       <img
         src={poster}
         alt={name}
         loading="lazy"
-        className={`h-full w-full object-cover transition-transform duration-700 ${
-          hover ? "scale-[1.04]" : "scale-100"
-        }`}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
-
-      {video && activated && (
+      {hover && video && (
         <video
           src={video}
           poster={poster}
-          autoPlay={hover}
+          autoPlay
           muted
           loop
           playsInline
-          preload="none"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-            hover ? "opacity-100" : "opacity-0"
-          }`}
+          className="absolute inset-0 w-full h-full object-cover"
         />
       )}
-
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-xl">
-            Technique
-          </span>
-
-          {video && (
-            <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-xl">
-              <Play className="size-3 fill-current" />
-              Video
-            </span>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -243,7 +211,7 @@ function ExercisesPage() {
     const next = favorites.includes(slug) ? favorites.filter((s) => s !== slug) : [...favorites, slug];
     setFavorites(next);
 
-    // If the last favorite is removed, automatically leave the Favorites filter.
+    // If the last favorite is removed, leave the Favorites filter automatically.
     if (next.length === 0) {
       setOnlyFavorites(false);
     }
@@ -573,42 +541,38 @@ function ExercisesPage() {
         </div>
       ) : null}
 
-      {/* V6 Exercise Library — video-first premium cards */}
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* Grid of Exercises with Interactive Quick View & Hover Play */}
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((e) => {
+          
           const video = exerciseVideo(e.slug, e.muscle_group, e.equipment);
           const poster = exerciseVideoPoster(e.slug, e.muscle_group, e.equipment);
+
           const isFav = favorites.includes(e.slug);
-          const name =
-            (lang === "lt" ? e.name_lt : e.name_en) ||
-            e.name_en ||
-            e.name_lt ||
-            e.slug ||
-            "";
+          const name = (lang === "lt" ? e.name_lt : e.name_en) || e.name_en || e.name_lt || e.slug || "";
 
           return (
-            <article
+            <div
               key={e.id}
-              className="group overflow-hidden rounded-[1.75rem] border border-border/70 bg-surface shadow-lg transition-all duration-500 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl"
+              className="panel group overflow-hidden rounded-3xl border border-border bg-surface hover:border-indigo-500/50 transition-all duration-300 flex flex-col justify-between"
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-background">
+              <div className="relative aspect-video w-full bg-surface overflow-hidden">
                 <CardMedia video={video} poster={poster} name={name} />
 
+
+
+
+                {/* Quick Favorite Action */}
                 <button
-                  type="button"
                   aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
                   onClick={(ev) => toggleFavorite(e.slug, ev)}
-                  className="absolute right-3 top-3 z-10 rounded-full border border-white/15 bg-black/40 p-2.5 text-white backdrop-blur-xl transition-all hover:scale-105 hover:bg-black/60 hover:text-rose-400"
+                  className="absolute top-3 right-3 p-2 rounded-full bg-surface backdrop-blur-md text-foreground hover:text-rose-400 transition-colors"
                 >
-                  <Heart
-                    className={`size-4 ${
-                      isFav ? "fill-rose-500 text-rose-500" : ""
-                    }`}
-                  />
+                  <Heart className={`w-4 h-4 ${isFav ? "fill-rose-500 text-rose-500" : ""}`} />
                 </button>
 
+                {/* Quick Video Modal Trigger */}
                 <button
-                  type="button"
                   onClick={() =>
                     setPreviewEx({
                       slug: e.slug,
@@ -616,10 +580,7 @@ function ExercisesPage() {
                       group: e.muscle_group,
                       equipment: e.equipment,
                       mistakes:
-                        (lang === "lt" ? e.mistakes_lt : e.mistakes_en) ||
-                        e.mistakes_en ||
-                        e.mistakes_lt ||
-                        undefined,
+                        (lang === "lt" ? e.mistakes_lt : e.mistakes_en) || e.mistakes_en || e.mistakes_lt || undefined,
                       instructions:
                         (lang === "lt" ? e.instructions_lt : e.instructions_en) ||
                         e.instructions_en ||
@@ -627,47 +588,35 @@ function ExercisesPage() {
                         undefined,
                     })
                   }
-                  className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-xl transition-all hover:bg-white/20"
+
+                  className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-surface backdrop-blur-md text-[11px] font-bold font-mono text-foreground flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-all"
                 >
-                  <Play className="size-3 fill-current" />
-                  {t("rt.ex.quickPreview")}
+                  <Play className="w-3 h-3 text-indigo-400 fill-indigo-400" /> {t("rt.ex.quickPreview")}
                 </button>
               </div>
 
-              <div className="flex min-h-[142px] flex-col justify-between p-4">
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                 <div>
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
-                      {t(`mg.${e.muscle_group}` as TKey)}
-                    </span>
-
-                    <span className="rounded-full border border-border bg-background/60 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {t(`eq.${e.equipment}` as TKey)}
-                    </span>
-                  </div>
-
-                  <h2 className="line-clamp-2 text-base font-black leading-tight text-foreground transition-colors group-hover:text-primary">
-                    {name}
-                  </h2>
+                  <h2 className="text-xl font-bold text-foreground group-hover:text-indigo-400 transition-colors">{name}</h2>
+                  <p className="mt-1 text-xs uppercase tracking-widest text-indigo-400 font-mono">
+                    {t(`mg.${e.muscle_group}` as TKey)} · {t(`eq.${e.equipment}` as TKey)}
+                  </p>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-                  <span className="rounded-full bg-background px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {e.difficulty
-                      ? t(`ex.level.${e.difficulty}` as TKey)
-                      : t("rt.ex.forEveryone")}
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface text-muted-foreground">
+                    {e.difficulty ? t(`ex.level.${e.difficulty}` as TKey) : t("rt.ex.forEveryone")}
                   </span>
-
                   <Link
                     to="/exercises/$slug"
                     params={{ slug: e.slug }}
-                    className="text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:text-primary"
+                    className="text-xs font-bold text-foreground hover:text-foreground flex items-center gap-1"
                   >
-                    {t("rt.ex.fullAnatomy")} →
+                    {t("rt.ex.fullAnatomy")}
                   </Link>
                 </div>
               </div>
-            </article>
+            </div>
           );
         })}
       </div>

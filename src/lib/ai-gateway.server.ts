@@ -89,5 +89,5 @@ export function createAiRouterProvider(task: string): (model: string) => any {
   if (normalized === "translation") configuredModel = env("AI_TRANSLATION_MODEL") ?? (fallback.provider === groq ? "llama-3.3-70b-versatile" : fallback.model);
   if (normalized === "motivation") configuredModel = env("AI_MOTIVATION_MODEL") ?? (fallback.provider === groq ? "llama-3.3-70b-versatile" : fallback.model);
   if (normalized === "analysis") configuredModel = env("AI_DEFAULT_MODEL") ?? fallback.model;
-  return (_requestedModel: string) => provider(configuredModel);
+  return (_requestedModel: string) => fallback.provider(configuredModel);
 }
