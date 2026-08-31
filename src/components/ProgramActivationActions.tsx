@@ -9,9 +9,11 @@ import { activatePlan } from "@/lib/activate-plan.functions";
 export function ProgramActivationActions({
   planId,
   lang,
+  onActivated,
 }: {
   planId: string;
   lang: string;
+  onActivated?: () => void;
 }) {
   const activate = useServerFn(activatePlan);
   const [activating, setActivating] = useState(false);
@@ -23,6 +25,7 @@ export function ProgramActivationActions({
     try {
       await activate({ data: { planId } });
       setActive(true);
+      onActivated?.();
       toast.success(lang === "lt" ? "Programa aktyvuota" : "Program activated");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Activation failed");
@@ -36,7 +39,7 @@ export function ProgramActivationActions({
       <Button asChild size="lg" className="hard-shadow rounded-none px-8 font-bold">
         <Link to="/workout/$day" params={{ day: "0" }}>
           <Play className="mr-1 size-4" />
-          {lang === "lt" ? "Start Workout" : "Start Workout"}
+          Start Workout
         </Link>
       </Button>
     );
@@ -50,11 +53,7 @@ export function ProgramActivationActions({
       className="hard-shadow rounded-none px-8 font-bold"
     >
       <ShieldCheck className="mr-1 size-4" />
-      {activating
-        ? lang === "lt"
-          ? "Aktyvuojama…"
-          : "Activating…"
-        : "Activate Program"}
+      {activating ? (lang === "lt" ? "Aktyvuojama…" : "Activating…") : "Activate Program"}
     </Button>
   );
 }
