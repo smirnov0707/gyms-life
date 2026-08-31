@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Mic, MicOff, Loader2, Sparkles, CheckCircle2, Volume2 } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, CheckCircle2, Volume2, Radio } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -48,7 +48,7 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
 
       mediaRecorder.start();
       setIsRecording(true);
-      toast.info(lang === "lt" ? "Klausausi... Sakykite pratimą, svorį ir pakartojimus" : "Listening... Speak your set");
+      toast.info(lang === "lt" ? "Klausausi... Ištarkite pratimą, svorį ir pakartojimus" : "Listening... Speak your set");
     } catch (err: any) {
       toast.error(lang === "lt" ? "Nepavyko pasiekti mikrofono" : "Microphone access denied");
     }
@@ -98,14 +98,14 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
   };
 
   return (
-    <div className="rounded-2xl bg-neutral-900/90 border border-white/10 p-4 backdrop-blur-xl shadow-xl space-y-3">
+    <div className="glass-panel rounded-3xl p-5 space-y-4 relative overflow-hidden">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
-            <Volume2 className="w-4 h-4" />
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+            <Radio className="w-4 h-4 animate-pulse" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">
+            <h4 className="text-sm font-black uppercase tracking-tight text-white">
               {lang === "lt" ? "Balso serijų registratorius" : "Voice Set Logger"}
             </h4>
             <p className="text-[11px] font-mono text-neutral-400">
@@ -114,29 +114,28 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
           </div>
         </div>
 
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/60 border border-red-500/30">
-          <Sparkles className="w-3 h-3 text-red-400" />
-          <span className="text-[9px] font-mono text-red-300 font-bold">VOICE AI</span>
-        </div>
+        <span className="badge-tech text-red-400 border-red-500/20 bg-red-500/5">
+          VOICE TELEMETRY
+        </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div>
         {!isRecording ? (
           <Button
             type="button"
             onClick={startRecording}
             disabled={isProcessing}
-            className="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold gap-2 py-3"
+            className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl shadow-lg shadow-red-950/40 border border-red-400/20 transition-all hover:scale-[1.01]"
           >
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{lang === "lt" ? "Apdorojama..." : "Processing..."}</span>
+                <span className="text-xs font-mono">{lang === "lt" ? "Apdorojama..." : "Processing..."}</span>
               </>
             ) : (
               <>
                 <Mic className="w-4 h-4" />
-                <span>{lang === "lt" ? "Ištarti seriją balsu" : "Hold to Voice Log"}</span>
+                <span className="text-xs">{lang === "lt" ? "Ištarti seriją balsu" : "Hold to Voice Log"}</span>
               </>
             )}
           </Button>
@@ -144,17 +143,17 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
           <Button
             type="button"
             onClick={stopRecording}
-            className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-red-400 border border-red-500/50 font-bold gap-2 py-3 animate-pulse"
+            className="w-full bg-neutral-900 text-red-400 border border-red-500/40 font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl animate-pulse shadow-lg shadow-red-950/40"
           >
             <MicOff className="w-4 h-4 text-red-400" />
-            <span>{lang === "lt" ? "Baigti kalbėti (Spauskite)" : "Stop Recording"}</span>
+            <span className="text-xs">{lang === "lt" ? "Baigti kalbėti (Spauskite)" : "Stop Recording"}</span>
           </Button>
         )}
       </div>
 
       {lastTranscript && (
-        <div className="p-2 rounded-lg bg-black/50 border border-white/5 flex items-center gap-2 text-xs text-neutral-300 font-mono">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] flex items-center gap-2.5 text-xs text-neutral-300 font-mono">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span className="truncate">„{lastTranscript}“</span>
         </div>
       )}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Zap, Activity, BatteryCharging, AlertCircle, Dumbbell, Apple } from "lucide-react";
+import { Zap, Dumbbell, Apple, Activity, Flame, Shield } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useI18n } from "@/lib/i18n";
 import { getProactiveCoachInsight } from "@/lib/ghost-coach.functions";
@@ -39,12 +39,12 @@ export const GhostCoachWidget: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-neutral-900/60 border border-white/10 p-5 animate-pulse flex items-center justify-between">
-        <div className="space-y-2">
-          <div className="h-4 w-32 bg-white/10 rounded" />
-          <div className="h-6 w-56 bg-white/15 rounded" />
+      <div className="glass-panel rounded-3xl p-6 animate-pulse flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="h-3.5 w-28 bg-white/10 rounded-full" />
+          <div className="h-6 w-64 bg-white/15 rounded-lg" />
         </div>
-        <div className="w-14 h-14 rounded-full bg-white/10" />
+        <div className="w-16 h-16 rounded-full bg-white/10" />
       </div>
     );
   }
@@ -54,76 +54,83 @@ export const GhostCoachWidget: React.FC = () => {
   const strokeColor = score >= 85 ? "#10b981" : score >= 70 ? "#f59e0b" : "#f43f5e";
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-neutral-900/90 via-neutral-900/80 to-black/90 border border-white/10 p-5 backdrop-blur-xl shadow-2xl space-y-4">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-300">
-              GHOST COACH AI AUTONOMOUS
+    <div className="glass-panel glass-panel-hover rounded-3xl p-6 relative overflow-hidden space-y-5">
+      {/* Foninis subtilus švytėjimas */}
+      <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="flex items-start justify-between relative z-10">
+        <div className="space-y-1.5 max-w-xl">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="badge-tech text-emerald-400 border-emerald-500/20 bg-emerald-500/5">
+              GHOST COACH • AUTONOMOUS AI
             </span>
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+          <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight leading-snug">
             {insight?.headline || (lang === "lt" ? "Kūnas optimaliai pasiruošęs treniruotei" : "Body primed for training")}
-          </h3>
+          </h2>
         </div>
 
-        {/* Pasirengimo ratas */}
+        {/* Pasirengimo žiedas */}
         <div className="relative flex items-center justify-center shrink-0">
-          <svg className="w-14 h-14 transform -rotate-90">
-            <circle cx="28" cy="28" r="22" stroke="currentColor" strokeWidth="4" className="text-white/10" fill="transparent" />
+          <svg className="w-16 h-16 transform -rotate-90">
+            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="4.5" className="text-white/10" fill="transparent" />
             <circle
-              cx="28"
-              cy="28"
-              r="22"
+              cx="32"
+              cy="32"
+              r="26"
               stroke={strokeColor}
-              strokeWidth="4"
-              strokeDasharray="138"
-              strokeDashoffset={138 - (138 * score) / 100}
+              strokeWidth="4.5"
+              strokeDasharray="163"
+              strokeDashoffset={163 - (163 * score) / 100}
               strokeLinecap="round"
               fill="transparent"
             />
           </svg>
           <div className="absolute flex flex-col items-center justify-center">
-            <span className={`text-xs font-mono font-black ${scoreColor}`}>{score}%</span>
+            <span className={`text-sm font-mono font-black ${scoreColor}`}>{score}%</span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+      {/* Kortelių tinklelis */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10">
         {insight?.trainingAdvice && (
-          <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-start gap-2.5">
-            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 shrink-0 mt-0.5">
-              <Dumbbell className="w-4 h-4" />
+          <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.06] flex items-start gap-3.5">
+            <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-200 shrink-0 mt-0.5">
+              <Dumbbell className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <span className="text-[10px] font-mono text-neutral-400 block uppercase">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block font-bold">
                 {lang === "lt" ? "Treniruotės fokusas" : "Workout Focus"}
               </span>
-              <p className="text-xs text-neutral-200 font-medium leading-relaxed">{insight.trainingAdvice}</p>
+              <p className="text-xs text-neutral-200 font-medium leading-relaxed mt-0.5">{insight.trainingAdvice}</p>
             </div>
           </div>
         )}
 
         {insight?.nutritionAdvice && (
-          <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-start gap-2.5">
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0 mt-0.5">
-              <Apple className="w-4 h-4" />
+          <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.06] flex items-start gap-3.5">
+            <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-200 shrink-0 mt-0.5">
+              <Apple className="w-4 h-4 text-amber-400" />
             </div>
             <div>
-              <span className="text-[10px] font-mono text-neutral-400 block uppercase">
+              <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block font-bold">
                 {lang === "lt" ? "Mitybos strategija" : "Nutrition Strategy"}
               </span>
-              <p className="text-xs text-neutral-200 font-medium leading-relaxed">{insight.nutritionAdvice}</p>
+              <p className="text-xs text-neutral-200 font-medium leading-relaxed mt-0.5">{insight.nutritionAdvice}</p>
             </div>
           </div>
         )}
       </div>
 
       {insight?.recommendedAction && (
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-neutral-300">
-          <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span><strong className="text-amber-300">{lang === "lt" ? "Veiksmas:" : "Action:"}</strong> {insight.recommendedAction}</span>
+        <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.08] text-xs font-mono text-neutral-300 relative z-10">
+          <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            <strong className="text-white uppercase tracking-wider">{lang === "lt" ? "Dienos veiksmas:" : "Action:"}</strong>{" "}
+            {insight.recommendedAction}
+          </span>
         </div>
       )}
     </div>
