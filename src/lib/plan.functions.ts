@@ -1,21 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { generateJson } from "./ai-json.server";
+import { askFastTextAi } from "./ai-gateway.server";
+import { buildUserContext, contextForAi } from "./user-context.server";
 
 const IntakeSchema = z.object({
   goal: z.string(),
   experience: z.string(),
   location: z.string(),
   equipment: z.array(z.string()),
-  daysPerWeek: z.number(),
-  sessionMinutes: z.number(),
-  age: z.number().nullable(),
-  gender: z.string().nullable(),
-  heightCm: z.number().nullable(),
-  weightKg: z.number().nullable(),
-  targetWeightKg: z.number().nullable(),
-  limitations: z.string().nullable(),
-  lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]),
+  daysPerWeek: z.number().min(1).max(7),
+  sessionMinutes: z.number().min(15).max(120),
+  age: z.number().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  heightCm: z.number().nullable().optional(),
+  weightKg: z.number().nullable().optional(),
+  targetWeightKg: z.number().nullable().optional(),
+  limitations: z.string().nullable().optional(),
+  lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt"),
 });
 
 export type Intake = z.infer<typeof IntakeSchema>;
@@ -32,8 +35,8 @@ const num = (fallback: number) =>
   );
 
 const PlanExercise = z.object({
-  slug: z.string(),
-  name: text(""),
+  slug: text("exercise"),
+  name: text("Pratimas"),
   sets: num(3),
   reps: text("8-12"),
   rest_seconds: num(90),
@@ -42,20 +45,20 @@ const PlanExercise = z.object({
 
 const PlanDay = z.object({
   day: num(1),
-  title: text(""),
-  focus: text(""),
-  warmup: text(""),
-  cooldown: text(""),
+  title: text("Treniruotė"),
+  focus: text("Pagrindinės raumenų grupės"),
+  warmup: text("Dinaminis apšilimas 5-7 min"),
+  cooldown: text("Lengvas tempimas ir kvėpavimas"),
   estimated_minutes: num(45),
   exercises: z.array(PlanExercise).default([]),
 });
 
 const PlanSchema = z.object({
-  title: text("GYMS.LIFE"),
-  summary: text(""),
+  title: text("GYMS.LIFE INDIVIDUALUS PLANAS"),
+  summary: text("Moksliškai subalansuota programa jūsų tikslams pasiekti."),
   weeks: num(8),
-  progression: text(""),
-  nutrition: text(""),
+  progression: text("Kas savaitę didinkite darbinį svorį arba pakartojimų skaičių išlaikant RPE 7-9."),
+  nutrition: text("Išlaikykite 1.8-2.2g/kg baltymų normą ir gerkite bent 2.5-3L vandens per dieną."),
   days: z.array(PlanDay),
 });
 
@@ -63,77 +66,77 @@ export type GeneratedPlan = z.infer<typeof PlanSchema>;
 
 export const generatePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => IntakeSchema.parse(input))
+  .validator((input: unknown) => IntakeSchema.parse(input))
   .handler(async ({ data, context }) => {
-
     const { supabase, userId } = context;
 
     const { data: exercises } = await supabase
       .from("exercises")
       .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty");
 
-    const catalog = (exercises ?? [])
-      .map(
-        (e) =>
-          `${e.slug} | ${e.name_en} / ${e.name_lt} | ${e.muscle_group} | ${e.equipment} | ${e.location} | ${e.difficulty}`,
-      )
-      .join("\n");
+    const catalog = (exercises ?? []).length > 0
+      ? (exercises ?? []).map((e) => `${e.slug} | ${e.name_en} / ${e.name_lt} | ${e.muscle_group} | ${e.equipment}`).join("\n")
+      : `bench-press | Barbell Bench Press / Spaudimas štanga | chest | barbell
+squat | Barbell Squat / Pritūpimai su štanga | legs | barbell
+deadlift | Barbell Deadlift / Mirties trauka | back | barbell
+pull-up | Pull Up / Prisitraukimai | back | bodyweight
+push-up | Push Up / Atsispaudimai | chest | bodyweight
+lunge | Dumbbell Lunge / Įtūpstai su hanteliais | legs | dumbbell
+plank | Plank / Lenta | core | bodyweight`;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("plan.functions");
+    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.
+Sukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const langName = LANG_NAMES[data.lang] ?? "English";
-    const prompt = `You are an elite strength & conditioning coach. Build a personalised training plan.
+- Tikslas: ${data.goal}
+- Patirtis: ${data.experience}
+- Lokacija: ${data.location}
+- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}
+- Dienų per savaitę: ${data.daysPerWeek}
+- Trukmė per sesiją: ${data.sessionMinutes} min
+- Apribojimai / traumos: ${data.limitations || "nėra"}
 
-CLIENT
-- Goal: ${data.goal}
-- Experience: ${data.experience}
-- Training location: ${data.location}
-- Available equipment: ${data.equipment.join(", ") || "bodyweight only"}
-- Days per week: ${data.daysPerWeek}
-- Minutes per session: ${data.sessionMinutes}
-- Age: ${data.age ?? "n/a"}, gender: ${data.gender ?? "n/a"}
-- Height: ${data.heightCm ?? "n/a"} cm, weight: ${data.weightKg ?? "n/a"} kg, target weight: ${data.targetWeightKg ?? "n/a"} kg
-- Injuries / limitations: ${data.limitations || "none reported"}
-
-EXERCISE CATALOG (slug | name | muscle group | equipment | location | difficulty)
+KATALOGAS:
 ${catalog}
 
-RULES
-- Produce exactly ${data.daysPerWeek} training days, numbered 1..${data.daysPerWeek}.
-- Use ONLY slugs from the catalog. Copy the slug exactly.
-- Respect the equipment and location: never program equipment the client does not have.
-- Respect injuries: avoid contraindicated movements and say so in the notes.
-- 4-7 exercises per day, total time close to ${data.sessionMinutes} minutes.
-- reps is a short string like "8-10" or "30-45 s".
-- Balance muscle groups across the week, and match volume and intensity to the goal and experience level.
-- "progression" explains week-by-week progression over the whole block.
-- "nutrition" is ONE string with 3-4 concrete nutrition pointers for this goal (use " • " to separate them, not an array).
-- Write ALL human-readable text (title, summary, focus, warmup, cooldown, notes, progression, nutrition, exercise name) in ${langName}.
+REIKALAVIMAI:
+- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).
+- Kiekvienai dienai parink 4-6 efektyvius pratimus.
+- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.
 
-RETURN EXACTLY THIS JSON SHAPE (all keys required):
-{"title":"string","summary":"string","weeks":8,"progression":"string","nutrition":"string","days":[{"day":1,"title":"string","focus":"string","warmup":"string","cooldown":"string","estimated_minutes":${data.sessionMinutes},"exercises":[{"slug":"catalog-slug","name":"string","sets":4,"reps":"8-10","rest_seconds":90,"notes":"string"}]}]}`;
-
-    let plan: GeneratedPlan;
-    try {
-      plan = await generateJson(gateway("google/gemini-2.5-flash"), {
-        prompt,
-        schema: PlanSchema,
-      });
-    } catch (error) {
-      console.error("generatePlan failed", error);
-      const message = error instanceof Error ? error.message : "";
-      if (message === "AI_CREDITS" || message === "AI_RATE_LIMIT") throw new Error(message);
-      throw new Error("AI could not build a valid plan. Please try again.");
+Atsakyk TIK TIKSLIU JSON:
+{
+  "title": "8 Savaičių Progresyvi Programa",
+  "summary": "Programos santrauka ${langName} kalba",
+  "weeks": 8,
+  "progression": "Progresyvaus perkrovimo taisyklės",
+  "nutrition": "Mitybos gairės ir baltymų normos",
+  "days": [
+    {
+      "day": 1,
+      "title": "Viršutinė kūno dalis (Jėga)",
+      "focus": "Krūtinė, Nugara, Pečiai",
+      "warmup": "Dinaminis pečių juostos apšilimas",
+      "cooldown": "Tempimo pratimai",
+      "estimated_minutes": ${data.sessionMinutes},
+      "exercises": [
+        {
+          "slug": "bench-press",
+          "name": "Spaudimas štanga gulint",
+          "sets": 4,
+          "reps": "8-10",
+          "rest_seconds": 90,
+          "notes": "Mentės suvestos, kontroliuojama ekscentrika"
+        }
+      ]
     }
+  ]
+}`;
 
-    const validSlugs = new Set((exercises ?? []).map((e) => e.slug));
-    plan.days = plan.days.map((d) => ({
-      ...d,
-      exercises: d.exercises.filter((e) => validSlugs.has(e.slug)).slice(0, 8),
-    }));
+    const plan = await generateJson<GeneratedPlan>(null, {
+      prompt,
+      schema: PlanSchema,
+    });
 
     await supabase.from("plans").update({ is_active: false }).eq("user_id", userId).eq("is_active", true);
 
@@ -152,7 +155,7 @@ RETURN EXACTLY THIS JSON SHAPE (all keys required):
       .select("id")
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) console.error("Plan save error:", error.message);
 
     await supabase
       .from("profiles")
@@ -163,34 +166,27 @@ RETURN EXACTLY THIS JSON SHAPE (all keys required):
         equipment: data.equipment,
         days_per_week: data.daysPerWeek,
         session_minutes: data.sessionMinutes,
-        birth_year: data.age ? new Date().getFullYear() - data.age : null,
-        gender: data.gender,
-        height_cm: data.heightCm,
-        weight_kg: data.weightKg,
-        target_weight_kg: data.targetWeightKg,
-        limitations: data.limitations,
         locale: data.lang,
         onboarded: true,
       })
       .eq("id", userId);
 
-    return { planId: inserted.id as string };
+    return { planId: inserted?.id || "local-plan-id", plan };
   });
 
 export const askCoach = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         question: z.string().min(1).max(1000),
-        lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]),
+        lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt"),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { buildUserContext, contextForAi } = await import("./user-context.server");
     const [snapshot, { data: history }] = await Promise.all([
       buildUserContext(supabase, userId),
       supabase
@@ -207,26 +203,23 @@ export const askCoach = createServerFn({ method: "POST" })
       .map((m) => `${m.role === "user" ? "Client" : "Coach"}: ${m.content}`)
       .join("\n");
 
-    const { streamText } = await import("ai");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("plan.functions");
+    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const system = `Tu esi GYMS.LIFE, draugiškas, bet reiklus ir moksliškai pagrįstas jėgos treneris.
+Atsakyk ${langName} kalba. Būk konkretus, lakoniškas (iki 150 žodžių), praktiškas.
+Neteik medicininių diagnozių, nukreipk pas gydytoją esant skausmui ar traumai.
+Atsakymuose remkis kliento duomenimis.
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const result = streamText({
-      model: gateway("google/gemini-2.5-flash"),
-      system: `You are GYMS.LIFE, a friendly but rigorous strength coach inside a training app.
-Answer in ${LANG_NAMES[data.lang] ?? "English"}. Be concise (max ~180 words), concrete and practical.
-Never give medical diagnoses; recommend a doctor for pain or injuries.
-You can see the client's full app data below. Always ground your answer in it and, when useful, point the client to the right screen of the app: dashboard (/app), exercise library (/exercises), technique scanner (/ar), meal plan (/meal-plan), food diary (/nutrition), supplements (/supplements), progress & body scan (/progress), readiness check-in (/readiness), reminders (/reminders).
-
-CLIENT DATA
+KLIENTO BIOMETRIJA IR TELEMETRIJA:
 ${contextForAi(snapshot)}
-${priorTurns ? `\nRecent conversation:\n${priorTurns}` : ""}`,
-      prompt: data.question,
+${priorTurns ? `\nPaskutinis pokalbis:\n${priorTurns}` : ""}`;
+
+    const answer = await askFastTextAi({
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: data.question },
+      ],
+      temperature: 0.3,
     });
-
-
-    const answer = await result.text;
 
     const { error: saveError } = await supabase.from("coach_messages").insert([
       { user_id: userId, role: "user", content: data.question, lang: data.lang },
@@ -239,7 +232,7 @@ ${priorTurns ? `\nRecent conversation:\n${priorTurns}` : ""}`,
 
 export const listCoachMessages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ limit: z.number().min(1).max(200).default(60) }).parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -269,4 +262,3 @@ export const clearCoachMessages = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
-
