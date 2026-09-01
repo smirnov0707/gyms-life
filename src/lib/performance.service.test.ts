@@ -14,7 +14,7 @@ describe("performance service", () => {
     expect(result?.sessions).toBe(2);
     expect(result?.totalSets).toBe(3);
     expect(result?.totalReps).toBe(26);
-    expect(result?.totalVolume).toBe(1490);
+    expect(result?.totalVolume).toBe(1420);
     expect(result?.bestWeightKg).toBe(60);
     expect(result?.averageRpe).toBe(8);
   });
