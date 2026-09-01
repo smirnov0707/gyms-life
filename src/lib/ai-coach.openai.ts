@@ -53,8 +53,8 @@ export class OpenAICoachWorker implements AIProviderAdapter {
   private readonly apiKey: string;
 
   constructor(options?: { apiKey?: string; model?: string }) {
-    this.apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY ?? "";
-    this.model = options?.model ?? process.env.OPENAI_COACH_MODEL ?? "gpt-5.6-luna";
+    this.apiKey = options?.apiKey ?? process.env["OPENAI_API_KEY"] ?? "";
+    this.model = options?.model ?? process.env["OPENAI_COACH_MODEL"] ?? "gpt-5.6-luna";
   }
 
   async generate(request: AIProviderRequest): Promise<AIProviderResponse> {
