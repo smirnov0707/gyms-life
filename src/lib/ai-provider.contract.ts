@@ -1,14 +1,19 @@
 import { z } from "zod";
-import { parseCoachRecommendation, type CoachContext, type CoachRecommendation } from "./ai-coach.contract";
+import {
+  CoachContextSchema,
+  parseCoachRecommendation,
+  type CoachContext,
+  type CoachRecommendation,
+} from "./ai-coach.contract";
 
 export const AIProviderRequestSchema = z.object({
   requestId: z.string().uuid(),
   schemaVersion: z.literal("1.0"),
   task: z.literal("COACH_RECOMMENDATION"),
-  context: z.unknown(),
+  context: CoachContextSchema,
 });
 
-export type AIProviderRequest = z.infer<typeof AIProviderRequestSchema> & { context: CoachContext };
+export type AIProviderRequest = z.infer<typeof AIProviderRequestSchema>;
 
 export type AIProviderResponse = {
   requestId: string;
@@ -24,11 +29,17 @@ export interface AIProviderAdapter {
 }
 
 export function createProviderRequest(requestId: string, context: CoachContext): AIProviderRequest {
-  const request = { requestId, schemaVersion: "1.0" as const, task: "COACH_RECOMMENDATION" as const, context };
-  AIProviderRequestSchema.parse(request);
-  return request;
+  return AIProviderRequestSchema.parse({
+    requestId,
+    schemaVersion: "1.0" as const,
+    task: "COACH_RECOMMENDATION" as const,
+    context,
+  });
 }
 
 export function validateProviderResponse(response: AIProviderResponse): AIProviderResponse {
-  return { ...response, recommendation: parseCoachRecommendation(response.recommendation) };
+  return {
+    ...response,
+    recommendation: parseCoachRecommendation(response.recommendation),
+  };
 }
