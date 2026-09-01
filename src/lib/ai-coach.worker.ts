@@ -1,7 +1,20 @@
-import { parseCoachRecommendation, type AICoachWorker, type CoachContext, type CoachRecommendation } from "./ai-coach.contract";
+import {
+  createProviderRequest,
+  validateProviderResponse,
+  type AIProviderAdapter,
+  type AIProviderResponse,
+} from "./ai-provider.contract";
+import type { CoachContext } from "./ai-coach.contract";
 
-/** Provider-neutral execution boundary. A concrete LLM adapter plugs in later. */
-export async function runCoachWorker(worker: AICoachWorker, context: CoachContext): Promise<CoachRecommendation> {
-  const recommendation = await worker.generateRecommendation(context);
-  return parseCoachRecommendation(recommendation);
+/** Provider-neutral execution boundary. Concrete LLM adapters implement AIProviderAdapter. */
+export async function runCoachWorker(
+  provider: AIProviderAdapter,
+  context: CoachContext,
+): Promise<AIProviderResponse> {
+  const request = createProviderRequest(crypto.randomUUID(), context);
+  const response = await provider.generate(request);
+  if (response.requestId !== request.requestId) {
+    throw new Error("AI provider requestId mismatch");
+  }
+  return validateProviderResponse(response);
 }
