@@ -1,0 +1,147 @@
+import { describe, expect, it } from "vitest";
+import {
+  buildAiPersonalizationSummary,
+  contextForAi,
+  type CentralUserContext,
+} from "./user-context.server";
+
+describe("buildAiPersonalizationSummary", () => {
+  it("derives bounded, date-free trends from owned database rows", () => {
+    const now = new Date("2026-09-02T12:00:00.000Z");
+    const summary = buildAiPersonalizationSummary(
+      {
+        workouts: [
+          { started_at: "2026-09-01T09:00:00.000Z", total_volume: 1200 },
+          { started_at: "2026-08-20T09:00:00.000Z", total_volume: 800 },
+          { started_at: "2026-07-01T09:00:00.000Z", total_volume: 900 },
+        ],
+        checkins: [
+          { checkin_on: "2026-09-02", readiness_score: 72, sleep_hours: 7.5 },
+          { checkin_on: "2026-08-30", readiness_score: 68, sleep_hours: 6.5 },
+        ],
+        bodyMetrics: [
+          { measured_on: "2026-09-01", weight_kg: 80, body_fat: 18 },
+          { measured_on: "2026-08-10", weight_kg: 81.2, body_fat: 18.5 },
+        ],
+        availability: { training: true, recovery: true, body: true },
+      },
+      now,
+    );
+
+    expect(summary).toEqual({
+      training: {
+        sessionsLast7Days: 1,
+        sessionsLast28Days: 2,
+        totalVolumeLast28Days: 2000,
+        daysSinceLastCompletedWorkout: 1,
+      },
+      recovery: {
+        latestReadinessScore: 72,
+        averageReadinessLast7Days: 70,
+        averageSleepHoursLast7Days: 7,
+      },
+      body: {
+        latestWeightKg: 80,
+        latestBodyFatPercent: 18,
+        weightChangeKgLast30Days: -1.2,
+      },
+      dataGaps: [],
+    });
+  });
+});
+
+describe("contextForAi", () => {
+  it("excludes identity, raw biometrics, free-text memory, and calendar dates", () => {
+    const context = {
+      profile: {
+        displayName: "Private athlete",
+        locale: "lt",
+        goal: "strength",
+        experience: "intermediate",
+        heightCm: 181,
+        weightKg: 80,
+        targetWeightKg: 84,
+        daysPerWeek: 4,
+        sessionMinutes: 60,
+        equipment: ["barbell"],
+        limitations: "Private limitation",
+        diet: "omnivore",
+        allergies: "Private allergy",
+        dislikes: "Private dislike",
+        mealsPerDay: 3,
+      },
+      biometric: {
+        userId: "private-user-id",
+        todayNutrition: {
+          calories: 1800,
+          proteinG: 150,
+          carbsG: 160,
+          fatG: 55,
+          targetCalories: 2400,
+          targetProteinG: 170,
+          remainingCalories: 600,
+          remainingProteinG: 20,
+        },
+        recentWorkout: {
+          date: "2026-09-01T09:00:00.000Z",
+          focus: "Private session title",
+          totalSets: 18,
+          avgRpe: 7.75,
+          fatigueLevel: "medium",
+        },
+        healthBiomarkers: { restingHr: 52, hrvMs: 61, notes: "Private health note" },
+        activeGoal: "strength",
+      },
+      aiSummary: {
+        training: {
+          sessionsLast7Days: 3,
+          sessionsLast28Days: 10,
+          totalVolumeLast28Days: 7000,
+          daysSinceLastCompletedWorkout: 1,
+        },
+        recovery: {
+          latestReadinessScore: 70,
+          averageReadinessLast7Days: 68,
+          averageSleepHoursLast7Days: 7.2,
+        },
+        body: {
+          latestWeightKg: 80,
+          latestBodyFatPercent: 18,
+          weightChangeKgLast30Days: -0.8,
+        },
+        dataGaps: [],
+      },
+      memory: [
+        {
+          type: "private",
+          content: "Private memory",
+          confidence: 1,
+          importance: 1,
+          lastConfirmedAt: "2026-09-01T00:00:00.000Z",
+        },
+      ],
+    } satisfies CentralUserContext;
+
+    const payload = contextForAi(context);
+
+    for (const privateValue of [
+      "Private athlete",
+      "private-user-id",
+      "Private limitation",
+      "Private allergy",
+      "Private dislike",
+      "Private session title",
+      "Private health note",
+      "Private memory",
+      "2026-09-01",
+    ]) {
+      expect(payload).not.toContain(privateValue);
+    }
+    expect(JSON.parse(payload)).toMatchObject({
+      preferences: { goal: "strength", trainingDaysPerWeek: 4 },
+      recentSession: { totalSets: 18, averageRpe: 7.8, fatigueLevel: "medium" },
+      trainingHistory: { sessionsLast28Days: 10 },
+      recovery: { latestReadinessScore: 70 },
+    });
+  });
+});
