@@ -13,9 +13,7 @@ async function callGemini(image: string, prompt: string) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
   const payload = { contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Data } }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.1 } };
   let response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  if (!response.ok) {
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  }
+  if (!response.ok) response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   if (!response.ok) return null;
   const result = await response.json();
   const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -41,7 +39,7 @@ export const savePhotoMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SaveInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("nutrition_logs").insert({ user_id: context.userId, logged_on: new Date().toISOString().slice(0, 10), food_name: data.dishName, calories: data.calories, protein: data.protein, carbs: data.carbs, fat: data.fat, note: data.note ?? "Nuskaityta su AI Vision Scanner" });
+    const { error } = await context.supabase.from("nutrition_logs").insert({ user_id: context.userId, logged_on: new Date().toISOString().slice(0, 10), food_name: data.dishName, description: data.dishName, calories: data.calories, protein: data.protein, carbs: data.carbs, fat: data.fat, note: data.note ?? "Nuskaityta su AI Vision Scanner" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
