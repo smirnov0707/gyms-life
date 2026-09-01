@@ -17,8 +17,8 @@ export async function assembleCoachContext(args: {
 
   return buildCoachContext({
     userId: args.userId,
-    goal: args.goal,
-    activePlan: args.activePlan,
+    goal: args.goal ?? null,
+    activePlan: args.activePlan ?? null,
     performance: {
       workouts: performance.metrics.workouts,
       totalVolume: performance.metrics.totalVolume,
