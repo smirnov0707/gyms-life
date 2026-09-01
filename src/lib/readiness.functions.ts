@@ -10,6 +10,13 @@ const CheckinInput = z.object({
   lang: z.string().default("lt"),
 });
 
+const sorenessScore: Record<z.infer<typeof CheckinInput>["soreness"], number> = {
+  none: 0,
+  mild: 1,
+  moderate: 2,
+  severe: 3,
+};
+
 export const submitReadinessCheckin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => CheckinInput.parse(data))
@@ -20,20 +27,22 @@ export const submitReadinessCheckin = createServerFn({ method: "POST" })
     baseScore += Math.min(data.sleepHours * 5, 40);
     baseScore += data.energy * 5;
     baseScore -= data.stress * 4;
-    if (data.soreness === "mild") baseScore -= 5;
-    if (data.soreness === "moderate") baseScore -= 12;
-    if (data.soreness === "severe") baseScore -= 22;
-
+    baseScore -= sorenessScore[data.soreness] * 6;
     const finalScore = Math.max(20, Math.min(100, Math.round(baseScore)));
 
-    const { error } = await supabase.from("readiness_checkins").insert({
-      user_id: userId,
-      score: finalScore,
-      sleep_hours: data.sleepHours,
-      energy: data.energy,
-      soreness: data.soreness,
-      stress: data.stress,
-    });
+    const { error } = await supabase.from("daily_checkins").upsert(
+      {
+        user_id: userId,
+        checkin_on: new Date().toISOString().slice(0, 10),
+        readiness_score: finalScore,
+        sleep_hours: data.sleepHours,
+        energy: data.energy,
+        soreness: sorenessScore[data.soreness],
+        stress: data.stress,
+        load_modifier: finalScore < 60 ? 0.7 : finalScore < 80 ? 0.9 : 1,
+      },
+      { onConflict: "user_id,checkin_on" },
+    );
 
     if (error) console.error("Readiness save error:", error.message);
 
@@ -44,22 +53,17 @@ export const submitReadinessCheckin = createServerFn({ method: "POST" })
       recommendation = "Vidutinis pasirengimas: atlikite suplanuotą programą, išlaikykite RPE <= 8.";
     }
 
-    return {
-      ok: true,
-      score: finalScore,
-      recommendation,
-    };
+    return { ok: !error, score: finalScore, recommendation };
   });
 
 export const getLatestReadiness = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { data } = await supabase
-      .from("readiness_checkins")
+    const { data } = await context.supabase
+      .from("daily_checkins")
       .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
+      .eq("user_id", context.userId)
+      .order("checkin_on", { ascending: false })
       .limit(1)
       .maybeSingle();
 
