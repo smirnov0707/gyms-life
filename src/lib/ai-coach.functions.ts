@@ -7,7 +7,10 @@ import { assembleCoachContext } from "./ai-coach.server";
 export const getCoachRecommendation = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const coachContext = await assembleCoachContext({ supabase: context.supabase, userId: context.userId });
-    const recommendation = await runCoachWorker(new OpenAICoachWorker(), coachContext);
-    return { status: "READY" as const, recommendation };
+    const coachContext = await assembleCoachContext({
+      supabase: context.supabase,
+      userId: context.userId,
+    });
+    const result = await runCoachWorker(new OpenAICoachWorker(), coachContext);
+    return { status: "READY" as const, recommendation: result.recommendation };
   });
