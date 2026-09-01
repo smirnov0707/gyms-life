@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { calculateAverage, calculateEstimated1RM, calculateVolume } from "./performance.engine";
 
 export type PerformanceSetLog = { id: string; session_id: string; exercise_slug: string; exercise_name: string; set_number: number; reps: number | null; weight_kg: number | null; rpe: number | null; done: boolean; created_at: string };
-export type PerformanceSession = { id: string; plan_id: string; day_index: number; title: string; started_at: string; finished_at: string | null; duration_seconds: number | null; total_volume: number | null };
+export type PerformanceSession = { id: string; plan_id: string | null; day_index: number | null; title: string | null; started_at: string; finished_at: string | null; duration_seconds: number | null; total_volume: number };
 export type ExercisePerformance = { exerciseSlug: string; exerciseName: string; sessions: number; totalSets: number; totalReps: number; totalVolume: number; bestWeightKg: number | null; bestReps: number | null; bestEstimated1RMKg: number | null; averageRpe: number | null; latest: { date: string; weightKg: number | null; reps: number | null; rpe: number | null; estimated1RMKg: number | null } | null };
 
 export async function loadCompletedPerformance(supabase: SupabaseClient<Database>, userId: string) {
@@ -34,4 +34,24 @@ export async function getPerformanceOverviewData(supabase: SupabaseClient<Databa
   const exercises = [...new Set(logs.map((log) => log.exercise_slug))].map((slug) => aggregateExercisePerformance(logs, slug)).filter((value): value is ExercisePerformance => value !== null);
   const rpes = logs.map((log) => log.rpe).filter((value): value is number => value != null);
   return { sessions, logs, metrics: { workouts: sessions.length, totalVolume: Number(sessions.reduce((sum, session) => sum + (session.total_volume ?? 0), 0).toFixed(1)), totalDurationSeconds: sessions.reduce((sum, session) => sum + (session.duration_seconds ?? 0), 0), totalSets: logs.length, totalReps: logs.reduce((sum, log) => sum + (log.reps ?? 0), 0), averageRpe: calculateAverage(rpes) }, exercises };
+}
+
+export async function getExerciseProgressData(supabase: SupabaseClient<Database>, userId: string, exerciseSlug: string) {
+  const { logs } = await loadCompletedPerformance(supabase, userId);
+  return {
+    exerciseSlug,
+    points: logs.filter((log) => log.exercise_slug === exerciseSlug && log.done).map((log) => ({ date: log.created_at, weightKg: log.weight_kg, reps: log.reps, rpe: log.rpe, estimated1RMKg: calculateEstimated1RM(log.weight_kg, log.reps) })),
+  };
+}
+
+export async function getVolumeTrendData(supabase: SupabaseClient<Database>, userId: string) {
+  const { sessions } = await loadCompletedPerformance(supabase, userId);
+  return { points: sessions.map((session) => ({ date: session.finished_at ?? session.started_at, workout: session.title ?? "Workout", volume: Number(session.total_volume ?? 0) })) };
+}
+
+export async function getStrengthTrendData(supabase: SupabaseClient<Database>, userId: string) {
+  const { logs } = await loadCompletedPerformance(supabase, userId);
+  return {
+    points: logs.filter((log) => log.done && log.weight_kg != null && log.reps != null).map((log) => ({ date: log.created_at, exerciseSlug: log.exercise_slug, exerciseName: log.exercise_name, estimated1RMKg: calculateEstimated1RM(log.weight_kg, log.reps) ?? 0 })),
+  };
 }
