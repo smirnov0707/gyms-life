@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import { History, Loader2, Send, Sparkles } from "lucide-react";
+import { History, Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getAiPersonalizationConsent,
+  recordAiPersonalizationConsent,
+} from "@/lib/ai-personalization-consent.functions";
 import { askCoach, listCoachMessages } from "@/lib/plan.functions";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -16,7 +19,10 @@ export const Route = createFileRoute("/_authenticated/coach")({
       { title: "Tavo treneris — GYMS.LIFE" },
       { name: "description", content: "Asmeninis treneris: technika, mityba ir plano korekcijos." },
       { property: "og:title", content: "Tavo treneris — GYMS.LIFE" },
-      { property: "og:description", content: "Klausk trenerio, kuris mato tavo planą ir progresą." },
+      {
+        property: "og:description",
+        content: "Klausk trenerio, kuris mato tavo planą ir progresą.",
+      },
     ],
   }),
   component: CoachPage,
@@ -86,6 +92,8 @@ function CoachPage() {
         </Button>
       </div>
 
+      <AiPersonalizationConsentCard />
+
       <div className="panel min-h-[45vh] p-5">
         {messages.length === 0 && !busy && (
           <div className="grid place-items-center gap-3 py-10 text-center text-sm text-muted-foreground">
@@ -135,5 +143,98 @@ function CoachPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+function AiPersonalizationConsentCard() {
+  const { lang } = useI18n();
+  const getConsent = useServerFn(getAiPersonalizationConsent);
+  const recordConsent = useServerFn(recordAiPersonalizationConsent);
+  const [granted, setGranted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const copy =
+    lang === "lt"
+      ? {
+          eyebrow: "AI PRIVATUMAS",
+          title: "Leisti asmeninį AI kontekstą",
+          description:
+            "Įjungus, Coach ir Daily Brief AI tiekėjui perduos tik 7/28/30 dienų mitybos, treniruočių, pasirengimo ir kūno pokyčių suvestines — ne žalius įrašus, vardą ar pokalbio atmintį.",
+          active: "Aktyvuota — galite bet kada atšaukti.",
+          inactive: "Išjungta — AI naudoja tik bazinius treniruočių nustatymus.",
+          enable: "Įjungti suvestines",
+          disable: "Atšaukti sutikimą",
+          saved: "AI privatumo pasirinkimas išsaugotas.",
+        }
+      : {
+          eyebrow: "AI PRIVACY",
+          title: "Allow personalized AI context",
+          description:
+            "When enabled, Coach and Daily Brief send only 7/28/30-day nutrition, training, readiness and body-trend summaries to the AI provider — never raw records, your name, or memory entries.",
+          active: "Enabled — you can withdraw this at any time.",
+          inactive: "Disabled — AI uses only basic training preferences.",
+          enable: "Enable summaries",
+          disable: "Withdraw consent",
+          saved: "AI privacy preference saved.",
+        };
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const current = await getConsent();
+        if (active) setGranted(current.granted);
+      } catch (error) {
+        if (active) toast.error(error instanceof Error ? error.message : "Could not load consent.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [getConsent]);
+
+  const toggle = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const recorded = await recordConsent({ data: { granted: !granted } });
+      setGranted(recorded.granted);
+      toast.success(copy.saved);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save consent.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex gap-3">
+        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-1 text-lg font-semibold">{copy.title}</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            {copy.description}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {loading ? "…" : granted ? copy.active : copy.inactive}
+          </p>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant={granted ? "outline" : "default"}
+        disabled={loading || saving}
+        onClick={toggle}
+      >
+        {saving ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+        {granted ? copy.disable : copy.enable}
+      </Button>
+    </section>
   );
 }

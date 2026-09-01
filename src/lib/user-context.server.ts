@@ -49,6 +49,7 @@ export interface CentralUserContext {
     mealsPerDay: number | null;
   };
   biometric: UserBiometricContext;
+  aiPersonalization: AiPersonalizationConsent;
   aiSummary: AiPersonalizationSummary;
   memory: Array<{
     type: string;
@@ -57,6 +58,12 @@ export interface CentralUserContext {
     importance: number;
     lastConfirmedAt: string | null;
   }>;
+}
+
+export interface AiPersonalizationConsent {
+  enabled: boolean;
+  policyVersion: string | null;
+  lastRecordedAt: string | null;
 }
 
 export interface AiPersonalizationSummary {
@@ -99,6 +106,28 @@ export interface AiPersonalizationSources {
 }
 
 const DAY_MS = 86_400_000;
+
+function emptyAiPersonalizationSummary(dataGap: string): AiPersonalizationSummary {
+  return {
+    training: {
+      sessionsLast7Days: 0,
+      sessionsLast28Days: 0,
+      totalVolumeLast28Days: 0,
+      daysSinceLastCompletedWorkout: null,
+    },
+    recovery: {
+      latestReadinessScore: null,
+      averageReadinessLast7Days: null,
+      averageSleepHoursLast7Days: null,
+    },
+    body: {
+      latestWeightKg: null,
+      latestBodyFatPercent: null,
+      weightChangeKgLast30Days: null,
+    },
+    dataGaps: [dataGap],
+  };
+}
 
 function roundToOneDecimal(value: number): number {
   return Math.round(value * 10) / 10;
@@ -333,15 +362,7 @@ export async function buildUserContext(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<CentralUserContext> {
-  const metricsSince = new Date(Date.now() - 30 * DAY_MS).toISOString().slice(0, 10);
-  const [
-    { data: profile },
-    { data: memory },
-    biometric,
-    workoutsResult,
-    checkinsResult,
-    bodyMetricsResult,
-  ] = await Promise.all([
+  const [{ data: profile }, { data: memory }, biometric, consentResult] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -359,37 +380,62 @@ export async function buildUserContext(
       .limit(30),
     buildBiometricContext(supabase, userId),
     supabase
-      .from("workout_sessions")
-      .select("started_at, total_volume")
+      .from("ai_personalization_consents")
+      .select("granted, policy_version, recorded_at")
       .eq("user_id", userId)
-      .not("finished_at", "is", null)
-      .order("started_at", { ascending: false })
-      .limit(60),
-    supabase
-      .from("daily_checkins")
-      .select("checkin_on, readiness_score, sleep_hours")
-      .eq("user_id", userId)
-      .order("checkin_on", { ascending: false })
-      .limit(14),
-    supabase
-      .from("body_metrics")
-      .select("measured_on, weight_kg, body_fat")
-      .eq("user_id", userId)
-      .gte("measured_on", metricsSince)
-      .order("measured_on", { ascending: false })
-      .limit(60),
+      .order("recorded_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
-  const aiSummary = buildAiPersonalizationSummary({
-    workouts: workoutsResult.data ?? [],
-    checkins: checkinsResult.data ?? [],
-    bodyMetrics: bodyMetricsResult.data ?? [],
-    availability: {
-      training: workoutsResult.error === null,
-      recovery: checkinsResult.error === null,
-      body: bodyMetricsResult.error === null,
-    },
-  });
+  const aiPersonalization = {
+    enabled: consentResult.error === null && consentResult.data?.granted === true,
+    policyVersion: consentResult.data?.policy_version ?? null,
+    lastRecordedAt: consentResult.data?.recorded_at ?? null,
+  };
+  let aiSummary = emptyAiPersonalizationSummary(
+    consentResult.error
+      ? "personalization_consent_unavailable"
+      : "personalization_consent_required",
+  );
+
+  if (aiPersonalization.enabled) {
+    const metricsSince = new Date(Date.now() - 30 * DAY_MS).toISOString().slice(0, 10);
+    const [workoutsResult, checkinsResult, bodyMetricsResult] = await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("started_at, total_volume")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null)
+        .order("started_at", { ascending: false })
+        .limit(60),
+      supabase
+        .from("daily_checkins")
+        .select("checkin_on, readiness_score, sleep_hours")
+        .eq("user_id", userId)
+        .order("checkin_on", { ascending: false })
+        .limit(14),
+      supabase
+        .from("body_metrics")
+        .select("measured_on, weight_kg, body_fat")
+        .eq("user_id", userId)
+        .gte("measured_on", metricsSince)
+        .order("measured_on", { ascending: false })
+        .limit(60),
+    ]);
+
+    aiSummary = buildAiPersonalizationSummary({
+      workouts: workoutsResult.data ?? [],
+      checkins: checkinsResult.data ?? [],
+      bodyMetrics: bodyMetricsResult.data ?? [],
+      availability: {
+        training: workoutsResult.error === null,
+        recovery: checkinsResult.error === null,
+        body: bodyMetricsResult.error === null,
+      },
+    });
+  }
 
   return {
     profile: {
@@ -410,6 +456,7 @@ export async function buildUserContext(
       mealsPerDay: profile?.meals_per_day ?? null,
     },
     biometric,
+    aiPersonalization,
     aiSummary,
     memory: (memory ?? []).map((item) => ({
       type: item.memory_type,
@@ -422,7 +469,7 @@ export async function buildUserContext(
 }
 
 export function contextForAi(context: CentralUserContext): string {
-  const externalContext = {
+  const baseContext = {
     schemaVersion: "1.0",
     preferences: {
       locale: context.profile.locale,
@@ -431,22 +478,33 @@ export function contextForAi(context: CentralUserContext): string {
       trainingDaysPerWeek: context.profile.daysPerWeek,
       sessionMinutes: context.profile.sessionMinutes,
       equipment: context.profile.equipment,
-      diet: context.profile.diet,
-      mealsPerDay: context.profile.mealsPerDay,
     },
-    nutritionToday: context.biometric.todayNutrition,
-    recentSession: context.biometric.recentWorkout
-      ? {
-          totalSets: context.biometric.recentWorkout.totalSets,
-          averageRpe: roundToOneDecimal(context.biometric.recentWorkout.avgRpe),
-          fatigueLevel: context.biometric.recentWorkout.fatigueLevel,
-        }
-      : null,
-    trainingHistory: context.aiSummary.training,
-    recovery: context.aiSummary.recovery,
-    bodyTrend: context.aiSummary.body,
-    dataGaps: context.aiSummary.dataGaps,
+    personalization: {
+      enabled: context.aiPersonalization.enabled,
+      policyVersion: context.aiPersonalization.policyVersion,
+    },
   };
+
+  const externalContext = context.aiPersonalization.enabled
+    ? {
+        ...baseContext,
+        nutritionToday: context.biometric.todayNutrition,
+        recentSession: context.biometric.recentWorkout
+          ? {
+              totalSets: context.biometric.recentWorkout.totalSets,
+              averageRpe: roundToOneDecimal(context.biometric.recentWorkout.avgRpe),
+              fatigueLevel: context.biometric.recentWorkout.fatigueLevel,
+            }
+          : null,
+        trainingHistory: context.aiSummary.training,
+        recovery: context.aiSummary.recovery,
+        bodyTrend: context.aiSummary.body,
+        dataGaps: context.aiSummary.dataGaps,
+      }
+    : {
+        ...baseContext,
+        dataGaps: context.aiSummary.dataGaps,
+      };
 
   return JSON.stringify(externalContext, null, 2);
 }

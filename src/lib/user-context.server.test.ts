@@ -92,6 +92,11 @@ describe("contextForAi", () => {
         healthBiomarkers: { restingHr: 52, hrvMs: 61, notes: "Private health note" },
         activeGoal: "strength",
       },
+      aiPersonalization: {
+        enabled: true,
+        policyVersion: "2026-09-02",
+        lastRecordedAt: "2026-09-01T00:00:00.000Z",
+      },
       aiSummary: {
         training: {
           sessionsLast7Days: 3,
@@ -139,9 +144,89 @@ describe("contextForAi", () => {
     }
     expect(JSON.parse(payload)).toMatchObject({
       preferences: { goal: "strength", trainingDaysPerWeek: 4 },
+      personalization: { enabled: true, policyVersion: "2026-09-02" },
       recentSession: { totalSets: 18, averageRpe: 7.8, fatigueLevel: "medium" },
       trainingHistory: { sessionsLast28Days: 10 },
       recovery: { latestReadinessScore: 70 },
     });
+  });
+
+  it("withholds aggregate health and behavior data until the user opts in", () => {
+    const context = {
+      profile: {
+        displayName: null,
+        locale: "lt",
+        goal: "strength",
+        experience: "intermediate",
+        heightCm: null,
+        weightKg: null,
+        targetWeightKg: null,
+        daysPerWeek: 4,
+        sessionMinutes: 60,
+        equipment: ["barbell"],
+        limitations: null,
+        diet: "omnivore",
+        allergies: null,
+        dislikes: null,
+        mealsPerDay: 3,
+      },
+      biometric: {
+        userId: "private-user-id",
+        todayNutrition: {
+          calories: 1800,
+          proteinG: 150,
+          carbsG: 160,
+          fatG: 55,
+          targetCalories: 2400,
+          targetProteinG: 170,
+          remainingCalories: 600,
+          remainingProteinG: 20,
+        },
+        activeGoal: "strength",
+      },
+      aiPersonalization: {
+        enabled: false,
+        policyVersion: null,
+        lastRecordedAt: null,
+      },
+      aiSummary: {
+        training: {
+          sessionsLast7Days: 3,
+          sessionsLast28Days: 10,
+          totalVolumeLast28Days: 7000,
+          daysSinceLastCompletedWorkout: 1,
+        },
+        recovery: {
+          latestReadinessScore: 70,
+          averageReadinessLast7Days: 68,
+          averageSleepHoursLast7Days: 7.2,
+        },
+        body: {
+          latestWeightKg: 80,
+          latestBodyFatPercent: 18,
+          weightChangeKgLast30Days: -0.8,
+        },
+        dataGaps: ["personalization_consent_required"],
+      },
+      memory: [],
+    } satisfies CentralUserContext;
+
+    const payload = contextForAi(context);
+
+    expect(JSON.parse(payload)).toMatchObject({
+      personalization: { enabled: false },
+      dataGaps: ["personalization_consent_required"],
+    });
+    for (const withheldField of [
+      "nutritionToday",
+      "recentSession",
+      "trainingHistory",
+      "recovery",
+      "bodyTrend",
+      "1800",
+      "7000",
+    ]) {
+      expect(payload).not.toContain(withheldField);
+    }
   });
 });

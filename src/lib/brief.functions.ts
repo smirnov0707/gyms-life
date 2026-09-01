@@ -26,17 +26,20 @@ const ActionSchema = z.object({
   evidence: z.string().default(""),
   route: z.string(),
   cta: z.string(),
-  priority: z.preprocess((v) => (typeof v === "string" ? v.toLowerCase() : v), z
-    .enum(["high", "medium", "low"])
-    .catch("medium")),
+  priority: z.preprocess(
+    (v) => (typeof v === "string" ? v.toLowerCase() : v),
+    z.enum(["high", "medium", "low"]).catch("medium"),
+  ),
 });
 
 const SignalSchema = z.object({
   label: z.string(),
   value: z.string(),
   note: z.string().default(""),
-  tone: z
-    .preprocess((v) => (typeof v === "string" ? v.toLowerCase() : v), z.enum(["good", "neutral", "risk"]).catch("neutral")),
+  tone: z.preprocess(
+    (v) => (typeof v === "string" ? v.toLowerCase() : v),
+    z.enum(["good", "neutral", "risk"]).catch("neutral"),
+  ),
 });
 
 const BriefSchema = z.object({
@@ -48,7 +51,12 @@ const BriefSchema = z.object({
   watchouts: z.array(z.string()).default([]),
 });
 
-export type BriefSignal = { label: string; value: string; note: string; tone: "good" | "neutral" | "risk" };
+export type BriefSignal = {
+  label: string;
+  value: string;
+  note: string;
+  tone: "good" | "neutral" | "risk";
+};
 export type DailyBrief = z.infer<typeof BriefSchema> & { actions: BriefAction[] };
 export type BriefAction = {
   title: string;
@@ -82,8 +90,11 @@ export const getDailyBrief = createServerFn({ method: "POST" })
     const gateway = createAiRouterProvider("brief.functions");
 
     const language = LANG_NAMES[data.lang] ?? "English";
+    const personalizationRules = snapshot.aiPersonalization.enabled
+      ? "Personalization consent is enabled. Use the aggregate training, recovery, body, and nutrition context exactly as provided."
+      : "Personalization consent is disabled. The snapshot deliberately omits nutrition, training history, recovery, and body-trend data. Do not infer or invent these data. Briefly explain that detailed recommendations require the user to enable AI personalization in /coach, and include one /coach action for that purpose.";
 
-    const system = `You are the operating brain of GYMS.LIFE, a training + nutrition app. You see ALL of the user's data and your job is to connect the dots between the app's features and tell the user exactly what to do today.
+    const system = `You are the operating brain of GYMS.LIFE, a training + nutrition app. You receive only the permission-aware snapshot below and your job is to connect the dots between the app's features and tell the user exactly what to do today.
 
 APP FEATURES YOU CAN SEND THE USER TO (use the exact route string):
 - "/app" — dashboard, today's workout, start session
@@ -102,12 +113,15 @@ APP FEATURES YOU CAN SEND THE USER TO (use the exact route string):
 RULES
 - Write EVERYTHING in ${language}.
 - headline: max 6 words, punchy, specific to this person today.
-- summary: 2-3 sentences connecting their training, recovery and nutrition state. QUOTE at least three concrete numbers from the snapshot (kcal, kg, streak days, readiness score, sleep hours, days since last workout) inside the sentences.
-- signals: 3-5 data citations taken VERBATIM from the snapshot. label = what the metric is (2-3 words), value = the exact number/date with unit as it appears in the snapshot, note = max 12 words explaining why that number matters today. tone = "good" | "neutral" | "risk". Never invent a number that is not in the snapshot; if data is missing, cite the gap (value = "—") and say what to log.
+- summary: 2-3 sentences connecting their training, recovery and nutrition state. When personalization is enabled, quote at least three concrete numbers from the snapshot (kcal, kg, streak days, readiness score, sleep hours, days since last workout). When it is disabled, never invent those numbers; describe the consent gap instead.
+- signals: When personalization is enabled, return 3-5 data citations taken VERBATIM from the snapshot. When it is disabled, return 1-2 consent/data-gap signals only. label = what the metric is (2-3 words), value = the exact number/date with unit as it appears in the snapshot, note = max 12 words explaining why that number matters today. tone = "good" | "neutral" | "risk". Never invent a number that is not in the snapshot; if data is missing, cite the gap (value = "—") and say what to log.
 - focus: 2-4 words, the single theme of the day.
 - actions: 3 or 4 items, ordered by importance. Each must reference REAL data from the snapshot and point to the most relevant route. Never recommend something already done today. Fill the biggest gaps first (see MISSING DATA FLAGS). reason = max 14 words, concrete. evidence = the exact data point from the snapshot that triggered this action, formatted like "readiness 62 / sleep 5.5h" or "0 kcal logged today" — numbers only from the snapshot, max 8 words. cta = 2-3 word button label.
 - watchouts: 0-2 short warnings (fatigue, missed protein, long inactivity, low form score). Empty array if nothing to warn about.
 - No medical claims. No generic motivational filler.
+
+PERSONALIZATION RULES
+${personalizationRules}
 
 USER SNAPSHOT
 ${contextForAi(snapshot)}
@@ -130,9 +144,9 @@ RETURN EXACTLY THIS JSON SHAPE:
       throw new Error("Could not build today's brief. Try again.");
     }
 
-    const actions = parsed.actions.flatMap((action) =>
-      isBriefRoute(action.route) ? [{ ...action, route: action.route }] : [],
-    ).slice(0, 4);
+    const actions = parsed.actions
+      .flatMap((action) => (isBriefRoute(action.route) ? [{ ...action, route: action.route }] : []))
+      .slice(0, 4);
 
     const [{ data: recentWorkouts }, { data: latestCheckin }] = await Promise.all([
       supabase

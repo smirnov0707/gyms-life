@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_personalization_consents: {
+        Row: {
+          granted: boolean
+          id: number
+          policy_version: string
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          granted: boolean
+          id?: never
+          policy_version: string
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          granted?: boolean
+          id?: never
+          policy_version?: string
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_daily: {
         Row: {
           request_count: number
