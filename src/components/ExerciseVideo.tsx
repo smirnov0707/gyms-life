@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { getExerciseMedia } from "../lib/exercise-media";
 
 interface ExerciseVideoProps {
-  slug: string;
+  slug: string | null;
   title?: string;
   className?: string;
   autoPlay?: boolean;
@@ -21,7 +21,8 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
   autoPlay = true,
   isHovered,
 }) => {
-  const media = getExerciseMedia(slug);
+  const safeSlug = slug ?? "";
+  const media = getExerciseMedia(safeSlug);
   const [frameIndex, setFrameIndex] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const [isInteractive, setIsInteractive] = useState(false);
@@ -31,51 +32,38 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry) setIsInViewport(entry.isIntersecting);
       },
       { threshold: 0.4 },
     );
-
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
     if (media.type !== "frames" || !media.frames || media.frames.length <= 1) return;
-
-    const shouldRun = isHovered !== undefined
-      ? isHovered
-      : autoPlay && (isInViewport || isInteractive);
-
+    const shouldRun = isHovered !== undefined ? isHovered : autoPlay && (isInViewport || isInteractive);
     if (!shouldRun) {
       setFrameIndex(0);
       return;
     }
-
     const interval = setInterval(() => {
       setFrameIndex((prev) => (prev + 1) % (media.frames?.length || 1));
     }, 850);
-
     return () => clearInterval(interval);
   }, [media, autoPlay, isHovered, isInViewport, isInteractive]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    setMousePos({
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
-    });
+    setMousePos({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
   };
 
   const handleTouchStart = () => {
     setIsInteractive(true);
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(12);
-    }
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(12);
   };
 
   const isEccentric = frameIndex === 0;
@@ -113,14 +101,14 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
         <div className="relative w-full h-full">
           <img
             src={media.frames[frameIndex]}
-            alt={title || slug}
+            alt={title || safeSlug}
             className="w-full h-full object-cover transition-opacity duration-300 pointer-events-none"
             loading="lazy"
           />
         </div>
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-neutral-900 text-neutral-600">
-          <span className="text-xs font-mono">{title || slug}</span>
+          <span className="text-xs font-mono">{title || safeSlug}</span>
         </div>
       )}
 
@@ -147,7 +135,7 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0 flex-1 pr-2">
             <div className="text-[8px] sm:text-[9px] font-mono text-neutral-400 tracking-wider uppercase">LOAD MATRIX</div>
-            <div className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">{title || slug.replace(/-/g, " ").toUpperCase()}</div>
+            <div className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">{title || safeSlug.replace(/-/g, " ").toUpperCase()}</div>
           </div>
           <div className="flex items-center shrink-0 bg-black/70 backdrop-blur-md px-2 py-0.5 sm:py-1 rounded-md border border-white/10">
             <span className={`text-[9px] sm:text-[10px] font-mono font-bold ${isEccentric ? "text-neutral-400" : "text-emerald-400"}`}>
@@ -159,9 +147,7 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
 
       <div
         className="hidden sm:block absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: `radial-gradient(circle 200px at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.08), transparent 70%)`,
-        }}
+        style={{ background: `radial-gradient(circle 200px at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(255,255,255,0.08), transparent 70%)` }}
       />
     </div>
   );
