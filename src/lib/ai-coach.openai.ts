@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { CoachContextSchema, parseCoachRecommendation, type AICoachWorker, type CoachContext, type CoachRecommendation } from "./ai-coach.contract";
 
 const SYSTEM_PROMPT = `You are the GYMS.LIFE AI Coach worker. Interpret only the supplied structured context. Do not invent user data. Return exactly one JSON object matching the requested recommendation schema. Estimated 1RM is derived, not actual lifted weight. Recommendations must be conservative and require user confirmation for changes.`;
@@ -22,26 +21,34 @@ const RESPONSE_SCHEMA = {
 export class OpenAICoachWorker implements AICoachWorker {
   readonly name = "openai-coach";
   readonly version = "1.0";
-  private readonly client: OpenAI;
   private readonly model: string;
+  private readonly apiKey: string;
 
   constructor(options?: { apiKey?: string; model?: string }) {
-    this.client = new OpenAI({ apiKey: options?.apiKey ?? process.env.OPENAI_API_KEY });
+    this.apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY ?? "";
     this.model = options?.model ?? process.env.OPENAI_COACH_MODEL ?? "gpt-5.6-luna";
   }
 
   async generateRecommendation(context: CoachContext): Promise<CoachRecommendation> {
     const safeContext = CoachContextSchema.parse(context);
-    const response = await this.client.responses.create({
-      model: this.model,
-      input: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: JSON.stringify(safeContext) },
-      ],
-      text: { format: { type: "json_schema", name: "coach_recommendation", strict: true, schema: RESPONSE_SCHEMA } },
+    if (!this.apiKey) throw new Error("OPENAI_API_KEY is not configured");
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: this.model,
+        input: [
+          { role: "system", content: [{ type: "input_text", text: SYSTEM_PROMPT }] },
+          { role: "user", content: [{ type: "input_text", text: JSON.stringify(safeContext) }] },
+        ],
+        text: { format: { type: "json_schema", name: "coach_recommendation", strict: true, schema: RESPONSE_SCHEMA } },
+      }),
     });
 
-    if (!response.output_text) throw new Error("AI Coach returned an empty response");
-    return parseCoachRecommendation(JSON.parse(response.output_text));
+    if (!response.ok) throw new Error(`OpenAI Coach request failed (${response.status})`);
+    const payload = (await response.json()) as { output_text?: string };
+    if (!payload.output_text) throw new Error("AI Coach returned an empty response");
+    return parseCoachRecommendation(JSON.parse(payload.output_text));
   }
 }
