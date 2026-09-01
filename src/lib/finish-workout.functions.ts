@@ -14,11 +14,12 @@ export const finishWorkout = createServerFn({ method: "POST" })
     if (sessionError) throw new Error(`Session lookup failed: ${sessionError.message}`);
     if (!session) throw new Error("Workout session not found.");
     if (session.finished_at) return { ok: true as const, session, alreadyFinished: true as const };
-    if (session.day_index == null) throw new Error("Workout session has no planned day.");
+    const dayIndex = session.day_index;
+    if (dayIndex == null) throw new Error("Workout session has no planned day.");
 
     const plan = await getActivePlan();
     if (plan.status !== "READY" || plan.plan.id !== session.plan_id) throw new Error("The workout session is not linked to the current active program.");
-    const plannedDay = plan.plan.data.days.find((day) => day.day === session.day_index + 1);
+    const plannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
     if (!plannedDay) throw new Error("The planned workout day could not be found.");
 
     const { data: logs, error: logsError } = await supabase.from("set_logs").select("id, exercise_slug, set_number, reps, weight_kg, done").eq("session_id", session.id).eq("user_id", userId);
