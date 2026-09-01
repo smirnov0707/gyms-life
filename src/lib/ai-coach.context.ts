@@ -26,7 +26,13 @@ export function buildCoachContext(input: {
     user: { id: input.userId },
     generatedAt: new Date().toISOString(),
     goal: input.goal ?? null,
-    activePlan: input.activePlan ?? null,
+    activePlan: input.activePlan
+      ? {
+          id: input.activePlan.id,
+          title: input.activePlan.title,
+          dayIndex: input.activePlan.dayIndex ?? null,
+        }
+      : null,
     performance: {
       workouts: input.performance.metrics.workouts,
       totalVolumeKg: input.performance.metrics.totalVolume,
