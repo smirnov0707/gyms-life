@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getTodaysWorkout } from "./todays-workout.functions";
+import { getTodaysWorkoutData } from "./active-plan.service";
 
 const Input = z.object({
   sessionId: z.string().uuid(),
@@ -27,19 +27,42 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (sessionError) throw new Error(`Session lookup failed: ${sessionError.message}`);
-    if (!session) throw new Error("Workout session not found.");
-    if (session.finished_at) throw new Error("Workout session is already finished.");
+    if (sessionError) {
+      throw new Error("Session lookup failed: " + sessionError.message);
+    }
+    if (!session) {
+      throw new Error("Workout session not found.");
+    }
+    if (session.finished_at) {
+      throw new Error("Workout session is already finished.");
+    }
+    if (session.plan_id === null || session.day_index === null) {
+      throw new Error("Workout session is missing active plan metadata.");
+    }
 
-    const workout = await getTodaysWorkout({ data: { day: session.day_index + 1 } });
+    const workout = await getTodaysWorkoutData(
+      supabase,
+      userId,
+      session.day_index + 1,
+    );
     if (workout.status !== "READY" || workout.plan.id !== session.plan_id) {
       throw new Error("Workout plan is no longer available for this session.");
     }
 
-    const exercise = workout.workout.exercises.find((item) => item.slug === data.exerciseSlug);
-    if (!exercise) throw new Error("Exercise does not belong to this workout.");
-    if (exercise.name !== data.exerciseName) throw new Error("Exercise name does not match the workout plan.");
-    if (data.setNumber > exercise.sets) throw new Error(`Set number exceeds the planned ${exercise.sets} sets.`);
+    const exercise = workout.workout.exercises.find(
+      (item) => item.slug === data.exerciseSlug,
+    );
+    if (!exercise) {
+      throw new Error("Exercise does not belong to this workout.");
+    }
+    if (exercise.name !== data.exerciseName) {
+      throw new Error("Exercise name does not match the workout plan.");
+    }
+    if (data.setNumber > exercise.sets) {
+      throw new Error(
+        "Set number exceeds the planned " + exercise.sets + " sets.",
+      );
+    }
 
     const { data: duplicate, error: duplicateError } = await supabase
       .from("set_logs")
@@ -49,8 +72,12 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       .eq("set_number", data.setNumber)
       .maybeSingle();
 
-    if (duplicateError) throw new Error(`Set lookup failed: ${duplicateError.message}`);
-    if (duplicate) throw new Error("This set has already been logged.");
+    if (duplicateError) {
+      throw new Error("Set lookup failed: " + duplicateError.message);
+    }
+    if (duplicate) {
+      throw new Error("This set has already been logged.");
+    }
 
     const { data: setLog, error } = await supabase
       .from("set_logs")
@@ -65,10 +92,16 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
         rpe: data.rpe ?? null,
         done: data.done,
       })
-      .select("id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at")
+      .select(
+        "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at",
+      )
       .single();
 
-    if (error || !setLog) throw new Error(`Could not save set: ${error?.message ?? "unknown error"}`);
+    if (error || !setLog) {
+      throw new Error(
+        "Could not save set: " + (error?.message ?? "unknown error"),
+      );
+    }
 
-    return { ok: true as const, setLog };
+    return { ok: true, setLog };
   });
