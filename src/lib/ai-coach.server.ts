@@ -19,7 +19,14 @@ export async function assembleCoachContext(args: {
     userId: args.userId,
     goal: args.goal,
     activePlan: args.activePlan,
-    performance,
+    performance: {
+      workouts: performance.metrics.workouts,
+      totalVolume: performance.metrics.totalVolume,
+      totalSets: performance.metrics.totalSets,
+      totalReps: performance.metrics.totalReps,
+      averageRpe: performance.metrics.averageRpe,
+      exercises: performance.exercises,
+    },
     insights: intelligence.status === "READY" ? intelligence.insights : [],
   });
 }
