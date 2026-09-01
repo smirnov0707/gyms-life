@@ -24,6 +24,7 @@ import { Route as AuthenticatedArRouteImport } from './routes/_authenticated/ar'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedCoachHistoryRouteImport } from './routes/_authenticated/coach-history'
 import { Route as AuthenticatedFormRouteImport } from './routes/_authenticated/form'
+import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedMealPlanRouteImport } from './routes/_authenticated/meal-plan'
 import { Route as AuthenticatedNutritionRouteImport } from './routes/_authenticated/nutrition'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -31,9 +32,10 @@ import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReadinessRouteImport } from './routes/_authenticated/readiness'
 import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
 import { Route as AuthenticatedSupplementsRouteImport } from './routes/_authenticated/supplements'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
 import { Route as ExercisesSlugRouteImport } from './routes/exercises.$slug'
-import { Route as AuthenticatedWorkoutDayRouteImport } from './routes/_authenticated/workout.$day'
+import { Route as AuthenticatedWorkoutDayRouteImport } from './routes/_authenticated/workout/$day'
 import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/health-ingest'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
@@ -113,6 +115,11 @@ const AuthenticatedFormRoute = AuthenticatedFormRouteImport.update({
   path: '/form',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMealPlanRoute = AuthenticatedMealPlanRouteImport.update({
   id: '/meal-plan',
   path: '/meal-plan',
@@ -149,6 +156,11 @@ const AuthenticatedSupplementsRoute =
     path: '/supplements',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   id: '/exercises/',
   path: '/exercises/',
@@ -191,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/coach': typeof AuthenticatedCoachRoute
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/form': typeof AuthenticatedFormRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/meal-plan': typeof AuthenticatedMealPlanRoute
   '/nutrition': typeof AuthenticatedNutritionRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -198,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/readiness': typeof AuthenticatedReadinessRoute
   '/reminders': typeof AuthenticatedRemindersRoute
   '/supplements': typeof AuthenticatedSupplementsRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/workout/$day': typeof AuthenticatedWorkoutDayRoute
@@ -219,6 +233,7 @@ export interface FileRoutesByTo {
   '/coach': typeof AuthenticatedCoachRoute
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/form': typeof AuthenticatedFormRoute
+  '/history': typeof AuthenticatedHistoryRoute
   '/meal-plan': typeof AuthenticatedMealPlanRoute
   '/nutrition': typeof AuthenticatedNutritionRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -226,6 +241,7 @@ export interface FileRoutesByTo {
   '/readiness': typeof AuthenticatedReadinessRoute
   '/reminders': typeof AuthenticatedRemindersRoute
   '/supplements': typeof AuthenticatedSupplementsRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises': typeof ExercisesIndexRoute
   '/workout/$day': typeof AuthenticatedWorkoutDayRoute
@@ -249,6 +265,7 @@ export interface FileRoutesById {
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/_authenticated/form': typeof AuthenticatedFormRoute
+  '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/meal-plan': typeof AuthenticatedMealPlanRoute
   '/_authenticated/nutrition': typeof AuthenticatedNutritionRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
@@ -256,6 +273,7 @@ export interface FileRoutesById {
   '/_authenticated/readiness': typeof AuthenticatedReadinessRoute
   '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
   '/_authenticated/supplements': typeof AuthenticatedSupplementsRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/_authenticated/workout/$day': typeof AuthenticatedWorkoutDayRoute
@@ -279,6 +297,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/coach-history'
     | '/form'
+    | '/history'
     | '/meal-plan'
     | '/nutrition'
     | '/onboarding'
@@ -286,6 +305,7 @@ export interface FileRouteTypes {
     | '/readiness'
     | '/reminders'
     | '/supplements'
+    | '/training'
     | '/exercises/$slug'
     | '/exercises/'
     | '/workout/$day'
@@ -307,6 +327,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/coach-history'
     | '/form'
+    | '/history'
     | '/meal-plan'
     | '/nutrition'
     | '/onboarding'
@@ -314,6 +335,7 @@ export interface FileRouteTypes {
     | '/readiness'
     | '/reminders'
     | '/supplements'
+    | '/training'
     | '/exercises/$slug'
     | '/exercises'
     | '/workout/$day'
@@ -336,6 +358,7 @@ export interface FileRouteTypes {
     | '/_authenticated/coach'
     | '/_authenticated/coach-history'
     | '/_authenticated/form'
+    | '/_authenticated/history'
     | '/_authenticated/meal-plan'
     | '/_authenticated/nutrition'
     | '/_authenticated/onboarding'
@@ -343,6 +366,7 @@ export interface FileRouteTypes {
     | '/_authenticated/readiness'
     | '/_authenticated/reminders'
     | '/_authenticated/supplements'
+    | '/_authenticated/training'
     | '/exercises/$slug'
     | '/exercises/'
     | '/_authenticated/workout/$day'
@@ -473,6 +497,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFormRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/history': {
+      id: '/_authenticated/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meal-plan': {
       id: '/_authenticated/meal-plan'
       path: '/meal-plan'
@@ -522,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSupplementsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/exercises/': {
       id: '/exercises/'
       path: '/exercises'
@@ -567,6 +605,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedCoachHistoryRoute: typeof AuthenticatedCoachHistoryRoute
   AuthenticatedFormRoute: typeof AuthenticatedFormRoute
+  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedMealPlanRoute: typeof AuthenticatedMealPlanRoute
   AuthenticatedNutritionRoute: typeof AuthenticatedNutritionRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
@@ -574,6 +613,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReadinessRoute: typeof AuthenticatedReadinessRoute
   AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
   AuthenticatedSupplementsRoute: typeof AuthenticatedSupplementsRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedWorkoutDayRoute: typeof AuthenticatedWorkoutDayRoute
 }
 
@@ -584,6 +624,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedCoachHistoryRoute: AuthenticatedCoachHistoryRoute,
   AuthenticatedFormRoute: AuthenticatedFormRoute,
+  AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedMealPlanRoute: AuthenticatedMealPlanRoute,
   AuthenticatedNutritionRoute: AuthenticatedNutritionRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
@@ -591,6 +632,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReadinessRoute: AuthenticatedReadinessRoute,
   AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
   AuthenticatedSupplementsRoute: AuthenticatedSupplementsRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedWorkoutDayRoute: AuthenticatedWorkoutDayRoute,
 }
 

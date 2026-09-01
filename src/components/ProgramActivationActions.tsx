@@ -37,7 +37,7 @@ export function ProgramActivationActions({
   if (active) {
     return (
       <Button asChild size="lg" className="hard-shadow rounded-none px-8 font-bold">
-        <Link to="/workout/$day" params={{ day: "0" }}>
+        <Link to="/workout/$day" params={{ day: "1" }}>
           <Play className="mr-1 size-4" />
           Start Workout
         </Link>

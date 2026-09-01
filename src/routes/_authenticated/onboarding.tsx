@@ -247,7 +247,7 @@ function Onboarding() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button asChild size="lg" className="hard-shadow rounded-none px-8 font-bold">
-                <Link to="/workout/$day" params={{ day: "0" }}>
+                <Link to="/workout/$day" params={{ day: "1" }}>
                   <Play className="mr-1 size-4" /> {t("qo.startNow")}
                 </Link>
               </Button>
@@ -386,11 +386,7 @@ function Onboarding() {
                 }}
               />
             </div>
-            <Button
-              variant="ghost"
-              className="mt-4 w-full"
-              onClick={() => setStep((s) => s + 1)}
-            >
+            <Button variant="ghost" className="mt-4 w-full" onClick={() => setStep((s) => s + 1)}>
               {sc.skip} <ArrowRight className="ml-1 size-4" />
             </Button>
           </>
@@ -407,7 +403,11 @@ function Onboarding() {
             )}
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {goals.map((g) => (
-                <OptionButton key={g.value} active={goal === g.value} onClick={() => setGoal(g.value)}>
+                <OptionButton
+                  key={g.value}
+                  active={goal === g.value}
+                  onClick={() => setGoal(g.value)}
+                >
                   {t(g.key)}
                 </OptionButton>
               ))}
@@ -528,13 +528,22 @@ function Onboarding() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="age">{t("ob.f.age")}</Label>
-                <Input id="age" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} />
+                <Input
+                  id="age"
+                  inputMode="numeric"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                />
               </div>
               <div className="grid gap-2">
                 <Label>{t("ob.f.gender")}</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {genders.map((g) => (
-                    <OptionButton key={g.value} active={gender === g.value} onClick={() => setGender(g.value)}>
+                    <OptionButton
+                      key={g.value}
+                      active={gender === g.value}
+                      onClick={() => setGender(g.value)}
+                    >
                       <span className="block text-center text-xs">{t(g.key)}</span>
                     </OptionButton>
                   ))}
@@ -542,15 +551,30 @@ function Onboarding() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="h">{t("ob.f.height")}</Label>
-                <Input id="h" inputMode="numeric" value={height} onChange={(e) => setHeight(e.target.value)} />
+                <Input
+                  id="h"
+                  inputMode="numeric"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="w">{t("ob.f.weight")}</Label>
-                <Input id="w" inputMode="numeric" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                <Input
+                  id="w"
+                  inputMode="numeric"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="tw">{t("ob.f.target")}</Label>
-                <Input id="tw" inputMode="numeric" value={target} onChange={(e) => setTarget(e.target.value)} />
+                <Input
+                  id="tw"
+                  inputMode="numeric"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                />
               </div>
             </div>
             {current === "quickBody" && (
@@ -581,7 +605,11 @@ function Onboarding() {
       </div>
 
       <div className="mt-6 flex items-center justify-between">
-        <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
+        <Button
+          variant="ghost"
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0}
+        >
           <ArrowLeft className="mr-1 size-4" /> {t("ob.back")}
         </Button>
         {step < steps - 1 ? (

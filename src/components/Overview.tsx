@@ -37,11 +37,7 @@ import { useLocalizedPlan } from "@/lib/use-localized-plan";
 import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
 import type { GeneratedMealPlan } from "@/lib/meal-types";
 import { dailyMotivation } from "@/lib/motivation";
-import {
-  applyAdaptation,
-  getAppliedAdaptation,
-  loadModifierFor,
-} from "@/lib/readiness-adapt";
+import { applyAdaptation, getAppliedAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
 
 function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
@@ -52,7 +48,14 @@ function ReadinessRing({ score }: { score: number }) {
     <div className="relative grid size-14 place-items-center">
       <GhostCoachWidget />
       <svg className="absolute inset-0 size-14 -rotate-90">
-        <circle cx="28" cy="28" r={radius} className="stroke-border" strokeWidth="4" fill="transparent" />
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          className="stroke-border"
+          strokeWidth="4"
+          fill="transparent"
+        />
         <circle
           cx="28"
           cy="28"
@@ -206,9 +209,9 @@ export function Overview() {
     enabled: !!user,
   });
 
-  const kcalToday = Math.round((nutritionToday ?? []).reduce((s, r) => s + Number(r.calories ?? 0), 0));
-
-
+  const kcalToday = Math.round(
+    (nutritionToday ?? []).reduce((s, r) => s + Number(r.calories ?? 0), 0),
+  );
 
   const savedRow = savedMeal as { id?: string; data?: unknown; lang?: string } | null | undefined;
   const { plan: localizedSaved } = useLocalizedMealPlan(
@@ -234,7 +237,9 @@ export function Overview() {
   const handleApplyAdaptation = () => {
     if (readinessScore == null) return;
     const modifier =
-      checkin?.load_modifier != null ? Number(checkin.load_modifier) : loadModifierFor(readinessScore);
+      checkin?.load_modifier != null
+        ? Number(checkin.load_modifier)
+        : loadModifierFor(readinessScore);
     applyAdaptation(modifier);
     setAdaptation(modifier);
     toast.success(`${t("ms.readiness.adjusted")} · ${Math.round(modifier * 100)}%`);
@@ -283,8 +288,7 @@ export function Overview() {
     return n;
   }, [sessions]);
 
-  const nextDayIndex = planData?.days.length ? done % planData.days.length : 0;
-  const today = planData?.days[nextDayIndex];
+  const today = planData?.days.length ? planData.days[done % planData.days.length] : undefined;
 
   const nextMeal = useMemo(() => {
     if (!localizedSaved?.days.length) return null;
@@ -293,7 +297,15 @@ export function Overview() {
     const day = localizedSaved.days[dayIndex];
     if (!day?.meals.length) return null;
     const currentSlot =
-      now.getHours() < 10 ? 0 : now.getHours() < 13 ? 2 : now.getHours() < 17 ? 3 : now.getHours() < 20 ? 4 : 5;
+      now.getHours() < 10
+        ? 0
+        : now.getHours() < 13
+          ? 2
+          : now.getHours() < 17
+            ? 3
+            : now.getHours() < 20
+              ? 4
+              : 5;
     const meal = day.meals[currentSlot] ?? day.meals[day.meals.length - 1];
     if (!meal) return null;
     return { meal, dayTitle: day.title };
@@ -343,7 +355,9 @@ export function Overview() {
         className={`flex flex-col justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-end ${anim("")}`}
       >
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">{t("dash.welcomeBack")}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">
+            {t("dash.welcomeBack")}
+          </p>
           <h1 className="mt-1 text-4xl shine-text md:text-5xl">
             {greeting}
             {firstName ? `, ${firstName}` : ""}
@@ -394,7 +408,7 @@ export function Overview() {
             </div>
             <MagneticButton
               onClick={withTactile(() =>
-                navigate({ to: "/workout/$day", params: { day: String(nextDayIndex) } }),
+                navigate({ to: "/workout/$day", params: { day: String(today.day) } }),
               )}
               className="press glow-ring inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground"
             >
@@ -406,9 +420,8 @@ export function Overview() {
 
       {/* Coach daily brief — first, it drives the whole day */}
       <div className={anim("delay-100")}>
-        <SmartBrief workoutDay={today ? nextDayIndex : null} />
+        <SmartBrief workoutDay={today?.day ?? null} />
       </div>
-
 
       {/* Live stats */}
       <div className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-5 ${anim("delay-150")}`}>
@@ -450,8 +463,12 @@ export function Overview() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className={`text-display text-4xl leading-none ${bucketColor}`}>{motivation.loadPct}%</div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("mot.load")}</div>
+              <div className={`text-display text-4xl leading-none ${bucketColor}`}>
+                {motivation.loadPct}%
+              </div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {t("mot.load")}
+              </div>
             </div>
             {!checkin && (
               <Button asChild variant="outline" size="sm" className="rounded-full">
@@ -469,7 +486,6 @@ export function Overview() {
         <CoachDock progression={planData?.progression} nutrition={planData?.nutrition} />
       </div>
 
-
       {/* Today + hydration/supplements */}
       <div className="grid gap-6 md:grid-cols-12">
         <div className={`md:col-span-8 ${anim("delay-200")}`}>
@@ -486,10 +502,12 @@ export function Overview() {
                       {t("landing.cmd.todaySession")}
                     </span>
                   </div>
-                  <h2 className="mt-2 break-words text-2xl leading-tight md:text-4xl">{today.title}</h2>
+                  <h2 className="mt-2 break-words text-2xl leading-tight md:text-4xl">
+                    {today.title}
+                  </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {today.focus} · {today.exercises.length} {t("plan.exercises")} · {today.estimated_minutes}{" "}
-                    {t("plan.min")}
+                    {today.focus} · {today.exercises.length} {t("plan.exercises")} ·{" "}
+                    {today.estimated_minutes} {t("plan.min")}
                   </p>
                   <div className="mt-6 flex flex-wrap gap-2">
                     {today.exercises.map((e) => (
@@ -503,7 +521,7 @@ export function Overview() {
                   </div>
                   <MagneticButton
                     onClick={withTactile(() =>
-                      navigate({ to: "/workout/$day", params: { day: String(nextDayIndex) } }),
+                      navigate({ to: "/workout/$day", params: { day: String(today.day) } }),
                     )}
                     className="press glow-ring mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 text-sm font-bold text-primary-foreground"
                   >
@@ -535,7 +553,9 @@ export function Overview() {
           />
           <GlowCard className="panel flex-1 p-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">{t("supp.title")}</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                {t("supp.title")}
+              </h3>
               <Button asChild variant="ghost" size="sm" className="h-8 gap-1 text-xs">
                 <Link to="/supplements">
                   <Plus className="size-3.5" /> {t("supp.add")}
@@ -584,11 +604,14 @@ export function Overview() {
             </div>
             {nextMeal ? (
               <div className="mt-5">
-                <p className="text-xs font-bold uppercase tracking-widest text-accent">{nextMeal.dayTitle}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-accent">
+                  {nextMeal.dayTitle}
+                </p>
                 <p className="mt-1 text-lg font-semibold text-foreground">{nextMeal.meal.name}</p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {Math.round(nextMeal.meal.kcal)} kcal · {t("nut.protein")} {Math.round(nextMeal.meal.protein)}g ·{" "}
-                  {t("nut.carbs")} {Math.round(nextMeal.meal.carbs)}g · {t("nut.fat")}{" "}
+                  {Math.round(nextMeal.meal.kcal)} kcal · {t("nut.protein")}{" "}
+                  {Math.round(nextMeal.meal.protein)}g · {t("nut.carbs")}{" "}
+                  {Math.round(nextMeal.meal.carbs)}g · {t("nut.fat")}{" "}
                   {Math.round(nextMeal.meal.fat)}g
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
@@ -617,11 +640,11 @@ export function Overview() {
         <div className={anim("delay-700")}>
           <h2 className="text-3xl">{t("dash.week")}</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {planData.days.map((d, i) => (
+            {planData.days.map((d) => (
               <Link
                 key={d.day}
                 to="/workout/$day"
-                params={{ day: String(i) }}
+                params={{ day: String(d.day) }}
                 className="panel lift block p-5"
               >
                 <div className="flex items-center justify-between">
@@ -646,7 +669,6 @@ export function Overview() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
