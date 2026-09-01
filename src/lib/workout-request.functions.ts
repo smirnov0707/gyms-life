@@ -3,67 +3,109 @@ import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 
 const BuildWorkoutInput = z.object({
-  muscleGroups: z.array(z.string()).min(1),
-  experienceLevel: z.enum(["beginner", "intermediate", "advanced"]).default("intermediate"),
-  durationMinutes: z.number().default(45),
-  equipment: z.array(z.string()).default(["gym_full"]),
-  injuries: z.string().optional(),
+  request: z.string().min(3),
   lang: z.string().default("lt"),
+  minutes: z.number().min(10).max(150).default(45),
+});
+
+export type RequestedWorkoutBlock = {
+  slug: string;
+  name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+  muscle?: string;
+  note?: string;
+  hasPage: boolean;
+};
+
+export type RequestedWorkout = {
+  ok: boolean;
+  title: string;
+  summary: string;
+  total_minutes: number;
+  warmup: string[];
+  blocks: RequestedWorkoutBlock[];
+  cooldown: string[];
+  tips: string[];
+};
+
+const RequestedWorkoutSchema = z.object({
+  ok: z.boolean().default(true),
+  title: z.string(),
+  summary: z.string().default(""),
+  total_minutes: z.number(),
+  warmup: z.array(z.string()).default([]),
+  blocks: z.array(
+    z.object({
+      slug: z.string(),
+      name: z.string(),
+      sets: z.number(),
+      reps: z.string(),
+      rest_seconds: z.number(),
+      muscle: z.string().optional(),
+      note: z.string().optional(),
+      hasPage: z.boolean().default(false),
+    }),
+  ),
+  cooldown: z.array(z.string()).default([]),
+  tips: z.array(z.string()).default([]),
 });
 
 export const buildRequestedWorkout = createServerFn({ method: "POST" })
   .validator((data: unknown) => BuildWorkoutInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<RequestedWorkout> => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
-    
     const prompt = `Tu esi profesionalus biomechanikos ir jėgos fitneso treneris platformoje GYMS.LIFE.
-Sukurk optimalią, moksliškai pagrįstą treniruočių programą šiai sesijai:
+Sukurk optimalią treniruotę pagal vartotojo užklausą.
 
-- Tikslinės raumenų grupės: ${data.muscleGroups.join(", ")}
-- Patirties lygis: ${data.experienceLevel}
-- Trukmė: ${data.durationMinutes} min
-- Prieinama įranga: ${data.equipment.join(", ")}
-- Traumos / apribojimai: ${data.injuries || "nėra"}
+Užklausa: ${data.request}
+Trukmė: ${data.minutes} min
+Kalba: ${langName}
 
-Atsakyk TIK TIKSLIU JSON formatu be jokio markdown:
+Atsakyk TIK JSON pagal šią struktūrą:
 {
   "ok": true,
-  "title": "Treniruotės pavadinimas ${langName} kalba",
-  "estimatedMinutes": ${data.durationMinutes},
-  "warmup": [
-    { "exercise": "Apšilimo pratimas", "duration": "2 min", "focus": "Kam skirta" }
-  ],
-  "exercises": [
+  "title": "Treniruotės pavadinimas",
+  "summary": "Trumpa trenerio santrauka",
+  "total_minutes": ${data.minutes},
+  "warmup": ["Apšilimo pratimas"],
+  "blocks": [
     {
+      "slug": "exercise-slug",
       "name": "Pratimo pavadinimas",
-      "targetMuscle": "Pagrindinis raumuo",
-      "sets": 4,
+      "sets": 3,
       "reps": "8-10",
-      "restSeconds": 90,
-      "cue": "Svarbiausias atlikimo technikos akcentas (cue)"
+      "rest_seconds": 90,
+      "muscle": "Pagrindinis raumuo",
+      "note": "Technikos akcentas",
+      "hasPage": false
     }
   ],
-  "cooldown": [
-    { "stretch": "Tempimo pratimas", "duration": "60s" }
-  ],
-  "coachSummary": "Trumpa trenerio įžvalga šiai sesijai"
+  "cooldown": ["Tempimo pratimas"],
+  "tips": ["Svarbiausias patarimas"]
 }`;
 
     try {
       const raw = await askFastTextAi({
         messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
+          { role: "system", content: "Atsakyk tik griežtu JSON formatu pagal pateiktą struktūrą." },
           { role: "user", content: prompt },
         ],
         jsonMode: true,
         temperature: 0.2,
       });
-
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
-    } catch (err: any) {
+      return RequestedWorkoutSchema.parse(JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim()));
+    } catch {
       return {
         ok: false,
-        reason: data.lang === "lt" ? "Nepavyko sugeneruoti treniruotės." : "Failed to build workout.",
+        title: data.lang === "lt" ? "Treniruotė" : "Workout",
+        summary: data.lang === "lt" ? "Nepavyko sugeneruoti treniruotės." : "Failed to build workout.",
+        total_minutes: data.minutes,
+        warmup: [],
+        blocks: [],
+        cooldown: [],
+        tips: [],
       };
     }
   });
