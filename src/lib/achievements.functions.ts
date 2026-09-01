@@ -11,21 +11,39 @@ export interface Achievement {
   maxProgress: number;
 }
 
+function calculateStreak(dates: string[]): number {
+  const uniqueDates = new Set(dates.map((value) => value.slice(0, 10)));
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  let streak = 0;
+  for (let i = 0; i < 60; i += 1) {
+    const date = cursor.toISOString().slice(0, 10);
+    if (!uniqueDates.has(date)) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 export const getUserAchievements = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
-    const [{ data: profile }, { data: workouts }, { data: meals }] = await Promise.all([
-      supabase.from("profiles").select("streak_days").eq("id", userId).maybeSingle(),
-      supabase.from("workout_logs").select("total_volume_kg, created_at").eq("user_id", userId),
-      supabase.from("meal_logs").select("id").eq("user_id", userId),
+    const [{ data: workouts }, { data: meals }] = await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("total_volume, finished_at")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null),
+      supabase.from("nutrition_logs").select("id").eq("user_id", userId),
     ]);
 
-    const streak = profile?.streak_days || 1;
-    const totalWorkouts = (workouts || []).length;
-    const totalVolume = (workouts || []).reduce((acc, w) => acc + (Number(w.total_volume_kg) || 0), 0);
-    const totalMeals = (meals || []).length;
+    const workoutRows = workouts ?? [];
+    const streak = calculateStreak(workoutRows.map((workout) => workout.finished_at ?? ""));
+    const totalWorkouts = workoutRows.length;
+    const totalVolume = workoutRows.reduce((acc, workout) => acc + Number(workout.total_volume ?? 0), 0);
+    const totalMeals = (meals ?? []).length;
 
     const achievements: Achievement[] = [
       {
@@ -58,7 +76,7 @@ export const getUserAchievements = createServerFn({ method: "POST" })
       {
         id: "nutrition-pro",
         title: "Mitybos Meistras",
-        description: "Užregistruota 30 valgių per Vision skenerį",
+        description: "Užregistruota 30 valgių",
         category: "nutrition",
         unlocked: totalMeals >= 30,
         progress: Math.min(totalMeals, 30),
