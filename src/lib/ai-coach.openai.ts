@@ -1,0 +1,47 @@
+import OpenAI from "openai";
+import { CoachContextSchema, parseCoachRecommendation, type AICoachWorker, type CoachContext, type CoachRecommendation } from "./ai-coach.contract";
+
+const SYSTEM_PROMPT = `You are the GYMS.LIFE AI Coach worker. Interpret only the supplied structured context. Do not invent user data. Return exactly one JSON object matching the requested recommendation schema. Estimated 1RM is derived, not actual lifted weight. Recommendations must be conservative and require user confirmation for changes.`;
+
+const RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "decision", "priority", "summary", "rationale", "actions", "confidence", "safety"],
+  properties: {
+    schemaVersion: { type: "string", enum: ["1.0"] },
+    decision: { type: "string", enum: ["NO_CHANGE", "ADJUST_NEXT_WORKOUT", "ADJUST_PROGRAM"] },
+    priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
+    summary: { type: "string" },
+    rationale: { type: "array", items: { type: "string" }, maxItems: 8 },
+    actions: { type: "array", maxItems: 12, items: { type: "object", additionalProperties: false, required: ["type", "exerciseSlug", "value", "unit", "instruction"], properties: { type: { type: "string", enum: ["INCREASE_LOAD", "DECREASE_LOAD", "CHANGE_REPS", "CHANGE_SETS", "CHANGE_REST", "KEEP_PLAN", "RECOVER"] }, exerciseSlug: { type: ["string", "null"] }, value: { type: ["number", "null"] }, unit: { type: ["string", "null"], enum: ["kg", "reps", "sets", "seconds", "percent", null] }, instruction: { type: "string" } } } },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    safety: { type: "object", additionalProperties: false, required: ["requiresUserConfirmation", "notes"], properties: { requiresUserConfirmation: { type: "boolean" }, notes: { type: "array", items: { type: "string" }, maxItems: 6 } } },
+  },
+} as const;
+
+export class OpenAICoachWorker implements AICoachWorker {
+  readonly name = "openai-coach";
+  readonly version = "1.0";
+  private readonly client: OpenAI;
+  private readonly model: string;
+
+  constructor(options?: { apiKey?: string; model?: string }) {
+    this.client = new OpenAI({ apiKey: options?.apiKey ?? process.env.OPENAI_API_KEY });
+    this.model = options?.model ?? process.env.OPENAI_COACH_MODEL ?? "gpt-5.6-luna";
+  }
+
+  async generateRecommendation(context: CoachContext): Promise<CoachRecommendation> {
+    const safeContext = CoachContextSchema.parse(context);
+    const response = await this.client.responses.create({
+      model: this.model,
+      input: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: JSON.stringify(safeContext) },
+      ],
+      text: { format: { type: "json_schema", name: "coach_recommendation", strict: true, schema: RESPONSE_SCHEMA } },
+    });
+
+    if (!response.output_text) throw new Error("AI Coach returned an empty response");
+    return parseCoachRecommendation(JSON.parse(response.output_text));
+  }
+}
