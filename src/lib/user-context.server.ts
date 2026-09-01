@@ -1,4 +1,3 @@
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -57,6 +56,9 @@ export interface CentralUserContext {
     importance: number;
     lastConfirmedAt: string | null;
   }>;
+  gaps: string[];
+  streakDays: number;
+  lastCheckin: { readiness_score: number | null; checkin_on: string } | null;
 }
 
 function normalizeGoal(goal: string | null): UserBiometricContext["activeGoal"] {
@@ -71,24 +73,9 @@ async function buildBiometricContext(
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: profile }, { data: nutritionLogs }, { data: activePlan }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("goal")
-      .eq("id", userId)
-      .maybeSingle(),
-    supabase
-      .from("nutrition_logs")
-      .select("calories, protein, carbs, fat")
-      .eq("user_id", userId)
-      .eq("logged_on", today),
-    supabase
-      .from("meal_plans")
-      .select("kcal_target, protein_target")
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    supabase.from("profiles").select("goal").eq("id", userId).maybeSingle(),
+    supabase.from("nutrition_logs").select("calories, protein, carbs, fat").eq("user_id", userId).eq("logged_on", today),
+    supabase.from("meal_plans").select("kcal_target, protein_target").eq("user_id", userId).eq("is_active", true).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
   const nutrition = (nutritionLogs ?? []).reduce(
@@ -114,16 +101,10 @@ async function buildBiometricContext(
 
   let recentWorkout: UserBiometricContext["recentWorkout"];
   if (session) {
-    const { data: sets } = await supabase
-      .from("set_logs")
-      .select("rpe, done")
-      .eq("user_id", userId)
-      .eq("session_id", session.id);
-
+    const { data: sets } = await supabase.from("set_logs").select("rpe, done").eq("user_id", userId).eq("session_id", session.id);
     const completedSets = (sets ?? []).filter((set) => set.done);
     const rpes = completedSets.map((set) => Number(set.rpe)).filter(Number.isFinite);
     const avgRpe = rpes.length ? rpes.reduce((a, b) => a + b, 0) / rpes.length : 7;
-
     recentWorkout = {
       date: session.started_at ?? session.created_at,
       focus: session.title || "Pilno kūno treniruotė",
@@ -150,41 +131,30 @@ async function buildBiometricContext(
       remainingCalories: Math.max(0, targetCalories - nutrition.calories),
       remainingProteinG: Math.max(0, targetProteinG - nutrition.proteinG),
     },
-    recentWorkout,
-    healthBiomarkers: health
+    ...(health
       ? {
-          recoveryScore: health.recovery_score,
-          restingHr: health.resting_hr,
-          hrvMs: health.hrv_ms,
-          sleepHours: health.sleep_hours,
-          notes: health.sleep_quality != null ? `Sleep quality: ${health.sleep_quality}/5` : undefined,
+          healthBiomarkers: {
+            recoveryScore: health.recovery_score,
+            restingHr: health.resting_hr,
+            hrvMs: health.hrv_ms,
+            sleepHours: health.sleep_hours,
+            ...(health.sleep_quality != null ? { notes: `Sleep quality: ${health.sleep_quality}/5` } : {}),
+          },
         }
-      : undefined,
+      : {}),
+    ...(recentWorkout ? { recentWorkout } : {}),
     activeGoal: normalizeGoal(profile?.goal ?? null),
   };
-}
-
-export async function getUserBiometricContext(): Promise<UserBiometricContext | null> {
-  try {
-    const { user, supabase } = await requireSupabaseAuth();
-    if (!user) return null;
-    return await buildBiometricContext(supabase, user.id);
-  } catch (err) {
-    console.warn("Could not retrieve full biometric context:", err);
-    return null;
-  }
 }
 
 export async function buildUserContext(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<CentralUserContext> {
-  const [{ data: profile }, { data: memory }, biometric] = await Promise.all([
+  const [{ data: profile }, { data: memory }, biometric, { data: checkin }, { data: sessions }] = await Promise.all([
     supabase
       .from("profiles")
-      .select(
-        "display_name, locale, goal, experience, height_cm, weight_kg, target_weight_kg, days_per_week, session_minutes, equipment, limitations, diet, allergies, dislikes, meals_per_day",
-      )
+      .select("display_name, locale, goal, experience, height_cm, weight_kg, target_weight_kg, days_per_week, session_minutes, equipment, limitations, diet, allergies, dislikes, meals_per_day")
       .eq("id", userId)
       .maybeSingle(),
     supabase
@@ -196,7 +166,26 @@ export async function buildUserContext(
       .order("last_confirmed_at", { ascending: false })
       .limit(30),
     buildBiometricContext(supabase, userId),
+    supabase.from("daily_checkins").select("readiness_score, checkin_on").eq("user_id", userId).order("checkin_on", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("workout_sessions").select("finished_at").eq("user_id", userId).not("finished_at", "is", null).order("finished_at", { ascending: false }).limit(60),
   ]);
+
+  const workoutDates = new Set((sessions ?? []).map((item) => item.finished_at?.slice(0, 10)).filter((value): value is string => Boolean(value)));
+  let streakDays = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 60; i += 1) {
+    const date = cursor.toISOString().slice(0, 10);
+    if (!workoutDates.has(date)) break;
+    streakDays += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  const gaps: string[] = [];
+  if (biometric.todayNutrition.calories <= 0) gaps.push("nutrition");
+  if (!checkin) gaps.push("readiness");
+  if (!biometric.recentWorkout) gaps.push("workout");
+  if (profile?.weight_kg == null) gaps.push("body_weight");
 
   return {
     profile: {
@@ -224,6 +213,9 @@ export async function buildUserContext(
       importance: Number(item.importance ?? 0),
       lastConfirmedAt: item.last_confirmed_at,
     })),
+    gaps,
+    streakDays,
+    lastCheckin: checkin ? { readiness_score: checkin.readiness_score, checkin_on: checkin.checkin_on } : null,
   };
 }
 
