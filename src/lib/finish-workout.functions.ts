@@ -32,6 +32,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     if (session.plan_id === null || session.day_index === null) {
       throw new Error("Workout session is missing active plan metadata.");
     }
+    const dayIndex = session.day_index;
 
     const plan = await getActivePlanData(supabase, userId);
     if (plan.status !== "READY" || plan.plan.id !== session.plan_id) {
@@ -41,7 +42,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
 
     const plannedDay = plan.plan.data.days.find(
-      (day) => day.day === session.day_index + 1,
+      (day) => day.day === dayIndex + 1,
     );
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found.");

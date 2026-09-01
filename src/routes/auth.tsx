@@ -17,10 +17,18 @@ function safeNext(value: unknown): string | undefined {
   return value;
 }
 
+function isAuthMode(value: unknown): value is "in" | "up" | "forgot" {
+  return value === "in" || value === "up" || value === "forgot";
+}
+
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>) => {
     const next = safeNext(s['next']);
-    return next ? { next } : {};
+    const mode = s["mode"];
+    return {
+      ...(next ? { next } : {}),
+      ...(isAuthMode(mode) ? { mode } : {}),
+    };
   },
   head: () => ({
     meta: [
@@ -63,21 +71,14 @@ function AuthPage() {
   const { t } = useI18n();
   const { user, loading, refresh } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up" | "forgot">(() => {
-    if (typeof window !== "undefined") {
-      const urlMode = new URLSearchParams(window.location.search).get("mode");
-      if (urlMode === "up") return "up";
-      if (urlMode === "forgot") return "forgot";
-    }
-    return "in";
-  });
+  const search = Route.useSearch();
+  const [mode, setMode] = useState<"in" | "up" | "forgot">(search.mode ?? "in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [sent, setSent] = useState(false);
-  const search = Route.useSearch() as { next?: string };
   const next = safeNext(search.next);
 
   const goNext = () => {

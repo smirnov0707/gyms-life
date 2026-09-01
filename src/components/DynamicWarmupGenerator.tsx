@@ -5,11 +5,9 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ExerciseVideo } from "./ExerciseVideo";
 import { getSmartWarmup } from "@/lib/coach-session.functions";
+import type { SmartWarmup } from "@/lib/coach-session.functions";
 import { useI18n } from "@/lib/i18n";
 import { aiErrorMessage } from "@/lib/ai-error";
-
-type Drill = { slug: string; name: string; dose: string; focus: string; why: string };
-type Warmup = { headline: string; minutes: number; drills: Drill[]; readiness: number | null };
 
 export interface DynamicWarmupGeneratorProps {
   focus?: string;
@@ -23,7 +21,7 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
 }) => {
   const { t, lang } = useI18n();
   const build = useServerFn(getSmartWarmup);
-  const [data, setData] = useState<Warmup | null>(null);
+  const [data, setData] = useState<SmartWarmup | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string[]>([]);
@@ -35,7 +33,7 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const res = (await build({ data: { focus, exercises, lang } })) as Warmup;
+      const res = await build({ data: { focus, exercises, lang } });
       setData(res);
       setDone([]);
     } catch (err) {
@@ -148,11 +146,12 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
               {data?.drills.find((d) => d.slug === videoSlug)?.name ?? t("w.watch")}
             </DialogTitle>
           </DialogHeader>
-          <ExerciseVideo
-            slug={videoSlug}
-            muscleGroup="mobility"
-            name={data?.drills.find((d) => d.slug === videoSlug)?.name ?? null}
-          />
+          {videoSlug && (
+            <ExerciseVideo
+              slug={videoSlug}
+              title={data?.drills.find((d) => d.slug === videoSlug)?.name ?? ""}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

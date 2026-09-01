@@ -11,21 +11,47 @@ export interface Achievement {
   maxProgress: number;
 }
 
+function calculateWorkoutStreak(workoutDates: string[]): number {
+  const dates = new Set(workoutDates.map((date) => date.slice(0, 10)));
+  const cursor = new Date();
+  let streak = 0;
+
+  while (true) {
+    const today = cursor.toISOString().slice(0, 10);
+    if (!dates.has(today)) {
+      if (streak === 0) {
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+        if (!dates.has(cursor.toISOString().slice(0, 10))) return 0;
+        continue;
+      }
+      return streak;
+    }
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+}
+
 export const getUserAchievements = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
-    const [{ data: profile }, { data: workouts }, { data: meals }] = await Promise.all([
-      supabase.from("profiles").select("streak_days").eq("id", userId).maybeSingle(),
-      supabase.from("workout_logs").select("total_volume_kg, created_at").eq("user_id", userId),
-      supabase.from("meal_logs").select("id").eq("user_id", userId),
+    const [{ data: workouts, error: workoutsError }, { data: meals, error: mealsError }] = await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("started_at, total_volume")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null)
+        .order("started_at", { ascending: false }),
+      supabase.from("vision_meal_scans").select("id").eq("user_id", userId),
     ]);
+    if (workoutsError || mealsError) throw new Error("Could not load achievement progress.");
 
-    const streak = profile?.streak_days || 1;
-    const totalWorkouts = (workouts || []).length;
-    const totalVolume = (workouts || []).reduce((acc, w) => acc + (Number(w.total_volume_kg) || 0), 0);
-    const totalMeals = (meals || []).length;
+    const completedWorkouts = workouts ?? [];
+    const streak = calculateWorkoutStreak(completedWorkouts.map((workout) => workout.started_at));
+    const totalWorkouts = completedWorkouts.length;
+    const totalVolume = completedWorkouts.reduce((total, workout) => total + Number(workout.total_volume), 0);
+    const totalMeals = (meals ?? []).length;
 
     const achievements: Achievement[] = [
       {

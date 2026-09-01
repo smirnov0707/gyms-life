@@ -2,25 +2,28 @@ import { createGroq } from "@ai-sdk/groq";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const groqClient = createGroq({
-  apiKey: process.env.GROQ_API_KEY || "",
+  apiKey: process.env["GROQ_API_KEY"] ?? "",
 });
 
 const googleClient = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
+  apiKey: process.env["GEMINI_API_KEY"] ?? "",
 });
 
 export function isAiConfigured(): boolean {
-  return Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY);
+  return Boolean(process.env["GROQ_API_KEY"] || process.env["GEMINI_API_KEY"]);
 }
 
 /**
  * Universalus AI modelių parinkiklis
  */
-export function createAiRouterProvider(sourceModule = "general") {
+export function createAiRouterProvider(_sourceModule = "general") {
   return (modelName: string) => {
-    if (modelName.includes("gemini") && process.env.GEMINI_API_KEY) {
+    if (modelName.includes("gemini") && process.env["GEMINI_API_KEY"]) {
       const cleanName = modelName.replace("google/", "");
       return googleClient(cleanName);
+    }
+    if (!process.env["GROQ_API_KEY"]) {
+      throw new Error("AI is not configured for the requested model.");
     }
     return groqClient("llama-3.3-70b-versatile");
   };
@@ -38,10 +41,10 @@ export async function askFastTextAi({
   jsonMode?: boolean;
   temperature?: number;
 }): Promise<string> {
-  const groqKey = process.env.GROQ_API_KEY;
+  const groqKey = process.env["GROQ_API_KEY"];
   if (!groqKey) {
     // Atsarginis variantas per Gemini, jei nėra Groq rakto
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) throw new Error("Nėra sukonfigūruotas nei GROQ_API_KEY, nei GEMINI_API_KEY");
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;

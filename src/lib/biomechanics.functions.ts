@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const BiomechanicsInput = z.object({
   image: z.string().min(10),
@@ -8,9 +9,10 @@ const BiomechanicsInput = z.object({
 });
 
 export const analyzeExerciseForm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => BiomechanicsInput.parse(data))
   .handler(async ({ data }) => {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return { ok: false, reason: "AI regos variklis nesukonfigūruotas." };
     }

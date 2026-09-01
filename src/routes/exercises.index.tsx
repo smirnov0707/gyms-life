@@ -39,7 +39,7 @@ export const Route = createFileRoute("/exercises/")({
  * Poster is the instant visual; the exact technique clip plays on hover.
  * Mobile/touch devices keep the poster and use Quick Preview.
  */
-function CardMedia({ video, poster, name }: { video: string | null; poster: string; name: string }) {
+function CardMedia({ video, poster, name }: { video: string | null; poster: string | null; name: string }) {
   const [hover, setHover] = useState(false);
   const [activated, setActivated] = useState(false);
 
@@ -54,19 +54,25 @@ function CardMedia({ video, poster, name }: { video: string | null; poster: stri
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setHover(false)}
     >
-      <img
-        src={poster}
-        alt={name}
-        loading="lazy"
-        className={`h-full w-full object-cover transition-transform duration-700 ${
-          hover ? "scale-[1.04]" : "scale-100"
-        }`}
-      />
+      {poster ? (
+        <img
+          src={poster}
+          alt={name}
+          loading="lazy"
+          className={`h-full w-full object-cover transition-transform duration-700 ${
+            hover ? "scale-[1.04]" : "scale-100"
+          }`}
+        />
+      ) : (
+        <div className="grid h-full w-full place-items-center bg-surface-2 p-4 text-center text-sm font-semibold text-muted-foreground">
+          {name}
+        </div>
+      )}
 
       {video && activated && (
         <video
           src={video}
-          poster={poster}
+          poster={poster ?? undefined}
           autoPlay={hover}
           muted
           loop
@@ -578,8 +584,8 @@ function ExercisesPage() {
       {/* V6 Exercise Library — video-first premium cards */}
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {list.map((e) => {
-          const video = exerciseVideo(e.slug, e.muscle_group, e.equipment);
-          const poster = exerciseVideoPoster(e.slug, e.muscle_group, e.equipment);
+          const video = exerciseVideo(e.slug);
+          const poster = exerciseVideoPoster(e.slug);
           const isFav = favorites.includes(e.slug);
           const name =
             (lang === "lt" ? e.name_lt : e.name_en) ||
@@ -685,11 +691,7 @@ function ExercisesPage() {
           {previewEx && (
             <ExerciseVideo
               slug={previewEx.slug}
-              muscleGroup={previewEx.group}
-              equipment={previewEx.equipment}
-              name={previewEx.name}
-              mistakes={previewEx.mistakes}
-              instructions={previewEx.instructions}
+              title={previewEx.name}
             />
           )}
         </DialogContent>

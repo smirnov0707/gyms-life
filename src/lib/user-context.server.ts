@@ -1,4 +1,3 @@
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -22,10 +21,10 @@ export interface UserBiometricContext {
     fatigueLevel: "low" | "medium" | "high";
   };
   healthBiomarkers?: {
-    recoveryScore?: number;
-    restingHr?: number;
-    hrvMs?: number;
-    sleepHours?: number;
+    recoveryScore?: number | null;
+    restingHr?: number | null;
+    hrvMs?: number | null;
+    sleepHours?: number | null;
     notes?: string;
   };
   activeGoal: "muscle_gain" | "fat_loss" | "recomp" | "strength";
@@ -141,6 +140,16 @@ async function buildBiometricContext(
     .limit(1)
     .maybeSingle();
 
+  const healthBiomarkers = health
+    ? {
+        recoveryScore: health.recovery_score,
+        restingHr: health.resting_hr,
+        hrvMs: health.hrv_ms,
+        sleepHours: health.sleep_hours,
+        ...(health.sleep_quality != null ? { notes: `Sleep quality: ${health.sleep_quality}/5` } : {}),
+      }
+    : undefined;
+
   return {
     userId,
     todayNutrition: {
@@ -150,28 +159,36 @@ async function buildBiometricContext(
       remainingCalories: Math.max(0, targetCalories - nutrition.calories),
       remainingProteinG: Math.max(0, targetProteinG - nutrition.proteinG),
     },
-    recentWorkout,
-    healthBiomarkers: health
-      ? {
-          recoveryScore: health.recovery_score,
-          restingHr: health.resting_hr,
-          hrvMs: health.hrv_ms,
-          sleepHours: health.sleep_hours,
-          notes: health.sleep_quality != null ? `Sleep quality: ${health.sleep_quality}/5` : undefined,
-        }
-      : undefined,
+    ...(recentWorkout ? { recentWorkout } : {}),
+    ...(healthBiomarkers ? { healthBiomarkers } : {}),
     activeGoal: normalizeGoal(profile?.goal ?? null),
   };
 }
 
-export async function getUserBiometricContext(): Promise<UserBiometricContext | null> {
-  try {
-    const { user, supabase } = await requireSupabaseAuth();
-    if (!user) return null;
-    return await buildBiometricContext(supabase, user.id);
-  } catch (err) {
-    console.warn("Could not retrieve full biometric context:", err);
-    return null;
+export async function getUserBiometricContext(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<UserBiometricContext> {
+  return buildBiometricContext(supabase, userId);
+}
+
+export function calculateWorkoutStreak(workoutDates: string[]): number {
+  const activeDates = new Set(workoutDates.map((date) => date.slice(0, 10)));
+  const cursor = new Date();
+  let streak = 0;
+
+  while (true) {
+    const date = cursor.toISOString().slice(0, 10);
+    if (!activeDates.has(date)) {
+      if (streak === 0) {
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+        if (!activeDates.has(cursor.toISOString().slice(0, 10))) return 0;
+        continue;
+      }
+      return streak;
+    }
+    streak += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
 }
 

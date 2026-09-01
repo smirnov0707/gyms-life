@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const VoiceLogInput = z.object({
   audioBase64: z.string().min(10),
@@ -9,18 +10,20 @@ const VoiceLogInput = z.object({
 });
 
 export const parseVoiceWorkoutLog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => VoiceLogInput.parse(data))
   .handler(async ({ data }) => {
-    const groqKey = process.env.GROQ_API_KEY;
+    const groqKey = process.env["GROQ_API_KEY"];
     if (!groqKey) {
       return { ok: false, reason: "Balso apdorojimo variklis nesukonfigūruotas." };
     }
 
     try {
       // 1. Dekoduojame audio buferį Whisper modeliui
-      const rawBase64 = data.audioBase64.includes(",") ? data.audioBase64.split(",")[1] : data.audioBase64;
-      const audioBuffer = Buffer.from(rawBase64, "base64");
-      const blob = new Blob([audioBuffer], { type: data.mimeType });
+      const commaIndex = data.audioBase64.indexOf(",");
+      const rawBase64 = commaIndex >= 0 ? data.audioBase64.slice(commaIndex + 1) : data.audioBase64;
+      const audioBytes = Uint8Array.from(Buffer.from(rawBase64, "base64"));
+      const blob = new Blob([audioBytes], { type: data.mimeType });
 
       const formData = new FormData();
       formData.append("file", blob, "workout-audio.webm");

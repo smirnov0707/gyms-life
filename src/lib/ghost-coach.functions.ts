@@ -2,22 +2,24 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 import { getUserBiometricContext } from "./user-context.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GhostCoachInput = z.object({
   lang: z.string().default("lt"),
 });
 
 export const getProactiveCoachInsight = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => GhostCoachInput.parse(data))
-  .handler(async ({ data }) => {
-    const context = await getUserBiometricContext();
+  .handler(async ({ data, context: auth }) => {
+    const context = await getUserBiometricContext(auth.supabase, auth.userId);
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
 
     const prompt = `Tu esi proaktyvus elitinis AI treneris „Ghost Coach“ platformoje GYMS.LIFE.
 Sportininko dabartinė būklė ir kontekstas:
-- Suvalgyta šiandien: ${context?.todayNutrition.calories || 0} kcal, ${context?.todayNutrition.proteinG || 0}g baltymų.
-- Tikslas: ${context?.activeGoal || "muscle_gain"}.
-- Paskutinė treniruotė: ${context?.recentWorkout?.focus || "Nėra duomenų"}, RPE: ${context?.recentWorkout?.avgRpe || 7}, Nuovargis: ${context?.recentWorkout?.fatigueLevel || "low"}.
+    - Suvalgyta šiandien: ${context.todayNutrition.calories} kcal, ${context.todayNutrition.proteinG}g baltymų.
+    - Tikslas: ${context.activeGoal}.
+    - Paskutinė treniruotė: ${context.recentWorkout?.focus ?? "Nėra duomenų"}, RPE: ${context.recentWorkout?.avgRpe ?? 7}, Nuovargis: ${context.recentWorkout?.fatigueLevel ?? "low"}.
 
 Sugeneruok trumpą, proaktyvią, profesionalią dienos įžvalgą sportininkui:
 Atsakyk TIK TIKSLIU JSON:

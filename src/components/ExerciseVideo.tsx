@@ -29,8 +29,9 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
     if (!el) return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInViewport(entry.isIntersecting);
+      (entries) => {
+        const entry = entries[0];
+        if (entry) setIsInViewport(entry.isIntersecting);
       },
       { threshold: 0.4 }
     );
@@ -112,7 +113,7 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
       ) : media.type === "frames" && media.frames && media.frames.length > 0 ? (
         <div className="relative w-full h-full">
           <img
-            src={media.frames[frameIndex]}
+            src={media.frames[frameIndex] ?? media.frames[0] ?? ""}
             alt={title || slug}
             className="w-full h-full object-cover transition-opacity duration-300 pointer-events-none"
             loading="lazy"

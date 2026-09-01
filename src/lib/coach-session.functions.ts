@@ -1,62 +1,71 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { askFastTextAi } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { generateJson } from "./ai-json.server";
+import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
 
 export const WARMUP_SLUGS = ["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"];
 
 const SmartWarmupInput = z.object({
-  targetMuscles: z.array(z.string()).min(1),
-  equipment: z.array(z.string()).default(["bodyweight"]),
-  durationMinutes: z.number().default(5),
-  lang: z.string().default("lt"),
+  focus: z.string().trim().max(160).default(""),
+  exercises: z.array(z.string().trim().min(1).max(120)).max(12).default([]),
+  lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt"),
 });
 
-export const getSmartWarmup = createServerFn({ method: "POST" })
-  .validator((data: unknown) => SmartWarmupInput.parse(data))
-  .handler(async ({ data }) => {
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
-    const prompt = `Tu esi sporto kineziterapeutas ir treneris platformoje GYMS.LIFE.
-Sukurk greitą dinaminio apšilimo protokolą šioms raumenų grupėms: ${data.targetMuscles.join(", ")}.
-Trukmė: ${data.durationMinutes} min.
-Įranga: ${data.equipment.join(", ")}.
+const SmartWarmupRecommendationSchema = z.object({
+  headline: z.string().trim().min(1).max(200),
+  minutes: z.coerce.number().int().min(3).max(20),
+  drills: z.array(z.object({
+    slug: z.string().trim().min(1).max(120),
+    name: z.string().trim().min(1).max(160),
+    dose: z.string().trim().min(1).max(80),
+    focus: z.string().trim().min(1).max(160),
+    why: z.string().trim().min(1).max(240),
+  })).min(2).max(6),
+});
 
-Atsakyk TIK TIKSLIU JSON formatu be markdown:
-{
-  "ok": true,
-  "routineTitle": "Dinaminio apšilimo kompleksas ${langName} kalba",
-  "totalDurationMinutes": ${data.durationMinutes},
-  "steps": [
-    {
-      "name": "Pratimo pavadinimas",
-      "durationOrReps": "60s arba 12 pakartojimų",
-      "focus": "Tikslinis sąnarys ar raumuo",
-      "instruction": "Trumpas atlikimo akcentas"
-    }
-  ]
-}`;
+export type SmartWarmup = z.infer<typeof SmartWarmupRecommendationSchema> & { readiness: number | null };
+
+function fallbackWarmup(lang: string, readiness: number | null): SmartWarmup {
+  const lithuanian = lang === "lt";
+  return {
+    headline: lithuanian ? "Dinaminis apšilimas" : "Dynamic warm-up",
+    minutes: 6,
+    readiness,
+    drills: [
+      { slug: "arm-circles", name: lithuanian ? "Rankų ratai" : "Arm circles", dose: "60s", focus: lithuanian ? "Pečiai ir mentės" : "Shoulders and scapulae", why: lithuanian ? "Aktyvina pečių juostą prieš apkrovą." : "Prepares the shoulder girdle for loading." },
+      { slug: "bodyweight-squats", name: lithuanian ? "Pritūpimai be svorio" : "Bodyweight squats", dose: "12 reps", focus: lithuanian ? "Klubai ir keliai" : "Hips and knees", why: lithuanian ? "Pakelia temperatūrą ir aktyvina apatinę kūno dalį." : "Raises temperature and activates the lower body." },
+      { slug: "plank", name: lithuanian ? "Lenta" : "Plank", dose: "30s", focus: lithuanian ? "Šerdis" : "Core", why: lithuanian ? "Suteikia liemens stabilumą pagrindiniams judesiams." : "Builds trunk stability for the main lifts." },
+    ],
+  };
+}
+
+export const getSmartWarmup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => SmartWarmupInput.parse(input))
+  .handler(async ({ data, context }): Promise<SmartWarmup> => {
+    const { data: latestCheckin } = await context.supabase
+      .from("daily_checkins")
+      .select("readiness_score")
+      .eq("user_id", context.userId)
+      .order("checkin_on", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const readiness = latestCheckin?.readiness_score ?? null;
+    const focus = data.focus || data.exercises.join(", ") || "full body";
 
     try {
-      const raw = await askFastTextAi({
-        messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
-          { role: "user", content: prompt },
-        ],
-        jsonMode: true,
-        temperature: 0.2,
+      const provider = createAiRouterProvider("coach-session.functions");
+      const recommendation = await generateJson(provider("google/gemini-2.5-flash"), {
+        system: "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
+        prompt: `Write in ${data.lang}. Build a 3-6 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
+        schema: SmartWarmupRecommendationSchema,
+        maxOutputTokens: 1200,
       });
-
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
-    } catch (err: any) {
-      return {
-        ok: true,
-        routineTitle: data.lang === "lt" ? "Standartinis dinaminis apšilimas" : "Standard Warmup Routine",
-        totalDurationMinutes: data.durationMinutes,
-        steps: [
-          { name: "Sąnarių mobilizacija", durationOrReps: "2 min", focus: "Bendras kūno aktyvavimas", instruction: "Ratai rankomis, klubų sukimai" },
-          { name: "Kūno svorio pritūpimai", durationOrReps: "15 pakartojimų", focus: "Kojos ir šerdis", instruction: "Pilna judesio amplitudė" },
-          { name: "Lenta (Plank)", durationOrReps: "45s", focus: "Šerdies aktyvavimas", instruction: "Įtemptas pilvo presas ir sėdmenys" },
-        ],
-      };
+      return { ...recommendation, readiness };
+    } catch (error) {
+      console.warn("Smart warm-up generation failed; using the deterministic fallback.", error);
+      return fallbackWarmup(data.lang, readiness);
     }
   });
 
@@ -70,6 +79,7 @@ const SetAdviceInput = z.object({
 });
 
 export const getSetAdvice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SetAdviceInput.parse(data))
   .handler(async ({ data }) => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
@@ -118,6 +128,7 @@ const DebriefInput = z.object({
 });
 
 export const getSessionDebrief = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => DebriefInput.parse(data))
   .handler(async ({ data }) => {
     const prompt = `Išanalizuok baigtos treniruotės duomenis:

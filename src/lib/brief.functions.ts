@@ -59,9 +59,13 @@ export type BriefAction = {
   priority: "high" | "medium" | "low";
 };
 
+function isBriefRoute(route: string): route is BriefRoute {
+  return BRIEF_ROUTES.some((allowedRoute) => allowedRoute === route);
+}
+
 export const getDailyBrief = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({ lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt") })
       .parse(input ?? {}),
@@ -126,10 +130,36 @@ RETURN EXACTLY THIS JSON SHAPE:
       throw new Error("Could not build today's brief. Try again.");
     }
 
-    const allowed = new Set<string>(BRIEF_ROUTES);
-    const actions = parsed.actions
-      .filter((a) => allowed.has(a.route))
-      .slice(0, 4) as BriefAction[];
+    const actions = parsed.actions.flatMap((action) =>
+      isBriefRoute(action.route) ? [{ ...action, route: action.route }] : [],
+    ).slice(0, 4);
+
+    const [{ data: recentWorkouts }, { data: latestCheckin }] = await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("started_at")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null)
+        .order("started_at", { ascending: false })
+        .limit(90),
+      supabase
+        .from("daily_checkins")
+        .select("checkin_on, readiness_score")
+        .eq("user_id", userId)
+        .order("checkin_on", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    const today = new Date().toISOString().slice(0, 10);
+    const workoutDates = (recentWorkouts ?? []).map((workout) => workout.started_at);
+    const { calculateWorkoutStreak } = await import("./user-context.server");
+    const gaps = [
+      ...(latestCheckin?.checkin_on === today ? [] : ["daily_readiness_checkin"]),
+      ...(snapshot.biometric.todayNutrition.calories > 0 ? [] : ["nutrition_logged_today"]),
+      ...(workoutDates.some((date) => Date.now() - new Date(date).getTime() <= 7 * 86_400_000)
+        ? []
+        : ["workout_last_7_days"]),
+    ];
 
     return {
       headline: parsed.headline,
@@ -138,8 +168,8 @@ RETURN EXACTLY THIS JSON SHAPE:
       signals: parsed.signals.slice(0, 5),
       actions,
       watchouts: parsed.watchouts.slice(0, 2),
-      gaps: snapshot.gaps,
-      streakDays: snapshot.streakDays,
-      readiness: snapshot.lastCheckin?.["readiness_score"] != null ? Number(snapshot.lastCheckin["readiness_score"]) : null,
+      gaps,
+      streakDays: calculateWorkoutStreak(workoutDates),
+      readiness: latestCheckin?.readiness_score ?? null,
     };
   });

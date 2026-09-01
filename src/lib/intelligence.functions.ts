@@ -14,15 +14,40 @@ export const getUserIntelligence = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = await buildUserContext(context.supabase, context.userId);
-    const workouts = ctx.recentWorkouts;
-    const checkins = ctx.recentCheckins;
-    const metrics = ctx.recentBodyMetrics;
+    const [{ data: workouts, error: workoutsError }, { data: checkins, error: checkinsError }, { data: metrics, error: metricsError }] = await Promise.all([
+      context.supabase
+        .from("workout_sessions")
+        .select("started_at")
+        .eq("user_id", context.userId)
+        .not("finished_at", "is", null)
+        .order("started_at", { ascending: false })
+        .limit(90),
+      context.supabase
+        .from("daily_checkins")
+        .select("readiness_score")
+        .eq("user_id", context.userId)
+        .order("checkin_on", { ascending: false })
+        .limit(14),
+      context.supabase
+        .from("body_metrics")
+        .select("weight_kg")
+        .eq("user_id", context.userId)
+        .order("measured_on", { ascending: false })
+        .limit(24),
+    ]);
+    if (workoutsError || checkinsError || metricsError) {
+      throw new Error("Could not calculate user intelligence.");
+    }
 
-    const readiness = avg(checkins.map((x) => Number(x.readiness_score)).filter(Number.isFinite));
-    const lastWorkout = workouts[0]?.started_at ?? null;
-    const workouts7d = workouts.filter((x) => Date.now() - new Date(x.started_at).getTime() <= 7 * 86400000).length;
-    const workouts28d = workouts.filter((x) => Date.now() - new Date(x.started_at).getTime() <= 28 * 86400000).length;
-    const weights = metrics.map((x) => Number(x.weight_kg)).filter(Number.isFinite);
+    const completedWorkouts = workouts ?? [];
+    const recentCheckins = checkins ?? [];
+    const bodyMetrics = metrics ?? [];
+
+    const readiness = avg(recentCheckins.flatMap((checkin) => checkin.readiness_score === null ? [] : [checkin.readiness_score]));
+    const lastWorkout = completedWorkouts[0]?.started_at ?? null;
+    const workouts7d = completedWorkouts.filter((workout) => Date.now() - new Date(workout.started_at).getTime() <= 7 * 86_400_000).length;
+    const workouts28d = completedWorkouts.filter((workout) => Date.now() - new Date(workout.started_at).getTime() <= 28 * 86_400_000).length;
+    const weights = bodyMetrics.flatMap((metric) => metric.weight_kg === null ? [] : [metric.weight_kg]);
     const weightDelta = weights.length >= 2 ? weights[0]! - weights[weights.length - 1]! : null;
 
     const insights: Array<{ type: string; severity: "info" | "positive" | "attention"; title: string; body: string; fingerprint: string }> = [];

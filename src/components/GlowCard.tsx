@@ -6,7 +6,7 @@ export function GlowCard({
   className,
   glowColor = "var(--primary-glow)",
 }: {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
   glowColor?: string;
 }) {

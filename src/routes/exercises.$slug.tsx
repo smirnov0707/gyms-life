@@ -80,8 +80,8 @@ function ExerciseDetail() {
                 "@type": "VideoObject",
                 name: `${name} — technika`,
                 description: instructions || `${name} technikos demonstracija.`,
-                thumbnailUrl: `https://gyms.life${exerciseVideoPoster(ex.slug, ex.muscle_group, ex.equipment)}`,
-                contentUrl: `https://gyms.life${exerciseVideo(ex.slug, ex.muscle_group, ex.equipment)}`,
+                thumbnailUrl: exerciseVideoPoster(ex.slug) ? `https://gyms.life${exerciseVideoPoster(ex.slug)}` : undefined,
+                contentUrl: exerciseVideo(ex.slug) ? `https://gyms.life${exerciseVideo(ex.slug)}` : undefined,
                 uploadDate: ex.created_at ?? undefined,
               },
               ...(steps.length
@@ -112,7 +112,7 @@ function ExerciseDetail() {
 
       <div className="mt-4 grid gap-8 lg:grid-cols-[3fr_2fr]">
         <div>
-          <ExerciseVideo slug={ex.slug} muscleGroup={ex.muscle_group} equipment={ex.equipment} name={name} mistakes={mistakes} />
+          <ExerciseVideo slug={ex.slug} title={name} />
         </div>
         <div>
           <h1 className="text-4xl sm:text-5xl font-black">{name}</h1>

@@ -312,9 +312,11 @@ export type Database = {
           dislikes: string | null
           fat_target: number | null
           goal: string | null
+          i18n: Json
           id: string
           is_active: boolean
           kcal_target: number | null
+          lang: string
           protein_target: number | null
           title: string
           updated_at: string
@@ -329,9 +331,11 @@ export type Database = {
           dislikes?: string | null
           fat_target?: number | null
           goal?: string | null
+          i18n?: Json
           id?: string
           is_active?: boolean
           kcal_target?: number | null
+          lang?: string
           protein_target?: number | null
           title: string
           updated_at?: string
@@ -346,9 +350,11 @@ export type Database = {
           dislikes?: string | null
           fat_target?: number | null
           goal?: string | null
+          i18n?: Json
           id?: string
           is_active?: boolean
           kcal_target?: number | null
+          lang?: string
           protein_target?: number | null
           title?: string
           updated_at?: string
@@ -542,6 +548,66 @@ export type Database = {
         }
         Relationships: []
       }
+      readiness_checkins: {
+        Row: {
+          created_at: string
+          energy: number
+          id: string
+          score: number
+          sleep_hours: number
+          soreness: string
+          stress: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy: number
+          id?: string
+          score: number
+          sleep_hours: number
+          soreness: string
+          stress: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy?: number
+          id?: string
+          score?: number
+          sleep_hours?: number
+          soreness?: string
+          stress?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          evening_recovery: boolean
+          pre_workout_alert: boolean
+          updated_at: string
+          user_id: string
+          water_reminders: boolean
+          workout_time: string
+        }
+        Insert: {
+          evening_recovery?: boolean
+          pre_workout_alert?: boolean
+          updated_at?: string
+          user_id: string
+          water_reminders?: boolean
+          workout_time?: string
+        }
+        Update: {
+          evening_recovery?: boolean
+          pre_workout_alert?: boolean
+          updated_at?: string
+          user_id?: string
+          water_reminders?: boolean
+          workout_time?: string
+        }
+        Relationships: []
+      }
       set_logs: {
         Row: {
           created_at: string
@@ -682,6 +748,48 @@ export type Database = {
           updated_at?: string
           user_id?: string
           with_food?: boolean
+        }
+        Relationships: []
+      }
+      user_insights: {
+        Row: {
+          body: string
+          created_at: string
+          fingerprint: string
+          id: string
+          insight_type: string
+          severity: string
+          source: Json
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          fingerprint: string
+          id?: string
+          insight_type: string
+          severity: string
+          source?: Json
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          insight_type?: string
+          severity?: string
+          source?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -882,7 +990,7 @@ export type Database = {
     }
     Functions: {
       consume_ai_quota: {
-        Args: { p_limit?: number; p_user_id: string }
+        Args: { p_limit: number; p_user_id: string }
         Returns: boolean
       }
       has_active_subscription: {

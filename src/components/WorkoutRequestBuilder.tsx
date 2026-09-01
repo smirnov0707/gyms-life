@@ -80,7 +80,7 @@ export function WorkoutRequestBuilder() {
     if (q.length < 3) return;
     setBusy(true);
     try {
-      const r = (await build({ data: { request: q, lang, minutes } })) as RequestedWorkout;
+      const r = await build({ data: { request: q, lang: lang === "lt" ? "lt" : "en", minutes } });
       setResult(r);
     } catch {
       toast.error(l.error);

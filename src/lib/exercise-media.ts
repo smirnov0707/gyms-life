@@ -4206,21 +4206,24 @@ export function getExerciseMedia(slug: string): ExerciseMediaResult {
   if (!slug) return { type: "fallback", isAvailable: false };
   const cleanSlug = slug.toLowerCase().trim();
 
-  if (VIDEO_MAP[cleanSlug]) {
+  const videoUrl = VIDEO_MAP[cleanSlug];
+  if (videoUrl) {
+    const posterUrl = EXERCISE_DB_FRAMES[cleanSlug]?.[0];
     return {
       type: "video",
-      videoUrl: VIDEO_MAP[cleanSlug],
-      posterUrl: EXERCISE_DB_FRAMES[cleanSlug]?.[0],
+      videoUrl,
+      ...(posterUrl ? { posterUrl } : {}),
       isAvailable: true,
     };
   }
 
-  if (EXERCISE_DB_FRAMES[cleanSlug] && EXERCISE_DB_FRAMES[cleanSlug].length > 0) {
-    const frames = EXERCISE_DB_FRAMES[cleanSlug];
+  const frames = EXERCISE_DB_FRAMES[cleanSlug];
+  if (frames && frames.length > 0) {
+    const posterUrl = frames[0];
     return {
       type: "frames",
-      frames: frames,
-      posterUrl: frames[0],
+      frames,
+      ...(posterUrl ? { posterUrl } : {}),
       isAvailable: true,
     };
   }

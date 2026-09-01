@@ -1,15 +1,34 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SupplementVisionInput = z.object({
   image: z.string().min(10),
   lang: z.string().default("lt"),
 });
 
+const SupplementProductSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  dose: z.string().trim().max(120).default(""),
+  category: z.string().trim().min(1).max(80),
+  timesPerDay: z.coerce.number().int().min(1).max(6).default(1),
+  withFood: z.boolean().default(false),
+  preferredTime: z.enum(["any", "morning", "pre_workout", "post_workout", "evening", "bedtime"]).default("any"),
+  notes: z.string().trim().max(500).default(""),
+  confidence: z.coerce.number().int().min(0).max(100).default(0),
+  readable: z.string().trim().max(500).default(""),
+});
+
+const SupplementVisionResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), products: z.array(SupplementProductSchema).min(1).max(8) }),
+  z.object({ ok: z.literal(false), reason: z.string().trim().min(1).max(300) }),
+]);
+
 export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SupplementVisionInput.parse(data))
   .handler(async ({ data }) => {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return {
         ok: false,
@@ -31,15 +50,17 @@ Jei nuotraukoje NĖRA papildo ar etiketė neįskaitoma:
 Jei papildas atpažintas:
 {
   "ok": true,
-  "productName": "Papildo pavadinimas ir gamintojas",
-  "category": "Kreatinas / Baltymai / Vitaminai / Pre-workout / Kita",
-  "activeIngredients": [
-    {"name": "Veiklioji medžiaga", "amount": "5g", "purpose": "Kam skirta"}
-  ],
-  "dosageRecommendation": "Optimali vartojimo dozė sportininkui ${langName} kalba",
-  "timing": "Prieš treniruotę / Ryte / Po treniruotės",
-  "warnings": "Įspėjimai dėl šalutinio poveikio ar sąveikos",
-  "verdictScore": 92
+  "products": [{
+    "name": "Papildo pavadinimas ir gamintojas",
+    "dose": "5 g",
+    "category": "creatine | protein | vitamin | mineral | iron | calcium | omega | preworkout | electrolyte | probiotic | general",
+    "timesPerDay": 1,
+    "withFood": false,
+    "preferredTime": "any | morning | pre_workout | post_workout | evening | bedtime",
+    "notes": "Trumpas saugus vartojimo kontekstas ${langName} kalba",
+    "confidence": 92,
+    "readable": "Etiketės tekstas arba tuščia eilutė"
+  }]
 }
 Atsakyk TIK TIKSLIU JSON be jokio markdown.`;
 
@@ -88,8 +109,11 @@ Atsakyk TIK TIKSLIU JSON be jokio markdown.`;
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
 
-      return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
-    } catch (err: any) {
-      return { ok: false, reason: err.message || "Apdorojimo klaida." };
+      return SupplementVisionResultSchema.parse(JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim()));
+    } catch (error) {
+      return {
+        ok: false,
+        reason: error instanceof Error && error.message ? error.message : "Apdorojimo klaida.",
+      };
     }
   });

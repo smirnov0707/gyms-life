@@ -8,9 +8,10 @@ const AnalyzeInput = z.object({
 });
 
 export const analyzeMealPhoto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => AnalyzeInput.parse(data))
   .handler(async ({ data }) => {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return {
         ok: false,
@@ -119,22 +120,22 @@ const SaveInput = z.object({
 });
 
 export const savePhotoMeal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SaveInput.parse(data))
-  .handler(async ({ data }) => {
-    const { user, supabase } = await requireSupabaseAuth();
-    if (!user) throw new Error("UNAUTHORIZED");
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().slice(0, 10);
     const { error } = await supabase.from("nutrition_logs").insert({
-      user_id: user.id,
+      user_id: userId,
       logged_on: today,
-      meal_type: "lunch",
-      name: data.dishName,
+      food_name: data.dishName,
+      description: data.note ?? "Scanned with the AI Vision Scanner",
       calories: data.calories,
-      protein_g: data.protein,
-      carbs_g: data.carbs,
-      fat_g: data.fat,
-      notes: data.note ?? "Nuskaityta su AI Vision Scanner",
+      protein: data.protein,
+      carbs: data.carbs,
+      fat: data.fat,
+      note: data.note ?? "Nuskaityta su AI Vision Scanner",
     });
 
     if (error) throw new Error(error.message);
@@ -147,9 +148,10 @@ const RecommendMenuInput = z.object({
 });
 
 export const recommendMenu = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => RecommendMenuInput.parse(data))
   .handler(async ({ data }) => {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return { ok: false, reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas." : "AI engine not configured." };
     }
