@@ -1,25 +1,73 @@
-import { getPerformanceOverview } from "./performance.functions";
-import { getProgressIntelligence } from "./progress-intelligence.functions";
 import { createCoachContext, type CoachContext } from "./ai-coach.contract";
 
-export async function buildCoachContext(input: { userId: string; goal?: string | null; activePlan?: { id: string; title: string; dayIndex?: number | null } | null; supabase: Parameters<typeof getPerformanceOverview>[0] extends never ? never : any }): Promise<CoachContext> {
-  const [performance, intelligence] = await Promise.all([
-    getPerformanceOverview(),
-    getProgressIntelligence(),
-  ]);
+type PerformanceSummary = {
+  workouts: number;
+  totalVolume: number;
+  totalSets: number;
+  totalReps: number;
+  averageRpe: number | null;
+  exercises: Array<{
+    exerciseSlug: string;
+    exerciseName: string;
+    sessions: number;
+    totalSets: number;
+    totalReps: number;
+    totalVolume: number;
+    bestWeightKg: number | null;
+    bestReps: number | null;
+    bestEstimated1RMKg: number | null;
+    averageRpe: number | null;
+    latest: { date: string; weightKg: number | null; reps: number | null; rpe: number | null; estimated1RMKg: number | null } | null;
+  }>;
+};
 
-  if (performance.status !== "READY") throw new Error("Performance context is unavailable");
-  if (intelligence.status === "NO_DATA") {
-    return createCoachContext({ user: { id: input.userId }, generatedAt: new Date().toISOString(), goal: input.goal ?? null, activePlan: input.activePlan ?? null, performance: { workouts: 0, totalVolumeKg: 0, totalSets: 0, totalReps: 0, averageRpe: null }, insights: [], exercises: [] });
-  }
+type ProgressInsight = {
+  exerciseSlug: string;
+  exerciseName: string;
+  insight: {
+    signal: "PROGRESSING" | "STAGNATING" | "FATIGUE_RISK" | "INSUFFICIENT_DATA";
+    confidence: number;
+    evidence: Array<{ metric: string; value: string | number }>;
+    explanation: string;
+    recommendation: string;
+  };
+};
 
+/**
+ * Pure orchestration adapter. It accepts already-authorized, normalized data
+ * from internal server-side loaders and never talks to Supabase or an AI provider.
+ */
+export function buildCoachContext(input: {
+  userId: string;
+  goal?: string | null;
+  activePlan?: { id: string; title: string; dayIndex?: number | null } | null;
+  performance: PerformanceSummary;
+  insights: ProgressInsight[];
+}): CoachContext {
   return createCoachContext({
     user: { id: input.userId },
     generatedAt: new Date().toISOString(),
     goal: input.goal ?? null,
     activePlan: input.activePlan ?? null,
-    performance: { workouts: performance.metrics.workouts, totalVolumeKg: performance.metrics.totalVolume, totalSets: performance.metrics.totalSets, totalReps: performance.metrics.totalReps, averageRpe: performance.metrics.averageRpe },
-    insights: intelligence.insights.map(({ exerciseSlug, exerciseName, insight }) => ({ exerciseSlug, exerciseName, signal: insight.signal, confidence: insight.confidence, evidence: insight.evidence, explanation: insight.explanation, recommendation: insight.recommendation })),
-    exercises: performance.exercises.map((exercise) => ({ ...exercise, totalVolumeKg: exercise.totalVolume })),
+    performance: {
+      workouts: input.performance.workouts,
+      totalVolumeKg: input.performance.totalVolume,
+      totalSets: input.performance.totalSets,
+      totalReps: input.performance.totalReps,
+      averageRpe: input.performance.averageRpe,
+    },
+    insights: input.insights.map(({ exerciseSlug, exerciseName, insight }) => ({
+      exerciseSlug,
+      exerciseName,
+      signal: insight.signal,
+      confidence: insight.confidence,
+      evidence: insight.evidence,
+      explanation: insight.explanation,
+      recommendation: insight.recommendation,
+    })),
+    exercises: input.performance.exercises.map((exercise) => ({
+      ...exercise,
+      totalVolumeKg: exercise.totalVolume,
+    })),
   });
 }
