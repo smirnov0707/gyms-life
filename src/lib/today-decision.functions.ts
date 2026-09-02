@@ -1,0 +1,29 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { TodayDecisionOutcomeSchema } from "./today-decision.schema";
+
+const RecordOutcomeInputSchema = z
+  .object({
+    decisionId: z.string().uuid(),
+    outcome: TodayDecisionOutcomeSchema,
+  })
+  .strict();
+
+/** Returns the server-owned, deterministic primary action for the current day. */
+export const getTodayDecision = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { getOrCreateTodayDecision } = await import("./today-decision.server");
+    return getOrCreateTodayDecision(context.supabase, context.userId);
+  });
+
+/** Stores an explicit user outcome without granting browser writes to audit tables. */
+export const recordTodayDecisionOutcome = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => RecordOutcomeInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { recordTodayDecisionOutcome: storeOutcome } = await import("./today-decision.server");
+    await storeOutcome(context.supabase, context.userId, data.decisionId, data.outcome);
+    return { ok: true };
+  });

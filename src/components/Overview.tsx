@@ -29,6 +29,7 @@ import { CoachDock } from "@/components/CoachDock";
 import { SmartBrief } from "@/components/SmartBrief";
 import { ReadinessBanner } from "@/components/ReadinessBanner";
 import { ReadinessCard } from "@/components/ReadinessCard";
+import { TodayDecision } from "@/components/TodayDecision";
 
 import { useCountUp } from "@/hooks/use-count-up";
 import { withTactile } from "@/lib/tactile";
@@ -352,6 +353,8 @@ export function Overview() {
           isAdjusted={adaptation != null}
         />
       )}
+
+      <TodayDecision workoutDay={today?.day ?? null} />
 
       {/* Greeting + readiness ring */}
       <section

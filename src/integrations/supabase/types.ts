@@ -212,6 +212,129 @@ export type Database = {
         }
         Relationships: []
       }
+      decision_evidence: {
+        Row: {
+          created_at: string
+          decision_id: string
+          evidence_key: string
+          evidence_value: string
+          id: string
+          position: number
+          source_class: string
+        }
+        Insert: {
+          created_at?: string
+          decision_id: string
+          evidence_key: string
+          evidence_value: string
+          id?: string
+          position: number
+          source_class: string
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string
+          evidence_key?: string
+          evidence_value?: string
+          id?: string
+          position?: number
+          source_class?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_evidence_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decision_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_outcomes: {
+        Row: {
+          decision_id: string
+          id: string
+          outcome: string
+          recorded_at: string
+        }
+        Insert: {
+          decision_id: string
+          id?: string
+          outcome: string
+          recorded_at?: string
+        }
+        Update: {
+          decision_id?: string
+          id?: string
+          outcome?: string
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_outcomes_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: true
+            referencedRelation: "decision_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_records: {
+        Row: {
+          action: string
+          alternatives: string[]
+          athlete_state_snapshot_id: string
+          confidence: number
+          created_at: string
+          decision_on: string
+          decision_fingerprint: string
+          decision_type: string
+          engine_version: string
+          id: string
+          safety_constraints: string[]
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          alternatives?: string[]
+          athlete_state_snapshot_id: string
+          confidence: number
+          created_at?: string
+          decision_on: string
+          decision_fingerprint: string
+          decision_type?: string
+          engine_version: string
+          id?: string
+          safety_constraints?: string[]
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          alternatives?: string[]
+          athlete_state_snapshot_id?: string
+          confidence?: number
+          created_at?: string
+          decision_on?: string
+          decision_fingerprint?: string
+          decision_type?: string
+          engine_version?: string
+          id?: string
+          safety_constraints?: string[]
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_records_athlete_state_snapshot_id_fkey"
+            columns: ["athlete_state_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_state_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           created_at: string

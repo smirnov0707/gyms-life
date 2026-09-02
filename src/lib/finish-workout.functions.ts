@@ -104,6 +104,9 @@ export const finishWorkout = createServerFn({ method: "POST" })
       );
     }
 
+    const { completeCurrentTrainingDecision } = await import("./today-decision.server");
+    await completeCurrentTrainingDecision(userId, finishedAt);
+
     return {
       ok: true,
       session: updated,
