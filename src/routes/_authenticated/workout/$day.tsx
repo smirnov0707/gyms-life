@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, Clock, Dumbbell, Loader2, TimerReset, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,13 @@ import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { startWorkout } from "@/lib/start-workout.functions";
 import { logWorkoutSet } from "@/lib/set-log.functions";
 import { finishWorkout } from "@/lib/finish-workout.functions";
+import {
+  flushOfflineWorkoutSets,
+  hasQueuedWorkoutSets,
+  isNetworkUnavailable,
+  queueWorkoutSet,
+  type WorkoutSetSync,
+} from "@/lib/offline-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
@@ -26,6 +33,18 @@ function WorkoutPage() {
   const [rest, setRest] = useState(0);
   const [finished, setFinished] = useState(false);
   const [summary, setSummary] = useState<{ duration: number; volume: number } | null>(null);
+
+  const syncQueuedSets = useCallback(async () => {
+    const result = await flushOfflineWorkoutSets((input) => logWorkoutSet({ data: input }));
+    if (result.synced > 0) {
+      toast.success(
+        result.synced === 1
+          ? "Išsaugota 1 anksčiau neprisijungus įrašyta serija."
+          : `Išsaugotos ${result.synced} anksčiau neprisijungus įrašytos serijos.`,
+      );
+    }
+    return result;
+  }, []);
 
   const workoutQuery = useQuery({
     queryKey: ["workout", dayNumber],
@@ -57,28 +76,44 @@ function WorkoutPage() {
       toast.error(error instanceof Error ? error.message : "Nepavyko pradėti treniruotės"),
   });
 
+  const buildSetInput = (): WorkoutSetSync => {
+    if (!sessionId) throw new Error("Workout session is not started.");
+    const exercise =
+      workoutQuery.data?.status === "READY"
+        ? workoutQuery.data.workout.exercises[exerciseIndex]
+        : null;
+    if (!exercise) throw new Error("Exercise not found.");
+
+    return {
+      sessionId,
+      exerciseSlug: exercise.slug,
+      exerciseName: exercise.name,
+      setNumber,
+      reps: reps ? Number(reps) : null,
+      weightKg: weight ? Number(weight) : null,
+      rpe: rpe ? Number(rpe) : null,
+      done: true,
+    };
+  };
+
   const logMutation = useMutation({
-    mutationFn: () => {
-      if (!sessionId) throw new Error("Workout session is not started.");
-      const exercise =
-        workoutQuery.data?.status === "READY"
-          ? workoutQuery.data.workout.exercises[exerciseIndex]
-          : null;
-      if (!exercise) throw new Error("Exercise not found.");
-      return logWorkoutSet({
-        data: {
-          sessionId,
-          exerciseSlug: exercise.slug,
-          exerciseName: exercise.name,
-          setNumber,
-          reps: reps ? Number(reps) : null,
-          weightKg: weight ? Number(weight) : null,
-          rpe: rpe ? Number(rpe) : null,
-          done: true,
-        },
-      });
+    mutationFn: async () => {
+      const input = buildSetInput();
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        queueWorkoutSet(input);
+        return { queued: true };
+      }
+
+      try {
+        const result = await logWorkoutSet({ data: input });
+        return { ...result, queued: false };
+      } catch (error) {
+        if (!isNetworkUnavailable(error)) throw error;
+        queueWorkoutSet(input);
+        return { queued: true };
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       setReps("");
       setWeight("");
       setRpe("");
@@ -88,14 +123,25 @@ function WorkoutPage() {
           : 0,
       );
       setSetNumber((n) => n + 1);
+      if (result.queued) {
+        toast.info("Serija išsaugota šiame įrenginyje ir bus persiųsta atkūrus ryšį.");
+      }
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "Nepavyko išsaugoti seto"),
   });
 
   const finishMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!sessionId) throw new Error("Workout session is not started.");
+      if (hasQueuedWorkoutSets(sessionId)) {
+        await syncQueuedSets();
+        if (hasQueuedWorkoutSets(sessionId)) {
+          throw new Error(
+            "Atkurkite ryšį, kad prieš užbaigiant treniruotę būtų išsaugotos serijos.",
+          );
+        }
+      }
       return finishWorkout({ data: { sessionId } });
     },
     onSuccess: (result) => {
@@ -115,6 +161,13 @@ function WorkoutPage() {
     const timer = window.setInterval(() => setRest((seconds) => Math.max(0, seconds - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [rest]);
+
+  useEffect(() => {
+    void syncQueuedSets();
+    const onOnline = () => void syncQueuedSets();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [syncQueuedSets]);
 
   const workout = workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null;
   const exercise = workout?.exercises[exerciseIndex];

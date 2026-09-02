@@ -14,6 +14,9 @@ const Input = z.object({
   done: z.boolean().default(true),
 });
 
+const setLogSelect =
+  "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
+
 export const logWorkoutSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
@@ -58,7 +61,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
 
     const { data: duplicate, error: duplicateError } = await supabase
       .from("set_logs")
-      .select("id")
+      .select(setLogSelect)
       .eq("session_id", session.id)
       .eq("exercise_slug", data.exerciseSlug)
       .eq("set_number", data.setNumber)
@@ -68,7 +71,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Set lookup failed: " + duplicateError.message);
     }
     if (duplicate) {
-      throw new Error("This set has already been logged.");
+      return { ok: true, setLog: duplicate, alreadyLogged: true };
     }
 
     const { data: setLog, error } = await supabase
@@ -84,14 +87,29 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
         rpe: data.rpe ?? null,
         done: data.done,
       })
-      .select(
-        "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at",
-      )
+      .select(setLogSelect)
       .single();
 
-    if (error || !setLog) {
-      throw new Error("Could not save set: " + (error?.message ?? "unknown error"));
+    if (!error && setLog) {
+      return { ok: true, setLog, alreadyLogged: false };
     }
 
-    return { ok: true, setLog };
+    if (error?.code === "23505") {
+      const { data: existing, error: existingError } = await supabase
+        .from("set_logs")
+        .select(setLogSelect)
+        .eq("session_id", session.id)
+        .eq("exercise_slug", data.exerciseSlug)
+        .eq("set_number", data.setNumber)
+        .maybeSingle();
+
+      if (existingError) {
+        throw new Error("Set retry lookup failed: " + existingError.message);
+      }
+      if (existing) {
+        return { ok: true, setLog: existing, alreadyLogged: true };
+      }
+    }
+
+    throw new Error("Could not save set: " + (error?.message ?? "unknown error"));
   });

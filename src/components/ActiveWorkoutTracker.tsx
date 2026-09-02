@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { VoiceSetLogger } from "./VoiceSetLogger";
 import { useI18n } from "@/lib/i18n";
-import { queueOfflineItem } from "@/lib/offline-store";
 
 interface WorkoutSet {
   id: string;
@@ -78,12 +77,6 @@ export const ActiveWorkoutTracker: React.FC = () => {
     };
 
     setSets((prev) => [newSet, ...prev]);
-
-    // Išsaugome į vietinę atmintį
-    queueOfflineItem({
-      type: "workout_set",
-      data: newSet,
-    });
 
     // Paleidžiame poilsio laikmatį
     const rest = data.suggestedRestSeconds || 90;
