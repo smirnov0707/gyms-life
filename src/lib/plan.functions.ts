@@ -5,6 +5,7 @@ import { generateJson } from "./ai-json.server";
 import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
 import { buildUserContext, contextForAi } from "./user-context.server";
 import { serializeJson } from "./json.schema";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { TrainingPlanDataSchema } from "./training-plan.schema";
 
 // Draft/activation lifecycle: generation never changes the user's active program.
@@ -23,7 +24,7 @@ const IntakeSchema = z.object({
   weightKg: z.number().nullable().optional(),
   targetWeightKg: z.number().nullable().optional(),
   limitations: z.string().nullable().optional(),
-  lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 export type Intake = z.infer<typeof IntakeSchema>;
 const text = (fallback = "") =>
@@ -83,7 +84,7 @@ export const generatePlan = createServerFn({ method: "POST" })
             )
             .join("\n")
         : `bench-press | Barbell Bench Press / Spaudimas štanga | chest | barbell\nsquat | Barbell Squat / Pritūpimai su štanga | legs | barbell\ndeadlift | Barbell Deadlift / Mirties trauka | back | barbell\npull-up | Pull Up / Prisitraukimai | back | bodyweight\npush-up | Push Up / Atsispaudimai | chest | bodyweight\nlunge | Dumbbell Lunge / Įtūpstai su hanteliais | legs | dumbbell\nplank | Plank / Lenta | core | bodyweight`;
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const langName = LANGUAGE_NAMES[data.lang];
     const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
     const provider = createAiRouterProvider("plan.functions");
     const generated = await generateJson(provider("google/gemini-2.5-flash"), {
@@ -133,7 +134,7 @@ export const askCoach = createServerFn({ method: "POST" })
     z
       .object({
         question: z.string().min(1).max(1000),
-        lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt"),
+        lang: SupportedLanguageSchema.default("lt"),
       })
       .parse(input),
   )
@@ -153,7 +154,7 @@ export const askCoach = createServerFn({ method: "POST" })
       .reverse()
       .map((m) => `${m.role === "user" ? "Client" : "Coach"}: ${m.content}`)
       .join("\n");
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const langName = LANGUAGE_NAMES[data.lang];
     const system = `Tu esi GYMS.LIFE, draugiškas, bet reiklus ir moksliškai pagrįstas jėgos treneris.\nAtsakyk ${langName} kalba. Būk konkretus, lakoniškas (iki 150 žodžių), praktiškas.\nNeteik medicininių diagnozių, nukreipk pas gydytoją esant skausmui ar traumai.\nAtsakymuose remkis kliento duomenimis.\n\nKLIENTO BIOMETRIJA IR TELEMETRIJA:\n${contextForAi(snapshot)}\n${priorTurns ? `\nPaskutinis pokalbis:\n${priorTurns}` : ""}`;
     const answer = await askFastTextAi({
       userId,

@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { translateMealPlan } from "./meal-i18n.server";
 import { serializeJson } from "./json.schema";
 import { GeneratedMealPlanSchema, MealPlanTranslationCacheSchema } from "./meal-plan.schema";
+import { SupportedLanguageSchema } from "./language.schema";
 
 export const localizeMealPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -11,7 +12,7 @@ export const localizeMealPlan = createServerFn({ method: "POST" })
     z
       .object({
         planId: z.string().uuid(),
-        lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]),
+        lang: SupportedLanguageSchema,
       })
       .parse(input),
   )

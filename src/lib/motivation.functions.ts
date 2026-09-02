@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const Input = z.object({
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
   count: z.number().min(3).max(24).default(12),
 });
 
@@ -29,9 +30,8 @@ export const generateMotivation = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("motivation.functions");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
 
     try {
       const res = await generateJson(gateway("google/gemini-3.1-flash-lite"), {

@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const MealInput = z.object({
   description: z.string().min(2).max(400),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 export const logMeal = createServerFn({ method: "POST" })
@@ -26,13 +27,12 @@ export const logMeal = createServerFn({ method: "POST" })
       note: z.string(),
     });
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     let parsed: z.infer<typeof schema> | null = null;
     try {
       parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
         userId,
         system: `You are a precise sports nutritionist. Estimate macros for the described meal.
-Respond in ${LANG_NAMES[data.lang] ?? "English"} for food_name and note.
+Respond in ${LANGUAGE_NAMES[data.lang]} for food_name and note.
 Assume realistic portion sizes when not stated. Numbers are grams, calories are kcal for the WHOLE described meal.
 note = max 1 short sentence with a practical tip for an athlete.`,
         prompt: data.description,

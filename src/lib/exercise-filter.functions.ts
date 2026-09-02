@@ -3,10 +3,11 @@ import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 import { parseAiJson } from "./ai-json.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { SupportedLanguageSchema } from "./language.schema";
 
 const FilterInput = z.object({
   prompt: z.string().min(2).max(300),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 export const ExerciseFilterSuggestionSchema = z.object({

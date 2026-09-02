@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
-const Input = z.object({ lang: z.string().default("lt") });
+const Input = z.object({ lang: SupportedLanguageSchema.default("lt") });
 
 const AdviceSchema = z.object({
   summary: z.string(),
@@ -63,9 +64,8 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("supplement-cycle.functions");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
 
     const today = new Date().toISOString().slice(0, 10);
 

@@ -3,13 +3,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateJson, parseAiJson } from "./ai-json.server";
 import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
+import { LANGUAGE_NAMES, SupportedLanguageSchema, type SupportedLanguage } from "./language.schema";
 
 export const WARMUP_SLUGS = ["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"];
 
 const SmartWarmupInput = z.object({
   focus: z.string().trim().max(160).default(""),
   exercises: z.array(z.string().trim().min(1).max(120)).max(12).default([]),
-  lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const SmartWarmupRecommendationSchema = z.object({
@@ -33,7 +34,7 @@ export type SmartWarmup = z.infer<typeof SmartWarmupRecommendationSchema> & {
   readiness: number | null;
 };
 
-function fallbackWarmup(lang: string, readiness: number | null): SmartWarmup {
+function fallbackWarmup(lang: SupportedLanguage, readiness: number | null): SmartWarmup {
   const lithuanian = lang === "lt";
   return {
     headline: lithuanian ? "Dinaminis apšilimas" : "Dynamic warm-up",
@@ -91,7 +92,7 @@ export const getSmartWarmup = createServerFn({ method: "POST" })
         userId: context.userId,
         system:
           "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
-        prompt: `Write in ${data.lang}. Build a 3-6 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
+        prompt: `Write in ${LANGUAGE_NAMES[data.lang]}. Build a 3-6 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
         schema: SmartWarmupRecommendationSchema,
         maxOutputTokens: 1200,
       });
@@ -108,7 +109,7 @@ const SetAdviceInput = z.object({
   targetReps: z.number(),
   actualReps: z.number(),
   rpe: z.number().min(1).max(10),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const SetAdviceSchema = z.object({
@@ -123,7 +124,7 @@ export const getSetAdvice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SetAdviceInput.parse(data))
   .handler(async ({ data, context }) => {
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const langName = LANGUAGE_NAMES[data.lang];
 
     const prompt = `Sportininkas atliko pratimą: "${data.exerciseName}".
 Serija: #${data.currentSet}, Tikslas: ${data.targetReps} pakartojimai, Atliko: ${data.actualReps} pakartojimus, Subjektyvus nuovargis (RPE): ${data.rpe}/10.
@@ -169,7 +170,7 @@ const DebriefInput = z.object({
   totalSetsCompleted: z.number(),
   avgRpe: z.number(),
   exercisesCompleted: z.array(z.string()),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const SessionDebriefSchema = z.object({
@@ -196,11 +197,13 @@ Atsakyk TIK JSON:
   "nutritionTip": "Mitybos rekomendacija po treniruotės"
 }`;
 
+    const system = `Return strict JSON only. Write the summary and nutritionTip in ${LANGUAGE_NAMES[data.lang]}.`;
+
     try {
       const raw = await askFastTextAi({
         userId: context.userId,
         messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
+          { role: "system", content: system },
           { role: "user", content: prompt },
         ],
         jsonMode: true,

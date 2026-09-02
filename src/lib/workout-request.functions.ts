@@ -3,10 +3,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateJson } from "./ai-json.server";
 import { createOrchestratedAi } from "./ai-orchestrator.server";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const BuildWorkoutInputSchema = z.object({
   request: z.string().trim().min(3).max(500),
-  lang: z.enum(["lt", "en"]).default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
   minutes: z.coerce.number().int().min(10).max(150).default(45),
 });
 
@@ -44,7 +45,7 @@ export const buildRequestedWorkout = createServerFn({ method: "POST" })
       context.userId,
     );
 
-    const language = data.lang === "lt" ? "Lithuanian" : "English";
+    const language = LANGUAGE_NAMES[data.lang];
     const workout = await generateJson(provider("google/gemini-2.5-flash"), {
       userId: context.userId,
       system: `You are GYMS.LIFE's evidence-based training planner. Write in ${language}.

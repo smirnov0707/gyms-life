@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 /** Vieninteliai maršrutai, į kuriuos AI gali nukreipti veiksmų kortelėse. */
 export const BRIEF_ROUTES = [
@@ -82,9 +83,7 @@ function isBriefRoute(route: string): route is BriefRoute {
 export const getDailyBrief = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z
-      .object({ lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt") })
-      .parse(input ?? {}),
+    z.object({ lang: SupportedLanguageSchema.default("lt") }).parse(input ?? {}),
   )
   .handler(async ({ data, context }): Promise<DailyBrief> => {
     const { supabase, userId } = context;
@@ -94,10 +93,9 @@ export const getDailyBrief = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("brief.functions");
 
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
     const personalizationRules = snapshot.aiPersonalization.enabled
       ? "Personalization consent is enabled. Use the aggregate training, recovery, body, and nutrition context exactly as provided."
       : "Personalization consent is disabled. The snapshot deliberately omits nutrition, training history, recovery, and body-trend data. Do not infer or invent these data. Briefly explain that detailed recommendations require the user to enable AI personalization in /coach, and include one /coach action for that purpose.";

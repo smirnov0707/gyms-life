@@ -3,13 +3,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import type { PlanData } from "./plan-types";
 import { serializeJson } from "./json.schema";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { parseStoredTrainingPlan } from "./training-plan.schema";
-
-const LANGS = ["lt", "en", "ru", "uk", "pl", "de", "es", "fr"] as const;
 
 const SuggestInput = z.object({
   goal: z.string().min(1).max(60),
-  lang: z.enum(LANGS).default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const num = (fallback: number) =>
@@ -93,9 +92,8 @@ export const suggestExercisesForGoal = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("exercise-suggest.functions");
-    const langName = LANG_NAMES[data.lang] ?? "English";
+    const langName = LANGUAGE_NAMES[data.lang];
 
     const prompt = `You are an elite strength coach recommending EXTRA exercises for a client's goal.
 

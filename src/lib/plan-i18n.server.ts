@@ -1,16 +1,6 @@
 import { z } from "zod";
+import { LANGUAGE_NAMES, type SupportedLanguage } from "./language.schema";
 import type { PlanData } from "./plan-types";
-
-export const LANG_NAMES: Record<string, string> = {
-  lt: "Lithuanian",
-  en: "English",
-  ru: "Russian",
-  uk: "Ukrainian",
-  pl: "Polish",
-  de: "German",
-  es: "Spanish",
-  fr: "French",
-};
 
 /** Collects every human-readable string of a plan, in a stable order. */
 export function collectStrings(plan: PlanData): string[] {
@@ -52,11 +42,11 @@ const Translated = z.object({ items: z.array(z.string()) });
 
 export async function translatePlanData(
   plan: PlanData,
-  lang: string,
+  lang: SupportedLanguage,
   userId: string,
 ): Promise<PlanData> {
   const source = collectStrings(plan);
-  const target = LANG_NAMES[lang] ?? "English";
+  const target = LANGUAGE_NAMES[lang];
   const { generateJson } = await import("./ai-json.server");
   const { createAiRouterProvider } = await import("./ai-gateway.server");
   const gateway = createAiRouterProvider("plan-i18n.server");

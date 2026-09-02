@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import type { ReportStats } from "./medical-report.server";
 
 const SectionSchema = z.object({
@@ -32,9 +33,7 @@ export type MedicalReport = z.infer<typeof ReportSchema> & {
 export const getMedicalReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z
-      .object({ lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt") })
-      .parse(input ?? {}),
+    z.object({ lang: SupportedLanguageSchema.default("lt") }).parse(input ?? {}),
   )
   .handler(async ({ data, context }): Promise<MedicalReport> => {
     const { supabase, userId } = context;
@@ -44,9 +43,8 @@ export const getMedicalReport = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("medical-report.functions");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
 
     const system = `You write a 30-day training, recovery and nutrition report that the user can hand to their physician, physiotherapist or coach. Accuracy is everything.
 

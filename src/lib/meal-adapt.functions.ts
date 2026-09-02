@@ -2,12 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { serializeJson } from "./json.schema";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { GeneratedMealPlanSchema, MealDaySchema, ShoppingGroupSchema } from "./meal-plan.schema";
 
 const AdaptInput = z.object({
   fromDay: z.number().min(1).max(7),
   notes: z.string().max(500).default(""),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 /**
@@ -88,8 +89,7 @@ export const adaptMealPlan = createServerFn({ method: "POST" })
       shopping_list: z.array(ShoppingGroupSchema),
     });
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
 
     const system = `You are an elite sports dietitian adapting an existing 7-day meal plan mid-week.
 Write everything in ${language}.

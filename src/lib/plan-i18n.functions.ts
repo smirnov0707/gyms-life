@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { translatePlanData } from "./plan-i18n.server";
 import { serializeJson } from "./json.schema";
 import { TrainingPlanDataSchema } from "./training-plan.schema";
+import { SupportedLanguageSchema } from "./language.schema";
 
 const PlanTranslationCacheSchema = z.record(z.string(), TrainingPlanDataSchema);
 
@@ -13,7 +14,7 @@ export const localizePlan = createServerFn({ method: "POST" })
     z
       .object({
         planId: z.string().uuid(),
-        lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]),
+        lang: SupportedLanguageSchema,
       })
       .parse(input),
   )

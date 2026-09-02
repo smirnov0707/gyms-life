@@ -27,8 +27,9 @@ import { extra_overview } from "./i18n-extra-overview";
 import { extra_landing2 } from "./i18n-extra-landing2";
 import { extra_landing3 } from "./i18n-extra-landing3";
 import { extra_scan2 } from "./i18n-extra-scan2";
+import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
-export type Lang = "lt" | "en" | "ru" | "uk" | "pl" | "de" | "es" | "fr";
+export type Lang = SupportedLanguage;
 
 type Dict = Record<string, { lt: string; en: string }>;
 type SupplementalLocales = Record<string, Record<string, string>>;
@@ -941,10 +942,9 @@ function translate(
 
 function detectLang(): Lang {
   if (typeof navigator === "undefined") return "lt";
-  const codes = LANGS.map((l) => l.code) as string[];
   for (const raw of navigator.languages ?? [navigator.language]) {
-    const base = (raw ?? "").slice(0, 2).toLowerCase();
-    if (codes.includes(base)) return base as Lang;
+    const language = parseSupportedLanguage((raw ?? "").slice(0, 2).toLowerCase());
+    if (language) return language;
   }
   return "en";
 }
@@ -955,9 +955,9 @@ export function LangProvider({ children }: { children: ReactNode }) {
     useState<SupplementalLocales | null>(supplementalLocales);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("forma_lang");
-    if (stored && LANGS.some((l) => l.code === stored)) {
-      setLangState(stored as Lang);
+    const stored = parseSupportedLanguage(window.localStorage.getItem("forma_lang"));
+    if (stored) {
+      setLangState(stored);
     } else {
       setLangState(detectLang());
     }

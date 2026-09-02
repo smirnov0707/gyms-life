@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const BodyScanInput = z.object({
   images: z.array(z.string().startsWith("data:image/")).min(1).max(3),
@@ -8,7 +9,7 @@ const BodyScanInput = z.object({
   weightKg: z.number().min(30).max(300).optional(),
   age: z.number().min(10).max(100).optional(),
   sex: z.enum(["male", "female", "unknown"]).default("unknown"),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const num = (min: number, max: number) =>
@@ -84,10 +85,9 @@ export const analyzeBodyScan = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("body-scan.functions");
 
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
 
     const system = `You are an anthropometric vision analyst measuring a human body from photographs.
 

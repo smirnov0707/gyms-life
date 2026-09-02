@@ -3,11 +3,12 @@ import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 import { parseAiJson } from "./ai-json.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { SupportedLanguageSchema } from "./language.schema";
 
 const VoiceLogInput = z.object({
   audioBase64: z.string().min(10),
   mimeType: z.string().default("audio/webm"),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const VoiceWorkoutSetSchema = z.object({

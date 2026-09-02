@@ -3,10 +3,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { createAiRouterProvider } from "./ai-gateway.server";
 import { generateJson } from "./ai-json.server";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const AnalyzeInput = z.object({
   image: z.string().min(10),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const MealAnalysisSuccessSchema = z.object({
@@ -52,7 +53,7 @@ export const analyzeMealPhoto = createServerFn({ method: "POST" })
     }
 
     try {
-      const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+      const langName = LANGUAGE_NAMES[data.lang];
 
       const systemPrompt = `Tu esi pažangus maisto atpažinimo ir sporto dietologijos AI asistentas.
 Nuodugniai išanalizuok pateiktą nuotrauką.

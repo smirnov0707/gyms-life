@@ -3,10 +3,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAiRouterProvider } from "./ai-gateway.server";
 import { generateJson } from "./ai-json.server";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const SupplementVisionInput = z.object({
   image: z.string().min(10),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const SupplementProductSchema = z.object({
@@ -48,7 +49,7 @@ export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
     }
 
     try {
-      const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+      const langName = LANGUAGE_NAMES[data.lang];
 
       const prompt = `Tu esi profesionalus sporto papildų ir farmakologijos AI ekspertas.
 Išanalizuok pateiktą maisto papildo pakuotės ar sudėties etiketės nuotrauką.

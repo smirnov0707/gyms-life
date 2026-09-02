@@ -3,11 +3,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createAiRouterProvider } from "./ai-gateway.server";
 import { generateJson } from "./ai-json.server";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const BiomechanicsInput = z.object({
   image: z.string().min(10),
   exerciseName: z.string().default("squat"),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const ExerciseFormAnalysisSuccessSchema = z.object({
@@ -47,7 +48,7 @@ export const analyzeExerciseForm = createServerFn({ method: "POST" })
     }
 
     try {
-      const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+      const langName = LANGUAGE_NAMES[data.lang];
 
       const prompt = `Tu esi profesionalus sporto biomechanikos kineziterapeutas ir treneris.
 Išanalizuok šį pratimo atlikimo kadrą (${data.exerciseName}).

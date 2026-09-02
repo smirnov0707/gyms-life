@@ -302,7 +302,7 @@ export function InjuryRiskRadar() {
                 className="p-3.5 rounded-xl border border-white/5 bg-black/40 hover:bg-black/60 transition-colors space-y-1.5"
               >
                 <div className="flex items-center justify-between font-semibold text-xs">
-                  <span className="text-white">{t(f.key as never)}</span>
+                  <span className="text-white">{t(f.key)}</span>
                   <span
                     className={cn(
                       "font-mono font-bold px-2 py-0.5 rounded",
@@ -313,9 +313,7 @@ export function InjuryRiskRadar() {
                     {f.value}
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  {t(f.adviceKey as never)}
-                </p>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">{t(f.adviceKey)}</p>
               </div>
             ))
           )}

@@ -2,10 +2,11 @@ import { isAiConfigured } from "./ai-gateway.server";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const looseNum = z.coerce.number().catch(0);
 
-const ScanInput = z.object({ lang: z.string().default("lt") });
+const ScanInput = z.object({ lang: SupportedLanguageSchema.default("lt") });
 
 const FindingSchema = z.object({
   name: z.string(),
@@ -47,9 +48,8 @@ export const scanMicronutrients = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("micronutrient.functions");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
 
     const age = snap.profile.birthYear ? new Date().getFullYear() - snap.profile.birthYear : null;
 

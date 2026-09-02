@@ -3,10 +3,11 @@ import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 import { parseAiJson } from "./ai-json.server";
 import { getUserBiometricContext } from "./user-context.server";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GhostCoachInput = z.object({
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const GhostCoachInsightSuccessSchema = z.object({
@@ -26,7 +27,7 @@ export const getProactiveCoachInsight = createServerFn({ method: "POST" })
   .validator((data: unknown) => GhostCoachInput.parse(data))
   .handler(async ({ data, context: auth }) => {
     const context = await getUserBiometricContext(auth.supabase, auth.userId);
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const langName = LANGUAGE_NAMES[data.lang];
 
     const prompt = `Tu esi proaktyvus elitinis AI treneris „Ghost Coach“ platformoje GYMS.LIFE.
 Sportininko dabartinė būklė ir kontekstas:

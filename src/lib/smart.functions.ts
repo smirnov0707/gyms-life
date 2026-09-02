@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
-const LangSchema = z.string().default("lt");
+const LangSchema = SupportedLanguageSchema.default("lt");
 
 /* ------------------------------------------------------------------ */
 /* AI FORM CHECK — vision analysis of exercise technique from frames   */
@@ -34,8 +35,7 @@ export const analyzeForm = createServerFn({ method: "POST" })
       risk: z.string(),
     });
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
     const system = `You are an elite movement-screening coach analysing still frames captured from a lifter's set.
 Exercise: ${data.exerciseName} (${data.exerciseSlug}).
 Judge only what is visible. If the frames are unusable (no person, too dark, wrong angle), say so in "verdict", set score 0 and leave arrays with one explanatory item.
@@ -141,11 +141,10 @@ export const submitCheckin = createServerFn({ method: "POST" })
     const { createAiRouterProvider } = await import("./ai-gateway.server");
     const gateway = createAiRouterProvider("smart.functions");
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const result = streamText({
       model: gateway("google/gemini-3.1-flash-lite"),
       system: `You are GYMS.LIFE's autoregulation engine. Answer in ${
-        LANG_NAMES[data.lang] ?? "English"
+        LANGUAGE_NAMES[data.lang]
       }. Give exactly 2-3 short sentences: how hard to train today, what to change (sets, load %, intensity, cardio) and one recovery action. No greetings, no lists.`,
       prompt: `Readiness score: ${score}/100 (recommended load ${Math.round(modifier * 100)}%).
 Check-in: ${JSON.stringify(data)}

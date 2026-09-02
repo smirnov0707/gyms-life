@@ -1,6 +1,8 @@
 // Real injury-risk model built from the user's own logged training data.
 // No simulated numbers: every factor is derived from set_logs, sessions and check-ins.
 
+import type { TKey } from "./i18n";
+
 export interface RiskSetRow {
   created_at: string;
   exercise_slug: string;
@@ -21,15 +23,16 @@ export interface RiskCheckinRow {
 }
 
 export type RiskLevel = "low" | "moderate" | "high";
+type RiskTranslationKey = Extract<TKey, `nx.risk.${string}`>;
 
 export interface RiskFactor {
   /** i18n key for the factor label */
-  key: string;
+  key: RiskTranslationKey;
   /** short value shown to the user, already formatted */
   value: string;
   level: RiskLevel;
   /** i18n key for the one-line advice */
-  adviceKey: string;
+  adviceKey: RiskTranslationKey;
 }
 
 export interface RiskReport {

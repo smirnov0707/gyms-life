@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { LineChart, Loader2, Sparkles, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TKey } from "@/lib/i18n";
 import { forecastProgress } from "@/lib/forecast.functions";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,8 @@ type Lift = {
   plateauRisk: number;
   note: string;
 };
+
+const forecastMetricKeys = ["nx.fc.now", "nx.fc.in4", "nx.fc.in12", "nx.fc.next"] satisfies TKey[];
 
 export function ProgressForecast() {
   const { t, lang } = useI18n();
@@ -91,19 +93,20 @@ export function ProgressForecast() {
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-                  {[
-                    { k: "nx.fc.now", v: l.current1rm },
-                    { k: "nx.fc.in4", v: l.projected4w },
-                    { k: "nx.fc.in12", v: l.projected12w },
-                    { k: "nx.fc.next", v: l.nextWorkingWeight },
-                  ].map((c) => (
-                    <div key={c.k} className="rounded-xl bg-surface p-2">
-                      <div className="text-display text-xl text-foreground">{c.v} kg</div>
-                      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                        {t(c.k as never)}
-                      </div>
-                    </div>
-                  ))}
+                  {[l.current1rm, l.projected4w, l.projected12w, l.nextWorkingWeight].map(
+                    (value, index) => {
+                      const key = forecastMetricKeys[index];
+                      if (!key) return null;
+                      return (
+                        <div key={key} className="rounded-xl bg-surface p-2">
+                          <div className="text-display text-xl text-foreground">{value} kg</div>
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                            {t(key)}
+                          </div>
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
                   <span className="uppercase tracking-widest">{t("nx.fc.plateau")}</span>

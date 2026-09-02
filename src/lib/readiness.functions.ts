@@ -1,13 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { SupportedLanguageSchema } from "./language.schema";
 
 const CheckinInput = z.object({
   sleepHours: z.number().min(3).max(14),
   energy: z.number().min(1).max(5),
   soreness: z.enum(["none", "mild", "moderate", "severe"]),
   stress: z.number().min(1).max(5),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 export const submitReadinessCheckin = createServerFn({ method: "POST" })

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { serializeJson } from "./json.schema";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { GeneratedMealPlanSchema } from "./meal-plan.schema";
 
 const MealPlanInput = z.object({
@@ -12,7 +13,7 @@ const MealPlanInput = z.object({
   budget: z.string().default("medium"),
   cookingLevel: z.string().default("intermediate"),
   kcalTarget: z.coerce.number().min(1000).max(6000).nullable().optional(),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const num = (fallback: number) =>
@@ -109,8 +110,7 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       }),
     );
 
-    const { LANG_NAMES } = await import("./plan-i18n.server");
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
     const age = profile?.birth_year ? new Date().getFullYear() - profile.birth_year : null;
 
     const system = `You are an elite sports dietitian building a 7-day meal plan.

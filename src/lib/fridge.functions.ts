@@ -3,11 +3,12 @@ import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 import { parseAiJson } from "./ai-json.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const FridgeInput = z.object({
   ingredients: z.array(z.string().trim().min(1).max(120)).min(1).max(30),
   goal: z.string().trim().max(120).default("muscle_gain"),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
   kcalLeft: z.number().finite().min(0).max(20_000).optional(),
   proteinLeft: z.number().finite().min(0).max(1_000).optional(),
   variant: z.number().int().min(0).max(100).optional(),
@@ -92,7 +93,7 @@ export const generateFridgeRecipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => FridgeInput.parse(data))
   .handler(async ({ data, context }): Promise<FridgeRecipe> => {
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const langName = LANGUAGE_NAMES[data.lang];
     const nutritionTarget = [
       data.kcalLeft != null ? `${Math.round(data.kcalLeft)} kcal likutis` : null,
       data.proteinLeft != null ? `${Math.round(data.proteinLeft)} g baltymų likutis` : null,

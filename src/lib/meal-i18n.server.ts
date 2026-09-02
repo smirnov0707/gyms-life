@@ -1,16 +1,6 @@
 import { z } from "zod";
+import { LANGUAGE_NAMES, type SupportedLanguage } from "./language.schema";
 import type { GeneratedMealPlan } from "./meal-types";
-
-export const MEAL_LANG_NAMES: Record<string, string> = {
-  lt: "Lithuanian",
-  en: "English",
-  ru: "Russian",
-  uk: "Ukrainian",
-  pl: "Polish",
-  de: "German",
-  es: "Spanish",
-  fr: "French",
-};
 
 /** Collects every human-readable string of a meal plan, in a stable order. */
 export function collectMealStrings(plan: GeneratedMealPlan): string[] {
@@ -83,11 +73,11 @@ const Translated = z.object({ items: z.array(z.string()) });
 
 export async function translateMealPlan(
   plan: GeneratedMealPlan,
-  lang: string,
+  lang: SupportedLanguage,
   userId: string,
 ): Promise<GeneratedMealPlan> {
   const source = collectMealStrings(plan);
-  const target = MEAL_LANG_NAMES[lang] ?? "English";
+  const target = LANGUAGE_NAMES[lang];
   const { generateJson } = await import("./ai-json.server");
   const { createAiRouterProvider } = await import("./ai-gateway.server");
   const gateway = createAiRouterProvider("meal-i18n.server");

@@ -3,11 +3,12 @@ import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
 import { parseAiJson } from "./ai-json.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const RestaurantSearchInput = z.object({
   query: z.string().min(1),
   goal: z.string().default("muscle_gain"),
-  lang: z.string().default("lt"),
+  lang: SupportedLanguageSchema.default("lt"),
 });
 
 const RestaurantDishSchema = z.object({
@@ -44,7 +45,7 @@ export const searchRestaurantDishes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => RestaurantSearchInput.parse(data))
   .handler(async ({ data, context }) => {
-    const langName = data.lang === "lt" ? "lietuvių" : "anglų";
+    const langName = LANGUAGE_NAMES[data.lang];
     const goalText =
       data.goal === "fat_loss"
         ? "svorio metimui (mažiau kalorijų, daug baltymų)"

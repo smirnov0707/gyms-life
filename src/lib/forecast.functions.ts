@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
-const ForecastInput = z.object({ lang: z.string().default("lt") });
+const ForecastInput = z.object({ lang: SupportedLanguageSchema.default("lt") });
 
 export const forecastProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -26,7 +27,6 @@ export const forecastProgress = createServerFn({ method: "POST" })
 
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const { LANG_NAMES } = await import("./plan-i18n.server");
     const gateway = createAiRouterProvider("forecast.functions");
 
     const schema = z.object({
@@ -46,7 +46,7 @@ export const forecastProgress = createServerFn({ method: "POST" })
       actions: z.array(z.string()),
     });
 
-    const language = LANG_NAMES[data.lang] ?? "English";
+    const language = LANGUAGE_NAMES[data.lang];
     const system = `You are a strength coach analysing a lifter's real training log.
 For each of the main lifts given, estimate the current 1RM (Epley from the best recent sets), a realistic 4-week and 12-week projection based on the observed rate of progress and training frequency, and the next working weight to use.
 Be conservative: untrained lifters progress faster, experienced lifters much slower. plateauRisk is 0-100. Weights in kilograms, rounded to 0.5.
