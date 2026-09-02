@@ -1,6 +1,6 @@
 import { createGroq } from "@ai-sdk/groq";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import type { LanguageModel } from "ai";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 
 const groqClient = createGroq({
   apiKey: process.env["GROQ_API_KEY"] ?? "",
@@ -18,20 +18,32 @@ export function isAiConfigured(): boolean {
 }
 
 /**
+ * Keep an invalid provider adapter from reaching the AI SDK. The SDK's error
+ * for this condition exposes its internal `specificationVersion` property,
+ * which is neither actionable nor safe to show to a member.
+ */
+function requireLanguageModel(model: LanguageModelV4, modelId: AiModelId): LanguageModelV4 {
+  if (model.specificationVersion !== "v4") {
+    throw new Error(`AI_MODEL_UNAVAILABLE:${modelId}`);
+  }
+  return model;
+}
+
+/**
  * Provider adapter only. Business modules must receive models through the
  * GYMS.LIFE orchestrator so task policy and fallbacks stay centrally owned.
  */
-export function createAiModel(modelId: AiModelId, allowProviderFallback = true): LanguageModel {
+export function createAiModel(modelId: AiModelId, allowProviderFallback = true): LanguageModelV4 {
   if (modelId.startsWith("google/") && process.env["GEMINI_API_KEY"]) {
-    return googleClient(modelId.replace("google/", ""));
+    return requireLanguageModel(googleClient(modelId.replace("google/", "")), modelId);
   }
 
   if (allowProviderFallback && process.env["GROQ_API_KEY"]) {
-    return groqClient("llama-3.3-70b-versatile");
+    return requireLanguageModel(groqClient("llama-3.3-70b-versatile"), modelId);
   }
 
   if (allowProviderFallback && process.env["GEMINI_API_KEY"]) {
-    return googleClient("gemini-2.5-flash");
+    return requireLanguageModel(googleClient("gemini-2.5-flash"), modelId);
   }
 
   throw new Error("AI is not configured for the requested task.");

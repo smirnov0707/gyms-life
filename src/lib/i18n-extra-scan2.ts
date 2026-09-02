@@ -11,6 +11,10 @@ export const extra_scan2 = {
     lt: "Trenerio generavimas išjungtas — naudojami bazinai skaičiavimai be AI kreditų.",
     en: "Coach generation is off — baseline logic is used with no AI credits.",
   },
+  "ai.err.unavailable": {
+    lt: "AI rekomendacijų generavimas šiuo metu nepasiekiamas. Pabandyk dar kartą po akimirkos.",
+    en: "AI recommendations are temporarily unavailable. Please try again in a moment.",
+  },
 
   "sc.fridge.add": { lt: "Pridėti produktą", en: "Add ingredient" },
   "sc.fridge.remove": { lt: "Pašalinti", en: "Remove" },

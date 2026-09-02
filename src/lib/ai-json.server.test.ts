@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { aiErrorMessage } from "./ai-error";
 import { AiUnavailableError, normalizeAiError, parseAiJson } from "./ai-json.server";
 
 describe("parseAiJson", () => {
@@ -28,5 +29,16 @@ describe("normalizeAiError", () => {
     if (!(error instanceof AiUnavailableError))
       throw new Error("Expected an AI availability error");
     expect(error.kind).toBe("rate_limit");
+  });
+});
+
+describe("aiErrorMessage", () => {
+  it("does not expose AI SDK internals when a model is unavailable", () => {
+    expect(
+      aiErrorMessage(
+        new Error("Cannot read properties of null (reading 'specificationVersion')"),
+        (key) => key,
+      ),
+    ).toBe("ai.err.unavailable");
   });
 });
