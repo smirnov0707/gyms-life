@@ -14,7 +14,7 @@ const AdaptInput = z.object({
  */
 export const adaptMealPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => AdaptInput.parse(input))
+  .validator((input: unknown) => AdaptInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

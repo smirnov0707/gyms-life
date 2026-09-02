@@ -23,9 +23,8 @@ const Schema = z.object({
  * body composition scanning, supplements and recovery.
  */
 export const generateMotivation = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => Input.parse(input))
+  .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data }) => {
-
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
     const { LANG_NAMES } = await import("./plan-i18n.server");

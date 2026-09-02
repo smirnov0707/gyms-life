@@ -17,7 +17,7 @@ const FormInput = z.object({
 
 export const analyzeForm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => FormInput.parse(input))
+  .validator((input: unknown) => FormInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -122,7 +122,7 @@ export function loadModifier(score: number) {
 
 export const submitCheckin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => CheckinInput.parse(input))
+  .validator((input: unknown) => CheckinInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

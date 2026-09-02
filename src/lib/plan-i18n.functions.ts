@@ -6,7 +6,7 @@ import type { PlanData } from "./plan-types";
 
 export const localizePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         planId: z.string().uuid(),

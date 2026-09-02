@@ -26,7 +26,7 @@ export type CycleAdvice = z.infer<typeof AdviceSchema>;
 
 export const analyzeSupplementCycles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => Input.parse(input))
+  .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -35,7 +35,9 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
     const [{ data: supps }, { data: sessions }, { data: checkins }] = await Promise.all([
       supabase
         .from("supplements")
-        .select("name, dose, category, times_per_day, with_food, preferred_time, is_active, created_at")
+        .select(
+          "name, dose, category, times_per_day, with_food, preferred_time, is_active, created_at",
+        )
         .eq("user_id", userId)
         .order("created_at", { ascending: true }),
       supabase

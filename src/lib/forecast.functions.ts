@@ -6,7 +6,7 @@ const ForecastInput = z.object({ lang: z.string().default("lt") });
 
 export const forecastProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => ForecastInput.parse(input))
+  .validator((input: unknown) => ForecastInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

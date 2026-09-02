@@ -39,7 +39,7 @@ const ScanSchema = z.object({
 
 export const scanMicronutrients = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => ScanInput.parse(input))
+  .validator((input: unknown) => ScanInput.parse(input))
   .handler(async ({ data, context }) => {
     const { loadMicroSnapshot, fallbackMicroScan } = await import("./micronutrient.server");
     const snap = await loadMicroSnapshot(context.supabase, context.userId);
@@ -93,12 +93,19 @@ Return exactly: {"summary":"","dataQuality":"","findings":[{"name":"","current":
           current: f.current,
           target: f.target,
           gapPercent: Math.max(0, Math.min(100, Math.round(f.gapPercent))),
-          priority: (allowed.includes(f.priority.toLowerCase()) ? f.priority.toLowerCase() : "medium") as
-            | "critical" | "high" | "medium" | "low",
+          priority: (allowed.includes(f.priority.toLowerCase())
+            ? f.priority.toLowerCase()
+            : "medium") as "critical" | "high" | "medium" | "low",
           reason: f.reason,
           evidence: f.evidence,
           foodFix: f.foodFix,
-          supplement: f.supplement && f.supplement.name ? { ...f.supplement, times_per_day: Math.max(1, Math.round(f.supplement.times_per_day)) } : null,
+          supplement:
+            f.supplement && f.supplement.name
+              ? {
+                  ...f.supplement,
+                  times_per_day: Math.max(1, Math.round(f.supplement.times_per_day)),
+                }
+              : null,
         })),
         strengths: r.strengths.slice(0, 4),
         warnings: r.warnings.slice(0, 4),

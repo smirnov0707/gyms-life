@@ -9,7 +9,7 @@ const MealInput = z.object({
 
 export const logMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => MealInput.parse(input))
+  .validator((input: unknown) => MealInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

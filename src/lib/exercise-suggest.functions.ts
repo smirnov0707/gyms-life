@@ -11,7 +11,10 @@ const SuggestInput = z.object({
 });
 
 const num = (fallback: number) =>
-  z.preprocess((v) => (v === undefined || v === null || v === "" ? fallback : v), z.coerce.number().default(fallback));
+  z.preprocess(
+    (v) => (v === undefined || v === null || v === "" ? fallback : v),
+    z.coerce.number().default(fallback),
+  );
 
 const SuggestionSchema = z.object({
   suggestions: z
@@ -45,14 +48,16 @@ export type ExerciseSuggestion = {
 /** AI picks catalog exercises that best serve the user's stated goal. */
 export const suggestExercisesForGoal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => SuggestInput.parse(input))
+  .validator((input: unknown) => SuggestInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
     const [{ data: profile }, { data: plans }, { data: exercises }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("experience, location, equipment, limitations, days_per_week, session_minutes, gender, weight_kg, height_cm")
+        .select(
+          "experience, location, equipment, limitations, days_per_week, session_minutes, gender, weight_kg, height_cm",
+        )
         .eq("id", userId)
         .maybeSingle(),
       supabase
@@ -77,7 +82,10 @@ export const suggestExercisesForGoal = createServerFn({ method: "POST" })
     const allowed = catalog.filter(
       (e) =>
         (!equipment.length || equipment.includes(e.equipment) || e.equipment === "bodyweight") &&
-        (!profile?.location || profile.location === "both" || e.location === "both" || e.location === profile.location),
+        (!profile?.location ||
+          profile.location === "both" ||
+          e.location === "both" ||
+          e.location === profile.location),
     );
     const pool = (allowed.length >= 20 ? allowed : catalog).slice(0, 400);
 
@@ -122,7 +130,13 @@ RETURN JSON: {"suggestions":[{"slug":"","name":"","reason":"","sets":3,"reps":"8
     const bySlug = new Map(catalog.map((e) => [e.slug, e]));
     const seen = new Set<string>();
     const suggestions: ExerciseSuggestion[] = out.suggestions
-      .filter((s) => bySlug.has(s.slug) && !planSlugs.has(s.slug) && !seen.has(s.slug) && seen.add(s.slug) !== undefined)
+      .filter(
+        (s) =>
+          bySlug.has(s.slug) &&
+          !planSlugs.has(s.slug) &&
+          !seen.has(s.slug) &&
+          seen.add(s.slug) !== undefined,
+      )
       .slice(0, 6)
       .map((s) => {
         const row = bySlug.get(s.slug)!;
@@ -170,7 +184,7 @@ const AddInput = z.object({
 /** Appends a suggested exercise to a day of the user's active plan. */
 export const addExerciseToActivePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => AddInput.parse(input))
+  .validator((input: unknown) => AddInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -200,8 +214,13 @@ export const addExerciseToActivePlan = createServerFn({ method: "POST" })
         i === index
           ? {
               ...d,
-              estimated_minutes: (d.estimated_minutes ?? 45) + Math.round((data.exercise.sets * (data.exercise.rest_seconds + 45)) / 60),
-              exercises: [...(d.exercises ?? []), { ...data.exercise, notes: data.exercise.notes ?? "" }],
+              estimated_minutes:
+                (d.estimated_minutes ?? 45) +
+                Math.round((data.exercise.sets * (data.exercise.rest_seconds + 45)) / 60),
+              exercises: [
+                ...(d.exercises ?? []),
+                { ...data.exercise, notes: data.exercise.notes ?? "" },
+              ],
             }
           : d,
       ),

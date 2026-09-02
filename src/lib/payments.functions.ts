@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { gatewayFetch, getPaddleClient, type PaddleEnv } from "@/lib/paddle.server";
 
 export const resolvePaddlePrice = createServerFn({ method: "GET" })
-  .inputValidator((data: { priceId: string; environment: PaddleEnv }) => data)
+  .validator((data: { priceId: string; environment: PaddleEnv }) => data)
   .handler(async ({ data }) => {
     const response = await gatewayFetch(
       data.environment,
@@ -88,7 +88,7 @@ export const resumeSubscription = createServerFn({ method: "POST" })
 // no pro-rated charge now, the full new price is billed on the next billing date.
 export const changePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { priceId: string }) => data)
+  .validator((data: { priceId: string }) => data)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: sub } = await supabase
@@ -102,10 +102,7 @@ export const changePlan = createServerFn({ method: "POST" })
       throw new Error("No active subscription");
     }
     const env = sub.environment as PaddleEnv;
-    const res = await gatewayFetch(
-      env,
-      `/prices?external_id=${encodeURIComponent(data.priceId)}`,
-    );
+    const res = await gatewayFetch(env, `/prices?external_id=${encodeURIComponent(data.priceId)}`);
     const json = await res.json();
     const paddlePriceId = json.data?.[0]?.id as string | undefined;
     if (!paddlePriceId) throw new Error("Price not found");

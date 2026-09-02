@@ -27,13 +27,18 @@ const text = (fallback = "") =>
 
 const arrayStrings = () =>
   z.preprocess(
-    (v) => (Array.isArray(v) ? v.map((x) => String(x)) : typeof v === "string" ? v.split("\n").filter(Boolean) : []),
+    (v) =>
+      Array.isArray(v)
+        ? v.map((x) => String(x))
+        : typeof v === "string"
+          ? v.split("\n").filter(Boolean)
+          : [],
     z.array(z.string()).default([]),
   );
 
 export const generateMealPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => MealPlanInput.parse(input))
+  .validator((input: unknown) => MealPlanInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -86,12 +91,14 @@ export const generateMealPlan = createServerFn({ method: "POST" })
 
     const partTwoSchema = z.object({
       days: z.array(DaySchema).default([]),
-      shopping_list: z.array(
-        z.object({
-          category: text("Produktai"),
-          items: z.array(z.object({ name: text(""), amount: text("") })).default([]),
-        }),
-      ).default([]),
+      shopping_list: z
+        .array(
+          z.object({
+            category: text("Produktai"),
+            items: z.array(z.object({ name: text(""), amount: text("") })).default([]),
+          }),
+        )
+        .default([]),
     });
 
     const schema = partOneSchema.merge(
@@ -108,10 +115,10 @@ export const generateMealPlan = createServerFn({ method: "POST" })
 Write EVERYTHING (titles, recipes, ingredients, shopping list) in ${language}.
 Rules:
 ${
-      data.kcalTarget
-        ? `- The user has chosen a fixed daily energy intake of ${data.kcalTarget} kcal. Every day's total_kcal MUST be close to ${data.kcalTarget}, and kcal_target MUST equal ${data.kcalTarget}.`
-        : "- Compute realistic daily kcal from body data (Mifflin-St Jeor + activity) and goal."
-    }
+  data.kcalTarget
+    ? `- The user has chosen a fixed daily energy intake of ${data.kcalTarget} kcal. Every day's total_kcal MUST be close to ${data.kcalTarget}, and kcal_target MUST equal ${data.kcalTarget}.`
+    : "- Compute realistic daily kcal from body data (Mifflin-St Jeor + activity) and goal."
+}
 - Distribute macros across exactly ${data.mealsPerDay} meals per day.
 - Each meal: ingredients with quantities and 2-3 brief steps.
 - Respect diet (${data.diet}), allergies (${data.allergies || "none"}) and dislikes (${data.dislikes || "none"}).
@@ -164,35 +171,36 @@ Preferences: ${JSON.stringify({
         .sort((a, b) => a.day - b.day);
 
       // Fallback default shopping list if partTwo shopping list was empty
-      const shoppingList = (partTwo?.shopping_list && partTwo.shopping_list.length > 0)
-        ? partTwo.shopping_list
-        : [
-            {
-              category: "Baltymai & Mėsa",
-              items: [
-                { name: "Vištienos krūtinėlė", amount: "1.2 kg" },
-                { name: "Kiaušiniai", amount: "20 vnt." },
-                { name: "Liesa varškė", amount: "800 g" },
-                { name: "Lašišos filė", amount: "500 g" },
-              ],
-            },
-            {
-              category: "Daržovės & Vaisiai",
-              items: [
-                { name: "Špinatai ir brokoliai", amount: "600 g" },
-                { name: "Bananai ir uogos", amount: "1 kg" },
-                { name: "Avokadai", amount: "4 vnt." },
-              ],
-            },
-            {
-              category: "Kruopos & Riebalai",
-              items: [
-                { name: "Avižiniai dribsniai", amount: "500 g" },
-                { name: "Ryžiai / grikiai", amount: "800 g" },
-                { name: "Alyvuogių aliejus", amount: "1 vnt." },
-              ],
-            },
-          ];
+      const shoppingList =
+        partTwo?.shopping_list && partTwo.shopping_list.length > 0
+          ? partTwo.shopping_list
+          : [
+              {
+                category: "Baltymai & Mėsa",
+                items: [
+                  { name: "Vištienos krūtinėlė", amount: "1.2 kg" },
+                  { name: "Kiaušiniai", amount: "20 vnt." },
+                  { name: "Liesa varškė", amount: "800 g" },
+                  { name: "Lašišos filė", amount: "500 g" },
+                ],
+              },
+              {
+                category: "Daržovės & Vaisiai",
+                items: [
+                  { name: "Špinatai ir brokoliai", amount: "600 g" },
+                  { name: "Bananai ir uogos", amount: "1 kg" },
+                  { name: "Avokadai", amount: "4 vnt." },
+                ],
+              },
+              {
+                category: "Kruopos & Riebalai",
+                items: [
+                  { name: "Avižiniai dribsniai", amount: "500 g" },
+                  { name: "Ryžiai / grikiai", amount: "800 g" },
+                  { name: "Alyvuogių aliejus", amount: "1 vnt." },
+                ],
+              },
+            ];
 
       parsed = {
         ...partOne,

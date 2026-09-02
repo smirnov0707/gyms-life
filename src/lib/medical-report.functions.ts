@@ -6,7 +6,9 @@ import type { ReportStats } from "./medical-report.server";
 const SectionSchema = z.object({
   title: z.string(),
   body: z.string(),
-  metrics: z.array(z.object({ label: z.string(), value: z.string(), note: z.string().default("") })).default([]),
+  metrics: z
+    .array(z.object({ label: z.string(), value: z.string(), note: z.string().default("") }))
+    .default([]),
 });
 
 const ReportSchema = z.object({
@@ -14,18 +16,25 @@ const ReportSchema = z.object({
   summary: z.string(),
   adherence: z.object({ score: z.number(), label: z.string(), note: z.string().default("") }),
   sections: z.array(SectionSchema).default([]),
-  risks: z.array(z.object({ title: z.string(), detail: z.string(), severity: z.string().default("low") })).default([]),
+  risks: z
+    .array(z.object({ title: z.string(), detail: z.string(), severity: z.string().default("low") }))
+    .default([]),
   recommendations: z.array(z.object({ title: z.string(), detail: z.string() })).default([]),
   questionsForDoctor: z.array(z.string()).default([]),
   dataGaps: z.array(z.string()).default([]),
 });
 
-export type MedicalReport = z.infer<typeof ReportSchema> & { stats: ReportStats; generatedAt: string };
+export type MedicalReport = z.infer<typeof ReportSchema> & {
+  stats: ReportStats;
+  generatedAt: string;
+};
 
 export const getMedicalReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt") }).parse(input ?? {}),
+  .validator((input: unknown) =>
+    z
+      .object({ lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt") })
+      .parse(input ?? {}),
   )
   .handler(async ({ data, context }): Promise<MedicalReport> => {
     const { supabase, userId } = context;

@@ -6,7 +6,7 @@ import type { GeneratedMealPlan } from "./meal-types";
 
 export const localizeMealPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         planId: z.string().uuid(),
@@ -29,7 +29,7 @@ export const localizeMealPlan = createServerFn({ method: "POST" })
     const sourceLang = ((row as { lang?: string }).lang as string) || "lt";
     if (sourceLang === data.lang) return { plan: base };
 
-    const cache = (((row as { i18n?: unknown }).i18n ?? {}) as Record<string, GeneratedMealPlan>);
+    const cache = ((row as { i18n?: unknown }).i18n ?? {}) as Record<string, GeneratedMealPlan>;
     const cached = cache[data.lang];
     if (cached) return { plan: cached };
 

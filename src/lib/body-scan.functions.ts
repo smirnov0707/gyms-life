@@ -12,11 +12,14 @@ const BodyScanInput = z.object({
 });
 
 const num = (min: number, max: number) =>
-  z.union([z.number(), z.string()]).optional().transform((v) => {
-    const n = typeof v === "string" ? Number(v.replace(",", ".")) : v;
-    if (n == null || !Number.isFinite(n)) return undefined;
-    return Math.min(max, Math.max(min, n));
-  });
+  z
+    .union([z.number(), z.string()])
+    .optional()
+    .transform((v) => {
+      const n = typeof v === "string" ? Number(v.replace(",", ".")) : v;
+      if (n == null || !Number.isFinite(n)) return undefined;
+      return Math.min(max, Math.max(min, n));
+    });
 
 const ScanSchema = z.object({
   isHuman: z.union([z.boolean(), z.string()]).transform((v) => v === true || v === "true"),
@@ -75,7 +78,7 @@ function bmiBodyFat(
 
 export const analyzeBodyScan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => BodyScanInput.parse(input))
+  .validator((input: unknown) => BodyScanInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
@@ -98,7 +101,9 @@ If either is false: fill rejectReason with one short sentence in ${language} exp
 STEP 2 — MEASUREMENT (only when the gate passes).
 Scale reference: stated standing height = ${data.heightCm} cm. Measure pixel proportions against this scale.
 Sex: ${data.sex}. Age: ${data.age ?? "unknown"}.${
-      data.weightKg ? ` Known body weight: ${data.weightKg} kg — every estimate must stay consistent with this mass.` : ""
+      data.weightKg
+        ? ` Known body weight: ${data.weightKg} kg — every estimate must stay consistent with this mass.`
+        : ""
     }
 Report TAPE circumferences in centimetres, one decimal, at the standard landmarks:
 - waistCm: narrowest point between ribs and navel (men: at the navel).
