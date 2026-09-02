@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from "react";
 
-import { locales } from "./i18n-locales";
 import { extra_legal } from "./i18n-extra-legal";
 import { extra_tools } from "./i18n-extra-tools";
 import { extra_scan } from "./i18n-extra-scan";
@@ -32,6 +31,27 @@ import { extra_scan2 } from "./i18n-extra-scan2";
 export type Lang = "lt" | "en" | "ru" | "uk" | "pl" | "de" | "es" | "fr";
 
 type Dict = Record<string, { lt: string; en: string }>;
+type SupplementalLocales = Record<string, Record<string, string>>;
+
+let supplementalLocales: SupplementalLocales | null = null;
+let supplementalLocalesPromise: Promise<SupplementalLocales> | null = null;
+
+/** Loads translations that are not needed by Lithuanian or English visitors. */
+export function preloadSupplementalLocales(): Promise<SupplementalLocales> {
+  if (!supplementalLocalesPromise) {
+    supplementalLocalesPromise = import("./i18n-locales")
+      .then(({ locales }) => {
+        supplementalLocales = locales;
+        return locales;
+      })
+      .catch((error: unknown) => {
+        supplementalLocalesPromise = null;
+        throw error;
+      });
+  }
+
+  return supplementalLocalesPromise;
+}
 
 const baseDict = {
   "nav.dashboard": { lt: "Apžvalga", en: "Dashboard" },
@@ -83,8 +103,14 @@ const baseDict = {
   "ar.formOk": { lt: "Technika gera", en: "Form looks good" },
   "ar.formWarn": { lt: "Taisyk techniką", en: "Fix your form" },
   "ar.idleTitle": { lt: "Įjunk kamerą", en: "Start camera" },
-  "ar.idleHint": { lt: "Pasiruošk erdvę — GYMS.LIFE seks tavo kūno poziciją realiu laiku.", en: "Make some space — GYMS.LIFE will track your body position in real time." },
-  "ar.noPose": { lt: "Nematau tavęs — atsitrauk nuo kameros", en: "I can\u2019t see you — step back from the camera" },
+  "ar.idleHint": {
+    lt: "Pasiruošk erdvę — GYMS.LIFE seks tavo kūno poziciją realiu laiku.",
+    en: "Make some space — GYMS.LIFE will track your body position in real time.",
+  },
+  "ar.noPose": {
+    lt: "Nematau tavęs — atsitrauk nuo kameros",
+    en: "I can\u2019t see you — step back from the camera",
+  },
   "ar.success": { lt: "Pavyko", en: "Success" },
   "ar.fail": { lt: "Nepavyko", en: "Failed" },
   "ar.retry": { lt: "Bandyti dar kartą", en: "Try again" },
@@ -114,13 +140,19 @@ const baseDict = {
     en: "\u201CThe body quits first. You stop only when you decide to stop.\u201D",
   },
   "landing.quoteBy": { lt: "GYMS.LIFE kodeksas", en: "The GYMS.LIFE code" },
-  "landing.bandTitle": { lt: "Pradėk šiandien. Rytoj bus per vėlu.", en: "Start today. Tomorrow is too late." },
+  "landing.bandTitle": {
+    lt: "Pradėk šiandien. Rytoj bus per vėlu.",
+    en: "Start today. Tomorrow is too late.",
+  },
   "landing.bandSub": {
     lt: "Pirmas planas sugeneruojamas per 60 sekundžių — tereikia atsakyti į kelis klausimus.",
     en: "Your first plan is generated in 60 seconds — just answer a few questions.",
   },
   "landing.ctaNow": { lt: "Sukurti mano planą nemokamai", en: "Build my plan free" },
-  "landing.trialNote": { lt: "7 dienos nemokamai · kortelės nereikia · atšaukti bet kada", en: "7 days free · no card required · cancel anytime" },
+  "landing.trialNote": {
+    lt: "7 dienos nemokamai · kortelės nereikia · atšaukti bet kada",
+    en: "7 days free · no card required · cancel anytime",
+  },
   "landing.demo": { lt: "Žiūrėti pratimus", en: "See the exercises" },
   "landing.myPlan": { lt: "Apžvalga", en: "Dashboard" },
   "landing.hasPlanTitle": { lt: "Jau turi aktyvų planą", en: "You already have an active plan" },
@@ -287,7 +319,10 @@ const baseDict = {
   "ex.level.intermediate": { lt: "Vidutinis", en: "Intermediate" },
   "ex.level.advanced": { lt: "Pažengusiems", en: "Advanced" },
   "ex.count": { lt: "pratimų", en: "exercises" },
-  "ex.none": { lt: "Pagal šiuos filtrus pratimų nerasta.", en: "No exercises match these filters." },
+  "ex.none": {
+    lt: "Pagal šiuos filtrus pratimų nerasta.",
+    en: "No exercises match these filters.",
+  },
 
   "ex.technique": { lt: "Technika", en: "Technique" },
   "ex.mistakes": { lt: "Dažnos klaidos", en: "Common mistakes" },
@@ -318,7 +353,10 @@ const baseDict = {
   "pr.records": { lt: "Asmeniniai rekordai", en: "Personal records" },
   "pr.addWeight": { lt: "Įrašyti svorį", en: "Log weight" },
   "pr.save": { lt: "Išsaugoti", en: "Save" },
-  "pr.empty": { lt: "Duomenų dar nėra — atlik pirmą treniruotę.", en: "No data yet — complete your first workout." },
+  "pr.empty": {
+    lt: "Duomenų dar nėra — atlik pirmą treniruotę.",
+    en: "No data yet — complete your first workout.",
+  },
   "pr.history": { lt: "Treniruočių istorija", en: "Workout history" },
 
   "coach.title": { lt: "Tavo treneris", en: "Your coach" },
@@ -342,7 +380,10 @@ const baseDict = {
     lt: "Visi tavo klausimai ir trenerio atsakymai išsaugomi automatiškai.",
     en: "Every question and coach answer is saved automatically.",
   },
-  "coach.historyEmpty": { lt: "Kol kas nėra išsaugotų pokalbių.", en: "No saved conversations yet." },
+  "coach.historyEmpty": {
+    lt: "Kol kas nėra išsaugotų pokalbių.",
+    en: "No saved conversations yet.",
+  },
   "coach.clear": { lt: "Išvalyti istoriją", en: "Clear history" },
   "coach.cleared": { lt: "Istorija išvalyta", en: "History cleared" },
   "coach.saved": { lt: "Išsaugota", en: "Saved" },
@@ -364,7 +405,10 @@ const baseDict = {
   "rd.score": { lt: "Pasiruošimas", en: "Readiness" },
   "rd.load": { lt: "Šiandienos krūvis", en: "Today's load" },
   "rd.again": { lt: "Perskaičiuoti", en: "Recalculate" },
-  "rd.applied": { lt: "Svoriai plane jau pritaikyti pagal pasiruošimą.", en: "Weights in the plan are already scaled to your readiness." },
+  "rd.applied": {
+    lt: "Svoriai plane jau pritaikyti pagal pasiruošimą.",
+    en: "Weights in the plan are already scaled to your readiness.",
+  },
 
   "fc.title": { lt: "Technikos skeneris", en: "Technique scanner" },
   "fc.sub": {
@@ -387,7 +431,6 @@ const baseDict = {
   "w.voiceOn": { lt: "Balsas įjungtas", en: "Voice on" },
   "w.restOver": { lt: "Poilsis baigtas, pradėk seriją", en: "Rest is over, start your set" },
 
-
   "cmd.ph": { lt: "Ieškok arba šok į skiltį...", en: "Search or jump to..." },
   "cmd.empty": { lt: "Nieko nerasta.", en: "No results." },
   "cmd.nav": { lt: "Navigacija", en: "Navigation" },
@@ -399,7 +442,10 @@ const baseDict = {
     lt: "Parašyk paprastai, ką suvalgei — kalorijos ir makro elementai suskaičiuojami už tave, o dienos tikslai atsinaujina patys.",
     en: "Describe what you ate in plain words — calories and macros are counted for you, and your daily targets update on their own.",
   },
-  "nut.ph": { lt: "Pvz.: 2 kiaušiniai, avižinė košė su bananu ir kava su pienu", en: "E.g. 2 eggs, oatmeal with banana and a latte" },
+  "nut.ph": {
+    lt: "Pvz.: 2 kiaušiniai, avižinė košė su bananu ir kava su pienu",
+    en: "E.g. 2 eggs, oatmeal with banana and a latte",
+  },
   "nut.add": { lt: "Įrašyti", en: "Log it" },
   "nut.analyzing": { lt: "Skaičiuojama...", en: "Calculating..." },
   "nut.today": { lt: "Šiandien", en: "Today" },
@@ -519,7 +565,10 @@ const baseDict = {
     lt: "Atidaryk „Shortcuts“ → Automation → Kasdien 8:00 → Health: gauk ramybės pulsą, HRV ir miegą → „Get contents of URL“ POST į adresą žemiau su JSON kūnu. Duomenys atkeliaus automatiškai kas rytą.",
     en: "Open Shortcuts → Automation → Daily 8:00 → Health: read resting HR, HRV and sleep → 'Get contents of URL' POST to the endpoint below with the JSON body. Data arrives automatically each morning.",
   },
-  "hs.android": { lt: "Android (Google Fit / Health Connect)", en: "Android (Google Fit / Health Connect)" },
+  "hs.android": {
+    lt: "Android (Google Fit / Health Connect)",
+    en: "Android (Google Fit / Health Connect)",
+  },
   "hs.androidSteps": {
     lt: "Naudok „HTTP Request Shortcuts“ arba „Tasker“ + Health Connect: kasdien nuskaityk pulsą, miegą ir žingsnius ir siųsk POST į tą patį adresą. Veikia ir su Garmin, Whoop, Oura per jų eksportą.",
     en: "Use 'HTTP Request Shortcuts' or Tasker + Health Connect: read heart rate, sleep and steps daily and POST them to the same endpoint. Works with Garmin, Whoop and Oura exports too.",
@@ -745,18 +794,45 @@ const baseDict = {
   "supp.slot.post_workout": { lt: "Po treniruotės", en: "Post-workout" },
   "supp.slot.dinner": { lt: "Vakarienė", en: "Dinner" },
   "supp.slot.bedtime": { lt: "Prieš miegą", en: "Before bed" },
-  "supp.why.preworkout": { lt: "Energijai ir fokusui — 30 min prieš treniruotę", en: "For energy and focus — 30 min before training" },
-  "supp.why.creatine": { lt: "Po treniruotės įsisavinamas geriausiai", en: "Best absorbed after training" },
+  "supp.why.preworkout": {
+    lt: "Energijai ir fokusui — 30 min prieš treniruotę",
+    en: "For energy and focus — 30 min before training",
+  },
+  "supp.why.creatine": {
+    lt: "Po treniruotės įsisavinamas geriausiai",
+    en: "Best absorbed after training",
+  },
   "supp.why.protein": { lt: "Padeda raumenims atsistatyti", en: "Helps muscles recover" },
   "supp.why.omega": { lt: "Su maistu įsisavinama geriau", en: "Absorbs better with food" },
-  "supp.why.vitamin": { lt: "Ryte su maistu — geriausias įsisavinimas", en: "Morning with food — best absorption" },
-  "supp.why.mineral": { lt: "Vakare padeda atsipalaiduoti ir miegoti", en: "In the evening it aids relaxation and sleep" },
-  "supp.why.iron": { lt: "Tuščiu skrandžiu įsisavinama daugiausia", en: "Best absorbed on an empty stomach" },
+  "supp.why.vitamin": {
+    lt: "Ryte su maistu — geriausias įsisavinimas",
+    en: "Morning with food — best absorption",
+  },
+  "supp.why.mineral": {
+    lt: "Vakare padeda atsipalaiduoti ir miegoti",
+    en: "In the evening it aids relaxation and sleep",
+  },
+  "supp.why.iron": {
+    lt: "Tuščiu skrandžiu įsisavinama daugiausia",
+    en: "Best absorbed on an empty stomach",
+  },
   "supp.why.calcium": { lt: "Vakare, atskirai nuo geležies", en: "In the evening, away from iron" },
-  "supp.why.electrolyte": { lt: "Palaiko vandens balansą treniruotės metu", en: "Supports hydration around training" },
-  "supp.why.probiotic": { lt: "Prieš valgį — geriausias poveikis žarnynui", en: "Before a meal — best for gut health" },
-  "supp.why.general": { lt: "Pastovus laikas kasdien — geriausias įprotis", en: "A consistent daily time builds the habit" },
-  "supp.why.separated": { lt: "Perkelta čia, kad netrukdytų kitų papildų įsisavinimui", en: "Moved here so it doesn't block absorption of others" },
+  "supp.why.electrolyte": {
+    lt: "Palaiko vandens balansą treniruotės metu",
+    en: "Supports hydration around training",
+  },
+  "supp.why.probiotic": {
+    lt: "Prieš valgį — geriausias poveikis žarnynui",
+    en: "Before a meal — best for gut health",
+  },
+  "supp.why.general": {
+    lt: "Pastovus laikas kasdien — geriausias įprotis",
+    en: "A consistent daily time builds the habit",
+  },
+  "supp.why.separated": {
+    lt: "Perkelta čia, kad netrukdytų kitų papildų įsisavinimui",
+    en: "Moved here so it doesn't block absorption of others",
+  },
   "supp.warn.ironCalcium": {
     lt: "Geležis ir kalcis trukdo vienas kito įsisavinimui — juos išskirstėme skirtingu metu.",
     en: "Iron and calcium compete for absorption — we've separated them.",
@@ -854,6 +930,15 @@ const LangContext = createContext<{
   t: (k: TKey) => string;
 }>({ lang: "lt", setLang: () => {}, t: (k) => dict[k].lt });
 
+function translate(
+  lang: Lang,
+  key: TKey,
+  loadedSupplementalLocales: SupplementalLocales | null = supplementalLocales,
+): string {
+  if (lang === "lt" || lang === "en") return dict[key][lang];
+  return loadedSupplementalLocales?.[lang]?.[key] ?? dict[key].en;
+}
+
 function detectLang(): Lang {
   if (typeof navigator === "undefined") return "lt";
   const codes = LANGS.map((l) => l.code) as string[];
@@ -866,6 +951,8 @@ function detectLang(): Lang {
 
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("lt");
+  const [loadedSupplementalLocales, setLoadedSupplementalLocales] =
+    useState<SupplementalLocales | null>(supplementalLocales);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("forma_lang");
@@ -881,12 +968,26 @@ export function LangProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem("forma_lang", l);
   }, []);
 
+  useEffect(() => {
+    if (lang === "lt" || lang === "en" || loadedSupplementalLocales?.[lang]) return;
+
+    let active = true;
+    void preloadSupplementalLocales()
+      .then(() => {
+        if (active) setLoadedSupplementalLocales(supplementalLocales);
+      })
+      .catch(() => {
+        // English remains the safe fallback if optional translations cannot load.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [lang, loadedSupplementalLocales]);
+
   const t = useCallback(
-    (k: TKey) => {
-      if (lang === "lt" || lang === "en") return dict[k][lang];
-      return locales[lang]?.[k] ?? dict[k].en;
-    },
-    [lang],
+    (k: TKey) => translate(lang, k, loadedSupplementalLocales),
+    [lang, loadedSupplementalLocales],
   );
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
@@ -897,12 +998,10 @@ export function useI18n() {
   return useContext(LangContext);
 }
 
-
 export type BaseLang = "lt" | "en";
 export const baseLang = (l: Lang): BaseLang => (l === "lt" ? "lt" : "en");
 
 /** Standalone translator for non-React code (server helpers, PDF/print builders). */
 export function tr(lang: Lang, k: TKey): string {
-  if (lang === "lt" || lang === "en") return dict[k][lang];
-  return locales[lang]?.[k] ?? dict[k].en;
+  return translate(lang, k);
 }
