@@ -69,12 +69,13 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
     setSaving(true);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from("daily_checkins")
         .select("id")
         .eq("user_id", user.id)
         .eq("checkin_on", today)
         .maybeSingle();
+      if (existingError) throw existingError;
 
       const payload = { readiness_score: Math.round(value), load_modifier: modifier };
       const { error } = existing?.id

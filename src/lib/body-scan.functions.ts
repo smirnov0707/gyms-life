@@ -210,20 +210,23 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
     const measuredOn = new Date().toISOString().slice(0, 10);
     let saved = true;
     try {
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from("body_metrics")
         .select("id")
         .eq("user_id", userId)
         .eq("measured_on", measuredOn)
         .limit(1)
         .maybeSingle();
-
-      const { error } = existing?.id
-        ? await supabase.from("body_metrics").update(measured).eq("id", existing.id)
-        : await supabase
-            .from("body_metrics")
-            .insert({ user_id: userId, measured_on: measuredOn, ...measured });
-      if (error) saved = false;
+      if (existingError) {
+        saved = false;
+      } else {
+        const { error } = existing?.id
+          ? await supabase.from("body_metrics").update(measured).eq("id", existing.id)
+          : await supabase
+              .from("body_metrics")
+              .insert({ user_id: userId, measured_on: measuredOn, ...measured });
+        if (error) saved = false;
+      }
     } catch {
       saved = false;
     }

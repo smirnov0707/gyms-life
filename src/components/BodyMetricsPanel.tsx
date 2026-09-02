@@ -13,11 +13,18 @@ import { TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { normalizeManualBodyMetric, type ManualBodyMetric } from "@/lib/body-metric.schema";
 import { useI18n } from "@/lib/i18n";
+import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type Row = { measured_on: string; weight_kg: number | null; body_fat: number | null };
+function toBodyMetricWrite(metric: ManualBodyMetric) {
+  const write: Database["public"]["Tables"]["body_metrics"]["Update"] = {};
+  if (metric.weight_kg !== undefined) write.weight_kg = metric.weight_kg;
+  if (metric.body_fat !== undefined) write.body_fat = metric.body_fat;
+  return write;
+}
 
 /** Unified body metrics: log weight / body fat and see the progress curve in one place. */
 export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
@@ -31,12 +38,13 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
   const { data: rows } = useQuery({
     queryKey: ["metrics", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("body_metrics")
         .select("measured_on, weight_kg, body_fat")
         .eq("user_id", user!.id)
         .order("measured_on", { ascending: true });
-      return (data ?? []) as Row[];
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: !!user,
   });
@@ -61,41 +69,43 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
 
   const save = async () => {
     if (!user) return;
-    const w = weight.replace(",", ".").trim();
-    const f = fat.replace(",", ".").trim();
-    if (!w && !f) return;
     setSaving(true);
-    const today = new Date().toISOString().slice(0, 10);
-    const payload = {
-      user_id: user.id,
-      measured_on: today,
-      ...(w ? { weight_kg: Number(w) } : {}),
-      ...(f ? { body_fat: Number(f) } : {}),
-    };
+    try {
+      const metric = normalizeManualBodyMetric({
+        ...(weight.trim() ? { weight_kg: weight } : {}),
+        ...(fat.trim() ? { body_fat: fat } : {}),
+      });
+      const metricWrite = toBodyMetricWrite(metric);
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: existing, error: existingError } = await supabase
+        .from("body_metrics")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("measured_on", today)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existingError) throw existingError;
 
-    const { data: existing } = await supabase
-      .from("body_metrics")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("measured_on", today)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      const { error } = existing
+        ? await supabase.from("body_metrics").update(metricWrite).eq("id", existing.id)
+        : await supabase
+            .from("body_metrics")
+            .insert({ user_id: user.id, measured_on: today, ...metricWrite });
+      if (error) throw error;
 
-    const { error } = existing
-      ? await supabase.from("body_metrics").update(payload).eq("id", existing.id)
-      : await supabase.from("body_metrics").insert(payload);
-
-    setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+      setWeight("");
+      setFat("");
+      toast.success(t("pr.save"));
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["metrics", user.id] }),
+        qc.invalidateQueries({ queryKey: ["latest-body-metric", user.id] }),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("common.error"));
+    } finally {
+      setSaving(false);
     }
-    setWeight("");
-    setFat("");
-    toast.success(t("pr.save"));
-    qc.invalidateQueries({ queryKey: ["metrics", user.id] });
-    qc.invalidateQueries({ queryKey: ["latest-body-metric", user.id] });
   };
 
   return (
@@ -139,6 +149,9 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
           inputMode="decimal"
+          min="0.01"
+          max="500"
+          step="0.01"
           placeholder={t("common.kg")}
           className="h-10 w-24"
         />
@@ -146,6 +159,9 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
           value={fat}
           onChange={(e) => setFat(e.target.value)}
           inputMode="decimal"
+          min="0"
+          max="100"
+          step="0.01"
           placeholder="%"
           className="h-10 w-20"
         />

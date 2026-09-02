@@ -105,7 +105,7 @@ export const getUserIntelligence = createServerFn({ method: "GET" })
       });
 
     for (const insight of insights) {
-      await context.supabase.from("user_insights").upsert(
+      const { error: upsertError } = await context.supabase.from("user_insights").upsert(
         {
           user_id: context.userId,
           insight_type: insight.type,
@@ -118,15 +118,17 @@ export const getUserIntelligence = createServerFn({ method: "GET" })
         },
         { onConflict: "user_id,fingerprint" },
       );
+      if (upsertError) throw new Error("Could not save user intelligence.");
     }
 
-    const { data: stored } = await context.supabase
+    const { data: stored, error: storedError } = await context.supabase
       .from("user_insights")
       .select("id, insight_type, severity, title, body, status, created_at")
       .eq("user_id", context.userId)
       .neq("status", "dismissed")
       .order("created_at", { ascending: false })
       .limit(12);
+    if (storedError) throw new Error("Could not load user intelligence.");
 
     return {
       context: ctx,

@@ -55,12 +55,13 @@ function ReadinessPage() {
   const { data: today, refetch } = useQuery({
     queryKey: ["checkin-today", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("daily_checkins")
         .select("*")
         .eq("user_id", user!.id)
         .eq("checkin_on", new Date().toISOString().slice(0, 10))
         .maybeSingle();
+      if (error) throw error;
       return data;
     },
     enabled: !!user,

@@ -58,13 +58,14 @@ export const getLatestReadiness = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("readiness_checkins")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (error) throw new Error("Could not load latest readiness check-in.");
 
-    return { data: data || null };
+    return { data: data ?? null };
   });
