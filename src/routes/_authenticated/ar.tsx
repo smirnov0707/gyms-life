@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 import {
   Activity,
   Camera,
@@ -79,7 +80,7 @@ function ArMode() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
-  const landmarkerRef = useRef<any>(null);
+  const landmarkerRef = useRef<PoseLandmarker | null>(null);
   const speakRef = useRef<{ text: string; at: number }>({ text: "", at: 0 });
   const analyserRef = useRef(new RepAnalyser(AR_EXERCISES[0]!));
   const samplesRef = useRef<PoseSample[]>([]);
@@ -197,11 +198,12 @@ function ArMode() {
   }, []);
 
   useEffect(() => {
+    const video = videoRef.current;
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
-      const stream = videoRef.current?.srcObject as MediaStream | null;
-      stream?.getTracks().forEach((track) => track.stop());
+      const stream = video?.srcObject;
+      if (stream instanceof MediaStream) stream.getTracks().forEach((track) => track.stop());
     };
   }, []);
 

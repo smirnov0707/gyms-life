@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-import { analyzeMealPhoto, savePhotoMeal } from "@/lib/food-vision.functions";
+import { analyzeMealPhoto, savePhotoMeal, type MealAnalysis } from "@/lib/food-vision.functions";
+import { errorMessage } from "@/lib/error-message";
 
 export const VisionMealScanner: React.FC = () => {
   const { lang } = useI18n();
@@ -20,18 +21,7 @@ export const VisionMealScanner: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [scanResult, setScanResult] = useState<{
-    ok: boolean;
-    dishName?: string;
-    calories?: number;
-    protein?: number;
-    carbs?: number;
-    fat?: number;
-    items?: string[];
-    confidence?: number;
-    note?: string;
-    reason?: string;
-  } | null>(null);
+  const [scanResult, setScanResult] = useState<MealAnalysis | null>(null);
 
   const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve) => {
@@ -77,8 +67,8 @@ export const VisionMealScanner: React.FC = () => {
       setImagePreview(base64);
       setScanResult(null);
       await runAnalysis(base64);
-    } catch (err: any) {
-      toast.error(err?.message || "Klaida apdorojant nuotrauką");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Klaida apdorojant nuotrauką"));
     }
   };
 
@@ -94,9 +84,9 @@ export const VisionMealScanner: React.FC = () => {
           res.reason || (lang === "lt" ? "Nepavyko atpažinti maisto" : "Failed to detect food"),
         );
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
       toast.error(
-        err?.message || (lang === "lt" ? "Klaida analizuojant nuotrauką" : "Analysis error"),
+        errorMessage(error, lang === "lt" ? "Klaida analizuojant nuotrauką" : "Analysis error"),
       );
     } finally {
       setIsScanning(false);
@@ -123,8 +113,8 @@ export const VisionMealScanner: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["nutrition-logs"] });
       setImagePreview(null);
       setScanResult(null);
-    } catch (err: any) {
-      toast.error(err?.message || (lang === "lt" ? "Nepavyko išsaugoti" : "Failed to save"));
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, lang === "lt" ? "Nepavyko išsaugoti" : "Failed to save"));
     } finally {
       setIsSaving(false);
     }

@@ -2,22 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Zap, Dumbbell, Apple, Activity, Flame, Shield } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useI18n } from "@/lib/i18n";
-import { getProactiveCoachInsight } from "@/lib/ghost-coach.functions";
+import { getProactiveCoachInsight, type GhostCoachInsight } from "@/lib/ghost-coach.functions";
 
 export const GhostCoachWidget: React.FC = () => {
   const { lang } = useI18n();
   const getInsightFn = useServerFn(getProactiveCoachInsight);
 
   const [loading, setLoading] = useState(true);
-  const [insight, setInsight] = useState<{
-    ok: boolean;
-    headline?: string;
-    readinessScore?: number;
-    fatigueStatus?: string;
-    trainingAdvice?: string;
-    nutritionAdvice?: string;
-    recommendedAction?: string;
-  } | null>(null);
+  const [insight, setInsight] = useState<GhostCoachInsight | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -35,7 +27,7 @@ export const GhostCoachWidget: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [lang]);
+  }, [getInsightFn, lang]);
 
   if (loading) {
     return (

@@ -2,9 +2,29 @@ import { resolvePaddlePrice } from "@/lib/payments.functions";
 
 const clientToken = import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"];
 
+type PaddleJs = {
+  Environment: {
+    set: (environment: "sandbox" | "production") => void;
+  };
+  Initialize: (options: { token: string }) => void;
+  Checkout: {
+    open: (options: {
+      items: Array<{ priceId: string; quantity: number }>;
+      customer?: { email: string };
+      customData?: Record<string, string>;
+      settings: {
+        displayMode: "overlay";
+        successUrl: string;
+        allowLogout: boolean;
+        variant: "one-page";
+      };
+    }) => void;
+  };
+};
+
 declare global {
   interface Window {
-    Paddle: any;
+    Paddle?: PaddleJs;
   }
 }
 
@@ -29,8 +49,13 @@ export async function initializePaddle() {
     script.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
     script.onload = () => {
       const paddleJsEnvironment = getPaddleEnvironment() === "sandbox" ? "sandbox" : "production";
-      window.Paddle.Environment.set(paddleJsEnvironment);
-      window.Paddle.Initialize({ token: clientToken });
+      const paddle = window.Paddle;
+      if (!paddle) {
+        reject(new Error("Paddle SDK did not initialize"));
+        return;
+      }
+      paddle.Environment.set(paddleJsEnvironment);
+      paddle.Initialize({ token: clientToken });
       paddleInitialized = true;
       resolve();
     };

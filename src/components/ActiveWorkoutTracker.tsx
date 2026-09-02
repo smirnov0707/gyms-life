@@ -24,7 +24,9 @@ export const ActiveWorkoutTracker: React.FC = () => {
   // Web Audio API sintetinis signalas
   const playRestCompleteBeep = () => {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextConstructor = window.AudioContext ?? window.webkitAudioContext;
+      if (!AudioContextConstructor) return;
+      const audioCtx = new AudioContextConstructor();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = "sine";
@@ -41,7 +43,7 @@ export const ActiveWorkoutTracker: React.FC = () => {
   };
 
   useEffect(() => {
-    let timer: any;
+    let timer: ReturnType<typeof window.setInterval> | undefined;
     if (isResting && restSecondsLeft !== null && restSecondsLeft > 0) {
       timer = setInterval(() => {
         setRestSecondsLeft((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
@@ -55,7 +57,9 @@ export const ActiveWorkoutTracker: React.FC = () => {
           : "Rest over! Ready for next set 💪",
       );
     }
-    return () => clearInterval(timer);
+    return () => {
+      if (timer !== undefined) window.clearInterval(timer);
+    };
   }, [isResting, restSecondsLeft, lang]);
 
   const handleVoiceSet = (data: {

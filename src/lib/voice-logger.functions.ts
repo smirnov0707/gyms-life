@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
+import { parseAiJson } from "./ai-json.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const VoiceLogInput = z.object({
@@ -9,13 +10,46 @@ const VoiceLogInput = z.object({
   lang: z.string().default("lt"),
 });
 
+const VoiceWorkoutSetSchema = z.object({
+  exerciseName: z.string().trim().min(1).max(160),
+  weightKg: z.coerce.number().finite().min(0).max(1_000),
+  reps: z.coerce.number().int().min(1).max(1_000),
+  rpe: z.coerce.number().finite().min(0).max(10),
+  suggestedRestSeconds: z.coerce.number().int().min(0).max(1_800),
+  coachFeedback: z.string().trim().min(1).max(500),
+});
+
+const VoiceLogSuccessSchema = z.object({
+  ok: z.literal(true),
+  transcription: z.string().trim().min(1).max(2_000),
+  data: VoiceWorkoutSetSchema,
+});
+
+const VoiceLogFailureSchema = z.object({
+  ok: z.literal(false),
+  reason: z.string().trim().min(1).max(500),
+});
+
+export const VoiceLogResultSchema = z.discriminatedUnion("ok", [
+  VoiceLogSuccessSchema,
+  VoiceLogFailureSchema,
+]);
+
+export type VoiceLogResult = z.infer<typeof VoiceLogResultSchema>;
+
+const WhisperResponseSchema = z.object({ text: z.string().optional() });
+
+function failedVoiceLog(reason: string): VoiceLogResult {
+  return { ok: false, reason };
+}
+
 export const parseVoiceWorkoutLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => VoiceLogInput.parse(data))
   .handler(async ({ data }) => {
     const groqKey = process.env["GROQ_API_KEY"];
     if (!groqKey) {
-      return { ok: false, reason: "Balso apdorojimo variklis nesukonfigūruotas." };
+      return failedVoiceLog("Balso apdorojimo variklis nesukonfigūruotas.");
     }
 
     try {
@@ -42,14 +76,14 @@ export const parseVoiceWorkoutLog = createServerFn({ method: "POST" })
       if (!whisperRes.ok) {
         const err = await whisperRes.text();
         console.error("Groq Whisper error:", err);
-        return { ok: false, reason: "Nepavyko atpažinti balso įrašo." };
+        return failedVoiceLog("Nepavyko atpažinti balso įrašo.");
       }
 
-      const whisperData = await whisperRes.json();
-      const transcription = whisperData.text?.trim() || "";
+      const whisperData = WhisperResponseSchema.safeParse(await whisperRes.json());
+      const transcription = whisperData.success ? whisperData.data.text?.trim() || "" : "";
 
       if (!transcription) {
-        return { ok: false, reason: "Balso įraše neaptikta kalba." };
+        return failedVoiceLog("Balso įraše neaptikta kalba.");
       }
 
       // 2. Struktūruojame tekstą į atskirus duomenų laukus per GPT-OSS 120B
@@ -74,20 +108,13 @@ Ištrauk šiuos duomenis ir grąžink TIK JSON formatu:
         temperature: 0.1,
       });
 
-      const parsedJson = JSON.parse(
-        aiParsed
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim(),
-      );
-
-      return {
+      return VoiceLogSuccessSchema.parse({
         ok: true,
         transcription,
-        data: parsedJson,
-      };
-    } catch (err: any) {
-      console.error("Voice parse error:", err);
-      return { ok: false, reason: err.message || "Balso apdorojimo klaida." };
+        data: parseAiJson(aiParsed, VoiceWorkoutSetSchema),
+      });
+    } catch (error: unknown) {
+      console.error("Voice parse error:", error);
+      return failedVoiceLog("Balso apdorojimo klaida.");
     }
   });

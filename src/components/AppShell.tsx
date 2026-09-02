@@ -10,7 +10,7 @@ import {
   Zap,
   Globe,
 } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 
 export function headerName(name?: string | null): string {
@@ -41,7 +41,7 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
   const languages = [
     { code: "lt", label: "LT" },
     { code: "en", label: "EN" },
-  ];
+  ] satisfies ReadonlyArray<{ code: Lang; label: string }>;
 
   return (
     <div
@@ -51,7 +51,7 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
         <button
           key={l.code}
           type="button"
-          onClick={() => setLang(l.code as any)}
+          onClick={() => setLang(l.code)}
           className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-lg transition-all ${
             lang === l.code
               ? "bg-emerald-500 text-black shadow-sm font-black"

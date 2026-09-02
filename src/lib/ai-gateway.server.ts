@@ -1,5 +1,6 @@
 import { createGroq } from "@ai-sdk/groq";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { z } from "zod";
 
 const groqClient = createGroq({
   apiKey: process.env["GROQ_API_KEY"] ?? "",
@@ -8,6 +9,41 @@ const groqClient = createGroq({
 const googleClient = createGoogleGenerativeAI({
   apiKey: process.env["GEMINI_API_KEY"] ?? "",
 });
+
+const GeminiTextResponseSchema = z.object({
+  candidates: z
+    .array(
+      z.object({
+        content: z
+          .object({
+            parts: z.array(z.object({ text: z.string().optional() })).min(1),
+          })
+          .optional(),
+      }),
+    )
+    .default([]),
+});
+
+const GroqChatResponseSchema = z.object({
+  choices: z
+    .array(
+      z.object({
+        message: z.object({ content: z.string().nullable().optional() }),
+      }),
+    )
+    .min(1),
+});
+
+function extractGeminiText(payload: unknown): string {
+  const response = GeminiTextResponseSchema.safeParse(payload);
+  if (!response.success) return "";
+  return (
+    response.data.candidates
+      .flatMap((candidate) => candidate.content?.parts ?? [])
+      .map((part) => part.text)
+      .find((text): text is string => Boolean(text?.trim())) ?? ""
+  );
+}
 
 export function isAiConfigured(): boolean {
   return Boolean(process.env["GROQ_API_KEY"] || process.env["GEMINI_API_KEY"]);
@@ -59,8 +95,11 @@ export async function askFastTextAi({
           : { temperature },
       }),
     });
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Gemini API klaida: ${body.slice(0, 500)}`);
+    }
+    return extractGeminiText(await res.json());
   }
 
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -82,6 +121,7 @@ export async function askFastTextAi({
     throw new Error(`Groq API klaida: ${err}`);
   }
 
-  const json = await res.json();
-  return json.choices?.[0]?.message?.content || "";
+  const json = GroqChatResponseSchema.safeParse(await res.json());
+  if (!json.success) throw new Error("Groq API returned an invalid response.");
+  return json.data.choices[0]?.message.content ?? "";
 }

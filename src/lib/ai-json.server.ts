@@ -1,3 +1,4 @@
+import type { LanguageModel, ModelMessage } from "ai";
 import type { z } from "zod";
 
 const INSTRUCTION =
@@ -7,11 +8,11 @@ const INSTRUCTION =
  * Providers may differ in structured-output support, so we ask for raw JSON and validate it ourselves.
  */
 export async function generateJson<T>(
-  model: unknown,
+  model: LanguageModel,
   opts: {
     prompt?: string;
     system?: string;
-    messages?: unknown;
+    messages?: ModelMessage[];
     schema: z.ZodType<T, unknown>;
     maxOutputTokens?: number;
   },
@@ -23,12 +24,10 @@ export async function generateJson<T>(
   let text: string;
   try {
     ({ text } = await generateText({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      model: model as any,
+      model,
       system,
       ...(opts.messages
-        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          { messages: opts.messages as any }
+        ? { messages: opts.messages }
         : { prompt: `${opts.prompt ?? ""}\n\n${INSTRUCTION}` }),
       maxOutputTokens: opts.maxOutputTokens ?? 16000,
       maxRetries: 2,
@@ -39,7 +38,12 @@ export async function generateJson<T>(
     throw normalizeAiError(error);
   }
 
-  return opts.schema.parse(extractJson(text));
+  return parseAiJson(text, opts.schema);
+}
+
+/** Validates raw provider output before it can enter a domain model. */
+export function parseAiJson<T>(text: string, schema: z.ZodType<T, unknown>): T {
+  return schema.parse(extractJson(text));
 }
 
 export type AiFailureKind = "credits" | "rate_limit" | "other";
@@ -59,14 +63,9 @@ export class AiUnavailableError extends Error {
  * Translate them into a stable shape so callers can degrade gracefully.
  */
 export function normalizeAiError(error: unknown): Error {
-  const raw = error as {
-    statusCode?: number;
-    status?: number;
-    message?: string;
-    responseBody?: string;
-  };
-  const status = raw?.statusCode ?? raw?.status ?? 0;
-  const text = `${raw?.message ?? ""} ${raw?.responseBody ?? ""}`.toLowerCase();
+  const status = numberProperty(error, "statusCode") ?? numberProperty(error, "status") ?? 0;
+  const text =
+    `${stringProperty(error, "message") ?? ""} ${stringProperty(error, "responseBody") ?? ""}`.toLowerCase();
 
   if (
     status === 402 ||
@@ -80,6 +79,22 @@ export function normalizeAiError(error: unknown): Error {
     return new AiUnavailableError("rate_limit", "AI_RATE_LIMIT");
   }
   return error instanceof Error ? error : new Error(String(error));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function numberProperty(value: unknown, key: string): number | undefined {
+  if (!isRecord(value)) return undefined;
+  const property = value[key];
+  return typeof property === "number" ? property : undefined;
+}
+
+function stringProperty(value: unknown, key: string): string | undefined {
+  if (!isRecord(value)) return undefined;
+  const property = value[key];
+  return typeof property === "string" ? property : undefined;
 }
 
 function extractJson(text: string): unknown {

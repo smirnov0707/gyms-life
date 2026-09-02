@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useI18n } from "@/lib/i18n";
-import { searchRestaurantDishes } from "@/lib/dineout.functions";
+import { searchRestaurantDishes, type RestaurantSearchResult } from "@/lib/dineout.functions";
+import { errorMessage } from "@/lib/error-message";
 
 export const DineOutMenuScanner: React.FC = () => {
   const { lang } = useI18n();
@@ -22,36 +23,15 @@ export const DineOutMenuScanner: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [goal, setGoal] = useState<"muscle_gain" | "fat_loss" | "healthy">("muscle_gain");
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<{
-    ok: boolean;
-    canonicalRestaurantName?: string;
-    category?: string;
-    dishes?: Array<{
-      name: string;
-      calories: number;
-      protein: number;
-      carbs: number;
-      fat: number;
-      recommendationReason: string;
-      fitScore: number;
-    }>;
-    coachTip?: string;
-    reason?: string;
-  } | null>(null);
+  const [result, setResult] = useState<RestaurantSearchResult | null>(null);
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!searchQuery.trim()) {
-      toast.error(lang === "lt" ? "Įveskite restorano pavadinimą" : "Enter restaurant name");
-      return;
-    }
-
+  const search = async (query: string) => {
     setIsLoading(true);
     setResult(null);
     try {
       const res = await searchFn({
         data: {
-          query: searchQuery.trim(),
+          query,
           goal,
           lang: lang || "lt",
         },
@@ -67,11 +47,21 @@ export const DineOutMenuScanner: React.FC = () => {
       } else {
         toast.error(res.reason || (lang === "lt" ? "Restoranas nerastas" : "Restaurant not found"));
       }
-    } catch (err: any) {
-      toast.error(err?.message || (lang === "lt" ? "Klaida ieškant meniu" : "Search error"));
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, lang === "lt" ? "Klaida ieškant meniu" : "Search error"));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) {
+      toast.error(lang === "lt" ? "Įveskite restorano pavadinimą" : "Enter restaurant name");
+      return;
+    }
+    await search(query);
   };
 
   const popularPlaces = [
@@ -186,11 +176,7 @@ export const DineOutMenuScanner: React.FC = () => {
             type="button"
             onClick={() => {
               setSearchQuery(p.query);
-              setTimeout(() => {
-                searchFn({
-                  data: { query: p.query, goal, lang: lang || "lt" },
-                }).then(setResult);
-              }, 50);
+              void search(p.query);
             }}
             className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 border border-white/5 transition-colors"
           >
@@ -213,24 +199,20 @@ export const DineOutMenuScanner: React.FC = () => {
                     {result.canonicalRestaurantName}
                   </h4>
                 </div>
-                {result.category && (
-                  <span className="text-xs font-mono px-2.5 py-1 rounded bg-black/40 text-neutral-300 border border-white/10">
-                    {result.category}
-                  </span>
-                )}
+                <span className="text-xs font-mono px-2.5 py-1 rounded bg-black/40 text-neutral-300 border border-white/10">
+                  {result.category}
+                </span>
               </div>
 
-              {result.coachTip && (
-                <div className="p-3 rounded-xl bg-neutral-950/80 border border-white/10 text-xs text-neutral-300 leading-relaxed flex items-start gap-2">
-                  <span className="text-base">💡</span>
-                  <div>
-                    <strong className="text-orange-400 font-medium block mb-0.5">
-                      {lang === "lt" ? "Trenerio patarimas užsakymui:" : "Coach Ordering Tip:"}
-                    </strong>
-                    {result.coachTip}
-                  </div>
+              <div className="p-3 rounded-xl bg-neutral-950/80 border border-white/10 text-xs text-neutral-300 leading-relaxed flex items-start gap-2">
+                <span className="text-base">💡</span>
+                <div>
+                  <strong className="text-orange-400 font-medium block mb-0.5">
+                    {lang === "lt" ? "Trenerio patarimas užsakymui:" : "Coach Ordering Tip:"}
+                  </strong>
+                  {result.coachTip}
                 </div>
-              )}
+              </div>
 
               <div className="space-y-2.5">
                 <span className="text-xs font-mono text-neutral-400 uppercase tracking-wider block">
@@ -239,7 +221,7 @@ export const DineOutMenuScanner: React.FC = () => {
                     : "TOP PICKS FOR YOUR GOAL:"}
                 </span>
 
-                {result.dishes?.map((dish, idx) => (
+                {result.dishes.map((dish, idx) => (
                   <div
                     key={idx}
                     className="p-3.5 rounded-xl bg-black/50 border border-white/10 hover:border-orange-500/30 transition-all space-y-2"

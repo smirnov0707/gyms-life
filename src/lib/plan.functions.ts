@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateJson } from "./ai-json.server";
-import { askFastTextAi } from "./ai-gateway.server";
+import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
 import { buildUserContext, contextForAi } from "./user-context.server";
 
 // Draft/activation lifecycle: generation never changes the user's active program.
@@ -83,7 +83,11 @@ export const generatePlan = createServerFn({ method: "POST" })
         : `bench-press | Barbell Bench Press / Spaudimas štanga | chest | barbell\nsquat | Barbell Squat / Pritūpimai su štanga | legs | barbell\ndeadlift | Barbell Deadlift / Mirties trauka | back | barbell\npull-up | Pull Up / Prisitraukimai | back | bodyweight\npush-up | Push Up / Atsispaudimai | chest | bodyweight\nlunge | Dumbbell Lunge / Įtūpstai su hanteliais | legs | dumbbell\nplank | Plank / Lenta | core | bodyweight`;
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
     const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
-    const plan = await generateJson<GeneratedPlan>(null, { prompt, schema: PlanSchema });
+    const provider = createAiRouterProvider("plan.functions");
+    const plan = await generateJson(provider("google/gemini-2.5-flash"), {
+      prompt,
+      schema: PlanSchema,
+    });
     const { data: inserted, error } = await supabase
       .from("plans")
       .insert({

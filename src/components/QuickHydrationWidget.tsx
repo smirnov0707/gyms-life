@@ -24,7 +24,7 @@ export const QuickHydrationWidget: React.FC<{ targetMl?: number }> = ({ targetMl
       setCurrentMl(0);
     }
     setReady(true);
-  }, [user?.id]);
+  }, [user]);
 
   const persist = (value: number) => {
     setCurrentMl(value);

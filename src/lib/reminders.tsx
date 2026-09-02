@@ -106,7 +106,7 @@ const ReminderContext = createContext<Ctx | null>(null);
 
 const beep = () => {
   try {
-    const AC = window.AudioContext ?? (window as any).webkitAudioContext;
+    const AC = window.AudioContext ?? window.webkitAudioContext;
     if (!AC) return;
     const ctx = new AC();
     const osc = ctx.createOscillator();
@@ -134,7 +134,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const today = () => new Date().toISOString().slice(0, 10);
+  const today = useCallback(() => new Date().toISOString().slice(0, 10), []);
 
   useEffect(() => {
     setSettings(loadReminders());
@@ -147,20 +147,26 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         /* ignore */
       }
     }
-  }, []);
+  }, [today]);
 
   const save = useCallback((next: ReminderSettings) => {
     setSettings(next);
     window.localStorage.setItem(KEY, JSON.stringify(next));
   }, []);
 
-  const persistWater = (ml: number) => {
-    setWaterMl(ml);
-    window.localStorage.setItem("forma_water", JSON.stringify({ date: today(), ml }));
-  };
+  const persistWater = useCallback(
+    (ml: number) => {
+      setWaterMl(ml);
+      window.localStorage.setItem("forma_water", JSON.stringify({ date: today(), ml }));
+    },
+    [today],
+  );
 
-  const addWater = useCallback((ml: number) => persistWater(Math.max(0, waterMl + ml)), [waterMl]);
-  const resetWater = useCallback(() => persistWater(0), []);
+  const addWater = useCallback(
+    (ml: number) => persistWater(Math.max(0, waterMl + ml)),
+    [persistWater, waterMl],
+  );
+  const resetWater = useCallback(() => persistWater(0), [persistWater]);
 
   const fire = useCallback((kind: ReminderKind) => {
     const l = langRef.current;
@@ -221,7 +227,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     tick();
     const id = window.setInterval(tick, 30000);
     return () => window.clearInterval(id);
-  }, [fire]);
+  }, [fire, today]);
 
   const value = useMemo<Ctx>(
     () => ({ settings, save, waterMl, addWater, resetWater, requestPush, fire }),

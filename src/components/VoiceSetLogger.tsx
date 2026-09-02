@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { parseVoiceWorkoutLog } from "@/lib/voice-logger.functions";
+import { errorMessage } from "@/lib/error-message";
 
 interface VoiceSetLoggerProps {
   onSetLogged?: (data: {
@@ -14,6 +15,22 @@ interface VoiceSetLoggerProps {
     rpe: number;
     suggestedRestSeconds: number;
   }) => void;
+}
+
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Nepavyko perskaityti garso įrašo."));
+      }
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Nepavyko perskaityti garso įrašo."));
+    reader.onabort = () => reject(new Error("Garso įrašo nuskaitymas buvo nutrauktas."));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) => {
@@ -53,7 +70,7 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
           ? "Klausausi... Ištarkite pratimą, svorį ir pakartojimus"
           : "Listening... Speak your set",
       );
-    } catch (err: any) {
+    } catch {
       toast.error(lang === "lt" ? "Nepavyko pasiekti mikrofono" : "Microphone access denied");
     }
   };
@@ -68,35 +85,29 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
   const processAudio = async (blob: Blob) => {
     setIsProcessing(true);
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(blob);
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        const res = await parseFn({
-          data: {
-            audioBase64: base64String,
-            mimeType: "audio/webm",
-            lang: lang || "lt",
-          },
-        });
+      const base64String = await readBlobAsDataUrl(blob);
+      const res = await parseFn({
+        data: {
+          audioBase64: base64String,
+          mimeType: "audio/webm",
+          lang: lang || "lt",
+        },
+      });
 
-        if (res.ok && res.data) {
-          setLastTranscript(res.transcription || "");
-          toast.success(
-            lang === "lt"
-              ? `Užregistruota: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps} (RPE ${res.data.rpe})`
-              : `Logged: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps}`,
-          );
-          if (onSetLogged) {
-            onSetLogged(res.data);
-          }
-        } else {
-          toast.error(res.reason || (lang === "lt" ? "Nepavyko atpažinti" : "Voice log failed"));
-        }
-        setIsProcessing(false);
-      };
-    } catch (err: any) {
-      toast.error(err?.message || "Apdorojimo klaida");
+      if (res.ok) {
+        setLastTranscript(res.transcription);
+        toast.success(
+          lang === "lt"
+            ? `Užregistruota: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps} (RPE ${res.data.rpe})`
+            : `Logged: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps}`,
+        );
+        onSetLogged?.(res.data);
+      } else {
+        toast.error(res.reason);
+      }
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Apdorojimo klaida"));
+    } finally {
       setIsProcessing(false);
     }
   };

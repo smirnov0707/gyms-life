@@ -6,7 +6,7 @@
 export interface OfflinePayload {
   id: string;
   type: "workout_set" | "nutrition_log";
-  data: any;
+  data: unknown;
   timestamp: number;
 }
 

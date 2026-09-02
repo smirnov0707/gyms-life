@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateJson } from "./ai-json.server";
+import { generateJson, parseAiJson } from "./ai-json.server";
 import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
 
 export const WARMUP_SLUGS = ["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"];
@@ -110,6 +110,14 @@ const SetAdviceInput = z.object({
   lang: z.string().default("lt"),
 });
 
+const SetAdviceSchema = z.object({
+  ok: z.literal(true),
+  weightAdjustment: z.enum(["keep", "increase", "decrease"]),
+  suggestedAdjustmentKg: z.coerce.number().finite().min(-100).max(100),
+  recommendedRestSec: z.coerce.number().int().min(0).max(1_800),
+  advice: z.string().trim().min(1).max(500),
+});
+
 export const getSetAdvice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SetAdviceInput.parse(data))
@@ -139,13 +147,8 @@ Atsakyk TIK TIKSLIU JSON:
         temperature: 0.2,
       });
 
-      return JSON.parse(
-        raw
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim(),
-      );
-    } catch (err: any) {
+      return parseAiJson(raw, SetAdviceSchema);
+    } catch {
       return {
         ok: true,
         weightAdjustment: "keep",
@@ -165,6 +168,14 @@ const DebriefInput = z.object({
   avgRpe: z.number(),
   exercisesCompleted: z.array(z.string()),
   lang: z.string().default("lt"),
+});
+
+const SessionDebriefSchema = z.object({
+  ok: z.literal(true),
+  recoveryHours: z.coerce.number().finite().min(0).max(168),
+  stimulusScore: z.coerce.number().finite().min(0).max(100),
+  summary: z.string().trim().min(1).max(1_000),
+  nutritionTip: z.string().trim().min(1).max(500),
 });
 
 export const getSessionDebrief = createServerFn({ method: "POST" })
@@ -193,13 +204,8 @@ Atsakyk TIK JSON:
         temperature: 0.2,
       });
 
-      return JSON.parse(
-        raw
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim(),
-      );
-    } catch (err: any) {
+      return parseAiJson(raw, SessionDebriefSchema);
+    } catch {
       return {
         ok: true,
         recoveryHours: 48,

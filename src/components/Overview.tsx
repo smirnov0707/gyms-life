@@ -257,17 +257,19 @@ export function Overview() {
         ? "text-destructive"
         : "text-accent";
 
-  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const firstName = useMemo(() => {
+    const metadata = user?.user_metadata ?? {};
+    const fullName = metadata["full_name"];
+    const name = metadata["name"];
     const raw =
-      (profile?.display_name as string | undefined) ||
-      (meta["full_name"] as string | undefined) ||
-      (meta["name"] as string | undefined) ||
+      profile?.display_name ||
+      (typeof fullName === "string" ? fullName : "") ||
+      (typeof name === "string" ? name : "") ||
       (user?.email ? user.email.split("@")[0] : "");
     const cleaned = (raw ?? "").trim().split(/\s+/)[0] ?? "";
     if (!cleaned) return "";
     return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-  }, [profile, meta, user]);
+  }, [profile, user]);
 
   const hour = new Date().getHours();
   const greeting = t(hour < 12 ? "dash.morning" : hour < 18 ? "dash.afternoon" : "dash.evening");

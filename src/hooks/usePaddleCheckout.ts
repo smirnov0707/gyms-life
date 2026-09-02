@@ -15,18 +15,21 @@ export function usePaddleCheckout() {
     try {
       await initializePaddle();
       const paddlePriceId = await getPaddlePriceId(options.priceId);
+      const paddle = window.Paddle;
+      if (!paddle) throw new Error("Paddle SDK did not initialize");
 
-      window.Paddle.Checkout.open({
+      const checkout = {
         items: [{ priceId: paddlePriceId, quantity: options.quantity }],
-        customer: options.customerEmail ? { email: options.customerEmail } : undefined,
-        customData: options.customData,
+        ...(options.customerEmail ? { customer: { email: options.customerEmail } } : {}),
+        ...(options.customData ? { customData: options.customData } : {}),
         settings: {
           displayMode: "overlay",
           successUrl: options.successUrl || `${window.location.origin}/app?checkout=success`,
           allowLogout: false,
           variant: "one-page",
         },
-      });
+      } satisfies Parameters<typeof paddle.Checkout.open>[0];
+      paddle.Checkout.open(checkout);
     } finally {
       setLoading(false);
     }

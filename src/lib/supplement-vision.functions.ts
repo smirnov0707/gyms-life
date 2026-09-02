@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createAiRouterProvider } from "./ai-gateway.server";
+import { generateJson } from "./ai-json.server";
 
 const SupplementVisionInput = z.object({
   image: z.string().min(10),
@@ -21,10 +23,16 @@ const SupplementProductSchema = z.object({
   readable: z.string().trim().max(500).default(""),
 });
 
-const SupplementVisionResultSchema = z.discriminatedUnion("ok", [
+export const SupplementVisionResultSchema = z.discriminatedUnion("ok", [
   z.object({ ok: z.literal(true), products: z.array(SupplementProductSchema).min(1).max(8) }),
   z.object({ ok: z.literal(false), reason: z.string().trim().min(1).max(300) }),
 ]);
+
+export type SupplementVisionResult = z.infer<typeof SupplementVisionResultSchema>;
+
+function failedSupplementScan(reason: string): SupplementVisionResult {
+  return { ok: false, reason };
+}
 
 export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -32,18 +40,14 @@ export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
-      return {
-        ok: false,
-        reason:
-          data.lang === "lt"
-            ? "AI variklis nesukonfigūruotas serveryje."
-            : "AI engine not configured.",
-      };
+      return failedSupplementScan(
+        data.lang === "lt"
+          ? "AI variklis nesukonfigūruotas serveryje."
+          : "AI engine not configured.",
+      );
     }
 
     try {
-      const base64Data = data.image.includes(",") ? data.image.split(",")[1] : data.image;
-      const mimeType = data.image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
       const langName = data.lang === "lt" ? "lietuvių" : "anglų";
 
       const prompt = `Tu esi profesionalus sporto papildų ir farmakologijos AI ekspertas.
@@ -67,68 +71,26 @@ Jei papildas atpažintas:
     "readable": "Etiketės tekstas arba tuščia eilutė"
   }]
 }
-Atsakyk TIK TIKSLIU JSON be jokio markdown.`;
+      Atsakyk TIK TIKSLIU JSON be jokio markdown.`;
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-      const payload = {
-        contents: [
+      const provider = createAiRouterProvider("supplement-vision.functions");
+      return await generateJson(provider("google/gemini-2.5-flash"), {
+        system: prompt,
+        messages: [
           {
             role: "user",
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType,
-                  data: base64Data,
-                },
-              },
+            content: [
+              { type: "text", text: "Išanalizuok šio papildo etiketę." },
+              { type: "image", image: data.image },
             ],
           },
         ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-        },
-      };
-
-      let res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        schema: SupplementVisionResultSchema,
+        maxOutputTokens: 1_200,
       });
-
-      if (!res.ok) {
-        const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
-        res = await fetch(fallbackEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!res.ok) {
-        return {
-          ok: false,
-          reason: data.lang === "lt" ? "Nepavyko nuskaityti papildo." : "Scan failed.",
-        };
-      }
-
-      const result = await res.json();
-      const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
-
-      return SupplementVisionResultSchema.parse(
-        JSON.parse(
-          rawText
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim(),
-        ),
+    } catch {
+      return failedSupplementScan(
+        data.lang === "lt" ? "Nepavyko nuskaityti papildo." : "Scan failed.",
       );
-    } catch (error) {
-      return {
-        ok: false,
-        reason: error instanceof Error && error.message ? error.message : "Apdorojimo klaida.",
-      };
     }
   });

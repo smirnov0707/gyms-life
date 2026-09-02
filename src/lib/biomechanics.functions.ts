@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createAiRouterProvider } from "./ai-gateway.server";
+import { generateJson } from "./ai-json.server";
 
 const BiomechanicsInput = z.object({
   image: z.string().min(10),
@@ -8,18 +10,43 @@ const BiomechanicsInput = z.object({
   lang: z.string().default("lt"),
 });
 
+const ExerciseFormAnalysisSuccessSchema = z.object({
+  ok: z.literal(true),
+  exerciseDetected: z.string().trim().min(1).max(120),
+  score: z.coerce.number().finite().min(0).max(100),
+  jointAngles: z.record(z.string(), z.string().trim().min(1).max(100)).default({}),
+  strengths: z.array(z.string().trim().min(1).max(300)).max(8).default([]),
+  corrections: z.array(z.string().trim().min(1).max(300)).max(8).default([]),
+  injuryRisk: z.enum(["low", "medium", "high"]).default("low"),
+  coachCue: z.string().trim().min(1).max(500),
+});
+
+const ExerciseFormAnalysisFailureSchema = z.object({
+  ok: z.literal(false),
+  reason: z.string().trim().min(1).max(500),
+});
+
+export const ExerciseFormAnalysisSchema = z.discriminatedUnion("ok", [
+  ExerciseFormAnalysisSuccessSchema,
+  ExerciseFormAnalysisFailureSchema,
+]);
+
+export type ExerciseFormAnalysis = z.infer<typeof ExerciseFormAnalysisSchema>;
+
+function failedAnalysis(reason: string): ExerciseFormAnalysis {
+  return { ok: false, reason };
+}
+
 export const analyzeExerciseForm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => BiomechanicsInput.parse(data))
   .handler(async ({ data }) => {
     const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
-      return { ok: false, reason: "AI regos variklis nesukonfigūruotas." };
+      return failedAnalysis("AI regos variklis nesukonfigūruotas.");
     }
 
     try {
-      const base64Data = data.image.includes(",") ? data.image.split(",")[1] : data.image;
-      const mimeType = data.image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
       const langName = data.lang === "lt" ? "lietuvių" : "anglų";
 
       const prompt = `Tu esi profesionalus sporto biomechanikos kineziterapeutas ir treneris.
@@ -45,48 +72,22 @@ Atsakyk TIK TIKSLIU JSON:
   "coachCue": "Taiklus biomechaninis patarimas ${langName} kalba"
 }`;
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
-      const payload = {
-        contents: [
+      const provider = createAiRouterProvider("biomechanics.functions");
+      return await generateJson(provider("google/gemini-2.5-flash"), {
+        system: prompt,
+        messages: [
           {
             role: "user",
-            parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Data } }],
+            content: [
+              { type: "text", text: "Išanalizuok šį pratimo atlikimo kadrą." },
+              { type: "image", image: data.image },
+            ],
           },
         ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.1,
-        },
-      };
-
-      let res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        schema: ExerciseFormAnalysisSchema,
+        maxOutputTokens: 1_200,
       });
-
-      if (!res.ok) {
-        const fallback = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
-        res = await fetch(fallback, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!res.ok) return { ok: false, reason: "Nepavyko atlikti formos analizės." };
-
-      const result = await res.json();
-      const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
-
-      return JSON.parse(
-        rawText
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim(),
-      );
-    } catch (err: any) {
-      return { ok: false, reason: err.message || "Biomechanikos klaida." };
+    } catch {
+      return failedAnalysis("Biomechanikos klaida.");
     }
   });

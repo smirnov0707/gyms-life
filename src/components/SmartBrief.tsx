@@ -22,26 +22,15 @@ import {
 } from "lucide-react";
 import {
   getDailyBrief,
-  type BriefAction,
+  DailyBriefSchema,
+  type DailyBrief,
   type BriefRoute,
-  type BriefSignal,
 } from "@/lib/brief.functions";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
 import { cn } from "@/lib/utils";
 import { aiErrorMessage } from "@/lib/ai-error";
-
-type Brief = {
-  headline: string;
-  summary: string;
-  focus: string;
-  signals: BriefSignal[];
-  actions: BriefAction[];
-  watchouts: string[];
-  streakDays: number;
-  readiness: number | null;
-};
 
 const ROUTE_ICON: Record<BriefRoute, typeof Sparkles> = {
   "/app": Activity,
@@ -63,7 +52,7 @@ const cacheKey = (lang: string) => `gl_brief_${lang}_${new Date().toISOString().
 export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
   const { t, lang } = useI18n();
   const fetchBrief = useServerFn(getDailyBrief);
-  const [brief, setBrief] = useState<Brief | null>(null);
+  const [brief, setBrief] = useState<DailyBrief | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -74,7 +63,7 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
         const cached = window.localStorage.getItem(key);
         if (cached) {
           try {
-            setBrief(JSON.parse(cached) as Brief);
+            setBrief(DailyBriefSchema.parse(JSON.parse(cached)));
             return;
           } catch {
             window.localStorage.removeItem(key);
@@ -84,7 +73,7 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
       setBusy(true);
       setFailed(null);
       try {
-        const res = (await fetchBrief({ data: { lang } })) as Brief;
+        const res = await fetchBrief({ data: { lang } });
         setBrief(res);
         window.localStorage.setItem(key, JSON.stringify(res));
       } catch (err) {

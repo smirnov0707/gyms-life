@@ -8,21 +8,8 @@ import { Input } from "./ui/input";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { generateFridgeRecipe } from "@/lib/fridge.functions";
-
-type Recipe = {
-  title: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  time: string;
-  steps: string[];
-  usedIngredients: string[];
-  missingSuggestion: string;
-  coachNote: string;
-  fallback: boolean;
-};
+import { generateFridgeRecipe, type FridgeRecipe } from "@/lib/fridge.functions";
+import { errorMessage } from "@/lib/error-message";
 
 export const SmartFridgeScanner: React.FC = () => {
   const { t, lang } = useI18n();
@@ -31,7 +18,7 @@ export const SmartFridgeScanner: React.FC = () => {
   const [inputVal, setInputVal] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [variant, setVariant] = useState(0);
-  const [recipeResult, setRecipeResult] = useState<Recipe | null>(null);
+  const [recipeResult, setRecipeResult] = useState<FridgeRecipe | null>(null);
   /** Signature of the ingredients the current recipe was built from. */
   const [recipeFor, setRecipeFor] = useState("");
   const call = useServerFn(generateFridgeRecipe);
@@ -75,7 +62,7 @@ export const SmartFridgeScanner: React.FC = () => {
     setIsGenerating(true);
     setRecipeResult(null);
     try {
-      const res = (await call({
+      const res = await call({
         data: {
           ingredients,
           lang,
@@ -84,12 +71,12 @@ export const SmartFridgeScanner: React.FC = () => {
           proteinLeft: Math.round(weight * 2),
           variant: seed,
         },
-      })) as Recipe;
+      });
       setRecipeResult(res);
       setRecipeFor(signature);
       if (res.fallback) toast.info(t("sc.fridge.offline"));
-    } catch (err) {
-      toast.error((err as Error).message);
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setIsGenerating(false);
     }

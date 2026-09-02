@@ -25,7 +25,7 @@ export function toNumber(value: unknown): number | null {
   let s = value.trim();
   if (!s) return null;
   // strip everything but digits, separators and sign
-  s = s.replace(/[^\d,.\-]/g, "");
+  s = s.replace(/[^\d,.-]/g, "");
   if (!s) return null;
   const lastComma = s.lastIndexOf(",");
   const lastDot = s.lastIndexOf(".");

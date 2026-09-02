@@ -198,7 +198,12 @@ export class RepAnalyser {
       );
       let fix = "";
       let top = 0;
-      for (const [cue, count] of this.cues) if (count > top) ((top = count), (fix = cue));
+      for (const [cue, count] of this.cues) {
+        if (count > top) {
+          top = count;
+          fix = cue;
+        }
+      }
       const rep: RepRecord = {
         index: this.reps.length + 1,
         score,
@@ -262,7 +267,12 @@ export function summarizeSet(reps: RepRecord[], lang: Base): SetSummary | null {
   for (const r of reps) if (r.fix) counts.set(r.fix, (counts.get(r.fix) ?? 0) + 1);
   let fix = "";
   let top = 0;
-  for (const [cue, count] of counts) if (count > top) ((top = count), (fix = cue));
+  for (const [cue, count] of counts) {
+    if (count > top) {
+      top = count;
+      fix = cue;
+    }
+  }
   if (!fix && down < 1) fix = T.fast;
   if (!fix && asym > 10) fix = T.asym;
 

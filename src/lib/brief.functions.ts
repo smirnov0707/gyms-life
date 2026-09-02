@@ -57,7 +57,6 @@ export type BriefSignal = {
   note: string;
   tone: "good" | "neutral" | "risk";
 };
-export type DailyBrief = z.infer<typeof BriefSchema> & { actions: BriefAction[] };
 export type BriefAction = {
   title: string;
   reason: string;
@@ -66,6 +65,15 @@ export type BriefAction = {
   cta: string;
   priority: "high" | "medium" | "low";
 };
+
+export const DailyBriefSchema = BriefSchema.extend({
+  actions: z.array(ActionSchema.extend({ route: z.enum(BRIEF_ROUTES) })).max(4),
+  gaps: z.array(z.string()).max(10),
+  streakDays: z.number().int().min(0),
+  readiness: z.number().finite().min(0).max(100).nullable(),
+});
+
+export type DailyBrief = z.infer<typeof DailyBriefSchema>;
 
 function isBriefRoute(route: string): route is BriefRoute {
   return BRIEF_ROUTES.some((allowedRoute) => allowedRoute === route);
@@ -78,7 +86,7 @@ export const getDailyBrief = createServerFn({ method: "POST" })
       .object({ lang: z.enum(["lt", "en", "ru", "uk", "pl", "de", "es", "fr"]).default("lt") })
       .parse(input ?? {}),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<DailyBrief> => {
     const { supabase, userId } = context;
 
     const { buildUserContext, contextForAi } = await import("./user-context.server");
@@ -175,7 +183,7 @@ RETURN EXACTLY THIS JSON SHAPE:
         : ["workout_last_7_days"]),
     ];
 
-    return {
+    return DailyBriefSchema.parse({
       headline: parsed.headline,
       summary: parsed.summary,
       focus: parsed.focus,
@@ -185,5 +193,5 @@ RETURN EXACTLY THIS JSON SHAPE:
       gaps,
       streakDays: calculateWorkoutStreak(workoutDates),
       readiness: latestCheckin?.readiness_score ?? null,
-    };
+    });
   });

@@ -4,7 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
 import { Search, Heart, Sparkles, ShieldCheck, Play, Filter, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { smartExerciseFilter } from "@/lib/exercise-filter.functions";
+import {
+  smartExerciseFilter,
+  type ExerciseFilterSuggestion,
+} from "@/lib/exercise-filter.functions";
 import { useI18n, type TKey } from "@/lib/i18n";
 
 import { WorkoutRequestBuilder } from "@/components/WorkoutRequestBuilder";
@@ -213,35 +216,25 @@ function ExercisesPage() {
   };
 
   /** AI: turns the typed phrase into filters. */
-  type Suggestion = {
-    group: string;
-    level: string;
-    equipment: string;
-    safety: string;
-    query: string;
-  };
-  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [suggestion, setSuggestion] = useState<ExerciseFilterSuggestion | null>(null);
   const [dismissed, setDismissed] = useState("");
   const askAi = useServerFn(smartExerciseFilter);
 
-  const applySuggestion = (r: Suggestion) => {
-    if (groups.includes(r.group as (typeof groups)[number]))
-      setGroup(r.group as (typeof groups)[number]);
-    if (levels.includes(r.level as (typeof levels)[number]))
-      setLevel(r.level as (typeof levels)[number]);
-    if (equipmentList.includes(r.equipment as (typeof equipmentList)[number]))
-      setEquipment(r.equipment as (typeof equipmentList)[number]);
-    if (safetyTags.some((s) => s.id === r.safety)) setSafety(r.safety);
-    setQ(r.query ?? "");
+  const applySuggestion = (r: ExerciseFilterSuggestion) => {
+    setGroup(r.group);
+    setLevel(r.level);
+    setEquipment(r.equipment);
+    setSafety(r.safety);
+    setQ(r.query);
     setSuggestion(null);
-    setDismissed((r.query ?? "").trim().toLowerCase());
+    setDismissed(r.query.trim().toLowerCase());
   };
 
   const requestSuggestion = async (prompt: string) => {
     if (prompt.trim().length < 3) return;
     setAiBusy(true);
     try {
-      const r = (await askAi({ data: { prompt: prompt.trim(), lang } })) as Suggestion;
+      const r = await askAi({ data: { prompt: prompt.trim(), lang } });
       const meaningful =
         r.group !== "all" || r.level !== "all" || r.equipment !== "all" || r.safety !== "all";
       setSuggestion(meaningful ? r : null);
@@ -268,7 +261,9 @@ function ExercisesPage() {
     try {
       const saved = localStorage.getItem("forma_fav_exercises");
       if (saved) setFavorites(JSON.parse(saved));
-    } catch {}
+    } catch {
+      // Browser storage is optional for exercise preferences.
+    }
   }, []);
 
   const toggleFavorite = (slug: string, e: React.MouseEvent) => {
@@ -286,7 +281,9 @@ function ExercisesPage() {
 
     try {
       localStorage.setItem("forma_fav_exercises", JSON.stringify(next));
-    } catch {}
+    } catch {
+      // Browser storage is optional for exercise preferences.
+    }
   };
 
   const fetchPage = async (from: number, to: number) => {

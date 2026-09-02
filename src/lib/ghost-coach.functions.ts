@@ -1,12 +1,25 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { askFastTextAi } from "./ai-gateway.server";
+import { parseAiJson } from "./ai-json.server";
 import { getUserBiometricContext } from "./user-context.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const GhostCoachInput = z.object({
   lang: z.string().default("lt"),
 });
+
+const GhostCoachInsightSuccessSchema = z.object({
+  ok: z.literal(true),
+  headline: z.string().trim().min(1).max(300),
+  readinessScore: z.coerce.number().finite().min(0).max(100),
+  fatigueStatus: z.string().trim().min(1).max(120),
+  trainingAdvice: z.string().trim().min(1).max(1_000),
+  nutritionAdvice: z.string().trim().min(1).max(1_000),
+  recommendedAction: z.string().trim().min(1).max(500),
+});
+
+export type GhostCoachInsight = z.infer<typeof GhostCoachInsightSuccessSchema>;
 
 export const getProactiveCoachInsight = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -43,13 +56,8 @@ Atsakyk TIK TIKSLIU JSON:
         temperature: 0.2,
       });
 
-      return JSON.parse(
-        raw
-          .replace(/```json/g, "")
-          .replace(/```/g, "")
-          .trim(),
-      );
-    } catch (err: any) {
+      return parseAiJson(raw, GhostCoachInsightSuccessSchema);
+    } catch {
       return {
         ok: true,
         headline:

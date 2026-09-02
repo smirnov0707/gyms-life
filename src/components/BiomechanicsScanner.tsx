@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n } from "../lib/i18n";
-import { analyzeExerciseForm } from "../lib/biomechanics.functions";
+import { analyzeExerciseForm, type ExerciseFormAnalysis } from "../lib/biomechanics.functions";
+import { errorMessage } from "../lib/error-message";
 
 export const BiomechanicsScanner: React.FC = () => {
   const { lang } = useI18n();
@@ -13,7 +14,7 @@ export const BiomechanicsScanner: React.FC = () => {
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ExerciseFormAnalysis | null>(null);
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,8 +38,8 @@ export const BiomechanicsScanner: React.FC = () => {
         } else {
           toast.error(res.reason || "Klaida analizuojant");
         }
-      } catch (err: any) {
-        toast.error(err.message);
+      } catch (error: unknown) {
+        toast.error(errorMessage(error, "Klaida analizuojant formą"));
       } finally {
         setIsScanning(false);
       }
