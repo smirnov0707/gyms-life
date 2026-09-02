@@ -9,12 +9,6 @@
 [build.environment]
   NODE_VERSION = "22"
 
-[context.production.environment]
-  NODE_ENV = "production"
-
-[context.deploy-preview.environment]
-  NODE_ENV = "production"
-
 # Netlify applies these to static files. SSR and API responses receive the
 # same protection in src/server.ts.
 [[headers]]
