@@ -25,6 +25,7 @@ import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCoachHistoryRouteImport } from './routes/_authenticated/coach-history'
 import { Route as AuthenticatedFormRouteImport } from './routes/_authenticated/form'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as AuthenticatedMealPlanRouteImport } from './routes/_authenticated/meal-plan'
 import { Route as AuthenticatedNutritionRouteImport } from './routes/_authenticated/nutrition'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -120,6 +121,11 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMeRoute = AuthenticatedMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMealPlanRoute = AuthenticatedMealPlanRouteImport.update({
   id: '/meal-plan',
   path: '/meal-plan',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/form': typeof AuthenticatedFormRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/me': typeof AuthenticatedMeRoute
   '/meal-plan': typeof AuthenticatedMealPlanRoute
   '/nutrition': typeof AuthenticatedNutritionRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/form': typeof AuthenticatedFormRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/me': typeof AuthenticatedMeRoute
   '/meal-plan': typeof AuthenticatedMealPlanRoute
   '/nutrition': typeof AuthenticatedNutritionRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/_authenticated/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/_authenticated/form': typeof AuthenticatedFormRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/me': typeof AuthenticatedMeRoute
   '/_authenticated/meal-plan': typeof AuthenticatedMealPlanRoute
   '/_authenticated/nutrition': typeof AuthenticatedNutritionRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
@@ -298,6 +307,7 @@ export interface FileRouteTypes {
     | '/coach-history'
     | '/form'
     | '/history'
+    | '/me'
     | '/meal-plan'
     | '/nutrition'
     | '/onboarding'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/coach-history'
     | '/form'
     | '/history'
+    | '/me'
     | '/meal-plan'
     | '/nutrition'
     | '/onboarding'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/_authenticated/coach-history'
     | '/_authenticated/form'
     | '/_authenticated/history'
+    | '/_authenticated/me'
     | '/_authenticated/meal-plan'
     | '/_authenticated/nutrition'
     | '/_authenticated/onboarding'
@@ -504,6 +516,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/me': {
+      id: '/_authenticated/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof AuthenticatedMeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/meal-plan': {
       id: '/_authenticated/meal-plan'
       path: '/meal-plan'
@@ -606,6 +625,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCoachHistoryRoute: typeof AuthenticatedCoachHistoryRoute
   AuthenticatedFormRoute: typeof AuthenticatedFormRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedMeRoute: typeof AuthenticatedMeRoute
   AuthenticatedMealPlanRoute: typeof AuthenticatedMealPlanRoute
   AuthenticatedNutritionRoute: typeof AuthenticatedNutritionRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
@@ -625,6 +645,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCoachHistoryRoute: AuthenticatedCoachHistoryRoute,
   AuthenticatedFormRoute: AuthenticatedFormRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedMeRoute: AuthenticatedMeRoute,
   AuthenticatedMealPlanRoute: AuthenticatedMealPlanRoute,
   AuthenticatedNutritionRoute: AuthenticatedNutritionRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,

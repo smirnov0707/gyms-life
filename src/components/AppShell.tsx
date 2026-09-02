@@ -1,15 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import {
-  Dumbbell,
-  Apple,
-  ShieldCheck,
-  Activity,
-  TrendingUp,
-  Sparkles,
-  Zap,
-  Globe,
-} from "lucide-react";
+import { Dumbbell, Activity, TrendingUp, MessageCircle, UserRound } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 
@@ -70,12 +61,11 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const location = useLocation();
 
   const navItems = [
-    { to: "/app", icon: Activity, label: lang === "lt" ? "Skydelis" : "Dashboard" },
-    { to: "/workout/1", icon: Dumbbell, label: lang === "lt" ? "Treniruotė" : "Workout" },
-    { to: "/exercises", icon: Sparkles, label: lang === "lt" ? "Biblioteka" : "Exercises" },
-    { to: "/nutrition", icon: Apple, label: lang === "lt" ? "Mityba" : "Nutrition" },
-    { to: "/form", icon: ShieldCheck, label: lang === "lt" ? "Forma & AR" : "Technique" },
+    { to: "/app", icon: Activity, label: lang === "lt" ? "Šiandien" : "Today" },
+    { to: "/training", icon: Dumbbell, label: lang === "lt" ? "Treniruotės" : "Train" },
     { to: "/progress", icon: TrendingUp, label: lang === "lt" ? "Progresas" : "Progress" },
+    { to: "/coach", icon: MessageCircle, label: lang === "lt" ? "Treneris" : "Coach" },
+    { to: "/me", icon: UserRound, label: lang === "lt" ? "Aš" : "Me" },
   ];
 
   return (

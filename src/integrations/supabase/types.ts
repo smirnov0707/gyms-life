@@ -59,6 +59,36 @@ export type Database = {
         }
         Relationships: []
       }
+      athlete_state_snapshots: {
+        Row: {
+          computed_at: string
+          created_at: string
+          id: string
+          schema_version: string
+          state: Json
+          state_fingerprint: string
+          user_id: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          id?: string
+          schema_version: string
+          state: Json
+          state_fingerprint: string
+          user_id: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          id?: string
+          schema_version?: string
+          state?: Json
+          state_fingerprint?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       body_metrics: {
         Row: {
           arm_cm: number | null
