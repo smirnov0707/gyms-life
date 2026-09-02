@@ -1013,6 +1013,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_training_plan: {
+        Args: { p_plan_id: string }
+        Returns: string
+      }
       consume_ai_quota: {
         Args: { p_limit: number; p_user_id: string }
         Returns: boolean
