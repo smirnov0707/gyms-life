@@ -37,7 +37,7 @@ function failedSupplementScan(reason: string): SupplementVisionResult {
 export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SupplementVisionInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return failedSupplementScan(
@@ -75,6 +75,7 @@ Jei papildas atpažintas:
 
       const provider = createAiRouterProvider("supplement-vision.functions");
       return await generateJson(provider("google/gemini-2.5-flash"), {
+        userId: context.userId,
         system: prompt,
         messages: [
           {

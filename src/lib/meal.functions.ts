@@ -148,6 +148,7 @@ Preferences: ${JSON.stringify({
     let parsed: z.infer<typeof schema> | null = null;
     try {
       const partOne = await generateJson(model, {
+        userId,
         system: `${system}\n- Return days 1, 2, 3 and 4 in "days".`,
         prompt,
         schema: partOneSchema,
@@ -156,6 +157,7 @@ Preferences: ${JSON.stringify({
       let partTwo: z.infer<typeof partTwoSchema> | null = null;
       try {
         partTwo = await generateJson(model, {
+          userId,
           system: `${system}\n- Return days 5, 6 and 7 in "days", plus full "shopping_list" aggregated by category.`,
           prompt: `${prompt}\n\nDays 1-4 planned:\n${JSON.stringify(
             partOne.days.map((d) => ({ day: d.day, meals: d.meals.map((m) => m.name) })),

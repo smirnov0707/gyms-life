@@ -1,5 +1,6 @@
 import type { LanguageModel, ModelMessage } from "ai";
 import type { z } from "zod";
+import { reserveAiRequest } from "./ai-quota.server";
 
 const INSTRUCTION =
   "OUTPUT FORMAT: Return ONLY a single valid JSON object. No markdown, no code fences, no commentary. All property names and string values must use double quotes. Keep strings short and never stop mid-object — the JSON must be complete and closed.";
@@ -10,6 +11,7 @@ const INSTRUCTION =
 export async function generateJson<T>(
   model: LanguageModel,
   opts: {
+    userId: string;
     prompt?: string;
     system?: string;
     messages?: ModelMessage[];
@@ -23,6 +25,7 @@ export async function generateJson<T>(
 
   let text: string;
   try {
+    await reserveAiRequest(opts.userId);
     ({ text } = await generateText({
       model,
       system,

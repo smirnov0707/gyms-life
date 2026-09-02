@@ -118,6 +118,7 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
     let result: z.infer<typeof ScanSchema>;
     try {
       result = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         system,
         schema: ScanSchema,
         maxOutputTokens: 1500,

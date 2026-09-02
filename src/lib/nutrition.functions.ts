@@ -30,6 +30,7 @@ export const logMeal = createServerFn({ method: "POST" })
     let parsed: z.infer<typeof schema> | null = null;
     try {
       parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         system: `You are a precise sports nutritionist. Estimate macros for the described meal.
 Respond in ${LANG_NAMES[data.lang] ?? "English"} for food_name and note.
 Assume realistic portion sizes when not stated. Numbers are grams, calories are kcal for the WHOLE described meal.

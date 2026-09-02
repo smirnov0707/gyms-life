@@ -49,7 +49,7 @@ export type ExerciseFilterSuggestion = z.infer<typeof ExerciseFilterSuggestionSc
 export const smartExerciseFilter = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => FilterInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const prompt = `Vartotojas ieško pratimų fitneso bibliotekoje pagal šią užklausą: "${data.prompt}".
 
 Parink tinkamus filtravimo kriterijus:
@@ -70,6 +70,7 @@ Atsakyk TIK TIKSLIU JSON:
 
     try {
       const raw = await askFastTextAi({
+        userId: context.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
           { role: "user", content: prompt },

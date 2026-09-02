@@ -88,6 +88,7 @@ export const getSmartWarmup = createServerFn({ method: "POST" })
     try {
       const provider = createAiRouterProvider("coach-session.functions");
       const recommendation = await generateJson(provider("google/gemini-2.5-flash"), {
+        userId: context.userId,
         system:
           "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
         prompt: `Write in ${data.lang}. Build a 3-6 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
@@ -121,7 +122,7 @@ const SetAdviceSchema = z.object({
 export const getSetAdvice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SetAdviceInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
 
     const prompt = `Sportininkas atliko pratimą: "${data.exerciseName}".
@@ -139,6 +140,7 @@ Atsakyk TIK TIKSLIU JSON:
 
     try {
       const raw = await askFastTextAi({
+        userId: context.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
           { role: "user", content: prompt },
@@ -181,7 +183,7 @@ const SessionDebriefSchema = z.object({
 export const getSessionDebrief = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => DebriefInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const prompt = `Išanalizuok baigtos treniruotės duomenis:
 Trukmė: ${data.sessionDurationMin} min, Viso serijų: ${data.totalSetsCompleted}, Vidutinis RPE: ${data.avgRpe}, Pratimai: ${data.exercisesCompleted.join(", ")}.
 
@@ -196,6 +198,7 @@ Atsakyk TIK JSON:
 
     try {
       const raw = await askFastTextAi({
+        userId: context.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
           { role: "user", content: prompt },

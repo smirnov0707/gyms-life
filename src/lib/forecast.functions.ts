@@ -57,6 +57,7 @@ Return EXACTLY this JSON shape, using these exact property names:
 "trend" must be one of "rising", "flat", "falling". Never rename, omit or nest these keys.`;
 
     const result = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      userId,
       system,
       schema,
       messages: [

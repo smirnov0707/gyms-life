@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Input = z.object({
   lang: z.string().default("lt"),
@@ -23,8 +24,9 @@ const Schema = z.object({
  * body composition scanning, supplements and recovery.
  */
 export const generateMotivation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { generateJson } = await import("./ai-json.server");
     const { createAiRouterProvider } = await import("./ai-gateway.server");
     const { LANG_NAMES } = await import("./plan-i18n.server");
@@ -33,6 +35,7 @@ export const generateMotivation = createServerFn({ method: "POST" })
 
     try {
       const res = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId: context.userId,
         system: `You write motivational one-liners for GYMS.LIFE, a fitness app whose real features are:
 AI-generated training plans, AI meal plans with a shopping list, an exercise library with technique videos,
 set/rep/weight tracking with progress charts, an AI body-composition and measurement scanner,

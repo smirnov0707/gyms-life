@@ -82,9 +82,9 @@ export function applyMealStrings(plan: GeneratedMealPlan, values: string[]): Gen
 const Translated = z.object({ items: z.array(z.string()) });
 
 export async function translateMealPlan(
-  _apiKey: string,
   plan: GeneratedMealPlan,
   lang: string,
+  userId: string,
 ): Promise<GeneratedMealPlan> {
   const source = collectMealStrings(plan);
   const target = MEAL_LANG_NAMES[lang] ?? "English";
@@ -107,6 +107,7 @@ INPUT: ${JSON.stringify(slice)}
 
 RETURN EXACTLY: {"items":["translated string", ...]}`;
     const res = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      userId,
       prompt,
       schema: Translated,
     });

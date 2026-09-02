@@ -158,6 +158,8 @@ function Landing() {
   const [lineI, setLineI] = useState(0);
 
   useEffect(() => {
+    if (!user) return;
+
     let alive = true;
     const cacheKey = `gl.motivation.${lang}`;
     const cached = typeof sessionStorage !== "undefined" ? sessionStorage.getItem(cacheKey) : null;
@@ -183,7 +185,7 @@ function Landing() {
     return () => {
       alive = false;
     };
-  }, [lang, motivate]);
+  }, [lang, motivate, user]);
 
   // Rotate through the generated lines so the hero keeps changing.
   useEffect(() => {

@@ -46,6 +46,7 @@ export const buildRequestedWorkout = createServerFn({ method: "POST" })
 
     const language = data.lang === "lt" ? "Lithuanian" : "English";
     const workout = await generateJson(provider("google/gemini-2.5-flash"), {
+      userId: context.userId,
       system: `You are GYMS.LIFE's evidence-based training planner. Write in ${language}.
 
 Safety rules:

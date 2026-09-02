@@ -33,7 +33,7 @@ export const localizePlan = createServerFn({ method: "POST" })
     const cached = cache[data.lang];
     if (cached) return { plan: cached };
 
-    const translated = await translatePlanData("", base, data.lang);
+    const translated = await translatePlanData(base, data.lang, userId);
     await supabase
       .from("plans")
       .update({ i18n: { ...cache, [data.lang]: translated } as never })

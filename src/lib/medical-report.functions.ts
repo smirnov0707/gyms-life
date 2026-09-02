@@ -70,6 +70,7 @@ RETURN EXACTLY THIS JSON SHAPE:
     let parsed: z.infer<typeof ReportSchema>;
     try {
       parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         system,
         prompt: "Generate the 30-day report.",
         schema: ReportSchema,

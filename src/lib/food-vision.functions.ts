@@ -41,7 +41,7 @@ function failedMealAnalysis(reason: string): MealAnalysis {
 export const analyzeMealPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => AnalyzeInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return failedMealAnalysis(
@@ -83,6 +83,7 @@ Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
 
       const provider = createAiRouterProvider("food-vision.functions");
       return await generateJson(provider("google/gemini-2.5-flash"), {
+        userId: context.userId,
         system: systemPrompt,
         messages: [
           {

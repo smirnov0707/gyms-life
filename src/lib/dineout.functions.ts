@@ -43,7 +43,7 @@ export type RestaurantSearchResult = z.infer<typeof RestaurantSearchResultSchema
 export const searchRestaurantDishes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => RestaurantSearchInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
     const goalText =
       data.goal === "fat_loss"
@@ -80,6 +80,7 @@ Atsakyk TIK TIKSLIU JSON formatu be markdown:
 
     try {
       const raw = await askFastTextAi({
+        userId: context.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
           { role: "user", content: prompt },

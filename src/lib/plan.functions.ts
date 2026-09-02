@@ -85,6 +85,7 @@ export const generatePlan = createServerFn({ method: "POST" })
     const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
     const provider = createAiRouterProvider("plan.functions");
     const plan = await generateJson(provider("google/gemini-2.5-flash"), {
+      userId,
       prompt,
       schema: PlanSchema,
     });
@@ -148,6 +149,7 @@ export const askCoach = createServerFn({ method: "POST" })
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
     const system = `Tu esi GYMS.LIFE, draugiškas, bet reiklus ir moksliškai pagrįstas jėgos treneris.\nAtsakyk ${langName} kalba. Būk konkretus, lakoniškas (iki 150 žodžių), praktiškas.\nNeteik medicininių diagnozių, nukreipk pas gydytoją esant skausmui ar traumai.\nAtsakymuose remkis kliento duomenimis.\n\nKLIENTO BIOMETRIJA IR TELEMETRIJA:\n${contextForAi(snapshot)}\n${priorTurns ? `\nPaskutinis pokalbis:\n${priorTurns}` : ""}`;
     const answer = await askFastTextAi({
+      userId,
       messages: [
         { role: "system", content: system },
         { role: "user", content: data.question },

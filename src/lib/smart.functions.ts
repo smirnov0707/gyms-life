@@ -45,6 +45,7 @@ score = technique quality 0-100. risk = one short sentence about injury risk.`;
     let parsed: z.infer<typeof schema> | null = null;
     try {
       parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         system,
         schema,
         messages: [

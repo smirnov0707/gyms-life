@@ -140,6 +140,7 @@ RETURN EXACTLY THIS JSON SHAPE:
     let parsed: z.infer<typeof BriefSchema>;
     try {
       parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         system,
         prompt: "Generate today's brief.",
         schema: BriefSchema,

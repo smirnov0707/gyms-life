@@ -148,6 +148,7 @@ Extra request from user: ${data.notes || "-"}`;
     let parsed: z.infer<typeof schema> | null = null;
     try {
       parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         system,
         prompt,
         schema,

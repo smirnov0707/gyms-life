@@ -75,6 +75,7 @@ Return exactly: {"summary":"","dataQuality":"","findings":[{"name":"","current":
 
     try {
       const r = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId: context.userId,
         system,
         prompt: "Run the micronutrient gap analysis on this athlete's data.",
         schema: ScanSchema,

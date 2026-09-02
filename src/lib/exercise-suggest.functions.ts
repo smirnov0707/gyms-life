@@ -119,6 +119,7 @@ RETURN JSON: {"suggestions":[{"slug":"","name":"","reason":"","sets":3,"reps":"8
     let out: z.infer<typeof SuggestionSchema>;
     try {
       out = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+        userId,
         prompt,
         schema: SuggestionSchema,
         maxOutputTokens: 2000,

@@ -70,6 +70,7 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
     const today = new Date().toISOString().slice(0, 10);
 
     const advice = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      userId,
       system: `You are a sports-nutrition specialist planning supplement cycling for one athlete.
 Today is ${today}. Answer entirely in ${language}.
 For EVERY active supplement decide, from evidence-based practice, whether it needs cycling:

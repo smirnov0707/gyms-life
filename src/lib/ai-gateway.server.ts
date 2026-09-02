@@ -1,6 +1,7 @@
 import { createGroq } from "@ai-sdk/groq";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
+import { reserveAiRequest } from "./ai-quota.server";
 
 const groqClient = createGroq({
   apiKey: process.env["GROQ_API_KEY"] ?? "",
@@ -69,14 +70,18 @@ export function createAiRouterProvider(_sourceModule = "general") {
  * Greitasis teksto AI modelis (Groq LPU <200ms)
  */
 export async function askFastTextAi({
+  userId,
   messages,
   jsonMode = false,
   temperature = 0.2,
 }: {
+  userId: string;
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
   jsonMode?: boolean;
   temperature?: number;
 }): Promise<string> {
+  await reserveAiRequest(userId);
+
   const groqKey = process.env["GROQ_API_KEY"];
   if (!groqKey) {
     // Atsarginis variantas per Gemini, jei nėra Groq rakto

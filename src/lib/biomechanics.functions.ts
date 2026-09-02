@@ -40,7 +40,7 @@ function failedAnalysis(reason: string): ExerciseFormAnalysis {
 export const analyzeExerciseForm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => BiomechanicsInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
       return failedAnalysis("AI regos variklis nesukonfigūruotas.");
@@ -74,6 +74,7 @@ Atsakyk TIK TIKSLIU JSON:
 
       const provider = createAiRouterProvider("biomechanics.functions");
       return await generateJson(provider("google/gemini-2.5-flash"), {
+        userId: context.userId,
         system: prompt,
         messages: [
           {

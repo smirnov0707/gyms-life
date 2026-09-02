@@ -91,7 +91,7 @@ function fallbackRecipe(data: z.infer<typeof FridgeInput>): FridgeRecipe {
 export const generateFridgeRecipe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => FridgeInput.parse(data))
-  .handler(async ({ data }): Promise<FridgeRecipe> => {
+  .handler(async ({ data, context }): Promise<FridgeRecipe> => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
     const nutritionTarget = [
       data.kcalLeft != null ? `${Math.round(data.kcalLeft)} kcal likutis` : null,
@@ -123,6 +123,7 @@ Visą tekstą pateik ${langName} kalba. Atsakyk TIK TIKSLIU JSON formatu be mark
 
     try {
       const raw = await askFastTextAi({
+        userId: context.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
           { role: "user", content: prompt },

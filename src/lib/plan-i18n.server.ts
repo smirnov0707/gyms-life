@@ -51,9 +51,9 @@ export function applyStrings(plan: PlanData, values: string[]): PlanData {
 const Translated = z.object({ items: z.array(z.string()) });
 
 export async function translatePlanData(
-  _apiKey: string,
   plan: PlanData,
   lang: string,
+  userId: string,
 ): Promise<PlanData> {
   const source = collectStrings(plan);
   const target = LANG_NAMES[lang] ?? "English";
@@ -77,6 +77,7 @@ INPUT: ${JSON.stringify(slice)}
 
 RETURN EXACTLY: {"items":["translated string", ...]}`;
     const res = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      userId,
       prompt,
       schema: Translated,
     });

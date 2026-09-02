@@ -46,7 +46,7 @@ function failedVoiceLog(reason: string): VoiceLogResult {
 export const parseVoiceWorkoutLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => VoiceLogInput.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const groqKey = process.env["GROQ_API_KEY"];
     if (!groqKey) {
       return failedVoiceLog("Balso apdorojimo variklis nesukonfigūruotas.");
@@ -100,6 +100,7 @@ Ištrauk šiuos duomenis ir grąžink TIK JSON formatu:
 }`;
 
       const aiParsed = await askFastTextAi({
+        userId: context.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK JSON formatu." },
           { role: "user", content: prompt },

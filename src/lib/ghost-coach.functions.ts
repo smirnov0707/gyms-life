@@ -48,6 +48,7 @@ Atsakyk TIK TIKSLIU JSON:
 
     try {
       const raw = await askFastTextAi({
+        userId: auth.userId,
         messages: [
           { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
           { role: "user", content: prompt },
