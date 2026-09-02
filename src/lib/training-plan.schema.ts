@@ -25,7 +25,22 @@ export const TrainingPlanDataSchema = z.object({
   weeks: z.coerce.number().int().positive(),
   progression: z.string(),
   nutrition: z.string(),
-  days: z.array(TrainingPlanDaySchema).min(1),
+  days: z
+    .array(TrainingPlanDaySchema)
+    .min(1)
+    .superRefine((days, context) => {
+      const seenDays = new Set<number>();
+      days.forEach((day, index) => {
+        if (seenDays.has(day.day)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Training plan days must be unique.",
+            path: [index, "day"],
+          });
+        }
+        seenDays.add(day.day);
+      });
+    }),
 });
 
 export type TrainingPlanExercise = z.infer<typeof TrainingPlanExerciseSchema>;

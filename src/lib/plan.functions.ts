@@ -6,6 +6,11 @@ import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
 import { buildUserContext, contextForAi } from "./user-context.server";
 import { serializeJson } from "./json.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import {
+  formatExerciseCatalogForAi,
+  parseDemonstratedExerciseCatalog,
+} from "./exercise-catalog.schema";
+import { validateGeneratedTrainingPlan } from "./training-plan-generation.validation";
 import { TrainingPlanDataSchema } from "./training-plan.schema";
 
 // Draft/activation lifecycle: generation never changes the user's active program.
@@ -73,17 +78,15 @@ export const generatePlan = createServerFn({ method: "POST" })
   .validator((input: unknown) => IntakeSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: exercises } = await supabase
+    const { data: exercises, error: catalogError } = await supabase
       .from("exercises")
       .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty");
-    const catalog =
-      (exercises ?? []).length > 0
-        ? (exercises ?? [])
-            .map(
-              (e) => `${e.slug} | ${e.name_en} / ${e.name_lt} | ${e.muscle_group} | ${e.equipment}`,
-            )
-            .join("\n")
-        : `bench-press | Barbell Bench Press / Spaudimas štanga | chest | barbell\nsquat | Barbell Squat / Pritūpimai su štanga | legs | barbell\ndeadlift | Barbell Deadlift / Mirties trauka | back | barbell\npull-up | Pull Up / Prisitraukimai | back | bodyweight\npush-up | Push Up / Atsispaudimai | chest | bodyweight\nlunge | Dumbbell Lunge / Įtūpstai su hanteliais | legs | dumbbell\nplank | Plank / Lenta | core | bodyweight`;
+    const catalogExercises = parseDemonstratedExerciseCatalog(exercises);
+    if (catalogError || catalogExercises.length === 0) {
+      throw new Error("Exercise catalog is unavailable. Please try again shortly.");
+    }
+    const catalog = formatExerciseCatalogForAi(catalogExercises);
+    const catalogSlugs = catalogExercises.map((exercise) => exercise.slug);
     const langName = LANGUAGE_NAMES[data.lang];
     const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
     const provider = createAiRouterProvider("plan.functions");
@@ -96,6 +99,7 @@ export const generatePlan = createServerFn({ method: "POST" })
     if (!plan.success) {
       throw new Error("Generated training plan is incomplete. Please try again.");
     }
+    validateGeneratedTrainingPlan(plan.data, data.daysPerWeek, catalogSlugs);
 
     const { data: inserted, error } = await supabase
       .from("plans")

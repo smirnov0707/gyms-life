@@ -3,6 +3,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import type { PlanData } from "./plan-types";
 import { serializeJson } from "./json.schema";
+import {
+  formatExerciseCatalogForAi,
+  parseDemonstratedExerciseCatalog,
+} from "./exercise-catalog.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { parseStoredTrainingPlan } from "./training-plan.schema";
 
@@ -53,33 +57,37 @@ export const suggestExercisesForGoal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const [{ data: profile }, { data: plans }, { data: exercises }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select(
-          "experience, location, equipment, limitations, days_per_week, session_minutes, gender, weight_kg, height_cm",
-        )
-        .eq("id", userId)
-        .maybeSingle(),
-      supabase
-        .from("plans")
-        .select("id, title, data")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .limit(1),
-      supabase
-        .from("exercises")
-        .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty"),
-    ]);
+    const [{ data: profile }, { data: plans }, { data: exercises, error: exercisesError }] =
+      await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "experience, location, equipment, limitations, days_per_week, session_minutes, gender, weight_kg, height_cm",
+          )
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("plans")
+          .select("id, title, data")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .limit(1),
+        supabase
+          .from("exercises")
+          .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty"),
+      ]);
 
-    const catalog = exercises ?? [];
+    const catalog = parseDemonstratedExerciseCatalog(exercises);
+    if (exercisesError || catalog.length === 0) {
+      throw new Error("Exercise catalog is unavailable. Please try again shortly.");
+    }
     const activePlan = plans?.[0];
     const planData = activePlan ? parseStoredTrainingPlan(activePlan.data) : null;
     const planSlugs = new Set(
       (planData?.days ?? []).flatMap((d) => (d.exercises ?? []).map((e) => e.slug)),
     );
 
-    const equipment = (profile?.equipment ?? []) as string[];
+    const equipment = profile?.equipment ?? [];
     const allowed = catalog.filter(
       (e) =>
         (!equipment.length || equipment.includes(e.equipment) || e.equipment === "bodyweight") &&
@@ -104,7 +112,7 @@ Already in the active plan (do NOT repeat these slugs): ${[...planSlugs].join(",
 Weak spots to consider: exercises that complement the plan and directly drive the goal.
 
 CATALOG (slug | en / lt | muscle | equipment | location | difficulty)
-${pool.map((e) => `${e.slug} | ${e.name_en} / ${e.name_lt} | ${e.muscle_group} | ${e.equipment} | ${e.location} | ${e.difficulty}`).join("\n")}
+${formatExerciseCatalogForAi(pool)}
 
 RULES
 - Return 6 suggestions, ordered best-first, using ONLY slugs copied exactly from the catalog.
@@ -198,6 +206,17 @@ export const addExerciseToActivePlan = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (!plan) return { ok: false as const, reason: "no_plan" };
+
+    const { data: exercise, error: exerciseError } = await supabase
+      .from("exercises")
+      .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty")
+      .eq("slug", data.exercise.slug)
+      .maybeSingle();
+    if (exerciseError)
+      throw new Error("Exercise catalog is unavailable. Please try again shortly.");
+    if (parseDemonstratedExerciseCatalog(exercise ? [exercise] : []).length === 0) {
+      return { ok: false as const, reason: "unavailable_exercise" };
+    }
 
     const planData = parseStoredTrainingPlan(plan.data);
     if (!planData) return { ok: false as const, reason: "invalid_plan" };

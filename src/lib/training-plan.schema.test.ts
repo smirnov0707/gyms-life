@@ -40,5 +40,11 @@ describe("TrainingPlanDataSchema", () => {
 
   it("rejects invalid program data before it reaches the domain", () => {
     expect(TrainingPlanDataSchema.safeParse({ ...validPlan, weeks: 0 }).success).toBe(false);
+    expect(
+      TrainingPlanDataSchema.safeParse({
+        ...validPlan,
+        days: [validPlan.days[0], { ...validPlan.days[0], title: "Duplicate day" }],
+      }).success,
+    ).toBe(false);
   });
 });

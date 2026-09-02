@@ -3,6 +3,10 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateJson } from "./ai-json.server";
 import { createOrchestratedAi } from "./ai-orchestrator.server";
+import {
+  formatExerciseCatalogForAi,
+  parseDemonstratedExerciseCatalog,
+} from "./exercise-catalog.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const BuildWorkoutInputSchema = z.object({
@@ -45,6 +49,17 @@ export const buildRequestedWorkout = createServerFn({ method: "POST" })
       context.userId,
     );
 
+    const { data: catalogExercises, error: catalogError } = await context.supabase
+      .from("exercises")
+      .select("slug, name_en, name_lt, muscle_group, equipment, location, difficulty")
+      .order("slug")
+      .limit(400);
+    const demonstratedCatalog = parseDemonstratedExerciseCatalog(catalogExercises);
+    if (catalogError || demonstratedCatalog.length === 0) {
+      throw new Error("Exercise catalog is unavailable. Please try again shortly.");
+    }
+    const catalog = formatExerciseCatalogForAi(demonstratedCatalog);
+
     const language = LANGUAGE_NAMES[data.lang];
     const workout = await generateJson(provider("google/gemini-2.5-flash"), {
       userId: context.userId,
@@ -55,9 +70,13 @@ Safety rules:
 - Respect limitations and equipment from the user context.
 - Choose conservative loading when recovery information is absent or poor.
 - Return a practical single-session workout that fits the requested duration.
+- Use ONLY exercise slugs copied exactly from the catalog below.
 
 ${contextPrompt}`,
-      prompt: `Build one workout from this user request: ${data.request}
+      prompt: `Exercise catalog (slug | English / Lithuanian | muscle | equipment | location | difficulty):
+${catalog}
+
+Build one workout from this user request: ${data.request}
 
 Return this exact JSON shape:
 {
@@ -81,19 +100,19 @@ Return this exact JSON shape:
       maxOutputTokens: 2400,
     });
 
-    const slugs = workout.blocks.map((block) => block.slug);
-    const { data: knownExercises, error } = await context.supabase
-      .from("exercises")
-      .select("slug")
-      .in("slug", slugs);
-    if (error) throw new Error("Could not verify generated exercises.");
+    const knownSlugs = new Set(demonstratedCatalog.map((exercise) => exercise.slug));
+    const unavailableSlugs = [
+      ...new Set(workout.blocks.map((block) => block.slug).filter((slug) => !knownSlugs.has(slug))),
+    ];
+    if (unavailableSlugs.length > 0) {
+      throw new Error("Generated workout contains exercises outside the available catalog.");
+    }
 
-    const knownSlugs = new Set((knownExercises ?? []).map((exercise) => exercise.slug));
     return {
       ...workout,
       blocks: workout.blocks.map((block) => ({
         ...block,
-        hasPage: knownSlugs.has(block.slug),
+        hasPage: true,
       })),
     };
   });
