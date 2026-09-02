@@ -143,6 +143,7 @@ export const DineOutMenuScanner: React.FC = () => {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            maxLength={120}
             placeholder={
               lang === "lt"
                 ? "Pvz.: mcdonals, hesburger, subway, cili..."
