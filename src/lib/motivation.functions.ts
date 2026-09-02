@@ -28,13 +28,13 @@ export const generateMotivation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("motivation.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const language = LANGUAGE_NAMES[data.lang];
 
     try {
-      const res = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      const res = await generateOrchestratedJson({
+        task: "motivation",
+        supabase: context.supabase,
         userId: context.userId,
         system: `You write motivational one-liners for GYMS.LIFE, a fitness app whose real features are:
 AI-generated training plans, AI meal plans with a shopping list, an exercise library with technique videos,

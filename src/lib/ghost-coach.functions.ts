@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { askFastTextAi } from "./ai-gateway.server";
-import { parseAiJson } from "./ai-json.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { getUserBiometricContext } from "./user-context.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -48,17 +47,14 @@ Atsakyk TIK TIKSLIU JSON:
 }`;
 
     try {
-      const raw = await askFastTextAi({
+      return await generateOrchestratedJson({
+        task: "ghost-coach",
+        supabase: auth.supabase,
         userId: auth.userId,
-        messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
-          { role: "user", content: prompt },
-        ],
-        jsonMode: true,
-        temperature: 0.2,
+        system: "Atsakyk TIK griežtu JSON formatu.",
+        prompt,
+        schema: GhostCoachInsightSuccessSchema,
       });
-
-      return parseAiJson(raw, GhostCoachInsightSuccessSchema);
     } catch {
       return {
         ok: true,

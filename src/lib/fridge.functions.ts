@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { askFastTextAi } from "./ai-gateway.server";
-import { parseAiJson } from "./ai-json.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
@@ -123,17 +122,16 @@ Visą tekstą pateik ${langName} kalba. Atsakyk TIK TIKSLIU JSON formatu be mark
 }`;
 
     try {
-      const raw = await askFastTextAi({
+      const result = await generateOrchestratedJson({
+        task: "fridge",
+        supabase: context.supabase,
         userId: context.userId,
-        messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
-          { role: "user", content: prompt },
-        ],
-        jsonMode: true,
-        temperature: 0.2,
+        system: "Atsakyk TIK griežtu JSON formatu.",
+        prompt,
+        schema: GeneratedRecipeResponseSchema,
       });
 
-      return toFridgeRecipe(parseAiJson(raw, GeneratedRecipeResponseSchema).recipe);
+      return toFridgeRecipe(result.recipe);
     } catch {
       return fallbackRecipe(data);
     }

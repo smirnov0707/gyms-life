@@ -83,9 +83,7 @@ export const analyzeBodyScan = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("body-scan.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const language = LANGUAGE_NAMES[data.lang];
 
@@ -117,7 +115,9 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
 
     let result: z.infer<typeof ScanSchema>;
     try {
-      result = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      result = await generateOrchestratedJson({
+        task: "body-scan",
+        supabase,
         userId,
         system,
         schema: ScanSchema,

@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createAiRouterProvider } from "./ai-gateway.server";
-import { generateJson } from "./ai-json.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const SupplementVisionInput = z.object({
@@ -39,15 +38,6 @@ export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => SupplementVisionInput.parse(data))
   .handler(async ({ data, context }) => {
-    const geminiKey = process.env["GEMINI_API_KEY"];
-    if (!geminiKey) {
-      return failedSupplementScan(
-        data.lang === "lt"
-          ? "AI variklis nesukonfigūruotas serveryje."
-          : "AI engine not configured.",
-      );
-    }
-
     try {
       const langName = LANGUAGE_NAMES[data.lang];
 
@@ -74,8 +64,9 @@ Jei papildas atpažintas:
 }
       Atsakyk TIK TIKSLIU JSON be jokio markdown.`;
 
-      const provider = createAiRouterProvider("supplement-vision.functions");
-      return await generateJson(provider("google/gemini-2.5-flash"), {
+      return await generateOrchestratedJson({
+        task: "supplement-vision",
+        supabase: context.supabase,
         userId: context.userId,
         system: prompt,
         messages: [

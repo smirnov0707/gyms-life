@@ -25,9 +25,7 @@ export const forecastProgress = createServerFn({ method: "POST" })
     const { buildLiftHistory } = await import("./forecast.server");
     const history = buildLiftHistory(rows);
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("forecast.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const schema = z.object({
       lifts: z.array(
@@ -56,7 +54,9 @@ Return EXACTLY this JSON shape, using these exact property names:
 {"lifts":[{"name":"Squat","current1rm":100,"projected4w":105,"projected12w":115,"nextWorkingWeight":85,"trend":"rising","plateauRisk":25,"note":"..."}],"summary":"...","actions":["...","..."]}
 "trend" must be one of "rising", "flat", "falling". Never rename, omit or nest these keys.`;
 
-    const result = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+    const result = await generateOrchestratedJson({
+      task: "forecast",
+      supabase,
       userId,
       system,
       schema,

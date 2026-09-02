@@ -1,9 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { generateJson } from "./ai-json.server";
-import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
-import { buildUserContext, contextForAi } from "./user-context.server";
+import { generateOrchestratedJson, generateOrchestratedText } from "./ai-orchestrator.server";
 import { serializeJson } from "./json.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import {
@@ -89,8 +87,9 @@ export const generatePlan = createServerFn({ method: "POST" })
     const catalogSlugs = catalogExercises.map((exercise) => exercise.slug);
     const langName = LANGUAGE_NAMES[data.lang];
     const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
-    const provider = createAiRouterProvider("plan.functions");
-    const generated = await generateJson(provider("google/gemini-2.5-flash"), {
+    const generated = await generateOrchestratedJson({
+      task: "training-plan",
+      supabase,
       userId,
       prompt,
       schema: PlanSchema,
@@ -145,28 +144,25 @@ export const askCoach = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const [snapshot, { data: history }] = await Promise.all([
-      buildUserContext(supabase, userId),
-      supabase
-        .from("coach_messages")
-        .select("role, content")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(10),
-    ]);
+    const { data: history } = await supabase
+      .from("coach_messages")
+      .select("role, content")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
     const priorTurns = (history ?? [])
       .slice()
       .reverse()
       .map((m) => `${m.role === "user" ? "Client" : "Coach"}: ${m.content}`)
       .join("\n");
     const langName = LANGUAGE_NAMES[data.lang];
-    const system = `Tu esi GYMS.LIFE, draugiškas, bet reiklus ir moksliškai pagrįstas jėgos treneris.\nAtsakyk ${langName} kalba. Būk konkretus, lakoniškas (iki 150 žodžių), praktiškas.\nNeteik medicininių diagnozių, nukreipk pas gydytoją esant skausmui ar traumai.\nAtsakymuose remkis kliento duomenimis.\n\nKLIENTO BIOMETRIJA IR TELEMETRIJA:\n${contextForAi(snapshot)}\n${priorTurns ? `\nPaskutinis pokalbis:\n${priorTurns}` : ""}`;
-    const answer = await askFastTextAi({
+    const system = `Tu esi GYMS.LIFE, draugiškas, bet reiklus ir moksliškai pagrįstas jėgos treneris.\nAtsakyk ${langName} kalba. Būk konkretus, lakoniškas (iki 150 žodžių), praktiškas.\nNeteik medicininių diagnozių, nukreipk pas gydytoją esant skausmui ar traumai.\nAtsakymuose remkis GYMS.LIFE centriniu vartotojo kontekstu.${priorTurns ? `\n\nPaskutinis pokalbis:\n${priorTurns}` : ""}`;
+    const answer = await generateOrchestratedText({
+      task: "coach.ask",
+      supabase,
       userId,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: data.question },
-      ],
+      system,
+      prompt: data.question,
       temperature: 0.3,
     });
     const { error: saveError } = await supabase.from("coach_messages").insert([

@@ -15,9 +15,7 @@ export const logMeal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("nutrition.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const schema = NutritionMacrosSchema.extend({
       food_name: z.string().trim().min(1).max(200),
@@ -26,7 +24,9 @@ export const logMeal = createServerFn({ method: "POST" })
 
     let parsed: z.infer<typeof schema> | null = null;
     try {
-      parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      parsed = await generateOrchestratedJson({
+        task: "nutrition-analysis",
+        supabase,
         userId,
         system: `You are a precise sports nutritionist. Estimate macros for the described meal.
 Respond in ${LANGUAGE_NAMES[data.lang]} for food_name and note.

@@ -59,9 +59,7 @@ export const generateMealPlan = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("meal.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const MealSchema = z.object({
       slot: text("Maitinimas"),
@@ -138,18 +136,20 @@ Preferences: ${JSON.stringify({
       cooking: data.cookingLevel,
     })}`;
 
-    const model = gateway("google/gemini-3.1-flash-lite");
-
     let mealPlan: z.infer<typeof GeneratedMealPlanSchema>;
     try {
-      const partOne = await generateJson(model, {
+      const partOne = await generateOrchestratedJson({
+        task: "meal-plan",
+        supabase,
         userId,
         system: `${system}\n- Return days 1, 2, 3 and 4 in "days".`,
         prompt,
         schema: partOneSchema,
       });
 
-      const partTwo = await generateJson(model, {
+      const partTwo = await generateOrchestratedJson({
+        task: "meal-plan",
+        supabase,
         userId,
         system: `${system}\n- Return days 5, 6 and 7 in "days".`,
         prompt: `${prompt}\n\nDays 1-4 planned:\n${JSON.stringify(

@@ -41,9 +41,7 @@ export const getMedicalReport = createServerFn({ method: "POST" })
     const { buildReportStats, statsToPrompt } = await import("./medical-report.server");
     const stats = await buildReportStats(supabase, userId);
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("medical-report.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const language = LANGUAGE_NAMES[data.lang];
 
     const system = `You write a 30-day training, recovery and nutrition report that the user can hand to their physician, physiotherapist or coach. Accuracy is everything.
@@ -67,7 +65,9 @@ RETURN EXACTLY THIS JSON SHAPE:
 
     let parsed: z.infer<typeof ReportSchema>;
     try {
-      parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      parsed = await generateOrchestratedJson({
+        task: "medical-report",
+        supabase,
         userId,
         system,
         prompt: "Generate the 30-day report.",

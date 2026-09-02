@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateJson, parseAiJson } from "./ai-json.server";
-import { askFastTextAi, createAiRouterProvider } from "./ai-gateway.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema, type SupportedLanguage } from "./language.schema";
 
 export const WARMUP_SLUGS = ["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"];
@@ -87,8 +86,9 @@ export const getSmartWarmup = createServerFn({ method: "POST" })
     const focus = data.focus || data.exercises.join(", ") || "full body";
 
     try {
-      const provider = createAiRouterProvider("coach-session.functions");
-      const recommendation = await generateJson(provider("google/gemini-2.5-flash"), {
+      const recommendation = await generateOrchestratedJson({
+        task: "coach.warmup",
+        supabase: context.supabase,
         userId: context.userId,
         system:
           "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
@@ -140,17 +140,14 @@ Atsakyk TIK TIKSLIU JSON:
 }`;
 
     try {
-      const raw = await askFastTextAi({
+      return await generateOrchestratedJson({
+        task: "coach.set-advice",
+        supabase: context.supabase,
         userId: context.userId,
-        messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
-          { role: "user", content: prompt },
-        ],
-        jsonMode: true,
-        temperature: 0.2,
+        system: "Atsakyk TIK griežtu JSON formatu.",
+        prompt,
+        schema: SetAdviceSchema,
       });
-
-      return parseAiJson(raw, SetAdviceSchema);
     } catch {
       return {
         ok: true,
@@ -200,17 +197,14 @@ Atsakyk TIK JSON:
     const system = `Return strict JSON only. Write the summary and nutritionTip in ${LANGUAGE_NAMES[data.lang]}.`;
 
     try {
-      const raw = await askFastTextAi({
+      return await generateOrchestratedJson({
+        task: "coach.session-debrief",
+        supabase: context.supabase,
         userId: context.userId,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: prompt },
-        ],
-        jsonMode: true,
-        temperature: 0.2,
+        system,
+        prompt,
+        schema: SessionDebriefSchema,
       });
-
-      return parseAiJson(raw, SessionDebriefSchema);
     } catch {
       return {
         ok: true,

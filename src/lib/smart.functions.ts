@@ -23,9 +23,7 @@ export const analyzeForm = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("smart.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const schema = z.object({
       score: z.number(),
@@ -45,7 +43,9 @@ score = technique quality 0-100. risk = one short sentence about injury risk.`;
 
     let parsed: z.infer<typeof schema> | null = null;
     try {
-      parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      parsed = await generateOrchestratedJson({
+        task: "form-analysis",
+        supabase,
         userId,
         system,
         schema,
@@ -133,12 +133,11 @@ export const submitCheckin = createServerFn({ method: "POST" })
       .order("started_at", { ascending: false })
       .limit(5);
 
-    const { streamText } = await import("ai");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("smart.functions");
-
-    const result = streamText({
-      model: gateway("google/gemini-3.1-flash-lite"),
+    const { generateOrchestratedText } = await import("./ai-orchestrator.server");
+    const advice = await generateOrchestratedText({
+      task: "daily-readiness",
+      supabase,
+      userId,
       system: `You are GYMS.LIFE's autoregulation engine. Answer in ${
         LANGUAGE_NAMES[data.lang]
       }. Give exactly 2-3 short sentences: how hard to train today, what to change (sets, load %, intensity, cardio) and one recovery action. No greetings, no lists.`,
@@ -146,8 +145,6 @@ export const submitCheckin = createServerFn({ method: "POST" })
 Check-in: ${JSON.stringify(data)}
 Recent workouts: ${JSON.stringify(recent ?? [])}`,
     });
-
-    const advice = await result.text;
 
     const { error: saveError } = await supabase.from("daily_checkins").upsert(
       {

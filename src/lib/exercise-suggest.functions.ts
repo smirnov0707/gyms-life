@@ -98,9 +98,7 @@ export const suggestExercisesForGoal = createServerFn({ method: "POST" })
     );
     const pool = (allowed.length >= 20 ? allowed : catalog).slice(0, 400);
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("exercise-suggest.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const langName = LANGUAGE_NAMES[data.lang];
 
     const prompt = `You are an elite strength coach recommending EXTRA exercises for a client's goal.
@@ -126,7 +124,9 @@ RETURN JSON: {"suggestions":[{"slug":"","name":"","reason":"","sets":3,"reps":"8
 
     let out: z.infer<typeof SuggestionSchema>;
     try {
-      out = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      out = await generateOrchestratedJson({
+        task: "exercise-suggestion",
+        supabase,
         userId,
         prompt,
         schema: SuggestionSchema,

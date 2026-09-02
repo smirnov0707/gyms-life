@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { askFastTextAi } from "./ai-gateway.server";
-import { parseAiJson } from "./ai-json.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { SupportedLanguageSchema } from "./language.schema";
 
@@ -70,17 +69,14 @@ Atsakyk TIK TIKSLIU JSON:
 }`;
 
     try {
-      const raw = await askFastTextAi({
+      return await generateOrchestratedJson({
+        task: "exercise-filter",
+        supabase: context.supabase,
         userId: context.userId,
-        messages: [
-          { role: "system", content: "Atsakyk TIK griežtu JSON formatu." },
-          { role: "user", content: prompt },
-        ],
-        jsonMode: true,
-        temperature: 0.1,
+        system: "Atsakyk TIK griežtu JSON formatu.",
+        prompt,
+        schema: ExerciseFilterSuggestionSchema,
       });
-
-      return parseAiJson(raw, ExerciseFilterSuggestionSchema);
     } catch {
       return {
         group: "all",

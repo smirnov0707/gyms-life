@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { createAiRouterProvider } from "./ai-gateway.server";
-import { generateJson } from "./ai-json.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { NutritionMacrosSchema, normalizeNutritionLogDraft } from "./nutrition-log.schema";
 
@@ -44,15 +43,6 @@ export const analyzeMealPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => AnalyzeInput.parse(data))
   .handler(async ({ data, context }) => {
-    const geminiKey = process.env["GEMINI_API_KEY"];
-    if (!geminiKey) {
-      return failedMealAnalysis(
-        data.lang === "lt"
-          ? "AI variklis nesukonfigūruotas serveryje."
-          : "AI engine not configured.",
-      );
-    }
-
     try {
       const langName = LANGUAGE_NAMES[data.lang];
 
@@ -83,8 +73,9 @@ Apskaičiuok realistiškas maistines vertes (kalorijas, baltymus, angliavandeniu
 
 Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
 
-      const provider = createAiRouterProvider("food-vision.functions");
-      return await generateJson(provider("google/gemini-2.5-flash"), {
+      return await generateOrchestratedJson({
+        task: "food-vision",
+        supabase: context.supabase,
         userId: context.userId,
         system: systemPrompt,
         messages: [

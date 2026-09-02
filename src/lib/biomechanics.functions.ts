@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createAiRouterProvider } from "./ai-gateway.server";
-import { generateJson } from "./ai-json.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 const BiomechanicsInput = z.object({
@@ -42,11 +41,6 @@ export const analyzeExerciseForm = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => BiomechanicsInput.parse(data))
   .handler(async ({ data, context }) => {
-    const geminiKey = process.env["GEMINI_API_KEY"];
-    if (!geminiKey) {
-      return failedAnalysis("AI regos variklis nesukonfigūruotas.");
-    }
-
     try {
       const langName = LANGUAGE_NAMES[data.lang];
 
@@ -73,8 +67,9 @@ Atsakyk TIK TIKSLIU JSON:
   "coachCue": "Taiklus biomechaninis patarimas ${langName} kalba"
 }`;
 
-      const provider = createAiRouterProvider("biomechanics.functions");
-      return await generateJson(provider("google/gemini-2.5-flash"), {
+      return await generateOrchestratedJson({
+        task: "biomechanics",
+        supabase: context.supabase,
         userId: context.userId,
         system: prompt,
         messages: [

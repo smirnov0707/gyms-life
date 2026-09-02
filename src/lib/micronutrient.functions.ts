@@ -46,9 +46,7 @@ export const scanMicronutrients = createServerFn({ method: "POST" })
     const snap = await loadMicroSnapshot(context.supabase, context.userId);
     if (!isAiConfigured()) return fallbackMicroScan(data.lang, snap.days);
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("micronutrient.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const language = LANGUAGE_NAMES[data.lang];
 
     const age = snap.profile.birthYear ? new Date().getFullYear() - snap.profile.birthYear : null;
@@ -74,7 +72,9 @@ CURRENT SUPPLEMENTS: ${snap.supplements.map((s) => `${s.name} ${s.dose} x${s.tim
 Return exactly: {"summary":"","dataQuality":"","findings":[{"name":"","current":"","target":"","gapPercent":0,"priority":"high","reason":"","evidence":"","foodFix":"","supplement":{"name":"","dose":"","category":"vitamin","times_per_day":1,"with_food":true,"preferred_time":"morning"}}],"strengths":[""],"warnings":[""]}`;
 
     try {
-      const r = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      const r = await generateOrchestratedJson({
+        task: "micronutrients",
+        supabase: context.supabase,
         userId: context.userId,
         system,
         prompt: "Run the micronutrient gap analysis on this athlete's data.",

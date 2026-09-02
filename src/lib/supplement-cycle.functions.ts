@@ -62,14 +62,14 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
       return { empty: true as const };
     }
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("supplement-cycle.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const language = LANGUAGE_NAMES[data.lang];
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const advice = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+    const advice = await generateOrchestratedJson({
+      task: "supplement-cycle",
+      supabase,
       userId,
       system: `You are a sports-nutrition specialist planning supplement cycling for one athlete.
 Today is ${today}. Answer entirely in ${language}.

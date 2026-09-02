@@ -78,9 +78,7 @@ export const adaptMealPlan = createServerFn({ method: "POST" })
       );
     }
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("meal-adapt.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const schema = z.object({
       rationale: z.string().trim().min(1).max(1200),
@@ -129,7 +127,9 @@ Extra request from user: ${data.notes || "-"}`;
 
     let parsed: z.infer<typeof schema> | null = null;
     try {
-      parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      parsed = await generateOrchestratedJson({
+        task: "meal-adaptation",
+        supabase,
         userId,
         system,
         prompt,

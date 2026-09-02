@@ -78,9 +78,7 @@ export async function translateMealPlan(
 ): Promise<GeneratedMealPlan> {
   const source = collectMealStrings(plan);
   const target = LANGUAGE_NAMES[lang];
-  const { generateJson } = await import("./ai-json.server");
-  const { createAiRouterProvider } = await import("./ai-gateway.server");
-  const gateway = createAiRouterProvider("meal-i18n.server");
+  const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
   const CHUNK = 80;
   const translated: string[] = [];
@@ -96,7 +94,8 @@ Rules:
 INPUT: ${JSON.stringify(slice)}
 
 RETURN EXACTLY: {"items":["translated string", ...]}`;
-    const res = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+    const res = await generateOrchestratedJson({
+      task: "meal-translation",
       userId,
       prompt,
       schema: Translated,

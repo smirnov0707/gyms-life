@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateJson } from "./ai-json.server";
-import { createOrchestratedAi } from "./ai-orchestrator.server";
+import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import {
   formatExerciseCatalogForAi,
   parseDemonstratedExerciseCatalog,
@@ -43,12 +42,6 @@ export const buildRequestedWorkout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => BuildWorkoutInputSchema.parse(input))
   .handler(async ({ data, context }): Promise<RequestedWorkout> => {
-    const { provider, contextPrompt } = await createOrchestratedAi(
-      "workout-request.functions",
-      context.supabase,
-      context.userId,
-    );
-
     const { data: catalogExercises, error: catalogError } = await context.supabase
       .from("exercises")
       .select("slug, name_en, name_lt, muscle_group, equipment, location, difficulty")
@@ -61,7 +54,9 @@ export const buildRequestedWorkout = createServerFn({ method: "POST" })
     const catalog = formatExerciseCatalogForAi(demonstratedCatalog);
 
     const language = LANGUAGE_NAMES[data.lang];
-    const workout = await generateJson(provider("google/gemini-2.5-flash"), {
+    const workout = await generateOrchestratedJson({
+      task: "workout-request",
+      supabase: context.supabase,
       userId: context.userId,
       system: `You are GYMS.LIFE's evidence-based training planner. Write in ${language}.
 
@@ -70,9 +65,7 @@ Safety rules:
 - Respect limitations and equipment from the user context.
 - Choose conservative loading when recovery information is absent or poor.
 - Return a practical single-session workout that fits the requested duration.
-- Use ONLY exercise slugs copied exactly from the catalog below.
-
-${contextPrompt}`,
+- Use ONLY exercise slugs copied exactly from the catalog below.`,
       prompt: `Exercise catalog (slug | English / Lithuanian | muscle | equipment | location | difficulty):
 ${catalog}
 

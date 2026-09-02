@@ -88,12 +88,10 @@ export const getDailyBrief = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<DailyBrief> => {
     const { supabase, userId } = context;
 
-    const { buildUserContext, contextForAi } = await import("./user-context.server");
+    const { buildUserContext } = await import("./user-context.server");
     const snapshot = await buildUserContext(supabase, userId);
 
-    const { generateJson } = await import("./ai-json.server");
-    const { createAiRouterProvider } = await import("./ai-gateway.server");
-    const gateway = createAiRouterProvider("brief.functions");
+    const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
     const language = LANGUAGE_NAMES[data.lang];
     const personalizationRules = snapshot.aiPersonalization.enabled
@@ -130,14 +128,16 @@ PERSONALIZATION RULES
 ${personalizationRules}
 
 USER SNAPSHOT
-${contextForAi(snapshot)}
+The permission-aware GYMS.LIFE central user context is appended after these instructions. Treat it as the only source of user facts.
 
 RETURN EXACTLY THIS JSON SHAPE:
 {"headline":"string","summary":"string","focus":"string","signals":[{"label":"string","value":"string","note":"string","tone":"good"}],"actions":[{"title":"string","reason":"string","evidence":"string","route":"/readiness","cta":"string","priority":"high"}],"watchouts":["string"]}`;
 
     let parsed: z.infer<typeof BriefSchema>;
     try {
-      parsed = await generateJson(gateway("google/gemini-3.1-flash-lite"), {
+      parsed = await generateOrchestratedJson({
+        task: "daily-brief",
+        supabase,
         userId,
         system,
         prompt: "Generate today's brief.",
