@@ -3,6 +3,8 @@ import { z } from "zod";
 import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { fallbackRecipe } from "./fridge.server";
+import { FridgeRecipeSchema, type FridgeRecipe } from "./fridge.schema";
 
 const FridgeInput = z.object({
   ingredients: z.array(z.string().trim().min(1).max(120)).min(1).max(30),
@@ -31,21 +33,7 @@ const GeneratedRecipeResponseSchema = z.object({
   recipe: GeneratedRecipeSchema,
 });
 
-export const FridgeRecipeSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  calories: z.number().finite().min(0).max(10_000),
-  protein: z.number().finite().min(0).max(1_000),
-  carbs: z.number().finite().min(0).max(1_000),
-  fat: z.number().finite().min(0).max(1_000),
-  time: z.string().trim().min(1).max(40),
-  steps: z.array(z.string().trim().min(1).max(500)).min(1).max(12),
-  usedIngredients: z.array(z.string().trim().min(1).max(120)).min(1).max(30),
-  missingSuggestion: z.string().trim().max(300),
-  coachNote: z.string().trim().min(1).max(500),
-  fallback: z.boolean(),
-});
-
-export type FridgeRecipe = z.infer<typeof FridgeRecipeSchema>;
+export { FridgeRecipeSchema, type FridgeRecipe } from "./fridge.schema";
 
 function toFridgeRecipe(recipe: z.infer<typeof GeneratedRecipeSchema>): FridgeRecipe {
   return {
@@ -60,31 +48,6 @@ function toFridgeRecipe(recipe: z.infer<typeof GeneratedRecipeSchema>): FridgeRe
     missingSuggestion: recipe.missingSuggestion,
     coachNote: recipe.tip,
     fallback: false,
-  };
-}
-
-function fallbackRecipe(data: z.infer<typeof FridgeInput>): FridgeRecipe {
-  const lithuanian = data.lang === "lt";
-  return {
-    title: lithuanian
-      ? "Greitas patiekalas iš jūsų ingredientų"
-      : "Quick Dish From Your Ingredients",
-    time: "20 min",
-    calories: 520,
-    protein: 38,
-    carbs: 45,
-    fat: 14,
-    usedIngredients: data.ingredients,
-    steps: [
-      lithuanian ? "Paruoškite visus turimus ingredientus." : "Prep all ingredients.",
-      lithuanian ? "Apkepkite baltymų šaltinį." : "Cook the protein source.",
-      lithuanian
-        ? "Sudėkite likusius ingredientus ir pagardinkite."
-        : "Combine the remaining ingredients and season.",
-    ],
-    missingSuggestion: "",
-    coachNote: lithuanian ? "Subalansuotas fitneso patiekalas." : "A balanced fitness meal.",
-    fallback: true,
   };
 }
 
@@ -131,8 +94,8 @@ Visą tekstą pateik ${langName} kalba. Atsakyk TIK TIKSLIU JSON formatu be mark
         schema: GeneratedRecipeResponseSchema,
       });
 
-      return toFridgeRecipe(result.recipe);
+      return FridgeRecipeSchema.parse(toFridgeRecipe(result.recipe));
     } catch {
-      return fallbackRecipe(data);
+      return FridgeRecipeSchema.parse(fallbackRecipe(data.ingredients, data.lang));
     }
   });
