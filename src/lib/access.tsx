@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getPaddleEnvironment } from "@/lib/paddle";
+import { isBillingEnabled } from "@/lib/billing";
 
 export const TRIAL_DAYS = 7;
 
@@ -17,9 +18,10 @@ type AccessState = {
 
 // Access = owner (admin role) OR active/trialing subscription OR within 7-day beta trial.
 export function useAccess(userId: string | undefined): AccessState {
+  const billingEnabled = isBillingEnabled();
   const { data, isLoading } = useQuery({
     queryKey: ["access", userId],
-    enabled: !!userId,
+    enabled: billingEnabled && !!userId,
     queryFn: async () => {
       const env = getPaddleEnvironment();
       const [roleRes, profileRes, subRes] = await Promise.all([
@@ -73,8 +75,8 @@ export function useAccess(userId: string | undefined): AccessState {
   const inTrial = !!data?.inTrial;
 
   return {
-    loading: !userId || isLoading,
-    hasAccess: isOwner || subscribed || inTrial,
+    loading: billingEnabled && (!userId || isLoading),
+    hasAccess: !billingEnabled || isOwner || subscribed || inTrial,
     isOwner,
     inTrial: inTrial && !isOwner && !subscribed,
     trialEndsAt: data?.trialEndsAt ?? null,

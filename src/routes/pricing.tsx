@@ -17,6 +17,7 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { TransformationCalculator } from "@/components/TransformationCalculator";
+import { isBillingEnabled } from "@/lib/billing";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -132,6 +133,19 @@ function PricingPage() {
   const cancelSub = useServerFn(cancelSubscription);
   const resumeSub = useServerFn(resumeSubscription);
   const [cancelling, setCancelling] = useState(false);
+  const billingEnabled = isBillingEnabled();
+  const betaCopy =
+    lang === "lt"
+      ? {
+          title: "Mokėjimai dar nejungiami",
+          body: "Visi GYMS.LIFE funkcionalumai šiuo beta etapu prieinami be prenumeratos.",
+          button: "Netrukus",
+        }
+      : {
+          title: "Payments are not enabled yet",
+          body: "Every GYMS.LIFE feature is available without a subscription during this beta phase.",
+          button: "Coming soon",
+        };
 
   const cancelLabels = {
     lt: {
@@ -190,6 +204,10 @@ function PricingPage() {
   ];
 
   const buy = async (priceId: string) => {
+    if (!billingEnabled) {
+      toast.info(betaCopy.body);
+      return;
+    }
     if (!user) {
       navigate({ to: "/auth" });
       return;
@@ -259,6 +277,13 @@ function PricingPage() {
           <p className="mt-4 text-muted-foreground">{t("lg.pricing.heroSubtitle")}</p>
         </div>
 
+        {!billingEnabled && (
+          <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
+            <h2 className="font-bold text-primary">{betaCopy.title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{betaCopy.body}</p>
+          </div>
+        )}
+
         <TransformationCalculator />
 
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
@@ -318,7 +343,7 @@ function PricingPage() {
                 </ul>
                 <button
                   onClick={() => buy(p.priceId)}
-                  disabled={loading || switching}
+                  disabled={!billingEnabled || loading || switching}
                   className={cn(
                     "press flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors",
                     p.popular
@@ -326,8 +351,14 @@ function PricingPage() {
                       : "border border-border bg-surface hover:bg-surface-2",
                   )}
                 >
-                  {(loading || switching) && <Loader2 className="size-4 animate-spin" />}
-                  {access.subscribed ? t("lg.pricing.switchPlan") : t("lg.pricing.startFree")}
+                  {billingEnabled && (loading || switching) && (
+                    <Loader2 className="size-4 animate-spin" />
+                  )}
+                  {billingEnabled
+                    ? access.subscribed
+                      ? t("lg.pricing.switchPlan")
+                      : t("lg.pricing.startFree")
+                    : betaCopy.button}
                 </button>
               </div>
             );

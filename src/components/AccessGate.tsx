@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useAccess, TRIAL_DAYS } from "@/lib/access";
+import { isBillingEnabled } from "@/lib/billing";
 
 type Labels = {
   trialLeft: string;
@@ -44,6 +45,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { lang } = useI18n();
   const l = L[lang] ?? L["en"]!;
+  const billingEnabled = isBillingEnabled();
   const access = useAccess(user?.id);
 
   const daysLeft = access.trialEndsAt
@@ -52,7 +54,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
 
   // Reminder: once a day while the trial is running out.
   useEffect(() => {
-    if (!access.inTrial || daysLeft > 3) return;
+    if (!billingEnabled || !access.inTrial || daysLeft > 3) return;
     const key = `vex_trial_reminder_${new Date().toISOString().slice(0, 10)}`;
     try {
       if (localStorage.getItem(key)) return;
@@ -63,7 +65,9 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
     toast(l.reminderTitle, {
       description: daysLeft <= 1 ? l.trialLast : l.trialLeft.replace("{n}", String(daysLeft)),
     });
-  }, [access.inTrial, daysLeft, l]);
+  }, [access.inTrial, billingEnabled, daysLeft, l]);
+
+  if (!billingEnabled) return <>{children}</>;
 
   if (access.loading) {
     return (
