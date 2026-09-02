@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Apple, Flame, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { logMeal } from "@/lib/nutrition.functions";
@@ -32,16 +33,7 @@ export const Route = createFileRoute("/_authenticated/nutrition")({
   component: NutritionPage,
 });
 
-type Row = {
-  id: string;
-  logged_on: string;
-  food_name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  note: string | null;
-};
+type Row = Tables<"nutrition_logs">;
 
 function Ring({
   value,
@@ -104,13 +96,14 @@ function NutritionPage() {
   const { data: logs } = useQuery({
     queryKey: ["nutrition", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("nutrition_logs")
         .select("*")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(80);
-      return (data ?? []) as Row[];
+      if (error) throw new Error(`Could not load nutrition logs: ${error.message}`);
+      return data ?? [];
     },
     enabled: !!user,
   });
@@ -126,9 +119,11 @@ function NutritionPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      await supabase.from("nutrition_logs").delete().eq("id", id);
+      const { error } = await supabase.from("nutrition_logs").delete().eq("id", id);
+      if (error) throw new Error(`Could not delete meal log: ${error.message}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition", user?.id] }),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const today = new Date().toISOString().slice(0, 10);

@@ -9,6 +9,9 @@ import { useAuth } from "@/lib/auth";
 import { analyzeMealPhoto, savePhotoMeal, type MealAnalysis } from "@/lib/food-vision.functions";
 import { errorMessage } from "@/lib/error-message";
 
+const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
 export const VisionMealScanner: React.FC = () => {
   const { lang } = useI18n();
   const { user } = useAuth();
@@ -24,9 +27,14 @@ export const VisionMealScanner: React.FC = () => {
   const [scanResult, setScanResult] = useState<MealAnalysis | null>(null);
 
   const resizeImage = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        const source = e.target?.result;
+        if (typeof source !== "string") {
+          reject(new Error("Could not read image data."));
+          return;
+        }
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement("canvas");
@@ -49,11 +57,17 @@ export const VisionMealScanner: React.FC = () => {
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, width, height);
+          if (!ctx) {
+            reject(new Error("Could not prepare image."));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
           resolve(canvas.toDataURL("image/jpeg", 0.82));
         };
-        img.src = e.target?.result as string;
+        img.onerror = () => reject(new Error("Could not decode image."));
+        img.src = source;
       };
+      reader.onerror = () => reject(new Error("Could not read image file."));
       reader.readAsDataURL(file);
     });
   };
@@ -61,6 +75,16 @@ export const VisionMealScanner: React.FC = () => {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!SUPPORTED_IMAGE_TYPES.has(file.type) || file.size > MAX_IMAGE_BYTES) {
+      e.currentTarget.value = "";
+      toast.error(
+        lang === "lt"
+          ? "Įkelkite JPG, PNG arba WebP nuotrauką iki 10 MB."
+          : "Upload a JPG, PNG, or WebP image up to 10 MB.",
+      );
+      return;
+    }
 
     try {
       const base64 = await resizeImage(file);
@@ -110,7 +134,7 @@ export const VisionMealScanner: React.FC = () => {
       toast.success(
         lang === "lt" ? "Patiekalas išsaugotas į mitybos dienoraštį!" : "Meal saved to log!",
       );
-      queryClient.invalidateQueries({ queryKey: ["nutrition-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["nutrition", user?.id] });
       setImagePreview(null);
       setScanResult(null);
     } catch (error: unknown) {
@@ -147,7 +171,7 @@ export const VisionMealScanner: React.FC = () => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         capture="environment"
         className="hidden"
       />

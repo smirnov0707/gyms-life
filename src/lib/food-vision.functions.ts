@@ -4,19 +4,20 @@ import { z } from "zod";
 import { createAiRouterProvider } from "./ai-gateway.server";
 import { generateJson } from "./ai-json.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { NutritionMacrosSchema, normalizeNutritionLogDraft } from "./nutrition-log.schema";
 
 const AnalyzeInput = z.object({
-  image: z.string().min(10),
+  image: z
+    .string()
+    .max(4_000_000)
+    .regex(/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, "Invalid image data."),
   lang: SupportedLanguageSchema.default("lt"),
 });
 
-const MealAnalysisSuccessSchema = z.object({
+const MealAnalysisSuccessSchema = NutritionMacrosSchema.extend({
   ok: z.literal(true),
   dishName: z.string().trim().min(1).max(200),
-  calories: z.coerce.number().finite().min(0).max(10_000),
-  protein: z.coerce.number().finite().min(0).max(1_000),
-  carbs: z.coerce.number().finite().min(0).max(1_000),
-  fat: z.coerce.number().finite().min(0).max(1_000),
+  calories: z.coerce.number().finite().positive().max(10_000),
   items: z.array(z.string().trim().min(1).max(160)).max(30).default([]),
   confidence: z.coerce.number().finite().min(0).max(100),
   note: z.string().trim().min(1).max(1_000),
@@ -106,13 +107,10 @@ Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
     }
   });
 
-const SaveInput = z.object({
-  dishName: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-  note: z.string().optional(),
+const SaveInput = NutritionMacrosSchema.extend({
+  dishName: z.string().trim().min(1).max(200),
+  calories: z.coerce.number().finite().positive().max(10_000),
+  note: z.string().trim().max(500).optional(),
 });
 
 export const savePhotoMeal = createServerFn({ method: "POST" })
@@ -122,17 +120,18 @@ export const savePhotoMeal = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     const today = new Date().toISOString().slice(0, 10);
-    const { error } = await supabase.from("nutrition_logs").insert({
-      user_id: userId,
-      logged_on: today,
+    const meal = normalizeNutritionLogDraft({
+      description: data.note || "Scanned with the AI Vision Scanner",
       food_name: data.dishName,
-      description: data.note ?? "Scanned with the AI Vision Scanner",
       calories: data.calories,
       protein: data.protein,
       carbs: data.carbs,
       fat: data.fat,
-      note: data.note ?? "Nuskaityta su AI Vision Scanner",
+      note: data.note ?? "",
     });
+    const { error } = await supabase
+      .from("nutrition_logs")
+      .insert({ user_id: userId, logged_on: today, ...meal });
 
     if (error) throw new Error(error.message);
     return { ok: true };
