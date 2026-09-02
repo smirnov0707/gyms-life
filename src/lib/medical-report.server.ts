@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Tables } from "@/integrations/supabase/types";
 
 /**
  * Aggregates the last 30 days of real user data for the monthly / medical
@@ -6,8 +7,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * PDF are always their own — no placeholders.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DB = SupabaseClient<any, any, any>;
+type ReportProfile = Pick<
+  Tables<"profiles">,
+  | "display_name"
+  | "birth_year"
+  | "gender"
+  | "height_cm"
+  | "weight_kg"
+  | "target_weight_kg"
+  | "experience"
+  | "goal"
+  | "limitations"
+  | "diet"
+  | "allergies"
+>;
 
 export type ReportStats = {
   from: string;
@@ -35,7 +48,7 @@ export type ReportStats = {
   bodyFatEnd: number | null;
   topLifts: { exercise: string; bestWeight: number; reps: number }[];
   supplements: { name: string; dose: string | null; timesPerDay: number | null }[];
-  profile: Record<string, string | number | boolean | null> | null;
+  profile: ReportProfile | null;
 };
 
 const num = (v: unknown) => {
@@ -49,7 +62,10 @@ const avg = (values: (number | null)[]) => {
   return Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10;
 };
 
-export async function buildReportStats(supabase: DB, userId: string): Promise<ReportStats> {
+export async function buildReportStats(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<ReportStats> {
   const to = new Date();
   const from = new Date(Date.now() - 30 * 864e5);
   const fromIso = from.toISOString();
@@ -101,37 +117,37 @@ export async function buildReportStats(supabase: DB, userId: string): Promise<Re
         .maybeSingle(),
     ]);
 
-  const sessions = (sessionsRes.data ?? []) as Record<string, unknown>[];
-  const totalVolumeKg = Math.round(sessions.reduce((a, s) => a + (num(s["total_volume"]) ?? 0), 0));
-  const trainingSeconds = sessions.reduce((a, s) => a + (num(s["duration_seconds"]) ?? 0), 0);
+  const sessions = sessionsRes.data ?? [];
+  const totalVolumeKg = Math.round(sessions.reduce((a, s) => a + (num(s.total_volume) ?? 0), 0));
+  const trainingSeconds = sessions.reduce((a, s) => a + (num(s.duration_seconds) ?? 0), 0);
   const trainingMinutes = Math.round(trainingSeconds / 60);
 
-  const checkins = (checkinsRes.data ?? []) as Record<string, unknown>[];
-  const nutri = (nutriRes.data ?? []) as Record<string, unknown>[];
+  const checkins = checkinsRes.data ?? [];
+  const nutri = nutriRes.data ?? [];
 
   const perDay = new Map<string, { kcal: number; p: number; c: number; f: number }>();
   for (const row of nutri) {
-    const key = String(row["logged_on"]);
+    const key = row.logged_on;
     const acc = perDay.get(key) ?? { kcal: 0, p: 0, c: 0, f: 0 };
-    acc.kcal += num(row["calories"]) ?? 0;
-    acc.p += num(row["protein"]) ?? 0;
-    acc.c += num(row["carbs"]) ?? 0;
-    acc.f += num(row["fat"]) ?? 0;
+    acc.kcal += num(row.calories) ?? 0;
+    acc.p += num(row.protein) ?? 0;
+    acc.c += num(row.carbs) ?? 0;
+    acc.f += num(row.fat) ?? 0;
     perDay.set(key, acc);
   }
   const days = [...perDay.values()];
 
-  const body = (bodyRes.data ?? []) as Record<string, unknown>[];
+  const body = bodyRes.data ?? [];
   const first = body[0] ?? null;
   const last = body[body.length - 1] ?? null;
-  const weightStartKg = first ? num(first["weight_kg"]) : null;
-  const weightEndKg = last ? num(last["weight_kg"]) : null;
+  const weightStartKg = first ? num(first.weight_kg) : null;
+  const weightEndKg = last ? num(last.weight_kg) : null;
 
   const bestByExercise = new Map<string, { bestWeight: number; reps: number }>();
-  for (const row of (setsRes.data ?? []) as Record<string, unknown>[]) {
-    const name = String(row["exercise_name"] ?? "").trim();
-    const w = num(row["weight_kg"]) ?? 0;
-    const reps = num(row["reps"]) ?? 0;
+  for (const row of setsRes.data ?? []) {
+    const name = row.exercise_name.trim();
+    const w = num(row.weight_kg) ?? 0;
+    const reps = num(row.reps) ?? 0;
     if (!name || w <= 0) continue;
     const prev = bestByExercise.get(name);
     if (!prev || w > prev.bestWeight) bestByExercise.set(name, { bestWeight: w, reps });
@@ -150,11 +166,11 @@ export async function buildReportStats(supabase: DB, userId: string): Promise<Re
     avgSessionMinutes: sessions.length ? Math.round(trainingMinutes / sessions.length) : 0,
     sessionsPerWeek: Math.round((sessions.length / 30) * 7 * 10) / 10,
     checkins: checkins.length,
-    avgReadiness: avg(checkins.map((c) => num(c["readiness_score"]))),
-    avgSleepHours: avg(checkins.map((c) => num(c["sleep_hours"]))),
-    avgSoreness: avg(checkins.map((c) => num(c["soreness"]))),
-    avgStress: avg(checkins.map((c) => num(c["stress"]))),
-    avgEnergy: avg(checkins.map((c) => num(c["energy"]))),
+    avgReadiness: avg(checkins.map((c) => num(c.readiness_score))),
+    avgSleepHours: avg(checkins.map((c) => num(c.sleep_hours))),
+    avgSoreness: avg(checkins.map((c) => num(c.soreness))),
+    avgStress: avg(checkins.map((c) => num(c.stress))),
+    avgEnergy: avg(checkins.map((c) => num(c.energy))),
     nutritionDaysLogged: perDay.size,
     avgKcal: avg(days.map((d) => Math.round(d.kcal))),
     avgProtein: avg(days.map((d) => Math.round(d.p))),
@@ -166,29 +182,29 @@ export async function buildReportStats(supabase: DB, userId: string): Promise<Re
       weightStartKg != null && weightEndKg != null
         ? Math.round((weightEndKg - weightStartKg) * 10) / 10
         : null,
-    bodyFatStart: first ? num(first["body_fat"]) : null,
-    bodyFatEnd: last ? num(last["body_fat"]) : null,
+    bodyFatStart: first ? num(first.body_fat) : null,
+    bodyFatEnd: last ? num(last.body_fat) : null,
     topLifts,
-    supplements: ((suppRes.data ?? []) as Record<string, unknown>[]).map((s) => ({
-      name: String(s["name"] ?? ""),
-      dose: (s["dose"] as string) ?? null,
-      timesPerDay: num(s["times_per_day"]),
+    supplements: (suppRes.data ?? []).map((s) => ({
+      name: s.name,
+      dose: s.dose,
+      timesPerDay: num(s.times_per_day),
     })),
-    profile: (profileRes.data ?? null) as ReportStats["profile"],
+    profile: profileRes.data,
   };
 }
 
 export function statsToPrompt(s: ReportStats): string {
-  const p = s.profile ?? {};
-  const age = p["birth_year"] ? new Date().getFullYear() - Number(p["birth_year"]) : null;
+  const profile = s.profile;
+  const age = profile?.birth_year ? new Date().getFullYear() - profile.birth_year : null;
   return [
     `PERIOD: ${s.from} → ${s.to} (30 days)`,
-    `SUBJECT: age=${age ?? "?"}, gender=${p["gender"] ?? "?"}, height=${p["height_cm"] ?? "?"}cm, goal=${p["goal"] ?? "?"}, experience=${p["experience"] ?? "?"}, limitations=${p["limitations"] ?? "none"}, diet=${p["diet"] ?? "?"}, allergies=${p["allergies"] ?? "none"}`,
+    `SUBJECT: age=${age ?? "?"}, gender=${profile?.gender ?? "?"}, height=${profile?.height_cm ?? "?"}cm, goal=${profile?.goal ?? "?"}, experience=${profile?.experience ?? "?"}, limitations=${profile?.limitations ?? "none"}, diet=${profile?.diet ?? "?"}, allergies=${profile?.allergies ?? "none"}`,
     `TRAINING: sessions=${s.sessions}, ${s.sessionsPerWeek}/week, total volume=${s.totalVolumeKg}kg, total time=${s.trainingMinutes}min, avg session=${s.avgSessionMinutes}min`,
     `TOP LIFTS: ${s.topLifts.length ? s.topLifts.map((l) => `${l.exercise} ${l.bestWeight}kg×${l.reps}`).join("; ") : "no logged sets"}`,
     `RECOVERY: check-ins=${s.checkins}, avg readiness=${s.avgReadiness ?? "—"}, avg sleep=${s.avgSleepHours ?? "—"}h, soreness=${s.avgSoreness ?? "—"}, stress=${s.avgStress ?? "—"}, energy=${s.avgEnergy ?? "—"}`,
     `NUTRITION: days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
-    `BODY: weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${p["target_weight_kg"] ?? "—"}kg`,
+    `BODY: weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
     `SUPPLEMENTS: ${s.supplements.length ? s.supplements.map((x) => `${x.name} ${x.dose ?? ""} ×${x.timesPerDay ?? 1}`).join("; ") : "none"}`,
   ].join("\n");
 }

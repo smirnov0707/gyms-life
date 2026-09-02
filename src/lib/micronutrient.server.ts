@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export type MicroSnapshot = {
   days: number;
@@ -27,8 +28,7 @@ export type MicroSnapshot = {
 
 /** Pulls the last 14 days of real logs so the scan is based on user data, not guesses. */
 export async function loadMicroSnapshot(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: SupabaseClient<any>,
+  supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<MicroSnapshot> {
   const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
@@ -63,35 +63,17 @@ export async function loadMicroSnapshot(
       .gte("checkin_on", since),
   ]);
 
-  const rows = (foods.data ?? []) as {
-    logged_on: string;
-    food_name: string;
-    description: string | null;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  }[];
+  const rows = foods.data ?? [];
 
   const dayKeys = new Set(rows.map((r) => r.logged_on));
   const dayCount = Math.max(1, dayKeys.size);
   const totalKcal = rows.reduce((a, r) => a + Number(r.calories ?? 0), 0);
   const totalProtein = rows.reduce((a, r) => a + Number(r.protein ?? 0), 0);
 
-  const ci = (checkins.data ?? []) as {
-    sleep_hours: number | null;
-    readiness_score: number | null;
-  }[];
+  const ci = checkins.data ?? [];
   const avg = (list: number[]) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
 
-  const p = (prof.data ?? {}) as {
-    weight_kg: number | null;
-    height_cm: number | null;
-    gender: string | null;
-    goal: string | null;
-    diet: string | null;
-    birth_year: number | null;
-  };
+  const profile = prof.data;
 
   return {
     days: dayCount,
@@ -106,20 +88,18 @@ export async function loadMicroSnapshot(
     })),
     avgKcal: Math.round(totalKcal / dayCount),
     avgProtein: Math.round(totalProtein / dayCount),
-    supplements: (
-      (sups.data ?? []) as { name: string; dose: string | null; times_per_day: number }[]
-    ).map((s) => ({
+    supplements: (sups.data ?? []).map((s) => ({
       name: s.name,
       dose: s.dose ?? "",
       times_per_day: s.times_per_day ?? 1,
     })),
     profile: {
-      weight: Number(p.weight_kg ?? 75),
-      height: Number(p.height_cm ?? 178),
-      gender: p.gender ?? "unknown",
-      goal: p.goal ?? "muscle",
-      diet: p.diet ?? "any",
-      birthYear: p.birth_year ?? null,
+      weight: Number(profile?.weight_kg ?? 75),
+      height: Number(profile?.height_cm ?? 178),
+      gender: profile?.gender ?? "unknown",
+      goal: profile?.goal ?? "muscle",
+      diet: profile?.diet ?? "any",
+      birthYear: profile?.birth_year ?? null,
     },
     training: {
       sessions14d: (sessions.data ?? []).length,
