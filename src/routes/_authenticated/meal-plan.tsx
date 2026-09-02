@@ -97,7 +97,7 @@ function MealPlanPage() {
   const { data: saved, refetch } = useQuery({
     queryKey: ["meal-plan", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("meal_plans")
         .select("id, data, lang, created_at")
         .eq("user_id", user!.id)
@@ -105,6 +105,7 @@ function MealPlanPage() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) throw new Error(`Could not load meal plan: ${error.message}`);
       return data;
     },
     enabled: !!user,
@@ -195,8 +196,12 @@ function MealPlanPage() {
           `${group.category}\n${group.items.map((i) => `- ${i.name} — ${i.amount}`).join("\n")}`,
       )
       .join("\n\n");
-    await navigator.clipboard.writeText(text);
-    toast.success(t("mp.copied"));
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t("mp.copied"));
+    } catch {
+      toast.error(t("common.error"));
+    }
   };
 
   const day = plan?.days.find((d) => d.day === openDay) ?? plan?.days[0];

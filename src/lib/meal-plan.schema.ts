@@ -2,11 +2,12 @@ import { z } from "zod";
 
 const NonEmptyText = z.string().trim().min(1);
 const MacroValue = z.coerce.number().finite().nonnegative();
+const PositiveEnergyValue = z.coerce.number().finite().positive();
 
 export const MealItemSchema = z.object({
   slot: NonEmptyText,
   name: NonEmptyText,
-  kcal: MacroValue,
+  kcal: PositiveEnergyValue,
   protein: MacroValue,
   carbs: MacroValue,
   fat: MacroValue,
@@ -19,7 +20,7 @@ export const MealItemSchema = z.object({
 export const MealDaySchema = z.object({
   day: z.coerce.number().int().min(1).max(7),
   title: NonEmptyText,
-  total_kcal: MacroValue,
+  total_kcal: PositiveEnergyValue,
   total_protein: MacroValue,
   total_carbs: MacroValue,
   total_fat: MacroValue,
@@ -47,7 +48,7 @@ const SevenDistinctDaysSchema = z
 export const GeneratedMealPlanSchema = z.object({
   title: NonEmptyText,
   summary: z.string(),
-  kcal_target: MacroValue,
+  kcal_target: PositiveEnergyValue,
   protein_target: MacroValue,
   carbs_target: MacroValue,
   fat_target: MacroValue,

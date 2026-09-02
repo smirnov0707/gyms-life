@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseStoredMealPlan } from "./meal-plan.schema";
+import { validateGeneratedMealPlan } from "./meal-plan-generation.validation";
 
 const validMealPlan = {
   title: "7 day performance plan",
@@ -21,7 +22,7 @@ const validMealPlan = {
       {
         slot: "Breakfast",
         name: "Oats and yoghurt",
-        kcal: "600",
+        kcal: "2400",
         protein: "40",
         carbs: "75",
         fat: "18",
@@ -55,5 +56,34 @@ describe("stored meal plan validation", () => {
       }),
     ).toBeNull();
     expect(parseStoredMealPlan({ ...validMealPlan, title: "" })).toBeNull();
+    expect(
+      parseStoredMealPlan({
+        ...validMealPlan,
+        days: validMealPlan.days.map((day) => ({
+          ...day,
+          meals: day.meals.map((meal) => ({ ...meal, kcal: 0 })),
+        })),
+      }),
+    ).toBeNull();
+  });
+
+  it("enforces the requested meal count and fixed daily calorie target", () => {
+    const plan = parseStoredMealPlan(validMealPlan);
+    expect(plan).not.toBeNull();
+    if (!plan) return;
+
+    expect(validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: 2400 })).toBe(plan);
+    expect(() =>
+      validateGeneratedMealPlan(plan, { mealsPerDay: 2, fixedKcalTarget: 2400 }),
+    ).toThrow("requested number of meals");
+    expect(() =>
+      validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: 1800 }),
+    ).toThrow("requested calorie target");
+    expect(() =>
+      validateGeneratedMealPlan(
+        { ...plan, days: [{ ...plan.days[0]!, total_kcal: 1800 }, ...plan.days.slice(1)] },
+        { mealsPerDay: 1, fixedKcalTarget: null },
+      ),
+    ).toThrow("inconsistent daily calorie totals");
   });
 });

@@ -1013,6 +1013,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_meal_plan: {
+        Args: { p_meal_plan_id: string }
+        Returns: string
+      }
       activate_training_plan: {
         Args: { p_plan_id: string }
         Returns: string
