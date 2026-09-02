@@ -1,8 +1,125 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Dumbbell, Activity, TrendingUp, MessageCircle, UserRound } from "lucide-react";
-import { useI18n, type Lang } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
+import { Activity, Apple, ArrowUpRight, Dumbbell, Menu, TrendingUp, UserRound } from "lucide-react";
+import { useI18n, type Lang, type TKey } from "@/lib/i18n";
+import { NAV_GROUPS, byRoute, type NavItem } from "@/lib/nav-map";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+
+const primaryNavItems = [
+  { to: "/app", icon: Activity, labelKey: "nav.today" },
+  { to: "/training", icon: Dumbbell, labelKey: "nav.training" },
+  { to: "/nutrition", icon: Apple, labelKey: "nav.nutrition" },
+  { to: "/progress", icon: TrendingUp, labelKey: "nav.progress" },
+] as const;
+
+function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
+  return NAV_GROUPS.map((group) => ({
+    key: group.key,
+    items: group.routes.flatMap((route) => {
+      const item = byRoute(route);
+      return item ? [item] : [];
+    }),
+  }));
+}
+
+function MoreNavigation({
+  className = "",
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const groups = groupedToolNavigation();
+
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("nav.more")}
+          className={
+            compact
+              ? `grid size-9 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-neutral-300 transition-colors hover:border-primary/40 hover:text-white ${className}`
+              : `rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-neutral-400 transition-all hover:bg-white/[0.03] hover:text-white ${className}`
+          }
+        >
+          <span className={compact ? "" : "flex items-center gap-2"}>
+            <Menu className="size-4" />
+            {compact ? null : t("nav.more")}
+          </span>
+        </button>
+      </DrawerTrigger>
+
+      <DrawerContent className="max-h-[85vh] overflow-y-auto rounded-t-[1.75rem] border-border bg-[#0b0b0d] px-4 pb-6 text-foreground sm:mx-auto sm:max-w-2xl">
+        <DrawerHeader className="px-1 pb-4 pt-5 text-left">
+          <DrawerTitle className="text-display text-2xl text-foreground">
+            {t("nav.more")}
+          </DrawerTitle>
+          <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
+            {t("nav.moreDescription")}
+          </DrawerDescription>
+        </DrawerHeader>
+
+        <div className="grid gap-5">
+          {groups.map((group) => (
+            <section key={group.key}>
+              <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {t(group.key)}
+              </h2>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DrawerClose key={item.to} asChild>
+                      <Link
+                        to={item.to}
+                        className="group flex min-h-20 flex-col justify-between rounded-2xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
+                      >
+                        <Icon className="size-4 text-primary" />
+                        <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
+                          <span className="leading-tight">{t(item.key)}</span>
+                          <ArrowUpRight className="size-3 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:text-primary" />
+                        </span>
+                      </Link>
+                    </DrawerClose>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+
+          <DrawerClose asChild>
+            <Link
+              to="/me"
+              className="group flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3.5 transition-colors hover:border-primary/50 hover:bg-primary/[0.12]"
+            >
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
+                <UserRound className="size-4" />
+              </span>
+              <span className="flex-1">
+                <span className="block text-sm font-bold text-foreground">{t("nav.athlete")}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {t("nav.athleteDescription")}
+                </span>
+              </span>
+              <ArrowUpRight className="size-4 text-primary transition-transform group-hover:-translate-y-0.5" />
+            </Link>
+          </DrawerClose>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
 
 export function headerName(name?: string | null): string {
   return name || "GYMS.LIFE";
@@ -57,16 +174,8 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
 };
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { lang } = useI18n();
+  const { t } = useI18n();
   const location = useLocation();
-
-  const navItems = [
-    { to: "/app", icon: Activity, label: lang === "lt" ? "Šiandien" : "Today" },
-    { to: "/training", icon: Dumbbell, label: lang === "lt" ? "Treniruotės" : "Train" },
-    { to: "/progress", icon: TrendingUp, label: lang === "lt" ? "Progresas" : "Progress" },
-    { to: "/coach", icon: MessageCircle, label: lang === "lt" ? "Treneris" : "Coach" },
-    { to: "/me", icon: UserRound, label: lang === "lt" ? "Aš" : "Me" },
-  ];
 
   return (
     <div className="min-h-screen bg-[#030303] text-[#f4f4f5] flex flex-col selection:bg-emerald-500/30 selection:text-emerald-300">
@@ -77,7 +186,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
           {/* Desktop navigacija */}
           <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
+            {primaryNavItems.map((item) => {
               const isActive = location.pathname.startsWith(item.to);
               const Icon = item.icon;
               return (
@@ -93,13 +202,15 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   <Icon
                     className={`w-3.5 h-3.5 ${isActive ? "text-emerald-400" : "text-neutral-400"}`}
                   />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
+            <MoreNavigation />
           </nav>
 
           <div className="flex items-center gap-2.5">
+            <MoreNavigation compact className="md:hidden" />
             <LangSwitch />
             <div className="badge-telemetry text-emerald-400 border-emerald-500/20 bg-emerald-500/5 hidden sm:inline-flex">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -117,7 +228,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       {/* Mobilus plaukiojantis apatinis dokas */}
       <nav className="md:hidden fixed bottom-4 inset-x-4 z-50">
         <div className="glass-panel rounded-2xl p-1.5 flex items-center justify-around shadow-2xl border border-white/15 bg-black/85 backdrop-blur-2xl">
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const isActive = location.pathname.startsWith(item.to);
             const Icon = item.icon;
             return (
@@ -132,7 +243,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-emerald-400 scale-110" : ""}`} />
                 <span className="text-[9px] font-bold uppercase tracking-tight mt-1">
-                  {item.label}
+                  {t(item.labelKey)}
                 </span>
               </Link>
             );
