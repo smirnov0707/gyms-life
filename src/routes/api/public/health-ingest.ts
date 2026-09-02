@@ -48,25 +48,34 @@ export const Route = createFileRoute("/api/public/health-ingest")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const { data: profile } = await supabaseAdmin
+        const { data: profile, error: profileError } = await supabaseAdmin
           .from("profiles")
           .select("id")
           .eq("health_token", p.token)
           .maybeSingle();
 
+        if (profileError) {
+          console.error("Health ingest profile lookup failed", { code: profileError.code });
+          return json({ error: "Health sync is temporarily unavailable" }, 503);
+        }
         if (!profile) return json({ error: "Unauthorized" }, 401);
 
-        const userId = profile.id as string;
+        const userId = profile.id;
         const sampleOn =
           normalizeDate(raw["date"] ?? raw["sample_on"] ?? raw["day"]) ??
           new Date().toISOString().slice(0, 10);
 
-        const { data: history } = await supabaseAdmin
+        const { data: history, error: historyError } = await supabaseAdmin
           .from("health_samples")
           .select("resting_hr, hrv_ms")
           .eq("user_id", userId)
           .order("sample_on", { ascending: false })
           .limit(30);
+
+        if (historyError) {
+          console.error("Health ingest history lookup failed", { code: historyError.code });
+          return json({ error: "Health sync is temporarily unavailable" }, 503);
+        }
 
         const avg = (nums: (number | null)[]) => {
           const list = nums.filter((n): n is number => typeof n === "number");
@@ -89,7 +98,7 @@ export const Route = createFileRoute("/api/public/health-ingest")({
         );
         const modifier = healthLoadModifier(score);
 
-        await supabaseAdmin.from("health_samples").upsert(
+        const { error: sampleError } = await supabaseAdmin.from("health_samples").upsert(
           {
             user_id: userId,
             sample_on: sampleOn,
@@ -106,8 +115,13 @@ export const Route = createFileRoute("/api/public/health-ingest")({
           { onConflict: "user_id,sample_on,source" },
         );
 
+        if (sampleError) {
+          console.error("Health ingest sample write failed", { code: sampleError.code });
+          return json({ error: "Health sync is temporarily unavailable" }, 503);
+        }
+
         if (sampleOn === new Date().toISOString().slice(0, 10)) {
-          await supabaseAdmin.from("daily_checkins").upsert(
+          const { error: checkinError } = await supabaseAdmin.from("daily_checkins").upsert(
             {
               user_id: userId,
               checkin_on: sampleOn,
@@ -118,6 +132,11 @@ export const Route = createFileRoute("/api/public/health-ingest")({
             },
             { onConflict: "user_id,checkin_on" },
           );
+
+          if (checkinError) {
+            console.error("Health ingest check-in write failed", { code: checkinError.code });
+            return json({ error: "Health sync is temporarily unavailable" }, 503);
+          }
         }
 
         return json({
