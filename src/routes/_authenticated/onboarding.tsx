@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
@@ -10,22 +10,20 @@ import {
   ListChecks,
   Timer,
   CheckCircle2,
-  Play,
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { generatePlan } from "@/lib/plan.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { PlanData } from "@/lib/plan-types";
-import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
+import type { TrainingPlanData } from "@/lib/training-plan.schema";
 import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { aiErrorMessage } from "@/lib/ai-error";
+import { ProgramActivationActions } from "@/components/ProgramActivationActions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
@@ -143,13 +141,13 @@ function OptionButton({
 
 function Onboarding() {
   const { t, lang } = useI18n();
-  const navigate = useNavigate();
   const run = useServerFn(generatePlan);
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [result, setResult] = useState<PlanData | null>(null);
+  const [result, setResult] = useState<TrainingPlanData | null>(null);
+  const [generatedPlanId, setGeneratedPlanId] = useState<string | null>(null);
 
   const [goal, setGoal] = useState("build_muscle");
   const [experience, setExperience] = useState("beginner");
@@ -204,16 +202,9 @@ function Onboarding() {
           lang,
         },
       });
-      if (res.planId) {
-        const { data } = await supabase
-          .from("plans")
-          .select("data")
-          .eq("id", res.planId)
-          .maybeSingle();
-        const planData = data ? parseStoredTrainingPlan(data.data) : null;
-        if (planData) setResult(planData);
-        else navigate({ to: "/app" });
-      }
+      if (!res.planId) throw new Error("Generated plan could not be saved.");
+      setGeneratedPlanId(res.planId);
+      setResult(res.plan);
     } catch (err) {
       toast.error(aiErrorMessage(err, t));
     } finally {
@@ -247,11 +238,7 @@ function Onboarding() {
               {result.summary}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="hard-shadow rounded-none px-8 font-bold">
-                <Link to="/workout/$day" params={{ day: "1" }}>
-                  <Play className="mr-1 size-4" /> {t("qo.startNow")}
-                </Link>
-              </Button>
+              {generatedPlanId && <ProgramActivationActions planId={generatedPlanId} lang={lang} />}
               <Button asChild size="lg" variant="outline" className="rounded-none px-8 font-bold">
                 <Link to="/app">{t("qo.open")}</Link>
               </Button>
@@ -260,6 +247,7 @@ function Onboarding() {
                 variant="ghost"
                 onClick={() => {
                   setResult(null);
+                  setGeneratedPlanId(null);
                   setStep(0);
                   setElapsed(0);
                 }}

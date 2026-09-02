@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { activatePlan } from "@/lib/activate-plan.functions";
+import type { SupportedLanguage } from "@/lib/language.schema";
 
 export function ProgramActivationActions({
   planId,
@@ -12,7 +13,7 @@ export function ProgramActivationActions({
   onActivated,
 }: {
   planId: string;
-  lang: string;
+  lang: SupportedLanguage;
   onActivated?: () => void;
 }) {
   const activate = useServerFn(activatePlan);
