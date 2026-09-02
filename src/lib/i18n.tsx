@@ -56,6 +56,17 @@ export function preloadSupplementalLocales(): Promise<SupplementalLocales> {
 
 const baseDict = {
   "nav.dashboard": { lt: "Apžvalga", en: "Dashboard" },
+  "nav.today": { lt: "Šiandien", en: "Today" },
+  "nav.training": { lt: "Treniruotės", en: "Training" },
+  "nav.moreDescription": {
+    lt: "Papildomi įrankiai tavo treniruotėms, mitybai, atsistatymui ir pažangai.",
+    en: "More tools for your training, nutrition, recovery and progress.",
+  },
+  "nav.athlete": { lt: "Sportininko modelis", en: "Athlete model" },
+  "nav.athleteDescription": {
+    lt: "Skaidri tavo validuotų duomenų suvestinė",
+    en: "A transparent summary of your validated data",
+  },
   "nav.plan": { lt: "Planas", en: "Plan" },
   "nav.exercises": { lt: "Pratimai", en: "Exercises" },
   "nav.progress": { lt: "Progresas", en: "Progress" },
