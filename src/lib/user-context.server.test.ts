@@ -116,6 +116,36 @@ describe("contextForAi", () => {
         },
         dataGaps: [],
       },
+      digitalAthlete: {
+        schemaVersion: "1.0",
+        training: {
+          sessionsLast7Days: 3,
+          sessionsLast28Days: 10,
+          totalVolumeLast28Days: 7000,
+          daysSinceLastCompletedWorkout: 1,
+        },
+        recovery: {
+          latestReadinessScore: 70,
+          averageReadinessLast7Days: 68,
+          averageSleepHoursLast7Days: 7.2,
+        },
+        body: {
+          latestWeightKg: 80,
+          latestBodyFatPercent: 18,
+          weightChangeKgLast30Days: -0.8,
+        },
+        nutrition: {
+          loggedDaysLast14Days: 7,
+          averageCaloriesOnLoggedDays: 2200,
+          averageProteinGOnLoggedDays: 155,
+        },
+        dataQuality: {
+          level: "informed",
+          evidenceCount: 24,
+          availableDomains: ["training", "recovery", "body", "nutrition"],
+        },
+        dataGaps: [],
+      },
       memory: [
         {
           type: "private",
@@ -207,6 +237,36 @@ describe("contextForAi", () => {
           weightChangeKgLast30Days: -0.8,
         },
         dataGaps: ["personalization_consent_required"],
+      },
+      digitalAthlete: {
+        schemaVersion: "1.0",
+        training: {
+          sessionsLast7Days: 3,
+          sessionsLast28Days: 10,
+          totalVolumeLast28Days: 7000,
+          daysSinceLastCompletedWorkout: 1,
+        },
+        recovery: {
+          latestReadinessScore: 70,
+          averageReadinessLast7Days: 68,
+          averageSleepHoursLast7Days: 7.2,
+        },
+        body: {
+          latestWeightKg: 80,
+          latestBodyFatPercent: 18,
+          weightChangeKgLast30Days: -0.8,
+        },
+        nutrition: {
+          loggedDaysLast14Days: 7,
+          averageCaloriesOnLoggedDays: 2200,
+          averageProteinGOnLoggedDays: 155,
+        },
+        dataQuality: {
+          level: "informed",
+          evidenceCount: 24,
+          availableDomains: ["training", "recovery", "body", "nutrition"],
+        },
+        dataGaps: [],
       },
       memory: [],
     } satisfies CentralUserContext;

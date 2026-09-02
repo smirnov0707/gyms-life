@@ -139,6 +139,7 @@ RETURN EXACTLY THIS JSON SHAPE:
         task: "daily-brief",
         supabase,
         userId,
+        centralUserContext: snapshot,
         system,
         prompt: "Generate today's brief.",
         schema: BriefSchema,

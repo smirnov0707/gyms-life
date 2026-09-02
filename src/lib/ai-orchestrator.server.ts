@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { createAiModel, type AiModelId } from "./ai-gateway.server";
 import { generateJson, normalizeAiError } from "./ai-json.server";
 import { reserveAiRequest } from "./ai-quota.server";
-import { buildUserContext, contextForAi } from "./user-context.server";
+import { buildUserContext, contextForAi, type CentralUserContext } from "./user-context.server";
 
 type AiContextScope = "none" | "personalized";
 
@@ -97,6 +97,8 @@ type OrchestrationRequest = {
   task: AiTask;
   supabase?: SupabaseClient<Database>;
   userId: string;
+  /** A request-local, permission-aware snapshot may be reused by a feature. */
+  centralUserContext?: CentralUserContext;
 };
 
 type OrchestratedExecution = {
@@ -121,14 +123,15 @@ async function prepareOrchestratedExecution(
   const policy = getAiTaskPolicy(request.task);
   let contextPrompt = "";
   if (policy.contextScope === "personalized") {
-    const supabase = request.supabase;
-    if (!supabase) {
-      throw new Error(`AI task ${request.task} requires an authenticated user context.`);
+    let userContext = request.centralUserContext;
+    if (!userContext) {
+      const supabase = request.supabase;
+      if (!supabase) {
+        throw new Error(`AI task ${request.task} requires an authenticated user context.`);
+      }
+      userContext = await buildUserContext(supabase, request.userId);
     }
-    contextPrompt = contextInstruction(
-      request.task,
-      contextForAi(await buildUserContext(supabase, request.userId)),
-    );
+    contextPrompt = contextInstruction(request.task, contextForAi(userContext));
   }
 
   return {

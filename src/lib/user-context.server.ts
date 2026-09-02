@@ -1,5 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { buildDigitalAthleteState, loadDigitalAthleteState } from "./digital-athlete.service";
+import type {
+  AiPersonalizationSources,
+  DigitalAthleteDataGap,
+  DigitalAthleteState,
+} from "./digital-athlete.schema";
+
+export type { AiPersonalizationSources } from "./digital-athlete.schema";
 
 export interface UserBiometricContext {
   userId: string;
@@ -51,6 +59,7 @@ export interface CentralUserContext {
   biometric: UserBiometricContext;
   aiPersonalization: AiPersonalizationConsent;
   aiSummary: AiPersonalizationSummary;
+  digitalAthlete: DigitalAthleteState;
   memory: Array<{
     type: string;
     content: string;
@@ -66,48 +75,21 @@ export interface AiPersonalizationConsent {
   lastRecordedAt: string | null;
 }
 
-export interface AiPersonalizationSummary {
-  training: {
-    sessionsLast7Days: number;
-    sessionsLast28Days: number;
-    totalVolumeLast28Days: number;
-    daysSinceLastCompletedWorkout: number | null;
-  };
-  recovery: {
-    latestReadinessScore: number | null;
-    averageReadinessLast7Days: number | null;
-    averageSleepHoursLast7Days: number | null;
-  };
-  body: {
-    latestWeightKg: number | null;
-    latestBodyFatPercent: number | null;
-    weightChangeKgLast30Days: number | null;
-  };
-  dataGaps: string[];
+export type AiPersonalizationSummary = Pick<
+  DigitalAthleteState,
+  "training" | "recovery" | "body"
+> & { dataGaps: DigitalAthleteDataGap[] };
+
+function roundToOneDecimal(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 
-export interface AiPersonalizationSources {
-  workouts: Array<{ started_at: string; total_volume: number }>;
-  checkins: Array<{
-    checkin_on: string;
-    readiness_score: number | null;
-    sleep_hours: number | null;
-  }>;
-  bodyMetrics: Array<{
-    measured_on: string;
-    weight_kg: number | null;
-    body_fat: number | null;
-  }>;
-  availability: {
-    training: boolean;
-    recovery: boolean;
-    body: boolean;
-  };
-}
-
-const DAY_MS = 86_400_000;
-
-function emptyAiPersonalizationSummary(dataGap: string): AiPersonalizationSummary {
+function emptyAiPersonalizationSummary(
+  dataGap: Extract<
+    DigitalAthleteDataGap,
+    "personalization_consent_required" | "personalization_consent_unavailable"
+  >,
+): AiPersonalizationSummary {
   return {
     training: {
       sessionsLast7Days: 0,
@@ -129,26 +111,25 @@ function emptyAiPersonalizationSummary(dataGap: string): AiPersonalizationSummar
   };
 }
 
-function roundToOneDecimal(value: number): number {
-  return Math.round(value * 10) / 10;
+function summaryFromDigitalAthlete(state: DigitalAthleteState): AiPersonalizationSummary {
+  return {
+    training: state.training,
+    recovery: state.recovery,
+    body: state.body,
+    dataGaps: state.dataGaps.filter(
+      (gap) => gap !== "nutrition_data_unavailable" && gap !== "no_nutrition_logs_14d",
+    ),
+  };
 }
 
-function average(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return roundToOneDecimal(values.reduce((sum, value) => sum + value, 0) / values.length);
-}
-
-function isWithinPastDays(dateValue: string, days: number, now: Date): boolean {
-  const timestamp = Date.parse(dateValue);
-  if (!Number.isFinite(timestamp)) return false;
-  return timestamp <= now.getTime() && timestamp >= now.getTime() - days * DAY_MS;
-}
-
-function daysSince(dateValue: string | undefined, now: Date): number | null {
-  if (!dateValue) return null;
-  const timestamp = Date.parse(dateValue);
-  if (!Number.isFinite(timestamp) || timestamp > now.getTime()) return null;
-  return Math.floor((now.getTime() - timestamp) / DAY_MS);
+function emptyDigitalAthleteState(): DigitalAthleteState {
+  return buildDigitalAthleteState({
+    workouts: [],
+    checkins: [],
+    bodyMetrics: [],
+    nutritionLogs: [],
+    availability: { training: true, recovery: true, body: true, nutrition: true },
+  });
 }
 
 /**
@@ -159,71 +140,16 @@ export function buildAiPersonalizationSummary(
   sources: AiPersonalizationSources,
   now = new Date(),
 ): AiPersonalizationSummary {
-  const completedWorkouts = sources.workouts.filter((workout) =>
-    isWithinPastDays(workout.started_at, 365, now),
+  return summaryFromDigitalAthlete(
+    buildDigitalAthleteState(
+      {
+        ...sources,
+        nutritionLogs: [],
+        availability: { ...sources.availability, nutrition: true },
+      },
+      now,
+    ),
   );
-  const workoutsLast7Days = completedWorkouts.filter((workout) =>
-    isWithinPastDays(workout.started_at, 7, now),
-  );
-  const workoutsLast28Days = completedWorkouts.filter((workout) =>
-    isWithinPastDays(workout.started_at, 28, now),
-  );
-  const checkinsLast7Days = sources.checkins.filter((checkin) =>
-    isWithinPastDays(checkin.checkin_on, 7, now),
-  );
-  const bodyMetricsLast30Days = sources.bodyMetrics.filter((metric) =>
-    isWithinPastDays(metric.measured_on, 30, now),
-  );
-  const latestWorkout = completedWorkouts[0];
-  const latestCheckin = checkinsLast7Days[0];
-  const latestBodyMetric = bodyMetricsLast30Days[0];
-  const weights = bodyMetricsLast30Days.flatMap((metric) =>
-    metric.weight_kg === null ? [] : [metric.weight_kg],
-  );
-  const latestWeight = weights[0] ?? null;
-  const earliestWeight = weights.at(-1) ?? null;
-  const weightChange =
-    latestWeight !== null && earliestWeight !== null && weights.length >= 2
-      ? roundToOneDecimal(latestWeight - earliestWeight)
-      : null;
-  const dataGaps: string[] = [];
-
-  if (!sources.availability.training) dataGaps.push("training_data_unavailable");
-  else if (workoutsLast28Days.length === 0) dataGaps.push("no_completed_workouts_28d");
-  if (!sources.availability.recovery) dataGaps.push("recovery_data_unavailable");
-  else if (checkinsLast7Days.length === 0) dataGaps.push("no_recovery_checkins_7d");
-  if (!sources.availability.body) dataGaps.push("body_measurements_unavailable");
-  else if (bodyMetricsLast30Days.length === 0) dataGaps.push("no_body_measurements_30d");
-
-  return {
-    training: {
-      sessionsLast7Days: workoutsLast7Days.length,
-      sessionsLast28Days: workoutsLast28Days.length,
-      totalVolumeLast28Days: roundToOneDecimal(
-        workoutsLast28Days.reduce((sum, workout) => sum + workout.total_volume, 0),
-      ),
-      daysSinceLastCompletedWorkout: daysSince(latestWorkout?.started_at, now),
-    },
-    recovery: {
-      latestReadinessScore: latestCheckin?.readiness_score ?? null,
-      averageReadinessLast7Days: average(
-        checkinsLast7Days.flatMap((checkin) =>
-          checkin.readiness_score === null ? [] : [checkin.readiness_score],
-        ),
-      ),
-      averageSleepHoursLast7Days: average(
-        checkinsLast7Days.flatMap((checkin) =>
-          checkin.sleep_hours === null ? [] : [checkin.sleep_hours],
-        ),
-      ),
-    },
-    body: {
-      latestWeightKg: latestBodyMetric?.weight_kg ?? null,
-      latestBodyFatPercent: latestBodyMetric?.body_fat ?? null,
-      weightChangeKgLast30Days: weightChange,
-    },
-    dataGaps,
-  };
 }
 
 function normalizeGoal(goal: string | null): UserBiometricContext["activeGoal"] {
@@ -394,6 +320,7 @@ export async function buildUserContext(
     policyVersion: consentResult.data?.policy_version ?? null,
     lastRecordedAt: consentResult.data?.recorded_at ?? null,
   };
+  let digitalAthlete = emptyDigitalAthleteState();
   let aiSummary = emptyAiPersonalizationSummary(
     consentResult.error
       ? "personalization_consent_unavailable"
@@ -401,40 +328,8 @@ export async function buildUserContext(
   );
 
   if (aiPersonalization.enabled) {
-    const metricsSince = new Date(Date.now() - 30 * DAY_MS).toISOString().slice(0, 10);
-    const [workoutsResult, checkinsResult, bodyMetricsResult] = await Promise.all([
-      supabase
-        .from("workout_sessions")
-        .select("started_at, total_volume")
-        .eq("user_id", userId)
-        .not("finished_at", "is", null)
-        .order("started_at", { ascending: false })
-        .limit(60),
-      supabase
-        .from("daily_checkins")
-        .select("checkin_on, readiness_score, sleep_hours")
-        .eq("user_id", userId)
-        .order("checkin_on", { ascending: false })
-        .limit(14),
-      supabase
-        .from("body_metrics")
-        .select("measured_on, weight_kg, body_fat")
-        .eq("user_id", userId)
-        .gte("measured_on", metricsSince)
-        .order("measured_on", { ascending: false })
-        .limit(60),
-    ]);
-
-    aiSummary = buildAiPersonalizationSummary({
-      workouts: workoutsResult.data ?? [],
-      checkins: checkinsResult.data ?? [],
-      bodyMetrics: bodyMetricsResult.data ?? [],
-      availability: {
-        training: workoutsResult.error === null,
-        recovery: checkinsResult.error === null,
-        body: bodyMetricsResult.error === null,
-      },
-    });
+    digitalAthlete = await loadDigitalAthleteState(supabase, userId);
+    aiSummary = summaryFromDigitalAthlete(digitalAthlete);
   }
 
   return {
@@ -458,6 +353,7 @@ export async function buildUserContext(
     biometric,
     aiPersonalization,
     aiSummary,
+    digitalAthlete,
     memory: (memory ?? []).map((item) => ({
       type: item.memory_type,
       content: item.content,
@@ -499,6 +395,11 @@ export function contextForAi(context: CentralUserContext): string {
         trainingHistory: context.aiSummary.training,
         recovery: context.aiSummary.recovery,
         bodyTrend: context.aiSummary.body,
+        athleteModel: {
+          schemaVersion: context.digitalAthlete.schemaVersion,
+          dataQuality: context.digitalAthlete.dataQuality,
+          nutritionHistory: context.digitalAthlete.nutrition,
+        },
         dataGaps: context.aiSummary.dataGaps,
       }
     : {
