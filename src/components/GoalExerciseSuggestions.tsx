@@ -100,7 +100,7 @@ export const GoalExerciseSuggestions: React.FC = () => {
   const run = async () => {
     setBusy(true);
     try {
-      const res = await suggest({ data: { goal: activeGoal, lang: lang as never } });
+      const res = await suggest({ data: { goal: activeGoal, lang } });
       setItems(res.suggestions);
       setPlan(res.plan);
       if (res.plan?.days.length) setDay(res.plan.days[0]!.day);

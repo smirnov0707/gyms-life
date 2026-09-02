@@ -16,7 +16,7 @@ export const TrainingPlanDaySchema = z.object({
   warmup: z.string(),
   cooldown: z.string(),
   estimated_minutes: z.coerce.number().int().positive(),
-  exercises: z.array(TrainingPlanExerciseSchema),
+  exercises: z.array(TrainingPlanExerciseSchema).min(1),
 });
 
 export const TrainingPlanDataSchema = z.object({
@@ -25,9 +25,15 @@ export const TrainingPlanDataSchema = z.object({
   weeks: z.coerce.number().int().positive(),
   progression: z.string(),
   nutrition: z.string(),
-  days: z.array(TrainingPlanDaySchema),
+  days: z.array(TrainingPlanDaySchema).min(1),
 });
 
 export type TrainingPlanExercise = z.infer<typeof TrainingPlanExerciseSchema>;
 export type TrainingPlanDay = z.infer<typeof TrainingPlanDaySchema>;
 export type TrainingPlanData = z.infer<typeof TrainingPlanDataSchema>;
+
+/** Invalid persisted JSON is never allowed to become a UI or AI domain object. */
+export function parseStoredTrainingPlan(value: unknown): TrainingPlanData | null {
+  const parsed = TrainingPlanDataSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}

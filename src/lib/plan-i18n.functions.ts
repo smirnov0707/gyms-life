@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { translatePlanData } from "./plan-i18n.server";
-import type { PlanData } from "./plan-types";
+import { serializeJson } from "./json.schema";
+import { TrainingPlanDataSchema } from "./training-plan.schema";
+
+const PlanTranslationCacheSchema = z.record(z.string(), TrainingPlanDataSchema);
 
 export const localizePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -25,18 +28,21 @@ export const localizePlan = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!row) throw new Error("Plan not found");
 
-    const base = row.data as unknown as PlanData;
-    const sourceLang = (row.lang as string) || "lt";
-    if (sourceLang === data.lang) return { plan: base };
+    const base = TrainingPlanDataSchema.safeParse(row.data);
+    if (!base.success) throw new Error("Stored plan data is invalid");
 
-    const cache = (row.i18n ?? {}) as Record<string, PlanData>;
-    const cached = cache[data.lang];
+    const sourceLang = row.lang || "lt";
+    if (sourceLang === data.lang) return { plan: base.data };
+
+    const cache = PlanTranslationCacheSchema.safeParse(row.i18n);
+    const translations = cache.success ? cache.data : {};
+    const cached = translations[data.lang];
     if (cached) return { plan: cached };
 
-    const translated = await translatePlanData(base, data.lang, userId);
+    const translated = await translatePlanData(base.data, data.lang, userId);
     await supabase
       .from("plans")
-      .update({ i18n: { ...cache, [data.lang]: translated } as never })
+      .update({ i18n: serializeJson({ ...translations, [data.lang]: translated }) })
       .eq("id", row.id)
       .eq("user_id", userId);
 

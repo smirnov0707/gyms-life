@@ -23,8 +23,7 @@ import { downloadShoppingListPdf } from "@/lib/shopping-pdf";
 import { printShoppingList } from "@/lib/shopping-print";
 import { withCompleteShoppingList } from "@/lib/shopping-build";
 import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
-
-import type { GeneratedMealPlan } from "@/lib/meal-types";
+import { parseStoredMealPlan, type GeneratedMealPlan } from "@/lib/meal-plan.schema";
 import { Button } from "@/components/ui/button";
 import { DynamicTDEECalculator } from "@/components/DynamicTDEECalculator";
 import { SmartFastingWindow } from "@/components/SmartFastingWindow";
@@ -111,11 +110,11 @@ function MealPlanPage() {
     enabled: !!user,
   });
 
-  const savedRow = saved as { id?: string; data?: unknown; lang?: string } | null | undefined;
+  const savedPlan = saved ? parseStoredMealPlan(saved.data) : null;
   const { plan: localizedSaved, translating } = useLocalizedMealPlan(
-    savedRow?.id,
-    (savedRow?.data as GeneratedMealPlan | undefined) ?? null,
-    savedRow?.lang ?? "lt",
+    saved?.id,
+    savedPlan,
+    saved?.lang ?? "lt",
   );
 
   const rawPlan = fresh ?? localizedSaved ?? null;
@@ -140,7 +139,7 @@ function MealPlanPage() {
         },
       });
 
-      setFresh(res.plan as GeneratedMealPlan);
+      setFresh(res.plan);
       setOpenDay(1);
       refetch();
     } catch (err) {
@@ -154,7 +153,7 @@ function MealPlanPage() {
     setAdaptBusy(true);
     try {
       const res = await adapt({ data: { fromDay: adaptFrom, notes: adaptNote, lang } });
-      setFresh(res.plan as GeneratedMealPlan);
+      setFresh(res.plan);
       setOpenDay(adaptFrom);
       setAdaptNote("");
       refetch();

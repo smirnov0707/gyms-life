@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { translateMealPlan } from "./meal-i18n.server";
-import type { GeneratedMealPlan } from "./meal-types";
+import { serializeJson } from "./json.schema";
+import { GeneratedMealPlanSchema, MealPlanTranslationCacheSchema } from "./meal-plan.schema";
 
 export const localizeMealPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -25,18 +26,21 @@ export const localizeMealPlan = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!row) throw new Error("Meal plan not found");
 
-    const base = row.data as unknown as GeneratedMealPlan;
-    const sourceLang = ((row as { lang?: string }).lang as string) || "lt";
-    if (sourceLang === data.lang) return { plan: base };
+    const base = GeneratedMealPlanSchema.safeParse(row.data);
+    if (!base.success) throw new Error("Stored meal plan data is invalid");
 
-    const cache = ((row as { i18n?: unknown }).i18n ?? {}) as Record<string, GeneratedMealPlan>;
-    const cached = cache[data.lang];
+    const sourceLang = row.lang || "lt";
+    if (sourceLang === data.lang) return { plan: base.data };
+
+    const cache = MealPlanTranslationCacheSchema.safeParse(row.i18n);
+    const translations = cache.success ? cache.data : {};
+    const cached = translations[data.lang];
     if (cached) return { plan: cached };
 
-    const translated = await translateMealPlan(base, data.lang, userId);
+    const translated = await translateMealPlan(base.data, data.lang, userId);
     await supabase
       .from("meal_plans")
-      .update({ i18n: { ...cache, [data.lang]: translated } as never })
+      .update({ i18n: serializeJson({ ...translations, [data.lang]: translated }) })
       .eq("id", row.id)
       .eq("user_id", userId);
 

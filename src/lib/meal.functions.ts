@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { serializeJson } from "./json.schema";
+import { GeneratedMealPlanSchema } from "./meal-plan.schema";
 
 const MealPlanInput = z.object({
   diet: z.string().default("any"),
@@ -222,6 +224,15 @@ Preferences: ${JSON.stringify({
       );
     }
 
+    const mealPlan = GeneratedMealPlanSchema.safeParse(parsed);
+    if (!mealPlan.success) {
+      throw new Error(
+        data.lang === "lt"
+          ? "Sugeneruotas mitybos planas yra nepilnas. Bandykite dar kartą."
+          : "The generated meal plan is incomplete. Please try again.",
+      );
+    }
+
     await supabase
       .from("meal_plans")
       .update({ is_active: false })
@@ -232,19 +243,19 @@ Preferences: ${JSON.stringify({
       .from("meal_plans")
       .insert({
         user_id: userId,
-        title: parsed.title,
+        title: mealPlan.data.title,
         goal: profile?.goal ?? null,
         diet: data.diet,
         allergies: data.allergies,
         dislikes: data.dislikes,
-        kcal_target: Math.round(parsed.kcal_target),
-        protein_target: Math.round(parsed.protein_target),
-        carbs_target: Math.round(parsed.carbs_target),
-        fat_target: Math.round(parsed.fat_target),
+        kcal_target: Math.round(mealPlan.data.kcal_target),
+        protein_target: Math.round(mealPlan.data.protein_target),
+        carbs_target: Math.round(mealPlan.data.carbs_target),
+        fat_target: Math.round(mealPlan.data.fat_target),
         is_active: true,
         lang: data.lang,
         i18n: {},
-        data: parsed,
+        data: serializeJson(mealPlan.data),
       })
       .select("id")
       .single();
@@ -263,5 +274,5 @@ Preferences: ${JSON.stringify({
       })
       .eq("id", userId);
 
-    return { id: inserted?.id ?? null, plan: parsed };
+    return { id: inserted?.id ?? null, plan: mealPlan.data };
   });

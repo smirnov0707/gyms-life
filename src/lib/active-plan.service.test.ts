@@ -14,7 +14,26 @@ const rawPlan: ActivePlanRow = {
     weeks: 8,
     progression: "Add load.",
     nutrition: "Eat enough protein.",
-    days: [],
+    days: [
+      {
+        day: 1,
+        title: "Upper body",
+        focus: "Strength",
+        warmup: "Rows",
+        cooldown: "Walk",
+        estimated_minutes: 45,
+        exercises: [
+          {
+            slug: "bench-press",
+            name: "Bench press",
+            sets: 3,
+            reps: "8",
+            rest_seconds: 90,
+            notes: "Keep the bar path controlled.",
+          },
+        ],
+      },
+    ],
   },
 };
 

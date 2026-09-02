@@ -20,8 +20,8 @@ export function useLocalizedPlan(
   const { data, isFetching } = useQuery({
     queryKey: ["plan-i18n", planId, lang],
     queryFn: async () => {
-      const res = await run({ data: { planId: planId!, lang: lang as never } });
-      return res.plan as PlanData;
+      const res = await run({ data: { planId: planId!, lang } });
+      return res.plan;
     },
     enabled: needs,
     staleTime: Infinity,

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/integrations/supabase/types";
 import {
-  TrainingPlanDataSchema,
+  parseStoredTrainingPlan,
   type TrainingPlanData,
   type TrainingPlanDay,
 } from "./training-plan.schema";
@@ -42,9 +42,9 @@ export type TodaysWorkoutState =
 export function normalizeActivePlan(
   row: ActivePlanRow,
 ): ActiveTrainingPlan | ActivePlanUnavailableState {
-  const parsed = TrainingPlanDataSchema.safeParse(row.data);
+  const data = parseStoredTrainingPlan(row.data);
 
-  if (!parsed.success) {
+  if (!data) {
     return {
       status: "INVALID_PLAN",
       planId: row.id,
@@ -59,7 +59,7 @@ export function normalizeActivePlan(
     weeks: row.weeks,
     daysPerWeek: row.days_per_week,
     createdAt: row.created_at,
-    data: parsed.data,
+    data,
   };
 }
 

@@ -20,8 +20,8 @@ export function useLocalizedMealPlan(
   const { data, isFetching } = useQuery({
     queryKey: ["meal-plan-i18n", planId, lang],
     queryFn: async () => {
-      const res = await run({ data: { planId: planId!, lang: lang as never } });
-      return res.plan as GeneratedMealPlan;
+      const res = await run({ data: { planId: planId!, lang } });
+      return res.plan;
     },
     enabled: needs,
     staleTime: Infinity,

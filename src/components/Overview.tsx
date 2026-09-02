@@ -32,10 +32,10 @@ import { ReadinessCard } from "@/components/ReadinessCard";
 
 import { useCountUp } from "@/hooks/use-count-up";
 import { withTactile } from "@/lib/tactile";
-import type { PlanData } from "@/lib/plan-types";
+import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
 import { useLocalizedPlan } from "@/lib/use-localized-plan";
 import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
-import type { GeneratedMealPlan } from "@/lib/meal-types";
+import { parseStoredMealPlan } from "@/lib/meal-plan.schema";
 import { dailyMotivation } from "@/lib/motivation";
 import { applyAdaptation, getAppliedAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
 
@@ -213,17 +213,18 @@ export function Overview() {
     (nutritionToday ?? []).reduce((s, r) => s + Number(r.calories ?? 0), 0),
   );
 
-  const savedRow = savedMeal as { id?: string; data?: unknown; lang?: string } | null | undefined;
+  const savedPlan = savedMeal ? parseStoredMealPlan(savedMeal.data) : null;
   const { plan: localizedSaved } = useLocalizedMealPlan(
-    savedRow?.id,
-    (savedRow?.data as GeneratedMealPlan | undefined) ?? null,
-    savedRow?.lang ?? "lt",
+    savedMeal?.id,
+    savedPlan,
+    savedMeal?.lang ?? "lt",
   );
 
+  const storedPlan = plan ? parseStoredTrainingPlan(plan.data) : null;
   const { plan: planData } = useLocalizedPlan(
-    plan?.id as string | undefined,
-    plan?.data as PlanData | undefined,
-    (plan?.lang as string | undefined) ?? "lt",
+    plan?.id,
+    storedPlan ?? undefined,
+    plan?.lang ?? "lt",
   );
 
   const readinessScore = checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;

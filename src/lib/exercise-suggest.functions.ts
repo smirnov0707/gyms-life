@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import type { PlanData } from "./plan-types";
+import { serializeJson } from "./json.schema";
+import { parseStoredTrainingPlan } from "./training-plan.schema";
 
 const LANGS = ["lt", "en", "ru", "uk", "pl", "de", "es", "fr"] as const;
 
@@ -73,7 +75,7 @@ export const suggestExercisesForGoal = createServerFn({ method: "POST" })
 
     const catalog = exercises ?? [];
     const activePlan = plans?.[0];
-    const planData = activePlan?.data as PlanData | undefined;
+    const planData = activePlan ? parseStoredTrainingPlan(activePlan.data) : null;
     const planSlugs = new Set(
       (planData?.days ?? []).flatMap((d) => (d.exercises ?? []).map((e) => e.slug)),
     );
@@ -158,8 +160,8 @@ RETURN JSON: {"suggestions":[{"slug":"","name":"","reason":"","sets":3,"reps":"8
       suggestions,
       plan: activePlan
         ? {
-            id: activePlan.id as string,
-            title: planData?.title ?? (activePlan.title as string),
+            id: activePlan.id,
+            title: planData?.title ?? activePlan.title,
             days: (planData?.days ?? []).map((d) => ({
               day: d.day,
               title: d.title,
@@ -199,8 +201,10 @@ export const addExerciseToActivePlan = createServerFn({ method: "POST" })
 
     if (!plan) return { ok: false as const, reason: "no_plan" };
 
-    const planData = plan.data as PlanData;
-    const days = planData.days ?? [];
+    const planData = parseStoredTrainingPlan(plan.data);
+    if (!planData) return { ok: false as const, reason: "invalid_plan" };
+
+    const days = planData.days;
     const index = days.findIndex((d) => d.day === data.day);
     if (index === -1) return { ok: false as const, reason: "no_day" };
 
@@ -229,7 +233,7 @@ export const addExerciseToActivePlan = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("plans")
-      .update({ data: updated as unknown as never })
+      .update({ data: serializeJson(updated) })
       .eq("id", plan.id);
 
     if (error) return { ok: false as const, reason: error.message };

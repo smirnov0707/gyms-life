@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { PlanData } from "@/lib/plan-types";
+import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
 import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { aiErrorMessage } from "@/lib/ai-error";
 
@@ -209,7 +210,7 @@ function Onboarding() {
           .select("data")
           .eq("id", res.planId)
           .maybeSingle();
-        const planData = data?.data as PlanData | undefined;
+        const planData = data ? parseStoredTrainingPlan(data.data) : null;
         if (planData) setResult(planData);
         else navigate({ to: "/app" });
       }

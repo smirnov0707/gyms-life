@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { serializeJson } from "./json.schema";
+import { GeneratedMealPlanSchema, MealDaySchema, ShoppingGroupSchema } from "./meal-plan.schema";
 
 const AdaptInput = z.object({
   fromDay: z.number().min(1).max(7),
@@ -55,11 +57,17 @@ export const adaptMealPlan = createServerFn({ method: "POST" })
         .limit(5),
     ]);
 
-    const plan = row.data as Record<string, unknown> & {
-      days: { day: number }[];
-      kcal_target: number;
-    };
-    const remaining = plan.days.filter((d) => d.day >= data.fromDay).map((d) => d.day);
+    const plan = GeneratedMealPlanSchema.safeParse(row.data);
+    if (!plan.success) {
+      throw new Error(
+        data.lang === "lt"
+          ? "Aktyvaus mitybos plano duomenys yra neteisingi. Sugeneruokite naują planą."
+          : "The active meal plan data is invalid. Generate a new plan.",
+      );
+    }
+
+    const activePlan = plan.data;
+    const remaining = activePlan.days.filter((d) => d.day >= data.fromDay).map((d) => d.day);
     if (!remaining.length) {
       throw new Error(
         data.lang === "lt" ? "Nėra likusių dienų koreguoti." : "No remaining days to adapt.",
@@ -70,42 +78,14 @@ export const adaptMealPlan = createServerFn({ method: "POST" })
     const { createAiRouterProvider } = await import("./ai-gateway.server");
     const gateway = createAiRouterProvider("meal-adapt.functions");
 
-    const MealSchema = z.object({
-      slot: z.string(),
-      name: z.string(),
-      kcal: z.number(),
-      protein: z.number(),
-      carbs: z.number(),
-      fat: z.number(),
-      minutes: z.number(),
-      ingredients: z.array(z.string()),
-      steps: z.array(z.string()),
-      tip: z.string(),
-    });
-
     const schema = z.object({
       rationale: z.string(),
       kcal_target: z.number(),
       protein_target: z.number(),
       carbs_target: z.number(),
       fat_target: z.number(),
-      days: z.array(
-        z.object({
-          day: z.number(),
-          title: z.string(),
-          total_kcal: z.number(),
-          total_protein: z.number(),
-          total_carbs: z.number(),
-          total_fat: z.number(),
-          meals: z.array(MealSchema),
-        }),
-      ),
-      shopping_list: z.array(
-        z.object({
-          category: z.string(),
-          items: z.array(z.object({ name: z.string(), amount: z.string() })),
-        }),
-      ),
+      days: z.array(MealDaySchema),
+      shopping_list: z.array(ShoppingGroupSchema),
     });
 
     const { LANG_NAMES } = await import("./plan-i18n.server");
@@ -116,19 +96,19 @@ Write everything in ${language}.
 Rules:
 - Rewrite ONLY days ${remaining.join(", ")}. Keep the same day numbers and the same number of meals per day.
 - Use the eaten-food log to see what the user actually eats: keep foods they repeat, drop ideas they clearly ignored, and compensate for macro gaps (e.g. if protein has been under target, raise protein on the remaining days).
-- Adjust kcal/macro targets only if body-weight trend or the log justifies it; keep changes within +/-15% of the current target (${Math.round(plan.kcal_target)} kcal) and explain it in "rationale" (2-3 sentences).
+- Adjust kcal/macro targets only if body-weight trend or the log justifies it; keep changes within +/-15% of the current target (${Math.round(activePlan.kcal_target)} kcal) and explain it in "rationale" (2-3 sentences).
 - Respect diet, allergies and dislikes absolutely, plus the user's extra request.
 - shopping_list = aggregated ingredients for the rewritten days ONLY, grouped by supermarket category.
 - Numbers are plain numbers. No markdown.`;
 
     const prompt = `Current plan targets: ${JSON.stringify({
-      kcal: plan.kcal_target,
-      protein: (plan as { protein_target?: number }).protein_target,
-      carbs: (plan as { carbs_target?: number }).carbs_target,
-      fat: (plan as { fat_target?: number }).fat_target,
+      kcal: activePlan.kcal_target,
+      protein: activePlan.protein_target,
+      carbs: activePlan.carbs_target,
+      fat: activePlan.fat_target,
     })}
 Days to rewrite: ${JSON.stringify(remaining)}
-Existing days (for style + variety, do not repeat identical meals): ${JSON.stringify(plan.days).slice(0, 6000)}
+Existing days (for style + variety, do not repeat identical meals): ${JSON.stringify(activePlan.days).slice(0, 6000)}
 Preferences: ${JSON.stringify({
       diet: row.diet,
       allergies: row.allergies,
@@ -167,10 +147,10 @@ Extra request from user: ${data.notes || "-"}`;
     }
 
     const byDay = new Map(parsed.days.map((d) => [d.day, d]));
-    const mergedDays = plan.days.map((d) => byDay.get(d.day) ?? d);
+    const mergedDays = activePlan.days.map((d) => byDay.get(d.day) ?? d);
 
     const updated = {
-      ...plan,
+      ...activePlan,
       kcal_target: Math.round(parsed.kcal_target),
       protein_target: Math.round(parsed.protein_target),
       carbs_target: Math.round(parsed.carbs_target),
@@ -185,7 +165,7 @@ Extra request from user: ${data.notes || "-"}`;
     await supabase
       .from("meal_plans")
       .update({
-        data: updated,
+        data: serializeJson(updated),
         lang: data.lang,
         i18n: {},
         kcal_target: updated.kcal_target,
