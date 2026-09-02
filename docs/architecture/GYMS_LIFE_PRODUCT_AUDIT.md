@@ -1,6 +1,6 @@
 # GYMS.LIFE Product and Intelligence Audit
 
-**Audited:** 2026-09-02
+**Audited:** 2026-09-03
 **Scope:** the `main` branch, the live Supabase project and the production Netlify configuration.
 
 ## Product decision
@@ -23,6 +23,7 @@ Every new capability must improve at least one of these:
 - AI model routing is centralized in `src/lib/ai-orchestrator.server.ts`. Features choose a task, not a provider or model. Provider access remains behind `src/lib/ai-gateway.server.ts`.
 - AI inputs and outputs use Zod contracts at feature boundaries. Stored plans and meal plans are parsed before use.
 - The latest production schema includes durable workout-readiness snapshots, idempotent set logging and atomic activation for training and meal plans.
+- Core AI and plan-decision workflows emit privacy-bounded operational events through a server-only telemetry table. The events retain stable outcome/error codes and timing, never prompts, health facts, chat content, provider payloads or raw errors.
 
 ### Current product capability
 
@@ -49,7 +50,8 @@ The live database currently contains only seed-stage member activity. It is ther
 ### P2 — delivery and observability
 
 - There is no end-to-end test that signs in, completes onboarding, generates a plan and starts a workout against controlled provider responses.
-- The app needs production-level event observability for failed server functions, provider latency, provider errors, validation failures, plan activation and recommendation acceptance.
+- **Resolved in this audit:** the central AI boundary now records provider latency and normalized failure categories for every orchestrated task. Training-plan and meal-plan generation/activation plus Today-decision outcomes are captured in an internal, RLS-enabled, browser-denied telemetry stream.
+- Remaining telemetry coverage is limited to the core flows above. Generic unexpected server-function failures, client runtime errors and a controlled operational dashboard remain future work; their records must follow the same no-payload, stable-code contract.
 - Client bundle warnings should be addressed after the core product flow is stable; they are not a functional blocker.
 
 ## Target information architecture
@@ -113,6 +115,7 @@ Add these application-owned, RLS-protected domains incrementally:
 - `athlete_state_snapshots`: a versioned current state, generated deterministically from observations.
 - `decision_records`: recommendation, alternatives, rationale, confidence, safety constraints and status.
 - `decision_evidence`: links between decisions and concrete facts or derived metrics.
+- `app_observability_events`: server-only operational outcomes and timing with bounded metadata, never user content or health payloads.
 - `hypotheses`: a bounded claim, confidence, expiration and supporting evidence.
 - `personal_experiments`: opt-in interventions, success measures and stop conditions.
 - `recommendation_outcomes`: acceptance, completion and observed effect.
@@ -172,6 +175,7 @@ No feature reaches production until all applicable gates pass:
 - TypeScript typecheck, formatting and unit tests pass.
 - Server inputs, provider outputs and persisted JSON are Zod-validated.
 - A live schema check confirms the generated `Database` contract, RLS, grants and critical indexes.
+- Core production flows emit bounded operational events for success and failure without persisting prompts, health data or raw provider errors.
 - A controlled end-to-end path covers authentication, onboarding, plan generation, activation, workout start, set log and workout finish.
 - AI failures return localized, actionable messages and never expose provider internals.
 - The UI has loading, empty, error, offline/retry and narrow-screen states.

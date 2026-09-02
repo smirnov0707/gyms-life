@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { createAiModel, type AiModelId } from "./ai-gateway.server";
 import { generateJson, normalizeAiError } from "./ai-json.server";
 import { reserveAiRequest } from "./ai-quota.server";
+import { recordObservabilityEvent } from "./observability.server";
 import { buildUserContext, contextForAi, type CentralUserContext } from "./user-context.server";
 
 type AiContextScope = "none" | "personalized";
@@ -117,6 +118,24 @@ function addContextToSystem(system: string | undefined, contextPrompt: string): 
   return [system, contextPrompt].filter(Boolean).join("\n\n");
 }
 
+function observabilityDuration(startedAt: number): number {
+  return Math.min(Math.max(Date.now() - startedAt, 0), 86_400_000);
+}
+
+function aiFailureCode(error: unknown): string {
+  if (!(error instanceof Error)) return "AI_REQUEST_FAILED";
+
+  switch (error.message) {
+    case "AI_CREDITS":
+    case "AI_DAILY_LIMIT":
+    case "AI_QUOTA_UNAVAILABLE":
+    case "AI_RATE_LIMIT":
+      return error.message;
+    default:
+      return "AI_REQUEST_FAILED";
+  }
+}
+
 async function prepareOrchestratedExecution(
   request: OrchestrationRequest,
 ): Promise<OrchestratedExecution> {
@@ -140,6 +159,37 @@ async function prepareOrchestratedExecution(
   };
 }
 
+async function executeObservedAiRequest<T>(
+  request: OrchestrationRequest,
+  execute: (execution: OrchestratedExecution) => Promise<T>,
+): Promise<T> {
+  const startedAt = Date.now();
+  const policy = getAiTaskPolicy(request.task);
+  const metadata = { model: policy.model, task: request.task };
+
+  try {
+    const result = await execute(await prepareOrchestratedExecution(request));
+    await recordObservabilityEvent({
+      eventName: "ai.request",
+      outcome: "success",
+      userId: request.userId,
+      durationMs: observabilityDuration(startedAt),
+      metadata,
+    });
+    return result;
+  } catch (error) {
+    await recordObservabilityEvent({
+      eventName: "ai.request",
+      outcome: "failure",
+      userId: request.userId,
+      durationMs: observabilityDuration(startedAt),
+      errorCode: aiFailureCode(error),
+      metadata,
+    });
+    throw error;
+  }
+}
+
 /**
  * Single orchestration entry point: GYMS.LIFE owns context; specialist models
  * are replaceable workers. This module is deliberately provider-agnostic.
@@ -153,15 +203,18 @@ export async function generateOrchestratedJson<T>(
     maxOutputTokens?: number;
   },
 ): Promise<T> {
-  const execution = await prepareOrchestratedExecution(request);
-  return generateJson(execution.model, {
-    userId: request.userId,
-    system: addContextToSystem(request.system, execution.contextPrompt),
-    schema: request.schema,
-    ...(request.prompt === undefined ? {} : { prompt: request.prompt }),
-    ...(request.messages === undefined ? {} : { messages: request.messages }),
-    ...(request.maxOutputTokens === undefined ? {} : { maxOutputTokens: request.maxOutputTokens }),
-  });
+  return executeObservedAiRequest(request, (execution) =>
+    generateJson(execution.model, {
+      userId: request.userId,
+      system: addContextToSystem(request.system, execution.contextPrompt),
+      schema: request.schema,
+      ...(request.prompt === undefined ? {} : { prompt: request.prompt }),
+      ...(request.messages === undefined ? {} : { messages: request.messages }),
+      ...(request.maxOutputTokens === undefined
+        ? {}
+        : { maxOutputTokens: request.maxOutputTokens }),
+    }),
+  );
 }
 
 export async function generateOrchestratedText(
@@ -173,21 +226,22 @@ export async function generateOrchestratedText(
     maxOutputTokens?: number;
   },
 ): Promise<string> {
-  const execution = await prepareOrchestratedExecution(request);
-  try {
-    await reserveAiRequest(request.userId);
-    const { text } = await generateText({
-      model: execution.model,
-      system: addContextToSystem(request.system, execution.contextPrompt),
-      ...(request.messages ? { messages: request.messages } : { prompt: request.prompt ?? "" }),
-      temperature: request.temperature ?? 0.2,
-      maxOutputTokens: request.maxOutputTokens ?? 16000,
-      maxRetries: 2,
-    });
-    return text;
-  } catch (error) {
-    throw normalizeAiError(error);
-  }
+  return executeObservedAiRequest(request, async (execution) => {
+    try {
+      await reserveAiRequest(request.userId);
+      const { text } = await generateText({
+        model: execution.model,
+        system: addContextToSystem(request.system, execution.contextPrompt),
+        ...(request.messages ? { messages: request.messages } : { prompt: request.prompt ?? "" }),
+        temperature: request.temperature ?? 0.2,
+        maxOutputTokens: request.maxOutputTokens ?? 16000,
+        maxRetries: 2,
+      });
+      return text;
+    } catch (error) {
+      throw normalizeAiError(error);
+    }
+  });
 }
 
 /**
@@ -205,30 +259,52 @@ export async function transcribeOrchestratedVoice({
   mimeType: string;
   language: "lt" | "en";
 }): Promise<string> {
-  const groqKey = process.env["GROQ_API_KEY"];
-  if (!groqKey) throw new Error("AI voice transcription is not configured.");
+  const startedAt = Date.now();
 
-  const commaIndex = audioBase64.indexOf(",");
-  const rawBase64 = commaIndex >= 0 ? audioBase64.slice(commaIndex + 1) : audioBase64;
-  const audioBytes = Uint8Array.from(Buffer.from(rawBase64, "base64"));
-  const formData = new FormData();
-  formData.append("file", new Blob([audioBytes], { type: mimeType }), "workout-audio.webm");
-  formData.append("model", VOICE_TRANSCRIPTION_MODEL);
-  formData.append("language", language);
-  formData.append("temperature", "0.0");
+  try {
+    const groqKey = process.env["GROQ_API_KEY"];
+    if (!groqKey) throw new Error("AI voice transcription is not configured.");
 
-  await reserveAiRequest(userId);
-  const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${groqKey}` },
-    body: formData,
-  });
-  if (!response.ok) {
-    throw new Error("AI voice transcription failed.");
+    const commaIndex = audioBase64.indexOf(",");
+    const rawBase64 = commaIndex >= 0 ? audioBase64.slice(commaIndex + 1) : audioBase64;
+    const audioBytes = Uint8Array.from(Buffer.from(rawBase64, "base64"));
+    const formData = new FormData();
+    formData.append("file", new Blob([audioBytes], { type: mimeType }), "workout-audio.webm");
+    formData.append("model", VOICE_TRANSCRIPTION_MODEL);
+    formData.append("language", language);
+    formData.append("temperature", "0.0");
+
+    await reserveAiRequest(userId);
+    const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${groqKey}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error("AI voice transcription failed.");
+    }
+
+    const parsed = VoiceTranscriptionResponseSchema.safeParse(await response.json());
+    const transcription = parsed.success ? (parsed.data.text?.trim() ?? "") : "";
+    if (!transcription) throw new Error("AI voice transcription returned no speech.");
+
+    await recordObservabilityEvent({
+      eventName: "ai.voice_transcription",
+      outcome: "success",
+      userId,
+      durationMs: observabilityDuration(startedAt),
+      metadata: { model: VOICE_TRANSCRIPTION_MODEL },
+    });
+    return transcription;
+  } catch (error) {
+    await recordObservabilityEvent({
+      eventName: "ai.voice_transcription",
+      outcome: "failure",
+      userId,
+      durationMs: observabilityDuration(startedAt),
+      errorCode: aiFailureCode(error),
+      metadata: { model: VOICE_TRANSCRIPTION_MODEL },
+    });
+    throw error;
   }
-
-  const parsed = VoiceTranscriptionResponseSchema.safeParse(await response.json());
-  const transcription = parsed.success ? (parsed.data.text?.trim() ?? "") : "";
-  if (!transcription) throw new Error("AI voice transcription returned no speech.");
-  return transcription;
 }

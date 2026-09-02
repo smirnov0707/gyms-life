@@ -59,6 +59,39 @@ export type Database = {
         }
         Relationships: []
       }
+      app_observability_events: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_code: string | null
+          event_name: string
+          id: string
+          metadata: Json
+          outcome: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json
+          outcome: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json
+          outcome?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       athlete_state_snapshots: {
         Row: {
           computed_at: string

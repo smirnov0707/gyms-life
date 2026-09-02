@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { observeServerAction } from "./observability.server";
 import { TodayDecisionOutcomeSchema } from "./today-decision.schema";
 
 const RecordOutcomeInputSchema = z
@@ -23,7 +24,18 @@ export const recordTodayDecisionOutcome = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => RecordOutcomeInputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { recordTodayDecisionOutcome: storeOutcome } = await import("./today-decision.server");
-    await storeOutcome(context.supabase, context.userId, data.decisionId, data.outcome);
-    return { ok: true };
+    return observeServerAction(
+      {
+        eventName: "today_decision.outcome",
+        userId: context.userId,
+        failureCode: "TODAY_DECISION_OUTCOME_FAILED",
+        metadata: { outcome: data.outcome },
+      },
+      async () => {
+        const { recordTodayDecisionOutcome: storeOutcome } =
+          await import("./today-decision.server");
+        await storeOutcome(context.supabase, context.userId, data.decisionId, data.outcome);
+        return { ok: true };
+      },
+    );
   });
