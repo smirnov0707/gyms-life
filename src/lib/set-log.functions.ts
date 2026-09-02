@@ -2,15 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTodaysWorkoutData } from "./active-plan.service";
+import { adaptTrainingPlanDay } from "./training-guidance.service";
 
 const Input = z.object({
   sessionId: z.string().uuid(),
   exerciseSlug: z.string().min(1).max(120),
   exerciseName: z.string().min(1).max(200),
   setNumber: z.coerce.number().int().positive(),
-  reps: z.coerce.number().int().positive().nullable().optional(),
-  weightKg: z.coerce.number().nonnegative().nullable().optional(),
-  rpe: z.coerce.number().min(0).max(10).nullable().optional(),
+  reps: z.coerce.number().finite().int().min(1).max(100).nullable().optional(),
+  weightKg: z.coerce.number().finite().nonnegative().max(1_000).nullable().optional(),
+  rpe: z.coerce.number().finite().min(1).max(10).nullable().optional(),
   done: z.boolean().default(true),
 });
 
@@ -25,7 +26,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
 
     const { data: session, error: sessionError } = await supabase
       .from("workout_sessions")
-      .select("id, user_id, plan_id, day_index, finished_at")
+      .select("id, user_id, plan_id, day_index, finished_at, adaptation_modifier")
       .eq("id", data.sessionId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -48,7 +49,8 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Workout plan is no longer available for this session.");
     }
 
-    const exercise = workout.workout.exercises.find((item) => item.slug === data.exerciseSlug);
+    const adjustedWorkout = adaptTrainingPlanDay(workout.workout, session.adaptation_modifier);
+    const exercise = adjustedWorkout.exercises.find((item) => item.slug === data.exerciseSlug);
     if (!exercise) {
       throw new Error("Exercise does not belong to this workout.");
     }

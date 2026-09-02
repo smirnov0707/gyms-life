@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { loadModifierFor } from "./readiness.engine";
 
 const LangSchema = SupportedLanguageSchema.default("lt");
 
@@ -114,13 +115,7 @@ export function readinessScore(i: z.infer<typeof CheckinInput>) {
   return Math.round(sleepPts + qualityPts + sorenessPts + stressPts + energyPts + moodPts);
 }
 
-export function loadModifier(score: number) {
-  if (score >= 85) return 1.05;
-  if (score >= 70) return 1;
-  if (score >= 55) return 0.9;
-  if (score >= 40) return 0.8;
-  return 0.65;
-}
+export const loadModifier = loadModifierFor;
 
 export const submitCheckin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

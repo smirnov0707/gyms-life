@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getActivePlanData } from "./active-plan.service";
+import { adaptTrainingPlanDay } from "./training-guidance.service";
 
 const Input = z.object({ sessionId: z.string().uuid() });
 
@@ -14,7 +15,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     const { data: session, error: sessionError } = await supabase
       .from("workout_sessions")
       .select(
-        "id, user_id, plan_id, day_index, started_at, finished_at, duration_seconds, total_volume",
+        "id, user_id, plan_id, day_index, started_at, finished_at, duration_seconds, total_volume, adaptation_modifier",
       )
       .eq("id", data.sessionId)
       .eq("user_id", userId)
@@ -39,7 +40,10 @@ export const finishWorkout = createServerFn({ method: "POST" })
       throw new Error("The workout session is not linked to the current active program.");
     }
 
-    const plannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
+    const basePlannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
+    const plannedDay = basePlannedDay
+      ? adaptTrainingPlanDay(basePlannedDay, session.adaptation_modifier)
+      : null;
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found.");
     }

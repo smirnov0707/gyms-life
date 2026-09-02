@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, Clock, Dumbbell, Loader2, TimerReset, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,14 +17,71 @@ import {
   type WorkoutSetSync,
 } from "@/lib/offline-store";
 import { toast } from "sonner";
+import type { TrainingPlanDay } from "@/lib/training-plan.schema";
+import type { ExerciseTrainingGuidance } from "@/lib/training-guidance.engine";
+import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
+
+function parseOptionalWorkoutNumber(value: string, label: string): number | null {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) throw new Error(label + " turi būti skaičius.");
+  return parsed;
+}
+
+function coachMessage(guidance: ExerciseTrainingGuidance): string {
+  const previous = guidance.previous
+    ? "Paskutinį kartą: " +
+      guidance.previous.weightKg +
+      " kg × " +
+      (guidance.previous.reps ?? "—") +
+      (guidance.previous.rpe !== null ? ", RPE " + guidance.previous.rpe : "") +
+      ". "
+    : "";
+
+  if (guidance.action === "INCREASE_LOAD") {
+    return (
+      previous +
+      "Visos darbinės serijos pasiekė viršutinę pakartojimų ribą su kontroliuojamu RPE. Siūlomas kitas svoris: " +
+      guidance.suggestedWeightKg +
+      " kg."
+    );
+  }
+  if (guidance.reason === "RECOVERY_REDUCTION") {
+    return (
+      previous +
+      "Šiandienos pasirengimas prašo tausoti atsistatymą. Siūlomas svoris: " +
+      guidance.suggestedWeightKg +
+      " kg; sumažintas serijų skaičius jau pritaikytas."
+    );
+  }
+  if (guidance.reason === "HIGH_EFFORT_MISSED_TARGET") {
+    return (
+      previous +
+      "Praeitą kartą tikslas nebuvo pasiektas su aukštu RPE. Siūlomas technikos ir pakartojimų svoris: " +
+      guidance.suggestedWeightKg +
+      " kg."
+    );
+  }
+  if (guidance.action === "MAINTAIN_LOAD") {
+    return (
+      previous +
+      "Laikyk šį svorį, kol saugiai pasieksi viršutinę pakartojimų ribą visose darbinėse serijose."
+    );
+  }
+  return "Pirmiausia užregistruok svorį, pakartojimus ir RPE — tuomet treneris pasiūlys kitą konkretų žingsnį.";
+}
 
 function WorkoutPage() {
   const { day } = Route.useParams();
   const dayNumber = Number(day);
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [activeWorkout, setActiveWorkout] = useState<TrainingPlanDay | null>(null);
+  const [workoutGuidance, setWorkoutGuidance] = useState<WorkoutTrainingGuidance | null>(null);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [setNumber, setSetNumber] = useState(1);
   const [reps, setReps] = useState("");
@@ -56,6 +113,8 @@ function WorkoutPage() {
     mutationFn: () => startWorkout({ data: { day: dayNumber } }),
     onSuccess: (result) => {
       setSessionId(result.session.id);
+      setActiveWorkout(result.workout);
+      setWorkoutGuidance(result.guidance);
       const firstIncomplete = result.workout.exercises.findIndex((exercise) => {
         const completed = result.logs.filter(
           (log) => log.exercise_slug === exercise.slug && log.done,
@@ -89,9 +148,9 @@ function WorkoutPage() {
       exerciseSlug: exercise.slug,
       exerciseName: exercise.name,
       setNumber,
-      reps: reps ? Number(reps) : null,
-      weightKg: weight ? Number(weight) : null,
-      rpe: rpe ? Number(rpe) : null,
+      reps: parseOptionalWorkoutNumber(reps, "Pakartojimų skaičius"),
+      weightKg: parseOptionalWorkoutNumber(weight, "Svoris"),
+      rpe: parseOptionalWorkoutNumber(rpe, "RPE"),
       done: true,
     };
   };
@@ -144,12 +203,21 @@ function WorkoutPage() {
       }
       return finishWorkout({ data: { sessionId } });
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       setFinished(true);
       setSummary({
         duration: result.session.duration_seconds ?? 0,
         volume: Number(result.session.total_volume ?? 0),
       });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["sessions"] }),
+        qc.invalidateQueries({ queryKey: ["sessions-all"] }),
+        qc.invalidateQueries({ queryKey: ["performance-overview"] }),
+        qc.invalidateQueries({ queryKey: ["volume-trend"] }),
+        qc.invalidateQueries({ queryKey: ["strength-trend"] }),
+        qc.invalidateQueries({ queryKey: ["progress-intelligence"] }),
+        qc.invalidateQueries({ queryKey: ["injury-risk"] }),
+      ]);
       toast.success("Treniruotė užbaigta!");
     },
     onError: (error) =>
@@ -169,8 +237,12 @@ function WorkoutPage() {
     return () => window.removeEventListener("online", onOnline);
   }, [syncQueuedSets]);
 
-  const workout = workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null;
+  const workout =
+    activeWorkout ?? (workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null);
   const exercise = workout?.exercises[exerciseIndex];
+  const exerciseGuidance = workoutGuidance?.exercises.find(
+    (guidance) => guidance.exerciseSlug === exercise?.slug,
+  );
   const totalSets = exercise?.sets ?? 0;
   const currentSetComplete = setNumber > totalSets;
   const lastExercise = Boolean(workout && exerciseIndex === workout.exercises.length - 1);
@@ -326,6 +398,27 @@ function WorkoutPage() {
                 </div>
               ) : (
                 <>
+                  {exerciseGuidance && (
+                    <div className="mt-6 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                      <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                        Trenerio pasiūlymas
+                      </p>
+                      <p className="mt-2 text-sm leading-5 text-muted-foreground">
+                        {coachMessage(exerciseGuidance)}
+                      </p>
+                      {exerciseGuidance.suggestedWeightKg !== null && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 rounded-full"
+                          onClick={() => setWeight(String(exerciseGuidance.suggestedWeightKg))}
+                        >
+                          Naudoti {exerciseGuidance.suggestedWeightKg} kg
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div>
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -334,6 +427,9 @@ function WorkoutPage() {
                       <Input
                         className="mt-1"
                         inputMode="numeric"
+                        min="1"
+                        max="100"
+                        step="1"
                         value={reps}
                         onChange={(e) => setReps(e.target.value)}
                         placeholder={String(exercise?.reps ?? "")}
@@ -346,6 +442,9 @@ function WorkoutPage() {
                       <Input
                         className="mt-1"
                         inputMode="decimal"
+                        min="0"
+                        max="1000"
+                        step="0.5"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
                         placeholder="0"
@@ -358,6 +457,9 @@ function WorkoutPage() {
                       <Input
                         className="mt-1"
                         inputMode="decimal"
+                        min="1"
+                        max="10"
+                        step="0.5"
                         value={rpe}
                         onChange={(e) => setRpe(e.target.value)}
                         placeholder="1–10"

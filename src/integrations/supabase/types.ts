@@ -957,6 +957,7 @@ export type Database = {
       }
       workout_sessions: {
         Row: {
+          adaptation_modifier: number
           created_at: string
           day_index: number | null
           duration_seconds: number | null
@@ -971,6 +972,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          adaptation_modifier?: number
           created_at?: string
           day_index?: number | null
           duration_seconds?: number | null
@@ -985,6 +987,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          adaptation_modifier?: number
           created_at?: string
           day_index?: number | null
           duration_seconds?: number | null
