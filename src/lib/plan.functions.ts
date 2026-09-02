@@ -168,7 +168,7 @@ export const askCoach = createServerFn({ method: "POST" })
       { user_id: userId, role: "user", content: data.question, lang: data.lang },
       { user_id: userId, role: "coach", content: answer, lang: data.lang },
     ]);
-    if (saveError) console.error("coach_messages insert failed", saveError.message);
+    if (saveError) throw new Error("Could not save this coach conversation.");
     return { answer };
   });
 

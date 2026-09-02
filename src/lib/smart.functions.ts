@@ -75,7 +75,7 @@ score = technique quality 0-100. risk = one short sentence about injury risk.`;
     }
 
     const score = Math.max(0, Math.min(100, Math.round(parsed.score)));
-    await supabase.from("form_analyses").insert({
+    const { error: saveError } = await supabase.from("form_analyses").insert({
       user_id: userId,
       exercise_slug: data.exerciseSlug,
       exercise_name: data.exerciseName,
@@ -85,6 +85,7 @@ score = technique quality 0-100. risk = one short sentence about injury risk.`;
       fixes: parsed.fixes.join("\n"),
       drills: parsed.drills.join("\n"),
     });
+    if (saveError) throw new Error("Could not save form analysis.");
 
     return { ...parsed, score };
   });
@@ -153,7 +154,7 @@ Recent workouts: ${JSON.stringify(recent ?? [])}`,
 
     const advice = await result.text;
 
-    await supabase.from("daily_checkins").upsert(
+    const { error: saveError } = await supabase.from("daily_checkins").upsert(
       {
         user_id: userId,
         checkin_on: new Date().toISOString().slice(0, 10),
@@ -169,6 +170,7 @@ Recent workouts: ${JSON.stringify(recent ?? [])}`,
       },
       { onConflict: "user_id,checkin_on" },
     );
+    if (saveError) throw new Error("Could not save daily check-in.");
 
     return { score, modifier, advice };
   });

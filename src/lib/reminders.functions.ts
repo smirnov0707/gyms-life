@@ -45,6 +45,6 @@ export const saveRemindersSettings = createServerFn({ method: "POST" })
       updated_at: new Date().toISOString(),
     });
 
-    if (error) console.error("Save reminders error:", error.message);
+    if (error) throw new Error("Could not save reminder settings.");
     return { ok: true };
   });

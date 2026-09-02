@@ -35,23 +35,24 @@ export const startWorkout = createServerFn({ method: "POST" })
       throw new Error("Workout session lookup failed: " + existingError.message);
     }
 
-    const session =
-      existing ??
-      (
-        await supabase
-          .from("workout_sessions")
-          .insert({
-            user_id: userId,
-            plan_id: workout.plan.id,
-            day_index: data.day - 1,
-            title: workout.workout.title,
-          })
-          .select(sessionSelect)
-          .single()
-      ).data;
-
+    let session = existing;
     if (!session) {
-      throw new Error("Could not start workout session.");
+      const { data: started, error: startError } = await supabase
+        .from("workout_sessions")
+        .insert({
+          user_id: userId,
+          plan_id: workout.plan.id,
+          day_index: data.day - 1,
+          title: workout.workout.title,
+        })
+        .select(sessionSelect)
+        .single();
+      if (startError || !started) {
+        throw new Error(
+          "Could not start workout session: " + (startError?.message ?? "unknown error"),
+        );
+      }
+      session = started;
     }
 
     const { data: logs, error: logsError } = await supabase

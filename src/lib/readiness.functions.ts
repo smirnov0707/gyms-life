@@ -36,7 +36,7 @@ export const submitReadinessCheckin = createServerFn({ method: "POST" })
       stress: data.stress,
     });
 
-    if (error) console.error("Readiness save error:", error.message);
+    if (error) throw new Error("Could not save readiness check-in.");
 
     let recommendation = "Optimalus pasirengimas maksimaliam tūriui ir intensyvumui.";
     if (finalScore < 60) {
