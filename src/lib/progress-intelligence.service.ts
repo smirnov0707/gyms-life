@@ -1,9 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  analyzeExerciseProgress,
-  type ExercisePoint,
-} from "./progress-intelligence.engine";
+import { analyzeExerciseProgress, type ExercisePoint } from "./progress-intelligence.engine";
 import { calculateEstimated1RM } from "./performance.engine";
 
 export type ProgressInsight = {
@@ -18,15 +15,10 @@ export type ProgressIntelligenceData = {
   insights: ProgressInsight[];
 };
 
-export async function loadProgressPoints(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-) {
+export async function loadProgressPoints(supabase: SupabaseClient<Database>, userId: string) {
   const { data, error } = await supabase
     .from("set_logs")
-    .select(
-      "exercise_slug, exercise_name, reps, weight_kg, rpe, done, created_at",
-    )
+    .select("exercise_slug, exercise_name, reps, weight_kg, rpe, done, created_at")
     .eq("user_id", userId)
     .eq("done", true)
     .order("created_at", { ascending: true });
@@ -60,15 +52,12 @@ export async function getProgressIntelligenceData(
     byExercise.set(row.exerciseSlug, points);
   }
 
-  const insights: ProgressInsight[] = [...byExercise.entries()].map(
-    ([exerciseSlug, points]) => ({
-      exerciseSlug,
-      exerciseName:
-        rows.find((row) => row.exerciseSlug === exerciseSlug)?.exerciseName ??
-        exerciseSlug,
-      insight: analyzeExerciseProgress(points),
-    }),
-  );
+  const insights: ProgressInsight[] = [...byExercise.entries()].map(([exerciseSlug, points]) => ({
+    exerciseSlug,
+    exerciseName:
+      rows.find((row) => row.exerciseSlug === exerciseSlug)?.exerciseName ?? exerciseSlug,
+    insight: analyzeExerciseProgress(points),
+  }));
 
   return {
     status: insights.length ? "READY" : "NO_DATA",

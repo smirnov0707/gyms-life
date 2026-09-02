@@ -75,11 +75,7 @@ export async function downloadShoppingListPdf(plan: GeneratedMealPlan, lang: Lan
     ctx.font = "400 10px Helvetica, Arial, sans-serif";
     if (first) {
       ctx.fillText(`${plan.title} · ${txt.week}`, MARGIN, 76);
-      ctx.fillText(
-        `${txt.generated}: ${today}   ·   ${totalItems} ${txt.items}`,
-        MARGIN,
-        92,
-      );
+      ctx.fillText(`${txt.generated}: ${today}   ·   ${totalItems} ${txt.items}`, MARGIN, 92);
     } else {
       ctx.fillText("GYMS.LIFE", PAGE_W - MARGIN - ctx.measureText("GYMS.LIFE").width, 38);
     }

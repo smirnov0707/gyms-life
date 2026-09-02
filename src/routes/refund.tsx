@@ -21,7 +21,9 @@ function RefundPage() {
       <header className="border-b border-border bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
           <Logo />
-          <Link to="/pricing" className="text-sm font-semibold text-primary">{t("lg.nav.pricing")}</Link>
+          <Link to="/pricing" className="text-sm font-semibold text-primary">
+            {t("lg.nav.pricing")}
+          </Link>
         </div>
       </header>
       <main className="prose-sm mx-auto max-w-3xl px-4 py-12 text-sm leading-relaxed">
@@ -34,7 +36,12 @@ function RefundPage() {
         <h2 className="mt-8 text-lg font-bold">{t("lg.refund.h2")}</h2>
         <p>
           {t("lg.refund.p2a")}{" "}
-          <a className="text-primary underline" href="https://paddle.net" target="_blank" rel="noopener noreferrer">
+          <a
+            className="text-primary underline"
+            href="https://paddle.net"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             paddle.net
           </a>{" "}
           {t("lg.refund.p2b")}
@@ -43,7 +50,12 @@ function RefundPage() {
         <h2 className="mt-8 text-lg font-bold">{t("lg.refund.h3")}</h2>
         <p>
           {t("lg.refund.p3a")}{" "}
-          <a className="text-primary underline" href="https://www.paddle.com/legal/refund-policy" target="_blank" rel="noopener noreferrer">
+          <a
+            className="text-primary underline"
+            href="https://www.paddle.com/legal/refund-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {t("lg.refund.p3link")}
           </a>
           .

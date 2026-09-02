@@ -1,10 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/integrations/supabase/types";
-import {
-  calculateAverage,
-  calculateEstimated1RM,
-  calculateVolume,
-} from "./performance.engine";
+import { calculateAverage, calculateEstimated1RM, calculateVolume } from "./performance.engine";
 
 export type PerformanceSetLog = Pick<
   Tables<"set_logs">,
@@ -130,12 +126,8 @@ export function aggregateExercisePerformance(
   const e1rms = rows
     .map((row) => calculateEstimated1RM(row.weight_kg, row.reps))
     .filter((value): value is number => value != null);
-  const rpes = rows
-    .map((row) => row.rpe)
-    .filter((value): value is number => value != null);
-  const latest = rows.reduce((newest, row) =>
-    row.created_at > newest.created_at ? row : newest,
-  );
+  const rpes = rows.map((row) => row.rpe).filter((value): value is number => value != null);
+  const latest = rows.reduce((newest, row) => (row.created_at > newest.created_at ? row : newest));
 
   return {
     exerciseSlug: slug,
@@ -144,12 +136,7 @@ export function aggregateExercisePerformance(
     totalSets: rows.length,
     totalReps: rows.reduce((sum, row) => sum + (row.reps ?? 0), 0),
     totalVolume: Number(
-      rows
-        .reduce(
-          (sum, row) => sum + calculateVolume(row.reps, row.weight_kg),
-          0,
-        )
-        .toFixed(1),
+      rows.reduce((sum, row) => sum + calculateVolume(row.reps, row.weight_kg), 0).toFixed(1),
     ),
     bestWeightKg: weights.length ? Math.max(...weights) : null,
     bestReps: reps.length ? Math.max(...reps) : null,
@@ -173,9 +160,7 @@ export async function getPerformanceOverviewData(
   const exercises = [...new Set(logs.map((log) => log.exercise_slug))]
     .map((slug) => aggregateExercisePerformance(logs, slug))
     .filter((value): value is ExercisePerformance => value !== null);
-  const rpes = logs
-    .map((log) => log.rpe)
-    .filter((value): value is number => value != null);
+  const rpes = logs.map((log) => log.rpe).filter((value): value is number => value != null);
 
   return {
     sessions,
@@ -183,9 +168,7 @@ export async function getPerformanceOverviewData(
     metrics: {
       workouts: sessions.length,
       totalVolume: Number(
-        sessions
-          .reduce((sum, session) => sum + session.total_volume, 0)
-          .toFixed(1),
+        sessions.reduce((sum, session) => sum + session.total_volume, 0).toFixed(1),
       ),
       totalDurationSeconds: sessions.reduce(
         (sum, session) => sum + (session.duration_seconds ?? 0),
@@ -209,10 +192,7 @@ export async function getExerciseProgressData(
   const sessionIds = new Set(sessions.map((session) => session.id));
   const points = logs
     .filter(
-      (log) =>
-        log.exercise_slug === exerciseSlug &&
-        log.done &&
-        sessionIds.has(log.session_id),
+      (log) => log.exercise_slug === exerciseSlug && log.done && sessionIds.has(log.session_id),
     )
     .map((log) => ({
       date: log.created_at,
@@ -229,10 +209,7 @@ export async function getExerciseProgressData(
   };
 }
 
-export async function getVolumeTrendData(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-) {
+export async function getVolumeTrendData(supabase: SupabaseClient<Database>, userId: string) {
   const { sessions } = await loadCompletedPerformance(supabase, userId);
 
   return {
@@ -252,10 +229,7 @@ export async function getVolumeTrendData(
   };
 }
 
-export async function getStrengthTrendData(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-) {
+export async function getStrengthTrendData(supabase: SupabaseClient<Database>, userId: string) {
   const { logs } = await loadCompletedPerformance(supabase, userId);
   const byExercise = new Map<
     string,

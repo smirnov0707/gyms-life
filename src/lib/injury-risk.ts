@@ -111,7 +111,11 @@ export function buildRiskReport(
       value: `${Math.round(ratio * 100) / 100} : 1`,
       level: levelOf(dev, 0.4, 0.8),
       adviceKey:
-        dev < 0.4 ? "nx.risk.balance.ok" : ratio > 1 ? "nx.risk.balance.push" : "nx.risk.balance.pull",
+        dev < 0.4
+          ? "nx.risk.balance.ok"
+          : ratio > 1
+            ? "nx.risk.balance.push"
+            : "nx.risk.balance.pull",
     });
   }
 
@@ -133,7 +137,12 @@ export function buildRiskReport(
       key: "nx.risk.recovery",
       value: `${streak} / ${last14}`,
       level: levelOf(streak, 4, 6),
-      adviceKey: streak >= 6 ? "nx.risk.recovery.high" : streak >= 4 ? "nx.risk.recovery.warn" : "nx.risk.recovery.ok",
+      adviceKey:
+        streak >= 6
+          ? "nx.risk.recovery.high"
+          : streak >= 4
+            ? "nx.risk.recovery.warn"
+            : "nx.risk.recovery.ok",
     });
   }
 
@@ -141,18 +150,27 @@ export function buildRiskReport(
   const fresh = checkins.filter((c) => new Date(c.checkin_on).getTime() > now - 10 * DAY);
   if (fresh.length) {
     const soreness =
-      fresh.reduce((n, c) => n + (c.soreness ?? 0), 0) / Math.max(1, fresh.filter((c) => c.soreness != null).length);
+      fresh.reduce((n, c) => n + (c.soreness ?? 0), 0) /
+      Math.max(1, fresh.filter((c) => c.soreness != null).length);
     const readinessVals = fresh.map((c) => c.readiness_score).filter((v): v is number => v != null);
     const readiness = readinessVals.length
       ? readinessVals.reduce((n, v) => n + v, 0) / readinessVals.length
       : null;
-    const add = Math.min(20, Math.max(0, soreness - 2.5) * 8 + (readiness != null ? Math.max(0, 65 - readiness) / 3 : 0));
+    const add = Math.min(
+      20,
+      Math.max(0, soreness - 2.5) * 8 + (readiness != null ? Math.max(0, 65 - readiness) / 3 : 0),
+    );
     risk += add;
     factors.push({
       key: "nx.risk.readiness",
       value: readiness != null ? `${Math.round(readiness)} / 100` : `${soreness.toFixed(1)} / 5`,
       level: levelOf(add, 6, 13),
-      adviceKey: add >= 13 ? "nx.risk.readiness.high" : add >= 6 ? "nx.risk.readiness.warn" : "nx.risk.readiness.ok",
+      adviceKey:
+        add >= 13
+          ? "nx.risk.readiness.high"
+          : add >= 6
+            ? "nx.risk.readiness.warn"
+            : "nx.risk.readiness.ok",
     });
   }
 
@@ -185,7 +203,12 @@ export function buildRiskReport(
       key: "nx.risk.jump",
       value: `${worstName} +${Math.round(worstJump * 100)}%`,
       level: levelOf(worstJump, 0.15, 0.25),
-      adviceKey: worstJump > 0.25 ? "nx.risk.jump.high" : worstJump > 0.15 ? "nx.risk.jump.warn" : "nx.risk.jump.ok",
+      adviceKey:
+        worstJump > 0.25
+          ? "nx.risk.jump.high"
+          : worstJump > 0.15
+            ? "nx.risk.jump.warn"
+            : "nx.risk.jump.ok",
     });
   }
 

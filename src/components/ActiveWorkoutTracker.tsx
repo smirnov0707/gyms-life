@@ -49,7 +49,11 @@ export const ActiveWorkoutTracker: React.FC = () => {
     } else if (restSecondsLeft === 0 && isResting) {
       setIsResting(false);
       playRestCompleteBeep();
-      toast.success(lang === "lt" ? "Poilsio laikas baigėsi! Pirmyn į kitą seriją 💪" : "Rest over! Ready for next set 💪");
+      toast.success(
+        lang === "lt"
+          ? "Poilsio laikas baigėsi! Pirmyn į kitą seriją 💪"
+          : "Rest over! Ready for next set 💪",
+      );
     }
     return () => clearInterval(timer);
   }, [isResting, restSecondsLeft, lang]);
@@ -97,7 +101,9 @@ export const ActiveWorkoutTracker: React.FC = () => {
       {restSecondsLeft !== null && (
         <div className="rounded-2xl bg-black/80 border border-white/10 p-4 flex items-center justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl ${isResting ? "bg-emerald-500/20 text-emerald-400 animate-pulse" : "bg-white/5 text-neutral-400"}`}>
+            <div
+              className={`p-2.5 rounded-xl ${isResting ? "bg-emerald-500/20 text-emerald-400 animate-pulse" : "bg-white/5 text-neutral-400"}`}
+            >
               <RotateCcw className="w-5 h-5" />
             </div>
             <div>
@@ -105,7 +111,8 @@ export const ActiveWorkoutTracker: React.FC = () => {
                 {lang === "lt" ? "POILSIO LAIKMATIS" : "REST TIMER"}
               </span>
               <span className="text-2xl font-mono font-black text-white">
-                {Math.floor(restSecondsLeft / 60)}:{(restSecondsLeft % 60).toString().padStart(2, "0")}
+                {Math.floor(restSecondsLeft / 60)}:
+                {(restSecondsLeft % 60).toString().padStart(2, "0")}
               </span>
             </div>
           </div>
@@ -148,7 +155,9 @@ export const ActiveWorkoutTracker: React.FC = () => {
 
         {sets.length === 0 ? (
           <p className="text-xs text-neutral-500 italic py-2">
-            {lang === "lt" ? "Serijų dar nėra. Paspauskite mikrofono mygtuką ir ištarkite seriją." : "No sets recorded yet. Use voice button above."}
+            {lang === "lt"
+              ? "Serijų dar nėra. Paspauskite mikrofono mygtuką ir ištarkite seriją."
+              : "No sets recorded yet. Use voice button above."}
           </p>
         ) : (
           <div className="space-y-2">

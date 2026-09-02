@@ -13,7 +13,9 @@ const SupplementProductSchema = z.object({
   category: z.string().trim().min(1).max(80),
   timesPerDay: z.coerce.number().int().min(1).max(6).default(1),
   withFood: z.boolean().default(false),
-  preferredTime: z.enum(["any", "morning", "pre_workout", "post_workout", "evening", "bedtime"]).default("any"),
+  preferredTime: z
+    .enum(["any", "morning", "pre_workout", "post_workout", "evening", "bedtime"])
+    .default("any"),
   notes: z.string().trim().max(500).default(""),
   confidence: z.coerce.number().int().min(0).max(100).default(0),
   readable: z.string().trim().max(500).default(""),
@@ -32,7 +34,10 @@ export const analyzeSupplementPhoto = createServerFn({ method: "POST" })
     if (!geminiKey) {
       return {
         ok: false,
-        reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas serveryje." : "AI engine not configured.",
+        reason:
+          data.lang === "lt"
+            ? "AI variklis nesukonfigūruotas serveryje."
+            : "AI engine not configured.",
       };
     }
 
@@ -102,14 +107,24 @@ Atsakyk TIK TIKSLIU JSON be jokio markdown.`;
       }
 
       if (!res.ok) {
-        return { ok: false, reason: data.lang === "lt" ? "Nepavyko nuskaityti papildo." : "Scan failed." };
+        return {
+          ok: false,
+          reason: data.lang === "lt" ? "Nepavyko nuskaityti papildo." : "Scan failed.",
+        };
       }
 
       const result = await res.json();
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
 
-      return SupplementVisionResultSchema.parse(JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim()));
+      return SupplementVisionResultSchema.parse(
+        JSON.parse(
+          rawText
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim(),
+        ),
+      );
     } catch (error) {
       return {
         ok: false,

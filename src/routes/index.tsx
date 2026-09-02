@@ -136,7 +136,6 @@ const GPT_ROWS: { a: TKey; b: TKey }[] = [
   { a: "l3.gpt.r3a", b: "l3.gpt.r3b" },
 ];
 
-
 function Landing() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
@@ -230,9 +229,6 @@ function Landing() {
       </AppShell>
     );
 
-
-
-
   const features = [
     { icon: ClipboardList, t: "landing.f1.t", d: "landing.f1.d" },
     { icon: PlayCircle, t: "landing.f2.t", d: "landing.f2.d" },
@@ -247,7 +243,6 @@ function Landing() {
     { v: "landing.s4v", l: "landing.s4l" },
   ];
 
-
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -261,7 +256,9 @@ function Landing() {
                 <span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
                   <UserRound className="size-3.5" />
                 </span>
-                <span className="max-w-[10rem] truncate">{headerName(user) || t("landing.myPlan")}</span>
+                <span className="max-w-[10rem] truncate">
+                  {headerName(user) || t("landing.myPlan")}
+                </span>
               </Link>
             </Button>
           ) : (
@@ -322,7 +319,11 @@ function Landing() {
                 className="hard-shadow press h-14 rounded-sm px-8 text-display text-xl font-bold uppercase tracking-[0.14em] sm:px-10 sm:text-2xl"
               >
                 {t("landing.ctaNow")}
-                {checkingPlan ? <Loader2 className="ml-2 size-5 animate-spin" /> : <ArrowRight className="ml-2 size-5" />}
+                {checkingPlan ? (
+                  <Loader2 className="ml-2 size-5 animate-spin" />
+                ) : (
+                  <ArrowRight className="ml-2 size-5" />
+                )}
               </Button>
               <Button
                 asChild
@@ -340,7 +341,6 @@ function Landing() {
           </div>
         </div>
       </section>
-
 
       {/* BRAND STATEMENT — said once */}
       <div className="border-y border-border bg-surface py-5 text-center">
@@ -393,7 +393,11 @@ function Landing() {
               className="hard-shadow press mt-8 min-h-14 h-auto whitespace-normal rounded-sm px-8 py-3 text-center text-display text-xl font-bold uppercase leading-tight tracking-[0.14em]"
             >
               {t("landing.cta")}
-              {checkingPlan ? <Loader2 className="ml-2 size-5 animate-spin" /> : <ArrowRight className="ml-2 size-5" />}
+              {checkingPlan ? (
+                <Loader2 className="ml-2 size-5 animate-spin" />
+              ) : (
+                <ArrowRight className="ml-2 size-5" />
+              )}
             </Button>
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {t("landing.trialNote")}
@@ -426,7 +430,10 @@ function Landing() {
               <h3 className="text-2xl uppercase text-foreground">{t("l3.ba.after")}</h3>
               <ul className="mt-4 space-y-2.5">
                 {AFTER.map((k) => (
-                  <li key={k} className="flex items-start gap-2.5 text-sm font-semibold text-foreground">
+                  <li
+                    key={k}
+                    className="flex items-start gap-2.5 text-sm font-semibold text-foreground"
+                  >
                     <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
                     <span>{t(k)}</span>
                   </li>
@@ -461,8 +468,12 @@ function Landing() {
             <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">
               {t("l2.show.tag")}
             </span>
-            <h2 className="headline-xl mt-3 max-w-3xl text-4xl md:text-6xl">{t("l2.show.title")}</h2>
-            <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">{t("l2.show.sub")}</p>
+            <h2 className="headline-xl mt-3 max-w-3xl text-4xl md:text-6xl">
+              {t("l2.show.title")}
+            </h2>
+            <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
+              {t("l2.show.sub")}
+            </p>
           </Reveal>
 
           <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -500,7 +511,9 @@ function Landing() {
                   {lang === "lt" ? "TECHNIKOS BIBLIOTEKA" : "TECHNIQUE LIBRARY"}
                 </span>
                 <h2 className="headline-xl mt-3 max-w-3xl text-4xl md:text-6xl">
-                  {lang === "lt" ? "Profesionali pratimų video biblioteka" : "A professional exercise video library"}
+                  {lang === "lt"
+                    ? "Profesionali pratimų video biblioteka"
+                    : "A professional exercise video library"}
                 </h2>
                 <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
                   {lang === "lt"
@@ -509,20 +522,41 @@ function Landing() {
                 </p>
               </div>
               <Button asChild variant="outline" className="shrink-0 rounded-full">
-                <Link to="/exercises">{lang === "lt" ? "Atidaryti visą biblioteką" : "Open full library"}<ArrowRight className="ml-2 size-4" /></Link>
+                <Link to="/exercises">
+                  {lang === "lt" ? "Atidaryti visą biblioteką" : "Open full library"}
+                  <ArrowRight className="ml-2 size-4" />
+                </Link>
               </Button>
             </div>
           </Reveal>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ["/assets/videos/exercise-squat.mp4", lang === "lt" ? "Pritūpimai" : "Squat"],
-              ["/assets/videos/exercise-deadlift.mp4", lang === "lt" ? "Mirties trauka" : "Deadlift"],
-              ["/assets/videos/exercise-bench.mp4", lang === "lt" ? "Spaudimas gulint" : "Bench press"],
+              [
+                "/assets/videos/exercise-deadlift.mp4",
+                lang === "lt" ? "Mirties trauka" : "Deadlift",
+              ],
+              [
+                "/assets/videos/exercise-bench.mp4",
+                lang === "lt" ? "Spaudimas gulint" : "Bench press",
+              ],
               ["/assets/videos/exercise-pullup.mp4", lang === "lt" ? "Prisitraukimai" : "Pull-up"],
             ].map(([src, title]) => (
-              <Link to="/exercises" key={src} className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-panel transition duration-300 hover:-translate-y-1 hover:border-primary/40">
+              <Link
+                to="/exercises"
+                key={src}
+                className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-panel transition duration-300 hover:-translate-y-1 hover:border-primary/40"
+              >
                 <div className="relative aspect-video overflow-hidden bg-black">
-                  <video src={src} muted loop autoPlay playsInline preload="metadata" className="size-full object-cover transition duration-500 group-hover:scale-105" />
+                  <video
+                    src={src}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                    className="size-full object-cover transition duration-500 group-hover:scale-105"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute inset-x-4 bottom-4 flex items-center justify-between">
                     <span className="text-display text-2xl uppercase text-white">{title}</span>
@@ -538,9 +572,13 @@ function Landing() {
       {/* AI DIFFERENTIATOR — memory */}
       <section className="mx-auto max-w-6xl px-4 py-20">
         <Reveal>
-          <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">{t("l3.mem.tag")}</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">
+            {t("l3.mem.tag")}
+          </span>
           <h2 className="headline-xl mt-3 max-w-3xl text-4xl md:text-6xl">{t("l3.mem.title")}</h2>
-          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">{t("l3.mem.sub")}</p>
+          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
+            {t("l3.mem.sub")}
+          </p>
         </Reveal>
 
         <div className="mt-8 flex flex-wrap gap-2">
@@ -556,12 +594,18 @@ function Landing() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="slab border border-border p-7 opacity-70">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{t("l3.mem.exQ")}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              {t("l3.mem.exQ")}
+            </p>
             <p className="mt-3 text-lg leading-snug text-muted-foreground">{t("l3.mem.exA")}</p>
           </div>
           <GlowCard className="slab border-l-4 border-primary p-7">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{t("l3.mem.glQ")}</p>
-            <p className="mt-3 text-lg font-semibold leading-snug text-foreground">{t("l3.mem.glA")}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+              {t("l3.mem.glQ")}
+            </p>
+            <p className="mt-3 text-lg font-semibold leading-snug text-foreground">
+              {t("l3.mem.glA")}
+            </p>
           </GlowCard>
         </div>
 
@@ -594,7 +638,9 @@ function Landing() {
       <section className="mx-auto max-w-6xl px-4 pb-4">
         <Reveal>
           <h2 className="headline-xl text-4xl md:text-6xl">{t("l3.inside.title")}</h2>
-          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">{t("l3.inside.sub")}</p>
+          <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
+            {t("l3.inside.sub")}
+          </p>
         </Reveal>
         <div className="mt-8 grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
           {INSIDE.map((f, i) => (
@@ -614,7 +660,9 @@ function Landing() {
       {/* HOW IT WORKS — 5 steps */}
       <section className="mx-auto max-w-6xl px-4 py-20">
         <Reveal>
-          <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">{t("l2.how.tag")}</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">
+            {t("l2.how.tag")}
+          </span>
           <h2 className="headline-xl mt-3 max-w-3xl text-4xl md:text-6xl">{t("l2.how.title")}</h2>
         </Reveal>
         <ol className="mt-10 grid gap-px bg-border md:grid-cols-5">
@@ -681,7 +729,6 @@ function Landing() {
         </div>
       </section>
 
-
       {/* QUOTE */}
       <Reveal>
         <section className="mx-auto max-w-4xl px-4 pb-16 text-center">
@@ -703,9 +750,7 @@ function Landing() {
               GO
             </div>
             <div className="relative">
-              <h2 className="headline-xl max-w-2xl text-5xl md:text-7xl">
-                {t("l3.final.title")}
-              </h2>
+              <h2 className="headline-xl max-w-2xl text-5xl md:text-7xl">{t("l3.final.title")}</h2>
               <p className="mt-4 max-w-xl text-sm text-muted-foreground md:text-base">
                 {t("landing.bandSub")}
               </p>
@@ -719,7 +764,11 @@ function Landing() {
                 className="hard-shadow press mt-8 h-14 rounded-sm px-10 text-display text-2xl font-bold uppercase tracking-[0.14em]"
               >
                 {t("landing.cta")}
-                {checkingPlan ? <Loader2 className="ml-2 size-5 animate-spin" /> : <ArrowRight className="ml-2 size-5" />}
+                {checkingPlan ? (
+                  <Loader2 className="ml-2 size-5 animate-spin" />
+                ) : (
+                  <ArrowRight className="ml-2 size-5" />
+                )}
               </Button>
             </div>
           </GlowCard>
@@ -742,17 +791,26 @@ function Landing() {
               </h2>
               <ul className="mt-4 space-y-2 text-sm font-semibold">
                 <li>
-                  <a href="#product" className="text-muted-foreground transition-colors hover:text-primary">
+                  <a
+                    href="#product"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("l2.show.tag")}
                   </a>
                 </li>
                 <li>
-                  <Link to="/exercises" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link
+                    to="/exercises"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("l2.foot.exercises")}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/pricing" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link
+                    to="/pricing"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("footer.pricing")}
                   </Link>
                 </li>
@@ -764,12 +822,18 @@ function Landing() {
               </h2>
               <ul className="mt-4 space-y-2 text-sm font-semibold">
                 <li>
-                  <a href="#faq" className="text-muted-foreground transition-colors hover:text-primary">
+                  <a
+                    href="#faq"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("l2.foot.faq")}
                   </a>
                 </li>
                 <li>
-                  <Link to="/auth" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link
+                    to="/auth"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("landing.login")}
                   </Link>
                 </li>
@@ -781,17 +845,26 @@ function Landing() {
               </h2>
               <ul className="mt-4 space-y-2 text-sm font-semibold">
                 <li>
-                  <Link to="/privacy" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link
+                    to="/privacy"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("footer.privacy")}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/terms" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link
+                    to="/terms"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("footer.terms")}
                   </Link>
                 </li>
                 <li>
-                  <Link to="/refund" className="text-muted-foreground transition-colors hover:text-primary">
+                  <Link
+                    to="/refund"
+                    className="text-muted-foreground transition-colors hover:text-primary"
+                  >
                     {t("footer.refund")}
                   </Link>
                 </li>
@@ -803,7 +876,6 @@ function Landing() {
           </p>
         </div>
       </footer>
-
 
       <AlertDialog open={planDialog} onOpenChange={setPlanDialog}>
         <AlertDialogContent>

@@ -12,7 +12,8 @@ export const Route = createFileRoute("/_authenticated/achievements")({
       { title: "Pasiekimai ir XP — GYMS.LIFE" },
       {
         name: "description",
-        content: "Rink XP už kiekvieną treniruotę, kelk lygį, atrakink ženkliukus ir stebėk metų aktyvumo žemėlapį.",
+        content:
+          "Rink XP už kiekvieną treniruotę, kelk lygį, atrakink ženkliukus ir stebėk metų aktyvumo žemėlapį.",
       },
       { property: "og:title", content: "Pasiekimai ir XP — GYMS.LIFE" },
       { property: "og:description", content: "Lygiai, ženkliukai ir aktyvumo žemėlapis." },
@@ -92,7 +93,6 @@ function AchievementsPage() {
         <p className="text-xs uppercase tracking-widest text-primary">GYMS.LIFE · XP</p>
         <h1 className="mt-1 text-5xl">{t("ach.title")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("ach.sub")}</p>
-
       </header>
 
       <div className="panel relative overflow-hidden p-6 md:p-8">
@@ -142,7 +142,6 @@ function AchievementsPage() {
         </div>
       </div>
 
-
       <section>
         <h2 className="flex items-center gap-2 text-3xl">
           <Award className="size-5 text-primary" /> {t("ach.badges")}
@@ -183,10 +182,7 @@ function AchievementsPage() {
               <span
                 key={d.key}
                 title={d.key}
-                className={cn(
-                  "size-3 rounded-[3px]",
-                  d.active ? "bg-primary" : "bg-surface-2",
-                )}
+                className={cn("size-3 rounded-[3px]", d.active ? "bg-primary" : "bg-surface-2")}
               />
             ))}
           </div>

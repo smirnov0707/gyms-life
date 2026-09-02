@@ -11,7 +11,9 @@ export const getWorkoutHistory = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data: sessions, error } = await supabase
       .from("workout_sessions")
-      .select("id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume")
+      .select(
+        "id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume",
+      )
       .eq("user_id", userId)
       .not("finished_at", "is", null)
       .order("finished_at", { ascending: false })
@@ -23,7 +25,9 @@ export const getWorkoutHistory = createServerFn({ method: "GET" })
     const ids = sessions.map((session) => session.id);
     const { data: logs, error: logsError } = await supabase
       .from("set_logs")
-      .select("id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at")
+      .select(
+        "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at",
+      )
       .eq("user_id", userId)
       .in("session_id", ids)
       .order("created_at", { ascending: true });

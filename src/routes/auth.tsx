@@ -23,7 +23,7 @@ function isAuthMode(value: unknown): value is "in" | "up" | "forgot" {
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>) => {
-    const next = safeNext(s['next']);
+    const next = safeNext(s["next"]);
     const mode = s["mode"];
     return {
       ...(next ? { next } : {}),
@@ -38,7 +38,10 @@ export const Route = createFileRoute("/auth")({
         content: "Prisijunk arba sukurk GYMS.LIFE paskyrą ir gauk individualų treniruočių planą.",
       },
       { property: "og:title", content: "Prisijungimas — GYMS.LIFE" },
-      { property: "og:description", content: "Prisijunk prie GYMS.LIFE ir tęsk savo treniruočių planą." },
+      {
+        property: "og:description",
+        content: "Prisijunk prie GYMS.LIFE ir tęsk savo treniruočių planą.",
+      },
     ],
   }),
   component: AuthPage,
@@ -93,7 +96,6 @@ function AuthPage() {
     if (!loading && user) goNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, next]);
-
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,7 +160,6 @@ function AuthPage() {
     }
   };
 
-
   const title =
     mode === "in" ? t("auth.title") : mode === "up" ? t("l3.auth.title") : t("auth.resetTitle");
 
@@ -218,9 +219,7 @@ function AuthPage() {
             </p>
           )}
           <Button type="submit" disabled={busy || googleBusy} className="font-bold">
-            {busy ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : null}
+            {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
             {mode === "in"
               ? t("auth.signin")
               : mode === "up"

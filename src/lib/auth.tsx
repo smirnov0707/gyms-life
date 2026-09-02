@@ -49,7 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const sync = async () => {
       const { data } = await supabase.auth.getSession();
-      setSession((prev) => (prev?.access_token === data.session?.access_token ? prev : data.session));
+      setSession((prev) =>
+        prev?.access_token === data.session?.access_token ? prev : data.session,
+      );
     };
     window.addEventListener("focus", sync);
     document.addEventListener("visibilitychange", sync);

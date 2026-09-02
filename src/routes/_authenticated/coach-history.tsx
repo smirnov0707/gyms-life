@@ -12,9 +12,15 @@ export const Route = createFileRoute("/_authenticated/coach-history")({
   head: () => ({
     meta: [
       { title: "Trenerio pokalbių istorija — GYMS.LIFE" },
-      { name: "description", content: "Peržiūrėk visus išsaugotus klausimus ir trenerio atsakymus." },
+      {
+        name: "description",
+        content: "Peržiūrėk visus išsaugotus klausimus ir trenerio atsakymus.",
+      },
       { property: "og:title", content: "Trenerio pokalbių istorija — GYMS.LIFE" },
-      { property: "og:description", content: "Visi tavo klausimai ir trenerio pastabos vienoje vietoje." },
+      {
+        property: "og:description",
+        content: "Visi tavo klausimai ir trenerio pastabos vienoje vietoje.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -88,11 +94,16 @@ function CoachHistoryPage() {
             <Loader2 className="size-6 animate-spin text-primary" />
           </div>
         ) : rows.length === 0 ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">{t("coach.historyEmpty")}</p>
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            {t("coach.historyEmpty")}
+          </p>
         ) : (
           <div className="grid gap-3">
             {rows.map((m) => (
-              <div key={m.id} className={cn("grid gap-1", m.role === "user" ? "justify-items-end" : "")}>
+              <div
+                key={m.id}
+                className={cn("grid gap-1", m.role === "user" ? "justify-items-end" : "")}
+              >
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
                   {new Date(m.createdAt).toLocaleString()}
                 </span>

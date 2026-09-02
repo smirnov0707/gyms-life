@@ -1,9 +1,15 @@
 export const extra_routes = {
   "rt.notFoundTitle": { lt: "Puslapis nerastas", en: "Page not found" },
-  "rt.notFoundHint": { lt: "Šio puslapio nėra arba jis buvo perkeltas.", en: "This page doesn't exist or has been moved." },
+  "rt.notFoundHint": {
+    lt: "Šio puslapio nėra arba jis buvo perkeltas.",
+    en: "This page doesn't exist or has been moved.",
+  },
   "rt.goHome": { lt: "Į pradžią", en: "Go home" },
   "rt.errorTitle": { lt: "Šis puslapis neužsikrovė", en: "This page failed to load" },
-  "rt.errorHint": { lt: "Kažkas nutiko. Pabandyk atnaujinti arba grįžk į pradžią.", en: "Something went wrong. Try refreshing or go back home." },
+  "rt.errorHint": {
+    lt: "Kažkas nutiko. Pabandyk atnaujinti arba grįžk į pradžią.",
+    en: "Something went wrong. Try refreshing or go back home.",
+  },
   "rt.tryAgain": { lt: "Bandyti dar kartą", en: "Try again" },
   "rt.backToHome": { lt: "← GYMS.LIFE", en: "← GYMS.LIFE" },
 
@@ -13,12 +19,18 @@ export const extra_routes = {
   "rt.ex.safety.shoulder": { lt: "Tausoja pečius", en: "Shoulder friendly" },
   "rt.ex.proLibrary": { lt: "GYMS.LIFE PRO MEDIATEKA", en: "GYMS.LIFE PRO LIBRARY" },
   "rt.ex.myFavorites": { lt: "Mano Mėgstamiausi ({n})", en: "My Favorites ({n})" },
-  "rt.ex.searchPlaceholder": { lt: "Ieškoti iš 175+ pratimų (pvz., Pritūpimai, Bench Press, Dumbbell...)", en: "Search 175+ exercises (e.g. Squats, Bench Press, Dumbbell...)" },
+  "rt.ex.searchPlaceholder": {
+    lt: "Ieškoti iš 175+ pratimų (pvz., Pritūpimai, Bench Press, Dumbbell...)",
+    en: "Search 175+ exercises (e.g. Squats, Bench Press, Dumbbell...)",
+  },
   "rt.ex.muscleGroup": { lt: "Raumenų grupė:", en: "Muscle group:" },
   "rt.ex.equipment": { lt: "Įranga:", en: "Equipment:" },
   "rt.ex.all2": { lt: "Visi", en: "All" },
   "rt.ex.jointSafety": { lt: "Sąnarių tausojimas:", en: "Joint safety:" },
-  "rt.ex.noResults": { lt: "Pagal pasirinktus filtrus pratimų nerasta. Pabandykite išvalyti filtrus.", en: "No exercises found for the selected filters. Try clearing the filters." },
+  "rt.ex.noResults": {
+    lt: "Pagal pasirinktus filtrus pratimų nerasta. Pabandykite išvalyti filtrus.",
+    en: "No exercises found for the selected filters. Try clearing the filters.",
+  },
   "rt.ex.quickPreview": { lt: "Greita peržiūra", en: "Quick preview" },
   "rt.ex.forEveryone": { lt: "Visiems", en: "Everyone" },
   "rt.ex.fullAnatomy": { lt: "Pilna anatomija →", en: "Full anatomy →" },

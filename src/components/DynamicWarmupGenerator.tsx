@@ -105,20 +105,26 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
                 <div
                   key={d.slug}
                   className={`flex items-start gap-3 rounded-2xl border p-3.5 transition-colors ${
-                    isDone ? "border-primary/40 bg-primary/5 opacity-80" : "border-border bg-surface-2"
+                    isDone
+                      ? "border-primary/40 bg-primary/5 opacity-80"
+                      : "border-border bg-surface-2"
                   }`}
                 >
                   <button
                     onClick={() => toggle(d.slug)}
                     aria-label={d.name}
                     className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border transition-colors ${
-                      isDone ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent"
+                      isDone
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border text-transparent"
                     }`}
                   >
                     <Check className="size-4" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-bold ${isDone ? "line-through text-muted-foreground" : ""}`}>
+                    <p
+                      className={`text-sm font-bold ${isDone ? "line-through text-muted-foreground" : ""}`}
+                    >
                       {d.name}
                     </p>
                     <p className="font-mono text-xs text-accent">

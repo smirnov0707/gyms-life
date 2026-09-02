@@ -206,7 +206,14 @@ export function SupplementPhotoScanner() {
       <div className="flex flex-wrap gap-2">
         {live ? (
           <>
-            <Button onClick={() => { tactileClick(); void capture(); }} disabled={busy} className="press">
+            <Button
+              onClick={() => {
+                tactileClick();
+                void capture();
+              }}
+              disabled={busy}
+              className="press"
+            >
               <Camera className="size-4" />
               {t("supp.scan.shoot")}
             </Button>
@@ -223,7 +230,14 @@ export function SupplementPhotoScanner() {
             </Button>
           </>
         ) : (
-          <Button onClick={() => { tactileClick(); void startCamera(); }} disabled={busy} className="press">
+          <Button
+            onClick={() => {
+              tactileClick();
+              void startCamera();
+            }}
+            disabled={busy}
+            className="press"
+          >
             <Camera className="size-4" />
             {t("supp.scan.start")}
           </Button>

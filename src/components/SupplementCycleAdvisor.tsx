@@ -74,7 +74,10 @@ export const SupplementCycleAdvisor: React.FC = () => {
 
           <ul className="grid gap-2">
             {advice.items.map((item, i) => (
-              <li key={`${item.name}-${i}`} className="rounded-2xl border border-border bg-surface p-3.5">
+              <li
+                key={`${item.name}-${i}`}
+                className="rounded-2xl border border-border bg-surface p-3.5"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-bold">{item.name}</span>
                   <span
@@ -85,14 +88,29 @@ export const SupplementCycleAdvisor: React.FC = () => {
                     {t(`supp.cycle.status.${item.status}` as TKey)}
                   </span>
                 </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{item.reason}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  {item.reason}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2 font-mono text-[10px] text-muted-foreground">
-                  <span>{t("supp.cycle.daysOn").replace("{n}", String(Math.max(0, Math.round(item.daysOn))))}</span>
+                  <span>
+                    {t("supp.cycle.daysOn").replace(
+                      "{n}",
+                      String(Math.max(0, Math.round(item.daysOn))),
+                    )}
+                  </span>
                   {item.status !== "continue" && item.breakLengthDays > 0 && (
                     <>
-                      <span>{t("supp.cycle.breakIn").replace("{n}", String(Math.max(0, Math.round(item.breakInDays))))}</span>
+                      <span>
+                        {t("supp.cycle.breakIn").replace(
+                          "{n}",
+                          String(Math.max(0, Math.round(item.breakInDays))),
+                        )}
+                      </span>
                       <span className="text-foreground">
-                        {t("supp.cycle.breakLen").replace("{n}", String(Math.round(item.breakLengthDays)))}
+                        {t("supp.cycle.breakLen").replace(
+                          "{n}",
+                          String(Math.round(item.breakLengthDays)),
+                        )}
                       </span>
                     </>
                   )}

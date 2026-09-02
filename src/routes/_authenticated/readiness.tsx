@@ -17,10 +17,14 @@ export const Route = createFileRoute("/_authenticated/readiness")({
       { title: "Paros pasiruošimas ir autoreguliacija — GYMS.LIFE" },
       {
         name: "description",
-        content: "Miego, streso ir raumenų skausmo patikra, kuri automatiškai pritaiko šiandienos krūvį.",
+        content:
+          "Miego, streso ir raumenų skausmo patikra, kuri automatiškai pritaiko šiandienos krūvį.",
       },
       { property: "og:title", content: "Paros pasiruošimas — GYMS.LIFE" },
-      { property: "og:description", content: "Sistema perskaičiuoja šiandienos krūvį pagal tavo būklę." },
+      {
+        property: "og:description",
+        content: "Sistema perskaičiuoja šiandienos krūvį pagal tavo būklę.",
+      },
     ],
   }),
   component: ReadinessPage,
@@ -92,7 +96,9 @@ function ReadinessPage() {
             <div className="text-display text-6xl leading-none text-primary">
               {today.readiness_score}
             </div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">{t("rd.score")}</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              {t("rd.score")}
+            </p>
             <p className="mt-1 text-sm font-bold text-accent">
               {t("rd.load")}: {Math.round(Number(today.load_modifier ?? 1) * 100)}%
             </p>
@@ -142,7 +148,11 @@ function ReadinessPage() {
               <b className="text-accent">{previewLoad}%</b>
             </span>
           </div>
-          <Button onClick={submit} disabled={busy} className="rounded-full px-6 font-bold glow-ring">
+          <Button
+            onClick={submit}
+            disabled={busy}
+            className="rounded-full px-6 font-bold glow-ring"
+          >
             {busy && <Loader2 className="mr-1 size-4 animate-spin" />}
             {today ? t("rd.again") : t("rd.submit")}
           </Button>

@@ -50,7 +50,8 @@ export const GhostCoachWidget: React.FC = () => {
   }
 
   const score = insight?.readinessScore || 88;
-  const scoreColor = score >= 85 ? "text-emerald-400" : score >= 70 ? "text-amber-400" : "text-rose-400";
+  const scoreColor =
+    score >= 85 ? "text-emerald-400" : score >= 70 ? "text-amber-400" : "text-rose-400";
   const strokeColor = score >= 85 ? "#10b981" : score >= 70 ? "#f59e0b" : "#f43f5e";
 
   return (
@@ -67,14 +68,25 @@ export const GhostCoachWidget: React.FC = () => {
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight leading-snug">
-            {insight?.headline || (lang === "lt" ? "Kūnas optimaliai pasiruošęs treniruotei" : "Body primed for training")}
+            {insight?.headline ||
+              (lang === "lt"
+                ? "Kūnas optimaliai pasiruošęs treniruotei"
+                : "Body primed for training")}
           </h2>
         </div>
 
         {/* Pasirengimo žiedas */}
         <div className="relative flex items-center justify-center shrink-0">
           <svg className="w-16 h-16 transform -rotate-90">
-            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="4.5" className="text-white/10" fill="transparent" />
+            <circle
+              cx="32"
+              cy="32"
+              r="26"
+              stroke="currentColor"
+              strokeWidth="4.5"
+              className="text-white/10"
+              fill="transparent"
+            />
             <circle
               cx="32"
               cy="32"
@@ -104,7 +116,9 @@ export const GhostCoachWidget: React.FC = () => {
               <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block font-bold">
                 {lang === "lt" ? "Treniruotės fokusas" : "Workout Focus"}
               </span>
-              <p className="text-xs text-neutral-200 font-medium leading-relaxed mt-0.5">{insight.trainingAdvice}</p>
+              <p className="text-xs text-neutral-200 font-medium leading-relaxed mt-0.5">
+                {insight.trainingAdvice}
+              </p>
             </div>
           </div>
         )}
@@ -118,7 +132,9 @@ export const GhostCoachWidget: React.FC = () => {
               <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider block font-bold">
                 {lang === "lt" ? "Mitybos strategija" : "Nutrition Strategy"}
               </span>
-              <p className="text-xs text-neutral-200 font-medium leading-relaxed mt-0.5">{insight.nutritionAdvice}</p>
+              <p className="text-xs text-neutral-200 font-medium leading-relaxed mt-0.5">
+                {insight.nutritionAdvice}
+              </p>
             </div>
           </div>
         )}
@@ -128,7 +144,9 @@ export const GhostCoachWidget: React.FC = () => {
         <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.08] text-xs font-mono text-neutral-300 relative z-10">
           <Zap className="w-4 h-4 text-amber-400 shrink-0" />
           <span>
-            <strong className="text-white uppercase tracking-wider">{lang === "lt" ? "Dienos veiksmas:" : "Action:"}</strong>{" "}
+            <strong className="text-white uppercase tracking-wider">
+              {lang === "lt" ? "Dienos veiksmas:" : "Action:"}
+            </strong>{" "}
             {insight.recommendedAction}
           </span>
         </div>

@@ -50,10 +50,7 @@ Atsakyk TIK TIKSLIU JSON:
         contents: [
           {
             role: "user",
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType, data: base64Data } },
-            ],
+            parts: [{ text: prompt }, { inlineData: { mimeType, data: base64Data } }],
           },
         ],
         generationConfig: {
@@ -83,7 +80,12 @@ Atsakyk TIK TIKSLIU JSON:
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
 
-      return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        rawText
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return { ok: false, reason: err.message || "Biomechanikos klaida." };
     }

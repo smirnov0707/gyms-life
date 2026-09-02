@@ -83,46 +83,177 @@ const CATEGORIES: { key: string; words: string[] }[] = [
   {
     key: "protein",
     words: [
-      "vištien", "kalakut", "jautien", "kiaulien", "menk", "lašiš", "tunas", "tuno", "žuv",
-      "kiaušin", "varšk", "jogurt", "sūr", "išrūgų", "baltym", "tofu", "tempeh", "krevet",
-      "chicken", "turkey", "beef", "pork", "salmon", "tuna", "fish", "egg", "cottage",
-      "yogurt", "yoghurt", "cheese", "whey", "protein", "shrimp", "curd",
+      "vištien",
+      "kalakut",
+      "jautien",
+      "kiaulien",
+      "menk",
+      "lašiš",
+      "tunas",
+      "tuno",
+      "žuv",
+      "kiaušin",
+      "varšk",
+      "jogurt",
+      "sūr",
+      "išrūgų",
+      "baltym",
+      "tofu",
+      "tempeh",
+      "krevet",
+      "chicken",
+      "turkey",
+      "beef",
+      "pork",
+      "salmon",
+      "tuna",
+      "fish",
+      "egg",
+      "cottage",
+      "yogurt",
+      "yoghurt",
+      "cheese",
+      "whey",
+      "protein",
+      "shrimp",
+      "curd",
     ],
   },
   {
     key: "produce",
     words: [
-      "daržov", "špinat", "brokol", "pomidor", "agurk", "salot", "morkų", "morkos", "svogūn",
-      "česnak", "paprik", "cukin", "kopūst", "bulv", "batat", "avokad", "bананų", "banan",
-      "obuol", "uog", "citrin", "apelsin", "vaisi", "grybų", "grybai",
-      "vegetable", "spinach", "broccoli", "tomato", "cucumber", "salad", "lettuce", "carrot",
-      "onion", "garlic", "pepper", "zucchini", "cabbage", "potato", "avocado", "banana",
-      "apple", "berry", "berries", "lemon", "orange", "fruit", "mushroom",
+      "daržov",
+      "špinat",
+      "brokol",
+      "pomidor",
+      "agurk",
+      "salot",
+      "morkų",
+      "morkos",
+      "svogūn",
+      "česnak",
+      "paprik",
+      "cukin",
+      "kopūst",
+      "bulv",
+      "batat",
+      "avokad",
+      "bананų",
+      "banan",
+      "obuol",
+      "uog",
+      "citrin",
+      "apelsin",
+      "vaisi",
+      "grybų",
+      "grybai",
+      "vegetable",
+      "spinach",
+      "broccoli",
+      "tomato",
+      "cucumber",
+      "salad",
+      "lettuce",
+      "carrot",
+      "onion",
+      "garlic",
+      "pepper",
+      "zucchini",
+      "cabbage",
+      "potato",
+      "avocado",
+      "banana",
+      "apple",
+      "berry",
+      "berries",
+      "lemon",
+      "orange",
+      "fruit",
+      "mushroom",
     ],
   },
   {
     key: "grains",
     words: [
-      "ryž", "grik", "aviž", "makaron", "duon", "bulgur", "kuskus", "kvinoj", "quinoa",
-      "miltai", "tortil", "lęš", "pupel", "avinž", "kruop",
-      "rice", "buckwheat", "oat", "pasta", "bread", "couscous", "flour", "tortilla",
-      "lentil", "bean", "chickpea", "grain",
+      "ryž",
+      "grik",
+      "aviž",
+      "makaron",
+      "duon",
+      "bulgur",
+      "kuskus",
+      "kvinoj",
+      "quinoa",
+      "miltai",
+      "tortil",
+      "lęš",
+      "pupel",
+      "avinž",
+      "kruop",
+      "rice",
+      "buckwheat",
+      "oat",
+      "pasta",
+      "bread",
+      "couscous",
+      "flour",
+      "tortilla",
+      "lentil",
+      "bean",
+      "chickpea",
+      "grain",
     ],
   },
   {
     key: "fats",
     words: [
-      "aliej", "sviest", "riešut", "migdol", "sėkl", "chia", "tahini", "alyvuog", "kokos",
-      "oil", "butter", "nut", "almond", "seed", "olive", "coconut", "peanut",
+      "aliej",
+      "sviest",
+      "riešut",
+      "migdol",
+      "sėkl",
+      "chia",
+      "tahini",
+      "alyvuog",
+      "kokos",
+      "oil",
+      "butter",
+      "nut",
+      "almond",
+      "seed",
+      "olive",
+      "coconut",
+      "peanut",
     ],
   },
   {
     key: "pantry",
     words: [
-      "druska", "pipir", "prieskoni", "medus", "actas", "padaž", "kakav", "cinamon", "kefyr",
-      "pienas", "gėrimas", "vanduo", "sultys",
-      "salt", "pepper", "spice", "honey", "vinegar", "sauce", "cocoa", "cinnamon", "milk",
-      "water", "juice", "drink",
+      "druska",
+      "pipir",
+      "prieskoni",
+      "medus",
+      "actas",
+      "padaž",
+      "kakav",
+      "cinamon",
+      "kefyr",
+      "pienas",
+      "gėrimas",
+      "vanduo",
+      "sultys",
+      "salt",
+      "pepper",
+      "spice",
+      "honey",
+      "vinegar",
+      "sauce",
+      "cocoa",
+      "cinnamon",
+      "milk",
+      "water",
+      "juice",
+      "drink",
     ],
   },
 ];
@@ -158,9 +289,12 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
         const name = cleanName(parsed.name || String(raw));
         if (!name || name.length < 2) continue;
         const key = name.toLowerCase();
-        const entry =
-          bucket.get(key) ??
-          { name, category: categoryOf(name), units: new Map<string, number>(), freeform: 0 };
+        const entry = bucket.get(key) ?? {
+          name,
+          category: categoryOf(name),
+          units: new Map<string, number>(),
+          freeform: 0,
+        };
         if (parsed.qty != null && Number.isFinite(parsed.qty)) {
           const unit = parsed.unit || "vnt.";
           entry.units.set(unit, (entry.units.get(unit) ?? 0) + parsed.qty);
@@ -186,11 +320,14 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
       else parts.push(`${round(value)}${unit === "vnt." || unit.length > 2 ? " " : " "}${unit}`);
     }
     if (!parts.length && entry.freeform)
-      parts.push(entry.freeform > 1 ? `×${entry.freeform}` : (lang === "lt" ? "pagal skonį" : "to taste"));
+      parts.push(
+        entry.freeform > 1 ? `×${entry.freeform}` : lang === "lt" ? "pagal skonį" : "to taste",
+      );
     else if (entry.freeform) parts.push(`+${entry.freeform}`);
 
-    const label =
-      (CATEGORY_LABELS[entry.category] ?? CATEGORY_LABELS["other"]!)[lang === "lt" ? "lt" : "en"];
+    const label = (CATEGORY_LABELS[entry.category] ?? CATEGORY_LABELS["other"]!)[
+      lang === "lt" ? "lt" : "en"
+    ];
     const group = groups.get(entry.category) ?? { category: label, items: [] };
     group.items.push({
       name: entry.name.charAt(0).toUpperCase() + entry.name.slice(1),
@@ -208,9 +345,6 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
 }
 
 /** Returns the plan with a shopping list that always matches its meals. */
-export function withCompleteShoppingList(
-  plan: GeneratedMealPlan,
-  lang: string,
-): GeneratedMealPlan {
+export function withCompleteShoppingList(plan: GeneratedMealPlan, lang: string): GeneratedMealPlan {
   return { ...plan, shopping_list: buildShoppingList(plan, lang) };
 }

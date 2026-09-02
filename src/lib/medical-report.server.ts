@@ -55,50 +55,51 @@ export async function buildReportStats(supabase: DB, userId: string): Promise<Re
   const fromIso = from.toISOString();
   const fromDay = fromIso.slice(0, 10);
 
-  const [sessionsRes, checkinsRes, nutriRes, bodyRes, setsRes, suppRes, profileRes] = await Promise.all([
-    supabase
-      .from("workout_sessions")
-      .select("id, title, started_at, total_volume, duration_seconds")
-      .eq("user_id", userId)
-      .not("finished_at", "is", null)
-      .gte("started_at", fromIso)
-      .order("started_at", { ascending: false }),
-    supabase
-      .from("daily_checkins")
-      .select("checkin_on, readiness_score, sleep_hours, soreness, stress, energy")
-      .eq("user_id", userId)
-      .gte("checkin_on", fromDay),
-    supabase
-      .from("nutrition_logs")
-      .select("logged_on, calories, protein, carbs, fat")
-      .eq("user_id", userId)
-      .gte("logged_on", fromDay),
-    supabase
-      .from("body_metrics")
-      .select("measured_on, weight_kg, body_fat")
-      .eq("user_id", userId)
-      .gte("measured_on", fromDay)
-      .order("measured_on", { ascending: true }),
-    supabase
-      .from("set_logs")
-      .select("exercise_name, weight_kg, reps, created_at")
-      .eq("user_id", userId)
-      .gte("created_at", fromIso)
-      .limit(2000),
-    supabase
-      .from("supplements")
-      .select("name, dose, times_per_day")
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .limit(20),
-    supabase
-      .from("profiles")
-      .select(
-        "display_name, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, limitations, diet, allergies",
-      )
-      .eq("id", userId)
-      .maybeSingle(),
-  ]);
+  const [sessionsRes, checkinsRes, nutriRes, bodyRes, setsRes, suppRes, profileRes] =
+    await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("id, title, started_at, total_volume, duration_seconds")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null)
+        .gte("started_at", fromIso)
+        .order("started_at", { ascending: false }),
+      supabase
+        .from("daily_checkins")
+        .select("checkin_on, readiness_score, sleep_hours, soreness, stress, energy")
+        .eq("user_id", userId)
+        .gte("checkin_on", fromDay),
+      supabase
+        .from("nutrition_logs")
+        .select("logged_on, calories, protein, carbs, fat")
+        .eq("user_id", userId)
+        .gte("logged_on", fromDay),
+      supabase
+        .from("body_metrics")
+        .select("measured_on, weight_kg, body_fat")
+        .eq("user_id", userId)
+        .gte("measured_on", fromDay)
+        .order("measured_on", { ascending: true }),
+      supabase
+        .from("set_logs")
+        .select("exercise_name, weight_kg, reps, created_at")
+        .eq("user_id", userId)
+        .gte("created_at", fromIso)
+        .limit(2000),
+      supabase
+        .from("supplements")
+        .select("name, dose, times_per_day")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .limit(20),
+      supabase
+        .from("profiles")
+        .select(
+          "display_name, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, limitations, diet, allergies",
+        )
+        .eq("id", userId)
+        .maybeSingle(),
+    ]);
 
   const sessions = (sessionsRes.data ?? []) as Record<string, unknown>[];
   const totalVolumeKg = Math.round(sessions.reduce((a, s) => a + (num(s["total_volume"]) ?? 0), 0));
@@ -162,7 +163,9 @@ export async function buildReportStats(supabase: DB, userId: string): Promise<Re
     weightStartKg,
     weightEndKg,
     weightDeltaKg:
-      weightStartKg != null && weightEndKg != null ? Math.round((weightEndKg - weightStartKg) * 10) / 10 : null,
+      weightStartKg != null && weightEndKg != null
+        ? Math.round((weightEndKg - weightStartKg) * 10) / 10
+        : null,
     bodyFatStart: first ? num(first["body_fat"]) : null,
     bodyFatEnd: last ? num(last["body_fat"]) : null,
     topLifts,

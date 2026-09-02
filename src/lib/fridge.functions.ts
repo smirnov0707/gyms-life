@@ -47,7 +47,12 @@ Atsakyk TIK TIKSLIU JSON formatu be markdown:
         temperature: 0.2,
       });
 
-      const parsed = JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+      const parsed = JSON.parse(
+        raw
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
       if (parsed.recipe) return { ok: true, fallback: false, recipe: parsed.recipe };
       return parsed;
     } catch (err: any) {
@@ -55,7 +60,10 @@ Atsakyk TIK TIKSLIU JSON formatu be markdown:
         ok: false,
         fallback: true,
         recipe: {
-          title: data.lang === "lt" ? "Greitas patiekalas iš jūsų ingredientų" : "Quick Dish From Your Ingredients",
+          title:
+            data.lang === "lt"
+              ? "Greitas patiekalas iš jūsų ingredientų"
+              : "Quick Dish From Your Ingredients",
           prepMinutes: 20,
           calories: 520,
           protein: 38,
@@ -65,10 +73,12 @@ Atsakyk TIK TIKSLIU JSON formatu be markdown:
           instructions: [
             data.lang === "lt" ? "Paruoškite visus turimus ingredientus." : "Prep all ingredients.",
             data.lang === "lt" ? "Apkepkite baltymų šaltinį." : "Cook protein source.",
-            data.lang === "lt" ? "Sudėkite likusius ingredientus ir pagardinkite." : "Combine and season."
+            data.lang === "lt"
+              ? "Sudėkite likusius ingredientus ir pagardinkite."
+              : "Combine and season.",
           ],
-          tip: "Subalansuotas fitneso patiekalas."
-        }
+          tip: "Subalansuotas fitneso patiekalas.",
+        },
       };
     }
   });

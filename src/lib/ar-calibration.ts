@@ -32,9 +32,24 @@ export function calibSteps(lang: Lang): {
   instruction: string;
 }[] {
   return [
-    { id: "stand", seconds: 5, title: tr(lang, "ar.calib.stand.title"), instruction: tr(lang, "ar.calib.stand.instruction") },
-    { id: "scale", seconds: 5, title: tr(lang, "ar.calib.scale.title"), instruction: tr(lang, "ar.calib.scale.instruction") },
-    { id: "move", seconds: 8, title: tr(lang, "ar.calib.move.title"), instruction: tr(lang, "ar.calib.move.instruction") },
+    {
+      id: "stand",
+      seconds: 5,
+      title: tr(lang, "ar.calib.stand.title"),
+      instruction: tr(lang, "ar.calib.stand.instruction"),
+    },
+    {
+      id: "scale",
+      seconds: 5,
+      title: tr(lang, "ar.calib.scale.title"),
+      instruction: tr(lang, "ar.calib.scale.instruction"),
+    },
+    {
+      id: "move",
+      seconds: 8,
+      title: tr(lang, "ar.calib.move.title"),
+      instruction: tr(lang, "ar.calib.move.instruction"),
+    },
   ];
 }
 
@@ -173,7 +188,10 @@ export function computeReliability(results: CalibStepResult[], lang: Lang): Reli
   const weight: Record<CalibStepId, number> = { stand: 0.4, scale: 0.25, move: 0.35 };
   const score = Math.round(
     results.reduce((sum, res) => sum + res.quality * weight[res.id], 0) /
-      Math.max(0.001, results.reduce((sum, res) => sum + weight[res.id], 0)),
+      Math.max(
+        0.001,
+        results.reduce((sum, res) => sum + weight[res.id], 0),
+      ),
   );
 
   const level = score >= 80 ? "high" : score >= 60 ? "medium" : "low";

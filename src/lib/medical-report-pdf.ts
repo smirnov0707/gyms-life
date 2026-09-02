@@ -42,7 +42,11 @@ function wrap(ctx: Ctx, text: string, maxWidth: number): string[] {
   return lines;
 }
 
-export async function downloadMedicalReportPdf(report: MedicalReport, lang: Lang, displayName: string) {
+export async function downloadMedicalReportPdf(
+  report: MedicalReport,
+  lang: Lang,
+  displayName: string,
+) {
   const { jsPDF } = await import("jspdf");
   const s = report.stats;
   const today = new Date().toISOString().slice(0, 10);
@@ -68,7 +72,9 @@ export async function downloadMedicalReportPdf(report: MedicalReport, lang: Lang
     const { ctx } = page;
     ctx.fillStyle = "#8b8f83";
     ctx.font = "400 7.5px Helvetica, Arial, sans-serif";
-    for (const [i, line] of wrap(ctx, txt.disclaimer, PAGE_W - MARGIN * 2 - 60).slice(0, 2).entries()) {
+    for (const [i, line] of wrap(ctx, txt.disclaimer, PAGE_W - MARGIN * 2 - 60)
+      .slice(0, 2)
+      .entries()) {
       ctx.fillText(line, MARGIN, PAGE_H - 30 + i * 9);
     }
     const label = `${txt.page} ${pages.length + 1}`;
@@ -149,7 +155,12 @@ export async function downloadMedicalReportPdf(report: MedicalReport, lang: Lang
     const barW = PAGE_W - MARGIN * 2 - 24;
     c.fillStyle = "#dde1d3";
     c.fillRect(barX, y + 24, barW, 5);
-    c.fillStyle = report.adherence.score >= 70 ? "#4a9d3f" : report.adherence.score >= 40 ? "#c99a1e" : "#c0392b";
+    c.fillStyle =
+      report.adherence.score >= 70
+        ? "#4a9d3f"
+        : report.adherence.score >= 40
+          ? "#c99a1e"
+          : "#c0392b";
     c.fillRect(barX, y + 24, (barW * report.adherence.score) / 100, 5);
     y += 52;
   }
@@ -168,7 +179,10 @@ export async function downloadMedicalReportPdf(report: MedicalReport, lang: Lang
       [tr(lang, "sc.report.sleep"), s.avgSleepHours != null ? `${s.avgSleepHours} h` : "—"],
       [tr(lang, "sc.report.kcal"), s.avgKcal != null ? `${s.avgKcal} kcal` : "—"],
       [tr(lang, "sc.report.protein"), s.avgProtein != null ? `${s.avgProtein} g` : "—"],
-      [tr(lang, "sc.report.weightChange"), s.weightDeltaKg != null ? `${s.weightDeltaKg > 0 ? "+" : ""}${s.weightDeltaKg} kg` : "—"],
+      [
+        tr(lang, "sc.report.weightChange"),
+        s.weightDeltaKg != null ? `${s.weightDeltaKg > 0 ? "+" : ""}${s.weightDeltaKg} kg` : "—",
+      ],
     ];
     const cols = 4;
     const cw = (PAGE_W - MARGIN * 2) / cols;
@@ -239,7 +253,8 @@ export async function downloadMedicalReportPdf(report: MedicalReport, lang: Lang
     for (const r of report.risks) {
       ensure(20);
       const c = page.ctx;
-      const color = r.severity === "high" ? "#c0392b" : r.severity === "medium" ? "#c99a1e" : "#6c7162";
+      const color =
+        r.severity === "high" ? "#c0392b" : r.severity === "medium" ? "#c99a1e" : "#6c7162";
       c.fillStyle = color;
       c.fillRect(MARGIN, y - 8, 3, 12);
       c.fillStyle = "#12140f";

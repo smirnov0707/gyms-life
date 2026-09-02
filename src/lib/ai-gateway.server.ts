@@ -54,7 +54,9 @@ export async function askFastTextAi({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: promptText }] }],
-        generationConfig: jsonMode ? { responseMimeType: "application/json", temperature } : { temperature },
+        generationConfig: jsonMode
+          ? { responseMimeType: "application/json", temperature }
+          : { temperature },
       }),
     });
     const data = await res.json();

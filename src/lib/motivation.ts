@@ -12,7 +12,11 @@ export type DailyMotivation = {
 
 const HEAD_KEYS: Record<string, string[]> = {
   lose_fat: ["hw.mot.head.lose_fat.1", "hw.mot.head.lose_fat.2", "hw.mot.head.lose_fat.3"],
-  build_muscle: ["hw.mot.head.build_muscle.1", "hw.mot.head.build_muscle.2", "hw.mot.head.build_muscle.3"],
+  build_muscle: [
+    "hw.mot.head.build_muscle.1",
+    "hw.mot.head.build_muscle.2",
+    "hw.mot.head.build_muscle.3",
+  ],
   strength: ["hw.mot.head.strength.1", "hw.mot.head.strength.2", "hw.mot.head.strength.3"],
   endurance: ["hw.mot.head.endurance.1", "hw.mot.head.endurance.2", "hw.mot.head.endurance.3"],
   default: ["hw.mot.head.default.1", "hw.mot.head.default.2", "hw.mot.head.default.3"],

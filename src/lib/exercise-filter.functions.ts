@@ -38,7 +38,12 @@ Atsakyk TIK TIKSLIU JSON:
         temperature: 0.1,
       });
 
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        raw
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return {
         group: "all",

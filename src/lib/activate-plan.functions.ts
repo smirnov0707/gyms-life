@@ -24,7 +24,8 @@ export const activatePlan = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .eq("is_active", true);
 
-    if (deactivateError) throw new Error(`Could not deactivate current plan: ${deactivateError.message}`);
+    if (deactivateError)
+      throw new Error(`Could not deactivate current plan: ${deactivateError.message}`);
 
     const { error: activateError } = await supabase
       .from("plans")

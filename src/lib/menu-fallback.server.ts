@@ -1,6 +1,15 @@
-export type MenuRec = { dish: string; kcal: number; protein: number; fitReason: string; orderTip: string };
+export type MenuRec = {
+  dish: string;
+  kcal: number;
+  protein: number;
+  fitReason: string;
+  orderTip: string;
+};
 
-const COPY: Record<string, { reason: string; tip: string; avoid: string; cuisine: string; dishes: string[] }> = {
+const COPY: Record<
+  string,
+  { reason: string; tip: string; avoid: string; cuisine: string; dishes: string[] }
+> = {
   lt: {
     reason: "Daug baltymų, telpa į likusį dienos biudžetą.",
     tip: "Padažo prašyk atskirai, bulvių fri keisk virtomis bulvėmis ar daržovėmis.",
@@ -32,10 +41,34 @@ export function fallbackMenu(place: string, lang: string, kcalLeft: number) {
   const c = COPY[lang] ?? COPY["en"]!;
   const cap = kcalLeft > 200 ? kcalLeft : 700;
   const base: MenuRec[] = [
-    { dish: c.dishes[0]!, kcal: Math.min(520, cap), protein: 48, fitReason: c.reason, orderTip: c.tip },
-    { dish: c.dishes[1]!, kcal: Math.min(620, cap), protein: 42, fitReason: c.reason, orderTip: c.tip },
-    { dish: c.dishes[2]!, kcal: Math.min(700, cap), protein: 50, fitReason: c.reason, orderTip: c.tip },
-    { dish: c.dishes[3]!, kcal: Math.min(430, cap), protein: 35, fitReason: c.reason, orderTip: c.tip },
+    {
+      dish: c.dishes[0]!,
+      kcal: Math.min(520, cap),
+      protein: 48,
+      fitReason: c.reason,
+      orderTip: c.tip,
+    },
+    {
+      dish: c.dishes[1]!,
+      kcal: Math.min(620, cap),
+      protein: 42,
+      fitReason: c.reason,
+      orderTip: c.tip,
+    },
+    {
+      dish: c.dishes[2]!,
+      kcal: Math.min(700, cap),
+      protein: 50,
+      fitReason: c.reason,
+      orderTip: c.tip,
+    },
+    {
+      dish: c.dishes[3]!,
+      kcal: Math.min(430, cap),
+      protein: 35,
+      fitReason: c.reason,
+      orderTip: c.tip,
+    },
   ];
   return {
     placeName: place,

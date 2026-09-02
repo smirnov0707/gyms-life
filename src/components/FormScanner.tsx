@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { aiErrorMessage } from "@/lib/ai-error";
 
-
 type Result = {
   score: number;
   verdict: string;
@@ -64,7 +63,6 @@ export function FormScanner() {
     },
     [],
   );
-
 
   const { data: exercises } = useQuery({
     queryKey: ["exercises"],
@@ -244,7 +242,6 @@ export function FormScanner() {
               {fullscreen ? t("nx.ar.exitFullscreen") : t("nx.ar.fullscreen")}
             </Button>
           </div>
-
         </div>
 
         <div className="grid gap-4">
@@ -254,7 +251,9 @@ export function FormScanner() {
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
                   {t("fc.score")}
                 </p>
-                <div className="text-display text-7xl leading-none text-primary">{result.score}</div>
+                <div className="text-display text-7xl leading-none text-primary">
+                  {result.score}
+                </div>
                 <p className="mt-2 text-sm text-muted-foreground">{result.verdict}</p>
               </div>
               {(

@@ -6,8 +6,7 @@ import {
   type TrainingPlanDay,
 } from "./training-plan.schema";
 
-const ACTIVE_PLAN_SELECT =
-  "id, title, goal, weeks, days_per_week, created_at, data";
+const ACTIVE_PLAN_SELECT = "id, title, goal, weeks, days_per_week, created_at, data";
 
 export type ActivePlanRow = Pick<
   Tables<"plans">,
@@ -29,10 +28,7 @@ export type ActivePlanState =
   | { status: "READY"; plan: ActiveTrainingPlan }
   | { status: "INVALID_PLAN"; planId: string; message: string };
 
-type ActivePlanUnavailableState = Exclude<
-  ActivePlanState,
-  { status: "READY" }
->;
+type ActivePlanUnavailableState = Exclude<ActivePlanState, { status: "READY" }>;
 
 export type TodaysWorkoutState =
   | ActivePlanUnavailableState

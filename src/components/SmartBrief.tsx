@@ -20,7 +20,12 @@ import {
   TriangleAlert,
   User,
 } from "lucide-react";
-import { getDailyBrief, type BriefAction, type BriefRoute, type BriefSignal } from "@/lib/brief.functions";
+import {
+  getDailyBrief,
+  type BriefAction,
+  type BriefRoute,
+  type BriefSignal,
+} from "@/lib/brief.functions";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
@@ -56,7 +61,6 @@ const ROUTE_ICON: Record<BriefRoute, typeof Sparkles> = {
 const cacheKey = (lang: string) => `gl_brief_${lang}_${new Date().toISOString().slice(0, 10)}`;
 
 export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
-
   const { t, lang } = useI18n();
   const fetchBrief = useServerFn(getDailyBrief);
   const [brief, setBrief] = useState<Brief | null>(null);
@@ -134,7 +138,9 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
           <div className="mt-6 grid gap-5">
             <div>
               <h4 className="text-3xl leading-tight md:text-4xl">{brief.headline}</h4>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{brief.summary}</p>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {brief.summary}
+              </p>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wide">
                 <span className="rounded-full bg-primary/10 px-3 py-1 text-primary">
                   {t("brief.focus")}: {brief.focus}
@@ -170,16 +176,26 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
                             : "border-border",
                       )}
                     >
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{sig.label}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        {sig.label}
+                      </p>
                       <p
                         className={cn(
                           "mt-0.5 text-lg font-bold leading-none",
-                          sig.tone === "risk" ? "text-amber-500" : sig.tone === "good" ? "text-primary" : "text-foreground",
+                          sig.tone === "risk"
+                            ? "text-amber-500"
+                            : sig.tone === "good"
+                              ? "text-primary"
+                              : "text-foreground",
                         )}
                       >
                         {sig.value}
                       </p>
-                      {sig.note && <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{sig.note}</p>}
+                      {sig.note && (
+                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                          {sig.note}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -223,10 +239,14 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
                         {t(`brief.prio.${a.priority}` as "brief.prio.high")}
                       </span>
                       <span className="mt-0.5 block text-sm font-bold leading-snug">{a.title}</span>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{a.reason}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                        {a.reason}
+                      </span>
                       {a.evidence && (
                         <span className="mt-1.5 block rounded-lg bg-background/60 px-2 py-1 text-[11px] leading-snug text-muted-foreground">
-                          <span className="font-bold uppercase tracking-wide">{t("brief.why")}: </span>
+                          <span className="font-bold uppercase tracking-wide">
+                            {t("brief.why")}:{" "}
+                          </span>
                           {a.evidence}
                         </span>
                       )}
@@ -238,7 +258,12 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
                   </>
                 );
                 return startsWorkout ? (
-                  <Link key={i} to="/workout/$day" params={{ day: String(workoutDay) }} className={cls}>
+                  <Link
+                    key={i}
+                    to="/workout/$day"
+                    params={{ day: String(workoutDay) }}
+                    className={cls}
+                  >
                     {inner}
                   </Link>
                 ) : (
@@ -248,7 +273,6 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
                 );
               })}
             </div>
-
           </div>
         )}
       </div>

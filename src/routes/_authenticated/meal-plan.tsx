@@ -124,8 +124,6 @@ function MealPlanPage() {
     [rawPlan, lang],
   );
 
-
-
   const generate = async () => {
     setBusy(true);
     try {
@@ -191,7 +189,6 @@ function MealPlanPage() {
   };
 
   const copyList = async () => {
-
     if (!plan) return;
     const text = plan.shopping_list
       .map(
@@ -223,7 +220,6 @@ function MealPlanPage() {
     };
   })();
 
-
   return (
     <div className="grid gap-6">
       <div>
@@ -238,7 +234,9 @@ function MealPlanPage() {
       </div>
 
       <DynamicTDEECalculator />
-      <div className="mt-4"><SmartFastingWindow /></div>
+      <div className="mt-4">
+        <SmartFastingWindow />
+      </div>
 
       <div className="panel grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
         <label className="grid gap-1.5 text-sm">
@@ -434,8 +432,6 @@ function MealPlanPage() {
             </div>
           )}
 
-
-
           <div className="panel grid gap-4 p-6 md:grid-cols-[1fr_auto] md:items-end">
             <div className="grid gap-3">
               <div>
@@ -488,7 +484,6 @@ function MealPlanPage() {
               <p className="mt-1 text-sm text-muted-foreground">{plan.adaptation_note}</p>
             </div>
           )}
-
 
           <div className="flex flex-wrap gap-2">
             {plan.days.map((d) => (
@@ -587,7 +582,6 @@ function MealPlanPage() {
                 <Button variant="outline" size="sm" onClick={printList}>
                   <Printer className="mr-1 size-4" /> {t("mp.print")}
                 </Button>
-
               </div>
             </div>
             <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -598,7 +592,10 @@ function MealPlanPage() {
                   </p>
                   <ul className="mt-2 grid gap-1 text-sm text-muted-foreground">
                     {group.items.map((item, i) => (
-                      <li key={i} className="flex justify-between gap-3 border-b border-border/50 py-1">
+                      <li
+                        key={i}
+                        className="flex justify-between gap-3 border-b border-border/50 py-1"
+                      >
                         <span>{item.name}</span>
                         <span className="text-foreground">{item.amount}</span>
                       </li>

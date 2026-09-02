@@ -48,7 +48,11 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
 
       mediaRecorder.start();
       setIsRecording(true);
-      toast.info(lang === "lt" ? "Klausausi... Ištarkite pratimą, svorį ir pakartojimus" : "Listening... Speak your set");
+      toast.info(
+        lang === "lt"
+          ? "Klausausi... Ištarkite pratimą, svorį ir pakartojimus"
+          : "Listening... Speak your set",
+      );
     } catch (err: any) {
       toast.error(lang === "lt" ? "Nepavyko pasiekti mikrofono" : "Microphone access denied");
     }
@@ -81,7 +85,7 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
           toast.success(
             lang === "lt"
               ? `Užregistruota: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps} (RPE ${res.data.rpe})`
-              : `Logged: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps}`
+              : `Logged: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps}`,
           );
           if (onSetLogged) {
             onSetLogged(res.data);
@@ -130,12 +134,16 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-xs font-mono">{lang === "lt" ? "Apdorojama..." : "Processing..."}</span>
+                <span className="text-xs font-mono">
+                  {lang === "lt" ? "Apdorojama..." : "Processing..."}
+                </span>
               </>
             ) : (
               <>
                 <Mic className="w-4 h-4" />
-                <span className="text-xs">{lang === "lt" ? "Ištarti seriją balsu" : "Hold to Voice Log"}</span>
+                <span className="text-xs">
+                  {lang === "lt" ? "Ištarti seriją balsu" : "Hold to Voice Log"}
+                </span>
               </>
             )}
           </Button>
@@ -146,7 +154,9 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
             className="w-full bg-neutral-900 text-red-400 border border-red-500/40 font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl animate-pulse shadow-lg shadow-red-950/40"
           >
             <MicOff className="w-4 h-4 text-red-400" />
-            <span className="text-xs">{lang === "lt" ? "Baigti kalbėti (Spauskite)" : "Stop Recording"}</span>
+            <span className="text-xs">
+              {lang === "lt" ? "Baigti kalbėti (Spauskite)" : "Stop Recording"}
+            </span>
           </Button>
         )}
       </div>

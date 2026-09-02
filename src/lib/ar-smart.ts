@@ -1,4 +1,11 @@
-import { LM, angleAt, AR_EXERCISES, evaluateTargets, type ArExercise, type Point } from "./ar-angles";
+import {
+  LM,
+  angleAt,
+  AR_EXERCISES,
+  evaluateTargets,
+  type ArExercise,
+  type Point,
+} from "./ar-angles";
 
 export type Base = "lt" | "en";
 
@@ -70,7 +77,7 @@ export function detectExercise(samples: PoseSample[]): string | null {
     poses.map((p) => Math.abs((p[LM.lAnkle]?.x ?? 0) - (p[LM.rAnkle]?.x ?? 0))),
   );
   const shoulderWidth = mean(
-    poses.map((p) => Math.abs((p[LM.lShoulder]?.x ?? 0) - (p[LM.rShoulder]?.x ?? 0))) ,
+    poses.map((p) => Math.abs((p[LM.lShoulder]?.x ?? 0) - (p[LM.rShoulder]?.x ?? 0))),
   );
 
   if (range(knees) > 22) {

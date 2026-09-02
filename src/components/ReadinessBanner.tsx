@@ -29,9 +29,7 @@ export const ReadinessBanner: React.FC<ReadinessBannerProps> = ({
               {t("ms.readiness.title").replace("{n}", String(score))}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {t("ms.readiness.desc")}
-          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("ms.readiness.desc")}</p>
         </div>
       </div>
 

@@ -26,7 +26,8 @@ export const Route = createFileRoute("/sitemap.xml")({
 
         try {
           const { createClient } = await import("@supabase/supabase-js");
-          const key = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+          const key =
+            process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
           const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"];
           if (key && url) {
             const supabase = createClient(url, key, {

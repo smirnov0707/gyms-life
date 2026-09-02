@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Utensils, Search, Loader2, Sparkles, Check, ChevronRight, AlertCircle } from "lucide-react";
+import {
+  Utensils,
+  Search,
+  Loader2,
+  Sparkles,
+  Check,
+  ChevronRight,
+  AlertCircle,
+} from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
@@ -52,9 +60,9 @@ export const DineOutMenuScanner: React.FC = () => {
       setResult(res);
       if (res.ok) {
         toast.success(
-          lang === "lt" 
-            ? `Rastas meniu: ${res.canonicalRestaurantName}` 
-            : `Found menu: ${res.canonicalRestaurantName}`
+          lang === "lt"
+            ? `Rastas meniu: ${res.canonicalRestaurantName}`
+            : `Found menu: ${res.canonicalRestaurantName}`,
         );
       } else {
         toast.error(res.reason || (lang === "lt" ? "Restoranas nerastas" : "Restaurant not found"));
@@ -84,10 +92,14 @@ export const DineOutMenuScanner: React.FC = () => {
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white">
-              {lang === "lt" ? "Restoranų ir Kavinių AI Asistentas" : "Restaurant & Cafe AI Assistant"}
+              {lang === "lt"
+                ? "Restoranų ir Kavinių AI Asistentas"
+                : "Restaurant & Cafe AI Assistant"}
             </h3>
             <p className="text-xs font-mono text-neutral-400">
-              {lang === "lt" ? "Smart fuzzy-matching & fitneso patiekalų parinkimas" : "Smart fuzzy-matching & healthy picks"}
+              {lang === "lt"
+                ? "Smart fuzzy-matching & fitneso patiekalų parinkimas"
+                : "Smart fuzzy-matching & healthy picks"}
             </p>
           </div>
         </div>
@@ -141,7 +153,11 @@ export const DineOutMenuScanner: React.FC = () => {
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={lang === "lt" ? "Pvz.: mcdonals, hesburger, subway, cili..." : "E.g. mcdonalds, chipotle, subway..."}
+            placeholder={
+              lang === "lt"
+                ? "Pvz.: mcdonals, hesburger, subway, cili..."
+                : "E.g. mcdonalds, chipotle, subway..."
+            }
             className="bg-black/50 border-white/10 text-white placeholder:text-neutral-500 pl-3 pr-3 text-sm focus:border-orange-500/50"
           />
         </div>
@@ -150,7 +166,11 @@ export const DineOutMenuScanner: React.FC = () => {
           disabled={isLoading}
           className="bg-orange-600 hover:bg-orange-500 text-white px-4 gap-2 font-medium"
         >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Search className="w-4 h-4" />
+          )}
           <span className="hidden sm:inline">{lang === "lt" ? "Rasti" : "Find"}</span>
         </Button>
       </form>
@@ -214,7 +234,9 @@ export const DineOutMenuScanner: React.FC = () => {
 
               <div className="space-y-2.5">
                 <span className="text-xs font-mono text-neutral-400 uppercase tracking-wider block">
-                  {lang === "lt" ? "REKOMENDUOJAMI PATIEKALAI PAGAL JŪSŲ TIKSLĄ:" : "TOP PICKS FOR YOUR GOAL:"}
+                  {lang === "lt"
+                    ? "REKOMENDUOJAMI PATIEKALAI PAGAL JŪSŲ TIKSLĄ:"
+                    : "TOP PICKS FOR YOUR GOAL:"}
                 </span>
 
                 {result.dishes?.map((dish, idx) => (

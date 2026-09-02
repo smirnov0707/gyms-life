@@ -34,7 +34,7 @@ export const parseVoiceWorkoutLog = createServerFn({ method: "POST" })
       const whisperRes = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${groqKey}`,
+          Authorization: `Bearer ${groqKey}`,
         },
         body: formData,
       });
@@ -74,7 +74,12 @@ Ištrauk šiuos duomenis ir grąžink TIK JSON formatu:
         temperature: 0.1,
       });
 
-      const parsedJson = JSON.parse(aiParsed.replace(/```json/g, "").replace(/```/g, "").trim());
+      const parsedJson = JSON.parse(
+        aiParsed
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
 
       return {
         ok: true,

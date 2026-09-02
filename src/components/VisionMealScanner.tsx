@@ -90,10 +90,14 @@ export const VisionMealScanner: React.FC = () => {
       if (res.ok) {
         toast.success(lang === "lt" ? "Patiekalas sėkmingai atpažintas!" : "Meal recognized!");
       } else {
-        toast.error(res.reason || (lang === "lt" ? "Nepavyko atpažinti maisto" : "Failed to detect food"));
+        toast.error(
+          res.reason || (lang === "lt" ? "Nepavyko atpažinti maisto" : "Failed to detect food"),
+        );
       }
     } catch (err: any) {
-      toast.error(err?.message || (lang === "lt" ? "Klaida analizuojant nuotrauką" : "Analysis error"));
+      toast.error(
+        err?.message || (lang === "lt" ? "Klaida analizuojant nuotrauką" : "Analysis error"),
+      );
     } finally {
       setIsScanning(false);
     }
@@ -113,7 +117,9 @@ export const VisionMealScanner: React.FC = () => {
           note: scanResult.note || "",
         },
       });
-      toast.success(lang === "lt" ? "Patiekalas išsaugotas į mitybos dienoraštį!" : "Meal saved to log!");
+      toast.success(
+        lang === "lt" ? "Patiekalas išsaugotas į mitybos dienoraštį!" : "Meal saved to log!",
+      );
       queryClient.invalidateQueries({ queryKey: ["nutrition-logs"] });
       setImagePreview(null);
       setScanResult(null);
@@ -165,10 +171,14 @@ export const VisionMealScanner: React.FC = () => {
             <Upload className="w-6 h-6 text-neutral-300 group-hover:text-emerald-400 transition-colors" />
           </div>
           <span className="text-sm font-semibold text-neutral-200 mb-1">
-            {lang === "lt" ? "Nufotografuok arba įkelk patiekalo nuotrauką" : "Snap or upload a meal photo"}
+            {lang === "lt"
+              ? "Nufotografuok arba įkelk patiekalo nuotrauką"
+              : "Snap or upload a meal photo"}
           </span>
           <span className="text-xs font-mono text-neutral-500">
-            {lang === "lt" ? "JPG, PNG • Automatinis porcijos ir makro nustatymas" : "JPG, PNG • Auto weight & macro detection"}
+            {lang === "lt"
+              ? "JPG, PNG • Automatinis porcijos ir makro nustatymas"
+              : "JPG, PNG • Auto weight & macro detection"}
           </span>
         </div>
       ) : (
@@ -182,7 +192,9 @@ export const VisionMealScanner: React.FC = () => {
                 <div className="flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-emerald-500/40">
                   <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
                   <span className="text-xs font-mono font-bold text-emerald-300">
-                    {lang === "lt" ? "SKENUOTAS PATIEKALAS • SKAIČIUOJAMI MAKROELEMENTAI..." : "SCANNING MEAL • CALCULATING MACROS..."}
+                    {lang === "lt"
+                      ? "SKENUOTAS PATIEKALAS • SKAIČIUOJAMI MAKROELEMENTAI..."
+                      : "SCANNING MEAL • CALCULATING MACROS..."}
                   </span>
                 </div>
               </div>
@@ -198,7 +210,9 @@ export const VisionMealScanner: React.FC = () => {
                       <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">
                         {lang === "lt" ? "ATPAŽINTAS PATIEKALAS" : "IDENTIFIED DISH"}
                       </span>
-                      <h4 className="text-base sm:text-lg font-bold text-white">{scanResult.dishName}</h4>
+                      <h4 className="text-base sm:text-lg font-bold text-white">
+                        {scanResult.dishName}
+                      </h4>
                     </div>
                     {scanResult.confidence && (
                       <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
@@ -210,26 +224,43 @@ export const VisionMealScanner: React.FC = () => {
                   <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
                     <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
                       <span className="block text-[10px] font-mono text-neutral-400">KCAL</span>
-                      <span className="text-sm sm:text-base font-bold text-white">{scanResult.calories}</span>
+                      <span className="text-sm sm:text-base font-bold text-white">
+                        {scanResult.calories}
+                      </span>
                     </div>
                     <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-blue-400">{lang === "lt" ? "BALTYMAI" : "PROT"}</span>
-                      <span className="text-sm sm:text-base font-bold text-blue-300">{scanResult.protein}g</span>
+                      <span className="block text-[10px] font-mono text-blue-400">
+                        {lang === "lt" ? "BALTYMAI" : "PROT"}
+                      </span>
+                      <span className="text-sm sm:text-base font-bold text-blue-300">
+                        {scanResult.protein}g
+                      </span>
                     </div>
                     <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-amber-400">{lang === "lt" ? "ANGLIAV." : "CARB"}</span>
-                      <span className="text-sm sm:text-base font-bold text-amber-300">{scanResult.carbs}g</span>
+                      <span className="block text-[10px] font-mono text-amber-400">
+                        {lang === "lt" ? "ANGLIAV." : "CARB"}
+                      </span>
+                      <span className="text-sm sm:text-base font-bold text-amber-300">
+                        {scanResult.carbs}g
+                      </span>
                     </div>
                     <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-rose-400">{lang === "lt" ? "RIEBALAI" : "FAT"}</span>
-                      <span className="text-sm sm:text-base font-bold text-rose-300">{scanResult.fat}g</span>
+                      <span className="block text-[10px] font-mono text-rose-400">
+                        {lang === "lt" ? "RIEBALAI" : "FAT"}
+                      </span>
+                      <span className="text-sm sm:text-base font-bold text-rose-300">
+                        {scanResult.fat}g
+                      </span>
                     </div>
                   </div>
 
                   {scanResult.items && scanResult.items.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {scanResult.items.map((it, idx) => (
-                        <span key={idx} className="text-[11px] font-mono bg-white/5 px-2 py-0.5 rounded text-neutral-300 border border-white/5">
+                        <span
+                          key={idx}
+                          className="text-[11px] font-mono bg-white/5 px-2 py-0.5 rounded text-neutral-300 border border-white/5"
+                        >
                           {it}
                         </span>
                       ))}
@@ -248,7 +279,11 @@ export const VisionMealScanner: React.FC = () => {
                       disabled={isSaving}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold gap-2"
                     >
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {isSaving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
                       {lang === "lt" ? "Įrašyti į mitybos dienoraštį" : "Save to Nutrition Log"}
                     </Button>
                     <Button

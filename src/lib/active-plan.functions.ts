@@ -11,6 +11,4 @@ export {
 
 export const getActivePlan = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) =>
-    getActivePlanData(context.supabase, context.userId),
-  );
+  .handler(async ({ context }) => getActivePlanData(context.supabase, context.userId));

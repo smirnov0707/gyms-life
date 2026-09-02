@@ -74,7 +74,6 @@ export function CoachDock({
               <Link to="/coach">{t("coach.open")}</Link>
             </Button>
           </div>
-
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
@@ -143,7 +142,12 @@ export function CoachDock({
               className="mt-4 flex gap-2"
             >
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("coach.ph")} />
-              <Button type="submit" disabled={busy} className="font-bold" aria-label={t("coach.send")}>
+              <Button
+                type="submit"
+                disabled={busy}
+                className="font-bold"
+                aria-label={t("coach.send")}
+              >
                 {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </Button>
             </form>

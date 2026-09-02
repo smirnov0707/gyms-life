@@ -43,16 +43,33 @@ Atsakyk TIK TIKSLIU JSON:
         temperature: 0.2,
       });
 
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        raw
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return {
         ok: true,
-        headline: data.lang === "lt" ? "Jūsų kūnas pasiruošęs progresyviai perkrovai" : "Body primed for progressive overload",
+        headline:
+          data.lang === "lt"
+            ? "Jūsų kūnas pasiruošęs progresyviai perkrovai"
+            : "Body primed for progressive overload",
         readinessScore: 90,
         fatigueStatus: "Optimalus",
-        trainingAdvice: data.lang === "lt" ? "Sutelkkite dėmesį į pagrindinių pratimų intensyvumą." : "Focus on compound exercise intensity.",
-        nutritionAdvice: data.lang === "lt" ? "Užtikrinkite bent 2g baltymų kilogramui kūno svorio." : "Hit at least 2g protein per kg bodyweight.",
-        recommendedAction: data.lang === "lt" ? "Atlikite pilną apšilimą prieš pagrindines serijas." : "Complete dynamic warmup.",
+        trainingAdvice:
+          data.lang === "lt"
+            ? "Sutelkkite dėmesį į pagrindinių pratimų intensyvumą."
+            : "Focus on compound exercise intensity.",
+        nutritionAdvice:
+          data.lang === "lt"
+            ? "Užtikrinkite bent 2g baltymų kilogramui kūno svorio."
+            : "Hit at least 2g protein per kg bodyweight.",
+        recommendedAction:
+          data.lang === "lt"
+            ? "Atlikite pilną apšilimą prieš pagrindines serijas."
+            : "Complete dynamic warmup.",
       };
     }
   });

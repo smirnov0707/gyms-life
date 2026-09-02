@@ -55,10 +55,14 @@ export const BiomechanicsScanner: React.FC = () => {
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-bold text-white">
-              {lang === "lt" ? "AI Biomechanikos & Formos Skeneris" : "AI Form & Biomechanics Scanner"}
+              {lang === "lt"
+                ? "AI Biomechanikos & Formos Skeneris"
+                : "AI Form & Biomechanics Scanner"}
             </h3>
             <p className="text-xs font-mono text-neutral-400">
-              {lang === "lt" ? "Sąnarių kampų, stuburo ir saugumo įvertinimas" : "Joint angle & spine safety check"}
+              {lang === "lt"
+                ? "Sąnarių kampų, stuburo ir saugumo įvertinimas"
+                : "Joint angle & spine safety check"}
             </p>
           </div>
         </div>
@@ -68,7 +72,14 @@ export const BiomechanicsScanner: React.FC = () => {
         </div>
       </div>
 
-      <input type="file" ref={fileInputRef} onChange={handleSelect} accept="image/*" capture="environment" className="hidden" />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleSelect}
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+      />
 
       {!imagePreview ? (
         <div
@@ -77,10 +88,14 @@ export const BiomechanicsScanner: React.FC = () => {
         >
           <Camera className="w-8 h-8 text-neutral-400 mx-auto group-hover:text-cyan-400 group-hover:scale-110 transition-transform" />
           <div className="text-sm font-semibold text-neutral-200">
-            {lang === "lt" ? "Nufotografuokite pratimo atlikimo poziciją" : "Snap a photo of your exercise form"}
+            {lang === "lt"
+              ? "Nufotografuokite pratimo atlikimo poziciją"
+              : "Snap a photo of your exercise form"}
           </div>
           <p className="text-xs font-mono text-neutral-500">
-            {lang === "lt" ? "Pritūpimai, štangos spaudimas, trauka" : "Squats, bench press, deadlifts"}
+            {lang === "lt"
+              ? "Pritūpimai, štangos spaudimas, trauka"
+              : "Squats, bench press, deadlifts"}
           </p>
         </div>
       ) : (

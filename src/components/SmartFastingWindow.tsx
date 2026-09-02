@@ -22,21 +22,35 @@ export const SmartFastingWindow: React.FC = () => {
 
       <div className="grid sm:grid-cols-3 gap-3 text-xs">
         <div className="p-3.5 rounded-2xl bg-surface border border-border space-y-1">
-          <span className="block text-[10px] font-mono uppercase text-primary font-bold">{t("ms.fasting.refeedTitle")}</span>
+          <span className="block text-[10px] font-mono uppercase text-primary font-bold">
+            {t("ms.fasting.refeedTitle")}
+          </span>
           <div className="text-sm font-black text-foreground font-mono">18:00 – 20:30</div>
-          <p className="text-[10px] text-muted-foreground leading-tight">{t("ms.fasting.refeedDesc")}</p>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {t("ms.fasting.refeedDesc")}
+          </p>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-surface border border-border space-y-1">
-          <span className="block text-[10px] font-mono uppercase text-accent font-bold">{t("ms.fasting.fastingTitle")}</span>
+          <span className="block text-[10px] font-mono uppercase text-accent font-bold">
+            {t("ms.fasting.fastingTitle")}
+          </span>
           <div className="text-sm font-black text-foreground font-mono">20:30 – 12:30</div>
-          <p className="text-[10px] text-muted-foreground leading-tight">{t("ms.fasting.fastingDesc")}</p>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {t("ms.fasting.fastingDesc")}
+          </p>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-surface border border-border space-y-1">
-          <span className="block text-[10px] font-mono uppercase text-indigo-400 font-bold">{t("ms.fasting.superTitle")}</span>
-          <div className="text-sm font-black text-foreground font-mono">{t("ms.fasting.superValue")}</div>
-          <p className="text-[10px] text-muted-foreground leading-tight">{t("ms.fasting.superDesc")}</p>
+          <span className="block text-[10px] font-mono uppercase text-indigo-400 font-bold">
+            {t("ms.fasting.superTitle")}
+          </span>
+          <div className="text-sm font-black text-foreground font-mono">
+            {t("ms.fasting.superValue")}
+          </div>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            {t("ms.fasting.superDesc")}
+          </p>
         </div>
       </div>
     </div>

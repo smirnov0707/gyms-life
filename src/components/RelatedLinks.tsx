@@ -11,7 +11,9 @@ export function RelatedLinks({ from }: { from: string }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("rel.title")}</h2>
+      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        {t("rel.title")}
+      </h2>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {items.map((item) => {
           const Icon = item!.icon;

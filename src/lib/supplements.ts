@@ -3,13 +3,7 @@
 // timing rules (absorption, interactions, stimulant curfews).
 
 export type SlotId =
-  | "wake"
-  | "breakfast"
-  | "lunch"
-  | "pre_workout"
-  | "post_workout"
-  | "dinner"
-  | "bedtime";
+  "wake" | "breakfast" | "lunch" | "pre_workout" | "post_workout" | "dinner" | "bedtime";
 
 export interface Supplement {
   id: string;
@@ -108,7 +102,7 @@ function slotsFor(s: Supplement): SlotId[] {
     // Empty-stomach slots become the nearest meal slot.
     base = base.map((slot) =>
       slot === "wake" || slot === "pre_workout" || slot === "bedtime"
-        ? MEAL_SLOTS.find((m) => !base.includes(m)) ?? "breakfast"
+        ? (MEAL_SLOTS.find((m) => !base.includes(m)) ?? "breakfast")
         : slot,
     );
     base = [...new Set(base)];
@@ -140,10 +134,7 @@ export function buildSchedule(supplements: Supplement[]): ScheduleResult {
     }
     // Stimulant curfew: pre-workout late in the day hurts sleep.
     const assigned = slots.slice(0, n);
-    if (
-      s.category === "preworkout" &&
-      assigned.some((x) => x === "dinner" || x === "bedtime")
-    ) {
+    if (s.category === "preworkout" && assigned.some((x) => x === "dinner" || x === "bedtime")) {
       warnings.add("supp.warn.caffeineLate");
     }
   }

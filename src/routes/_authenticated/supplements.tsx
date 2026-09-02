@@ -143,124 +143,126 @@ function SupplementsPage() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         {/* Add form */}
         <div className="grid gap-6">
-        <Reveal>
-          <SupplementPhotoScanner />
-        </Reveal>
-        <Reveal delay={60}>
-          <section className="panel grid gap-4 p-5">
-            <h2 className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-              <Plus className="size-4 text-primary" />
-              {t("supp.add")}
-            </h2>
-
-            <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
-              {t("supp.name")}
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("supp.namePh")}
-              />
-            </label>
-
-            <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
-              {t("supp.dose")}
-              <Input
-                value={dose}
-                onChange={(e) => setDose(e.target.value)}
-                placeholder={t("supp.dosePh")}
-              />
-            </label>
-
-            <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
-              {t("supp.category")}
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="h-10 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {t(`supp.cat.${c}` as TKey)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
-                {t("supp.timesPerDay")}
-                <div className="flex h-10 items-center gap-1 rounded-lg border border-border bg-surface p-1">
-                  {[1, 2, 3, 4].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-pressed={timesPerDay === n}
-                      onClick={() => {
-                        tactileClick();
-                        setTimesPerDay(n);
-                      }}
-                      className={`flex-1 rounded-md text-sm font-bold transition-colors ${
-                        timesPerDay === n
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-surface-2"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <Reveal>
+            <SupplementPhotoScanner />
+          </Reveal>
+          <Reveal delay={60}>
+            <section className="panel grid gap-4 p-5">
+              <h2 className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
+                <Plus className="size-4 text-primary" />
+                {t("supp.add")}
+              </h2>
 
               <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
-                {t("supp.prefTime")}
+                {t("supp.name")}
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t("supp.namePh")}
+                />
+              </label>
+
+              <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+                {t("supp.dose")}
+                <Input
+                  value={dose}
+                  onChange={(e) => setDose(e.target.value)}
+                  placeholder={t("supp.dosePh")}
+                />
+              </label>
+
+              <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+                {t("supp.category")}
                 <select
-                  value={prefTime}
-                  onChange={(e) => setPrefTime(e.target.value)}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
                   className="h-10 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground"
                 >
-                  {PREF_TIMES.map((p) => (
-                    <option key={p} value={p}>
-                      {t(`supp.pref.${p}` as TKey)}
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {t(`supp.cat.${c}` as TKey)}
                     </option>
                   ))}
                 </select>
               </label>
-            </div>
 
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={withFood}
-                onChange={(e) => setWithFood(e.target.checked)}
-                className="size-4 accent-[var(--primary)]"
-              />
-              <Utensils className="size-4 text-primary" />
-              {t("supp.withFood")}
-            </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+                  {t("supp.timesPerDay")}
+                  <div className="flex h-10 items-center gap-1 rounded-lg border border-border bg-surface p-1">
+                    {[1, 2, 3, 4].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-pressed={timesPerDay === n}
+                        onClick={() => {
+                          tactileClick();
+                          setTimesPerDay(n);
+                        }}
+                        className={`flex-1 rounded-md text-sm font-bold transition-colors ${
+                          timesPerDay === n
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-surface-2"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
-              {t("supp.notes")}
-              <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </label>
+                <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+                  {t("supp.prefTime")}
+                  <select
+                    value={prefTime}
+                    onChange={(e) => setPrefTime(e.target.value)}
+                    className="h-10 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground"
+                  >
+                    {PREF_TIMES.map((p) => (
+                      <option key={p} value={p}>
+                        {t(`supp.pref.${p}` as TKey)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
-            <Button
-              onClick={() => {
-                tactileClick();
-                add.mutate();
-              }}
-              disabled={!name.trim() || add.isPending}
-              className="press"
-            >
-              <Plus className="size-4" />
-              {t("supp.add")}
-            </Button>
-          </section>
-        </Reveal>
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={withFood}
+                  onChange={(e) => setWithFood(e.target.checked)}
+                  className="size-4 accent-[var(--primary)]"
+                />
+                <Utensils className="size-4 text-primary" />
+                {t("supp.withFood")}
+              </label>
+
+              <label className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
+                {t("supp.notes")}
+                <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </label>
+
+              <Button
+                onClick={() => {
+                  tactileClick();
+                  add.mutate();
+                }}
+                disabled={!name.trim() || add.isPending}
+                className="press"
+              >
+                <Plus className="size-4" />
+                {t("supp.add")}
+              </Button>
+            </section>
+          </Reveal>
         </div>
 
         {/* Schedule */}
         <div className="grid gap-6">
-          <div className="mb-6"><MicronutrientDeficiencyScanner /></div>
+          <div className="mb-6">
+            <MicronutrientDeficiencyScanner />
+          </div>
 
           <Reveal delay={40}>
             <SupplementCycleAdvisor />
@@ -367,7 +369,8 @@ function SupplementsPage() {
                           ) : null}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {t(`supp.cat.${s.category}` as TKey)} · {s.times_per_day}× {t("supp.perDay")}
+                          {t(`supp.cat.${s.category}` as TKey)} · {s.times_per_day}×{" "}
+                          {t("supp.perDay")}
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">

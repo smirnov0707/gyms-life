@@ -1,5 +1,15 @@
 import React, { useState } from "react";
-import { Pill, Sparkles, Plus, ShieldCheck, Loader2, RefreshCw, AlertTriangle, Apple, Check } from "lucide-react";
+import {
+  Pill,
+  Sparkles,
+  Plus,
+  ShieldCheck,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  Apple,
+  Check,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -65,7 +75,10 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
   const insertSupplements = async (items: Supplement[]) => {
     if (!user) throw new Error("no user");
-    const { data: existing, error: readError } = await supabase.from("supplements").select("name").eq("user_id", user.id);
+    const { data: existing, error: readError } = await supabase
+      .from("supplements")
+      .select("name")
+      .eq("user_id", user.id);
     if (readError) throw readError;
     const have = new Set((existing ?? []).map((r) => r.name.trim().toLowerCase()));
     const rows = items
@@ -103,7 +116,9 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
   const applyAll = useMutation({
     mutationFn: async () => {
-      const items = (scan.data?.findings ?? []).map((f) => f.supplement).filter(Boolean) as Supplement[];
+      const items = (scan.data?.findings ?? [])
+        .map((f) => f.supplement)
+        .filter(Boolean) as Supplement[];
       return insertSupplements(items);
     },
     onSuccess: async () => {
@@ -142,7 +157,11 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
           disabled={scan.isFetching}
           className="rounded-xl text-xs shrink-0"
         >
-          {scan.isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          {scan.isFetching ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="w-3.5 h-3.5" />
+          )}
         </Button>
       </div>
 
@@ -153,30 +172,42 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
         </div>
       )}
 
-      {scan.isError && (
-        <p className="text-xs text-rose-400">{(scan.error as Error).message}</p>
-      )}
+      {scan.isError && <p className="text-xs text-rose-400">{(scan.error as Error).message}</p>}
 
       {data && (
         <>
-          {data.summary && <p className="text-xs text-foreground/90 leading-relaxed">{data.summary}</p>}
+          {data.summary && (
+            <p className="text-xs text-foreground/90 leading-relaxed">{data.summary}</p>
+          )}
 
           <div className="flex flex-wrap gap-1.5 text-[10px] font-mono uppercase text-muted-foreground">
             <span className="rounded-md bg-surface-2 px-2 py-1">
               {t("sc.micro.loggedDays").replace("{n}", String(data.loggedDays))}
             </span>
-            {data.fallback && <span className="rounded-md bg-surface-2 px-2 py-1 text-accent">{t("sc.micro.offline")}</span>}
+            {data.fallback && (
+              <span className="rounded-md bg-surface-2 px-2 py-1 text-accent">
+                {t("sc.micro.offline")}
+              </span>
+            )}
           </div>
 
-          {data.dataQuality && <p className="text-[11px] text-muted-foreground">{data.dataQuality}</p>}
+          {data.dataQuality && (
+            <p className="text-[11px] text-muted-foreground">{data.dataQuality}</p>
+          )}
 
           <div className="space-y-2.5">
             {data.findings.map((d) => (
-              <div key={d.key} className="p-3.5 rounded-2xl bg-surface border border-border space-y-1.5">
+              <div
+                key={d.key}
+                className="p-3.5 rounded-2xl bg-surface border border-border space-y-1.5"
+              >
                 <div className="flex justify-between items-center gap-2 text-xs">
                   <span className="font-bold text-foreground text-sm">{d.name}</span>
-                  <span className={`font-mono font-bold px-2 py-0.5 rounded border ${PRIORITY_STYLE[d.priority] ?? PRIORITY_STYLE["medium"]}`}>
-                    {t(`sc.micro.priority.${d.priority}`)} · {t("sc.micro.gap").replace("{n}", `${d.gapPercent}%`)}
+                  <span
+                    className={`font-mono font-bold px-2 py-0.5 rounded border ${PRIORITY_STYLE[d.priority] ?? PRIORITY_STYLE["medium"]}`}
+                  >
+                    {t(`sc.micro.priority.${d.priority}`)} ·{" "}
+                    {t("sc.micro.gap").replace("{n}", `${d.gapPercent}%`)}
                   </span>
                 </div>
 
@@ -189,7 +220,9 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
                 <p className="text-xs text-muted-foreground leading-relaxed">{d.reason}</p>
                 {d.evidence && (
-                  <p className="text-[11px] text-foreground/70 border-l-2 border-violet-500/50 pl-2">{d.evidence}</p>
+                  <p className="text-[11px] text-foreground/70 border-l-2 border-violet-500/50 pl-2">
+                    {d.evidence}
+                  </p>
                 )}
                 {d.foodFix && (
                   <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
@@ -199,7 +232,9 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
                 <div className="flex justify-between items-center gap-2 text-[10px] font-mono text-muted-foreground pt-1.5 border-t border-border">
                   <span>{t("sc.micro.currentIntake").replace("{n}", d.current)}</span>
-                  <span className="text-foreground">{t("sc.micro.recommended").replace("{n}", d.target)}</span>
+                  <span className="text-foreground">
+                    {t("sc.micro.recommended").replace("{n}", d.target)}
+                  </span>
                 </div>
 
                 {d.supplement && (
@@ -211,7 +246,9 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
                     className="rounded-xl text-[11px] w-full mt-1"
                   >
                     {added[d.key] ? (
-                      <span className="flex items-center gap-1.5 text-primary"><Check className="w-3.5 h-3.5" /> {t("sc.micro.addedOne")}</span>
+                      <span className="flex items-center gap-1.5 text-primary">
+                        <Check className="w-3.5 h-3.5" /> {t("sc.micro.addedOne")}
+                      </span>
                     ) : (
                       <span className="flex items-center gap-1.5">
                         <Plus className="w-3.5 h-3.5" /> {d.supplement.name} · {d.supplement.dose}
@@ -225,9 +262,13 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
           {data.strengths.length > 0 && (
             <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/20 space-y-1">
-              <p className="text-[10px] font-mono uppercase text-primary">{t("sc.micro.strengths")}</p>
+              <p className="text-[10px] font-mono uppercase text-primary">
+                {t("sc.micro.strengths")}
+              </p>
               {data.strengths.map((s, i) => (
-                <p key={i} className="text-[11px] text-muted-foreground">• {s}</p>
+                <p key={i} className="text-[11px] text-muted-foreground">
+                  • {s}
+                </p>
               ))}
             </div>
           )}
@@ -238,7 +279,9 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
                 <AlertTriangle className="w-3.5 h-3.5" /> {t("sc.micro.warnings")}
               </p>
               {data.warnings.map((s, i) => (
-                <p key={i} className="text-[11px] text-muted-foreground">• {s}</p>
+                <p key={i} className="text-[11px] text-muted-foreground">
+                  • {s}
+                </p>
               ))}
             </div>
           )}
@@ -254,11 +297,17 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
               }`}
             >
               {allApplied ? (
-                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> {t("sc.micro.applied")}</span>
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> {t("sc.micro.applied")}
+                </span>
               ) : applyAll.isPending ? (
-                <span className="flex items-center gap-1.5"><Loader2 className="w-4 h-4 animate-spin" /> {t("sc.micro.applying")}</span>
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="w-4 h-4 animate-spin" /> {t("sc.micro.applying")}
+                </span>
               ) : (
-                <span className="flex items-center gap-1.5"><Plus className="w-4 h-4" /> {t("sc.micro.apply")}</span>
+                <span className="flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" /> {t("sc.micro.apply")}
+                </span>
               )}
             </Button>
           )}

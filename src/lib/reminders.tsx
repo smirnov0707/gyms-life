@@ -73,7 +73,8 @@ export function daySchedule(
     const step = Math.max(30, s.water.everyMin);
     for (let m = from; m <= to; m += step) out.push({ kind: "water", minutes: m });
   }
-  if (s.meal.on) for (const time of s.meal.times) out.push({ kind: "meal", minutes: toMinutes(time) });
+  if (s.meal.on)
+    for (const time of s.meal.times) out.push({ kind: "meal", minutes: toMinutes(time) });
   if (s.workout.on && s.workout.days.includes(weekday))
     out.push({ kind: "workout", minutes: toMinutes(s.workout.time) });
   return out.sort((a, b) => a.minutes - b.minutes);

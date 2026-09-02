@@ -222,15 +222,30 @@ export const extra_nat2 = {
 
   "hw.mot.head.lose_fat.1": { lt: "Deginam, ne dvejojam", en: "Burn it, don't debate it" },
   "hw.mot.head.lose_fat.2": { lt: "Kiekvienas judesys skaičiuoja", en: "Every move counts" },
-  "hw.mot.head.lose_fat.3": { lt: "Lengviau nebus — bus stipriau", en: "It won't get easier — you'll get stronger" },
+  "hw.mot.head.lose_fat.3": {
+    lt: "Lengviau nebus — bus stipriau",
+    en: "It won't get easier — you'll get stronger",
+  },
   "hw.mot.head.build_muscle.1": { lt: "Šiandien auga raumuo", en: "Muscle is built today" },
-  "hw.mot.head.build_muscle.2": { lt: "Dar vienas kartojimas — dar vienas gramas", en: "One more rep, one more gram" },
-  "hw.mot.head.build_muscle.3": { lt: "Statyk kūną, ne pasiteisinimus", en: "Build the body, not excuses" },
+  "hw.mot.head.build_muscle.2": {
+    lt: "Dar vienas kartojimas — dar vienas gramas",
+    en: "One more rep, one more gram",
+  },
+  "hw.mot.head.build_muscle.3": {
+    lt: "Statyk kūną, ne pasiteisinimus",
+    en: "Build the body, not excuses",
+  },
   "hw.mot.head.strength.1": { lt: "Štanga nemeluoja", en: "The bar never lies" },
   "hw.mot.head.strength.2": { lt: "Stipriau nei vakar", en: "Stronger than yesterday" },
-  "hw.mot.head.strength.3": { lt: "Technika pirma, svoris antra", en: "Technique first, weight second" },
+  "hw.mot.head.strength.3": {
+    lt: "Technika pirma, svoris antra",
+    en: "Technique first, weight second",
+  },
   "hw.mot.head.endurance.1": { lt: "Kvėpuok ir judėk", en: "Breathe and move" },
-  "hw.mot.head.endurance.2": { lt: "Ištvermė gimsta diskomforte", en: "Endurance is born in discomfort" },
+  "hw.mot.head.endurance.2": {
+    lt: "Ištvermė gimsta diskomforte",
+    en: "Endurance is born in discomfort",
+  },
   "hw.mot.head.endurance.3": { lt: "Tempas — tavo ginklas", en: "Tempo is your weapon" },
   "hw.mot.head.default.1": { lt: "Pradėk — visa kita seks", en: "Start — the rest follows" },
   "hw.mot.head.default.2": { lt: "Disciplina > motyvacija", en: "Discipline > motivation" },

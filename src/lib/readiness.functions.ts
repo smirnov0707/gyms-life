@@ -39,9 +39,11 @@ export const submitReadinessCheckin = createServerFn({ method: "POST" })
 
     let recommendation = "Optimalus pasirengimas maksimaliam tūriui ir intensyvumui.";
     if (finalScore < 60) {
-      recommendation = "Didelis nuovargis: rekomenduojama sumažinti serijų skaičių 20-30% arba atlikti lengvą atsistatymo sesiją.";
+      recommendation =
+        "Didelis nuovargis: rekomenduojama sumažinti serijų skaičių 20-30% arba atlikti lengvą atsistatymo sesiją.";
     } else if (finalScore < 80) {
-      recommendation = "Vidutinis pasirengimas: atlikite suplanuotą programą, išlaikykite RPE <= 8.";
+      recommendation =
+        "Vidutinis pasirengimas: atlikite suplanuotą programą, išlaikykite RPE <= 8.";
     }
 
     return {

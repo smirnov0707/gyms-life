@@ -15,10 +15,7 @@ const ExerciseInput = z.object({ exerciseSlug: z.string().min(1) });
 export const getPerformanceOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const data = await getPerformanceOverviewData(
-      context.supabase,
-      context.userId,
-    );
+    const data = await getPerformanceOverviewData(context.supabase, context.userId);
 
     return { status: "READY", metrics: data.metrics, exercises: data.exercises };
   });
@@ -27,18 +24,11 @@ export const getExerciseProgress = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ExerciseInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { sessions, logs } = await loadCompletedPerformance(
-      context.supabase,
-      context.userId,
-    );
+    const { sessions, logs } = await loadCompletedPerformance(context.supabase, context.userId);
     const performance = aggregateExercisePerformance(logs, data.exerciseSlug);
     const sessionIds = new Set(sessions.map((session) => session.id));
     const points = logs
-      .filter(
-        (log) =>
-          log.exercise_slug === data.exerciseSlug &&
-          sessionIds.has(log.session_id),
-      )
+      .filter((log) => log.exercise_slug === data.exerciseSlug && sessionIds.has(log.session_id))
       .map((log) => ({
         date: log.created_at,
         weightKg: log.weight_kg,
@@ -56,12 +46,8 @@ export const getExerciseProgress = createServerFn({ method: "GET" })
 
 export const getVolumeTrend = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) =>
-    getVolumeTrendData(context.supabase, context.userId),
-  );
+  .handler(async ({ context }) => getVolumeTrendData(context.supabase, context.userId));
 
 export const getStrengthTrend = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) =>
-    getStrengthTrendData(context.supabase, context.userId),
-  );
+  .handler(async ({ context }) => getStrengthTrendData(context.supabase, context.userId));

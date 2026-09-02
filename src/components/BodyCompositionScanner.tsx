@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { User, Camera, Loader2, RefreshCw, AlertTriangle, Upload, X, Sparkles, ShieldCheck } from "lucide-react";
+import {
+  User,
+  Camera,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  Upload,
+  X,
+  Sparkles,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -47,7 +57,8 @@ const COPY = {
     analyze: "Analizuoti",
     analyzing: "Treneris analizuoja kūno geometriją...",
     photos: "Nuotraukos",
-    photosHint: "Pridėk iki 3 nuotraukų: iš priekio, iš šono ir iš nugaros — tikslumas ženkliai išauga.",
+    photosHint:
+      "Pridėk iki 3 nuotraukų: iš priekio, iš šono ir iš nugaros — tikslumas ženkliai išauga.",
     hint: "Stovėk visu ūgiu kadre, prigludusiais drabužiais, gerame apšvietime.",
     needHeight: "Įvesk ūgį – be jo matavimai netikslūs.",
     needPhoto: "Pirmiausia pridėk bent vieną nuotrauką.",
@@ -151,7 +162,9 @@ async function downscale(dataUrl: string, maxSide = 1280): Promise<string> {
 }
 
 export const BodyCompositionScanner: React.FC<{
-  onResult?: (result: Result & { heightCm: number; weightKg: number | null; sex: string; age: number | null }) => void;
+  onResult?: (
+    result: Result & { heightCm: number; weightKg: number | null; sex: string; age: number | null },
+  ) => void;
 }> = ({ onResult }) => {
   const { lang } = useI18n();
   const c = COPY[lang === "lt" ? "lt" : "en"];
@@ -173,8 +186,12 @@ export const BodyCompositionScanner: React.FC<{
   const [age, setAge] = useState("");
   const [sex, setSex] = useState<"male" | "female" | "unknown">("unknown");
   const [framing, setFraming] = useState<{ state: string; text: string } | null>(null);
-  const [box, setBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-
+  const [box, setBox] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -218,21 +235,35 @@ export const BodyCompositionScanner: React.FC<{
       const { data: px, width: w, height: h } = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
       // background reference = average of the frame border
-      let br = 0, bg = 0, bb = 0, n = 0;
+      let br = 0,
+        bg = 0,
+        bb = 0,
+        n = 0;
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           if (x > 3 && x < w - 4 && y > 3 && y < h - 4) continue;
           const i = (y * w + x) * 4;
-          br += px[i]!; bg += px[i + 1]!; bb += px[i + 2]!; n++;
+          br += px[i]!;
+          bg += px[i + 1]!;
+          bb += px[i + 2]!;
+          n++;
         }
       }
-      br /= n; bg /= n; bb /= n;
+      br /= n;
+      bg /= n;
+      bb /= n;
 
-      let minX = w, maxX = -1, minY = h, maxY = -1, count = 0;
+      let minX = w,
+        maxX = -1,
+        minY = h,
+        maxY = -1,
+        count = 0;
       for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
           const i = (y * w + x) * 4;
-          const r = px[i]!, g = px[i + 1]!, b = px[i + 2]!;
+          const r = px[i]!,
+            g = px[i + 1]!,
+            b = px[i + 2]!;
           const diff = Math.abs(r - br) + Math.abs(g - bg) + Math.abs(b - bb);
           const skin = r > 60 && r > g + 12 && r > b + 12;
           if (diff > 90 || skin) {
@@ -301,8 +332,6 @@ export const BodyCompositionScanner: React.FC<{
       window.clearInterval(id);
     };
   }, [cameraOn, c]);
-
-
 
   const startCamera = async () => {
     if (shots.length >= MAX_PHOTOS) {
@@ -441,7 +470,9 @@ export const BodyCompositionScanner: React.FC<{
   const metric = (label: string, value: number | null, unit: string, accent?: boolean) => (
     <div className="p-3 rounded-2xl bg-surface border border-border">
       <span className="block text-[10px] font-mono text-muted-foreground uppercase">{label}</span>
-      <span className={`text-sm font-black font-mono ${accent ? "text-primary" : "text-foreground"}`}>
+      <span
+        className={`text-sm font-black font-mono ${accent ? "text-primary" : "text-foreground"}`}
+      >
         {value == null ? "—" : `${value}${unit}`}
       </span>
     </div>
@@ -461,16 +492,38 @@ export const BodyCompositionScanner: React.FC<{
 
       <div className="grid gap-2 sm:grid-cols-4">
         <div>
-          <label className="text-[10px] font-mono uppercase text-muted-foreground">{c.height}</label>
-          <Input value={heightCm} onChange={(e) => setHeightCm(e.target.value)} inputMode="decimal" placeholder="180" className="h-9" />
+          <label className="text-[10px] font-mono uppercase text-muted-foreground">
+            {c.height}
+          </label>
+          <Input
+            value={heightCm}
+            onChange={(e) => setHeightCm(e.target.value)}
+            inputMode="decimal"
+            placeholder="180"
+            className="h-9"
+          />
         </div>
         <div>
-          <label className="text-[10px] font-mono uppercase text-muted-foreground">{c.weight}</label>
-          <Input value={weightKg} onChange={(e) => setWeightKg(e.target.value)} inputMode="decimal" placeholder="80" className="h-9" />
+          <label className="text-[10px] font-mono uppercase text-muted-foreground">
+            {c.weight}
+          </label>
+          <Input
+            value={weightKg}
+            onChange={(e) => setWeightKg(e.target.value)}
+            inputMode="decimal"
+            placeholder="80"
+            className="h-9"
+          />
         </div>
         <div>
           <label className="text-[10px] font-mono uppercase text-muted-foreground">{c.age}</label>
-          <Input value={age} onChange={(e) => setAge(e.target.value)} inputMode="numeric" placeholder="30" className="h-9" />
+          <Input
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            inputMode="numeric"
+            placeholder="30"
+            className="h-9"
+          />
         </div>
         <div>
           <label className="text-[10px] font-mono uppercase text-muted-foreground">{c.sex}</label>
@@ -481,7 +534,9 @@ export const BodyCompositionScanner: React.FC<{
                 type="button"
                 onClick={() => setSex(s)}
                 className={`h-8 rounded-lg border px-1 text-[10px] font-semibold transition ${
-                  sex === s ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"
+                  sex === s
+                    ? "border-primary bg-primary/15 text-primary"
+                    : "border-border text-muted-foreground"
                 }`}
               >
                 {c[s]}
@@ -506,9 +561,19 @@ export const BodyCompositionScanner: React.FC<{
         }`}
       >
         {cameraOn ? (
-          <video ref={videoRef} playsInline muted autoPlay className="h-full w-full object-contain" />
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            autoPlay
+            className="h-full w-full object-contain"
+          />
         ) : shots[0] ? (
-          <img src={shots[shots.length - 1]} alt="Body scan" className="h-full w-full object-contain" />
+          <img
+            src={shots[shots.length - 1]}
+            alt="Body scan"
+            className="h-full w-full object-contain"
+          />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
             <Camera className="w-8 h-8 text-muted-foreground" />
@@ -566,7 +631,11 @@ export const BodyCompositionScanner: React.FC<{
           <div className="flex gap-2">
             {shots.map((s, i) => (
               <div key={i} className="relative">
-                <img src={s} alt={`shot ${i + 1}`} className="h-12 w-10 rounded-lg object-cover border border-border" />
+                <img
+                  src={s}
+                  alt={`shot ${i + 1}`}
+                  className="h-12 w-10 rounded-lg object-cover border border-border"
+                />
                 <button
                   type="button"
                   onClick={() => setShots((prev) => prev.filter((_, idx) => idx !== i))}
@@ -587,14 +656,26 @@ export const BodyCompositionScanner: React.FC<{
             <Button onClick={capture} disabled={busy} className="w-full rounded-2xl py-6 font-bold">
               <Camera className="w-4 h-4 mr-2" /> {c.capture}
             </Button>
-            <Button variant="outline" onClick={stopCamera} className="w-full rounded-2xl py-6 font-bold">
+            <Button
+              variant="outline"
+              onClick={stopCamera}
+              className="w-full rounded-2xl py-6 font-bold"
+            >
               <X className="w-4 h-4 mr-2" /> {c.close}
             </Button>
           </>
         ) : (
           <>
-            <Button onClick={startCamera} disabled={busy || shots.length >= MAX_PHOTOS} className="w-full rounded-2xl py-6 font-bold">
-              {shots.length ? <RefreshCw className="w-4 h-4 mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
+            <Button
+              onClick={startCamera}
+              disabled={busy || shots.length >= MAX_PHOTOS}
+              className="w-full rounded-2xl py-6 font-bold"
+            >
+              {shots.length ? (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              ) : (
+                <Camera className="w-4 h-4 mr-2" />
+              )}
               {c.start}
             </Button>
             <Button
@@ -614,7 +695,11 @@ export const BodyCompositionScanner: React.FC<{
         disabled={busy || !shots.length}
         className="w-full rounded-2xl py-6 font-bold"
       >
-        {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+        {busy ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Sparkles className="w-4 h-4 mr-2" />
+        )}
         {c.analyze}
       </Button>
 

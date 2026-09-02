@@ -59,7 +59,7 @@ const bySlug: Record<string, ExerciseAnatomy> = {
     stabilizers: "Rotator cuff, scapular stabilizers, core",
   },
 
-  "deadlift": {
+  deadlift: {
     primary: "Gluteus maximus, hamstrings",
     synergists: "Erector spinae, adductor magnus, quadriceps",
     stabilizers: "Core, latissimus dorsi, forearms",
@@ -71,7 +71,7 @@ const bySlug: Record<string, ExerciseAnatomy> = {
     stabilizers: "Core, latissimus dorsi, forearms",
   },
 
-  "squat": {
+  squat: {
     primary: "Quadriceps, gluteus maximus",
     synergists: "Adductors, hamstrings",
     stabilizers: "Core, erector spinae, calves",
@@ -155,7 +155,7 @@ const bySlug: Record<string, ExerciseAnatomy> = {
     stabilizers: "Transverse abdominis, pelvic stabilizers",
   },
 
-  "plank": {
+  plank: {
     primary: "Transverse abdominis, rectus abdominis",
     synergists: "Obliques, gluteus maximus",
     stabilizers: "Shoulders, serratus anterior, spinal stabilizers",

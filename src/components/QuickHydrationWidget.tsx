@@ -49,7 +49,9 @@ export const QuickHydrationWidget: React.FC<{ targetMl?: number }> = ({ targetMl
             <Droplets className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t("ms.hydration.title")}</h3>
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
+              {t("ms.hydration.title")}
+            </h3>
             <p className="text-xs text-muted-foreground">
               {t("ms.hydration.progress")
                 .replace("{cur}", String(ready ? currentMl : 0))
@@ -58,7 +60,12 @@ export const QuickHydrationWidget: React.FC<{ targetMl?: number }> = ({ targetMl
             </p>
           </div>
         </div>
-        <Button onClick={resetWater} variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+        <Button
+          onClick={resetWater}
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        >
           <RotateCcw className="w-4 h-4" />
         </Button>
       </div>

@@ -17,9 +17,7 @@ export const startWorkout = createServerFn({ method: "POST" })
     const workout = await getTodaysWorkoutData(supabase, userId, data.day);
 
     if (workout.status !== "READY") {
-      throw new Error(
-        "The selected workout is not available from the active program.",
-      );
+      throw new Error("The selected workout is not available from the active program.");
     }
 
     const { data: existing, error: existingError } = await supabase

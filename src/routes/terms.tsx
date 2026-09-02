@@ -7,7 +7,10 @@ export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
       { title: "Naudojimo sąlygos — GYMS.LIFE" },
-      { name: "description", content: "GYMS.LIFE paslaugos naudojimo sąlygos. Pardavėjas: Aleksandr Smirnov." },
+      {
+        name: "description",
+        content: "GYMS.LIFE paslaugos naudojimo sąlygos. Pardavėjas: Aleksandr Smirnov.",
+      },
       { property: "og:title", content: "Naudojimo sąlygos — GYMS.LIFE" },
       { property: "og:description", content: "GYMS.LIFE paslaugos naudojimo sąlygos." },
     ],
@@ -22,7 +25,9 @@ function TermsPage() {
       <header className="border-b border-border bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
           <Logo />
-          <Link to="/pricing" className="text-sm font-semibold text-primary">{t("lg.nav.pricing")}</Link>
+          <Link to="/pricing" className="text-sm font-semibold text-primary">
+            {t("lg.nav.pricing")}
+          </Link>
         </div>
       </header>
       <main className="prose-sm mx-auto max-w-3xl px-4 py-12 text-sm leading-relaxed">
@@ -41,7 +46,12 @@ function TermsPage() {
         <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h4")}</h2>
         <p>
           {t("lg.terms.p4a")}{" "}
-          <a className="text-primary underline" href="https://www.paddle.com/legal/checkout-buyer-terms" target="_blank" rel="noopener noreferrer">
+          <a
+            className="text-primary underline"
+            href="https://www.paddle.com/legal/checkout-buyer-terms"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {t("lg.terms.p4link")}
           </a>
           . {t("lg.terms.p4b")}

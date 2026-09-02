@@ -43,7 +43,11 @@ const L: Record<string, Labels> = {
     rest: "poilsis",
     open: "Žiūrėti video",
     signIn: "Prisijunk, kad Treneris sudarytų treniruotę pagal tavo profilį",
-    examples: ["Presas ir liemuo namie, 20 min", "Kojos salėje, jėgos diena", "Viršus su gumomis, be šuolių"],
+    examples: [
+      "Presas ir liemuo namie, 20 min",
+      "Kojos salėje, jėgos diena",
+      "Viršus su gumomis, be šuolių",
+    ],
   },
   en: {
     title: "Tell us what you want to train",
@@ -61,7 +65,11 @@ const L: Record<string, Labels> = {
     rest: "rest",
     open: "Watch video",
     signIn: "Sign in so the Coach can build a workout from your profile",
-    examples: ["Abs and core at home, 20 min", "Leg day at the gym, strength", "Upper body with bands, no jumping"],
+    examples: [
+      "Abs and core at home, 20 min",
+      "Leg day at the gym, strength",
+      "Upper body with bands, no jumping",
+    ],
   },
 };
 
@@ -107,56 +115,59 @@ export function WorkoutRequestBuilder() {
           <Sparkles className="size-4" /> {l.signIn}
         </Link>
       ) : (
-      <>
-      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-        <textarea
-          value={request}
-          onChange={(e) => setRequest(e.target.value)}
-          rows={2}
-          placeholder={l.placeholder}
-          aria-label={l.title}
-          className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-        />
-        <div className="flex items-end gap-2">
-          <label className="text-xs text-muted-foreground">
-            <span className="mb-1 block">{l.minutes}</span>
-            <input
-              type="number"
-              min={10}
-              max={150}
-              step={5}
-              value={minutes}
-              onChange={(e) => setMinutes(Number(e.target.value) || 45)}
-              className="w-20 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+        <>
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+            <textarea
+              value={request}
+              onChange={(e) => setRequest(e.target.value)}
+              rows={2}
+              placeholder={l.placeholder}
+              aria-label={l.title}
+              className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
             />
-          </label>
-          <button
-            onClick={() => void generate()}
-            disabled={busy || request.trim().length < 3}
-            className="press flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50"
-          >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <Dumbbell className="size-4" />}
-            {busy ? l.generating : l.generate}
-          </button>
-        </div>
-      </div>
+            <div className="flex items-end gap-2">
+              <label className="text-xs text-muted-foreground">
+                <span className="mb-1 block">{l.minutes}</span>
+                <input
+                  type="number"
+                  min={10}
+                  max={150}
+                  step={5}
+                  value={minutes}
+                  onChange={(e) => setMinutes(Number(e.target.value) || 45)}
+                  className="w-20 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                />
+              </label>
+              <button
+                onClick={() => void generate()}
+                disabled={busy || request.trim().length < 3}
+                className="press flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {busy ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Dumbbell className="size-4" />
+                )}
+                {busy ? l.generating : l.generate}
+              </button>
+            </div>
+          </div>
 
-      <div className="mt-2 flex flex-wrap gap-2">
-        {l.examples.map((ex) => (
-          <button
-            key={ex}
-            onClick={() => {
-              setRequest(ex);
-              void generate(ex);
-            }}
-            className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-surface-2"
-          >
-            {ex}
-          </button>
-        ))}
-      </div>
-
-      </>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {l.examples.map((ex) => (
+              <button
+                key={ex}
+                onClick={() => {
+                  setRequest(ex);
+                  void generate(ex);
+                }}
+                className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-surface-2"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {result && (
@@ -183,7 +194,9 @@ export function WorkoutRequestBuilder() {
           )}
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{l.main}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {l.main}
+            </p>
             <ol className="mt-2 space-y-2">
               {result.blocks.map((b, i) => (
                 <li
@@ -230,7 +243,9 @@ export function WorkoutRequestBuilder() {
 
           {result.tips.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{l.tips}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {l.tips}
+              </p>
               <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-muted-foreground">
                 {result.tips.map((tp, i) => (
                   <li key={i}>{tp}</li>

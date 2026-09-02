@@ -6,7 +6,12 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { useAccess } from "@/lib/access";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useServerFn } from "@tanstack/react-start";
-import { getPortalUrl, changePlan, cancelSubscription, resumeSubscription } from "@/lib/payments.functions";
+import {
+  getPortalUrl,
+  changePlan,
+  cancelSubscription,
+  resumeSubscription,
+} from "@/lib/payments.functions";
 import { Logo, LangSwitch } from "@/components/AppShell";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { cn } from "@/lib/utils";
@@ -115,7 +120,6 @@ const PLANS: {
   },
 ];
 
-
 function PricingPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
@@ -216,7 +220,6 @@ function PricingPage() {
     }
   };
 
-
   const openPortal = async () => {
     try {
       const { url } = await portal();
@@ -253,9 +256,7 @@ function PricingPage() {
           <h1 className="text-display mt-4 text-5xl leading-none sm:text-6xl">
             {t("lg.pricing.heroTitle")}
           </h1>
-          <p className="mt-4 text-muted-foreground">
-            {t("lg.pricing.heroSubtitle")}
-          </p>
+          <p className="mt-4 text-muted-foreground">{t("lg.pricing.heroSubtitle")}</p>
         </div>
 
         <TransformationCalculator />
@@ -302,7 +303,9 @@ function PricingPage() {
                     </p>
                   )}
                   {p.perMonthKey && (
-                    <p className="mt-1 text-xs font-semibold text-muted-foreground">{t(p.perMonthKey)}</p>
+                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                      {t(p.perMonthKey)}
+                    </p>
                   )}
                 </div>
                 <ul className="flex-1 space-y-2 text-sm">
@@ -334,13 +337,13 @@ function PricingPage() {
         <p className="mt-6 text-center text-sm font-semibold text-foreground">
           {t("l3.pr.allFeatures")}
         </p>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          {t("lg.pricing.payNote")}
-        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">{t("lg.pricing.payNote")}</p>
 
         <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-border bg-surface p-6 text-center">
           <h2 className="text-lg font-bold">{t("l3.pr.compare.t")}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("l3.pr.compare.d")}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {t("l3.pr.compare.d")}
+          </p>
         </div>
 
         {user && (access.subscribed || access.isOwner) && (
@@ -352,12 +355,13 @@ function PricingPage() {
               </p>
             ) : (
               <>
-                <p className="text-sm font-semibold">
-                  {t("lg.pricing.subActive")}
-                </p>
+                <p className="text-sm font-semibold">{t("lg.pricing.subActive")}</p>
                 {access.cancelAtPeriodEnd && access.periodEnd && (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {cancelLabels.scheduled.replace("{date}", access.periodEnd.toLocaleDateString())}
+                    {cancelLabels.scheduled.replace(
+                      "{date}",
+                      access.periodEnd.toLocaleDateString(),
+                    )}
                   </p>
                 )}
                 <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -382,10 +386,18 @@ function PricingPage() {
         )}
 
         <footer className="mt-16 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border pt-8 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">GYMS.LIFE</Link>
-          <Link to="/terms" className="hover:text-foreground">{t("lg.pricing.terms")}</Link>
-          <Link to="/privacy" className="hover:text-foreground">{t("lg.pricing.privacy")}</Link>
-          <Link to="/refund" className="hover:text-foreground">{t("lg.pricing.refunds")}</Link>
+          <Link to="/" className="hover:text-foreground">
+            GYMS.LIFE
+          </Link>
+          <Link to="/terms" className="hover:text-foreground">
+            {t("lg.pricing.terms")}
+          </Link>
+          <Link to="/privacy" className="hover:text-foreground">
+            {t("lg.pricing.privacy")}
+          </Link>
+          <Link to="/refund" className="hover:text-foreground">
+            {t("lg.pricing.refunds")}
+          </Link>
         </footer>
       </main>
     </div>

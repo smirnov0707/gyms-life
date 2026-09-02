@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldAlert, ShieldCheck, ShieldQuestion, Activity, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
+import {
+  ShieldAlert,
+  ShieldCheck,
+  ShieldQuestion,
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -8,9 +16,24 @@ import { buildRiskReport, type RiskLevel } from "@/lib/injury-risk";
 import { cn } from "@/lib/utils";
 
 const TONE: Record<RiskLevel, { text: string; border: string; bg: string; fill: string }> = {
-  low: { text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10", fill: "#10b981" },
-  moderate: { text: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/10", fill: "#f59e0b" },
-  high: { text: "text-rose-400", border: "border-rose-500/30", bg: "bg-rose-500/10", fill: "#f43f5e" },
+  low: {
+    text: "text-emerald-400",
+    border: "border-emerald-500/30",
+    bg: "bg-emerald-500/10",
+    fill: "#10b981",
+  },
+  moderate: {
+    text: "text-amber-400",
+    border: "border-amber-500/30",
+    bg: "bg-amber-500/10",
+    fill: "#f59e0b",
+  },
+  high: {
+    text: "text-rose-400",
+    border: "border-rose-500/30",
+    bg: "bg-rose-500/10",
+    fill: "#f43f5e",
+  },
 };
 
 export function InjuryRiskRadar() {
@@ -55,8 +78,14 @@ export function InjuryRiskRadar() {
   const jumpFactor = data?.factors.find((f) => f.key.includes("jump"));
   const acwrFactor = data?.factors.find((f) => f.key.includes("acwr"));
 
-  const shouldersRisk: RiskLevel = jumpFactor?.level === "high" || pushFactor?.level === "high" ? "high" : pushFactor?.level === "moderate" ? "moderate" : "low";
-  const kneesRisk: RiskLevel = acwrFactor?.level === "high" ? "high" : acwrFactor?.level === "moderate" ? "moderate" : "low";
+  const shouldersRisk: RiskLevel =
+    jumpFactor?.level === "high" || pushFactor?.level === "high"
+      ? "high"
+      : pushFactor?.level === "moderate"
+        ? "moderate"
+        : "low";
+  const kneesRisk: RiskLevel =
+    acwrFactor?.level === "high" ? "high" : acwrFactor?.level === "moderate" ? "moderate" : "low";
   const spineRisk: RiskLevel = data?.score && data.score > 40 ? "moderate" : "low";
 
   return (
@@ -77,7 +106,9 @@ export function InjuryRiskRadar() {
               </span>
             </div>
             <p className="text-xs font-mono text-neutral-400">
-              {lang === "lt" ? "Realaus laiko sąnarių ir apkrovos telemetrija" : "Real-time joint load telemetry"}
+              {lang === "lt"
+                ? "Realaus laiko sąnarių ir apkrovos telemetrija"
+                : "Real-time joint load telemetry"}
             </p>
           </div>
         </div>
@@ -107,59 +138,154 @@ export function InjuryRiskRadar() {
           <svg viewBox="0 0 200 280" className="w-44 h-60 drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">
             {/* Galva / Kaklas */}
             <circle cx="100" cy="35" r="18" fill="#262626" stroke="#404040" strokeWidth="2" />
-            
+
             {/* Pečiai / Krūtinė */}
             <path
               d="M 60 70 L 140 70 L 130 120 L 70 120 Z"
-              fill={shouldersRisk === "high" ? "#f43f5e" : shouldersRisk === "moderate" ? "#f59e0b" : "#10b981"}
+              fill={
+                shouldersRisk === "high"
+                  ? "#f43f5e"
+                  : shouldersRisk === "moderate"
+                    ? "#f59e0b"
+                    : "#10b981"
+              }
               fillOpacity="0.25"
-              stroke={shouldersRisk === "high" ? "#f43f5e" : shouldersRisk === "moderate" ? "#f59e0b" : "#10b981"}
+              stroke={
+                shouldersRisk === "high"
+                  ? "#f43f5e"
+                  : shouldersRisk === "moderate"
+                    ? "#f59e0b"
+                    : "#10b981"
+              }
               strokeWidth="2"
               className="transition-colors duration-500 cursor-pointer hover:opacity-80"
-              onClick={() => setSelectedZone(lang === "lt" ? "Pečių juosta ir krūtinė" : "Shoulders & Chest")}
+              onClick={() =>
+                setSelectedZone(lang === "lt" ? "Pečių juosta ir krūtinė" : "Shoulders & Chest")
+              }
             />
 
             {/* Stuburas / Liemuo */}
-            <line x1="100" y1="70" x2="100" y2="150" stroke={spineRisk === "moderate" ? "#f59e0b" : "#10b981"} strokeWidth="4" strokeDasharray="2,2" />
+            <line
+              x1="100"
+              y1="70"
+              x2="100"
+              y2="150"
+              stroke={spineRisk === "moderate" ? "#f59e0b" : "#10b981"}
+              strokeWidth="4"
+              strokeDasharray="2,2"
+            />
 
             {/* Rankos */}
-            <line x1="60" y1="70" x2="40" y2="130" stroke="#525252" strokeWidth="6" strokeLinecap="round" />
-            <line x1="140" y1="70" x2="160" y2="130" stroke="#525252" strokeWidth="6" strokeLinecap="round" />
+            <line
+              x1="60"
+              y1="70"
+              x2="40"
+              y2="130"
+              stroke="#525252"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+            <line
+              x1="140"
+              y1="70"
+              x2="160"
+              y2="130"
+              stroke="#525252"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
 
             {/* Dubuo */}
-            <path d="M 70 120 L 130 120 L 120 150 L 80 150 Z" fill="#262626" stroke="#404040" strokeWidth="2" />
+            <path
+              d="M 70 120 L 130 120 L 120 150 L 80 150 Z"
+              fill="#262626"
+              stroke="#404040"
+              strokeWidth="2"
+            />
 
             {/* Kojos / Keliai */}
             <line
-              x1="85" y1="150" x2="80" y2="210"
-              stroke={kneesRisk === "high" ? "#f43f5e" : kneesRisk === "moderate" ? "#f59e0b" : "#10b981"}
+              x1="85"
+              y1="150"
+              x2="80"
+              y2="210"
+              stroke={
+                kneesRisk === "high" ? "#f43f5e" : kneesRisk === "moderate" ? "#f59e0b" : "#10b981"
+              }
               strokeWidth="7"
               strokeLinecap="round"
               className="cursor-pointer"
-              onClick={() => setSelectedZone(lang === "lt" ? "Kelių sąnariai ir keturgalviai" : "Knees & Quadriceps")}
+              onClick={() =>
+                setSelectedZone(
+                  lang === "lt" ? "Kelių sąnariai ir keturgalviai" : "Knees & Quadriceps",
+                )
+              }
             />
             <line
-              x1="115" y1="150" x2="120" y2="210"
-              stroke={kneesRisk === "high" ? "#f43f5e" : kneesRisk === "moderate" ? "#f59e0b" : "#10b981"}
+              x1="115"
+              y1="150"
+              x2="120"
+              y2="210"
+              stroke={
+                kneesRisk === "high" ? "#f43f5e" : kneesRisk === "moderate" ? "#f59e0b" : "#10b981"
+              }
               strokeWidth="7"
               strokeLinecap="round"
               className="cursor-pointer"
-              onClick={() => setSelectedZone(lang === "lt" ? "Kelių sąnariai ir keturgalviai" : "Knees & Quadriceps")}
+              onClick={() =>
+                setSelectedZone(
+                  lang === "lt" ? "Kelių sąnariai ir keturgalviai" : "Knees & Quadriceps",
+                )
+              }
             />
 
             {/* Blauzdos */}
-            <line x1="80" y1="210" x2="78" y2="265" stroke="#404040" strokeWidth="5" strokeLinecap="round" />
-            <line x1="120" y1="210" x2="122" y2="265" stroke="#404040" strokeWidth="5" strokeLinecap="round" />
+            <line
+              x1="80"
+              y1="210"
+              x2="78"
+              y2="265"
+              stroke="#404040"
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
+            <line
+              x1="120"
+              y1="210"
+              x2="122"
+              y2="265"
+              stroke="#404040"
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
 
             {/* Kelių sąnarių telemetrijos taškai */}
-            <circle cx="80" cy="210" r="4" fill={kneesRisk === "high" ? "#f43f5e" : "#10b981"} className="animate-ping" />
-            <circle cx="120" cy="210" r="4" fill={kneesRisk === "high" ? "#f43f5e" : "#10b981"} className="animate-ping" />
+            <circle
+              cx="80"
+              cy="210"
+              r="4"
+              fill={kneesRisk === "high" ? "#f43f5e" : "#10b981"}
+              className="animate-ping"
+            />
+            <circle
+              cx="120"
+              cy="210"
+              r="4"
+              fill={kneesRisk === "high" ? "#f43f5e" : "#10b981"}
+              className="animate-ping"
+            />
           </svg>
 
           <div className="flex items-center gap-3 mt-3 text-[10px] font-mono">
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Saugus</div>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Įspėjimas</div>
-            <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-400" /> Pavojus</div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" /> Saugus
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-400" /> Įspėjimas
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-rose-400" /> Pavojus
+            </div>
           </div>
         </div>
 
@@ -177,11 +303,19 @@ export function InjuryRiskRadar() {
               >
                 <div className="flex items-center justify-between font-semibold text-xs">
                   <span className="text-white">{t(f.key as never)}</span>
-                  <span className={cn("font-mono font-bold px-2 py-0.5 rounded", TONE[f.level].bg, TONE[f.level].text)}>
+                  <span
+                    className={cn(
+                      "font-mono font-bold px-2 py-0.5 rounded",
+                      TONE[f.level].bg,
+                      TONE[f.level].text,
+                    )}
+                  >
                     {f.value}
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">{t(f.adviceKey as never)}</p>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  {t(f.adviceKey as never)}
+                </p>
               </div>
             ))
           )}
@@ -196,8 +330,12 @@ export function InjuryRiskRadar() {
                 </span>
                 <span className="text-neutral-400 text-[11px]">
                   {level === "low"
-                    ? (lang === "lt" ? "Treniruočių planas optimizuotas pilnam pajėgumui." : "Training plan operating at full capacity.")
-                    : (lang === "lt" ? "Pavojingi pratimai automatiškai pakeisti saugiomis alternatyvomis." : "High-risk lifts automatically substituted with joint-safe variations.")}
+                    ? lang === "lt"
+                      ? "Treniruočių planas optimizuotas pilnam pajėgumui."
+                      : "Training plan operating at full capacity."
+                    : lang === "lt"
+                      ? "Pavojingi pratimai automatiškai pakeisti saugiomis alternatyvomis."
+                      : "High-risk lifts automatically substituted with joint-safe variations."}
                 </span>
               </div>
             </div>

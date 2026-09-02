@@ -111,7 +111,6 @@ function ArMode() {
   const [fullscreen, setFullscreen] = useState(false);
   const { user } = useAuth();
 
-
   const [voice, setVoice] = useState(true);
   const [coachMode, setCoachMode] = useState(true);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -170,10 +169,7 @@ function ArMode() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      "forma_ar_calib",
-      JSON.stringify({ heightCm, voiceUri, rate }),
-    );
+    window.localStorage.setItem("forma_ar_calib", JSON.stringify({ heightCm, voiceUri, rate }));
   }, [heightCm, voiceUri, rate]);
 
   useEffect(() => {
@@ -224,8 +220,6 @@ function ArMode() {
     };
   }, [fullscreen]);
 
-
-
   // Chrome silently pauses long-running speech synthesis; nudge it awake.
   useEffect(() => {
     if (!live || typeof window === "undefined" || !window.speechSynthesis) return;
@@ -235,8 +229,6 @@ function ArMode() {
     }, 5000);
     return () => window.clearInterval(id);
   }, [live]);
-
-
 
   /* ---------------- voice ---------------- */
 
@@ -320,7 +312,6 @@ function ArMode() {
     unlockedRef.current = true;
   };
 
-
   /* ---------------- session ---------------- */
 
   const facingRef = useRef(facing);
@@ -354,8 +345,6 @@ function ArMode() {
     }
   };
 
-
-
   const start = async () => {
     setLoading(true);
     if (voiceRef.current) unlockVoice();
@@ -372,7 +361,6 @@ function ArMode() {
       const video = videoRef.current!;
       video.srcObject = stream;
       await video.play();
-
 
       analyserRef.current.reset(AR_EXERCISES.find((e) => e.slug === slugRef.current)!);
       calibFramesRef.current = [];
@@ -563,12 +551,7 @@ function ArMode() {
         });
         if (line) speak(line, true);
       } else if (rep) {
-        speak(
-          rep.score >= 85
-            ? t("rt.ar.cleanRep")
-            : rep.fix || t("rt.ar.oneMore"),
-          true,
-        );
+        speak(rep.score >= 85 ? t("rt.ar.cleanRep") : rep.fix || t("rt.ar.oneMore"), true);
       }
 
       /* ---------------- drawing ---------------- */
@@ -675,7 +658,13 @@ function ArMode() {
 
       {tab === "scan" && <FormScanner />}
 
-      <div className={cn("grid gap-6", tab !== "live" && "hidden", !fullscreen && "lg:grid-cols-[3fr_2fr]")}>
+      <div
+        className={cn(
+          "grid gap-6",
+          tab !== "live" && "hidden",
+          !fullscreen && "lg:grid-cols-[3fr_2fr]",
+        )}
+      >
         <div
           className={cn(
             "panel overflow-hidden",
@@ -718,7 +707,6 @@ function ArMode() {
                 facing === "user" && "-scale-x-100",
               )}
             />
-
 
             {live && (
               <div className="absolute left-3 top-3 flex flex-wrap items-center gap-2">
@@ -822,7 +810,8 @@ function ArMode() {
           <div
             className={cn(
               "flex flex-wrap items-center gap-3 p-4",
-              fullscreen && "max-h-[45vh] shrink-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]",
+              fullscreen &&
+                "max-h-[45vh] shrink-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]",
             )}
           >
             {live ? (
@@ -877,7 +866,6 @@ function ArMode() {
             </Button>
 
             <button
-
               type="button"
               onClick={() => setShowSettings((s) => !s)}
               className="ml-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -934,7 +922,6 @@ function ArMode() {
                 </Button>
               </div>
             </div>
-
           ) : (
             <div className="panel p-5">
               <h2 className="flex items-center gap-2 text-xl">

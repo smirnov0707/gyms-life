@@ -36,21 +36,25 @@ export const getUserAchievements = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
-    const [{ data: workouts, error: workoutsError }, { data: meals, error: mealsError }] = await Promise.all([
-      supabase
-        .from("workout_sessions")
-        .select("started_at, total_volume")
-        .eq("user_id", userId)
-        .not("finished_at", "is", null)
-        .order("started_at", { ascending: false }),
-      supabase.from("vision_meal_scans").select("id").eq("user_id", userId),
-    ]);
+    const [{ data: workouts, error: workoutsError }, { data: meals, error: mealsError }] =
+      await Promise.all([
+        supabase
+          .from("workout_sessions")
+          .select("started_at, total_volume")
+          .eq("user_id", userId)
+          .not("finished_at", "is", null)
+          .order("started_at", { ascending: false }),
+        supabase.from("vision_meal_scans").select("id").eq("user_id", userId),
+      ]);
     if (workoutsError || mealsError) throw new Error("Could not load achievement progress.");
 
     const completedWorkouts = workouts ?? [];
     const streak = calculateWorkoutStreak(completedWorkouts.map((workout) => workout.started_at));
     const totalWorkouts = completedWorkouts.length;
-    const totalVolume = completedWorkouts.reduce((total, workout) => total + Number(workout.total_volume), 0);
+    const totalVolume = completedWorkouts.reduce(
+      (total, workout) => total + Number(workout.total_volume),
+      0,
+    );
     const totalMeals = (meals ?? []).length;
 
     const achievements: Achievement[] = [

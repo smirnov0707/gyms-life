@@ -83,7 +83,9 @@ export const MuscleHeatmap: React.FC = () => {
           <Flame className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">{t("tl.heat.title")}</h3>
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
+            {t("tl.heat.title")}
+          </h3>
           <p className="text-xs text-muted-foreground">{t("tl.heat.subtitle")}</p>
         </div>
       </div>
@@ -95,7 +97,10 @@ export const MuscleHeatmap: React.FC = () => {
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {muscles.map((m) => (
-            <div key={m.key} className="p-3.5 rounded-2xl bg-surface border border-border space-y-2">
+            <div
+              key={m.key}
+              className="p-3.5 rounded-2xl bg-surface border border-border space-y-2"
+            >
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-foreground">{m.name}</span>
                 <span className="font-mono text-muted-foreground">
@@ -105,7 +110,11 @@ export const MuscleHeatmap: React.FC = () => {
               <div className="w-full bg-surface-2 h-2 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    m.recoveryPct >= 80 ? "bg-emerald-400" : m.recoveryPct >= 55 ? "bg-amber-400" : "bg-rose-500"
+                    m.recoveryPct >= 80
+                      ? "bg-emerald-400"
+                      : m.recoveryPct >= 55
+                        ? "bg-amber-400"
+                        : "bg-rose-500"
                   }`}
                   style={{ width: `${m.recoveryPct}%` }}
                 />
@@ -113,11 +122,17 @@ export const MuscleHeatmap: React.FC = () => {
               <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
                 <span>
                   {t("tl.heat.recoveryStatus")}
-                  {m.lastHours !== null ? ` · ${t("tl.heat.lastTrained").replace("{h}", String(m.lastHours))}` : ""}
+                  {m.lastHours !== null
+                    ? ` · ${t("tl.heat.lastTrained").replace("{h}", String(m.lastHours))}`
+                    : ""}
                 </span>
                 <span
                   className={
-                    m.recoveryPct >= 80 ? "text-primary" : m.recoveryPct >= 55 ? "text-accent" : "text-rose-400"
+                    m.recoveryPct >= 80
+                      ? "text-primary"
+                      : m.recoveryPct >= 55
+                        ? "text-accent"
+                        : "text-rose-400"
                   }
                 >
                   {m.recoveryPct >= 80

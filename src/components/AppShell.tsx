@@ -1,14 +1,14 @@
 import React from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { 
-  Dumbbell, 
-  Apple, 
-  ShieldCheck, 
-  Activity, 
-  TrendingUp, 
+import {
+  Dumbbell,
+  Apple,
+  ShieldCheck,
+  Activity,
+  TrendingUp,
   Sparkles,
   Zap,
-  Globe
+  Globe,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -17,7 +17,10 @@ export function headerName(name?: string | null): string {
   return name || "GYMS.LIFE";
 }
 
-export const Logo: React.FC<{ className?: string; href?: string }> = ({ className = "", href = "/app" }) => (
+export const Logo: React.FC<{ className?: string; href?: string }> = ({
+  className = "",
+  href = "/app",
+}) => (
   <Link to={href} className={`flex items-center gap-2.5 group ${className}`}>
     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center font-black text-black text-sm tracking-tighter shadow-lg shadow-emerald-950/40 group-hover:scale-105 transition-transform">
       G
@@ -41,7 +44,9 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
   ];
 
   return (
-    <div className={`flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] ${className}`}>
+    <div
+      className={`flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] ${className}`}
+    >
       {languages.map((l) => (
         <button
           key={l.code}
@@ -95,7 +100,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                       : "text-neutral-400 hover:text-white hover:bg-white/[0.03]"
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? "text-emerald-400" : "text-neutral-400"}`} />
+                  <Icon
+                    className={`w-3.5 h-3.5 ${isActive ? "text-emerald-400" : "text-neutral-400"}`}
+                  />
                   {item.label}
                 </Link>
               );

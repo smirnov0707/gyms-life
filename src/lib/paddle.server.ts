@@ -24,7 +24,11 @@ export function getPaddleClient(env: PaddleEnv): Paddle {
 }
 
 /** Direct Paddle REST API access for endpoints not exposed by the SDK. */
-export async function gatewayFetch(env: PaddleEnv, path: string, init?: RequestInit): Promise<Response> {
+export async function gatewayFetch(
+  env: PaddleEnv,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   const apiKey = getConnectionApiKey(env);
   const response = await fetch(`${getBaseUrl(env)}${path}`, {
     ...init,

@@ -39,7 +39,15 @@ export const Route = createFileRoute("/exercises/")({
  * Poster is the instant visual; the exact technique clip plays on hover.
  * Mobile/touch devices keep the poster and use Quick Preview.
  */
-function CardMedia({ video, poster, name }: { video: string | null; poster: string | null; name: string }) {
+function CardMedia({
+  video,
+  poster,
+  name,
+}: {
+  video: string | null;
+  poster: string | null;
+  name: string;
+}) {
   const [hover, setHover] = useState(false);
   const [activated, setActivated] = useState(false);
 
@@ -148,7 +156,11 @@ function FilterChip({ label, onClear }: { label: string; onClear: () => void }) 
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-mono text-foreground">
       {label}
-      <button aria-label="Remove filter" onClick={onClear} className="text-muted-foreground hover:text-foreground">
+      <button
+        aria-label="Remove filter"
+        onClick={onClear}
+        className="text-muted-foreground hover:text-foreground"
+      >
         <X className="size-3" />
       </button>
     </span>
@@ -178,10 +190,20 @@ function ExercisesPage() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
-  const [previewEx, setPreviewEx] = useState<{ slug: string; name: string; group: string; equipment?: string | null; mistakes?: string | undefined; instructions?: string | undefined } | null>(null);
+  const [previewEx, setPreviewEx] = useState<{
+    slug: string;
+    name: string;
+    group: string;
+    equipment?: string | null;
+    mistakes?: string | undefined;
+    instructions?: string | undefined;
+  } | null>(null);
 
   const activeCount =
-    (group !== "all" ? 1 : 0) + (level !== "all" ? 1 : 0) + (equipment !== "all" ? 1 : 0) + (safety !== "all" ? 1 : 0);
+    (group !== "all" ? 1 : 0) +
+    (level !== "all" ? 1 : 0) +
+    (equipment !== "all" ? 1 : 0) +
+    (safety !== "all" ? 1 : 0);
 
   const resetFilters = () => {
     setGroup("all");
@@ -191,14 +213,22 @@ function ExercisesPage() {
   };
 
   /** AI: turns the typed phrase into filters. */
-  type Suggestion = { group: string; level: string; equipment: string; safety: string; query: string };
+  type Suggestion = {
+    group: string;
+    level: string;
+    equipment: string;
+    safety: string;
+    query: string;
+  };
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [dismissed, setDismissed] = useState("");
   const askAi = useServerFn(smartExerciseFilter);
 
   const applySuggestion = (r: Suggestion) => {
-    if (groups.includes(r.group as (typeof groups)[number])) setGroup(r.group as (typeof groups)[number]);
-    if (levels.includes(r.level as (typeof levels)[number])) setLevel(r.level as (typeof levels)[number]);
+    if (groups.includes(r.group as (typeof groups)[number]))
+      setGroup(r.group as (typeof groups)[number]);
+    if (levels.includes(r.level as (typeof levels)[number]))
+      setLevel(r.level as (typeof levels)[number]);
     if (equipmentList.includes(r.equipment as (typeof equipmentList)[number]))
       setEquipment(r.equipment as (typeof equipmentList)[number]);
     if (safetyTags.some((s) => s.id === r.safety)) setSafety(r.safety);
@@ -234,8 +264,6 @@ function ExercisesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, lang, dismissed]);
 
-
-
   useEffect(() => {
     try {
       const saved = localStorage.getItem("forma_fav_exercises");
@@ -246,7 +274,9 @@ function ExercisesPage() {
   const toggleFavorite = (slug: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const next = favorites.includes(slug) ? favorites.filter((s) => s !== slug) : [...favorites, slug];
+    const next = favorites.includes(slug)
+      ? favorites.filter((s) => s !== slug)
+      : [...favorites, slug];
     setFavorites(next);
 
     // If the last favorite is removed, automatically leave the Favorites filter.
@@ -254,7 +284,9 @@ function ExercisesPage() {
       setOnlyFavorites(false);
     }
 
-    try { localStorage.setItem("forma_fav_exercises", JSON.stringify(next)); } catch {}
+    try {
+      localStorage.setItem("forma_fav_exercises", JSON.stringify(next));
+    } catch {}
   };
 
   const fetchPage = async (from: number, to: number) => {
@@ -313,14 +345,20 @@ function ExercisesPage() {
 
     let matchesSafety = true;
     if (safety === "back_safe") {
-      matchesSafety = !["deadlift", "squat", "barbell-row", "good-morning"].some((k) => slugStr.includes(k));
+      matchesSafety = !["deadlift", "squat", "barbell-row", "good-morning"].some((k) =>
+        slugStr.includes(k),
+      );
     } else if (safety === "knee_safe") {
-      matchesSafety = !["jump", "lunge", "hack-squat", "sissy-squat"].some((k) => slugStr.includes(k));
+      matchesSafety = !["jump", "lunge", "hack-squat", "sissy-squat"].some((k) =>
+        slugStr.includes(k),
+      );
     } else if (safety === "shoulder_safe") {
       matchesSafety = !["upright-row", "behind-neck", "dips"].some((k) => slugStr.includes(k));
     }
 
-    return matchesQuery && matchesGroup && matchesLevel && matchesEquip && matchesFav && matchesSafety;
+    return (
+      matchesQuery && matchesGroup && matchesLevel && matchesEquip && matchesFav && matchesSafety
+    );
   });
 
   return (
@@ -371,7 +409,11 @@ function ExercisesPage() {
               onClick={() => void requestSuggestion(q)}
               className="h-11 gap-1.5 rounded-2xl px-4 text-xs font-bold"
             >
-              {aiBusy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              {aiBusy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
               {aiLabels.title.split(" ")[0]}
             </Button>
             <Button
@@ -403,11 +445,16 @@ function ExercisesPage() {
               <FilterChip label={t(`ex.level.${level}` as TKey)} onClear={() => setLevel("all")} />
             )}
             {equipment !== "all" && (
-              <FilterChip label={t(`eq.${equipment}` as TKey)} onClear={() => setEquipment("all")} />
+              <FilterChip
+                label={t(`eq.${equipment}` as TKey)}
+                onClear={() => setEquipment("all")}
+              />
             )}
             {safety !== "all" && (
               <FilterChip
-                label={t((safetyTags.find((s) => s.id === safety)?.labelKey ?? "rt.ex.safety.all") as TKey)}
+                label={t(
+                  (safetyTags.find((s) => s.id === safety)?.labelKey ?? "rt.ex.safety.all") as TKey,
+                )}
                 onClear={() => setSafety("all")}
               />
             )}
@@ -428,28 +475,34 @@ function ExercisesPage() {
               <Sparkles className="size-3.5" /> {aiLabels.title}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {suggestion.group !== "all" && groups.includes(suggestion.group as (typeof groups)[number]) && (
-                <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-mono font-bold text-foreground">
-                  {t(`mg.${suggestion.group}` as TKey)}
-                </span>
-              )}
-              {suggestion.level !== "all" && levels.includes(suggestion.level as (typeof levels)[number]) && (
-                <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-mono font-bold text-background">
-                  {t(`ex.level.${suggestion.level}` as TKey)}
-                </span>
-              )}
+              {suggestion.group !== "all" &&
+                groups.includes(suggestion.group as (typeof groups)[number]) && (
+                  <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-mono font-bold text-foreground">
+                    {t(`mg.${suggestion.group}` as TKey)}
+                  </span>
+                )}
+              {suggestion.level !== "all" &&
+                levels.includes(suggestion.level as (typeof levels)[number]) && (
+                  <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-mono font-bold text-background">
+                    {t(`ex.level.${suggestion.level}` as TKey)}
+                  </span>
+                )}
               {suggestion.equipment !== "all" &&
                 equipmentList.includes(suggestion.equipment as (typeof equipmentList)[number]) && (
                   <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-mono font-bold text-background">
                     {t(`eq.${suggestion.equipment}` as TKey)}
                   </span>
                 )}
-              {suggestion.safety !== "all" && safetyTags.some((s) => s.id === suggestion.safety) && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[11px] font-mono font-bold text-background">
-                  <ShieldCheck className="size-3" />
-                  {t((safetyTags.find((s) => s.id === suggestion.safety)?.labelKey ?? "rt.ex.safety.all") as TKey)}
-                </span>
-              )}
+              {suggestion.safety !== "all" &&
+                safetyTags.some((s) => s.id === suggestion.safety) && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[11px] font-mono font-bold text-background">
+                    <ShieldCheck className="size-3" />
+                    {t(
+                      (safetyTags.find((s) => s.id === suggestion.safety)?.labelKey ??
+                        "rt.ex.safety.all") as TKey,
+                    )}
+                  </span>
+                )}
             </div>
             <div className="mt-3 flex items-center gap-2">
               <Button
@@ -480,7 +533,9 @@ function ExercisesPage() {
           <div className="mt-4 space-y-4 border-t border-border pt-4">
             {/* Muscle Groups */}
             <div className="space-y-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{t("rt.ex.muscleGroup")}</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                {t("rt.ex.muscleGroup")}
+              </span>
               <div className="flex flex-wrap gap-1.5">
                 {groups.map((g) => (
                   <button
@@ -501,7 +556,9 @@ function ExercisesPage() {
 
             {/* Difficulty */}
             <div className="space-y-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{t("ex.level")}</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                {t("ex.level")}
+              </span>
               <div className="flex flex-wrap gap-1.5">
                 {levels.map((lv) => (
                   <button
@@ -523,7 +580,9 @@ function ExercisesPage() {
             {/* Equipment & Joint Safety Filters */}
             <div className="grid gap-4 border-t border-border pt-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{t("rt.ex.equipment")}</span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  {t("rt.ex.equipment")}
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   {equipmentList.map((eq) => (
                     <button
@@ -543,7 +602,9 @@ function ExercisesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{t("rt.ex.jointSafety")}</span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  {t("rt.ex.jointSafety")}
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   {safetyTags.map((sf) => (
                     <button
@@ -567,7 +628,6 @@ function ExercisesPage() {
         )}
       </div>
 
-
       {isLoading && (
         <div className="panel p-12 text-center text-sm text-muted-foreground mt-8 flex flex-col items-center gap-2">
           <Loader2 className="size-6 animate-spin text-primary" />
@@ -588,11 +648,7 @@ function ExercisesPage() {
           const poster = exerciseVideoPoster(e.slug);
           const isFav = favorites.includes(e.slug);
           const name =
-            (lang === "lt" ? e.name_lt : e.name_en) ||
-            e.name_en ||
-            e.name_lt ||
-            e.slug ||
-            "";
+            (lang === "lt" ? e.name_lt : e.name_en) || e.name_en || e.name_lt || e.slug || "";
 
           return (
             <article
@@ -608,11 +664,7 @@ function ExercisesPage() {
                   onClick={(ev) => toggleFavorite(e.slug, ev)}
                   className="absolute right-3 top-3 z-10 rounded-full border border-white/15 bg-black/40 p-2.5 text-white backdrop-blur-xl transition-all hover:scale-105 hover:bg-black/60 hover:text-rose-400"
                 >
-                  <Heart
-                    className={`size-4 ${
-                      isFav ? "fill-rose-500 text-rose-500" : ""
-                    }`}
-                  />
+                  <Heart className={`size-4 ${isFav ? "fill-rose-500 text-rose-500" : ""}`} />
                 </button>
 
                 <button
@@ -661,9 +713,7 @@ function ExercisesPage() {
 
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
                   <span className="rounded-full bg-background px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {e.difficulty
-                      ? t(`ex.level.${e.difficulty}` as TKey)
-                      : t("rt.ex.forEveryone")}
+                    {e.difficulty ? t(`ex.level.${e.difficulty}` as TKey) : t("rt.ex.forEveryone")}
                   </span>
 
                   <Link
@@ -688,12 +738,7 @@ function ExercisesPage() {
               <Sparkles className="w-5 h-5 text-indigo-400" /> {previewEx?.name}
             </DialogTitle>
           </DialogHeader>
-          {previewEx && (
-            <ExerciseVideo
-              slug={previewEx.slug}
-              title={previewEx.name}
-            />
-          )}
+          {previewEx && <ExerciseVideo slug={previewEx.slug} title={previewEx.name} />}
         </DialogContent>
       </Dialog>
     </AppShell>

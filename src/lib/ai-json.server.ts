@@ -59,11 +59,21 @@ export class AiUnavailableError extends Error {
  * Translate them into a stable shape so callers can degrade gracefully.
  */
 export function normalizeAiError(error: unknown): Error {
-  const raw = error as { statusCode?: number; status?: number; message?: string; responseBody?: string };
+  const raw = error as {
+    statusCode?: number;
+    status?: number;
+    message?: string;
+    responseBody?: string;
+  };
   const status = raw?.statusCode ?? raw?.status ?? 0;
   const text = `${raw?.message ?? ""} ${raw?.responseBody ?? ""}`.toLowerCase();
 
-  if (status === 402 || text.includes("payment required") || text.includes("insufficient") || text.includes("credit")) {
+  if (
+    status === 402 ||
+    text.includes("payment required") ||
+    text.includes("insufficient") ||
+    text.includes("credit")
+  ) {
     return new AiUnavailableError("credits", "AI_CREDITS");
   }
   if (status === 429 || text.includes("rate limit") || text.includes("too many requests")) {
@@ -71,8 +81,6 @@ export function normalizeAiError(error: unknown): Error {
   }
   return error instanceof Error ? error : new Error(String(error));
 }
-
-
 
 function extractJson(text: string): unknown {
   let raw = text.trim();
@@ -121,7 +129,6 @@ function sanitizeJson(input: string): string {
 
   return out;
 }
-
 
 /**
  * Long generations sometimes get cut off mid-array. We drop the unfinished

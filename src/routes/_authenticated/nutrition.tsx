@@ -43,7 +43,17 @@ type Row = {
   note: string | null;
 };
 
-function Ring({ value, target, label, unit }: { value: number; target: number; label: string; unit: string }) {
+function Ring({
+  value,
+  target,
+  label,
+  unit,
+}: {
+  value: number;
+  target: number;
+  label: string;
+  unit: string;
+}) {
   const pct = Math.min(100, Math.round((value / Math.max(1, target)) * 100));
   return (
     <div className="panel flex flex-col items-center gap-2 p-5">
@@ -55,7 +65,9 @@ function Ring({ value, target, label, unit }: { value: number; target: number; l
       >
         <div className="grid size-[76px] place-items-center rounded-full bg-surface">
           <span className="text-display text-2xl leading-none">{Math.round(value)}</span>
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{unit}</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            {unit}
+          </span>
         </div>
       </div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>
@@ -77,7 +89,13 @@ function NutritionPage() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("id, display_name, locale, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, location, days_per_week, session_minutes, equipment, limitations, onboarded, created_at, updated_at, diet, allergies, dislikes, meals_per_day").eq("id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "id, display_name, locale, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, location, days_per_week, session_minutes, equipment, limitations, onboarded, created_at, updated_at, diet, allergies, dislikes, meals_per_day",
+        )
+        .eq("id", user!.id)
+        .maybeSingle();
       return data;
     },
     enabled: !!user,
@@ -122,10 +140,7 @@ function NutritionPage() {
   const kcalTarget = Math.round(weight * (goal === "lose" ? 28 : goal === "muscle" ? 38 : 34));
   const proteinTarget = Math.round(weight * 2);
   const fatTarget = Math.round(weight * 0.9);
-  const carbTarget = Math.max(
-    50,
-    Math.round((kcalTarget - proteinTarget * 4 - fatTarget * 9) / 4),
-  );
+  const carbTarget = Math.max(50, Math.round((kcalTarget - proteinTarget * 4 - fatTarget * 9) / 4));
 
   return (
     <div className="grid gap-8">
@@ -210,8 +225,12 @@ function NutritionPage() {
 
       <section className="mt-8">
         <SmartFridgeScanner />
-        <div className="mt-6"><VisionMealScanner /></div>
-        <div className="mt-6"><DineOutMenuScanner /></div>
+        <div className="mt-6">
+          <VisionMealScanner />
+        </div>
+        <div className="mt-6">
+          <DineOutMenuScanner />
+        </div>
       </section>
     </div>
   );

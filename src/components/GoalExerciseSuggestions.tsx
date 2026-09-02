@@ -60,7 +60,11 @@ const COPY = {
 
 const GOALS = ["lose_fat", "build_muscle", "strength", "endurance"] as const;
 
-type PlanSummary = { id: string; title: string; days: { day: number; title: string; exercises: number }[] };
+type PlanSummary = {
+  id: string;
+  title: string;
+  days: { day: number; title: string; exercises: number }[];
+};
 
 export const GoalExerciseSuggestions: React.FC = () => {
   const { lang } = useI18n();
@@ -74,7 +78,11 @@ export const GoalExerciseSuggestions: React.FC = () => {
     queryKey: ["profile-goal", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("goal").eq("id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("goal")
+        .eq("id", user!.id)
+        .maybeSingle();
       return data;
     },
   });
@@ -128,7 +136,9 @@ export const GoalExerciseSuggestions: React.FC = () => {
           qc.invalidateQueries({ queryKey: ["plan", user.id] });
         }
       } else {
-        toast.error(res.reason === "duplicate" ? c.dup : res.reason === "no_plan" ? c.noPlan : c.fail);
+        toast.error(
+          res.reason === "duplicate" ? c.dup : res.reason === "no_plan" ? c.noPlan : c.fail,
+        );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : c.fail);
@@ -167,12 +177,18 @@ export const GoalExerciseSuggestions: React.FC = () => {
       </div>
 
       <Button onClick={run} disabled={busy} className="w-full rounded-2xl py-6 font-bold">
-        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+        {busy ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Sparkles className="mr-2 h-4 w-4" />
+        )}
         {busy ? c.loading : items ? c.regenerate : c.generate}
       </Button>
 
       {items && !plan && (
-        <p className="rounded-2xl border border-border bg-surface-2 p-3 text-xs text-muted-foreground">{c.noPlan}</p>
+        <p className="rounded-2xl border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+          {c.noPlan}
+        </p>
       )}
 
       {plan && plan.days.length > 0 && (
@@ -184,7 +200,9 @@ export const GoalExerciseSuggestions: React.FC = () => {
               type="button"
               onClick={() => setDay(d.day)}
               className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition ${
-                day === d.day ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"
+                day === d.day
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-border text-muted-foreground"
               }`}
             >
               {c.day} {d.day} · {d.title}

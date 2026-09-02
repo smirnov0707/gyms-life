@@ -5,7 +5,10 @@ export const extra_nat3 = {
   "rm.shopping.generated": { lt: "Sugeneruota", en: "Generated" },
   "rm.shopping.page": { lt: "Puslapis", en: "Page" },
   "rm.shopping.items": { lt: "prekių", en: "items" },
-  "rm.shopping.footer": { lt: "GYMS.LIFE — AI treniruočių ir mitybos sistema", en: "GYMS.LIFE — AI training & nutrition system" },
+  "rm.shopping.footer": {
+    lt: "GYMS.LIFE — AI treniruočių ir mitybos sistema",
+    en: "GYMS.LIFE — AI training & nutrition system",
+  },
   "rm.shopping.tips": { lt: "Paruošimo patarimai", en: "Prep tips" },
   "rm.shopping.filename": { lt: "pirkiniu-sarasas", en: "shopping-list" },
 

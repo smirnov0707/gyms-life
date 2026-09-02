@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +51,10 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
     latestWeight != null && firstWeight != null ? Number(latestWeight) - Number(firstWeight) : null;
 
   const chart = withWeight.map((r) => ({
-    date: new Date(r.measured_on).toLocaleDateString(undefined, { month: "2-digit", day: "2-digit" }),
+    date: new Date(r.measured_on).toLocaleDateString(undefined, {
+      month: "2-digit",
+      day: "2-digit",
+    }),
     weight: Number(r.weight_kg),
     fat: r.body_fat != null ? Number(r.body_fat) : null,
   }));
@@ -138,7 +149,12 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
           placeholder="%"
           className="h-10 w-20"
         />
-        <Button size="sm" onClick={save} disabled={saving || (!weight && !fat)} className="rounded-full">
+        <Button
+          size="sm"
+          onClick={save}
+          disabled={saving || (!weight && !fat)}
+          className="rounded-full"
+        >
           {t("pr.addWeight")}
         </Button>
       </div>

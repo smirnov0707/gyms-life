@@ -40,18 +40,12 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Workout session is missing active plan metadata.");
     }
 
-    const workout = await getTodaysWorkoutData(
-      supabase,
-      userId,
-      session.day_index + 1,
-    );
+    const workout = await getTodaysWorkoutData(supabase, userId, session.day_index + 1);
     if (workout.status !== "READY" || workout.plan.id !== session.plan_id) {
       throw new Error("Workout plan is no longer available for this session.");
     }
 
-    const exercise = workout.workout.exercises.find(
-      (item) => item.slug === data.exerciseSlug,
-    );
+    const exercise = workout.workout.exercises.find((item) => item.slug === data.exerciseSlug);
     if (!exercise) {
       throw new Error("Exercise does not belong to this workout.");
     }
@@ -59,9 +53,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Exercise name does not match the workout plan.");
     }
     if (data.setNumber > exercise.sets) {
-      throw new Error(
-        "Set number exceeds the planned " + exercise.sets + " sets.",
-      );
+      throw new Error("Set number exceeds the planned " + exercise.sets + " sets.");
     }
 
     const { data: duplicate, error: duplicateError } = await supabase
@@ -98,9 +90,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       .single();
 
     if (error || !setLog) {
-      throw new Error(
-        "Could not save set: " + (error?.message ?? "unknown error"),
-      );
+      throw new Error("Could not save set: " + (error?.message ?? "unknown error"));
     }
 
     return { ok: true, setLog };

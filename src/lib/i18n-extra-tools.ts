@@ -2,7 +2,10 @@
 export const extra_tools = {
   // PlateCalculator
   "tl.plate.title": { lt: "Blynų skaičiuoklė (Plate Calculator)", en: "Plate Calculator" },
-  "tl.plate.subtitle": { lt: "Kiekvienai štangos pusei uždėti", en: "To load on each side of the bar" },
+  "tl.plate.subtitle": {
+    lt: "Kiekvienai štangos pusei uždėti",
+    en: "To load on each side of the bar",
+  },
   "tl.plate.totalWeight": { lt: "Bendras svoris (kg)", en: "Total weight (kg)" },
   "tl.plate.barWeight": { lt: "Štangos svoris (kg)", en: "Bar weight (kg)" },
   "tl.plate.barTitle": { lt: "Štanga", en: "Bar" },
@@ -10,8 +13,14 @@ export const extra_tools = {
   "tl.plate.remaining": { lt: "+{n} kg nepadalinama", en: "+{n} kg cannot be divided" },
 
   // OneRepMaxEstimator
-  "tl.orm.title": { lt: "1RM & RIR Skaičiuoklė (Epley formulė)", en: "1RM & RIR Calculator (Epley formula)" },
-  "tl.orm.subtitle": { lt: "Prognozuojamas maksimalus vieno pakartojimo svoris", en: "Estimated one-rep maximum weight" },
+  "tl.orm.title": {
+    lt: "1RM & RIR Skaičiuoklė (Epley formulė)",
+    en: "1RM & RIR Calculator (Epley formula)",
+  },
+  "tl.orm.subtitle": {
+    lt: "Prognozuojamas maksimalus vieno pakartojimo svoris",
+    en: "Estimated one-rep maximum weight",
+  },
   "tl.orm.predicted": { lt: "Prognozuojamas 1RM", en: "Predicted 1RM" },
   "tl.orm.weight": { lt: "Svoris:", en: "Weight:" },
   "tl.orm.reps": { lt: "Atlikti kart.:", en: "Reps done:" },
@@ -23,7 +32,10 @@ export const extra_tools = {
   "tl.breath.phase.exhale": { lt: "Iškvėpk", en: "Exhale" },
   "tl.breath.phase.pause": { lt: "Pauzė", en: "Pause" },
   "tl.breath.title": { lt: "Atsistatymo Kvėpavimo Gidas", en: "Recovery Breathing Guide" },
-  "tl.breath.subtitle": { lt: "Parasimpatinės sistemos aktyvavimas tarp serijų", en: "Activating the parasympathetic system between sets" },
+  "tl.breath.subtitle": {
+    lt: "Parasimpatinės sistemos aktyvavimas tarp serijų",
+    en: "Activating the parasympathetic system between sets",
+  },
   "tl.breath.modeBox": { lt: "Box 4-4-4-4", en: "Box 4-4-4-4" },
   "tl.breath.modeRelax": { lt: "4-7-8 Relax", en: "4-7-8 Relax" },
   "tl.breath.ready": { lt: "Pasiruošęs", en: "Ready" },
@@ -31,34 +43,97 @@ export const extra_tools = {
 
   // MuscleTargetVisualizer
   "tl.mtv.title": { lt: "Raumenų Aktyvacijos Anatomija", en: "Muscle Activation Anatomy" },
-  "tl.mtv.primaryLabel": { lt: "Pirminis Agonistas (Pagrindinis darbas)", en: "Primary Agonist (Main work)" },
-  "tl.mtv.synergistsLabel": { lt: "Sinergistai (Pagalbiniai raumenys)", en: "Synergists (Assisting muscles)" },
-  "tl.mtv.stabilizersLabel": { lt: "Stabilizatoriai & Sąnarių apsauga", en: "Stabilizers & Joint protection" },
+  "tl.mtv.primaryLabel": {
+    lt: "Pirminis Agonistas (Pagrindinis darbas)",
+    en: "Primary Agonist (Main work)",
+  },
+  "tl.mtv.synergistsLabel": {
+    lt: "Sinergistai (Pagalbiniai raumenys)",
+    en: "Synergists (Assisting muscles)",
+  },
+  "tl.mtv.stabilizersLabel": {
+    lt: "Stabilizatoriai & Sąnarių apsauga",
+    en: "Stabilizers & Joint protection",
+  },
   "tl.mtv.defaultPrimary": { lt: "Tikslinė raumenų grupė", en: "Target muscle group" },
   "tl.mtv.defaultSynergists": { lt: "Pagalbiniai raumenys", en: "Assisting muscles" },
   "tl.mtv.defaultStabilizers": { lt: "Korpuso stabilizatoriai", en: "Core stabilizers" },
-  "tl.mtv.legs.primary": { lt: "Keturgalvis šlaunies raumuo, Didysis sėdmens raumuo", en: "Quadriceps, Gluteus maximus" },
-  "tl.mtv.legs.synergists": { lt: "Dvigalvis šlaunies raumuo, Pritraukiamieji raumenys", en: "Hamstrings, Adductors" },
-  "tl.mtv.legs.stabilizers": { lt: "Nugaros tiesiamieji, Pilvo presas, Blauzdos", en: "Spinal erectors, Abs, Calves" },
-  "tl.mtv.chest.primary": { lt: "Didysis krūtinės raumuo (vidurinė/apatinė dalis)", en: "Pectoralis major (mid/lower)" },
-  "tl.mtv.chest.synergists": { lt: "Priekinis deltos raumuo, Tricepsas", en: "Anterior deltoid, Triceps" },
-  "tl.mtv.chest.stabilizers": { lt: "Rotatorių manžetė, Platusis nugaros raumuo, Korpusas", en: "Rotator cuff, Latissimus dorsi, Core" },
-  "tl.mtv.back.primary": { lt: "Platusis nugaros raumuo (Latissimus dorsi), Rombiniai raumenys", en: "Latissimus dorsi, Rhomboids" },
-  "tl.mtv.back.synergists": { lt: "Bicepsas, Užpakalinis deltos raumuo, Trapecija", en: "Biceps, Posterior deltoid, Trapezius" },
-  "tl.mtv.back.stabilizers": { lt: "Nugaros tiesiamieji, Dilbiai, Gilusis korpusas", en: "Spinal erectors, Forearms, Deep core" },
-  "tl.mtv.shoulders.primary": { lt: "Vidurinis ir priekinis deltos raumuo", en: "Middle and anterior deltoid" },
-  "tl.mtv.shoulders.synergists": { lt: "Tricepsas, Viršutinė trapecija, Priekinis dantytasis", en: "Triceps, Upper trapezius, Serratus anterior" },
+  "tl.mtv.legs.primary": {
+    lt: "Keturgalvis šlaunies raumuo, Didysis sėdmens raumuo",
+    en: "Quadriceps, Gluteus maximus",
+  },
+  "tl.mtv.legs.synergists": {
+    lt: "Dvigalvis šlaunies raumuo, Pritraukiamieji raumenys",
+    en: "Hamstrings, Adductors",
+  },
+  "tl.mtv.legs.stabilizers": {
+    lt: "Nugaros tiesiamieji, Pilvo presas, Blauzdos",
+    en: "Spinal erectors, Abs, Calves",
+  },
+  "tl.mtv.chest.primary": {
+    lt: "Didysis krūtinės raumuo (vidurinė/apatinė dalis)",
+    en: "Pectoralis major (mid/lower)",
+  },
+  "tl.mtv.chest.synergists": {
+    lt: "Priekinis deltos raumuo, Tricepsas",
+    en: "Anterior deltoid, Triceps",
+  },
+  "tl.mtv.chest.stabilizers": {
+    lt: "Rotatorių manžetė, Platusis nugaros raumuo, Korpusas",
+    en: "Rotator cuff, Latissimus dorsi, Core",
+  },
+  "tl.mtv.back.primary": {
+    lt: "Platusis nugaros raumuo (Latissimus dorsi), Rombiniai raumenys",
+    en: "Latissimus dorsi, Rhomboids",
+  },
+  "tl.mtv.back.synergists": {
+    lt: "Bicepsas, Užpakalinis deltos raumuo, Trapecija",
+    en: "Biceps, Posterior deltoid, Trapezius",
+  },
+  "tl.mtv.back.stabilizers": {
+    lt: "Nugaros tiesiamieji, Dilbiai, Gilusis korpusas",
+    en: "Spinal erectors, Forearms, Deep core",
+  },
+  "tl.mtv.shoulders.primary": {
+    lt: "Vidurinis ir priekinis deltos raumuo",
+    en: "Middle and anterior deltoid",
+  },
+  "tl.mtv.shoulders.synergists": {
+    lt: "Tricepsas, Viršutinė trapecija, Priekinis dantytasis",
+    en: "Triceps, Upper trapezius, Serratus anterior",
+  },
   "tl.mtv.shoulders.stabilizers": { lt: "Rotatorių manžetė, Korpusas", en: "Rotator cuff, Core" },
-  "tl.mtv.arms.primary": { lt: "Dvigalvis / Trigvalvis žasto raumuo", en: "Biceps / Triceps brachii" },
-  "tl.mtv.arms.synergists": { lt: "Žastinis raumuo, Dilbio lenkiamieji", en: "Brachialis, Forearm flexors" },
-  "tl.mtv.arms.stabilizers": { lt: "Pečių juosta, Riešo stabilizatoriai", en: "Shoulder girdle, Wrist stabilizers" },
-  "tl.mtv.core.primary": { lt: "Tiesusis pilvo raumuo, Įstrižiniai pilvo raumenys", en: "Rectus abdominis, Obliques" },
-  "tl.mtv.core.synergists": { lt: "Skersinis pilvo raumuo, Kvadratinis juosmens raumuo", en: "Transverse abdominis, Quadratus lumborum" },
+  "tl.mtv.arms.primary": {
+    lt: "Dvigalvis / Trigvalvis žasto raumuo",
+    en: "Biceps / Triceps brachii",
+  },
+  "tl.mtv.arms.synergists": {
+    lt: "Žastinis raumuo, Dilbio lenkiamieji",
+    en: "Brachialis, Forearm flexors",
+  },
+  "tl.mtv.arms.stabilizers": {
+    lt: "Pečių juosta, Riešo stabilizatoriai",
+    en: "Shoulder girdle, Wrist stabilizers",
+  },
+  "tl.mtv.core.primary": {
+    lt: "Tiesusis pilvo raumuo, Įstrižiniai pilvo raumenys",
+    en: "Rectus abdominis, Obliques",
+  },
+  "tl.mtv.core.synergists": {
+    lt: "Skersinis pilvo raumuo, Kvadratinis juosmens raumuo",
+    en: "Transverse abdominis, Quadratus lumborum",
+  },
   "tl.mtv.core.stabilizers": { lt: "Klubų lenkiamieji, Sėdmenys", en: "Hip flexors, Glutes" },
 
   // MuscleHeatmap
-  "tl.heat.title": { lt: "Savaitės Raumenų Apkrovos & Atkūrimo Žemėlapis", en: "Weekly Muscle Load & Recovery Map" },
-  "tl.heat.subtitle": { lt: "Faktinio tūrio ir nuovargio akumuliacijos stebėsena", en: "Tracking actual training volume and fatigue accumulation" },
+  "tl.heat.title": {
+    lt: "Savaitės Raumenų Apkrovos & Atkūrimo Žemėlapis",
+    en: "Weekly Muscle Load & Recovery Map",
+  },
+  "tl.heat.subtitle": {
+    lt: "Faktinio tūrio ir nuovargio akumuliacijos stebėsena",
+    en: "Tracking actual training volume and fatigue accumulation",
+  },
   "tl.heat.recoveryStatus": { lt: "Atkūrimo būsena", en: "Recovery status" },
   "tl.heat.empty": {
     lt: "Kol kas nėra užfiksuotų serijų per paskutines 7 dienas — atlik treniruotę ir žemėlapis užsipildys.",
@@ -79,74 +154,161 @@ export const extra_tools = {
   // TransformationCalculator
   "tl.tc.badge": { lt: "Rezultatų Prognozė", en: "Results Forecast" },
   "tl.tc.title": { lt: "Kur Būsi Su GYMS.LIFE?", en: "Where will you be with GYMS.LIFE?" },
-  "tl.tc.subtitle": { lt: "Pasirink savo planuojamą laikotarpį ir pamatyk realią transformacijos prognozę.", en: "Pick your planned timeframe and see a realistic transformation forecast." },
+  "tl.tc.subtitle": {
+    lt: "Pasirink savo planuojamą laikotarpį ir pamatyk realią transformacijos prognozę.",
+    en: "Pick your planned timeframe and see a realistic transformation forecast.",
+  },
   "tl.tc.duration": { lt: "Programos trukmė:", en: "Program duration:" },
   "tl.tc.durationWeeks": { lt: "{n} savaičių", en: "{n} weeks" },
   "tl.tc.frequency": { lt: "Treniruočių dažnumas:", en: "Training frequency:" },
   "tl.tc.frequencyPerWeek": { lt: "{n} k. / savaitę", en: "{n}x / week" },
   "tl.tc.strengthGain": { lt: "Prognozuojamas jėgos progresas", en: "Projected strength progress" },
-  "tl.tc.strengthGainSub": { lt: "vertinimas pagal pasirinktą trukmę ir dažnumą", en: "estimate based on your chosen length and frequency" },
+  "tl.tc.strengthGainSub": {
+    lt: "vertinimas pagal pasirinktą trukmę ir dažnumą",
+    en: "estimate based on your chosen length and frequency",
+  },
   "tl.tc.kcalBurned": { lt: "Sudeginta energija", en: "Energy burned" },
   "tl.tc.kcalBurnedSub": { lt: "aktyvių kcal", en: "active kcal" },
   "tl.tc.goalProbability": { lt: "Progreso prognozė", en: "Progress forecast" },
-  "tl.tc.goalProbabilitySub": { lt: "orientacinis nuoseklumo rodiklis, ne garantija", en: "an indicative consistency score, not a guarantee" },
+  "tl.tc.goalProbabilitySub": {
+    lt: "orientacinis nuoseklumo rodiklis, ne garantija",
+    en: "an indicative consistency score, not a guarantee",
+  },
 
   // SmartExerciseSwap
   "tl.swap.button": { lt: "Pakeisti pratimą", en: "Swap exercise" },
   "tl.swap.dialogTitle": { lt: "Išmanus Pratimo Pakaitalas", en: "Smart Exercise Swap" },
   "tl.swap.match": { lt: "Biomechaninis atitikmuo", en: "Biomechanical match" },
-  "tl.swap.squat1.name": { lt: "Goblet Squats (Su svarmeniu)", en: "Goblet Squats (with dumbbell)" },
-  "tl.swap.squat1.reason": { lt: "Mažesnė apkrova juosmeniui, tinka jei užimtas stovas", en: "Less lower-back load, good if the squat rack is busy" },
-  "tl.swap.squat2.name": { lt: "Leg Press (Kojų spaudimas treniruoklyje)", en: "Leg Press (machine)" },
-  "tl.swap.squat2.reason": { lt: "Izoliuotas darbas keturgalviams be nugaros įtampos", en: "Isolated quad work without spinal loading" },
-  "tl.swap.squat3.name": { lt: "Bulgarian Split Squats (Įtūpstai)", en: "Bulgarian Split Squats (lunges)" },
-  "tl.swap.squat3.reason": { lt: "Vienos kojos darbas, taiso raumenų disbalansą", en: "Single-leg work, corrects muscle imbalances" },
+  "tl.swap.squat1.name": {
+    lt: "Goblet Squats (Su svarmeniu)",
+    en: "Goblet Squats (with dumbbell)",
+  },
+  "tl.swap.squat1.reason": {
+    lt: "Mažesnė apkrova juosmeniui, tinka jei užimtas stovas",
+    en: "Less lower-back load, good if the squat rack is busy",
+  },
+  "tl.swap.squat2.name": {
+    lt: "Leg Press (Kojų spaudimas treniruoklyje)",
+    en: "Leg Press (machine)",
+  },
+  "tl.swap.squat2.reason": {
+    lt: "Izoliuotas darbas keturgalviams be nugaros įtampos",
+    en: "Isolated quad work without spinal loading",
+  },
+  "tl.swap.squat3.name": {
+    lt: "Bulgarian Split Squats (Įtūpstai)",
+    en: "Bulgarian Split Squats (lunges)",
+  },
+  "tl.swap.squat3.reason": {
+    lt: "Vienos kojos darbas, taiso raumenų disbalansą",
+    en: "Single-leg work, corrects muscle imbalances",
+  },
   "tl.swap.bench1.name": { lt: "Dumbbell Press (Spaudimas su hanteliais)", en: "Dumbbell Press" },
-  "tl.swap.bench1.reason": { lt: "Didesnė judesio amplitudė ir mažesnė pečių sąnario trintis", en: "Greater range of motion and less shoulder joint stress" },
+  "tl.swap.bench1.reason": {
+    lt: "Didesnė judesio amplitudė ir mažesnė pečių sąnario trintis",
+    en: "Greater range of motion and less shoulder joint stress",
+  },
   "tl.swap.bench2.name": { lt: "Push-Ups (Atsispaudimai su svoriu)", en: "Push-Ups (weighted)" },
-  "tl.swap.bench2.reason": { lt: "Kūno svorio alternatyva, papildomai stiprina korpusą", en: "Bodyweight alternative that also strengthens the core" },
+  "tl.swap.bench2.reason": {
+    lt: "Kūno svorio alternatyva, papildomai stiprina korpusą",
+    en: "Bodyweight alternative that also strengthens the core",
+  },
   "tl.swap.deadlift1.name": { lt: "Romanian Deadlift (Rumuniška trauka)", en: "Romanian Deadlift" },
-  "tl.swap.deadlift1.reason": { lt: "Daugiau akcento sėdmenims ir šlaunų dvigalviams", en: "More emphasis on glutes and hamstrings" },
+  "tl.swap.deadlift1.reason": {
+    lt: "Daugiau akcento sėdmenims ir šlaunų dvigalviams",
+    en: "More emphasis on glutes and hamstrings",
+  },
   "tl.swap.deadlift2.name": { lt: "Glute Bridge (Sėdmenų tiltelis)", en: "Glute Bridge" },
-  "tl.swap.deadlift2.reason": { lt: "Saugiausia alternatyva esant nugaros jautrumui", en: "Safest alternative for sensitive lower backs" },
-  "tl.swap.default1.name": { lt: "Dumbbell Variant (Alternatyva su hanteliais)", en: "Dumbbell Variant" },
-  "tl.swap.default1.reason": { lt: "Greitas pakaitalas laisvaisiais svoriais", en: "Quick free-weight substitute" },
+  "tl.swap.deadlift2.reason": {
+    lt: "Saugiausia alternatyva esant nugaros jautrumui",
+    en: "Safest alternative for sensitive lower backs",
+  },
+  "tl.swap.default1.name": {
+    lt: "Dumbbell Variant (Alternatyva su hanteliais)",
+    en: "Dumbbell Variant",
+  },
+  "tl.swap.default1.reason": {
+    lt: "Greitas pakaitalas laisvaisiais svoriais",
+    en: "Quick free-weight substitute",
+  },
   "tl.swap.default2.name": { lt: "Kūno svorio alternatyva", en: "Bodyweight alternative" },
-  "tl.swap.default2.reason": { lt: "Galima atlikti be papildomos įrangos", en: "Can be done without extra equipment" },
+  "tl.swap.default2.reason": {
+    lt: "Galima atlikti be papildomos įrangos",
+    en: "Can be done without extra equipment",
+  },
 
   // DynamicWarmupGenerator
-  "tl.warmup.title": { lt: "Išmanusis Apšilimo & Mobilumo Gidas", en: "Smart Warmup & Mobility Guide" },
+  "tl.warmup.title": {
+    lt: "Išmanusis Apšilimo & Mobilumo Gidas",
+    en: "Smart Warmup & Mobility Guide",
+  },
   "tl.warmup.tabLegs": { lt: "Kojų diena", en: "Leg day" },
   "tl.warmup.tabUpper": { lt: "Viršutinė kūno dalis", en: "Upper body" },
   "tl.warmup.tabFull": { lt: "Visas kūnas", en: "Full body" },
-  "tl.warmup.legs.title": { lt: "Kojų & Klubų Mobilumo Aktyvavimas", en: "Leg & Hip Mobility Activation" },
+  "tl.warmup.legs.title": {
+    lt: "Kojų & Klubų Mobilumo Aktyvavimas",
+    en: "Leg & Hip Mobility Activation",
+  },
   "tl.warmup.legs.d1.name": { lt: "90/90 Klubų rotacija", en: "90/90 Hip Rotation" },
   "tl.warmup.legs.d1.reps": { lt: "10 k. kiekvienai pusei", en: "10 reps each side" },
-  "tl.warmup.legs.d1.focus": { lt: "Klubo sąnario kapsulė ir mobilumas", en: "Hip joint capsule and mobility" },
-  "tl.warmup.legs.d2.name": { lt: "Gilus pritūpimas su krūtinės atvėrimu", en: "Deep squat with chest opener" },
+  "tl.warmup.legs.d1.focus": {
+    lt: "Klubo sąnario kapsulė ir mobilumas",
+    en: "Hip joint capsule and mobility",
+  },
+  "tl.warmup.legs.d2.name": {
+    lt: "Gilus pritūpimas su krūtinės atvėrimu",
+    en: "Deep squat with chest opener",
+  },
   "tl.warmup.legs.d2.reps": { lt: "8 pakartojimai su 2s pauze", en: "8 reps with 2s pause" },
-  "tl.warmup.legs.d2.focus": { lt: "Čiurnos ir krūtininės dalies mobilumas", en: "Ankle and thoracic mobility" },
-  "tl.warmup.legs.d3.name": { lt: "Glute Bridges (Sėdmenų aktyvavimas)", en: "Glute Bridges (glute activation)" },
+  "tl.warmup.legs.d2.focus": {
+    lt: "Čiurnos ir krūtininės dalies mobilumas",
+    en: "Ankle and thoracic mobility",
+  },
+  "tl.warmup.legs.d3.name": {
+    lt: "Glute Bridges (Sėdmenų aktyvavimas)",
+    en: "Glute Bridges (glute activation)",
+  },
   "tl.warmup.legs.d3.reps": { lt: "15 pakartojimų su suspaudimu", en: "15 reps with a squeeze" },
-  "tl.warmup.legs.d3.focus": { lt: "Sėdmenų įjungimas prieš bazinius svorius", en: "Activating glutes before heavy lifts" },
-  "tl.warmup.upper.title": { lt: "Pečių Juostos & Krūtinės Apšilimas", en: "Shoulder Girdle & Chest Warmup" },
+  "tl.warmup.legs.d3.focus": {
+    lt: "Sėdmenų įjungimas prieš bazinius svorius",
+    en: "Activating glutes before heavy lifts",
+  },
+  "tl.warmup.upper.title": {
+    lt: "Pečių Juostos & Krūtinės Apšilimas",
+    en: "Shoulder Girdle & Chest Warmup",
+  },
   "tl.warmup.upper.d1.name": { lt: "Band Pull-Aparts (Gumos trauka)", en: "Band Pull-Aparts" },
   "tl.warmup.upper.d1.reps": { lt: "20 pakartojimų", en: "20 reps" },
-  "tl.warmup.upper.d1.focus": { lt: "Užpakalinis deltos raumuo ir mentės", en: "Posterior deltoid and scapulae" },
+  "tl.warmup.upper.d1.focus": {
+    lt: "Užpakalinis deltos raumuo ir mentės",
+    en: "Posterior deltoid and scapulae",
+  },
   "tl.warmup.upper.d2.name": { lt: "Scapular Push-Ups", en: "Scapular Push-Ups" },
   "tl.warmup.upper.d2.reps": { lt: "12 pakartojimų", en: "12 reps" },
   "tl.warmup.upper.d2.focus": { lt: "Priekinis dantytasis raumuo", en: "Serratus anterior" },
-  "tl.warmup.upper.d3.name": { lt: "Arm Circles & Thoracic Rotations", en: "Arm Circles & Thoracic Rotations" },
+  "tl.warmup.upper.d3.name": {
+    lt: "Arm Circles & Thoracic Rotations",
+    en: "Arm Circles & Thoracic Rotations",
+  },
   "tl.warmup.upper.d3.reps": { lt: "10 k. kiekviena kryptimi", en: "10 reps each direction" },
-  "tl.warmup.upper.d3.focus": { lt: "Rotatorių manžetės kraujotaka", en: "Rotator cuff blood flow" },
+  "tl.warmup.upper.d3.focus": {
+    lt: "Rotatorių manžetės kraujotaka",
+    en: "Rotator cuff blood flow",
+  },
   "tl.warmup.full.title": { lt: "Viso Kūno CNS Paruošimas", en: "Full Body CNS Preparation" },
   "tl.warmup.full.d1.name": { lt: "World's Greatest Stretch", en: "World's Greatest Stretch" },
   "tl.warmup.full.d1.reps": { lt: "6 k. kiekvienai pusei", en: "6 reps each side" },
   "tl.warmup.full.d1.focus": { lt: "Klubai, stuburas, krūtinė", en: "Hips, spine, chest" },
   "tl.warmup.full.d2.name": { lt: "Inchworm su atsispaudimu", en: "Inchworm with push-up" },
   "tl.warmup.full.d2.reps": { lt: "8 pakartojimai", en: "8 reps" },
-  "tl.warmup.full.d2.focus": { lt: "Užpakalinė grandinė ir korpusas", en: "Posterior chain and core" },
+  "tl.warmup.full.d2.focus": {
+    lt: "Užpakalinė grandinė ir korpusas",
+    en: "Posterior chain and core",
+  },
   "tl.warmup.full.d3.name": { lt: "Pogo Jumps (Šuoliukai ant pirštų)", en: "Pogo Jumps" },
   "tl.warmup.full.d3.reps": { lt: "30 sekundžių", en: "30 seconds" },
-  "tl.warmup.full.d3.focus": { lt: "Centrinės nervų sistemos aktyvavimas", en: "Central nervous system activation" },
+  "tl.warmup.full.d3.focus": {
+    lt: "Centrinės nervų sistemos aktyvavimas",
+    en: "Central nervous system activation",
+  },
 } as const;

@@ -40,8 +40,8 @@ export const Route = createFileRoute("/api/public/health-ingest")({
         const raw = body as Record<string, unknown>;
 
         const parsed = Envelope.safeParse({
-          token: typeof raw['token'] === "string" ? raw['token'].trim() : raw['token'],
-          ...(raw['source'] ? { source: raw['source'] } : {}),
+          token: typeof raw["token"] === "string" ? raw["token"].trim() : raw["token"],
+          ...(raw["source"] ? { source: raw["source"] } : {}),
         });
         if (!parsed.success) return json({ error: "Invalid payload" }, 400);
         const p = { ...parsed.data, ...normalizeHealthPayload(raw) };
@@ -57,9 +57,9 @@ export const Route = createFileRoute("/api/public/health-ingest")({
         if (!profile) return json({ error: "Unauthorized" }, 401);
 
         const userId = profile.id as string;
-        const sampleOn = normalizeDate(raw['date'] ?? raw['sample_on'] ?? raw['day']) ??
+        const sampleOn =
+          normalizeDate(raw["date"] ?? raw["sample_on"] ?? raw["day"]) ??
           new Date().toISOString().slice(0, 10);
-
 
         const { data: history } = await supabaseAdmin
           .from("health_samples")
@@ -134,7 +134,6 @@ export const Route = createFileRoute("/api/public/health-ingest")({
             active_kcal: p.activeKcal,
           },
         });
-
       },
     },
   },

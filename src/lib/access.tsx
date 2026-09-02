@@ -23,7 +23,12 @@ export function useAccess(userId: string | undefined): AccessState {
     queryFn: async () => {
       const env = getPaddleEnvironment();
       const [roleRes, profileRes, subRes] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId!).eq("role", "admin").maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId!)
+          .eq("role", "admin")
+          .maybeSingle(),
         supabase.from("profiles").select("created_at").eq("id", userId!).maybeSingle(),
         supabase
           .from("subscriptions")
@@ -52,7 +57,14 @@ export function useAccess(userId: string | undefined): AccessState {
       const trialEndsAt = new Date(createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
       const inTrial = now < trialEndsAt;
 
-      return { isOwner, subscribed, inTrial, trialEndsAt, periodEnd, cancelAtPeriodEnd: !!sub?.cancel_at_period_end };
+      return {
+        isOwner,
+        subscribed,
+        inTrial,
+        trialEndsAt,
+        periodEnd,
+        cancelAtPeriodEnd: !!sub?.cancel_at_period_end,
+      };
     },
   });
 

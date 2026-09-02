@@ -1,10 +1,13 @@
 // AUTO-GENERATED — do not edit manually.
 // Free Exercise DB visual assets used by GYMS.LIFE.
 
-export const EXERCISE_DB_MEDIA: Record<string, {
-  image0: string;
-  image1: string;
-}> = {
+export const EXERCISE_DB_MEDIA: Record<
+  string,
+  {
+    image0: string;
+    image1: string;
+  }
+> = {
   "ab-wheel": {
     image0: "/assets/exercise-db/ab-wheel/0.jpg",
     image1: "/assets/exercise-db/ab-wheel/1.jpg",
@@ -201,7 +204,7 @@ export const EXERCISE_DB_MEDIA: Record<string, {
     image0: "/assets/exercise-db/pallof-press/0.jpg",
     image1: "/assets/exercise-db/pallof-press/1.jpg",
   },
-  "plank": {
+  plank: {
     image0: "/assets/exercise-db/plank/0.jpg",
     image1: "/assets/exercise-db/plank/1.jpg",
   },
@@ -241,7 +244,7 @@ export const EXERCISE_DB_MEDIA: Record<string, {
     image0: "/assets/exercise-db/sit-up/0.jpg",
     image1: "/assets/exercise-db/sit-up/1.jpg",
   },
-  "skullcrusher": {
+  skullcrusher: {
     image0: "/assets/exercise-db/skullcrusher/0.jpg",
     image1: "/assets/exercise-db/skullcrusher/1.jpg",
   },
@@ -261,7 +264,7 @@ export const EXERCISE_DB_MEDIA: Record<string, {
     image0: "/assets/exercise-db/sumo-deadlift/0.jpg",
     image1: "/assets/exercise-db/sumo-deadlift/1.jpg",
   },
-  "superman": {
+  superman: {
     image0: "/assets/exercise-db/superman/0.jpg",
     image1: "/assets/exercise-db/superman/1.jpg",
   },
@@ -303,6 +306,4 @@ export const EXERCISE_DB_MEDIA: Record<string, {
   },
 };
 
-export const EXERCISE_DB_SLUGS = new Set(
-  Object.keys(EXERCISE_DB_MEDIA),
-);
+export const EXERCISE_DB_SLUGS = new Set(Object.keys(EXERCISE_DB_MEDIA));

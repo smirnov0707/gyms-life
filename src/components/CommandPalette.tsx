@@ -8,7 +8,6 @@ import {
   HeartPulse,
   LineChart,
   MessageSquare,
-  
   Trophy,
   Sparkles,
   UtensilsCrossed,
@@ -34,7 +33,7 @@ const items: { to: string; key: TKey; icon: typeof Activity }[] = [
   { to: "/supplements", key: "supp.title", icon: Pill },
   { to: "/achievements", key: "ach.title", icon: Trophy },
   { to: "/progress", key: "nav.progress", icon: LineChart },
-  
+
   { to: "/readiness", key: "rd.title", icon: HeartPulse },
   { to: "/coach", key: "nav.coach", icon: MessageSquare },
   { to: "/coach-history", key: "coach.history", icon: MessageSquare },

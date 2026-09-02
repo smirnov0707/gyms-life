@@ -12,11 +12,12 @@ export const searchRestaurantDishes = createServerFn({ method: "POST" })
   .validator((data: unknown) => RestaurantSearchInput.parse(data))
   .handler(async ({ data }) => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
-    const goalText = data.goal === "fat_loss" 
-      ? "svorio metimui (mažiau kalorijų, daug baltymų)" 
-      : data.goal === "muscle_gain"
-      ? "raumenų auginimui (daug baltymų, geri angliavandeniai)"
-      : "sveikam balansui";
+    const goalText =
+      data.goal === "fat_loss"
+        ? "svorio metimui (mažiau kalorijų, daug baltymų)"
+        : data.goal === "muscle_gain"
+          ? "raumenų auginimui (daug baltymų, geri angliavandeniai)"
+          : "sveikam balansui";
 
     const prompt = `Tu esi profesionalus sporto dietologas ir restoranų meniu ekspertas.
 Vartotojas įvedė restorano ar kavinės pavadinimą: "${data.query}".
@@ -54,11 +55,17 @@ Atsakyk TIK TIKSLIU JSON formatu be markdown:
         temperature: 0.2,
       });
 
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        raw
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return {
         ok: false,
-        reason: data.lang === "lt" ? "Nepavyko apdoroti restorano užklausos." : "Failed to fetch menu.",
+        reason:
+          data.lang === "lt" ? "Nepavyko apdoroti restorano užklausos." : "Failed to fetch menu.",
       };
     }
   });

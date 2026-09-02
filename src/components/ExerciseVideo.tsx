@@ -33,7 +33,7 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
         const entry = entries[0];
         if (entry) setIsInViewport(entry.isIntersecting);
       },
-      { threshold: 0.4 }
+      { threshold: 0.4 },
     );
 
     observer.observe(el);
@@ -44,9 +44,8 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
   useEffect(() => {
     if (media.type !== "frames" || !media.frames || media.frames.length <= 1) return;
 
-    const shouldRun = isHovered !== undefined 
-      ? isHovered 
-      : (autoPlay && (isInViewport || isInteractive));
+    const shouldRun =
+      isHovered !== undefined ? isHovered : autoPlay && (isInViewport || isInteractive);
 
     if (!shouldRun) {
       setFrameIndex(0);
@@ -135,14 +134,16 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
               AI OPTIMIZED
             </span>
           </div>
-          
+
           <div className="text-[9px] sm:text-[10px] font-mono text-neutral-300 bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded border border-white/10">
             {isEccentric ? "ECCENTRIC" : "CONCENTRIC"}
           </div>
         </div>
 
         {/* Vidurinis tinklelis (Desktop hover arba Mobile touch) */}
-        <div className={`transition-opacity duration-300 ${isInteractive ? "opacity-100" : "opacity-0"} absolute inset-0 flex items-center justify-center pointer-events-none`}>
+        <div
+          className={`transition-opacity duration-300 ${isInteractive ? "opacity-100" : "opacity-0"} absolute inset-0 flex items-center justify-center pointer-events-none`}
+        >
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-dashed border-emerald-500/30 flex items-center justify-center animate-spin-slow">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/10" />
           </div>
@@ -154,12 +155,18 @@ export const ExerciseVideo: React.FC<ExerciseVideoProps> = ({
         {/* Apatinis pavadinimas ir pozicijos fazė */}
         <div className="flex items-end justify-between gap-2">
           <div className="min-w-0 flex-1 pr-2">
-            <div className="text-[8px] sm:text-[9px] font-mono text-neutral-400 tracking-wider uppercase">LOAD MATRIX</div>
-            <div className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">{title || slug.replace(/-/g, " ").toUpperCase()}</div>
+            <div className="text-[8px] sm:text-[9px] font-mono text-neutral-400 tracking-wider uppercase">
+              LOAD MATRIX
+            </div>
+            <div className="text-xs sm:text-sm font-bold text-white tracking-wide truncate">
+              {title || slug.replace(/-/g, " ").toUpperCase()}
+            </div>
           </div>
-          
+
           <div className="flex items-center shrink-0 bg-black/70 backdrop-blur-md px-2 py-0.5 sm:py-1 rounded-md border border-white/10">
-            <span className={`text-[9px] sm:text-[10px] font-mono font-bold ${isEccentric ? "text-neutral-400" : "text-emerald-400"}`}>
+            <span
+              className={`text-[9px] sm:text-[10px] font-mono font-bold ${isEccentric ? "text-neutral-400" : "text-emerald-400"}`}
+            >
               {isEccentric ? "POS 0" : "POS 1"}
             </span>
           </div>

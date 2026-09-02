@@ -39,8 +39,6 @@ describe("TrainingPlanDataSchema", () => {
   });
 
   it("rejects invalid program data before it reaches the domain", () => {
-    expect(
-      TrainingPlanDataSchema.safeParse({ ...validPlan, weeks: 0 }).success,
-    ).toBe(false);
+    expect(TrainingPlanDataSchema.safeParse({ ...validPlan, weeks: 0 }).success).toBe(false);
   });
 });

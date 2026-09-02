@@ -57,8 +57,7 @@ const pick = (raw: Raw, keys: string[]): unknown => {
 const inRange = (n: number | null, min: number, max: number) =>
   n != null && n >= min && n <= max ? n : null;
 
-const round = (n: number | null, d = 1) =>
-  n == null ? null : Math.round(n * 10 ** d) / 10 ** d;
+const round = (n: number | null, d = 1) => (n == null ? null : Math.round(n * 10 ** d) / 10 ** d);
 
 export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
   // Resting heart rate — bpm
@@ -86,7 +85,8 @@ export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
   const sleepMinutes = toNumber(pick(raw, ["sleep_minutes", "sleep_mins", "asleep_minutes"]));
   if (sleep == null && sleepMinutes != null) sleep = sleepMinutes / 60;
   if (sleep != null) {
-    if (sleep > 1440) sleep = sleep / 3600; // seconds
+    if (sleep > 1440)
+      sleep = sleep / 3600; // seconds
     else if (sleep > 20) sleep = sleep / 60; // minutes
   }
   const sleepHours = inRange(round(sleep), 0, 20);
@@ -122,7 +122,6 @@ export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
   // A value in kJ accidentally sent as kcal (> 8000 kcal/day is implausible)
   if (kcal != null && kcal > 8000) kcal = kcal / 4.184;
   const activeKcal = inRange(kcal == null ? null : Math.round(kcal), 0, 20000);
-
 
   const vo2max = inRange(toNumber(pick(raw, ["vo2max", "vo2_max", "vo2"])), 10, 100);
 

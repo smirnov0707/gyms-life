@@ -15,16 +15,23 @@ const SmartWarmupInput = z.object({
 const SmartWarmupRecommendationSchema = z.object({
   headline: z.string().trim().min(1).max(200),
   minutes: z.coerce.number().int().min(3).max(20),
-  drills: z.array(z.object({
-    slug: z.string().trim().min(1).max(120),
-    name: z.string().trim().min(1).max(160),
-    dose: z.string().trim().min(1).max(80),
-    focus: z.string().trim().min(1).max(160),
-    why: z.string().trim().min(1).max(240),
-  })).min(2).max(6),
+  drills: z
+    .array(
+      z.object({
+        slug: z.string().trim().min(1).max(120),
+        name: z.string().trim().min(1).max(160),
+        dose: z.string().trim().min(1).max(80),
+        focus: z.string().trim().min(1).max(160),
+        why: z.string().trim().min(1).max(240),
+      }),
+    )
+    .min(2)
+    .max(6),
 });
 
-export type SmartWarmup = z.infer<typeof SmartWarmupRecommendationSchema> & { readiness: number | null };
+export type SmartWarmup = z.infer<typeof SmartWarmupRecommendationSchema> & {
+  readiness: number | null;
+};
 
 function fallbackWarmup(lang: string, readiness: number | null): SmartWarmup {
   const lithuanian = lang === "lt";
@@ -33,9 +40,33 @@ function fallbackWarmup(lang: string, readiness: number | null): SmartWarmup {
     minutes: 6,
     readiness,
     drills: [
-      { slug: "arm-circles", name: lithuanian ? "Rankų ratai" : "Arm circles", dose: "60s", focus: lithuanian ? "Pečiai ir mentės" : "Shoulders and scapulae", why: lithuanian ? "Aktyvina pečių juostą prieš apkrovą." : "Prepares the shoulder girdle for loading." },
-      { slug: "bodyweight-squats", name: lithuanian ? "Pritūpimai be svorio" : "Bodyweight squats", dose: "12 reps", focus: lithuanian ? "Klubai ir keliai" : "Hips and knees", why: lithuanian ? "Pakelia temperatūrą ir aktyvina apatinę kūno dalį." : "Raises temperature and activates the lower body." },
-      { slug: "plank", name: lithuanian ? "Lenta" : "Plank", dose: "30s", focus: lithuanian ? "Šerdis" : "Core", why: lithuanian ? "Suteikia liemens stabilumą pagrindiniams judesiams." : "Builds trunk stability for the main lifts." },
+      {
+        slug: "arm-circles",
+        name: lithuanian ? "Rankų ratai" : "Arm circles",
+        dose: "60s",
+        focus: lithuanian ? "Pečiai ir mentės" : "Shoulders and scapulae",
+        why: lithuanian
+          ? "Aktyvina pečių juostą prieš apkrovą."
+          : "Prepares the shoulder girdle for loading.",
+      },
+      {
+        slug: "bodyweight-squats",
+        name: lithuanian ? "Pritūpimai be svorio" : "Bodyweight squats",
+        dose: "12 reps",
+        focus: lithuanian ? "Klubai ir keliai" : "Hips and knees",
+        why: lithuanian
+          ? "Pakelia temperatūrą ir aktyvina apatinę kūno dalį."
+          : "Raises temperature and activates the lower body.",
+      },
+      {
+        slug: "plank",
+        name: lithuanian ? "Lenta" : "Plank",
+        dose: "30s",
+        focus: lithuanian ? "Šerdis" : "Core",
+        why: lithuanian
+          ? "Suteikia liemens stabilumą pagrindiniams judesiams."
+          : "Builds trunk stability for the main lifts.",
+      },
     ],
   };
 }
@@ -57,7 +88,8 @@ export const getSmartWarmup = createServerFn({ method: "POST" })
     try {
       const provider = createAiRouterProvider("coach-session.functions");
       const recommendation = await generateJson(provider("google/gemini-2.5-flash"), {
-        system: "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
+        system:
+          "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
         prompt: `Write in ${data.lang}. Build a 3-6 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
         schema: SmartWarmupRecommendationSchema,
         maxOutputTokens: 1200,
@@ -83,7 +115,7 @@ export const getSetAdvice = createServerFn({ method: "POST" })
   .validator((data: unknown) => SetAdviceInput.parse(data))
   .handler(async ({ data }) => {
     const langName = data.lang === "lt" ? "lietuvių" : "anglų";
-    
+
     const prompt = `Sportininkas atliko pratimą: "${data.exerciseName}".
 Serija: #${data.currentSet}, Tikslas: ${data.targetReps} pakartojimai, Atliko: ${data.actualReps} pakartojimus, Subjektyvus nuovargis (RPE): ${data.rpe}/10.
 
@@ -107,14 +139,22 @@ Atsakyk TIK TIKSLIU JSON:
         temperature: 0.2,
       });
 
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        raw
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return {
         ok: true,
         weightAdjustment: "keep",
         suggestedAdjustmentKg: 0,
         recommendedRestSec: 90,
-        advice: data.lang === "lt" ? "Išlaikykite stabilią formą ir kontroliuokite judesį." : "Maintain form and control the tempo.",
+        advice:
+          data.lang === "lt"
+            ? "Išlaikykite stabilią formą ir kontroliuokite judesį."
+            : "Maintain form and control the tempo.",
       };
     }
   });
@@ -153,14 +193,22 @@ Atsakyk TIK JSON:
         temperature: 0.2,
       });
 
-      return JSON.parse(raw.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        raw
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return {
         ok: true,
         recoveryHours: 48,
         stimulusScore: 85,
         summary: data.lang === "lt" ? "Puikiai atlikta treniruotė." : "Great workout session.",
-        nutritionTip: data.lang === "lt" ? "30-40g baltymų ir angliavandeniai atsistatymui." : "30-40g protein with carbs.",
+        nutritionTip:
+          data.lang === "lt"
+            ? "30-40g baltymų ir angliavandeniai atsistatymui."
+            : "30-40g protein with carbs.",
       };
     }
   });

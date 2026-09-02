@@ -86,7 +86,10 @@ function RemindersPage() {
 
   const upcoming = useMemo(() => nextReminder(settings), [settings]);
   const today = useMemo(() => daySchedule(settings, now.getDay()), [settings, now]);
-  const waterPct = Math.min(100, Math.round((waterMl / Math.max(1, settings.water.targetMl)) * 100));
+  const waterPct = Math.min(
+    100,
+    Math.round((waterMl / Math.max(1, settings.water.targetMl)) * 100),
+  );
 
   const togglePush = async (v: boolean) => {
     if (!v) return patch({ push: false });
@@ -138,7 +141,11 @@ function RemindersPage() {
             onChange={(v) => patch({ enabled: v })}
             label={t("rem.enable")}
           />
-          <Toggle on={settings.sound} onChange={(v) => patch({ sound: v })} label={t("rem.sound")} />
+          <Toggle
+            on={settings.sound}
+            onChange={(v) => patch({ sound: v })}
+            label={t("rem.sound")}
+          />
           <div className="sm:col-span-2">
             <Toggle
               on={settings.push}
@@ -379,7 +386,9 @@ function RemindersPage() {
                   className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
                     past ? "bg-surface-2 text-muted-foreground" : "bg-surface-2"
                   }`}
-                  style={{ boxShadow: past ? undefined : `inset 0 0 0 1px ${KIND_META[slot.kind].color}` }}
+                  style={{
+                    boxShadow: past ? undefined : `inset 0 0 0 1px ${KIND_META[slot.kind].color}`,
+                  }}
                 >
                   <Icon className="size-4 shrink-0" style={{ color: KIND_META[slot.kind].color }} />
                   <span className="text-display text-base">{fmtMinutes(slot.minutes)}</span>

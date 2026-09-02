@@ -15,7 +15,10 @@ export const analyzeMealPhoto = createServerFn({ method: "POST" })
     if (!geminiKey) {
       return {
         ok: false,
-        reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas serveryje." : "AI engine not configured.",
+        reason:
+          data.lang === "lt"
+            ? "AI variklis nesukonfigūruotas serveryje."
+            : "AI engine not configured.",
       };
     }
 
@@ -94,7 +97,10 @@ Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
         console.error("Gemini Vision error:", errText);
         return {
           ok: false,
-          reason: data.lang === "lt" ? "Nepavyko atlikti analizės. Pabandykite dar kartą." : "Analysis failed. Please try again.",
+          reason:
+            data.lang === "lt"
+              ? "Nepavyko atlikti analizės. Pabandykite dar kartą."
+              : "Analysis failed. Please try again.",
         };
       }
 
@@ -102,7 +108,10 @@ Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas iš modelio." };
 
-      const cleanJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const cleanJson = rawText
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
       return JSON.parse(cleanJson);
     } catch (err: any) {
       console.error("Food vision handler error:", err);
@@ -153,7 +162,10 @@ export const recommendMenu = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const geminiKey = process.env["GEMINI_API_KEY"];
     if (!geminiKey) {
-      return { ok: false, reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas." : "AI engine not configured." };
+      return {
+        ok: false,
+        reason: data.lang === "lt" ? "AI variklis nesukonfigūruotas." : "AI engine not configured.",
+      };
     }
 
     try {
@@ -193,7 +205,12 @@ export const recommendMenu = createServerFn({ method: "POST" })
       const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!rawText) return { ok: false, reason: "Negautas atsakymas." };
 
-      return JSON.parse(rawText.replace(/```json/g, "").replace(/```/g, "").trim());
+      return JSON.parse(
+        rawText
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim(),
+      );
     } catch (err: any) {
       return { ok: false, reason: err.message || "Apdorojimo klaida." };
     }

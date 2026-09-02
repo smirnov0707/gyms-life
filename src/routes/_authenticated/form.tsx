@@ -23,7 +23,9 @@ function FormRouteComponent() {
               {lang === "lt" ? "AI Formos & Biomechanikos Analizė" : "AI Form & Biomechanics"}
             </h1>
             <p className="text-xs font-mono text-neutral-400">
-              {lang === "lt" ? "Automatinis sąnarių kampų, stuburo ir saugumo įvertinimas" : "Kinematic joint angle & spine safety assessment"}
+              {lang === "lt"
+                ? "Automatinis sąnarių kampų, stuburo ir saugumo įvertinimas"
+                : "Kinematic joint angle & spine safety assessment"}
             </p>
           </div>
         </div>

@@ -60,7 +60,11 @@ export function ProgressForecast() {
           </div>
         </div>
         <Button size="sm" onClick={go} disabled={loading} className="font-bold">
-          {loading ? <Loader2 className="mr-1 size-4 animate-spin" /> : <Sparkles className="mr-1 size-4" />}
+          {loading ? (
+            <Loader2 className="mr-1 size-4 animate-spin" />
+          ) : (
+            <Sparkles className="mr-1 size-4" />
+          )}
           {loading ? t("nx.fc.loading") : lifts ? t("nx.fc.again") : t("nx.fc.run")}
         </Button>
       </div>
@@ -70,9 +74,14 @@ export function ProgressForecast() {
       {lifts?.length ? (
         <div className="grid gap-3">
           {lifts.map((l) => {
-            const Trend = l.trend === "rising" ? TrendingUp : l.trend === "falling" ? TrendingDown : Minus;
+            const Trend =
+              l.trend === "rising" ? TrendingUp : l.trend === "falling" ? TrendingDown : Minus;
             const tone =
-              l.trend === "rising" ? "text-primary" : l.trend === "falling" ? "text-destructive" : "text-accent";
+              l.trend === "rising"
+                ? "text-primary"
+                : l.trend === "falling"
+                  ? "text-destructive"
+                  : "text-accent";
             return (
               <div key={l.name} className="rounded-2xl border border-border bg-surface-2 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -100,7 +109,10 @@ export function ProgressForecast() {
                   <span className="uppercase tracking-widest">{t("nx.fc.plateau")}</span>
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface">
                     <div
-                      className={cn("h-full rounded-full", l.plateauRisk > 60 ? "bg-destructive" : "bg-accent")}
+                      className={cn(
+                        "h-full rounded-full",
+                        l.plateauRisk > 60 ? "bg-destructive" : "bg-accent",
+                      )}
                       style={{ width: `${Math.max(4, Math.min(100, l.plateauRisk))}%` }}
                     />
                   </div>
@@ -113,11 +125,15 @@ export function ProgressForecast() {
 
           {summary && (
             <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
-              <p className="text-[10px] uppercase tracking-widest text-primary">{t("nx.fc.summary")}</p>
+              <p className="text-[10px] uppercase tracking-widest text-primary">
+                {t("nx.fc.summary")}
+              </p>
               <p className="mt-1 text-sm">{summary}</p>
               {actions.length > 0 && (
                 <>
-                  <p className="mt-3 text-[10px] uppercase tracking-widest text-primary">{t("nx.fc.actions")}</p>
+                  <p className="mt-3 text-[10px] uppercase tracking-widest text-primary">
+                    {t("nx.fc.actions")}
+                  </p>
                   <ul className="mt-1 grid gap-1 text-sm">
                     {actions.map((a) => (
                       <li key={a}>→ {a}</li>

@@ -14,10 +14,14 @@ export const Route = createFileRoute("/exercises/$slug")({
       { title: `${params.slug} — pratimo technika ir video | GYMS.LIFE` },
       {
         name: "description",
-        content: "Pratimo technika žingsnis po žingsnio, dažniausios klaidos ir vaizdo demonstracija.",
+        content:
+          "Pratimo technika žingsnis po žingsnio, dažniausios klaidos ir vaizdo demonstracija.",
       },
       { property: "og:title", content: `${params.slug} — pratimo technika | GYMS.LIFE` },
-      { property: "og:description", content: "Kaip taisyklingai atlikti šį pratimą — video ir patarimai." },
+      {
+        property: "og:description",
+        content: "Kaip taisyklingai atlikti šį pratimą — video ir patarimai.",
+      },
     ],
   }),
   component: ExerciseDetail,
@@ -52,8 +56,13 @@ function ExerciseDetail() {
   }
 
   const name = (lang === "lt" ? ex.name_lt : ex.name_en) || ex.name_en || ex.name_lt || ex.slug;
-  const instructions = (lang === "lt" ? ex.instructions_lt : ex.instructions_en) || ex.instructions_en || ex.instructions_lt || "";
-  const mistakes = (lang === "lt" ? ex.mistakes_lt : ex.mistakes_en) || ex.mistakes_en || ex.mistakes_lt || "";
+  const instructions =
+    (lang === "lt" ? ex.instructions_lt : ex.instructions_en) ||
+    ex.instructions_en ||
+    ex.instructions_lt ||
+    "";
+  const mistakes =
+    (lang === "lt" ? ex.mistakes_lt : ex.mistakes_en) || ex.mistakes_en || ex.mistakes_lt || "";
 
   const steps = instructions
     .split(/\n+|(?<=\.)\s+(?=[A-ZĄČĘĖĮŠŲŪŽ0-9])/)
@@ -80,8 +89,12 @@ function ExerciseDetail() {
                 "@type": "VideoObject",
                 name: `${name} — technika`,
                 description: instructions || `${name} technikos demonstracija.`,
-                thumbnailUrl: exerciseVideoPoster(ex.slug) ? `https://gyms.life${exerciseVideoPoster(ex.slug)}` : undefined,
-                contentUrl: exerciseVideo(ex.slug) ? `https://gyms.life${exerciseVideo(ex.slug)}` : undefined,
+                thumbnailUrl: exerciseVideoPoster(ex.slug)
+                  ? `https://gyms.life${exerciseVideoPoster(ex.slug)}`
+                  : undefined,
+                contentUrl: exerciseVideo(ex.slug)
+                  ? `https://gyms.life${exerciseVideo(ex.slug)}`
+                  : undefined,
                 uploadDate: ex.created_at ?? undefined,
               },
               ...(steps.length
@@ -90,7 +103,9 @@ function ExerciseDetail() {
                       "@type": "HowTo",
                       name: `Kaip atlikti: ${name}`,
                       description: instructions,
-                      tool: ex.equipment ? [{ "@type": "HowToTool", name: ex.equipment }] : undefined,
+                      tool: ex.equipment
+                        ? [{ "@type": "HowToTool", name: ex.equipment }]
+                        : undefined,
                       step: steps.map((s, i) => ({
                         "@type": "HowToStep",
                         position: i + 1,
@@ -142,7 +157,9 @@ function ExerciseDetail() {
             </div>
           )}
 
-          <div className="mt-4"><MuscleTargetVisualizer muscleGroup={ex.muscle_group} /></div>
+          <div className="mt-4">
+            <MuscleTargetVisualizer muscleGroup={ex.muscle_group} />
+          </div>
 
           {mistakes && (
             <div className="panel mt-4 p-5">

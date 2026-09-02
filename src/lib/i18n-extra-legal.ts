@@ -3,16 +3,19 @@ export const extra_legal = {
 
   // Terms
   "lg.terms.title": { lt: "Naudojimo sąlygos", en: "Terms of Service" },
-  "lg.terms.updated": { lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.", en: "Last updated: August 26, 2026" },
+  "lg.terms.updated": {
+    lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.",
+    en: "Last updated: August 26, 2026",
+  },
   "lg.terms.h1": { lt: "1. Pardavėjas", en: "1. Seller" },
   "lg.terms.p1": {
     lt: "GYMS.LIFE paslaugą teikia Aleksandr Smirnov (toliau – „mes“). Naudodamiesi paslauga sudarote sutartį su šiuo pardavėju. Toliau naudodamiesi paslauga sutinkate su šiomis sąlygomis.",
-    en: "The GYMS.LIFE service is provided by Aleksandr Smirnov (hereinafter – \"we\"). By using the service you enter into an agreement with this seller. By continuing to use the service, you agree to these terms.",
+    en: 'The GYMS.LIFE service is provided by Aleksandr Smirnov (hereinafter – "we"). By using the service you enter into an agreement with this seller. By continuing to use the service, you agree to these terms.',
   },
   "lg.terms.h2": { lt: "2. Paslauga", en: "2. The Service" },
   "lg.terms.p2": {
     lt: "GYMS.LIFE – tai asmeninių treniruočių ir mitybos planų platforma: treniruočių programos, pratimų biblioteka su vaizdo pamokomis, mitybos planai, papildų planavimas, sveikatos įžvalgos ir technikos analizė. Paslauga teikiama „tokia, kokia yra“; negarantuojame nepertraukiamo ar beklaidžio veikimo. Turinys nėra medicininis patarimas – prieš keisdami fizinį aktyvumą ar mitybą pasitarkite su gydytoju.",
-    en: "GYMS.LIFE is a personal training and nutrition planning platform: workout programs, an exercise library with video tutorials, meal plans, supplement scheduling, health insights and form analysis. The service is provided \"as is\"; we do not guarantee uninterrupted or error-free operation. Content is not medical advice – consult a doctor before changing your physical activity or diet.",
+    en: 'GYMS.LIFE is a personal training and nutrition planning platform: workout programs, an exercise library with video tutorials, meal plans, supplement scheduling, health insights and form analysis. The service is provided "as is"; we do not guarantee uninterrupted or error-free operation. Content is not medical advice – consult a doctor before changing your physical activity or diet.',
   },
   "lg.terms.h3": { lt: "3. Paskyra", en: "3. Account" },
   "lg.terms.p3": {
@@ -57,28 +60,70 @@ export const extra_legal = {
 
   // Privacy
   "lg.privacy.title": { lt: "Privatumo politika", en: "Privacy Policy" },
-  "lg.privacy.updated": { lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.", en: "Last updated: August 26, 2026" },
+  "lg.privacy.updated": {
+    lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.",
+    en: "Last updated: August 26, 2026",
+  },
   "lg.privacy.h1": { lt: "1. Duomenų valdytojas", en: "1. Data Controller" },
   "lg.privacy.p1": {
     lt: "Jūsų asmens duomenų valdytojas yra Aleksandr Smirnov, GYMS.LIFE paslaugos teikėjas.",
     en: "The controller of your personal data is Aleksandr Smirnov, provider of the GYMS.LIFE service.",
   },
   "lg.privacy.h2": { lt: "2. Kokių duomenų renkame", en: "2. What Data We Collect" },
-  "lg.privacy.li2a": { lt: "Paskyros duomenys: vardas, el. paštas, prisijungimo informacija.", en: "Account data: name, email, login information." },
-  "lg.privacy.li2b": { lt: "Profilio duomenys: amžius, ūgis, svoris, tikslas, patirtis, įranga, mitybos pageidavimai.", en: "Profile data: age, height, weight, goal, experience, equipment, dietary preferences." },
-  "lg.privacy.li2c": { lt: "Veiklos duomenys: treniruočių ir mitybos žurnalai, savijautos įvestys, sveikatos rodikliai (jei importuojate).", en: "Activity data: workout and nutrition logs, wellbeing entries, health metrics (if imported)." },
-  "lg.privacy.li2d": { lt: "Techniniai duomenys: įrenginio identifikatoriai, IP adresas, naudojimosi telemetrija.", en: "Technical data: device identifiers, IP address, usage telemetry." },
+  "lg.privacy.li2a": {
+    lt: "Paskyros duomenys: vardas, el. paštas, prisijungimo informacija.",
+    en: "Account data: name, email, login information.",
+  },
+  "lg.privacy.li2b": {
+    lt: "Profilio duomenys: amžius, ūgis, svoris, tikslas, patirtis, įranga, mitybos pageidavimai.",
+    en: "Profile data: age, height, weight, goal, experience, equipment, dietary preferences.",
+  },
+  "lg.privacy.li2c": {
+    lt: "Veiklos duomenys: treniruočių ir mitybos žurnalai, savijautos įvestys, sveikatos rodikliai (jei importuojate).",
+    en: "Activity data: workout and nutrition logs, wellbeing entries, health metrics (if imported).",
+  },
+  "lg.privacy.li2d": {
+    lt: "Techniniai duomenys: įrenginio identifikatoriai, IP adresas, naudojimosi telemetrija.",
+    en: "Technical data: device identifiers, IP address, usage telemetry.",
+  },
   "lg.privacy.h3": { lt: "3. Kam naudojame", en: "3. How We Use It" },
-  "lg.privacy.li3a": { lt: "Paskyros sukūrimui ir paslaugos teikimui (sutarties vykdymas).", en: "To create an account and provide the service (contract performance)." },
-  "lg.privacy.li3b": { lt: "Asmeninių treniruočių ir mitybos planų generavimui (sutarties vykdymas).", en: "To generate personal training and nutrition plans (contract performance)." },
-  "lg.privacy.li3c": { lt: "Saugumui ir sukčiavimo prevencijai (teisėtas interesas).", en: "For security and fraud prevention (legitimate interest)." },
-  "lg.privacy.li3d": { lt: "Paslaugos tobulinimui (teisėtas interesas).", en: "To improve the service (legitimate interest)." },
-  "lg.privacy.li3e": { lt: "Klientų aptarnavimui (sutarties vykdymas).", en: "For customer support (contract performance)." },
+  "lg.privacy.li3a": {
+    lt: "Paskyros sukūrimui ir paslaugos teikimui (sutarties vykdymas).",
+    en: "To create an account and provide the service (contract performance).",
+  },
+  "lg.privacy.li3b": {
+    lt: "Asmeninių treniruočių ir mitybos planų generavimui (sutarties vykdymas).",
+    en: "To generate personal training and nutrition plans (contract performance).",
+  },
+  "lg.privacy.li3c": {
+    lt: "Saugumui ir sukčiavimo prevencijai (teisėtas interesas).",
+    en: "For security and fraud prevention (legitimate interest).",
+  },
+  "lg.privacy.li3d": {
+    lt: "Paslaugos tobulinimui (teisėtas interesas).",
+    en: "To improve the service (legitimate interest).",
+  },
+  "lg.privacy.li3e": {
+    lt: "Klientų aptarnavimui (sutarties vykdymas).",
+    en: "For customer support (contract performance).",
+  },
   "lg.privacy.h4": { lt: "4. Su kuo dalijamės", en: "4. Who We Share Data With" },
-  "lg.privacy.li4a": { lt: "Paslaugų teikėjais (talpinimas, duomenų bazė, analizė).", en: "Service providers (hosting, database, analytics)." },
-  "lg.privacy.li4b": { lt: "Paddle – mūsų įgaliotuoju pardavėju (Merchant of Record), kuris tvarko prenumeratas, mokėjimus, mokesčius ir sąskaitas.", en: "Paddle – our Merchant of Record, which handles subscriptions, payments, taxes and invoices." },
-  "lg.privacy.li4c": { lt: "Profesionaliais patarėjais (teisininkai, buhalteriai).", en: "Professional advisors (lawyers, accountants)." },
-  "lg.privacy.li4d": { lt: "Valdžios institucijomis, kai to reikalauja įstatymai.", en: "Government authorities, when required by law." },
+  "lg.privacy.li4a": {
+    lt: "Paslaugų teikėjais (talpinimas, duomenų bazė, analizė).",
+    en: "Service providers (hosting, database, analytics).",
+  },
+  "lg.privacy.li4b": {
+    lt: "Paddle – mūsų įgaliotuoju pardavėju (Merchant of Record), kuris tvarko prenumeratas, mokėjimus, mokesčius ir sąskaitas.",
+    en: "Paddle – our Merchant of Record, which handles subscriptions, payments, taxes and invoices.",
+  },
+  "lg.privacy.li4c": {
+    lt: "Profesionaliais patarėjais (teisininkai, buhalteriai).",
+    en: "Professional advisors (lawyers, accountants).",
+  },
+  "lg.privacy.li4d": {
+    lt: "Valdžios institucijomis, kai to reikalauja įstatymai.",
+    en: "Government authorities, when required by law.",
+  },
   "lg.privacy.h5": { lt: "5. Saugojimas", en: "5. Retention" },
   "lg.privacy.p5": {
     lt: "Duomenis saugome tiek, kiek būtina paslaugai teikti ir įstatymų nustatytais terminais; nebereikalingus duomenis ištriname arba anonimizuojame.",
@@ -107,7 +152,10 @@ export const extra_legal = {
 
   // Refund
   "lg.refund.title": { lt: "Pinigų grąžinimo politika", en: "Refund Policy" },
-  "lg.refund.updated": { lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.", en: "Last updated: August 26, 2026" },
+  "lg.refund.updated": {
+    lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.",
+    en: "Last updated: August 26, 2026",
+  },
   "lg.refund.h1": { lt: "30 dienų garantija", en: "30-Day Guarantee" },
   "lg.refund.p1": {
     lt: "Siūlome 30 dienų pinigų grąžinimo garantiją. Jei nepasiteisino – visą sumą grąžinsime per 30 dienų nuo užsakymo datos, be papildomų sąlygų.",
@@ -118,11 +166,14 @@ export const extra_legal = {
     lt: "Grąžinimus apdoroja mūsų mokėjimų partneris Paddle. Norėdami paprašyti grąžinimo, apsilankykite",
     en: "Refunds are processed by our payment partner Paddle. To request a refund, visit",
   },
-  "lg.refund.p2b": { lt: "arba susisiekite su mumis per programėlės pagalbos kanalus.", en: "or contact us via the app's support channels." },
+  "lg.refund.p2b": {
+    lt: "arba susisiekite su mumis per programėlės pagalbos kanalus.",
+    en: "or contact us via the app's support channels.",
+  },
   "lg.refund.h3": { lt: "Prenumeratos atšaukimas", en: "Cancelling Your Subscription" },
   "lg.refund.p3a": {
     lt: "Prenumeratą galite atšaukti bet kada paskyros nustatymuose („Valdyti prenumeratą“). Atšaukus prieiga išlieka iki apmokėto laikotarpio pabaigos; tolesni mokėjimai nebevykdomi. Taip pat galioja",
-    en: "You may cancel your subscription at any time in account settings (\"Manage subscription\"). After cancellation, access remains until the end of the paid period; no further payments are taken. The",
+    en: 'You may cancel your subscription at any time in account settings ("Manage subscription"). After cancellation, access remains until the end of the paid period; no further payments are taken. The',
   },
   "lg.refund.p3link": { lt: "Paddle grąžinimo politika", en: "Paddle refund policy" },
   "lg.refund.p3b": { lt: "", en: "also applies." },
@@ -130,10 +181,16 @@ export const extra_legal = {
   // Pricing
   "lg.pricing.myApp": { lt: "Mano programa", en: "My app" },
   "lg.pricing.signIn": { lt: "Prisijungti", en: "Sign in" },
-  "lg.pricing.checkoutError": { lt: "Nepavyko atidaryti apmokėjimo", en: "Could not open checkout" },
+  "lg.pricing.checkoutError": {
+    lt: "Nepavyko atidaryti apmokėjimo",
+    en: "Could not open checkout",
+  },
   "lg.pricing.noSub": { lt: "Paskyra dar neturi prenumeratos", en: "No subscription yet" },
   "lg.pricing.freeDays": { lt: "7 dienos nemokamai", en: "7 days free" },
-  "lg.pricing.heroTitle": { lt: "Vienas planas. Viskas viduje.", en: "One plan. Everything inside." },
+  "lg.pricing.heroTitle": {
+    lt: "Vienas planas. Viskas viduje.",
+    en: "One plan. Everything inside.",
+  },
   "lg.pricing.heroSubtitle": {
     lt: "Išbandyk GYMS.LIFE nemokamai 7 dienas. Po to rinkis tau patogiausią ritmą. Atšaukti gali bet kada.",
     en: "Try GYMS.LIFE free for 7 days. Then pick the rhythm that suits you. Cancel anytime.",
@@ -144,11 +201,20 @@ export const extra_legal = {
     lt: "Mokama saugiai: kortele, Apple Pay ar Google Pay. PVM tvarkomas automatiškai. 30 dienų pinigų grąžinimo garantija.",
     en: "Pay securely by card, Apple Pay or Google Pay. VAT handled automatically. 30-day money-back guarantee.",
   },
-  "lg.pricing.ownerAccount": { lt: "Savininko paskyra — viskas nemokamai visam laikui", en: "Owner account — free forever" },
+  "lg.pricing.ownerAccount": {
+    lt: "Savininko paskyra — viskas nemokamai visam laikui",
+    en: "Owner account — free forever",
+  },
   "lg.pricing.subActive": { lt: "Prenumerata aktyvi", en: "Subscription active" },
   "lg.pricing.switchPlan": { lt: "Keisti į šį planą", en: "Switch to this plan" },
-  "lg.pricing.planSwitched": { lt: "Planas pakeistas – įsigalios nuo kito atsinaujinimo.", en: "Plan changed – it takes effect at your next renewal." },
-  "lg.pricing.manageSub": { lt: "Valdyti prenumeratą / atšaukti", en: "Manage / cancel subscription" },
+  "lg.pricing.planSwitched": {
+    lt: "Planas pakeistas – įsigalios nuo kito atsinaujinimo.",
+    en: "Plan changed – it takes effect at your next renewal.",
+  },
+  "lg.pricing.manageSub": {
+    lt: "Valdyti prenumeratą / atšaukti",
+    en: "Manage / cancel subscription",
+  },
   "lg.pricing.terms": { lt: "Sąlygos", en: "Terms" },
   "lg.pricing.privacy": { lt: "Privatumas", en: "Privacy" },
   "lg.pricing.refunds": { lt: "Grąžinimas", en: "Refunds" },
@@ -161,13 +227,37 @@ export const extra_legal = {
   "lg.pricing.plan.monthly.tagline": { lt: "Populiariausias pasirinkimas", en: "Most popular" },
   "lg.pricing.plan.yearly.name": { lt: "Metinis", en: "Yearly" },
   "lg.pricing.plan.yearly.per": { lt: "/ metus", en: "/ year" },
-  "lg.pricing.plan.yearly.tagline": { lt: "€4.08 / mėn. · sutaupai €98", en: "€4.08 / mo · save €98" },
+  "lg.pricing.plan.yearly.tagline": {
+    lt: "€4.08 / mėn. · sutaupai €98",
+    en: "€4.08 / mo · save €98",
+  },
 
-  "lg.pricing.feature.plans": { lt: "Asmeniniai treniruočių planai pagal tavo tikslą", en: "Personal training plans built around your goal" },
-  "lg.pricing.feature.library": { lt: "175+ pratimų biblioteka su technikos video", en: "175+ exercise library with technique videos" },
-  "lg.pricing.feature.meals": { lt: "Mitybos planas su receptais ir pirkinių sąrašu", en: "Meal plans with recipes and shopping lists" },
-  "lg.pricing.feature.camera": { lt: "Kameros technikos analizė ir balsas", en: "Camera-based form analysis with voice cues" },
-  "lg.pricing.feature.supplements": { lt: "Papildų sekiklis — primena, ką ir kada pasirinkai vartoti", en: "Supplement tracker — reminds you what you chose to take, and when" },
-  "lg.pricing.feature.health": { lt: "Sveikatos įžvalgos ir savaitės suvestinė", en: "Health insights and weekly summaries" },
-  "lg.pricing.feature.coach": { lt: "Asmeninis treneris pokalbyje 24/7", en: "Personal coach chat 24/7" },
+  "lg.pricing.feature.plans": {
+    lt: "Asmeniniai treniruočių planai pagal tavo tikslą",
+    en: "Personal training plans built around your goal",
+  },
+  "lg.pricing.feature.library": {
+    lt: "175+ pratimų biblioteka su technikos video",
+    en: "175+ exercise library with technique videos",
+  },
+  "lg.pricing.feature.meals": {
+    lt: "Mitybos planas su receptais ir pirkinių sąrašu",
+    en: "Meal plans with recipes and shopping lists",
+  },
+  "lg.pricing.feature.camera": {
+    lt: "Kameros technikos analizė ir balsas",
+    en: "Camera-based form analysis with voice cues",
+  },
+  "lg.pricing.feature.supplements": {
+    lt: "Papildų sekiklis — primena, ką ir kada pasirinkai vartoti",
+    en: "Supplement tracker — reminds you what you chose to take, and when",
+  },
+  "lg.pricing.feature.health": {
+    lt: "Sveikatos įžvalgos ir savaitės suvestinė",
+    en: "Health insights and weekly summaries",
+  },
+  "lg.pricing.feature.coach": {
+    lt: "Asmeninis treneris pokalbyje 24/7",
+    en: "Personal coach chat 24/7",
+  },
 } as const;

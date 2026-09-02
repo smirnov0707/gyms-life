@@ -36,14 +36,10 @@ export const finishWorkout = createServerFn({ method: "POST" })
 
     const plan = await getActivePlanData(supabase, userId);
     if (plan.status !== "READY" || plan.plan.id !== session.plan_id) {
-      throw new Error(
-        "The workout session is not linked to the current active program.",
-      );
+      throw new Error("The workout session is not linked to the current active program.");
     }
 
-    const plannedDay = plan.plan.data.days.find(
-      (day) => day.day === dayIndex + 1,
-    );
+    const plannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found.");
     }
@@ -58,20 +54,12 @@ export const finishWorkout = createServerFn({ method: "POST" })
       throw new Error("Set log lookup failed: " + logsError.message);
     }
 
-    const expected = plannedDay.exercises.reduce(
-      (sum, exercise) => sum + exercise.sets,
-      0,
-    );
+    const expected = plannedDay.exercises.reduce((sum, exercise) => sum + exercise.sets, 0);
     const completed = new Set(
-      logs
-        .filter((log) => log.done)
-        .map((log) => log.exercise_slug + ":" + log.set_number),
+      logs.filter((log) => log.done).map((log) => log.exercise_slug + ":" + log.set_number),
     );
     const expectedKeys = plannedDay.exercises.flatMap((exercise) =>
-      Array.from(
-        { length: exercise.sets },
-        (_, index) => exercise.slug + ":" + (index + 1),
-      ),
+      Array.from({ length: exercise.sets }, (_, index) => exercise.slug + ":" + (index + 1)),
     );
     const missing = expectedKeys.filter((key) => !completed.has(key));
 
@@ -89,11 +77,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     );
     const totalVolume = logs
       .filter((log) => log.done)
-      .reduce(
-        (sum, log) =>
-          sum + Number(log.reps ?? 0) * Number(log.weight_kg ?? 0),
-        0,
-      );
+      .reduce((sum, log) => sum + Number(log.reps ?? 0) * Number(log.weight_kg ?? 0), 0);
 
     const { data: updated, error: updateError } = await supabase
       .from("workout_sessions")
@@ -112,8 +96,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
 
     if (updateError || !updated) {
       throw new Error(
-        "Could not finish workout: " +
-          (updateError?.message ?? "session was already finished"),
+        "Could not finish workout: " + (updateError?.message ?? "session was already finished"),
       );
     }
 

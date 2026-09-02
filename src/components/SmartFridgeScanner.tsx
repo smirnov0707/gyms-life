@@ -36,13 +36,20 @@ export const SmartFridgeScanner: React.FC = () => {
   const [recipeFor, setRecipeFor] = useState("");
   const call = useServerFn(generateFridgeRecipe);
 
-  const signature = ingredients.map((i) => i.toLowerCase().trim()).sort().join("|");
+  const signature = ingredients
+    .map((i) => i.toLowerCase().trim())
+    .sort()
+    .join("|");
   const stale = !!recipeResult && recipeFor !== signature;
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("weight_kg, goal").eq("id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("weight_kg, goal")
+        .eq("id", user!.id)
+        .maybeSingle();
       return data;
     },
     enabled: !!user,
@@ -177,7 +184,10 @@ export const SmartFridgeScanner: React.FC = () => {
           {recipeResult.usedIngredients.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {recipeResult.usedIngredients.map((i) => (
-                <span key={i} className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-2 text-muted-foreground border border-border">
+                <span
+                  key={i}
+                  className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-2 text-muted-foreground border border-border"
+                >
                   {i}
                 </span>
               ))}
@@ -186,19 +196,27 @@ export const SmartFridgeScanner: React.FC = () => {
 
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className="p-2 rounded-xl bg-surface border border-border">
-              <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.fridge.kcal")}</span>
+              <span className="block text-[10px] text-muted-foreground uppercase font-mono">
+                {t("sc.fridge.kcal")}
+              </span>
               <span className="font-bold text-sm text-foreground">{recipeResult.calories}</span>
             </div>
             <div className="p-2 rounded-xl bg-surface border border-border">
-              <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.fridge.protein")}</span>
+              <span className="block text-[10px] text-muted-foreground uppercase font-mono">
+                {t("sc.fridge.protein")}
+              </span>
               <span className="font-bold text-sm text-primary">{recipeResult.protein}g</span>
             </div>
             <div className="p-2 rounded-xl bg-surface border border-border">
-              <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.fridge.carbs")}</span>
+              <span className="block text-[10px] text-muted-foreground uppercase font-mono">
+                {t("sc.fridge.carbs")}
+              </span>
               <span className="font-bold text-sm text-accent">{recipeResult.carbs}g</span>
             </div>
             <div className="p-2 rounded-xl bg-surface border border-border">
-              <span className="block text-[10px] text-muted-foreground uppercase font-mono">{t("sc.fridge.fat")}</span>
+              <span className="block text-[10px] text-muted-foreground uppercase font-mono">
+                {t("sc.fridge.fat")}
+              </span>
               <span className="font-bold text-sm text-rose-400">{recipeResult.fat}g</span>
             </div>
           </div>
@@ -212,7 +230,9 @@ export const SmartFridgeScanner: React.FC = () => {
           </div>
 
           {recipeResult.coachNote && (
-            <p className="text-xs text-foreground/80 border-l-2 border-indigo-500/60 pl-3">{recipeResult.coachNote}</p>
+            <p className="text-xs text-foreground/80 border-l-2 border-indigo-500/60 pl-3">
+              {recipeResult.coachNote}
+            </p>
           )}
           {recipeResult.missingSuggestion && (
             <p className="text-[11px] text-muted-foreground">{recipeResult.missingSuggestion}</p>

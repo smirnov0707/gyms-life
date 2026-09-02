@@ -15,9 +15,33 @@ const context: CoachContext = {
 
 describe("runCoachWorker", () => {
   it("validates a worker recommendation at the boundary", async () => {
-    const result = await runCoachWorker({ name: "fake", version: "test", async generateRecommendation() {
-      return { schemaVersion: "1.0", decision: "NO_CHANGE", priority: "LOW", summary: "Keep plan", rationale: ["Stable performance"], actions: [{ type: "KEEP_PLAN", exerciseSlug: null, value: null, unit: null, instruction: "Continue the current plan." }], confidence: 0.9, safety: { requiresUserConfirmation: true, notes: [] } };
-    } }, context);
+    const result = await runCoachWorker(
+      {
+        name: "fake",
+        version: "test",
+        async generateRecommendation() {
+          return {
+            schemaVersion: "1.0",
+            decision: "NO_CHANGE",
+            priority: "LOW",
+            summary: "Keep plan",
+            rationale: ["Stable performance"],
+            actions: [
+              {
+                type: "KEEP_PLAN",
+                exerciseSlug: null,
+                value: null,
+                unit: null,
+                instruction: "Continue the current plan.",
+              },
+            ],
+            confidence: 0.9,
+            safety: { requiresUserConfirmation: true, notes: [] },
+          };
+        },
+      },
+      context,
+    );
     expect(result.decision).toBe("NO_CHANGE");
   });
 });

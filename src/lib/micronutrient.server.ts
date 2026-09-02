@@ -2,11 +2,26 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type MicroSnapshot = {
   days: number;
-  foodEntries: { day: string; food: string; description: string; kcal: number; protein: number; carbs: number; fat: number }[];
+  foodEntries: {
+    day: string;
+    food: string;
+    description: string;
+    kcal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }[];
   avgKcal: number;
   avgProtein: number;
   supplements: { name: string; dose: string; times_per_day: number }[];
-  profile: { weight: number; height: number; gender: string; goal: string; diet: string; birthYear: number | null };
+  profile: {
+    weight: number;
+    height: number;
+    gender: string;
+    goal: string;
+    diet: string;
+    birthYear: number | null;
+  };
   training: { sessions14d: number; avgSleep: number; avgReadiness: number };
 };
 
@@ -26,19 +41,36 @@ export async function loadMicroSnapshot(
       .gte("logged_on", since)
       .order("logged_on", { ascending: false })
       .limit(160),
-    supabase.from("supplements").select("name, dose, times_per_day, is_active").eq("user_id", userId).eq("is_active", true),
+    supabase
+      .from("supplements")
+      .select("name, dose, times_per_day, is_active")
+      .eq("user_id", userId)
+      .eq("is_active", true),
     supabase
       .from("profiles")
       .select("weight_kg, height_cm, gender, goal, diet, birth_year")
       .eq("id", userId)
       .maybeSingle(),
-    supabase.from("workout_sessions").select("id, created_at").eq("user_id", userId).gte("created_at", `${since}T00:00:00Z`),
-    supabase.from("daily_checkins").select("sleep_hours, readiness_score").eq("user_id", userId).gte("checkin_on", since),
+    supabase
+      .from("workout_sessions")
+      .select("id, created_at")
+      .eq("user_id", userId)
+      .gte("created_at", `${since}T00:00:00Z`),
+    supabase
+      .from("daily_checkins")
+      .select("sleep_hours, readiness_score")
+      .eq("user_id", userId)
+      .gte("checkin_on", since),
   ]);
 
   const rows = (foods.data ?? []) as {
-    logged_on: string; food_name: string; description: string | null;
-    calories: number; protein: number; carbs: number; fat: number;
+    logged_on: string;
+    food_name: string;
+    description: string | null;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
   }[];
 
   const dayKeys = new Set(rows.map((r) => r.logged_on));
@@ -46,12 +78,19 @@ export async function loadMicroSnapshot(
   const totalKcal = rows.reduce((a, r) => a + Number(r.calories ?? 0), 0);
   const totalProtein = rows.reduce((a, r) => a + Number(r.protein ?? 0), 0);
 
-  const ci = (checkins.data ?? []) as { sleep_hours: number | null; readiness_score: number | null }[];
+  const ci = (checkins.data ?? []) as {
+    sleep_hours: number | null;
+    readiness_score: number | null;
+  }[];
   const avg = (list: number[]) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
 
   const p = (prof.data ?? {}) as {
-    weight_kg: number | null; height_cm: number | null; gender: string | null;
-    goal: string | null; diet: string | null; birth_year: number | null;
+    weight_kg: number | null;
+    height_cm: number | null;
+    gender: string | null;
+    goal: string | null;
+    diet: string | null;
+    birth_year: number | null;
   };
 
   return {
@@ -67,7 +106,9 @@ export async function loadMicroSnapshot(
     })),
     avgKcal: Math.round(totalKcal / dayCount),
     avgProtein: Math.round(totalProtein / dayCount),
-    supplements: ((sups.data ?? []) as { name: string; dose: string | null; times_per_day: number }[]).map((s) => ({
+    supplements: (
+      (sups.data ?? []) as { name: string; dose: string | null; times_per_day: number }[]
+    ).map((s) => ({
       name: s.name,
       dose: s.dose ?? "",
       times_per_day: s.times_per_day ?? 1,
@@ -98,7 +139,14 @@ export type MicroNutrientFinding = {
   reason: string;
   evidence: string;
   foodFix: string;
-  supplement: { name: string; dose: string; category: string; times_per_day: number; with_food: boolean; preferred_time: string } | null;
+  supplement: {
+    name: string;
+    dose: string;
+    category: string;
+    times_per_day: number;
+    with_food: boolean;
+    preferred_time: string;
+  } | null;
 };
 
 export type MicroScanResult = {
@@ -111,33 +159,78 @@ export type MicroScanResult = {
   fallback: boolean;
 };
 
-const FB: Record<string, { summary: string; quality: string; strengths: string[]; warnings: string[]; items: Omit<MicroNutrientFinding, "key">[] }> = {
+const FB: Record<
+  string,
+  {
+    summary: string;
+    quality: string;
+    strengths: string[];
+    warnings: string[];
+    items: Omit<MicroNutrientFinding, "key">[];
+  }
+> = {
   lt: {
     summary: "Bazinė analizė pagal tavo maisto žurnalą ir treniruočių krūvį.",
-    quality: "Analizė paremta ribotu maisto žurnalo kiekiu — pildyk mitybą kasdien tikslesniam rezultatui.",
+    quality:
+      "Analizė paremta ribotu maisto žurnalo kiekiu — pildyk mitybą kasdien tikslesniam rezultatui.",
     strengths: ["Baltymų kiekis stebimas kasdien"],
     warnings: ["Tai nėra medicininė diagnozė. Dėl kraujo tyrimų kreipkis į gydytoją."],
     items: [
       {
-        name: "Vitaminas D3", current: "~200 TV/d", target: "2000–4000 TV/d", gapPercent: 90, priority: "critical",
-        reason: "Šiaurės platumose su maistu gaunama labai mažai vitamino D, o jis būtinas raumenų jėgai ir imunitetui.",
+        name: "Vitaminas D3",
+        current: "~200 TV/d",
+        target: "2000–4000 TV/d",
+        gapPercent: 90,
+        priority: "critical",
+        reason:
+          "Šiaurės platumose su maistu gaunama labai mažai vitamino D, o jis būtinas raumenų jėgai ir imunitetui.",
         evidence: "Maisto žurnale beveik nėra riebios žuvies ar praturtintų produktų.",
         foodFix: "2–3 kartus per savaitę riebi žuvis (lašiša, skumbrė), kiaušinių tryniai.",
-        supplement: { name: "Vitamin D3", dose: "4000 IU", category: "vitamin", times_per_day: 1, with_food: true, preferred_time: "morning" },
+        supplement: {
+          name: "Vitamin D3",
+          dose: "4000 IU",
+          category: "vitamin",
+          times_per_day: 1,
+          with_food: true,
+          preferred_time: "morning",
+        },
       },
       {
-        name: "Magnis", current: "~180 mg/d", target: "350–400 mg/d", gapPercent: 55, priority: "high",
-        reason: "Intensyvios treniruotės didina magnio netektį su prakaitu; trūkumas blogina miegą ir atsistatymą.",
+        name: "Magnis",
+        current: "~180 mg/d",
+        target: "350–400 mg/d",
+        gapPercent: 55,
+        priority: "high",
+        reason:
+          "Intensyvios treniruotės didina magnio netektį su prakaitu; trūkumas blogina miegą ir atsistatymą.",
         evidence: "Mažai ankštinių, riešutų ir žalių lapinių daržovių žurnale.",
         foodFix: "Sauja migdolų, špinatai, avinžirniai, tamsus šokoladas (85 %).",
-        supplement: { name: "Magnesium (citrate/glycinate)", dose: "400 mg", category: "mineral", times_per_day: 1, with_food: true, preferred_time: "bedtime" },
+        supplement: {
+          name: "Magnesium (citrate/glycinate)",
+          dose: "400 mg",
+          category: "mineral",
+          times_per_day: 1,
+          with_food: true,
+          preferred_time: "bedtime",
+        },
       },
       {
-        name: "Omega-3 (EPA/DHA)", current: "~400 mg/d", target: "1500–2000 mg/d", gapPercent: 73, priority: "medium",
+        name: "Omega-3 (EPA/DHA)",
+        current: "~400 mg/d",
+        target: "1500–2000 mg/d",
+        gapPercent: 73,
+        priority: "medium",
         reason: "Padeda mažinti sąnarių uždegimą po didelio savaitės tūrio.",
         evidence: "Žuvies patiekalų per pastarąsias 2 savaites užfiksuota mažai.",
         foodFix: "Riebi žuvis 2 k./sav., linų sėmenys, graikiniai riešutai.",
-        supplement: { name: "Omega-3 (EPA/DHA)", dose: "1500 mg", category: "omega", times_per_day: 1, with_food: true, preferred_time: "any" },
+        supplement: {
+          name: "Omega-3 (EPA/DHA)",
+          dose: "1500 mg",
+          category: "omega",
+          times_per_day: 1,
+          with_food: true,
+          preferred_time: "any",
+        },
       },
     ],
   },
@@ -148,25 +241,60 @@ const FB: Record<string, { summary: string; quality: string; strengths: string[]
     warnings: ["This is not a medical diagnosis. See a doctor for blood work."],
     items: [
       {
-        name: "Vitamin D3", current: "~200 IU/d", target: "2000–4000 IU/d", gapPercent: 90, priority: "critical",
-        reason: "Food rarely covers vitamin D in northern latitudes, yet it drives muscle strength and immunity.",
+        name: "Vitamin D3",
+        current: "~200 IU/d",
+        target: "2000–4000 IU/d",
+        gapPercent: 90,
+        priority: "critical",
+        reason:
+          "Food rarely covers vitamin D in northern latitudes, yet it drives muscle strength and immunity.",
         evidence: "Almost no oily fish or fortified foods in the log.",
         foodFix: "Oily fish (salmon, mackerel) 2–3x per week, egg yolks.",
-        supplement: { name: "Vitamin D3", dose: "4000 IU", category: "vitamin", times_per_day: 1, with_food: true, preferred_time: "morning" },
+        supplement: {
+          name: "Vitamin D3",
+          dose: "4000 IU",
+          category: "vitamin",
+          times_per_day: 1,
+          with_food: true,
+          preferred_time: "morning",
+        },
       },
       {
-        name: "Magnesium", current: "~180 mg/d", target: "350–400 mg/d", gapPercent: 55, priority: "high",
-        reason: "Hard training increases magnesium loss through sweat; a deficit hurts sleep and recovery.",
+        name: "Magnesium",
+        current: "~180 mg/d",
+        target: "350–400 mg/d",
+        gapPercent: 55,
+        priority: "high",
+        reason:
+          "Hard training increases magnesium loss through sweat; a deficit hurts sleep and recovery.",
         evidence: "Few legumes, nuts or leafy greens in the log.",
         foodFix: "A handful of almonds, spinach, chickpeas, 85% dark chocolate.",
-        supplement: { name: "Magnesium (citrate/glycinate)", dose: "400 mg", category: "mineral", times_per_day: 1, with_food: true, preferred_time: "bedtime" },
+        supplement: {
+          name: "Magnesium (citrate/glycinate)",
+          dose: "400 mg",
+          category: "mineral",
+          times_per_day: 1,
+          with_food: true,
+          preferred_time: "bedtime",
+        },
       },
       {
-        name: "Omega-3 (EPA/DHA)", current: "~400 mg/d", target: "1500–2000 mg/d", gapPercent: 73, priority: "medium",
+        name: "Omega-3 (EPA/DHA)",
+        current: "~400 mg/d",
+        target: "1500–2000 mg/d",
+        gapPercent: 73,
+        priority: "medium",
         reason: "Helps reduce joint inflammation after high weekly volume.",
         evidence: "Very few fish meals logged in the last 2 weeks.",
         foodFix: "Oily fish 2x/week, flaxseed, walnuts.",
-        supplement: { name: "Omega-3 (EPA/DHA)", dose: "1500 mg", category: "omega", times_per_day: 1, with_food: true, preferred_time: "any" },
+        supplement: {
+          name: "Omega-3 (EPA/DHA)",
+          dose: "1500 mg",
+          category: "omega",
+          times_per_day: 1,
+          with_food: true,
+          preferred_time: "any",
+        },
       },
     ],
   },

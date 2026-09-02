@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { FileText, Download, Sparkles, RefreshCw, AlertTriangle, Stethoscope, CheckCircle2 } from "lucide-react";
+import {
+  FileText,
+  Download,
+  Sparkles,
+  RefreshCw,
+  AlertTriangle,
+  Stethoscope,
+  CheckCircle2,
+} from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
@@ -103,7 +111,9 @@ export const WorkoutReportExporter: React.FC = () => {
 
           {report.sections.map((section) => (
             <div key={section.title} className="p-4 rounded-2xl border border-border space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-foreground">{section.title}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-foreground">
+                {section.title}
+              </p>
               <p className="text-xs text-muted-foreground leading-relaxed">{section.body}</p>
               <div className="flex flex-wrap gap-1.5">
                 {section.metrics.map((m) => (
@@ -123,7 +133,10 @@ export const WorkoutReportExporter: React.FC = () => {
           {report.risks.length > 0 && (
             <div className="space-y-2">
               {report.risks.map((r) => (
-                <div key={r.title} className="flex gap-2 p-3 rounded-2xl border border-amber-500/25 bg-amber-500/5">
+                <div
+                  key={r.title}
+                  className="flex gap-2 p-3 rounded-2xl border border-amber-500/25 bg-amber-500/5"
+                >
                   <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs font-bold text-foreground">{r.title}</p>
@@ -164,7 +177,9 @@ export const WorkoutReportExporter: React.FC = () => {
             </div>
           )}
 
-          <p className="text-[10px] text-muted-foreground leading-relaxed">{t("sc.report.disclaimer")}</p>
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            {t("sc.report.disclaimer")}
+          </p>
         </div>
       )}
 
@@ -180,7 +195,11 @@ export const WorkoutReportExporter: React.FC = () => {
             <Sparkles className="w-4 h-4 mr-2 text-indigo-400 shrink-0" />
           )}
           <span className="truncate">
-            {loading ? t("sc.report.analyzing") : report ? t("sc.report.regenerate") : t("sc.report.analyze")}
+            {loading
+              ? t("sc.report.analyzing")
+              : report
+                ? t("sc.report.regenerate")
+                : t("sc.report.analyze")}
           </span>
         </Button>
         <Button
@@ -189,7 +208,9 @@ export const WorkoutReportExporter: React.FC = () => {
           className="flex-1 min-w-0 h-11 font-bold rounded-2xl"
         >
           <Download className="w-4 h-4 mr-2 shrink-0" />
-          <span className="truncate">{downloading ? t("sc.report.exporting") : t("sc.report.download")}</span>
+          <span className="truncate">
+            {downloading ? t("sc.report.exporting") : t("sc.report.download")}
+          </span>
         </Button>
       </div>
     </div>

@@ -14,11 +14,23 @@ export const extra_scan2 = {
 
   "sc.fridge.add": { lt: "Pridėti produktą", en: "Add ingredient" },
   "sc.fridge.remove": { lt: "Pašalinti", en: "Remove" },
-  "sc.fridge.another": { lt: "Kitas receptas su tais pačiais produktais", en: "Another recipe with the same ingredients" },
-  "sc.fridge.stale": { lt: "Produktai pasikeitė — spausk „Sugeneruoti patiekalą“, kad gautum naują receptą.", en: "Ingredients changed — tap “Generate dish” for a fresh recipe." },
-  "sc.fridge.offline": { lt: "Treneris laikinai nepasiekiamas — parodytas bazinis receptas pagal tavo produktus.", en: "Coach is temporarily unavailable — showing a baseline recipe from your ingredients." },
+  "sc.fridge.another": {
+    lt: "Kitas receptas su tais pačiais produktais",
+    en: "Another recipe with the same ingredients",
+  },
+  "sc.fridge.stale": {
+    lt: "Produktai pasikeitė — spausk „Sugeneruoti patiekalą“, kad gautum naują receptą.",
+    en: "Ingredients changed — tap “Generate dish” for a fresh recipe.",
+  },
+  "sc.fridge.offline": {
+    lt: "Treneris laikinai nepasiekiamas — parodytas bazinis receptas pagal tavo produktus.",
+    en: "Coach is temporarily unavailable — showing a baseline recipe from your ingredients.",
+  },
 
-  "sc.micro.analyzing": { lt: "Analizuojamas tavo maisto žurnalas ir krūvis...", en: "Analyzing your food log and training load..." },
+  "sc.micro.analyzing": {
+    lt: "Analizuojamas tavo maisto žurnalas ir krūvis...",
+    en: "Analyzing your food log and training load...",
+  },
   "sc.micro.rescan": { lt: "Perskaičiuoti", en: "Rescan" },
   "sc.micro.loggedDays": { lt: "Užfiksuotos {n} d.", en: "{n} logged days" },
   "sc.micro.offline": { lt: "Bazinė analizė", en: "Baseline analysis" },
@@ -30,5 +42,8 @@ export const extra_scan2 = {
   "sc.micro.priority.medium": { lt: "Vidutinis", en: "Medium" },
   "sc.micro.priority.low": { lt: "Žemas", en: "Low" },
 
-  "sc.dine.offline": { lt: "Treneris laikinai nepasiekiamas — parodyti bendri saugūs pasirinkimai.", en: "Coach is temporarily unavailable — showing safe general picks." },
+  "sc.dine.offline": {
+    lt: "Treneris laikinai nepasiekiamas — parodyti bendri saugūs pasirinkimai.",
+    en: "Coach is temporarily unavailable — showing safe general picks.",
+  },
 };
