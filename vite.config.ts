@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import netlify from "@netlify/vite-plugin-tanstack-start";
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [
     tanstackStart({ server: { entry: "server" } }),
     react(),
@@ -32,4 +32,33 @@ export default defineConfig({
       "lucide-react",
     ],
   },
-});
+  ...(isSsrBuild
+    ? {}
+    : {
+        build: {
+          rolldownOptions: {
+            output: {
+              codeSplitting: {
+                groups: [
+                  {
+                    name: "react-runtime",
+                    test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                    priority: 4,
+                  },
+                  {
+                    name: "supabase-client",
+                    test: /node_modules[\\/]@supabase[\\/]/,
+                    priority: 3,
+                  },
+                  {
+                    name: "notifications",
+                    test: /node_modules[\\/]sonner[\\/]/,
+                    priority: 1,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      }),
+}));
