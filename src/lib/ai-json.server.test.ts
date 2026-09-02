@@ -41,4 +41,10 @@ describe("aiErrorMessage", () => {
       ),
     ).toBe("ai.err.unavailable");
   });
+
+  it("does not expose quota infrastructure failures to the member", () => {
+    expect(aiErrorMessage(new Error("AI_QUOTA_UNAVAILABLE"), (key) => key)).toBe(
+      "ai.err.unavailable",
+    );
+  });
 });

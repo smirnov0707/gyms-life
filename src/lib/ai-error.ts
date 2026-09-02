@@ -9,7 +9,11 @@ export function aiErrorMessage(error: unknown, t: (key: TKey) => string): string
   if (raw.includes("AI_DISABLED")) return t("ai.err.disabled" as TKey);
   if (raw.includes("AI_CREDITS")) return t("ai.err.credits" as TKey);
   if (raw.includes("AI_RATE_LIMIT")) return t("ai.err.rate" as TKey);
-  if (raw.includes("AI_MODEL_UNAVAILABLE") || raw.includes("specificationVersion")) {
+  if (
+    raw.includes("AI_QUOTA_UNAVAILABLE") ||
+    raw.includes("AI_MODEL_UNAVAILABLE") ||
+    raw.includes("specificationVersion")
+  ) {
     return t("ai.err.unavailable");
   }
   return raw || t("common.error" as TKey);
