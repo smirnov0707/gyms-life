@@ -1,3 +1,5 @@
+import type { FridgeRecipe } from "./fridge.schema";
+
 /** Deterministic macro estimates per 100 g for the most common fridge staples. */
 const FOOD_TABLE: { match: string[]; kcal: number; p: number; c: number; f: number }[] = [
   {
@@ -58,20 +60,6 @@ const FOOD_TABLE: { match: string[]; kcal: number; p: number; c: number; f: numb
   { match: ["tofu"], kcal: 145, p: 16, c: 3, f: 8 },
   { match: ["krevet", "shrimp", "prawn"], kcal: 99, p: 24, c: 0, f: 0.3 },
 ];
-
-export type FridgeRecipe = {
-  title: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  time: string;
-  steps: string[];
-  usedIngredients: string[];
-  missingSuggestion: string;
-  coachNote: string;
-  fallback: boolean;
-};
 
 function lookup(name: string) {
   const n = name.toLowerCase();
