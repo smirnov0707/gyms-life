@@ -41,11 +41,12 @@ export const localizePlan = createServerFn({ method: "POST" })
     if (cached) return { plan: cached };
 
     const translated = await translatePlanData(base.data, data.lang, userId);
-    await supabase
+    const { error: cacheError } = await supabase
       .from("plans")
       .update({ i18n: serializeJson({ ...translations, [data.lang]: translated }) })
       .eq("id", row.id)
       .eq("user_id", userId);
+    if (cacheError) throw new Error(`Could not cache translated plan: ${cacheError.message}`);
 
     return { plan: translated };
   });

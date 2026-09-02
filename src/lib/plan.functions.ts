@@ -116,7 +116,7 @@ export const generatePlan = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(`Plan save error: ${error.message}`);
-    await supabase
+    const { error: profileError } = await supabase
       .from("profiles")
       .update({
         goal: data.goal,
@@ -129,6 +129,7 @@ export const generatePlan = createServerFn({ method: "POST" })
         onboarded: true,
       })
       .eq("id", userId);
+    if (profileError) throw new Error(`Profile save error: ${profileError.message}`);
     return { planId: inserted.id, plan: plan.data };
   });
 
