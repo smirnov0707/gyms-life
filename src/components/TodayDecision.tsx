@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Activity, ArrowRight, HeartPulse, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  HeartPulse,
+  Loader2,
+  ShieldCheck,
+  Sparkles,
+  ThumbsDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
@@ -18,6 +26,10 @@ type Copy = {
   evidence: string;
   confidence: string;
   unavailable: string;
+  notHelpful: string;
+  feedbackRecorded: string;
+  feedbackFailed: string;
+  alternativePrompt: string;
   action: Record<TodayDecisionAction, { title: string; summary: string; cta: string }>;
   evidenceLabel: Record<TodayDecisionEvidence["key"], (value: string) => string>;
 };
@@ -29,6 +41,10 @@ function copyFor(lang: string): Copy {
       evidence: "Why this action",
       confidence: "Decision confidence",
       unavailable: "We couldn't load today's decision. You can still use all training tools.",
+      notHelpful: "This doesn't fit today",
+      feedbackRecorded: "We recorded your feedback.",
+      feedbackFailed: "We couldn't record that feedback. Please try again.",
+      alternativePrompt: "Choose a safe alternative:",
       action: {
         generate_training_plan: {
           title: "Build your training plan",
@@ -84,6 +100,10 @@ function copyFor(lang: string): Copy {
     confidence: "Sprendimo patikimumas",
     unavailable:
       "Nepavyko įkelti šiandienos sprendimo. Visi treniruočių įrankiai vis tiek pasiekiami.",
+    notHelpful: "Šis pasiūlymas šiandien netinka",
+    feedbackRecorded: "Tavo grįžtamąjį ryšį užregistravome.",
+    feedbackFailed: "Nepavyko užregistruoti grįžtamojo ryšio. Bandyk dar kartą.",
+    alternativePrompt: "Pasirink saugią alternatyvą:",
     action: {
       generate_training_plan: {
         title: "Sukurk treniruočių planą",
@@ -146,6 +166,7 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [feedbackState, setFeedbackState] = useState<"idle" | "sending" | "recorded">("idle");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -163,26 +184,16 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
     void load();
   }, [load]);
 
-  const continueToAction = async () => {
-    if (!decision || acting) return;
-    setActing(true);
-    try {
-      await recordOutcome({ data: { decisionId: decision.id, outcome: "accepted" } });
-    } catch {
-      toast.error(copy.unavailable);
-    } finally {
-      setActing(false);
-    }
-
-    if (decision.action === "generate_training_plan") {
+  const navigateToAction = (action: TodayDecisionAction) => {
+    if (action === "generate_training_plan") {
       navigate({ to: "/onboarding" });
       return;
     }
-    if (decision.action === "complete_readiness" || decision.action === "recover") {
+    if (action === "complete_readiness" || action === "recover") {
       navigate({ to: "/readiness" });
       return;
     }
-    if (decision.action === "log_nutrition") {
+    if (action === "log_nutrition") {
       navigate({ to: "/nutrition" });
       return;
     }
@@ -191,6 +202,32 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
       return;
     }
     navigate({ to: "/training" });
+  };
+
+  const continueToAction = async () => {
+    if (!decision || acting || feedbackState === "sending") return;
+    setActing(true);
+    try {
+      await recordOutcome({ data: { decisionId: decision.id, outcome: "accepted" } });
+    } catch {
+      toast.error(copy.unavailable);
+    } finally {
+      setActing(false);
+    }
+    navigateToAction(decision.action);
+  };
+
+  const reportNotHelpful = async () => {
+    if (!decision || acting || feedbackState !== "idle" || decision.status === "dismissed") return;
+    setFeedbackState("sending");
+    try {
+      await recordOutcome({ data: { decisionId: decision.id, outcome: "not_helpful" } });
+      setDecision({ ...decision, status: "dismissed" });
+      setFeedbackState("recorded");
+    } catch {
+      setFeedbackState("idle");
+      toast.error(copy.feedbackFailed);
+    }
   };
 
   if (failed) {
@@ -208,6 +245,8 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   }
 
   const action = copy.action[decision.action];
+  const feedbackRecorded = feedbackState === "recorded" || decision.status === "dismissed";
+  const alternative = decision.alternatives[0];
   return (
     <GlowCard className="panel relative overflow-hidden border-primary/40 p-6 md:p-7">
       <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-primary/12 blur-3xl" />
@@ -249,9 +288,45 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
         </div>
       </div>
 
-      <div className="relative z-10 mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-        <HeartPulse className="size-3.5 text-primary" /> {copy.confidence}: {decision.confidence}%
+      <div className="relative z-10 mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <HeartPulse className="size-3.5 text-primary" /> {copy.confidence}: {decision.confidence}%
+        </div>
+        {feedbackRecorded ? (
+          <p className="text-xs text-muted-foreground">{copy.feedbackRecorded}</p>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-10 self-start rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
+            disabled={acting || feedbackState === "sending"}
+            onClick={() => void reportNotHelpful()}
+          >
+            {feedbackState === "sending" ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <ThumbsDown className="size-3.5" />
+            )}
+            {copy.notHelpful}
+          </Button>
+        )}
       </div>
+
+      {feedbackRecorded && alternative ? (
+        <div className="relative z-10 mt-3 flex flex-col gap-2 rounded-xl bg-surface-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">{copy.alternativePrompt}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-10 self-start rounded-full px-4 text-xs sm:self-auto"
+            onClick={() => navigateToAction(alternative)}
+          >
+            {copy.action[alternative].cta} <ArrowRight className="size-3.5" />
+          </Button>
+        </div>
+      ) : null}
     </GlowCard>
   );
 }
