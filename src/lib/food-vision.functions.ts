@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 import { NutritionMacrosSchema, normalizeNutritionLogDraft } from "./nutrition-log.schema";
 
 const AnalyzeInput = z.object({
@@ -108,7 +109,8 @@ const SaveInput = NutritionMacrosSchema.extend({
   dishName: z.string().trim().min(1).max(200),
   calories: z.coerce.number().finite().positive().max(10_000),
   note: z.string().trim().max(500).optional(),
-});
+  timeZone: IanaTimeZoneSchema,
+}).strict();
 
 export const savePhotoMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -116,7 +118,7 @@ export const savePhotoMeal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = dayInTimeZone(new Date(), data.timeZone);
     const meal = normalizeNutritionLogDraft({
       description: data.note || "Scanned with the AI Vision Scanner",
       food_name: data.dishName,

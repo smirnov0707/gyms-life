@@ -1,8 +1,9 @@
 /** Client-side persistence for a readiness adjustment; calculation stays shared with the server. */
 export { adaptSets, loadModifierFor } from "./readiness.engine";
+import { browserTimeZone, dayInTimeZone } from "./local-day";
 
 function todayKey(): string {
-  return `gymslife_adapt_${new Date().toISOString().slice(0, 10)}`;
+  return `gymslife_adapt_${dayInTimeZone(new Date(), browserTimeZone())}`;
 }
 
 /** Returns the load modifier the user applied today, or null. */

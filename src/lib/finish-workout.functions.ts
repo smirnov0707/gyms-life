@@ -5,8 +5,9 @@ import { getActivePlanData } from "./active-plan.service";
 import { adaptTrainingPlanDay } from "./training-guidance.service";
 import { evaluateWorkoutCompletion } from "./workout-completion.engine";
 import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
+import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 
-const Input = z.object({ sessionId: z.string().uuid() });
+const Input = z.object({ sessionId: z.string().uuid(), timeZone: IanaTimeZoneSchema }).strict();
 
 export const finishWorkout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -97,7 +98,10 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
 
     const { completeCurrentTrainingDecision } = await import("./today-decision.server");
-    await completeCurrentTrainingDecision(userId, finishedAt);
+    await completeCurrentTrainingDecision(
+      userId,
+      dayInTimeZone(new Date(session.startedAt), data.timeZone),
+    );
 
     return {
       ok: true,

@@ -9,6 +9,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 import { logMeal } from "@/lib/nutrition.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,8 @@ function NutritionPage() {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const call = useServerFn(logMeal);
+  const timeZone = browserTimeZone();
+  const today = dayInTimeZone(new Date(), timeZone);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -110,7 +113,7 @@ function NutritionPage() {
   });
 
   const add = useMutation({
-    mutationFn: async () => call({ data: { description: text, lang } }),
+    mutationFn: async () => call({ data: { description: text, lang, timeZone } }),
     onSuccess: () => {
       setText("");
       qc.invalidateQueries({ queryKey: ["nutrition", user?.id] });
@@ -127,7 +130,6 @@ function NutritionPage() {
     onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
-  const today = new Date().toISOString().slice(0, 10);
   const todays = (logs ?? []).filter((l) => l.logged_on === today);
   const sum = (k: keyof Row) => todays.reduce((s, l) => s + Number(l[k] ?? 0), 0);
 

@@ -15,8 +15,11 @@ import {
   parseDemonstratedExerciseCatalog,
   type ExerciseCatalogItem,
 } from "./exercise-catalog.schema";
+import { IanaTimeZoneSchema } from "./local-day";
 
-const Input = z.object({ day: z.coerce.number().int().min(1) });
+const Input = z
+  .object({ day: z.coerce.number().int().min(1), timeZone: IanaTimeZoneSchema })
+  .strict();
 const setSelect =
   "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
 
@@ -53,7 +56,7 @@ export const startWorkout = createServerFn({ method: "POST" })
     let session = existing;
     let executionSnapshot = existing?.workoutSnapshot ?? null;
     if (!session) {
-      const adaptationModifier = await getTodaysReadinessModifier(supabase, userId);
+      const adaptationModifier = await getTodaysReadinessModifier(supabase, userId, data.timeZone);
 
       const needsEquipmentCatalog = lifeContext.contexts.some(
         (context) =>

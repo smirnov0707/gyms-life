@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 import { NutritionMacrosSchema, normalizeNutritionLogDraft } from "./nutrition-log.schema";
 
-const MealInput = z.object({
-  description: z.string().trim().min(2).max(400),
-  lang: SupportedLanguageSchema.default("lt"),
-});
+const MealInput = z
+  .object({
+    description: z.string().trim().min(2).max(400),
+    lang: SupportedLanguageSchema.default("lt"),
+    timeZone: IanaTimeZoneSchema,
+  })
+  .strict();
 
 export const logMeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -58,7 +62,7 @@ note = max 1 short sentence with a practical tip for an athlete.`,
 
     const { data: inserted, error } = await supabase
       .from("nutrition_logs")
-      .insert({ user_id: userId, ...row })
+      .insert({ user_id: userId, logged_on: dayInTimeZone(new Date(), data.timeZone), ...row })
       .select("*")
       .single();
     if (error || !inserted) {

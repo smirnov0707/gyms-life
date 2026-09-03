@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { observeServerAction } from "./observability.server";
+import { IanaTimeZoneSchema } from "./local-day";
 import { TodayDecisionOutcomeSchema } from "./today-decision.schema";
+
+const GetTodayDecisionInputSchema = z.object({ timeZone: IanaTimeZoneSchema }).strict();
 
 const RecordOutcomeInputSchema = z
   .object({
@@ -14,9 +17,10 @@ const RecordOutcomeInputSchema = z
 /** Returns the server-owned, deterministic primary action for the current day. */
 export const getTodayDecision = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .validator((input: unknown) => GetTodayDecisionInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
     const { getOrCreateTodayDecision } = await import("./today-decision.server");
-    return getOrCreateTodayDecision(context.supabase, context.userId);
+    return getOrCreateTodayDecision(context.supabase, context.userId, data.timeZone);
   });
 
 /** Stores an explicit user outcome without granting browser writes to audit tables. */

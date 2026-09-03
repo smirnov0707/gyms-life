@@ -22,6 +22,7 @@ import type { ExerciseTrainingGuidance } from "@/lib/training-guidance.engine";
 import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
 import type { WorkoutExecutionAdaptation } from "@/lib/workout-execution.schema";
 import { errorMessage } from "@/lib/error-message";
+import { browserTimeZone } from "@/lib/local-day";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
 
@@ -141,7 +142,7 @@ function WorkoutPage() {
   const startMutation = useMutation({
     mutationFn: async () => {
       await syncQueuedSets();
-      return startWorkout({ data: { day: dayNumber } });
+      return startWorkout({ data: { day: dayNumber, timeZone: browserTimeZone() } });
     },
     onSuccess: (result) => {
       setSessionId(result.session.id);
@@ -232,7 +233,7 @@ function WorkoutPage() {
           );
         }
       }
-      return finishWorkout({ data: { sessionId } });
+      return finishWorkout({ data: { sessionId, timeZone: browserTimeZone() } });
     },
     onSuccess: async (result) => {
       setFinished(true);

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { getActivePlanData } from "./active-plan.service";
+import { IsoDaySchema, IanaTimeZoneSchema, dayBoundsInTimeZone, dayInTimeZone } from "./local-day";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
 import {
   StoredTodayDecisionEvidenceSchema,
@@ -12,17 +13,6 @@ import {
   type TodayDecision,
   type TodayDecisionOutcome,
 } from "./today-decision.schema";
-
-function utcDay(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
-
-function utcDayBounds(day: string): { start: string; end: string } {
-  const start = new Date(`${day}T00:00:00.000Z`);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return { start: start.toISOString(), end: end.toISOString() };
-}
 
 function statusForOutcome(outcome: TodayDecisionOutcome): "accepted" | "dismissed" | "completed" {
   if (outcome === "accepted") return "accepted";
@@ -38,10 +28,12 @@ function statusForOutcome(outcome: TodayDecisionOutcome): "accepted" | "dismisse
 export async function getOrCreateTodayDecision(
   supabase: SupabaseClient<Database>,
   userId: string,
+  timeZone: string,
   now = new Date(),
 ): Promise<TodayDecision> {
-  const decisionOn = utcDay(now);
-  const { start, end } = utcDayBounds(decisionOn);
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const decisionOn = dayInTimeZone(now, zone);
+  const { start, end } = dayBoundsInTimeZone(decisionOn, zone);
 
   const [athlete, activePlan, readinessResult, completedWorkoutResult] = await Promise.all([
     refreshAthleteStateSnapshot(supabase, userId),
@@ -193,31 +185,32 @@ export async function recordTodayDecisionOutcome(
  */
 export async function completeCurrentTrainingDecision(
   userId: string,
-  completedAt: Date,
+  decisionOn: string,
 ): Promise<boolean> {
-  return completeCurrentDecision(userId, completedAt, ["train_adapted", "train_as_planned"]);
+  return completeCurrentDecision(userId, decisionOn, ["train_adapted", "train_as_planned"]);
 }
 
 /** Marks a completed readiness check-in as the result of today's readiness action. */
 export async function completeCurrentReadinessDecision(
   userId: string,
-  completedAt: Date,
+  decisionOn: string,
 ): Promise<boolean> {
-  return completeCurrentDecision(userId, completedAt, ["complete_readiness"]);
+  return completeCurrentDecision(userId, decisionOn, ["complete_readiness"]);
 }
 
 async function completeCurrentDecision(
   userId: string,
-  completedAt: Date,
+  decisionOn: string,
   actions: Array<"complete_readiness" | "train_adapted" | "train_as_planned">,
 ): Promise<boolean> {
   try {
+    const canonicalDay = IsoDaySchema.parse(decisionOn);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: decision, error: decisionError } = await supabaseAdmin
       .from("decision_records")
       .select("id")
       .eq("user_id", userId)
-      .eq("decision_on", utcDay(completedAt))
+      .eq("decision_on", canonicalDay)
       .in("action", actions)
       .in("status", ["active", "accepted"])
       .order("created_at", { ascending: false })

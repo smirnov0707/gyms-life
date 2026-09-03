@@ -7,6 +7,7 @@ import {
   DailyReadinessFactorsSchema,
   loadModifierFor,
 } from "./readiness.engine";
+import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 
 const LangSchema = SupportedLanguageSchema.default("lt");
 
@@ -99,12 +100,15 @@ score = technique quality 0-100. risk = one short sentence about injury risk.`;
 /* READINESS / AUTOREGULATION — daily check-in scores today's load     */
 /* ------------------------------------------------------------------ */
 
-const CheckinInput = DailyReadinessFactorsSchema.extend({ lang: LangSchema }).strict();
+const CheckinInput = DailyReadinessFactorsSchema.extend({
+  lang: LangSchema,
+  timeZone: IanaTimeZoneSchema,
+}).strict();
 const ReadinessAdjustmentInputSchema = z
-  .object({ score: z.number().finite().min(0).max(100) })
+  .object({ score: z.number().finite().min(0).max(100), timeZone: IanaTimeZoneSchema })
   .strict();
 
-export function readinessScore(i: z.infer<typeof CheckinInput>) {
+export function readinessScore(i: z.infer<typeof DailyReadinessFactorsSchema>) {
   return calculateReadinessScore({
     sleepHours: i.sleepHours,
     sleepQuality: i.sleepQuality,
@@ -156,11 +160,12 @@ export const submitCheckin = createServerFn({ method: "POST" })
     const score = readinessScore(data);
     const modifier = loadModifier(score);
     const advice = deterministicReadinessAdvice(score, modifier, data.lang);
+    const checkinOn = dayInTimeZone(new Date(), data.timeZone);
 
     const { error: saveError } = await supabase.from("daily_checkins").upsert(
       {
         user_id: userId,
-        checkin_on: new Date().toISOString().slice(0, 10),
+        checkin_on: checkinOn,
         sleep_hours: data.sleepHours,
         sleep_quality: data.sleepQuality,
         soreness: data.soreness,
@@ -176,7 +181,7 @@ export const submitCheckin = createServerFn({ method: "POST" })
     if (saveError) throw new Error("Could not save daily check-in.");
 
     const { completeCurrentReadinessDecision } = await import("./today-decision.server");
-    await completeCurrentReadinessDecision(userId, new Date());
+    await completeCurrentReadinessDecision(userId, checkinOn);
 
     return { score, modifier, advice };
   });
@@ -188,7 +193,7 @@ export const saveReadinessAdjustment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const score = Math.round(data.score);
     const modifier = loadModifierFor(score);
-    const checkinOn = new Date().toISOString().slice(0, 10);
+    const checkinOn = dayInTimeZone(new Date(), data.timeZone);
     const { error } = await context.supabase.from("daily_checkins").upsert(
       {
         user_id: context.userId,
@@ -201,6 +206,6 @@ export const saveReadinessAdjustment = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not save readiness adjustment.");
 
     const { completeCurrentReadinessDecision } = await import("./today-decision.server");
-    await completeCurrentReadinessDecision(context.userId, new Date());
+    await completeCurrentReadinessDecision(context.userId, checkinOn);
     return { score, modifier };
   });

@@ -9,6 +9,7 @@ import { errorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth";
 import { applyAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
 import { saveReadinessAdjustment } from "@/lib/smart.functions";
+import { browserTimeZone } from "@/lib/local-day";
 
 const COPY = {
   lt: {
@@ -73,7 +74,7 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
     if (!user) return;
     setSaving(true);
     try {
-      const saved = await saveAdjustment({ data: { score: value } });
+      const saved = await saveAdjustment({ data: { score: value, timeZone: browserTimeZone() } });
 
       applyAdaptation(saved.modifier);
       await qc.invalidateQueries({ queryKey: ["today-checkin", user.id] });

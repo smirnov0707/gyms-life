@@ -39,6 +39,7 @@ import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
 import { parseStoredMealPlan } from "@/lib/meal-plan.schema";
 import { dailyMotivation } from "@/lib/motivation";
 import { applyAdaptation, getAppliedAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 
 function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
@@ -107,6 +108,7 @@ export function Overview() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const localDay = dayInTimeZone(new Date(), browserTimeZone());
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -153,13 +155,13 @@ export function Overview() {
   });
 
   const { data: checkin } = useQuery({
-    queryKey: ["today-checkin", user?.id],
+    queryKey: ["today-checkin", user?.id, localDay],
     queryFn: async () => {
       const { data } = await supabase
         .from("daily_checkins")
         .select("load_modifier, readiness_score, checkin_on")
         .eq("user_id", user!.id)
-        .eq("checkin_on", new Date().toISOString().slice(0, 10))
+        .eq("checkin_on", localDay)
         .maybeSingle();
       return data;
     },
@@ -197,13 +199,13 @@ export function Overview() {
   });
 
   const { data: nutritionToday } = useQuery({
-    queryKey: ["nutrition-today", user?.id],
+    queryKey: ["nutrition-today", user?.id, localDay],
     queryFn: async () => {
       const { data } = await supabase
         .from("nutrition_logs")
         .select("calories")
         .eq("user_id", user!.id)
-        .eq("logged_on", new Date().toISOString().slice(0, 10));
+        .eq("logged_on", localDay);
       return data ?? [];
     },
     enabled: !!user,

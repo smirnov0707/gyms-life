@@ -3,8 +3,9 @@ import { Droplets, Plus, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => dayInTimeZone(new Date(), browserTimeZone());
 const storageKey = (userId: string) => `gymslife:hydration:${userId}:${todayKey()}`;
 
 export const QuickHydrationWidget: React.FC<{ targetMl?: number }> = ({ targetMl = 3000 }) => {

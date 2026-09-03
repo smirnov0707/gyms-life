@@ -7,8 +7,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { submitCheckin, readinessScore, loadModifier } from "@/lib/smart.functions";
 import { useAuth } from "@/lib/auth";
-import { useI18n, baseLang, type TKey } from "@/lib/i18n";
+import { useI18n, type TKey } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -43,6 +44,8 @@ function ReadinessPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const run = useServerFn(submitCheckin);
+  const timeZone = browserTimeZone();
+  const todayOn = dayInTimeZone(new Date(), timeZone);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     sleepHours: 7,
@@ -54,13 +57,13 @@ function ReadinessPage() {
   });
 
   const { data: today, refetch } = useQuery({
-    queryKey: ["checkin-today", user?.id],
+    queryKey: ["checkin-today", user?.id, todayOn],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_checkins")
         .select("*")
         .eq("user_id", user!.id)
-        .eq("checkin_on", new Date().toISOString().slice(0, 10))
+        .eq("checkin_on", todayOn)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -68,13 +71,13 @@ function ReadinessPage() {
     enabled: !!user,
   });
 
-  const preview = readinessScore({ ...form, lang: baseLang(lang) });
+  const preview = readinessScore(form);
   const previewLoad = Math.round(loadModifier(preview) * 100);
 
   const submit = async () => {
     setBusy(true);
     try {
-      await run({ data: { ...form, lang } });
+      await run({ data: { ...form, lang, timeZone } });
       await refetch();
       toast.success(t("rd.title"));
     } catch (error) {

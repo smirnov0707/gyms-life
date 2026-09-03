@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { analyzeMealPhoto, savePhotoMeal, type MealAnalysis } from "@/lib/food-vision.functions";
 import { errorMessage } from "@/lib/error-message";
+import { browserTimeZone } from "@/lib/local-day";
 
 const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -129,6 +130,7 @@ export const VisionMealScanner: React.FC = () => {
           carbs: scanResult.carbs || 0,
           fat: scanResult.fat || 0,
           note: scanResult.note || "",
+          timeZone: browserTimeZone(),
         },
       });
       toast.success(

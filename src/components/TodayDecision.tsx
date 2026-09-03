@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { browserTimeZone } from "@/lib/local-day";
 import { getTodayDecision, recordTodayDecisionOutcome } from "@/lib/today-decision.functions";
 import type {
   TodayDecision,
@@ -188,7 +189,7 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
     setLoading(true);
     setFailed(false);
     try {
-      setDecision(await fetchDecision({}));
+      setDecision(await fetchDecision({ data: { timeZone: browserTimeZone() } }));
     } catch {
       setFailed(true);
     } finally {
