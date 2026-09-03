@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTodaysWorkoutData } from "./active-plan.service";
 import { adaptTrainingPlanDay } from "./training-guidance.service";
 import { validateWorkoutSetAgainstPlan } from "./workout-set.engine";
+import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
 
 const Input = z.object({
   sessionId: z.string().uuid(),
@@ -25,9 +26,9 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: session, error: sessionError } = await supabase
+    const { data: rawSession, error: sessionError } = await supabase
       .from("workout_sessions")
-      .select("id, user_id, plan_id, day_index, finished_at, adaptation_modifier")
+      .select(WORKOUT_SESSION_SELECT)
       .eq("id", data.sessionId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -35,22 +36,23 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
     if (sessionError) {
       throw new Error("Session lookup failed: " + sessionError.message);
     }
-    if (!session) {
+    if (!rawSession) {
       throw new Error("Workout session not found.");
     }
-    if (session.finished_at) {
+    const session = parseWorkoutSession(rawSession);
+    if (session.finishedAt) {
       throw new Error("Workout session is already finished.");
     }
-    if (session.plan_id === null || session.day_index === null) {
+    if (session.planId === null || session.dayIndex === null) {
       throw new Error("Workout session is missing active plan metadata.");
     }
 
-    const workout = await getTodaysWorkoutData(supabase, userId, session.day_index + 1);
-    if (workout.status !== "READY" || workout.plan.id !== session.plan_id) {
+    const workout = await getTodaysWorkoutData(supabase, userId, session.dayIndex + 1);
+    if (workout.status !== "READY" || workout.plan.id !== session.planId) {
       throw new Error("Workout plan is no longer available for this session.");
     }
 
-    const adjustedWorkout = adaptTrainingPlanDay(workout.workout, session.adaptation_modifier);
+    const adjustedWorkout = adaptTrainingPlanDay(workout.workout, session.adaptationModifier);
     validateWorkoutSetAgainstPlan(adjustedWorkout, data);
 
     const { data: duplicate, error: duplicateError } = await supabase

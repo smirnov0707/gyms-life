@@ -205,8 +205,8 @@ function WorkoutPage() {
     onSuccess: async (result) => {
       setFinished(true);
       setSummary({
-        duration: result.session.duration_seconds ?? 0,
-        volume: Number(result.session.total_volume ?? 0),
+        duration: result.session.durationSeconds ?? 0,
+        volume: result.session.totalVolume,
       });
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["sessions"] }),

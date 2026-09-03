@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getActivePlanData } from "./active-plan.service";
 import { adaptTrainingPlanDay } from "./training-guidance.service";
 import { evaluateWorkoutCompletion } from "./workout-completion.engine";
+import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
 
 const Input = z.object({ sessionId: z.string().uuid() });
 
@@ -13,11 +14,9 @@ export const finishWorkout = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: session, error: sessionError } = await supabase
+    const { data: rawSession, error: sessionError } = await supabase
       .from("workout_sessions")
-      .select(
-        "id, user_id, plan_id, day_index, started_at, finished_at, duration_seconds, total_volume, adaptation_modifier",
-      )
+      .select(WORKOUT_SESSION_SELECT)
       .eq("id", data.sessionId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -25,25 +24,26 @@ export const finishWorkout = createServerFn({ method: "POST" })
     if (sessionError) {
       throw new Error("Session lookup failed: " + sessionError.message);
     }
-    if (!session) {
+    if (!rawSession) {
       throw new Error("Workout session not found.");
     }
-    if (session.finished_at) {
+    const session = parseWorkoutSession(rawSession);
+    if (session.finishedAt) {
       return { ok: true, session, alreadyFinished: true };
     }
-    if (session.plan_id === null || session.day_index === null) {
+    if (session.planId === null || session.dayIndex === null) {
       throw new Error("Workout session is missing active plan metadata.");
     }
-    const dayIndex = session.day_index;
+    const dayIndex = session.dayIndex;
 
     const plan = await getActivePlanData(supabase, userId);
-    if (plan.status !== "READY" || plan.plan.id !== session.plan_id) {
+    if (plan.status !== "READY" || plan.plan.id !== session.planId) {
       throw new Error("The workout session is not linked to the current active program.");
     }
 
     const basePlannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
     const plannedDay = basePlannedDay
-      ? adaptTrainingPlanDay(basePlannedDay, session.adaptation_modifier)
+      ? adaptTrainingPlanDay(basePlannedDay, session.adaptationModifier)
       : null;
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found.");
@@ -72,7 +72,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
 
     const finishedAt = new Date();
-    const startedAt = new Date(session.started_at);
+    const startedAt = new Date(session.startedAt);
     const durationSeconds = Math.max(
       0,
       Math.round((finishedAt.getTime() - startedAt.getTime()) / 1000),
@@ -87,9 +87,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
       .eq("id", session.id)
       .eq("user_id", userId)
       .is("finished_at", null)
-      .select(
-        "id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume",
-      )
+      .select(WORKOUT_SESSION_SELECT)
       .single();
 
     if (updateError || !updated) {
@@ -103,7 +101,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
 
     return {
       ok: true,
-      session: updated,
+      session: parseWorkoutSession(updated),
       alreadyFinished: false,
     };
   });
