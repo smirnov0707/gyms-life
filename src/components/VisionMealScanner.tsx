@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
+import { aiErrorMessage } from "@/lib/ai-error";
 import { useAuth } from "@/lib/auth";
 import { analyzeMealPhoto, savePhotoMeal, type MealAnalysis } from "@/lib/food-vision.functions";
 import { errorMessage } from "@/lib/error-message";
@@ -14,7 +15,7 @@ const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"])
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export const VisionMealScanner: React.FC = () => {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,6 +27,9 @@ export const VisionMealScanner: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [scanResult, setScanResult] = useState<MealAnalysis | null>(null);
+
+  const failureMessage = (result: Extract<MealAnalysis, { ok: false }>) =>
+    result.aiErrorCode ? aiErrorMessage(new Error(result.aiErrorCode), t) : result.reason;
 
   const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -106,7 +110,8 @@ export const VisionMealScanner: React.FC = () => {
         toast.success(lang === "lt" ? "Patiekalas sėkmingai atpažintas!" : "Meal recognized!");
       } else {
         toast.error(
-          res.reason || (lang === "lt" ? "Nepavyko atpažinti maisto" : "Failed to detect food"),
+          failureMessage(res) ||
+            (lang === "lt" ? "Nepavyko atpažinti maisto" : "Failed to detect food"),
         );
       }
     } catch (error: unknown) {
@@ -230,11 +235,9 @@ export const VisionMealScanner: React.FC = () => {
                         {scanResult.dishName}
                       </h4>
                     </div>
-                    {scanResult.confidence && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                        {scanResult.confidence}% {lang === "lt" ? "TIKSLUMAS" : "CONFIDENCE"}
-                      </span>
-                    )}
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      {lang === "lt" ? "ĮVERTIS PAGAL NUOTRAUKĄ" : "PHOTO-BASED ESTIMATE"}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
@@ -314,7 +317,7 @@ export const VisionMealScanner: React.FC = () => {
               ) : (
                 <div className="text-center py-3 space-y-2">
                   <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto" />
-                  <p className="text-xs font-mono text-neutral-300">{scanResult.reason}</p>
+                  <p className="text-xs font-mono text-neutral-300">{failureMessage(scanResult)}</p>
                   <Button
                     size="sm"
                     variant="outline"

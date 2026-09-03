@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { aiErrorMessage } from "./ai-error";
+import { aiErrorMessage, getSafeAiErrorCode, rethrowSafeAiError } from "./ai-error";
 import {
   AiUnavailableError,
   isAiModelUnavailable,
@@ -51,6 +51,19 @@ describe("normalizeAiError", () => {
 });
 
 describe("aiErrorMessage", () => {
+  it("explains the member daily limit without exposing provider details", () => {
+    expect(aiErrorMessage(new Error("AI_DAILY_LIMIT"), (key) => key)).toBe("ai.err.dailyLimit");
+  });
+
+  it("preserves only known application-owned AI states across server boundaries", () => {
+    expect(getSafeAiErrorCode(new Error("AI_MODEL_UNAVAILABLE:google/example"))).toBe(
+      "AI_MODEL_UNAVAILABLE",
+    );
+    expect(getSafeAiErrorCode(new Error("provider account 123 failed"))).toBeNull();
+    expect(() => rethrowSafeAiError(new Error("AI_DAILY_LIMIT"))).toThrow("AI_DAILY_LIMIT");
+    expect(() => rethrowSafeAiError(new Error("provider account 123 failed"))).not.toThrow();
+  });
+
   it("does not expose AI SDK internals when a model is unavailable", () => {
     expect(
       aiErrorMessage(

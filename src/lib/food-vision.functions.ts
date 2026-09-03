@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { getSafeAiErrorCode, SAFE_AI_ERROR_CODES, type SafeAiErrorCode } from "./ai-error";
 import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
@@ -19,7 +20,6 @@ const MealAnalysisSuccessSchema = NutritionMacrosSchema.extend({
   dishName: z.string().trim().min(1).max(200),
   calories: z.coerce.number().finite().positive().max(10_000),
   items: z.array(z.string().trim().min(1).max(160)).max(30).default([]),
-  confidence: z.coerce.number().finite().min(0).max(100),
   note: z.string().trim().min(1).max(1_000),
 });
 
@@ -27,6 +27,7 @@ const MealAnalysisFailureSchema = z.object({
   ok: z.literal(false),
   detectedObject: z.string().trim().min(1).max(200).optional(),
   reason: z.string().trim().min(1).max(500),
+  aiErrorCode: z.enum(SAFE_AI_ERROR_CODES).optional(),
 });
 
 export const MealAnalysisSchema = z.discriminatedUnion("ok", [
@@ -36,15 +37,19 @@ export const MealAnalysisSchema = z.discriminatedUnion("ok", [
 
 export type MealAnalysis = z.infer<typeof MealAnalysisSchema>;
 
-function failedMealAnalysis(reason: string): MealAnalysis {
-  return { ok: false, reason };
+function failedMealAnalysis(reason: string, aiErrorCode?: SafeAiErrorCode): MealAnalysis {
+  return { ok: false, reason, ...(aiErrorCode ? { aiErrorCode } : {}) };
 }
 
-function unavailableMealAnalysis(lang: z.infer<typeof SupportedLanguageSchema>): MealAnalysis {
+function unavailableMealAnalysis(
+  error: unknown,
+  lang: z.infer<typeof SupportedLanguageSchema>,
+): MealAnalysis {
   return failedMealAnalysis(
     lang === "lt"
       ? "Nuotraukos analizė šiuo metu nepasiekiama. Bandykite dar kartą po akimirkos."
       : "Photo analysis is temporarily unavailable. Please try again in a moment.",
+    getSafeAiErrorCode(error) ?? undefined,
   );
 }
 
@@ -76,9 +81,10 @@ Apskaičiuok realistiškas maistines vertes (kalorijas, baltymus, angliavandeniu
   "carbs": 40,
   "fat": 15,
   "items": ["Ingredientas 1", "Ingredientas 2", "Ingredientas 3"],
-  "confidence": 94,
-  "note": "Komentaras apie patiekalo maistinę vertę ir porciją"
+  "note": "Trumpas maistinės vertės ir porcijos įvertis"
 }
+
+Niekada nepateik procentinio tikslumo ar confidence: tai yra nuotrauka pagrįstas įvertis, kurį vartotojas gali patikrinti prieš įrašydamas.
 
 Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
 
@@ -101,7 +107,7 @@ Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
       });
     } catch (error: unknown) {
       console.error("Food vision handler error:", error);
-      return unavailableMealAnalysis(data.lang);
+      return unavailableMealAnalysis(error, data.lang);
     }
   });
 

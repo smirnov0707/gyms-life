@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { rethrowSafeAiError } from "./ai-error";
 import { serializeJson } from "./json.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { validateGeneratedMealPlan } from "./meal-plan-generation.validation";
@@ -181,6 +182,7 @@ Preferences: ${JSON.stringify({
             data.lang,
           );
         } catch (error) {
+          rethrowSafeAiError(error);
           console.error("AI Meal plan generation failed", error);
           throw new Error(
             data.lang === "lt"

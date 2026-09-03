@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { rethrowSafeAiError } from "./ai-error";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 import { NutritionMacrosSchema, normalizeNutritionLogDraft } from "./nutrition-log.schema";
@@ -40,6 +41,7 @@ note = max 1 short sentence with a practical tip for an athlete.`,
         schema,
       });
     } catch (error) {
+      rethrowSafeAiError(error);
       console.error("nutrition parse failed", error);
       parsed = null;
     }

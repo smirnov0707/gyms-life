@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { rethrowSafeAiError } from "./ai-error";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import {
   IanaTimeZoneSchema,
@@ -160,9 +161,8 @@ RETURN EXACTLY THIS JSON SHAPE:
         maxOutputTokens: 2600,
       });
     } catch (error) {
+      rethrowSafeAiError(error);
       console.error("getDailyBrief failed", error);
-      const message = error instanceof Error ? error.message : "";
-      if (message === "AI_CREDITS" || message === "AI_RATE_LIMIT") throw new Error(message);
       throw new Error("Could not build today's brief. Try again.");
     }
 

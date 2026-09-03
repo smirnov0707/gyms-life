@@ -29,6 +29,7 @@ describe("GYMS.LIFE AI task policy", () => {
     ]);
     expect(getAiTaskModelRoute("food-vision")).toEqual([
       "google/gemini-2.5-flash",
+      "google/gemini-3.1-flash-lite",
       "openrouter/meta-llama/llama-4-scout",
       "openai/gpt-4o-mini",
     ]);

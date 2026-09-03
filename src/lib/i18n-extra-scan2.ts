@@ -1,4 +1,8 @@
 export const extra_scan2 = {
+  "ai.err.dailyLimit": {
+    lt: "Šiandien pasiektas AI užklausų limitas. Bandyk vėliau.",
+    en: "Today's AI request limit has been reached. Please try again later.",
+  },
   "ai.err.credits": {
     lt: "Treneris laikinai nepasiekiamas — baigėsi AI limitas. Pabandyk vėliau arba naudok rankinį įvedimą.",
     en: "The coach is temporarily unavailable — the AI limit ran out. Try again later or enter data manually.",
