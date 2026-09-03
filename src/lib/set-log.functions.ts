@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTodaysWorkoutData } from "./active-plan.service";
 import { adaptTrainingPlanDay } from "./training-guidance.service";
+import { validateWorkoutSetAgainstPlan } from "./workout-set.engine";
 
 const Input = z.object({
   sessionId: z.string().uuid(),
@@ -50,16 +51,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
     }
 
     const adjustedWorkout = adaptTrainingPlanDay(workout.workout, session.adaptation_modifier);
-    const exercise = adjustedWorkout.exercises.find((item) => item.slug === data.exerciseSlug);
-    if (!exercise) {
-      throw new Error("Exercise does not belong to this workout.");
-    }
-    if (exercise.name !== data.exerciseName) {
-      throw new Error("Exercise name does not match the workout plan.");
-    }
-    if (data.setNumber > exercise.sets) {
-      throw new Error("Set number exceeds the planned " + exercise.sets + " sets.");
-    }
+    validateWorkoutSetAgainstPlan(adjustedWorkout, data);
 
     const { data: duplicate, error: duplicateError } = await supabase
       .from("set_logs")
