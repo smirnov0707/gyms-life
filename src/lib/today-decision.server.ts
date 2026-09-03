@@ -195,6 +195,22 @@ export async function completeCurrentTrainingDecision(
   userId: string,
   completedAt: Date,
 ): Promise<boolean> {
+  return completeCurrentDecision(userId, completedAt, ["train_adapted", "train_as_planned"]);
+}
+
+/** Marks a completed readiness check-in as the result of today's readiness action. */
+export async function completeCurrentReadinessDecision(
+  userId: string,
+  completedAt: Date,
+): Promise<boolean> {
+  return completeCurrentDecision(userId, completedAt, ["complete_readiness"]);
+}
+
+async function completeCurrentDecision(
+  userId: string,
+  completedAt: Date,
+  actions: Array<"complete_readiness" | "train_adapted" | "train_as_planned">,
+): Promise<boolean> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: decision, error: decisionError } = await supabaseAdmin
@@ -202,7 +218,7 @@ export async function completeCurrentTrainingDecision(
       .select("id")
       .eq("user_id", userId)
       .eq("decision_on", utcDay(completedAt))
-      .in("action", ["train_adapted", "train_as_planned"])
+      .in("action", actions)
       .in("status", ["active", "accepted"])
       .order("created_at", { ascending: false })
       .limit(1)

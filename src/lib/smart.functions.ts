@@ -2,7 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
-import { loadModifierFor } from "./readiness.engine";
+import {
+  calculateReadinessScore,
+  DailyReadinessFactorsSchema,
+  loadModifierFor,
+} from "./readiness.engine";
 
 const LangSchema = SupportedLanguageSchema.default("lt");
 
@@ -95,27 +99,53 @@ score = technique quality 0-100. risk = one short sentence about injury risk.`;
 /* READINESS / AUTOREGULATION — daily check-in scores today's load     */
 /* ------------------------------------------------------------------ */
 
-const CheckinInput = z.object({
-  sleepHours: z.number().min(0).max(16),
-  sleepQuality: z.number().min(1).max(5),
-  soreness: z.number().min(1).max(5),
-  stress: z.number().min(1).max(5),
-  energy: z.number().min(1).max(5),
-  mood: z.number().min(1).max(5),
-  lang: LangSchema,
-});
+const CheckinInput = DailyReadinessFactorsSchema.extend({ lang: LangSchema }).strict();
+const ReadinessAdjustmentInputSchema = z
+  .object({ score: z.number().finite().min(0).max(100) })
+  .strict();
 
 export function readinessScore(i: z.infer<typeof CheckinInput>) {
-  const sleepPts = Math.max(0, Math.min(1, (i.sleepHours - 4) / 4)) * 30;
-  const qualityPts = ((i.sleepQuality - 1) / 4) * 20;
-  const sorenessPts = ((5 - i.soreness) / 4) * 20;
-  const stressPts = ((5 - i.stress) / 4) * 10;
-  const energyPts = ((i.energy - 1) / 4) * 15;
-  const moodPts = ((i.mood - 1) / 4) * 5;
-  return Math.round(sleepPts + qualityPts + sorenessPts + stressPts + energyPts + moodPts);
+  return calculateReadinessScore({
+    sleepHours: i.sleepHours,
+    sleepQuality: i.sleepQuality,
+    soreness: i.soreness,
+    stress: i.stress,
+    energy: i.energy,
+    mood: i.mood,
+  });
 }
 
 export const loadModifier = loadModifierFor;
+
+function deterministicReadinessAdvice(
+  score: number,
+  modifier: number,
+  lang: z.infer<typeof LangSchema>,
+): string {
+  if (lang === "lt") {
+    if (score < 40) {
+      return "Šiandien rinkis atsistatymą. Netreniruok su papildomu svoriu ir įvertink savijautą rytoj.";
+    }
+    if (score < 55) {
+      return "Šiandien mažink apimtį ir nekelk svorio. Palik 2–3 pakartojimų atsargą bei prioritetą skirk atsistatymui.";
+    }
+    if (score < 70) {
+      return `Treniruokis konservatyviai, su ${Math.round(modifier * 100)}% planuoto krūvio. Rinkis techniškai stabilų tempą ir trumpesnę sesiją, jei reikia.`;
+    }
+    return "Dabartinis pasiruošimas palaiko suplanuotą treniruotę. Laikykis technikos ir sustok, jei atsiranda neįprastas skausmas.";
+  }
+
+  if (score < 40) {
+    return "Choose recovery today. Do not add training load and reassess how you feel tomorrow.";
+  }
+  if (score < 55) {
+    return "Reduce volume today and do not increase load. Leave 2–3 reps in reserve and prioritise recovery.";
+  }
+  if (score < 70) {
+    return `Train conservatively at ${Math.round(modifier * 100)}% of planned load. Keep technique steady and shorten the session if needed.`;
+  }
+  return "Your current readiness supports the planned session. Keep technique strict and stop if unusual pain appears.";
+}
 
 export const submitCheckin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -125,26 +155,7 @@ export const submitCheckin = createServerFn({ method: "POST" })
 
     const score = readinessScore(data);
     const modifier = loadModifier(score);
-
-    const { data: recent } = await supabase
-      .from("workout_sessions")
-      .select("title, started_at, total_volume")
-      .eq("user_id", userId)
-      .order("started_at", { ascending: false })
-      .limit(5);
-
-    const { generateOrchestratedText } = await import("./ai-orchestrator.server");
-    const advice = await generateOrchestratedText({
-      task: "daily-readiness",
-      supabase,
-      userId,
-      system: `You are GYMS.LIFE's autoregulation engine. Answer in ${
-        LANGUAGE_NAMES[data.lang]
-      }. Give exactly 2-3 short sentences: how hard to train today, what to change (sets, load %, intensity, cardio) and one recovery action. No greetings, no lists.`,
-      prompt: `Readiness score: ${score}/100 (recommended load ${Math.round(modifier * 100)}%).
-Check-in: ${JSON.stringify(data)}
-Recent workouts: ${JSON.stringify(recent ?? [])}`,
-    });
+    const advice = deterministicReadinessAdvice(score, modifier, data.lang);
 
     const { error: saveError } = await supabase.from("daily_checkins").upsert(
       {
@@ -164,5 +175,32 @@ Recent workouts: ${JSON.stringify(recent ?? [])}`,
     );
     if (saveError) throw new Error("Could not save daily check-in.");
 
+    const { completeCurrentReadinessDecision } = await import("./today-decision.server");
+    await completeCurrentReadinessDecision(userId, new Date());
+
     return { score, modifier, advice };
+  });
+
+/** Saves the compact Today-screen adjustment through the same server-owned decision loop. */
+export const saveReadinessAdjustment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => ReadinessAdjustmentInputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const score = Math.round(data.score);
+    const modifier = loadModifierFor(score);
+    const checkinOn = new Date().toISOString().slice(0, 10);
+    const { error } = await context.supabase.from("daily_checkins").upsert(
+      {
+        user_id: context.userId,
+        checkin_on: checkinOn,
+        readiness_score: score,
+        load_modifier: modifier,
+      },
+      { onConflict: "user_id,checkin_on" },
+    );
+    if (error) throw new Error("Could not save readiness adjustment.");
+
+    const { completeCurrentReadinessDecision } = await import("./today-decision.server");
+    await completeCurrentReadinessDecision(context.userId, new Date());
+    return { score, modifier };
   });

@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
 import { applyAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
+import { saveReadinessAdjustment } from "@/lib/smart.functions";
 
 const COPY = {
   lt: {
@@ -56,6 +57,7 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
   const c = COPY[lang === "lt" ? "lt" : "en"];
   const { user } = useAuth();
   const qc = useQueryClient();
+  const saveAdjustment = useServerFn(saveReadinessAdjustment);
 
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(score);
@@ -71,26 +73,11 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
     if (!user) return;
     setSaving(true);
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      const { data: existing, error: existingError } = await supabase
-        .from("daily_checkins")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("checkin_on", today)
-        .maybeSingle();
-      if (existingError) throw existingError;
+      const saved = await saveAdjustment({ data: { score: value } });
 
-      const payload = { readiness_score: Math.round(value), load_modifier: modifier };
-      const { error } = existing?.id
-        ? await supabase.from("daily_checkins").update(payload).eq("id", existing.id)
-        : await supabase
-            .from("daily_checkins")
-            .insert({ user_id: user.id, checkin_on: today, ...payload });
-      if (error) throw error;
-
-      applyAdaptation(modifier);
+      applyAdaptation(saved.modifier);
       await qc.invalidateQueries({ queryKey: ["today-checkin", user.id] });
-      toast.success(`${c.saved} · ${Math.round(modifier * 100)}%`);
+      toast.success(`${c.saved} · ${Math.round(saved.modifier * 100)}%`);
       setOpen(false);
     } catch (error) {
       toast.error(errorMessage(error, c.saveFailed));
