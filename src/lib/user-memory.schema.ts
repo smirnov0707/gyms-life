@@ -65,11 +65,27 @@ const UserMemoryDbRowSchema = z
   })
   .strict();
 
+export const UserMemoryTransparencyItemResultSchema = z
+  .object({
+    id: z.string().uuid(),
+    type: UserMemoryTypeSchema,
+    content: z.string().trim().min(1).max(400),
+    source: UserMemorySourceSchema,
+    confidence: z.number().finite().min(0).max(1),
+    importance: z.number().finite().min(0).max(1),
+    status: UserMemoryStatusSchema,
+    calculatedValue: CalculatedMemoryValueSchema.nullable(),
+    evidenceCount: z.number().int().nonnegative(),
+    lastConfirmedAt: TimestampSchema,
+    expiresAt: TimestampSchema.nullable(),
+  })
+  .strict();
+
 export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform((row) => {
   const calculatedValue =
     row.source === "calculated" ? CalculatedMemoryValueSchema.safeParse(row.value) : null;
 
-  return {
+  return UserMemoryTransparencyItemResultSchema.parse({
     id: row.id,
     type: row.memory_type,
     content: row.content,
@@ -81,14 +97,19 @@ export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform(
     evidenceCount: row.evidence_refs.length,
     lastConfirmedAt: row.last_confirmed_at,
     expiresAt: row.expires_at,
-  };
+  });
 });
 
 export type UserMemoryTransparencyItem = z.infer<typeof UserMemoryTransparencyItemSchema>;
 
+type CalculatedMemoryTransparencyFields = Pick<
+  UserMemoryTransparencyItem,
+  "source" | "calculatedValue"
+>;
+
 /** Returns only an application-owned calculated value that matches a known contract. */
 export function calculatedMemoryValueForTransparency(
-  memory: UserMemoryTransparencyItem,
+  memory: CalculatedMemoryTransparencyFields,
 ): UserMemoryTransparencyItem["calculatedValue"] {
   return memory.source === "calculated" ? memory.calculatedValue : null;
 }

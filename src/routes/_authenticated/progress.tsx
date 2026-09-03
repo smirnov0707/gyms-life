@@ -12,6 +12,7 @@ import { ProgressForecast } from "@/components/ProgressForecast";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
 import { AIProgressInsights } from "@/components/AIProgressInsights";
+import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
 
 export const Route = createFileRoute("/_authenticated/progress")({
   head: () => ({
@@ -77,6 +78,7 @@ function ProgressPage() {
     <div className="grid gap-8">
       <h1 className="text-5xl">{t("pr.title")}</h1>
       <PerformanceProgressPanel />
+      <WeeklyIntelligenceReview />
       <AIProgressInsights />
       <ProgressForecast />
       <InjuryRiskRadar />
