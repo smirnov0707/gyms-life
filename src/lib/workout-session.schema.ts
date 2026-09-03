@@ -31,8 +31,14 @@ export const WorkoutSessionSchema = z.object({
 
 export type WorkoutSession = z.infer<typeof WorkoutSessionSchema>;
 
-export function parseWorkoutSession(row: WorkoutSessionRow): WorkoutSession {
-  return WorkoutSessionSchema.parse({
+export const CompletedWorkoutSessionSchema = WorkoutSessionSchema.extend({
+  finishedAt: z.string().datetime({ offset: true }),
+});
+
+export type CompletedWorkoutSession = z.infer<typeof CompletedWorkoutSessionSchema>;
+
+function normalizeWorkoutSessionRow(row: WorkoutSessionRow) {
+  return {
     id: row.id,
     planId: row.plan_id,
     dayIndex: row.day_index,
@@ -42,5 +48,23 @@ export function parseWorkoutSession(row: WorkoutSessionRow): WorkoutSession {
     durationSeconds: row.duration_seconds,
     totalVolume: row.total_volume,
     adaptationModifier: row.adaptation_modifier,
+  };
+}
+
+export function parseWorkoutSession(row: WorkoutSessionRow): WorkoutSession {
+  return WorkoutSessionSchema.parse(normalizeWorkoutSessionRow(row));
+}
+
+export function parseCompletedWorkoutSession(row: WorkoutSessionRow): CompletedWorkoutSession {
+  return CompletedWorkoutSessionSchema.parse(normalizeWorkoutSessionRow(row));
+}
+
+/** Invalid historical rows are excluded before they can reach performance logic. */
+export function parseCompletedWorkoutSessions(
+  rows: WorkoutSessionRow[],
+): CompletedWorkoutSession[] {
+  return rows.flatMap((row) => {
+    const parsed = CompletedWorkoutSessionSchema.safeParse(normalizeWorkoutSessionRow(row));
+    return parsed.success ? [parsed.data] : [];
   });
 }

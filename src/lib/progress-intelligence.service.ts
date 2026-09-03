@@ -20,13 +20,13 @@ export async function loadProgressPoints(supabase: SupabaseClient<Database>, use
   const { logs } = await loadCompletedPerformance(supabase, userId);
 
   return logs.map((row) => ({
-    exerciseSlug: row.exercise_slug,
-    exerciseName: row.exercise_name,
-    date: row.created_at,
-    weightKg: row.weight_kg,
+    exerciseSlug: row.exerciseSlug,
+    exerciseName: row.exerciseName,
+    date: row.createdAt,
+    weightKg: row.weightKg,
     reps: row.reps,
     rpe: row.rpe,
-    estimated1RMKg: calculateEstimated1RM(row.weight_kg, row.reps),
+    estimated1RMKg: calculateEstimated1RM(row.weightKg, row.reps),
     done: row.done,
   }));
 }

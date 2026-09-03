@@ -28,13 +28,13 @@ export const getExerciseProgress = createServerFn({ method: "GET" })
     const performance = aggregateExercisePerformance(logs, data.exerciseSlug);
     const sessionIds = new Set(sessions.map((session) => session.id));
     const points = logs
-      .filter((log) => log.exercise_slug === data.exerciseSlug && sessionIds.has(log.session_id))
+      .filter((log) => log.exerciseSlug === data.exerciseSlug && sessionIds.has(log.sessionId))
       .map((log) => ({
-        date: log.created_at,
-        weightKg: log.weight_kg,
+        date: log.createdAt,
+        weightKg: log.weightKg,
         reps: log.reps,
         rpe: log.rpe,
-        estimated1RMKg: calculateEstimated1RM(log.weight_kg, log.reps),
+        estimated1RMKg: calculateEstimated1RM(log.weightKg, log.reps),
       }));
 
     return {

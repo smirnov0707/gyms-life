@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseWorkoutSession, type WorkoutSessionRow } from "./workout-session.schema";
+import {
+  parseCompletedWorkoutSessions,
+  parseWorkoutSession,
+  type WorkoutSessionRow,
+} from "./workout-session.schema";
 
 const row: WorkoutSessionRow = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -25,5 +29,18 @@ describe("workout session domain contract", () => {
 
   it("rejects database values outside the persisted readiness contract", () => {
     expect(() => parseWorkoutSession({ ...row, adaptation_modifier: 1.2 })).toThrow();
+  });
+
+  it("excludes unfinished and malformed rows from completed-performance consumers", () => {
+    const complete = {
+      ...row,
+      finished_at: "2026-09-03T05:00:00+00:00",
+      duration_seconds: 3_600,
+      total_volume: 1_200,
+    };
+
+    expect(
+      parseCompletedWorkoutSessions([complete, row, { ...complete, total_volume: -1 }]),
+    ).toEqual([expect.objectContaining({ id: complete.id, finishedAt: complete.finished_at })]);
   });
 });

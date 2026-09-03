@@ -36,24 +36,22 @@ export async function getWorkoutTrainingGuidance(
   const { sessions, logs } = await loadCompletedPerformance(supabase, userId);
   const finishedAtBySessionId = new Map<string, string>();
   for (const session of sessions) {
-    if (session.finished_at !== null) {
-      finishedAtBySessionId.set(session.id, session.finished_at);
-    }
+    finishedAtBySessionId.set(session.id, session.finishedAt);
   }
   return {
     readinessModifier,
     exercises: day.exercises.map((exercise) => {
       const history = parseWorkoutGuidanceHistory(
         logs.flatMap((log) => {
-          const finishedAt = finishedAtBySessionId.get(log.session_id);
-          if (!finishedAt || log.exercise_slug !== exercise.slug) return [];
+          const finishedAt = finishedAtBySessionId.get(log.sessionId);
+          if (!finishedAt || log.exerciseSlug !== exercise.slug) return [];
           return [
             {
-              sessionId: log.session_id,
+              sessionId: log.sessionId,
               finishedAt,
-              setNumber: log.set_number,
+              setNumber: log.setNumber,
               reps: log.reps,
-              weightKg: log.weight_kg,
+              weightKg: log.weightKg,
               rpe: log.rpe,
             },
           ];
