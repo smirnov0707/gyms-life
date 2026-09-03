@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   isNetworkUnavailable,
+  retainUnacknowledgedWorkoutSets,
   synchronizeWorkoutSets,
   type OfflinePayload,
   type WorkoutSetSync,
@@ -33,6 +34,38 @@ describe("synchronizeWorkoutSets", () => {
     expect(result.synced).toBe(1);
     expect(result.remaining).toEqual([queue[1]]);
     expect(sync).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps records queued during a flush while removing only acknowledged records", () => {
+    const secondSet = { ...firstSet, setNumber: 2 };
+    const thirdSet = { ...firstSet, setNumber: 3 };
+    const acknowledgedPayload: OfflinePayload = {
+      id: "one",
+      type: "workout_set",
+      data: firstSet,
+      timestamp: 1,
+    };
+    const failedPayload: OfflinePayload = {
+      id: "two",
+      type: "workout_set",
+      data: secondSet,
+      timestamp: 2,
+    };
+    const snapshot = [acknowledgedPayload, failedPayload];
+    const queuedDuringFlush: OfflinePayload = {
+      id: "three",
+      type: "workout_set",
+      data: thirdSet,
+      timestamp: 3,
+    };
+
+    const next = retainUnacknowledgedWorkoutSets(
+      snapshot,
+      [failedPayload],
+      [...snapshot, queuedDuringFlush],
+    );
+
+    expect(next).toEqual([failedPayload, queuedDuringFlush]);
   });
 });
 

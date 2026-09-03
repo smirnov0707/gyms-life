@@ -111,7 +111,10 @@ function WorkoutPage() {
   });
 
   const startMutation = useMutation({
-    mutationFn: () => startWorkout({ data: { day: dayNumber } }),
+    mutationFn: async () => {
+      await syncQueuedSets();
+      return startWorkout({ data: { day: dayNumber } });
+    },
     onSuccess: (result) => {
       setSessionId(result.session.id);
       setActiveWorkout(result.workout);

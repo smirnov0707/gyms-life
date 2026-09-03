@@ -30,6 +30,8 @@ export type OfflineSyncResult = {
   remaining: number;
 };
 
+let activeWorkoutSetFlush: Promise<OfflineSyncResult> | null = null;
+
 function isBrowser(): boolean {
   return typeof window !== "undefined";
 }
@@ -104,16 +106,48 @@ export async function synchronizeWorkoutSets(
   return { synced, remaining };
 }
 
-export async function flushOfflineWorkoutSets(
+/**
+ * Removes only records acknowledged from this synchronization snapshot. Records
+ * appended while a flush was in flight are retained for the next flush.
+ */
+export function retainUnacknowledgedWorkoutSets(
+  snapshot: OfflinePayload[],
+  failed: OfflinePayload[],
+  current: OfflinePayload[],
+): OfflinePayload[] {
+  const failedIds = new Set(failed.map((item) => item.id));
+  const acknowledgedIds = new Set(
+    snapshot.filter((item) => !failedIds.has(item.id)).map((item) => item.id),
+  );
+
+  return current.filter((item) => !acknowledgedIds.has(item.id));
+}
+
+export function flushOfflineWorkoutSets(
   sync: (input: WorkoutSetSync) => Promise<unknown>,
 ): Promise<OfflineSyncResult> {
   if (!isBrowser() || !navigator.onLine) {
-    return { synced: 0, remaining: getOfflineQueue().length };
+    return Promise.resolve({ synced: 0, remaining: getOfflineQueue().length });
   }
+  if (activeWorkoutSetFlush) return activeWorkoutSetFlush;
 
-  const { synced, remaining } = await synchronizeWorkoutSets(getOfflineQueue(), sync);
-  persistOfflineQueue(remaining);
-  return { synced, remaining: remaining.length };
+  const snapshot = getOfflineQueue();
+  const flush = synchronizeWorkoutSets(snapshot, sync).then(({ synced, remaining }) => {
+    const queue = retainUnacknowledgedWorkoutSets(snapshot, remaining, getOfflineQueue());
+    persistOfflineQueue(queue);
+    return { synced, remaining: queue.length };
+  });
+
+  activeWorkoutSetFlush = flush;
+  void flush.then(
+    () => {
+      if (activeWorkoutSetFlush === flush) activeWorkoutSetFlush = null;
+    },
+    () => {
+      if (activeWorkoutSetFlush === flush) activeWorkoutSetFlush = null;
+    },
+  );
+  return flush;
 }
 
 export function isNetworkUnavailable(error: unknown): boolean {
