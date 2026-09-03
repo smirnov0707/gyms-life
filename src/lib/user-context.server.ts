@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { hasCurrentAiPersonalizationConsent } from "./ai-personalization-consent.policy";
 import { canonicalWorkoutEquipment } from "./workout-equipment.schema";
 import { buildDigitalAthleteState, loadDigitalAthleteState } from "./digital-athlete.service";
 import type {
@@ -8,6 +9,8 @@ import type {
   DigitalAthleteDataGap,
   DigitalAthleteState,
 } from "./digital-athlete.schema";
+import { ActiveMemoryForAiSchema, type ActiveMemoryForAi } from "./user-memory.schema";
+import { loadActiveMemoryForAi } from "./user-memory.service";
 
 export type { AiPersonalizationSources } from "./digital-athlete.schema";
 
@@ -141,6 +144,7 @@ export interface CentralUserContext {
   currentDay: CurrentDayContext;
   aiPersonalization: AiPersonalizationConsent;
   digitalAthlete: DigitalAthleteState;
+  activeMemory: ActiveMemoryForAi;
   /** Context-only gaps; athlete-model gaps stay on `digitalAthlete.dataGaps`. */
   dataGaps: string[];
 }
@@ -237,6 +241,10 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
       context: true,
     },
   });
+}
+
+function emptyActiveMemory(): ActiveMemoryForAi {
+  return ActiveMemoryForAiSchema.parse({ available: false, entries: [] });
 }
 
 function emptyCurrentDayContext(dataGaps: CurrentDayContext["dataGaps"]): CurrentDayContext {
@@ -402,7 +410,10 @@ export function buildAiPersonalizationSummary(
 function consentFrom(value: unknown, querySucceeded: boolean): AiPersonalizationConsent {
   const parsed = PersonalizationConsentSourceSchema.safeParse(value);
   return AiPersonalizationConsentSchema.parse({
-    enabled: querySucceeded && parsed.success && parsed.data.granted,
+    enabled:
+      querySucceeded &&
+      parsed.success &&
+      hasCurrentAiPersonalizationConsent(parsed.data.granted, parsed.data.policy_version),
     policyVersion: parsed.success ? parsed.data.policy_version : null,
     lastRecordedAt: parsed.success ? parsed.data.recorded_at : null,
   });
@@ -437,27 +448,40 @@ export async function buildUserContext(
     : aiPersonalization.enabled
       ? null
       : "personalization_consent_required";
-  const digitalAthlete = aiPersonalization.enabled
-    ? await loadDigitalAthleteState(supabase, userId)
-    : emptyDigitalAthleteState();
+  let digitalAthlete = emptyDigitalAthleteState();
+  let activeMemory = emptyActiveMemory();
+  if (aiPersonalization.enabled) {
+    [digitalAthlete, activeMemory] = await Promise.all([
+      loadDigitalAthleteState(supabase, userId),
+      loadActiveMemoryForAi(supabase, userId),
+    ]);
+  }
 
   return {
     profile: profile ?? defaultProfilePreferences(),
     currentDay,
     aiPersonalization,
     digitalAthlete,
+    activeMemory,
     dataGaps: [
       ...(profile === null ? ["profile_data_unavailable"] : []),
       ...currentDay.dataGaps,
+      ...(aiPersonalization.enabled && !activeMemory.available
+        ? ["active_memory_unavailable"]
+        : []),
       ...(consentGap === null ? [] : [consentGap]),
     ],
   };
 }
 
-/** Removes names, free text, dates, IDs, raw rows, and unconsented history before AI routing. */
+/**
+ * Removes account identity, chat history, dates, IDs, raw activity rows, and unconsented
+ * history before AI routing. Active memory statements require current explicit
+ * consent and remain marked as untrusted data for the provider.
+ */
 export function contextForAi(context: CentralUserContext): string {
   const baseContext = {
-    schemaVersion: "1.1",
+    schemaVersion: "1.2",
     preferences: context.profile,
     personalization: {
       enabled: context.aiPersonalization.enabled,
@@ -535,6 +559,7 @@ export function contextForAi(context: CentralUserContext): string {
         nutrition: context.digitalAthlete.nutrition,
         currentContext,
       },
+      activeMemory: context.activeMemory.entries,
     },
     null,
     2,

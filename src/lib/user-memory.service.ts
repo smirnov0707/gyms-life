@@ -2,8 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
+  ActiveMemoryForAiSchema,
+  buildActiveMemoryForAi,
   CorrectUserMemoryInputSchema,
   parseUserMemoryTransparencyItems,
+  type ActiveMemoryForAi,
   type UserMemoryTransparencyItem,
 } from "./user-memory.schema";
 
@@ -32,6 +35,24 @@ export async function loadUserMemoryTransparency(
   const { data, error } = await activeMemoryQuery(supabase, userId, now);
   if (error) throw new Error("Could not load user memory.");
   return parseUserMemoryTransparencyItems(data);
+}
+
+/**
+ * A deliberately small, validated subset for the central AI context. It is
+ * loaded only after the caller has checked the current personalization consent.
+ */
+export async function loadActiveMemoryForAi(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  now = new Date(),
+): Promise<ActiveMemoryForAi> {
+  try {
+    const { data, error } = await activeMemoryQuery(supabase, userId, now);
+    if (error) throw error;
+    return buildActiveMemoryForAi(data);
+  } catch {
+    return ActiveMemoryForAiSchema.parse({ available: false, entries: [] });
+  }
 }
 
 async function requireOwnedActiveMemory(

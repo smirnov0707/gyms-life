@@ -1,8 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  AI_PERSONALIZATION_POLICY_VERSION,
+  hasCurrentAiPersonalizationConsent,
+} from "./ai-personalization-consent.policy";
 
-export const AI_PERSONALIZATION_POLICY_VERSION = "2026-09-02";
+export { AI_PERSONALIZATION_POLICY_VERSION } from "./ai-personalization-consent.policy";
 
 const ConsentInput = z.object({
   granted: z.boolean(),
@@ -23,9 +27,12 @@ export const getAiPersonalizationConsent = createServerFn({ method: "GET" })
 
     if (error) throw new Error("Could not load AI personalization consent.");
 
+    const granted = data?.granted ?? false;
+    const policyVersion = data?.policy_version ?? null;
     return {
-      granted: data?.granted ?? false,
-      policyVersion: data?.policy_version ?? null,
+      granted,
+      enabled: hasCurrentAiPersonalizationConsent(granted, policyVersion),
+      policyVersion,
       recordedAt: data?.recorded_at ?? null,
     };
   });
@@ -49,6 +56,7 @@ export const recordAiPersonalizationConsent = createServerFn({ method: "POST" })
 
     return {
       granted: recorded.granted,
+      enabled: hasCurrentAiPersonalizationConsent(recorded.granted, recorded.policy_version),
       policyVersion: recorded.policy_version,
       recordedAt: recorded.recorded_at,
     };

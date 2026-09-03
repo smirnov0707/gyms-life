@@ -152,7 +152,7 @@ function AiPersonalizationConsentCard() {
   const { lang, t } = useI18n();
   const getConsent = useServerFn(getAiPersonalizationConsent);
   const recordConsent = useServerFn(recordAiPersonalizationConsent);
-  const [granted, setGranted] = useState(false);
+  const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const copy =
@@ -161,10 +161,10 @@ function AiPersonalizationConsentCard() {
           eyebrow: "AI PRIVATUMAS",
           title: "Leisti asmeninį AI kontekstą",
           description:
-            "Įjungus, Coach ir Daily Brief AI tiekėjui perduos tik 7/28/30 dienų mitybos, treniruočių, pasirengimo ir kūno pokyčių suvestines — ne žalius įrašus, vardą ar pokalbio atmintį.",
+            "Įjungus, Coach ir Daily Brief AI tiekėjui perduos tik 7/28/30 dienų suvestines bei iki 12 aktyvių faktų, pirmenybių ir dėsningumų, kuriuos matai ir gali pataisyti sportininko modelyje. Neperduodami žali įrašai, paskyros vardas ar pokalbių istorija.",
           active: "Aktyvuota — galite bet kada atšaukti.",
           inactive: "Išjungta — AI naudoja tik bazinius treniruočių nustatymus.",
-          enable: "Įjungti suvestines",
+          enable: "Įjungti kontekstą",
           disable: "Atšaukti sutikimą",
           saved: "AI privatumo pasirinkimas išsaugotas.",
         }
@@ -172,10 +172,10 @@ function AiPersonalizationConsentCard() {
           eyebrow: "AI PRIVACY",
           title: "Allow personalized AI context",
           description:
-            "When enabled, Coach and Daily Brief send only 7/28/30-day nutrition, training, readiness and body-trend summaries to the AI provider — never raw records, your name, or memory entries.",
+            "When enabled, Coach and Daily Brief send only 7/28/30-day summaries and up to 12 active facts, preferences, and patterns you can inspect and correct in your athlete model. Raw records, your account name, and chat history are never sent.",
           active: "Enabled — you can withdraw this at any time.",
           inactive: "Disabled — AI uses only basic training preferences.",
-          enable: "Enable summaries",
+          enable: "Enable context",
           disable: "Withdraw consent",
           saved: "AI privacy preference saved.",
         };
@@ -185,7 +185,7 @@ function AiPersonalizationConsentCard() {
     void (async () => {
       try {
         const current = await getConsent();
-        if (active) setGranted(current.granted);
+        if (active) setEnabled(current.enabled);
       } catch (error) {
         if (active) toast.error(errorMessage(error, t("common.error")));
       } finally {
@@ -201,8 +201,8 @@ function AiPersonalizationConsentCard() {
     if (saving) return;
     setSaving(true);
     try {
-      const recorded = await recordConsent({ data: { granted: !granted } });
-      setGranted(recorded.granted);
+      const recorded = await recordConsent({ data: { granted: !enabled } });
+      setEnabled(recorded.enabled);
       toast.success(copy.saved);
     } catch (error) {
       toast.error(errorMessage(error, t("common.error")));
@@ -224,18 +224,18 @@ function AiPersonalizationConsentCard() {
             {copy.description}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            {loading ? "…" : granted ? copy.active : copy.inactive}
+            {loading ? "…" : enabled ? copy.active : copy.inactive}
           </p>
         </div>
       </div>
       <Button
         type="button"
-        variant={granted ? "outline" : "default"}
+        variant={enabled ? "outline" : "default"}
         disabled={loading || saving}
         onClick={toggle}
       >
         {saving ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-        {granted ? copy.disable : copy.enable}
+        {enabled ? copy.disable : copy.enable}
       </Button>
     </section>
   );

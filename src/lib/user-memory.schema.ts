@@ -78,6 +78,41 @@ export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform(
 
 export type UserMemoryTransparencyItem = z.infer<typeof UserMemoryTransparencyItemSchema>;
 
+/** Bounded active memory that may reach an AI worker after explicit consent. */
+export const ActiveMemoryForAiItemSchema = z
+  .object({
+    type: UserMemoryTypeSchema.exclude(["current_context"]),
+    content: z.string().trim().min(1).max(400),
+    source: UserMemorySourceSchema,
+    confidence: z.number().finite().min(0).max(1),
+    importance: z.number().finite().min(0).max(1),
+  })
+  .strict();
+
+export const ActiveMemoryForAiSchema = z
+  .object({
+    available: z.boolean(),
+    entries: z.array(ActiveMemoryForAiItemSchema).max(12),
+  })
+  .strict();
+
+export type ActiveMemoryForAi = z.infer<typeof ActiveMemoryForAiSchema>;
+
+/** Removes IDs, dates, evidence references, and temporary context before AI routing. */
+export function buildActiveMemoryForAi(value: unknown): ActiveMemoryForAi {
+  const entries = parseUserMemoryTransparencyItems(value)
+    .filter((item) => item.status === "active" && item.type !== "current_context")
+    .slice(0, 12)
+    .map((item) => ({
+      type: item.type,
+      content: item.content,
+      source: item.source,
+      confidence: item.confidence,
+      importance: item.importance,
+    }));
+  return ActiveMemoryForAiSchema.parse({ available: true, entries });
+}
+
 /** A user correction becomes a new, explicitly user-reported memory record. */
 export const CorrectUserMemoryInputSchema = z
   .object({

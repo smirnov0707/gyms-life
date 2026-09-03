@@ -58,6 +58,19 @@ const digitalAthlete: DigitalAthleteState = {
   dataGaps: [],
 };
 
+const activeMemory = {
+  available: true,
+  entries: [
+    {
+      type: "preference" as const,
+      content: "Prefers sessions closer to 45 minutes.",
+      source: "user_reported" as const,
+      confidence: 1,
+      importance: 0.8,
+    },
+  ],
+};
+
 describe("buildAiPersonalizationSummary", () => {
   it("derives bounded, date-free trends from owned database rows", () => {
     const now = new Date("2026-09-02T12:00:00.000Z");
@@ -157,10 +170,11 @@ describe("contextForAi", () => {
       },
       aiPersonalization: {
         enabled: true,
-        policyVersion: "2026-09-02",
+        policyVersion: "2026-09-03-memory-context-v1",
         lastRecordedAt: "2026-09-01T00:00:00.000Z",
       },
       digitalAthlete,
+      activeMemory,
       dataGaps: [],
     } satisfies CentralUserContext;
 
@@ -175,8 +189,9 @@ describe("contextForAi", () => {
       expect(payload).not.toContain(privateValue);
     }
     expect(JSON.parse(payload)).toMatchObject({
+      schemaVersion: "1.2",
       preferences: { goal: "strength", daysPerWeek: 4 },
-      personalization: { enabled: true, policyVersion: "2026-09-02" },
+      personalization: { enabled: true, policyVersion: "2026-09-03-memory-context-v1" },
       nutritionToday: { calories: 1800, targetCalories: 2400 },
       recentSession: { totalSets: 18, averageRpe: 7.8, fatigueLevel: "medium" },
       athleteModel: {
@@ -184,6 +199,7 @@ describe("contextForAi", () => {
         recovery: { latestReadinessScore: 70 },
         currentContext: { shortestAvailableSessionMinutes: 30 },
       },
+      activeMemory: activeMemory.entries,
     });
   });
 
@@ -218,12 +234,14 @@ describe("contextForAi", () => {
         lastRecordedAt: null,
       },
       digitalAthlete,
+      activeMemory,
       dataGaps: ["personalization_consent_required"],
     } satisfies CentralUserContext;
 
     const payload = contextForAi(context);
 
     expect(JSON.parse(payload)).toMatchObject({
+      schemaVersion: "1.2",
       personalization: { enabled: false },
       dataGaps: ["personalization_consent_required"],
     });

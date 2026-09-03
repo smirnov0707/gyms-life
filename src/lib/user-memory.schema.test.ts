@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildActiveMemoryForAi,
   CorrectUserMemoryInputSchema,
   parseUserMemoryTransparencyItems,
 } from "./user-memory.schema";
@@ -38,6 +39,27 @@ describe("user memory transparency contracts", () => {
   it("rejects invalid raw rows before they reach the user interface", () => {
     expect(() => parseUserMemoryTransparencyItems([{ ...row, source: "unknown" }])).toThrow();
     expect(() => parseUserMemoryTransparencyItems([{ ...row, evidence_refs: {} }])).toThrow();
+  });
+
+  it("creates a bounded AI-memory contract without IDs, dates, evidence references, or context", () => {
+    const result = buildActiveMemoryForAi([
+      row,
+      { ...row, memory_type: "current_context", content: "Temporary equipment limit" },
+      { ...row, status: "incorrect", content: "Rejected memory" },
+    ]);
+
+    expect(result).toEqual({
+      available: true,
+      entries: [
+        {
+          type: "training_pattern",
+          content: row.content,
+          source: "calculated",
+          confidence: 0.75,
+          importance: 0.8,
+        },
+      ],
+    });
   });
 
   it("accepts a bounded explicit correction and normalizes surrounding whitespace", () => {
