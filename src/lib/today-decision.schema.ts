@@ -3,7 +3,7 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 
 const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
-const TodayDecisionEngineVersionSchema = z.enum(["1.0", "1.1", "1.2"]);
+const TodayDecisionEngineVersionSchema = z.enum(["1.0", "1.1", "1.2", "1.3"]);
 
 export const TodayDecisionActionSchema = z.enum([
   "generate_training_plan",
@@ -32,6 +32,7 @@ export const TodayDecisionEvidenceKeySchema = z.enum([
   "load_modifier",
   "model_data_quality",
   "active_life_context",
+  "recent_decision_feedback",
 ]);
 
 export const TodayDecisionEvidenceSourceSchema = z.enum([
@@ -76,13 +77,13 @@ export const TodayDecisionInputSchema = z
 
 export const ProposedTodayDecisionSchema = z
   .object({
-    engineVersion: z.literal("1.2"),
+    engineVersion: z.literal("1.3"),
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema).max(5),
     confidence: z.number().int().min(0).max(100),
     safetyConstraints: z.array(TodayDecisionSafetyConstraintSchema).max(5),
-    evidence: z.array(TodayDecisionEvidenceSchema).min(1).max(4),
+    evidence: z.array(TodayDecisionEvidenceSchema).min(1).max(5),
   })
   .strict();
 
@@ -122,7 +123,7 @@ export const TodayDecisionSchema = z
     confidence: z.number().int().min(0).max(100),
     safetyConstraints: z.array(TodayDecisionSafetyConstraintSchema),
     status: TodayDecisionStatusSchema,
-    evidence: z.array(TodayDecisionEvidenceSchema).min(1).max(4),
+    evidence: z.array(TodayDecisionEvidenceSchema).min(1).max(5),
     createdAt: z.string().min(1),
   })
   .strict();

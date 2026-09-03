@@ -8,7 +8,7 @@ import {
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const digitalAthlete: DigitalAthleteState = {
-  schemaVersion: "1.0" as const,
+  schemaVersion: "1.1" as const,
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -29,6 +29,13 @@ const digitalAthlete: DigitalAthleteState = {
     loggedDaysLast14Days: 7,
     averageCaloriesOnLoggedDays: 2200,
     averageProteinGOnLoggedDays: 155,
+  },
+  decisionFeedback: {
+    available: true,
+    ratedDecisionsLast28Days: 0,
+    helpfulDecisionOutcomesLast28Days: 0,
+    notHelpfulDecisionOutcomesLast28Days: 0,
+    helpfulnessRate: null,
   },
   currentContext: {
     active: [

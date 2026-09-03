@@ -49,6 +49,18 @@ export const NutritionLogSourceSchema = z
   })
   .strict();
 
+/**
+ * An explicit result of a prior Today recommendation. This is intentionally
+ * distinct from a workout result: it measures whether the recommendation fit
+ * the athlete's day, not whether the athlete made progress.
+ */
+export const DecisionFeedbackSourceSchema = z
+  .object({
+    decision_on: DaySchema,
+    outcome: z.enum(["accepted", "dismissed", "completed", "not_helpful"]),
+  })
+  .strict();
+
 const BaseAvailabilitySchema = z
   .object({
     training: z.boolean(),
@@ -78,9 +90,11 @@ export const DigitalAthleteSourcesSchema = z
     checkins: z.array(DailyCheckinSourceSchema),
     bodyMetrics: z.array(BodyMetricSourceSchema),
     nutritionLogs: z.array(NutritionLogSourceSchema),
+    decisionFeedback: z.array(DecisionFeedbackSourceSchema),
     lifeContexts: z.array(ActiveLifeContextSchema),
     availability: BaseAvailabilitySchema.extend({
       nutrition: z.boolean(),
+      decisionFeedback: z.boolean(),
       context: z.boolean(),
     }).strict(),
   })
@@ -106,7 +120,7 @@ export type DigitalAthleteDataGap = z.infer<typeof DigitalAthleteDataGapSchema>;
 
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.0"),
+    schemaVersion: z.literal("1.1"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
@@ -128,6 +142,15 @@ export const DigitalAthleteStateSchema = z
       averageCaloriesOnLoggedDays: NonNegativeNumberSchema.nullable(),
       averageProteinGOnLoggedDays: NonNegativeNumberSchema.nullable(),
     }),
+    decisionFeedback: z
+      .object({
+        available: z.boolean(),
+        ratedDecisionsLast28Days: z.number().int().nonnegative(),
+        helpfulDecisionOutcomesLast28Days: z.number().int().nonnegative(),
+        notHelpfulDecisionOutcomesLast28Days: z.number().int().nonnegative(),
+        helpfulnessRate: z.number().finite().min(0).max(1).nullable(),
+      })
+      .strict(),
     currentContext: z
       .object({
         active: z.array(ActiveLifeContextSchema).max(12),

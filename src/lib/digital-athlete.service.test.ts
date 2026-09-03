@@ -28,12 +28,18 @@ describe("buildDigitalAthleteState", () => {
           { logged_on: "2026-08-30", calories: 2300, protein: 170 },
           { logged_on: "2026-08-29", calories: 2050, protein: 145 },
         ],
+        decisionFeedback: [
+          { decision_on: "2026-09-02", outcome: "completed" },
+          { decision_on: "2026-09-01", outcome: "accepted" },
+          { decision_on: "2026-08-31", outcome: "not_helpful" },
+        ],
         lifeContexts: [],
         availability: {
           training: true,
           recovery: true,
           body: true,
           nutrition: true,
+          decisionFeedback: true,
           context: true,
         },
       },
@@ -41,7 +47,7 @@ describe("buildDigitalAthleteState", () => {
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.0",
+      schemaVersion: "1.1",
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
@@ -62,6 +68,13 @@ describe("buildDigitalAthleteState", () => {
         loggedDaysLast14Days: 5,
         averageCaloriesOnLoggedDays: 2130,
         averageProteinGOnLoggedDays: 153,
+      },
+      decisionFeedback: {
+        available: true,
+        ratedDecisionsLast28Days: 3,
+        helpfulDecisionOutcomesLast28Days: 2,
+        notHelpfulDecisionOutcomesLast28Days: 1,
+        helpfulnessRate: 0.67,
       },
       currentContext: {
         active: [],
@@ -85,12 +98,14 @@ describe("buildDigitalAthleteState", () => {
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
+        decisionFeedback: [],
         lifeContexts: [],
         availability: {
           training: false,
           recovery: false,
           body: false,
           nutrition: false,
+          decisionFeedback: false,
           context: false,
         },
       },
@@ -118,12 +133,14 @@ describe("buildDigitalAthleteState", () => {
         checkins: [{ checkin_on: "2026-06-01", readiness_score: 80, sleep_hours: 8 }],
         bodyMetrics: [{ measured_on: "2026-06-01", weight_kg: 80, body_fat: 18 }],
         nutritionLogs: [{ logged_on: "2026-06-01", calories: 2200, protein: 160 }],
+        decisionFeedback: [],
         lifeContexts: [],
         availability: {
           training: true,
           recovery: true,
           body: true,
           nutrition: true,
+          decisionFeedback: true,
           context: true,
         },
       },
@@ -150,6 +167,7 @@ describe("buildDigitalAthleteState", () => {
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
+        decisionFeedback: [],
         lifeContexts: [
           {
             id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e",
@@ -163,6 +181,7 @@ describe("buildDigitalAthleteState", () => {
           recovery: true,
           body: true,
           nutrition: true,
+          decisionFeedback: true,
           context: true,
         },
       },
@@ -174,5 +193,38 @@ describe("buildDigitalAthleteState", () => {
       hasTrainingConstraint: false,
     });
     expect(state.dataQuality.level).toBe("cold_start");
+  });
+
+  it("uses only three or more explicit decision outcomes for a feedback rate", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [
+          { decision_on: "2026-09-02", outcome: "accepted" },
+          { decision_on: "2026-09-01", outcome: "not_helpful" },
+        ],
+        lifeContexts: [],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+        },
+      },
+      now,
+    );
+
+    expect(state.decisionFeedback).toEqual({
+      available: true,
+      ratedDecisionsLast28Days: 2,
+      helpfulDecisionOutcomesLast28Days: 1,
+      notHelpfulDecisionOutcomesLast28Days: 1,
+      helpfulnessRate: null,
+    });
   });
 });

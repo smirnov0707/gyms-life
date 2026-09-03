@@ -8,7 +8,7 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.2" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.3" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -81,6 +81,41 @@ function withLifeContextEvidence(
 ): TodayDecisionEvidence[] {
   const context = lifeContextEvidence(input, items.length);
   return context === null ? items : [...items, context];
+}
+
+function decisionFeedbackEvidence(
+  input: TodayDecisionInput,
+  position: number,
+): TodayDecisionEvidence | null {
+  const feedback = input.state.decisionFeedback;
+  if (feedback.helpfulnessRate === null) return null;
+  return evidence(
+    "recent_decision_feedback",
+    `${feedback.helpfulDecisionOutcomesLast28Days}/${feedback.ratedDecisionsLast28Days}`,
+    "calculated",
+    position,
+  );
+}
+
+function withDecisionFeedbackEvidence(
+  input: TodayDecisionInput,
+  items: TodayDecisionEvidence[],
+): TodayDecisionEvidence[] {
+  const feedback = decisionFeedbackEvidence(input, items.length);
+  return feedback === null ? items : [...items, feedback];
+}
+
+/**
+ * Feedback can reduce the confidence label only after enough explicit user
+ * outcomes exist. It never upgrades confidence, changes the chosen action,
+ * or weakens a safety constraint.
+ */
+function calibratedConfidence(input: TodayDecisionInput, baseConfidence: number): number {
+  const helpfulnessRate = input.state.decisionFeedback.helpfulnessRate;
+  if (helpfulnessRate === null) return baseConfidence;
+  if (helpfulnessRate < 0.5) return Math.max(baseConfidence - 15, 60);
+  if (helpfulnessRate < 0.7) return Math.max(baseConfidence - 8, 65);
+  return baseConfidence;
 }
 
 /**
@@ -194,16 +229,19 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "train_adapted",
       alternatives: ["recover", "train_as_planned"],
-      confidence: Math.min(qualityConfidence(input), 92),
+      confidence: calibratedConfidence(input, Math.min(qualityConfidence(input), 92)),
       safetyConstraints: [
         "apply_persisted_readiness_modifier",
         "apply_persisted_execution_snapshot",
       ],
-      evidence: withLifeContextEvidence(input, [
-        readinessEvidence(input, 0),
-        loadModifierEvidence(input, 1),
-        dataQualityEvidence(input, 2),
-      ]),
+      evidence: withDecisionFeedbackEvidence(
+        input,
+        withLifeContextEvidence(input, [
+          readinessEvidence(input, 0),
+          loadModifierEvidence(input, 1),
+          dataQualityEvidence(input, 2),
+        ]),
+      ),
     });
   }
 
@@ -211,13 +249,16 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     ...base,
     action: "train_as_planned",
     alternatives: ["recover"],
-    confidence: qualityConfidence(input),
+    confidence: calibratedConfidence(input, qualityConfidence(input)),
     safetyConstraints: ["apply_persisted_readiness_modifier"],
-    evidence: withLifeContextEvidence(input, [
-      readinessEvidence(input, 0),
-      loadModifierEvidence(input, 1),
-      dataQualityEvidence(input, 2),
-    ]),
+    evidence: withDecisionFeedbackEvidence(
+      input,
+      withLifeContextEvidence(input, [
+        readinessEvidence(input, 0),
+        loadModifierEvidence(input, 1),
+        dataQualityEvidence(input, 2),
+      ]),
+    ),
   });
 }
 

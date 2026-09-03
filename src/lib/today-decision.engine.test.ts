@@ -3,7 +3,7 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
 
 const baseState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   training: {
     sessionsLast7Days: 2,
     sessionsLast28Days: 5,
@@ -20,6 +20,13 @@ const baseState = DigitalAthleteStateSchema.parse({
     loggedDaysLast14Days: 8,
     averageCaloriesOnLoggedDays: 2300,
     averageProteinGOnLoggedDays: 160,
+  },
+  decisionFeedback: {
+    available: true,
+    ratedDecisionsLast28Days: 0,
+    helpfulDecisionOutcomesLast28Days: 0,
+    notHelpfulDecisionOutcomesLast28Days: 0,
+    helpfulnessRate: null,
   },
   currentContext: {
     active: [],
@@ -142,6 +149,29 @@ describe("buildTodayDecision", () => {
     expect(decision.evidence.at(-1)).toMatchObject({
       key: "active_life_context",
       value: "time_limited",
+    });
+  });
+
+  it("uses several explicit negative outcomes only to lower the confidence label", () => {
+    const feedbackState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      decisionFeedback: {
+        available: true,
+        ratedDecisionsLast28Days: 3,
+        helpfulDecisionOutcomesLast28Days: 1,
+        notHelpfulDecisionOutcomesLast28Days: 2,
+        helpfulnessRate: 0.33,
+      },
+    });
+    const decision = buildTodayDecision(input({ state: feedbackState }));
+
+    expect(decision.action).toBe("train_as_planned");
+    expect(decision.confidence).toBe(77);
+    expect(decision.evidence).toContainEqual({
+      key: "recent_decision_feedback",
+      value: "1/3",
+      sourceClass: "calculated",
+      position: 3,
     });
   });
 

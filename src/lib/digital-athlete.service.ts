@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
   BodyMetricSourceSchema,
   CompletedWorkoutSourceSchema,
   DailyCheckinSourceSchema,
+  DecisionFeedbackSourceSchema,
   DigitalAthleteSourcesSchema,
   DigitalAthleteStateSchema,
   NutritionLogSourceSchema,
@@ -24,6 +26,10 @@ function roundToOneDecimal(value: number): number {
 function average(values: number[]): number | null {
   if (values.length === 0) return null;
   return roundToOneDecimal(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+function roundToTwoDecimals(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function isWithinPastDays(dateValue: string, days: number, now: Date): boolean {
@@ -95,6 +101,74 @@ function currentContextFor(
   };
 }
 
+function decisionFeedbackFor(
+  outcomes: DigitalAthleteSources["decisionFeedback"],
+  available: boolean,
+  now: Date,
+): DigitalAthleteState["decisionFeedback"] {
+  if (!available) {
+    return {
+      available: false,
+      ratedDecisionsLast28Days: 0,
+      helpfulDecisionOutcomesLast28Days: 0,
+      notHelpfulDecisionOutcomesLast28Days: 0,
+      helpfulnessRate: null,
+    };
+  }
+
+  const recent = outcomes.filter((outcome) => isWithinPastDays(outcome.decision_on, 28, now));
+  const helpful = recent.filter(
+    (outcome) => outcome.outcome === "accepted" || outcome.outcome === "completed",
+  ).length;
+  const notHelpful = recent.filter(
+    (outcome) => outcome.outcome === "dismissed" || outcome.outcome === "not_helpful",
+  ).length;
+  const rated = helpful + notHelpful;
+
+  return {
+    available: true,
+    ratedDecisionsLast28Days: rated,
+    helpfulDecisionOutcomesLast28Days: helpful,
+    notHelpfulDecisionOutcomesLast28Days: notHelpful,
+    // Three explicit outcomes are the minimum before feedback influences a
+    // confidence label. It never changes a safety decision or training load.
+    helpfulnessRate: rated >= 3 ? roundToTwoDecimals(helpful / rated) : null,
+  };
+}
+
+const DecisionFeedbackRelationSchema = z
+  .object({
+    outcome: z.unknown(),
+  })
+  .strict();
+
+const DecisionFeedbackJoinRowSchema = z
+  .object({
+    decision_on: z.unknown(),
+    decision_outcomes: z.union([
+      DecisionFeedbackRelationSchema,
+      z.array(DecisionFeedbackRelationSchema).max(1),
+      z.null(),
+    ]),
+  })
+  .strict();
+
+function parseDecisionFeedbackRows(value: unknown): {
+  rows: DigitalAthleteSources["decisionFeedback"];
+  valid: boolean;
+} {
+  const parsedJoinRows = z.array(DecisionFeedbackJoinRowSchema).safeParse(value ?? []);
+  if (!parsedJoinRows.success) return { rows: [], valid: false };
+
+  const flattened = parsedJoinRows.data.flatMap((row) => {
+    const relation = Array.isArray(row.decision_outcomes)
+      ? (row.decision_outcomes[0] ?? null)
+      : row.decision_outcomes;
+    return relation === null ? [] : [{ decision_on: row.decision_on, outcome: relation.outcome }];
+  });
+  return parseDigitalAthleteRows(DecisionFeedbackSourceSchema, flattened);
+}
+
 /**
  * Builds the app-owned digital athlete state from narrow, validated source
  * rows. It is deterministic: AI may interpret this state, but never creates
@@ -158,7 +232,7 @@ export function buildDigitalAthleteState(
   if (!sources.availability.context) dataGaps.push("current_context_unavailable");
 
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -190,6 +264,11 @@ export function buildDigitalAthleteState(
       averageCaloriesOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.calories)),
       averageProteinGOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.protein)),
     },
+    decisionFeedback: decisionFeedbackFor(
+      sources.decisionFeedback,
+      sources.availability.decisionFeedback,
+      now,
+    ),
     currentContext: currentContextFor(sources.lifeContexts, now),
     dataQuality: dataQualityFor(sources, {
       workouts: workoutsLast28Days.length,
@@ -213,11 +292,13 @@ export async function loadDigitalAthleteState(
 ): Promise<DigitalAthleteState> {
   const bodyMetricsSince = new Date(now.getTime() - 30 * DAY_MS).toISOString().slice(0, 10);
   const nutritionSince = new Date(now.getTime() - 14 * DAY_MS).toISOString().slice(0, 10);
+  const decisionFeedbackSince = new Date(now.getTime() - 28 * DAY_MS).toISOString().slice(0, 10);
   const [
     workoutsResult,
     checkinsResult,
     bodyMetricsResult,
     nutritionLogsResult,
+    decisionFeedbackResult,
     lifeContextResult,
   ] = await Promise.all([
     supabase
@@ -247,6 +328,13 @@ export async function loadDigitalAthleteState(
       .gte("logged_on", nutritionSince)
       .order("logged_on", { ascending: false })
       .limit(280),
+    supabase
+      .from("decision_records")
+      .select("decision_on, decision_outcomes(outcome)")
+      .eq("user_id", userId)
+      .gte("decision_on", decisionFeedbackSince)
+      .order("decision_on", { ascending: false })
+      .limit(56),
     loadActiveLifeContexts(supabase, userId, now),
   ]);
 
@@ -254,6 +342,7 @@ export async function loadDigitalAthleteState(
   const checkins = parseDigitalAthleteRows(DailyCheckinSourceSchema, checkinsResult.data);
   const bodyMetrics = parseDigitalAthleteRows(BodyMetricSourceSchema, bodyMetricsResult.data);
   const nutritionLogs = parseDigitalAthleteRows(NutritionLogSourceSchema, nutritionLogsResult.data);
+  const decisionFeedback = parseDecisionFeedbackRows(decisionFeedbackResult.data);
 
   return buildDigitalAthleteState(
     {
@@ -261,12 +350,14 @@ export async function loadDigitalAthleteState(
       checkins: checkins.rows,
       bodyMetrics: bodyMetrics.rows,
       nutritionLogs: nutritionLogs.rows,
+      decisionFeedback: decisionFeedback.rows,
       lifeContexts: lifeContextResult.contexts,
       availability: {
         training: workoutsResult.error === null && workouts.valid,
         recovery: checkinsResult.error === null && checkins.valid,
         body: bodyMetricsResult.error === null && bodyMetrics.valid,
         nutrition: nutritionLogsResult.error === null && nutritionLogs.valid,
+        decisionFeedback: decisionFeedbackResult.error === null && decisionFeedback.valid,
         context: lifeContextResult.available,
       },
     },

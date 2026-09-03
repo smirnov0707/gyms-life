@@ -226,8 +226,16 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
     checkins: [],
     bodyMetrics: [],
     nutritionLogs: [],
+    decisionFeedback: [],
     lifeContexts: [],
-    availability: { training: true, recovery: true, body: true, nutrition: true, context: true },
+    availability: {
+      training: true,
+      recovery: true,
+      body: true,
+      nutrition: true,
+      decisionFeedback: true,
+      context: true,
+    },
   });
 }
 
@@ -369,8 +377,14 @@ export function buildAiPersonalizationSummary(
     {
       ...sources,
       nutritionLogs: [],
+      decisionFeedback: [],
       lifeContexts: [],
-      availability: { ...sources.availability, nutrition: true, context: true },
+      availability: {
+        ...sources.availability,
+        nutrition: true,
+        decisionFeedback: true,
+        context: true,
+      },
     },
     now,
   );

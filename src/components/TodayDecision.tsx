@@ -94,6 +94,10 @@ function copyFor(lang: string): Copy {
         model_data_quality: (value) => `Model data quality: ${value.replace("_", " ")}.`,
         active_life_context: (value) =>
           `Current context considered: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
+        recent_decision_feedback: (value) => {
+          const [helpful, rated] = value.split("/");
+          return `Recent daily recommendations you marked helpful: ${helpful} of ${rated}.`;
+        },
       },
     };
   }
@@ -160,6 +164,10 @@ function copyFor(lang: string): Copy {
       model_data_quality: (value) => `Modelio duomenų kokybė: ${value.replace("_", " ")}.`,
       active_life_context: (value) =>
         `Atsižvelgta į dabartinį kontekstą: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
+      recent_decision_feedback: (value) => {
+        const [helpful, rated] = value.split("/");
+        return `Naujausias dienos rekomendacijas įvertinai kaip tinkamas: ${helpful} iš ${rated}.`;
+      },
     },
   };
 }
