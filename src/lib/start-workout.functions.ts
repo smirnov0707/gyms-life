@@ -5,6 +5,13 @@ import { getTodaysWorkoutData } from "./active-plan.service";
 import { getTodaysReadinessModifier } from "./readiness.service";
 import { adaptTrainingPlanDay, getWorkoutTrainingGuidance } from "./training-guidance.service";
 import { createOpenWorkoutSession, findOpenWorkoutSession } from "./workout-session.service";
+import { buildWorkoutExecutionSnapshot } from "./workout-execution.engine";
+import { WorkoutExecutionSnapshotSchema } from "./workout-execution.schema";
+import { loadActiveLifeContexts } from "./life-context.server";
+import {
+  parseDemonstratedExerciseCatalog,
+  type ExerciseCatalogItem,
+} from "./exercise-catalog.schema";
 
 const Input = z.object({ day: z.coerce.number().int().min(1) });
 const setSelect =
@@ -29,24 +36,74 @@ export const startWorkout = createServerFn({ method: "POST" })
     const existing = await findOpenWorkoutSession(supabase, identity);
     let resumed = Boolean(existing);
     let session = existing;
+    let executionSnapshot = existing?.workoutSnapshot ?? null;
     if (!session) {
-      const adaptationModifier = await getTodaysReadinessModifier(supabase, userId);
+      const [adaptationModifier, lifeContext] = await Promise.all([
+        getTodaysReadinessModifier(supabase, userId),
+        loadActiveLifeContexts(supabase, userId),
+      ]);
+      if (!lifeContext.available) {
+        throw new Error(
+          "Current life context is temporarily unavailable. Please try again shortly.",
+        );
+      }
+
+      const needsEquipmentCatalog = lifeContext.contexts.some(
+        (context) =>
+          context.context.kind === "equipment_limited" ||
+          context.context.kind === "facility_closed",
+      );
+      let catalog: ExerciseCatalogItem[] = [];
+      if (needsEquipmentCatalog) {
+        const { data, error } = await supabase
+          .from("exercises")
+          .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty");
+        if (error)
+          throw new Error("Exercise catalog is temporarily unavailable. Please try again.");
+        catalog = parseDemonstratedExerciseCatalog(data);
+        if (catalog.length === 0) {
+          throw new Error("Exercise catalog is temporarily unavailable. Please try again.");
+        }
+      }
+
+      executionSnapshot = buildWorkoutExecutionSnapshot({
+        day: workout.workout,
+        readinessModifier: adaptationModifier,
+        lifeContexts: lifeContext.contexts,
+        exerciseCatalog: catalog,
+      });
       const started = await createOpenWorkoutSession(supabase, {
         ...identity,
-        title: workout.workout.title,
-        adaptationModifier,
+        title: executionSnapshot.workout.title,
+        adaptationModifier: executionSnapshot.adaptation.readinessModifier,
+        workoutSnapshot: executionSnapshot,
       });
       session = started.session;
       resumed = started.resumed;
+      executionSnapshot = session.workoutSnapshot ?? executionSnapshot;
     }
 
-    const adjustedWorkout = adaptTrainingPlanDay(workout.workout, session.adaptationModifier);
+    const snapshot =
+      executionSnapshot ??
+      WorkoutExecutionSnapshotSchema.parse({
+        version: "1.0",
+        workout: adaptTrainingPlanDay(workout.workout, session.adaptationModifier),
+        adaptation: {
+          version: "1.0",
+          readinessModifier: session.adaptationModifier,
+          reasons: [],
+          sourceContextIds: [],
+          timeBudgetMinutes: null,
+          substitutions: [],
+          omittedExerciseSlugs: [],
+        },
+      });
     let guidance: Awaited<ReturnType<typeof getWorkoutTrainingGuidance>> | null = null;
     try {
       guidance = await getWorkoutTrainingGuidance(
         supabase,
         userId,
-        workout.workout,
+        snapshot.workout,
         session.adaptationModifier,
       );
     } catch (error) {
@@ -66,7 +123,8 @@ export const startWorkout = createServerFn({ method: "POST" })
     return {
       ok: true,
       session,
-      workout: adjustedWorkout,
+      workout: snapshot.workout,
+      adaptation: snapshot.adaptation,
       guidance,
       logs: logs ?? [],
       resumed,

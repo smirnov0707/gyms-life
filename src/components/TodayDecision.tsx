@@ -63,8 +63,9 @@ function copyFor(lang: string): Copy {
           cta: "Open recovery check-in",
         },
         train_adapted: {
-          title: "Train with a reduced load",
-          summary: "Today's plan will use your validated readiness adjustment.",
+          title: "Train with today's adaptation",
+          summary:
+            "We will validate and persist the exact session using today's readiness and active context.",
           cta: "Start adapted session",
         },
         train_as_planned: {
@@ -126,8 +127,9 @@ function copyFor(lang: string): Copy {
         cta: "Atidaryti atsistatymo check-in",
       },
       train_adapted: {
-        title: "Treniruokis su mažesniu krūviu",
-        summary: "Šios dienos planui bus pritaikyta patikrinta pasiruošimo korekcija.",
+        title: "Treniruokis su šiandienos adaptacija",
+        summary:
+          "Prieš pirmą setą parinksime ir išsaugosime tikslią sesiją pagal pasiruošimą bei dabartinį kontekstą.",
         cta: "Pradėti adaptuotą treniruotę",
       },
       train_as_planned: {

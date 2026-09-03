@@ -25,6 +25,8 @@ export type ExerciseTrainingGuidance = {
 type ExerciseTrainingGuidanceInput = {
   exerciseSlug: string;
   plannedSets: number;
+  /** Exact set target in the persisted execution snapshot, when available. */
+  targetSets?: number;
   plannedReps: string;
   readinessModifier: number;
   history: WorkoutGuidanceHistorySet[];
@@ -77,7 +79,7 @@ export function buildExerciseTrainingGuidance(
   input: ExerciseTrainingGuidanceInput,
 ): ExerciseTrainingGuidance {
   const targetRepRange = parseRepRange(input.plannedReps);
-  const adjustedSets = adaptSets(input.plannedSets, input.readinessModifier);
+  const adjustedSets = input.targetSets ?? adaptSets(input.plannedSets, input.readinessModifier);
   const sessions = groupCompletedSessions(input.history);
   const lastWorkingSets = workingSets(sessions[0]);
   const baseline = lastWorkingSets[0] ?? null;

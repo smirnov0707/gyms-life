@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { Tables } from "@/integrations/supabase/types";
+import { WorkoutExecutionSnapshotSchema } from "./workout-execution.schema";
 
 export const WORKOUT_SESSION_SELECT =
-  "id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume, adaptation_modifier";
+  "id, plan_id, day_index, title, started_at, finished_at, duration_seconds, total_volume, adaptation_modifier, workout_snapshot";
 
 export type WorkoutSessionRow = Pick<
   Tables<"workout_sessions">,
@@ -15,6 +16,7 @@ export type WorkoutSessionRow = Pick<
   | "duration_seconds"
   | "total_volume"
   | "adaptation_modifier"
+  | "workout_snapshot"
 >;
 
 export const WorkoutSessionSchema = z.object({
@@ -27,6 +29,7 @@ export const WorkoutSessionSchema = z.object({
   durationSeconds: z.number().int().nonnegative().nullable(),
   totalVolume: z.number().finite().nonnegative(),
   adaptationModifier: z.number().finite().min(0.5).max(1.1),
+  workoutSnapshot: WorkoutExecutionSnapshotSchema.nullable(),
 });
 
 export type WorkoutSession = z.infer<typeof WorkoutSessionSchema>;
@@ -48,6 +51,10 @@ function normalizeWorkoutSessionRow(row: WorkoutSessionRow) {
     durationSeconds: row.duration_seconds,
     totalVolume: row.total_volume,
     adaptationModifier: row.adaptation_modifier,
+    workoutSnapshot:
+      row.workout_snapshot === null
+        ? null
+        : WorkoutExecutionSnapshotSchema.parse(row.workout_snapshot),
   };
 }
 

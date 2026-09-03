@@ -5,6 +5,8 @@ import {
   WORKOUT_SESSION_SELECT,
   type WorkoutSession,
 } from "./workout-session.schema";
+import { serializeJson } from "./json.schema";
+import type { WorkoutExecutionSnapshot } from "./workout-execution.schema";
 
 type WorkoutSessionIdentity = {
   userId: string;
@@ -15,6 +17,7 @@ type WorkoutSessionIdentity = {
 type NewWorkoutSession = WorkoutSessionIdentity & {
   title: string;
   adaptationModifier: number;
+  workoutSnapshot: WorkoutExecutionSnapshot;
 };
 
 export async function findOpenWorkoutSession(
@@ -51,6 +54,7 @@ export async function createOpenWorkoutSession(
       day_index: input.dayIndex,
       title: input.title,
       adaptation_modifier: input.adaptationModifier,
+      workout_snapshot: serializeJson(input.workoutSnapshot),
     })
     .select(WORKOUT_SESSION_SELECT)
     .single();

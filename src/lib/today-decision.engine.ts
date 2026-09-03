@@ -8,7 +8,7 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.1" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.2" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -178,6 +178,31 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
         readinessEvidence(input, 0),
         loadModifierEvidence(input, 1),
         sessionsEvidence(input, 2),
+      ]),
+    });
+  }
+
+  const hasExecutableLifeConstraint = input.state.currentContext.active.some(
+    (context) =>
+      context.context.kind === "time_limited" ||
+      context.context.kind === "equipment_limited" ||
+      context.context.kind === "facility_closed" ||
+      context.context.kind === "high_stress",
+  );
+  if (hasExecutableLifeConstraint) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "train_adapted",
+      alternatives: ["recover", "train_as_planned"],
+      confidence: Math.min(qualityConfidence(input), 92),
+      safetyConstraints: [
+        "apply_persisted_readiness_modifier",
+        "apply_persisted_execution_snapshot",
+      ],
+      evidence: withLifeContextEvidence(input, [
+        readinessEvidence(input, 0),
+        loadModifierEvidence(input, 1),
+        dataQualityEvidence(input, 2),
       ]),
     });
   }

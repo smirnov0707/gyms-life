@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
 import type { ExerciseTrainingGuidance } from "@/lib/training-guidance.engine";
 import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
+import type { WorkoutExecutionAdaptation } from "@/lib/workout-execution.schema";
 import { errorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
@@ -75,6 +76,27 @@ function coachMessage(guidance: ExerciseTrainingGuidance): string {
   return "Pirmiausia užregistruok svorį, pakartojimus ir RPE — tuomet treneris pasiūlys kitą konkretų žingsnį.";
 }
 
+function adaptationMessage(adaptation: WorkoutExecutionAdaptation): string | null {
+  if (adaptation.reasons.length === 0) return null;
+  const parts: string[] = [];
+  if (adaptation.reasons.includes("readiness")) parts.push("pakoreguotos serijos pagal savijautą");
+  if (adaptation.reasons.includes("high_stress"))
+    parts.push("sumažintas krūvis dėl įtemptos dienos");
+  if (adaptation.reasons.includes("time_limit") && adaptation.timeBudgetMinutes !== null) {
+    parts.push(`sesija sutrumpinta iki maždaug ${adaptation.timeBudgetMinutes} min.`);
+  }
+  if (adaptation.reasons.includes("equipment_limit")) {
+    parts.push("pratimai pritaikyti turimai įrangai");
+  }
+  if (adaptation.reasons.includes("facility_closed")) {
+    parts.push("parinkti pratimai be sporto salės įrangos");
+  }
+  if (adaptation.omittedExerciseSlugs.length > 0) {
+    parts.push(`${adaptation.omittedExerciseSlugs.length} prat. saugiai praleistas`);
+  }
+  return parts.join(" · ");
+}
+
 function WorkoutPage() {
   const { day } = Route.useParams();
   const dayNumber = Number(day);
@@ -82,6 +104,9 @@ function WorkoutPage() {
   const qc = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<TrainingPlanDay | null>(null);
+  const [workoutAdaptation, setWorkoutAdaptation] = useState<WorkoutExecutionAdaptation | null>(
+    null,
+  );
   const [workoutGuidance, setWorkoutGuidance] = useState<WorkoutTrainingGuidance | null>(null);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [setNumber, setSetNumber] = useState(1);
@@ -118,6 +143,7 @@ function WorkoutPage() {
     onSuccess: (result) => {
       setSessionId(result.session.id);
       setActiveWorkout(result.workout);
+      setWorkoutAdaptation(result.adaptation);
       setWorkoutGuidance(result.guidance);
       const firstIncomplete = result.workout.exercises.findIndex((exercise) => {
         const completed = result.logs.filter(
@@ -140,10 +166,9 @@ function WorkoutPage() {
 
   const buildSetInput = (): WorkoutSetSync => {
     if (!sessionId) throw new Error("Workout session is not started.");
-    const exercise =
-      workoutQuery.data?.status === "READY"
-        ? workoutQuery.data.workout.exercises[exerciseIndex]
-        : null;
+    const currentWorkout =
+      activeWorkout ?? (workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null);
+    const exercise = currentWorkout?.exercises[exerciseIndex] ?? null;
     if (!exercise) throw new Error("Exercise not found.");
 
     return {
@@ -180,9 +205,10 @@ function WorkoutPage() {
       setWeight("");
       setRpe("");
       setRest(
-        workoutQuery.data?.status === "READY"
-          ? (workoutQuery.data.workout.exercises[exerciseIndex]?.rest_seconds ?? 0)
-          : 0,
+        (
+          activeWorkout ??
+          (workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null)
+        )?.exercises[exerciseIndex]?.rest_seconds ?? 0,
       );
       setSetNumber((n) => n + 1);
       if (result.queued) {
@@ -245,6 +271,7 @@ function WorkoutPage() {
     (guidance) => guidance.exerciseSlug === exercise?.slug,
   );
   const totalSets = exercise?.sets ?? 0;
+  const adaptedDescription = workoutAdaptation ? adaptationMessage(workoutAdaptation) : null;
   const currentSetComplete = setNumber > totalSets;
   const lastExercise = Boolean(workout && exerciseIndex === workout.exercises.length - 1);
   const progress = useMemo(
@@ -320,6 +347,11 @@ function WorkoutPage() {
         </p>
         <h1 className="mt-2 text-4xl">{workout.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{workout.focus}</p>
+        {adaptedDescription ? (
+          <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
+            Šiandienos adaptacija: {adaptedDescription}
+          </p>
+        ) : null}
         <div className="mt-5 h-2 overflow-hidden rounded-full bg-surface-2">
           <div
             className="h-full bg-primary transition-all"

@@ -118,6 +118,33 @@ describe("buildTodayDecision", () => {
     });
   });
 
+  it("routes an executable life constraint to the persisted workout adaptation path", () => {
+    const timeLimitedState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      currentContext: {
+        active: [
+          {
+            id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6f",
+            content: "Temporary context: time_limited (30 min)",
+            expiresAt: "2026-09-04T12:00:00.000Z",
+            context: { kind: "time_limited", minutes: 30 },
+          },
+        ],
+        shortestAvailableSessionMinutes: 30,
+        hasTrainingConstraint: true,
+        hasSafetyConstraint: false,
+      },
+    });
+    const decision = buildTodayDecision(input({ state: timeLimitedState }));
+
+    expect(decision.action).toBe("train_adapted");
+    expect(decision.safetyConstraints).toContain("apply_persisted_execution_snapshot");
+    expect(decision.evidence.at(-1)).toMatchObject({
+      key: "active_life_context",
+      value: "time_limited",
+    });
+  });
+
   it("fingerprints an exact decision and snapshot deterministically", () => {
     const decision = buildTodayDecision(input());
     const snapshotId = "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e";

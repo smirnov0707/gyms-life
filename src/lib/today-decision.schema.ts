@@ -3,7 +3,7 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 
 const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
-const TodayDecisionEngineVersionSchema = z.enum(["1.0", "1.1"]);
+const TodayDecisionEngineVersionSchema = z.enum(["1.0", "1.1", "1.2"]);
 
 export const TodayDecisionActionSchema = z.enum([
   "generate_training_plan",
@@ -19,6 +19,7 @@ export const TodayDecisionSafetyConstraintSchema = z.enum([
   "do_not_adapt_load_without_today_checkin",
   "avoid_progression_when_readiness_low",
   "apply_persisted_readiness_modifier",
+  "apply_persisted_execution_snapshot",
   "avoid_duplicate_training_prompt",
   "avoid_training_with_active_limitation",
 ]);
@@ -75,7 +76,7 @@ export const TodayDecisionInputSchema = z
 
 export const ProposedTodayDecisionSchema = z
   .object({
-    engineVersion: z.literal("1.1"),
+    engineVersion: z.literal("1.2"),
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema).max(5),

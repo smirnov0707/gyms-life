@@ -1176,6 +1176,7 @@ export type Database = {
           title: string | null
           total_volume: number
           user_id: string
+          workout_snapshot: Json | null
         }
         Insert: {
           adaptation_modifier?: number
@@ -1191,6 +1192,7 @@ export type Database = {
           title?: string | null
           total_volume?: number
           user_id: string
+          workout_snapshot?: Json | null
         }
         Update: {
           adaptation_modifier?: number
@@ -1206,6 +1208,7 @@ export type Database = {
           title?: string | null
           total_volume?: number
           user_id?: string
+          workout_snapshot?: Json | null
         }
         Relationships: [
           {

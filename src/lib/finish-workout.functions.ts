@@ -42,9 +42,9 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
 
     const basePlannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
-    const plannedDay = basePlannedDay
-      ? adaptTrainingPlanDay(basePlannedDay, session.adaptationModifier)
-      : null;
+    const plannedDay =
+      session.workoutSnapshot?.workout ??
+      (basePlannedDay ? adaptTrainingPlanDay(basePlannedDay, session.adaptationModifier) : null);
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found.");
     }

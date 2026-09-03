@@ -60,6 +60,7 @@ export async function getWorkoutTrainingGuidance(
       return buildExerciseTrainingGuidance({
         exerciseSlug: exercise.slug,
         plannedSets: exercise.sets,
+        targetSets: exercise.sets,
         plannedReps: exercise.reps,
         readinessModifier,
         history,
