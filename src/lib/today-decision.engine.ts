@@ -8,7 +8,9 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.6" as const;
+// Versioned because the decision now consumes one canonical athlete-state
+// snapshot rather than independently re-querying current-day facts.
+export const TODAY_DECISION_ENGINE_VERSION = "1.7" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -39,7 +41,10 @@ function planEvidence(input: TodayDecisionInput, position: number): TodayDecisio
 }
 
 function readinessEvidence(input: TodayDecisionInput, position: number): TodayDecisionEvidence {
-  if (!input.hasCompletedReadinessToday || input.state.recovery.latestReadinessScore === null) {
+  if (
+    !input.state.currentDay.hasCompletedReadiness ||
+    input.state.recovery.latestReadinessScore === null
+  ) {
     return evidence("today_readiness", "not_recorded", "system_generated", position);
   }
 
@@ -57,7 +62,7 @@ function completedWorkoutEvidence(
 ): TodayDecisionEvidence {
   return evidence(
     "completed_workout_today",
-    input.hasLoggedNutritionToday ? "completed_and_nutrition_logged" : "completed",
+    input.state.currentDay.hasLoggedNutrition ? "completed_and_nutrition_logged" : "completed",
     "calculated",
     position,
   );
@@ -115,10 +120,13 @@ function trainingRhythmEvidence(
   input: TodayDecisionInput,
   position: number,
 ): TodayDecisionEvidence | null {
-  if (input.hasPreferredTrainingDayToday === null) return null;
+  if (input.state.behavior.status !== "measured") return null;
+  const isPreferredTrainingDay = input.state.behavior.preferredWeekdays.includes(
+    input.state.currentDay.weekday,
+  );
   return evidence(
     "training_rhythm",
-    input.hasPreferredTrainingDayToday ? "usual_training_day" : "usual_recovery_day",
+    isPreferredTrainingDay ? "usual_training_day" : "usual_recovery_day",
     "user_reported",
     position,
   );
@@ -179,10 +187,13 @@ function calibratedConfidence(input: TodayDecisionInput, baseConfidence: number)
  */
 export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDecision {
   const input = TodayDecisionInputSchema.parse(value);
-  const base = { engineVersion: TODAY_DECISION_ENGINE_VERSION, decisionOn: input.decisionOn };
+  const base = {
+    engineVersion: TODAY_DECISION_ENGINE_VERSION,
+    decisionOn: input.state.currentDay.day,
+  };
 
-  if (input.hasCompletedWorkoutToday) {
-    if (input.hasLoggedNutritionToday) {
+  if (input.state.currentDay.hasCompletedWorkout) {
+    if (input.state.currentDay.hasLoggedNutrition) {
       return ProposedTodayDecisionSchema.parse({
         ...base,
         action: "recover",
@@ -270,7 +281,10 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     });
   }
 
-  if (!input.hasCompletedReadinessToday || input.state.recovery.latestReadinessScore === null) {
+  if (
+    !input.state.currentDay.hasCompletedReadiness ||
+    input.state.recovery.latestReadinessScore === null
+  ) {
     return ProposedTodayDecisionSchema.parse({
       ...base,
       action: "complete_readiness",
@@ -336,7 +350,10 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     });
   }
 
-  if (input.hasPreferredTrainingDayToday === false) {
+  if (
+    input.state.behavior.status === "measured" &&
+    !input.state.behavior.preferredWeekdays.includes(input.state.currentDay.weekday)
+  ) {
     return ProposedTodayDecisionSchema.parse({
       ...base,
       action: "recover",

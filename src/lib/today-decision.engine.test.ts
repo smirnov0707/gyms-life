@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
+import { DigitalAthleteStateSchema, type DigitalAthleteState } from "./digital-athlete.schema";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
+import { TodayDecisionInputSchema } from "./today-decision.schema";
 
 const baseState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.3",
+  schemaVersion: "1.4",
   training: {
     sessionsLast7Days: 2,
     sessionsLast28Days: 5,
@@ -26,6 +27,13 @@ const baseState = DigitalAthleteStateSchema.parse({
     loggedDaysLast14Days: 8,
     averageCaloriesOnLoggedDays: 2300,
     averageProteinGOnLoggedDays: 160,
+  },
+  currentDay: {
+    day: "2026-09-03",
+    weekday: 3,
+    hasCompletedReadiness: true,
+    hasCompletedWorkout: false,
+    hasLoggedNutrition: false,
   },
   behavior: {
     status: "not_configured",
@@ -56,23 +64,65 @@ const baseState = DigitalAthleteStateSchema.parse({
   dataGaps: [],
 });
 
+function stateWithCurrentDay(
+  state: DigitalAthleteState,
+  overrides: Partial<DigitalAthleteState["currentDay"]>,
+): DigitalAthleteState {
+  return DigitalAthleteStateSchema.parse({
+    ...state,
+    currentDay: { ...state.currentDay, ...overrides },
+  });
+}
+
+function stateWithTrainingRhythm(
+  state: DigitalAthleteState,
+  isPreferredTrainingDay: boolean,
+): DigitalAthleteState {
+  return DigitalAthleteStateSchema.parse({
+    ...state,
+    behavior: isPreferredTrainingDay
+      ? {
+          status: "measured",
+          preferredWeekdays: [1, 3, 5],
+          usualTrainingDaysLast28Days: 12,
+          completedUsualTrainingDaysLast28Days: 8,
+          completedFlexibleTrainingDaysLast28Days: 2,
+          usualDayCompletionRateLast28Days: 0.67,
+        }
+      : {
+          status: "measured",
+          preferredWeekdays: [1, 5],
+          usualTrainingDaysLast28Days: 8,
+          completedUsualTrainingDaysLast28Days: 4,
+          completedFlexibleTrainingDaysLast28Days: 1,
+          usualDayCompletionRateLast28Days: 0.5,
+        },
+  });
+}
+
 function input(overrides: Partial<Parameters<typeof buildTodayDecision>[0]> = {}) {
   return {
-    decisionOn: "2026-09-03",
     hasActiveTrainingPlan: true,
-    hasCompletedReadinessToday: true,
-    hasCompletedWorkoutToday: false,
-    hasLoggedNutritionToday: false,
     hasOpenWorkout: false,
     activePlanDaysPerWeek: 3,
     activePlanSessionsLast7Days: 2,
-    hasPreferredTrainingDayToday: null,
     state: baseState,
     ...overrides,
   };
 }
 
 describe("buildTodayDecision", () => {
+  it("takes the calendar day only from the canonical current-day state", () => {
+    const decision = buildTodayDecision(
+      input({ state: stateWithCurrentDay(baseState, { day: "2026-09-04", weekday: 4 }) }),
+    );
+
+    expect(decision.decisionOn).toBe("2026-09-04");
+    expect(
+      TodayDecisionInputSchema.safeParse({ ...input(), decisionOn: "2026-09-03" }).success,
+    ).toBe(false);
+  });
+
   it("asks for a plan before training when no active plan exists", () => {
     const decision = buildTodayDecision(input({ hasActiveTrainingPlan: false }));
 
@@ -81,7 +131,9 @@ describe("buildTodayDecision", () => {
   });
 
   it("requires a same-day readiness check before modifying a planned session", () => {
-    const decision = buildTodayDecision(input({ hasCompletedReadinessToday: false }));
+    const decision = buildTodayDecision(
+      input({ state: stateWithCurrentDay(baseState, { hasCompletedReadiness: false }) }),
+    );
 
     expect(decision.action).toBe("complete_readiness");
     expect(decision.evidence[0]).toMatchObject({ key: "today_readiness", value: "not_recorded" });
@@ -89,7 +141,12 @@ describe("buildTodayDecision", () => {
 
   it("still asks for a readiness check before applying a usual recovery-day preference", () => {
     const decision = buildTodayDecision(
-      input({ hasCompletedReadinessToday: false, hasPreferredTrainingDayToday: false }),
+      input({
+        state: stateWithTrainingRhythm(
+          stateWithCurrentDay(baseState, { hasCompletedReadiness: false }),
+          false,
+        ),
+      }),
     );
 
     expect(decision.action).toBe("complete_readiness");
@@ -102,7 +159,9 @@ describe("buildTodayDecision", () => {
   });
 
   it("prefers recovery on a usual recovery day after readiness is known", () => {
-    const decision = buildTodayDecision(input({ hasPreferredTrainingDayToday: false }));
+    const decision = buildTodayDecision(
+      input({ state: stateWithTrainingRhythm(baseState, false) }),
+    );
 
     expect(decision.action).toBe("recover");
     expect(decision.alternatives).toEqual(["train_as_planned"]);
@@ -114,7 +173,7 @@ describe("buildTodayDecision", () => {
   });
 
   it("keeps a usual training day visible in an otherwise normal training decision", () => {
-    const decision = buildTodayDecision(input({ hasPreferredTrainingDayToday: true }));
+    const decision = buildTodayDecision(input({ state: stateWithTrainingRhythm(baseState, true) }));
 
     expect(decision.action).toBe("train_as_planned");
     expect(decision.evidence).toContainEqual({
@@ -128,7 +187,7 @@ describe("buildTodayDecision", () => {
   it("prioritizes recovery once the active plan frequency target is already met", () => {
     const decision = buildTodayDecision(
       input({
-        hasCompletedReadinessToday: false,
+        state: stateWithCurrentDay(baseState, { hasCompletedReadiness: false }),
         activePlanDaysPerWeek: 3,
         activePlanSessionsLast7Days: 3,
       }),
@@ -143,7 +202,7 @@ describe("buildTodayDecision", () => {
   it("resumes an open planned session before applying the weekly frequency target", () => {
     const decision = buildTodayDecision(
       input({
-        hasCompletedReadinessToday: false,
+        state: stateWithCurrentDay(baseState, { hasCompletedReadiness: false }),
         hasOpenWorkout: true,
         activePlanDaysPerWeek: 3,
         activePlanSessionsLast7Days: 3,
@@ -182,7 +241,9 @@ describe("buildTodayDecision", () => {
   });
 
   it("does not prompt a second training session after a completed workout", () => {
-    const decision = buildTodayDecision(input({ hasCompletedWorkoutToday: true }));
+    const decision = buildTodayDecision(
+      input({ state: stateWithCurrentDay(baseState, { hasCompletedWorkout: true }) }),
+    );
 
     expect(decision.action).toBe("log_nutrition");
     expect(decision.safetyConstraints).toEqual(["avoid_duplicate_training_prompt"]);
@@ -190,7 +251,12 @@ describe("buildTodayDecision", () => {
 
   it("moves to recovery after a completed workout and same-day nutrition log", () => {
     const decision = buildTodayDecision(
-      input({ hasCompletedWorkoutToday: true, hasLoggedNutritionToday: true }),
+      input({
+        state: stateWithCurrentDay(baseState, {
+          hasCompletedWorkout: true,
+          hasLoggedNutrition: true,
+        }),
+      }),
     );
 
     expect(decision.action).toBe("recover");
@@ -330,7 +396,7 @@ describe("buildTodayDecision", () => {
       },
     });
     const decision = buildTodayDecision(
-      input({ state: contextAndFeedbackState, hasPreferredTrainingDayToday: true }),
+      input({ state: stateWithTrainingRhythm(contextAndFeedbackState, true) }),
     );
 
     expect(decision.evidence).toHaveLength(5);

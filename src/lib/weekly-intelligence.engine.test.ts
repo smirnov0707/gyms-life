@@ -4,7 +4,7 @@ import { UserMemoryTransparencyItemResultSchema } from "./user-memory.schema";
 import { buildWeeklyIntelligenceReview } from "./weekly-intelligence.engine";
 
 const informedState: DigitalAthleteState = {
-  schemaVersion: "1.3",
+  schemaVersion: "1.4",
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -27,6 +27,13 @@ const informedState: DigitalAthleteState = {
     loggedDaysLast14Days: 11,
     averageCaloriesOnLoggedDays: 2_120,
     averageProteinGOnLoggedDays: 154,
+  },
+  currentDay: {
+    day: "2026-09-03",
+    weekday: 3,
+    hasCompletedReadiness: true,
+    hasCompletedWorkout: false,
+    hasLoggedNutrition: false,
   },
   behavior: {
     status: "measured",

@@ -3,7 +3,16 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 
 const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
-const TodayDecisionEngineVersionSchema = z.enum(["1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6"]);
+const TodayDecisionEngineVersionSchema = z.enum([
+  "1.0",
+  "1.1",
+  "1.2",
+  "1.3",
+  "1.4",
+  "1.5",
+  "1.6",
+  "1.7",
+]);
 
 export const TodayDecisionActionSchema = z.enum([
   "generate_training_plan",
@@ -68,22 +77,17 @@ export const TodayDecisionOutcomeSchema = z.enum([
 
 export const TodayDecisionInputSchema = z
   .object({
-    decisionOn: DaySchema,
     hasActiveTrainingPlan: z.boolean(),
-    hasCompletedReadinessToday: z.boolean(),
-    hasCompletedWorkoutToday: z.boolean(),
-    hasLoggedNutritionToday: z.boolean(),
     hasOpenWorkout: z.boolean(),
     activePlanDaysPerWeek: z.number().int().min(1).max(7).nullable(),
     activePlanSessionsLast7Days: z.number().int().nonnegative().nullable(),
-    hasPreferredTrainingDayToday: z.boolean().nullable(),
     state: DigitalAthleteStateSchema,
   })
   .strict();
 
 export const ProposedTodayDecisionSchema = z
   .object({
-    engineVersion: z.literal("1.6"),
+    engineVersion: z.literal("1.7"),
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema).max(5),

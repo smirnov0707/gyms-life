@@ -285,6 +285,13 @@ export function buildDigitalAthleteState(
   const nutritionLogsLast14Days = sources.nutritionLogs.filter((log) =>
     isDayWithinPastDays(log.logged_on, 14, today),
   );
+  const hasCompletedReadiness = sources.checkins.some(
+    (checkin) => checkin.checkin_on === today && checkin.readiness_score !== null,
+  );
+  const hasCompletedWorkout = completedWorkouts.some(
+    (workout) => dayInTimeZone(new Date(workout.started_at), zone) === today,
+  );
+  const hasLoggedNutrition = sources.nutritionLogs.some((log) => log.logged_on === today);
   const latestWorkout = completedWorkouts[0];
   const latestCheckin = checkinsLast7Days[0];
   const latestBodyMetric = bodyMetricsLast30Days[0];
@@ -311,7 +318,7 @@ export function buildDigitalAthleteState(
   if (!sources.availability.trainingRhythm) dataGaps.push("training_rhythm_data_unavailable");
 
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -344,6 +351,13 @@ export function buildDigitalAthleteState(
       loggedDaysLast14Days: new Set(nutritionLogsLast14Days.map((log) => log.logged_on)).size,
       averageCaloriesOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.calories)),
       averageProteinGOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.protein)),
+    },
+    currentDay: {
+      day: today,
+      weekday: weekdayForDay(today, zone),
+      hasCompletedReadiness,
+      hasCompletedWorkout,
+      hasLoggedNutrition,
     },
     behavior: trainingBehaviorFor(
       completedWorkouts,

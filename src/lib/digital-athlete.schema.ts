@@ -182,9 +182,26 @@ export const TrainingBehaviorSchema = z
 
 export type TrainingBehavior = z.infer<typeof TrainingBehaviorSchema>;
 
+/**
+ * Current local-day facts are calculated with the same time-zone boundary as
+ * the rest of the athlete state. They prevent a separate Today query path
+ * from disagreeing with the persisted athlete snapshot.
+ */
+export const CurrentDayStateSchema = z
+  .object({
+    day: DaySchema,
+    weekday: TrainingWeekdaySchema,
+    hasCompletedReadiness: z.boolean(),
+    hasCompletedWorkout: z.boolean(),
+    hasLoggedNutrition: z.boolean(),
+  })
+  .strict();
+
+export type CurrentDayState = z.infer<typeof CurrentDayStateSchema>;
+
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.3"),
+    schemaVersion: z.literal("1.4"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
@@ -208,6 +225,7 @@ export const DigitalAthleteStateSchema = z
       averageCaloriesOnLoggedDays: NonNegativeNumberSchema.nullable(),
       averageProteinGOnLoggedDays: NonNegativeNumberSchema.nullable(),
     }),
+    currentDay: CurrentDayStateSchema,
     behavior: TrainingBehaviorSchema,
     decisionFeedback: z
       .object({

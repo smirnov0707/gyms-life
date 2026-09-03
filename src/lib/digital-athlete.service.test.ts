@@ -52,7 +52,7 @@ describe("buildDigitalAthleteState", () => {
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.3",
+      schemaVersion: "1.4",
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
@@ -75,6 +75,13 @@ describe("buildDigitalAthleteState", () => {
         loggedDaysLast14Days: 5,
         averageCaloriesOnLoggedDays: 2130,
         averageProteinGOnLoggedDays: 153,
+      },
+      currentDay: {
+        day: "2026-09-02",
+        weekday: 3,
+        hasCompletedReadiness: true,
+        hasCompletedWorkout: false,
+        hasLoggedNutrition: true,
       },
       behavior: {
         status: "measured",
@@ -297,6 +304,13 @@ describe("buildDigitalAthleteState", () => {
       latestReadinessScore: 83,
       averageReadinessLast7Days: 75.5,
     });
+    expect(state.currentDay).toEqual({
+      day: "2026-09-04",
+      weekday: 5,
+      hasCompletedReadiness: true,
+      hasCompletedWorkout: false,
+      hasLoggedNutrition: true,
+    });
     expect(state.body).toMatchObject({ measurementsLast30Days: 2, weightChangeKgLast30Days: -0.5 });
     expect(state.nutrition).toMatchObject({
       loggedDaysLast14Days: 2,
@@ -305,6 +319,39 @@ describe("buildDigitalAthleteState", () => {
     expect(state.decisionFeedback).toMatchObject({
       ratedDecisionsLast28Days: 2,
       helpfulDecisionOutcomesLast28Days: 2,
+    });
+  });
+
+  it("derives completed current-day facts with the user's local calendar boundary", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [{ started_at: "2026-09-03T21:40:00.000Z", total_volume: 900 }],
+        checkins: [{ checkin_on: "2026-09-04", readiness_score: 78, sleep_hours: 8 }],
+        bodyMetrics: [],
+        nutritionLogs: [{ logged_on: "2026-09-04", calories: 2200, protein: 160 }],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+        },
+      },
+      new Date("2026-09-03T21:45:00.000Z"),
+      "Europe/Vilnius",
+    );
+
+    expect(state.currentDay).toEqual({
+      day: "2026-09-04",
+      weekday: 5,
+      hasCompletedReadiness: true,
+      hasCompletedWorkout: true,
+      hasLoggedNutrition: true,
     });
   });
 
