@@ -1,4 +1,3 @@
-import { GhostCoachWidget } from "@/components/GhostCoachWidget";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -48,7 +47,6 @@ function ReadinessRing({ score }: { score: number }) {
   const tone = score >= 80 ? "text-primary" : score >= 55 ? "text-accent" : "text-destructive";
   return (
     <div className="relative grid size-14 place-items-center">
-      <GhostCoachWidget />
       <svg className="absolute inset-0 size-14 -rotate-90">
         <circle
           cx="28"

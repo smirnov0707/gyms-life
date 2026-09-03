@@ -177,7 +177,11 @@ RETURN EXACTLY THIS JSON SHAPE:
     const { calculateWorkoutStreak } = await import("./user-context.server");
     const gaps = [
       ...(latestCheckin?.checkin_on === today ? [] : ["daily_readiness_checkin"]),
-      ...(snapshot.biometric.todayNutrition.calories > 0 ? [] : ["nutrition_logged_today"]),
+      ...(snapshot.currentDay.nutrition.available &&
+      snapshot.currentDay.nutrition.calories !== null &&
+      snapshot.currentDay.nutrition.calories > 0
+        ? []
+        : ["nutrition_logged_today"]),
       ...(workoutDates.some((date) => Date.now() - new Date(date).getTime() <= 7 * 86_400_000)
         ? []
         : ["workout_last_7_days"]),
