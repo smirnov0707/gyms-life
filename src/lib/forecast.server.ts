@@ -1,70 +1,50 @@
-export interface HistRow {
-  created_at: string;
-  exercise_slug: string;
-  exercise_name: string;
-  weight_kg: number | null;
-  reps: number | null;
-  rpe?: number | null;
-}
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  buildDeterministicPerformanceForecast,
+  FORECAST_SOURCE_WINDOW_DAYS,
+} from "./forecast.engine";
+import type { DeterministicPerformanceForecast } from "./forecast.schema";
+import { parseWorkoutSetLogs, WORKOUT_SET_LOG_SELECT } from "./workout-set-log.schema";
 
-export interface LiftHistory {
-  name: string;
-  slug: string;
-  sessions: number;
-  weeksTracked: number;
-  best: { weight: number; reps: number; e1rm: number; on: string };
-  recent: { on: string; weight: number; reps: number }[];
-  weeklyE1rm: { week: string; e1rm: number }[];
-}
+const FinishedWorkoutSessionIdSchema = z.object({ id: z.string().uuid() }).strict();
 
-const epley = (w: number, r: number) => Math.round(w * (1 + r / 30) * 10) / 10;
+/**
+ * Reads only the current user's completed sessions through RLS before the
+ * deterministic forecast engine receives validated set-log domain objects.
+ */
+export async function loadDeterministicPerformanceForecast(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  now = new Date(),
+): Promise<DeterministicPerformanceForecast> {
+  const since = new Date(now.getTime() - FORECAST_SOURCE_WINDOW_DAYS * 86_400_000).toISOString();
+  const { data: sessions, error: sessionError } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .not("finished_at", "is", null)
+    .gte("finished_at", since)
+    .order("finished_at", { ascending: true })
+    .limit(180);
+  if (sessionError) throw new Error("Could not load completed workout sessions for forecast.");
 
-function weekKey(iso: string) {
-  const d = new Date(iso);
-  const day = (d.getUTCDay() + 6) % 7;
-  d.setUTCDate(d.getUTCDate() - day);
-  return d.toISOString().slice(0, 10);
-}
+  const parsedSessions = z.array(FinishedWorkoutSessionIdSchema).safeParse(sessions ?? []);
+  if (!parsedSessions.success) throw new Error("Completed workout session data is invalid.");
+  const sessionIds = parsedSessions.data.map((session) => session.id);
+  if (sessionIds.length === 0) return buildDeterministicPerformanceForecast([], now);
 
-/** Condenses raw set logs into a compact per-lift history the model can reason about. */
-export function buildLiftHistory(rows: HistRow[], maxLifts = 6): LiftHistory[] {
-  const bySlug = new Map<string, HistRow[]>();
-  for (const r of rows) {
-    const list = bySlug.get(r.exercise_slug) ?? [];
-    list.push(r);
-    bySlug.set(r.exercise_slug, list);
-  }
+  const { data: logs, error: logError } = await supabase
+    .from("set_logs")
+    .select(WORKOUT_SET_LOG_SELECT)
+    .eq("user_id", userId)
+    .in("session_id", sessionIds)
+    .eq("done", true)
+    .gte("created_at", since)
+    .order("created_at", { ascending: true })
+    .limit(2_000);
+  if (logError) throw new Error("Could not load completed set logs for forecast.");
 
-  const lifts: LiftHistory[] = [];
-  for (const [slug, list] of bySlug) {
-    if (list.length < 3) continue;
-    const weeks = new Map<string, number>();
-    let best = { weight: 0, reps: 0, e1rm: 0, on: "" };
-    for (const r of list) {
-      const w = r.weight_kg ?? 0;
-      const reps = r.reps ?? 0;
-      const e = epley(w, reps);
-      const k = weekKey(r.created_at);
-      if (e > (weeks.get(k) ?? 0)) weeks.set(k, e);
-      if (e > best.e1rm) best = { weight: w, reps, e1rm: e, on: r.created_at.slice(0, 10) };
-    }
-    const weekly = [...weeks.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, e1rm]) => ({ week, e1rm }));
-    lifts.push({
-      name: list[list.length - 1]!.exercise_name,
-      slug,
-      sessions: new Set(list.map((r) => r.created_at.slice(0, 10))).size,
-      weeksTracked: weekly.length,
-      best,
-      recent: list.slice(-6).map((r) => ({
-        on: r.created_at.slice(0, 10),
-        weight: r.weight_kg ?? 0,
-        reps: r.reps ?? 0,
-      })),
-      weeklyE1rm: weekly.slice(-12),
-    });
-  }
-
-  return lifts.sort((a, b) => b.sessions - a.sessions).slice(0, maxLifts);
+  return buildDeterministicPerformanceForecast(parseWorkoutSetLogs(logs ?? []), now);
 }

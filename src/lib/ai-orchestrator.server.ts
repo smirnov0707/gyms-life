@@ -52,7 +52,6 @@ const AI_TASK_POLICIES = {
     fallbackModels: ["openrouter/meta-llama/llama-4-scout", "openai/gpt-4o-mini"],
     contextScope: "personalized",
   },
-  forecast: { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
   "form-analysis": {
     model: "google/gemini-3.1-flash-lite",
     contextScope: "none",
