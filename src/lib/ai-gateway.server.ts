@@ -10,8 +10,10 @@ const googleClient = createGoogleGenerativeAI({
   apiKey: process.env["GEMINI_API_KEY"] ?? "",
 });
 
+const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
+
 export type AiModelId =
-  "google/gemini-2.5-flash" | "google/gemini-3.1-flash-lite" | "groq/llama-3.3-70b-versatile";
+  "google/gemini-2.5-flash" | "google/gemini-3.1-flash-lite" | "groq/openai/gpt-oss-120b";
 
 export function isAiConfigured(): boolean {
   return Boolean(process.env["GROQ_API_KEY"] || process.env["GEMINI_API_KEY"]);
@@ -38,8 +40,12 @@ export function createAiModel(modelId: AiModelId, allowProviderFallback = true):
     return requireLanguageModel(googleClient(modelId.replace("google/", "")), modelId);
   }
 
+  if (modelId.startsWith("groq/") && process.env["GROQ_API_KEY"]) {
+    return requireLanguageModel(groqClient(modelId.replace("groq/", "")), modelId);
+  }
+
   if (allowProviderFallback && process.env["GROQ_API_KEY"]) {
-    return requireLanguageModel(groqClient("llama-3.3-70b-versatile"), modelId);
+    return requireLanguageModel(groqClient(GROQ_TEXT_MODEL), modelId);
   }
 
   if (allowProviderFallback && process.env["GEMINI_API_KEY"]) {

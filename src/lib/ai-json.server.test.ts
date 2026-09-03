@@ -42,6 +42,15 @@ describe("aiErrorMessage", () => {
     ).toBe("ai.err.unavailable");
   });
 
+  it("normalizes provider model removals into an application-owned code", () => {
+    const error = normalizeAiError({
+      status: 404,
+      message: "The model `removed-model` does not exist or you do not have access to it.",
+    });
+
+    expect(error.message).toBe("AI_MODEL_UNAVAILABLE");
+  });
+
   it("does not expose quota infrastructure failures to the member", () => {
     expect(aiErrorMessage(new Error("AI_QUOTA_UNAVAILABLE"), (key) => key)).toBe(
       "ai.err.unavailable",

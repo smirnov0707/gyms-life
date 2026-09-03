@@ -81,6 +81,12 @@ export function normalizeAiError(error: unknown): Error {
   if (status === 429 || text.includes("rate limit") || text.includes("too many requests")) {
     return new AiUnavailableError("rate_limit", "AI_RATE_LIMIT");
   }
+  if (
+    (status === 400 || status === 404) &&
+    (text.includes("model") || text.includes("does not exist") || text.includes("no access"))
+  ) {
+    return new AiUnavailableError("other", "AI_MODEL_UNAVAILABLE");
+  }
   return error instanceof Error ? error : new Error(String(error));
 }
 
