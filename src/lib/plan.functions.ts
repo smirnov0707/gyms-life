@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { generateOrchestratedJson, generateOrchestratedText } from "./ai-orchestrator.server";
+import { parseCoachMessageHistory } from "./coach-message.schema";
 import { serializeJson } from "./json.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import {
@@ -198,16 +199,9 @@ export const listCoachMessages = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(data.limit);
     if (error) throw new Error(error.message);
+    const orderedRows = (rows ?? []).slice().reverse();
     return {
-      messages: (rows ?? [])
-        .slice()
-        .reverse()
-        .map((r) => ({
-          id: r.id as string,
-          role: r.role as "user" | "coach",
-          content: r.content as string,
-          createdAt: r.created_at as string,
-        })),
+      messages: parseCoachMessageHistory(orderedRows),
     };
   });
 export const clearCoachMessages = createServerFn({ method: "POST" })
