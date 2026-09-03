@@ -20,6 +20,15 @@ export function validateGeneratedTrainingPlan(
     throw new Error("Generated training plan does not contain the requested workout days.");
   }
 
+  for (const day of plan.days) {
+    if (day.exercises.length < 4 || day.exercises.length > 6) {
+      throw new Error("Generated training plan must contain 4–6 exercises per workout day.");
+    }
+    if (new Set(day.exercises.map((exercise) => exercise.slug)).size !== day.exercises.length) {
+      throw new Error("Generated training plan repeats an exercise within a workout day.");
+    }
+  }
+
   const knownSlugs = new Set(catalogSlugs);
   const unavailableSlugs = [
     ...new Set(

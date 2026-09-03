@@ -26,6 +26,7 @@ Every new capability must improve at least one of these:
 - Core AI and plan-decision workflows emit privacy-bounded operational events through a server-only telemetry table. The events retain stable outcome/error codes and timing, never prompts, health facts, chat content, provider payloads or raw errors.
 - Client-facing failure handling uses localised, application-owned copy. Unknown server, database and provider messages cannot be rendered into a member-facing toast or production browser console.
 - Lithuanian and English translations remain synchronous; each optional locale is loaded in a separate on-demand bundle, preserving English as the non-blocking fallback.
+- Training-plan generation accepts only the requested daily schedule, with 4–6 distinct exercises per day drawn from the demonstrated exercise catalogue.
 
 ### Current product capability
 
