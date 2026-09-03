@@ -111,5 +111,20 @@ export async function refreshAthleteStateSnapshot(
   const parsedSnapshot = AthleteStateSnapshotSchema.safeParse(storedSnapshot);
   if (!parsedSnapshot.success) throw new Error("Stored athlete state snapshot is invalid.");
 
-  return { state, evaluatedAt, snapshot: toPublicSnapshot(parsedSnapshot.data) };
+  const snapshot = toPublicSnapshot(parsedSnapshot.data);
+  try {
+    const { reconcileCalculatedUserMemory } = await import("./deterministic-memory.service");
+    await reconcileCalculatedUserMemory(userId, state, snapshot);
+  } catch {
+    const { recordObservabilityEvent } = await import("./observability.server");
+    await recordObservabilityEvent({
+      eventName: "user_memory.reconcile",
+      outcome: "failure",
+      userId,
+      errorCode: "USER_MEMORY_RECONCILE_FAILED",
+      metadata: { schema_version: snapshot.schemaVersion },
+    });
+  }
+
+  return { state, evaluatedAt, snapshot };
 }

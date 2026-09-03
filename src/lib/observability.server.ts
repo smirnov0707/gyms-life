@@ -14,6 +14,7 @@ const ObservabilityEventNameSchema = z.enum([
   "user_memory.correct",
   "user_memory.forget",
   "user_memory.mark_incorrect",
+  "user_memory.reconcile",
 ]);
 
 const SafeMetadataValueSchema = z.union([

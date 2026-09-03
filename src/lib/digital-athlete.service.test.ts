@@ -47,7 +47,7 @@ describe("buildDigitalAthleteState", () => {
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.1",
+      schemaVersion: "1.2",
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
@@ -55,11 +55,13 @@ describe("buildDigitalAthleteState", () => {
         daysSinceLastCompletedWorkout: 1,
       },
       recovery: {
+        checkinsLast7Days: 3,
         latestReadinessScore: 72,
         averageReadinessLast7Days: 71.7,
         averageSleepHoursLast7Days: 7.3,
       },
       body: {
+        measurementsLast30Days: 2,
         latestWeightKg: 80,
         latestBodyFatPercent: 18,
         weightChangeKgLast30Days: -1.2,

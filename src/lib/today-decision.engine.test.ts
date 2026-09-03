@@ -3,7 +3,7 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
 
 const baseState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   training: {
     sessionsLast7Days: 2,
     sessionsLast28Days: 5,
@@ -11,11 +11,17 @@ const baseState = DigitalAthleteStateSchema.parse({
     daysSinceLastCompletedWorkout: 1,
   },
   recovery: {
+    checkinsLast7Days: 4,
     latestReadinessScore: 76,
     averageReadinessLast7Days: 74,
     averageSleepHoursLast7Days: 7.5,
   },
-  body: { latestWeightKg: 80, latestBodyFatPercent: 18, weightChangeKgLast30Days: -0.4 },
+  body: {
+    measurementsLast30Days: 3,
+    latestWeightKg: 80,
+    latestBodyFatPercent: 18,
+    weightChangeKgLast30Days: -0.4,
+  },
   nutrition: {
     loggedDaysLast14Days: 8,
     averageCaloriesOnLoggedDays: 2300,

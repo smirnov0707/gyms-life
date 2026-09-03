@@ -6,7 +6,7 @@ import {
 } from "./athlete-state-snapshot.server";
 
 const informedState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -14,11 +14,17 @@ const informedState = DigitalAthleteStateSchema.parse({
     daysSinceLastCompletedWorkout: 1,
   },
   recovery: {
+    checkinsLast7Days: 4,
     latestReadinessScore: 74,
     averageReadinessLast7Days: 71,
     averageSleepHoursLast7Days: 7.4,
   },
-  body: { latestWeightKg: 80, latestBodyFatPercent: 18, weightChangeKgLast30Days: -0.7 },
+  body: {
+    measurementsLast30Days: 3,
+    latestWeightKg: 80,
+    latestBodyFatPercent: 18,
+    weightChangeKgLast30Days: -0.7,
+  },
   nutrition: {
     loggedDaysLast14Days: 9,
     averageCaloriesOnLoggedDays: 2360,

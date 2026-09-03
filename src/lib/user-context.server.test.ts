@@ -8,7 +8,7 @@ import {
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const digitalAthlete: DigitalAthleteState = {
-  schemaVersion: "1.1" as const,
+  schemaVersion: "1.2" as const,
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -16,11 +16,13 @@ const digitalAthlete: DigitalAthleteState = {
     daysSinceLastCompletedWorkout: 1,
   },
   recovery: {
+    checkinsLast7Days: 4,
     latestReadinessScore: 70,
     averageReadinessLast7Days: 68,
     averageSleepHoursLast7Days: 7.2,
   },
   body: {
+    measurementsLast30Days: 3,
     latestWeightKg: 80,
     latestBodyFatPercent: 18,
     weightChangeKgLast30Days: -0.8,
@@ -102,11 +104,13 @@ describe("buildAiPersonalizationSummary", () => {
         daysSinceLastCompletedWorkout: 1,
       },
       recovery: {
+        checkinsLast7Days: 2,
         latestReadinessScore: 72,
         averageReadinessLast7Days: 70,
         averageSleepHoursLast7Days: 7,
       },
       body: {
+        measurementsLast30Days: 2,
         latestWeightKg: 80,
         latestBodyFatPercent: 18,
         weightChangeKgLast30Days: -1.2,

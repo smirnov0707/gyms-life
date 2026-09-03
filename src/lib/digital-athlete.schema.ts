@@ -120,7 +120,7 @@ export type DigitalAthleteDataGap = z.infer<typeof DigitalAthleteDataGapSchema>;
 
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.1"),
+    schemaVersion: z.literal("1.2"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
@@ -128,11 +128,13 @@ export const DigitalAthleteStateSchema = z
       daysSinceLastCompletedWorkout: z.number().int().nonnegative().nullable(),
     }),
     recovery: z.object({
+      checkinsLast7Days: z.number().int().nonnegative(),
       latestReadinessScore: z.number().finite().min(0).max(100).nullable(),
       averageReadinessLast7Days: z.number().finite().min(0).max(100).nullable(),
       averageSleepHoursLast7Days: z.number().finite().min(0).max(24).nullable(),
     }),
     body: z.object({
+      measurementsLast30Days: z.number().int().nonnegative(),
       latestWeightKg: NonNegativeNumberSchema.nullable(),
       latestBodyFatPercent: z.number().finite().min(0).max(100).nullable(),
       weightChangeKgLast30Days: z.number().finite().nullable(),

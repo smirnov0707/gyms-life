@@ -232,7 +232,7 @@ export function buildDigitalAthleteState(
   if (!sources.availability.context) dataGaps.push("current_context_unavailable");
 
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.1",
+    schemaVersion: "1.2",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -242,6 +242,7 @@ export function buildDigitalAthleteState(
       daysSinceLastCompletedWorkout: daysSince(latestWorkout?.started_at, now),
     },
     recovery: {
+      checkinsLast7Days: checkinsLast7Days.length,
       latestReadinessScore: latestCheckin?.readiness_score ?? null,
       averageReadinessLast7Days: average(
         checkinsLast7Days.flatMap((checkin) =>
@@ -255,6 +256,7 @@ export function buildDigitalAthleteState(
       ),
     },
     body: {
+      measurementsLast30Days: bodyMetricsLast30Days.length,
       latestWeightKg: latestBodyMetric?.weight_kg ?? null,
       latestBodyFatPercent: latestBodyMetric?.body_fat ?? null,
       weightChangeKgLast30Days: weightChange,
