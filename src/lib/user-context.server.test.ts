@@ -92,7 +92,7 @@ const activeMemory = {
       type: "preference" as const,
       content: "Prefers sessions closer to 45 minutes.",
       source: "user_reported" as const,
-      confidence: 1,
+      evidenceState: "user_confirmed" as const,
       importance: 0.8,
     },
   ],
@@ -236,6 +236,9 @@ describe("contextForAi", () => {
     } satisfies CentralUserContext;
 
     const payload = contextForAi(context);
+
+    expect(payload).not.toContain('"confidence"');
+    expect(payload).toContain('"evidenceState": "user_confirmed"');
 
     for (const privateValue of [
       "Private context summary",

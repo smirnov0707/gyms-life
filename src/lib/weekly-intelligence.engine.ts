@@ -41,7 +41,7 @@ export function buildWeeklyIntelligenceReview(value: unknown): WeeklyIntelligenc
           type: memory.type,
           content: memory.content,
           source: memory.source,
-          confidence: memory.confidence,
+          evidenceState: memory.evidenceState,
           importance: memory.importance,
           calculatedValue: memory.calculatedValue,
         },

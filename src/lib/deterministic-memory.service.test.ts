@@ -86,7 +86,7 @@ describe("calculated user memory", () => {
       expect.arrayContaining([
         expect.objectContaining({
           memoryType: "recovery_pattern",
-          confidence: 0.8,
+          evidenceState: "calculated_threshold_met",
           value: {
             kind: "recovery_low_7d",
             averageReadiness: 52.5,

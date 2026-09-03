@@ -28,7 +28,7 @@ describe("user memory transparency contracts", () => {
         type: "training_pattern",
         content: row.content,
         source: "calculated",
-        confidence: 0.75,
+        evidenceState: "requires_review",
         importance: 0.8,
         status: "active",
         calculatedValue: null,
@@ -84,7 +84,7 @@ describe("user memory transparency contracts", () => {
 
   it("creates a bounded AI-memory contract without IDs, dates, evidence references, or context", () => {
     const result = buildActiveMemoryForAi([
-      row,
+      { ...row, source: "user_reported" },
       { ...row, memory_type: "current_context", content: "Temporary equipment limit" },
       { ...row, status: "incorrect", content: "Rejected memory" },
     ]);
@@ -95,12 +95,16 @@ describe("user memory transparency contracts", () => {
         {
           type: "training_pattern",
           content: row.content,
-          source: "calculated",
-          confidence: 0.75,
+          source: "user_reported",
+          evidenceState: "user_confirmed",
           importance: 0.8,
         },
       ],
     });
+  });
+
+  it("withholds a calculated claim from AI when its structured evidence cannot be validated", () => {
+    expect(buildActiveMemoryForAi([row])).toEqual({ available: true, entries: [] });
   });
 
   it("accepts a bounded explicit correction and normalizes surrounding whitespace", () => {

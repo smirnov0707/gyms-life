@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CalculatedMemoryValueSchema } from "./calculated-memory.contract";
+import { MemoryEvidenceStateSchema, type MemoryEvidenceState } from "./memory-evidence.schema";
 
 const TimestampSchema = z
   .string()
@@ -49,12 +50,28 @@ export const UserMemoryStatusSchema = z.enum([
   "incorrect",
 ]);
 
+function evidenceStateForMemory(
+  source: UserMemorySource,
+  calculatedValue: z.infer<typeof CalculatedMemoryValueSchema> | null,
+): MemoryEvidenceState {
+  if (source === "user_reported") return "user_confirmed";
+  if (source === "measured" || source === "wearable") return "measured_record";
+  if (source === "calculated") {
+    return calculatedValue === null ? "requires_review" : "calculated_threshold_met";
+  }
+  if (source === "ai_inferred") return "hypothesis_needs_confirmation";
+  if (source === "experimental") return "experiment_in_progress";
+  return "system_record";
+}
+
 const UserMemoryDbRowSchema = z
   .object({
     id: z.string().uuid(),
     memory_type: UserMemoryTypeSchema,
     content: z.string().trim().min(1).max(400),
     source: UserMemorySourceSchema,
+    // Legacy raw database field. The domain model derives an evidence state
+    // from provenance plus validated evidence instead of exposing this as a probability.
     confidence: z.number().finite().min(0).max(1),
     importance: z.number().finite().min(0).max(1),
     status: UserMemoryStatusSchema,
@@ -71,7 +88,7 @@ export const UserMemoryTransparencyItemResultSchema = z
     type: UserMemoryTypeSchema,
     content: z.string().trim().min(1).max(400),
     source: UserMemorySourceSchema,
-    confidence: z.number().finite().min(0).max(1),
+    evidenceState: MemoryEvidenceStateSchema,
     importance: z.number().finite().min(0).max(1),
     status: UserMemoryStatusSchema,
     calculatedValue: CalculatedMemoryValueSchema.nullable(),
@@ -90,7 +107,10 @@ export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform(
     type: row.memory_type,
     content: row.content,
     source: row.source,
-    confidence: row.confidence,
+    evidenceState: evidenceStateForMemory(
+      row.source,
+      calculatedValue?.success ? calculatedValue.data : null,
+    ),
     importance: row.importance,
     status: row.status,
     calculatedValue: calculatedValue?.success ? calculatedValue.data : null,
@@ -120,7 +140,7 @@ export const ActiveMemoryForAiItemSchema = z
     type: UserMemoryTypeSchema.exclude(["current_context"]),
     content: z.string().trim().min(1).max(400),
     source: UserMemorySourceSchema,
-    confidence: z.number().finite().min(0).max(1),
+    evidenceState: MemoryEvidenceStateSchema,
     importance: z.number().finite().min(0).max(1),
   })
   .strict();
@@ -137,13 +157,18 @@ export type ActiveMemoryForAi = z.infer<typeof ActiveMemoryForAiSchema>;
 /** Removes IDs, dates, evidence references, and temporary context before AI routing. */
 export function buildActiveMemoryForAi(value: unknown): ActiveMemoryForAi {
   const entries = parseUserMemoryTransparencyItems(value)
-    .filter((item) => item.status === "active" && item.type !== "current_context")
+    .filter(
+      (item) =>
+        item.status === "active" &&
+        item.type !== "current_context" &&
+        item.evidenceState !== "requires_review",
+    )
     .slice(0, 12)
     .map((item) => ({
       type: item.type,
       content: item.content,
       source: item.source,
-      confidence: item.confidence,
+      evidenceState: item.evidenceState,
       importance: item.importance,
     }));
   return ActiveMemoryForAiSchema.parse({ available: true, entries });

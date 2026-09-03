@@ -94,7 +94,7 @@ export const CalculatedMemoryCandidateSchema = z
     ]),
     content: z.string().trim().min(1).max(400),
     value: CalculatedMemoryValueSchema,
-    confidence: z.number().finite().min(0).max(1),
+    evidenceState: z.literal("calculated_threshold_met"),
     importance: z.number().finite().min(0).max(1),
   })
   .strict();

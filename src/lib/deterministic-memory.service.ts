@@ -12,6 +12,11 @@ type AthleteStateSnapshotReference = {
   schemaVersion: string;
 };
 
+// Compatibility value for the legacy database column. The validated domain,
+// user interface, and AI context use evidenceState rather than a fabricated
+// probability percentage.
+const LEGACY_MEMORY_CONFIDENCE = 0;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -51,7 +56,7 @@ export function buildCalculatedMemoryCandidates(
         sessionsLast28Days: state.training.sessionsLast28Days,
         windowDays: 28,
       },
-      confidence: 0.85,
+      evidenceState: "calculated_threshold_met",
       importance: 0.7,
     });
   }
@@ -70,7 +75,7 @@ export function buildCalculatedMemoryCandidates(
         usualDayCompletionRateLast28Days: state.behavior.usualDayCompletionRateLast28Days,
         windowDays: 28,
       },
-      confidence: state.behavior.usualTrainingDaysLast28Days >= 8 ? 0.8 : 0.65,
+      evidenceState: "calculated_threshold_met",
       importance: 0.7,
     });
   }
@@ -90,7 +95,7 @@ export function buildCalculatedMemoryCandidates(
         checkinsLast7Days: state.recovery.checkinsLast7Days,
         windowDays: 7,
       },
-      confidence: 0.8,
+      evidenceState: "calculated_threshold_met",
       importance: 0.8,
     });
   }
@@ -111,7 +116,7 @@ export function buildCalculatedMemoryCandidates(
         measurementsLast30Days: state.body.measurementsLast30Days,
         windowDays: 30,
       },
-      confidence: 0.75,
+      evidenceState: "calculated_threshold_met",
       importance: 0.65,
     });
   }
@@ -126,7 +131,7 @@ export function buildCalculatedMemoryCandidates(
         loggedDaysLast14Days: state.nutrition.loggedDaysLast14Days,
         windowDays: 14,
       },
-      confidence: 0.85,
+      evidenceState: "calculated_threshold_met",
       importance: 0.65,
     });
   }
@@ -156,7 +161,7 @@ export async function reconcileCalculatedUserMemory(
         schema_version: snapshot.schemaVersion,
       },
     ]),
-    confidence: candidate.confidence,
+    confidence: LEGACY_MEMORY_CONFIDENCE,
     importance: candidate.importance,
   }));
 

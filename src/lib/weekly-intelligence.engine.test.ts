@@ -77,7 +77,7 @@ const calculatedMemory = UserMemoryTransparencyItemResultSchema.parse({
   type: "recovery_pattern",
   content: "Average readiness was 52.5/100 across four check-ins.",
   source: "calculated",
-  confidence: 0.8,
+  evidenceState: "calculated_threshold_met",
   importance: 0.8,
   status: "active",
   calculatedValue: {

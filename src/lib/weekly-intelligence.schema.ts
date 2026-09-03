@@ -18,7 +18,7 @@ export const WeeklyIntelligenceDiscoverySchema = UserMemoryTransparencyItemResul
   type: true,
   content: true,
   source: true,
-  confidence: true,
+  evidenceState: true,
   importance: true,
   calculatedValue: true,
 })

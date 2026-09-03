@@ -7,7 +7,7 @@ const calculatedMemory = UserMemoryTransparencyItemResultSchema.parse({
   type: "training_pattern",
   content: "Completed 10 workouts in the last 28 days.",
   source: "calculated",
-  confidence: 0.85,
+  evidenceState: "calculated_threshold_met",
   importance: 0.7,
   status: "active",
   calculatedValue: {
@@ -35,6 +35,7 @@ describe("user-memory presentation", () => {
       ...calculatedMemory,
       content: "I prefer sessions under 45 minutes.",
       source: "user_reported",
+      evidenceState: "user_confirmed",
       calculatedValue: null,
     });
 

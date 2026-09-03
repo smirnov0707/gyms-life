@@ -31,6 +31,7 @@ import {
   getUserMemoryTransparency,
   markMemoryIncorrect,
 } from "@/lib/user-memory.functions";
+import type { MemoryEvidenceState } from "@/lib/memory-evidence.schema";
 import type { UserMemorySource, UserMemoryTransparencyItem } from "@/lib/user-memory.schema";
 import { displayedMemoryContent, memoryEvidenceSummary } from "@/lib/user-memory.presentation";
 
@@ -86,7 +87,8 @@ type Copy = {
     loading: string;
     empty: string;
     source: string;
-    confidence: string;
+    evidenceState: string;
+    evidenceStateLabel: Record<MemoryEvidenceState, string>;
     evidence: (count: number) => string;
     lastConfirmed: string;
     expires: string;
@@ -152,7 +154,16 @@ function copyFor(lang: string): Copy {
         empty:
           "There are no active memory entries yet. GYMS.LIFE will show facts only after they exist.",
         source: "Source",
-        confidence: "Confidence",
+        evidenceState: "Evidence status",
+        evidenceStateLabel: {
+          user_confirmed: "You confirmed this",
+          measured_record: "Recorded by measurement or wearable",
+          calculated_threshold_met: "Recorded-data threshold met",
+          hypothesis_needs_confirmation: "Needs your confirmation",
+          experiment_in_progress: "Under observation",
+          system_record: "System record",
+          requires_review: "Needs review before use",
+        },
         evidence: (count) => `${count} evidence ${count === 1 ? "reference" : "references"}`,
         lastConfirmed: "Last confirmed",
         expires: "Expires",
@@ -218,7 +229,16 @@ function copyFor(lang: string): Copy {
       empty:
         "Aktyvių atminties įrašų dar nėra. GYMS.LIFE faktus rodys tik tada, kai jie iš tikrųjų atsiras.",
       source: "Šaltinis",
-      confidence: "Pasitikėjimas",
+      evidenceState: "Įrodymų būsena",
+      evidenceStateLabel: {
+          user_confirmed: "Tavo patvirtinta",
+        measured_record: "Užregistruota matavimu arba dėvimu įrenginiu",
+        calculated_threshold_met: "Pasiektas duomenų pakankamumo slenkstis",
+        hypothesis_needs_confirmation: "Reikia tavo patvirtinimo",
+        experiment_in_progress: "Stebima eksperimento metu",
+        system_record: "Sistemos įrašas",
+        requires_review: "Prieš naudojimą reikia peržiūros",
+      },
       evidence: (count) => `Įrodymų nuorodos: ${count}`,
       lastConfirmed: "Paskutinį kartą patvirtinta",
       expires: "Galioja iki",
@@ -392,7 +412,7 @@ function AthleteModelPage() {
                 id: result.id,
                 content,
                 source: "user_reported",
-                confidence: 1,
+                evidenceState: "user_confirmed",
                 evidenceCount: 0,
                 lastConfirmedAt: confirmedAt,
                 expiresAt: null,
@@ -646,8 +666,10 @@ function AthleteModelPage() {
                       <dd className="mt-0.5">{memorySourceLabel(memory.source, lang)}</dd>
                     </div>
                     <div className="rounded-xl bg-background/50 px-3 py-2">
-                      <dt className="font-semibold text-foreground">{copy.memory.confidence}</dt>
-                      <dd className="mt-0.5">{Math.round(memory.confidence * 100)}%</dd>
+                      <dt className="font-semibold text-foreground">{copy.memory.evidenceState}</dt>
+                      <dd className="mt-0.5">
+                        {copy.memory.evidenceStateLabel[memory.evidenceState]}
+                      </dd>
                     </div>
                     <div className="rounded-xl bg-background/50 px-3 py-2">
                       <dt className="font-semibold text-foreground">{copy.memory.lastConfirmed}</dt>
