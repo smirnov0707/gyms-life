@@ -47,6 +47,9 @@ const AI_TASK_POLICIES = {
   },
   "food-vision": {
     model: "google/gemini-2.5-flash",
+    // Vision tasks need vision-capable backups. Text-only workers are never
+    // routed an image, because they could not produce a trustworthy result.
+    fallbackModels: ["openrouter/meta-llama/llama-4-scout", "openai/gpt-4o-mini"],
     contextScope: "personalized",
   },
   forecast: { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },

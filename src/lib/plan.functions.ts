@@ -6,8 +6,10 @@ import { parseCoachMessageHistory } from "./coach-message.schema";
 import { serializeJson } from "./json.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import {
+  canonicalizeGeneratedPlanExercises,
   formatExerciseCatalogForAi,
   parseDemonstratedExerciseCatalog,
+  selectPlanExerciseCatalog,
 } from "./exercise-catalog.schema";
 import { observeServerAction } from "./observability.server";
 import { validateGeneratedTrainingPlan } from "./training-plan-generation.validation";
@@ -93,10 +95,14 @@ export const generatePlan = createServerFn({ method: "POST" })
         if (catalogError || catalogExercises.length === 0) {
           throw new Error("Exercise catalog is unavailable. Please try again shortly.");
         }
-        const catalog = formatExerciseCatalogForAi(catalogExercises);
-        const catalogSlugs = catalogExercises.map((exercise) => exercise.slug);
+        const compatibleCatalog = selectPlanExerciseCatalog(catalogExercises, {
+          equipment: data.equipment,
+          location: data.location,
+        });
+        const catalog = formatExerciseCatalogForAi(compatibleCatalog);
+        const catalogSlugs = compatibleCatalog.map((exercise) => exercise.slug);
         const langName = LANGUAGE_NAMES[data.lang];
-        const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
+        const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Kiekvieno pratimo \`slug\` privalo būti pažodžiui nukopijuotas iš pirmo KATALOGAS eilutės lauko. Niekada nekurk naujo slug ir nekeisk jo tarpo, didžiosiomis raidėmis ar vertimu.\n- \`name\` turi atitikti to paties katalogo pratimo pavadinimą ${langName} kalba.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
         const generated = await generateOrchestratedJson({
           task: "training-plan",
           supabase,
@@ -108,19 +114,24 @@ export const generatePlan = createServerFn({ method: "POST" })
         if (!plan.success) {
           throw new Error("Generated training plan is incomplete. Please try again.");
         }
-        validateGeneratedTrainingPlan(plan.data, data.daysPerWeek, catalogSlugs);
+        const canonicalPlan = canonicalizeGeneratedPlanExercises(
+          plan.data,
+          compatibleCatalog,
+          data.lang === "lt" ? "lt" : "en",
+        );
+        validateGeneratedTrainingPlan(canonicalPlan, data.daysPerWeek, catalogSlugs);
 
         const { data: inserted, error } = await supabase
           .from("plans")
           .insert({
             user_id: userId,
-            title: plan.data.title,
+            title: canonicalPlan.title,
             goal: data.goal,
             weeks: plan.data.weeks,
             days_per_week: data.daysPerWeek,
             is_active: false,
             lang: data.lang,
-            data: serializeJson(plan.data),
+            data: serializeJson(canonicalPlan),
           })
           .select("id")
           .single();
@@ -139,7 +150,7 @@ export const generatePlan = createServerFn({ method: "POST" })
           })
           .eq("id", userId);
         if (profileError) throw new Error(`Profile save error: ${profileError.message}`);
-        return { planId: inserted.id, plan: plan.data };
+        return { planId: inserted.id, plan: canonicalPlan };
       },
     );
   });

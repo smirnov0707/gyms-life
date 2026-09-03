@@ -4,6 +4,7 @@ import { createAiModel } from "./ai-gateway.server";
 const originalGeminiKey = process.env["GEMINI_API_KEY"];
 const originalGroqKey = process.env["GROQ_API_KEY"];
 const originalOpenAiKey = process.env["OPENAI_API_KEY"];
+const originalOpenRouterKey = process.env["OPENROUTER_API_KEY"];
 
 afterEach(() => {
   if (originalGeminiKey === undefined) delete process.env["GEMINI_API_KEY"];
@@ -12,6 +13,8 @@ afterEach(() => {
   else process.env["GROQ_API_KEY"] = originalGroqKey;
   if (originalOpenAiKey === undefined) delete process.env["OPENAI_API_KEY"];
   else process.env["OPENAI_API_KEY"] = originalOpenAiKey;
+  if (originalOpenRouterKey === undefined) delete process.env["OPENROUTER_API_KEY"];
+  else process.env["OPENROUTER_API_KEY"] = originalOpenRouterKey;
 });
 
 describe("AI provider adapter", () => {
@@ -41,5 +44,14 @@ describe("AI provider adapter", () => {
 
     expect(model.specificationVersion).toBe("v4");
     expect(model.modelId).toBe("gpt-4o-mini");
+  });
+
+  it("provides the approved vision fallback through OpenRouter", () => {
+    process.env["OPENROUTER_API_KEY"] = "test-key";
+
+    const model = createAiModel("openrouter/meta-llama/llama-4-scout");
+
+    expect(model.specificationVersion).toBe("v4");
+    expect(model.modelId).toBe("meta-llama/llama-4-scout");
   });
 });

@@ -39,6 +39,14 @@ function failedMealAnalysis(reason: string): MealAnalysis {
   return { ok: false, reason };
 }
 
+function unavailableMealAnalysis(lang: z.infer<typeof SupportedLanguageSchema>): MealAnalysis {
+  return failedMealAnalysis(
+    lang === "lt"
+      ? "Nuotraukos analizė šiuo metu nepasiekiama. Bandykite dar kartą po akimirkos."
+      : "Photo analysis is temporarily unavailable. Please try again in a moment.",
+  );
+}
+
 export const analyzeMealPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => AnalyzeInput.parse(data))
@@ -92,9 +100,7 @@ Atsakyk TIK TIKSLIU JSON be jokių markdown formatavimų.`;
       });
     } catch (error: unknown) {
       console.error("Food vision handler error:", error);
-      return failedMealAnalysis(
-        data.lang === "lt" ? "Apdorojimo klaida." : "Failed to process the image.",
-      );
+      return unavailableMealAnalysis(data.lang);
     }
   });
 

@@ -17,15 +17,25 @@ const openAiClient = createOpenAICompatible({
   apiKey: process.env["OPENAI_API_KEY"] ?? "",
 });
 
+const openRouterClient = createOpenAICompatible({
+  name: "openrouter",
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env["OPENROUTER_API_KEY"] ?? "",
+});
+
 export type AiModelId =
   | "google/gemini-2.5-flash"
   | "google/gemini-3.1-flash-lite"
   | "groq/openai/gpt-oss-120b"
-  | "openai/gpt-4o-mini";
+  | "openai/gpt-4o-mini"
+  | "openrouter/meta-llama/llama-4-scout";
 
 export function isAiConfigured(): boolean {
   return Boolean(
-    process.env["GROQ_API_KEY"] || process.env["GEMINI_API_KEY"] || process.env["OPENAI_API_KEY"],
+    process.env["GROQ_API_KEY"] ||
+    process.env["GEMINI_API_KEY"] ||
+    process.env["OPENAI_API_KEY"] ||
+    process.env["OPENROUTER_API_KEY"],
   );
 }
 
@@ -56,6 +66,13 @@ export function createAiModel(modelId: AiModelId): LanguageModelV4 {
 
   if (modelId.startsWith("openai/") && process.env["OPENAI_API_KEY"]) {
     return requireLanguageModel(openAiClient.chatModel(modelId.replace("openai/", "")), modelId);
+  }
+
+  if (modelId.startsWith("openrouter/") && process.env["OPENROUTER_API_KEY"]) {
+    return requireLanguageModel(
+      openRouterClient.chatModel(modelId.replace("openrouter/", "")),
+      modelId,
+    );
   }
 
   throw new Error(`AI_MODEL_UNAVAILABLE:${modelId}`);

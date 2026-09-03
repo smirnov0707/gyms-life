@@ -27,7 +27,11 @@ describe("GYMS.LIFE AI task policy", () => {
       "groq/openai/gpt-oss-120b",
       "google/gemini-3.1-flash-lite",
     ]);
-    expect(getAiTaskModelRoute("food-vision")).toEqual(["google/gemini-2.5-flash"]);
+    expect(getAiTaskModelRoute("food-vision")).toEqual([
+      "google/gemini-2.5-flash",
+      "openrouter/meta-llama/llama-4-scout",
+      "openai/gpt-4o-mini",
+    ]);
   });
 
   it("retries only an unavailable provider model with the next approved worker", async () => {
