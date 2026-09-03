@@ -6,7 +6,7 @@ import {
 } from "./athlete-state-snapshot.server";
 
 const informedState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.5",
+  schemaVersion: "1.6",
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -18,6 +18,7 @@ const informedState = DigitalAthleteStateSchema.parse({
       ratedSessionsLast28Days: 3,
       latestFeeling: 4,
       averageFeelingLast28Days: 3.7,
+      recentLowFeelingStreak: 0,
     },
   },
   recovery: {

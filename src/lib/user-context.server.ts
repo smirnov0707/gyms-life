@@ -558,7 +558,7 @@ export async function buildUserContext(
  */
 export function contextForAi(context: CentralUserContext): string {
   const baseContext = {
-    schemaVersion: "1.5",
+    schemaVersion: "1.6",
     preferences: context.profile,
     personalization: {
       enabled: context.aiPersonalization.enabled,

@@ -9,8 +9,13 @@ import {
   buildWorkoutExecutionSnapshot,
   hasActiveWorkoutSafetyConstraint,
 } from "./workout-execution.engine";
-import { WorkoutExecutionSnapshotSchema } from "./workout-execution.schema";
+import {
+  WorkoutExecutionSnapshotSchema,
+  loadModifierForWorkoutAdaptation,
+} from "./workout-execution.schema";
 import { loadActiveLifeContexts } from "./life-context.server";
+import { loadDigitalAthleteState } from "./digital-athlete.service";
+import { resolveTrainingResponseVolumeGuard } from "./training-response.engine";
 import {
   parseDemonstratedExerciseCatalog,
   type ExerciseCatalogItem,
@@ -64,8 +69,16 @@ export const startWorkout = createServerFn({ method: "POST" })
     }
 
     let todaysReadiness = null;
+    let trainingResponseModifier = 1;
     if (!existing) {
-      todaysReadiness = await getTodaysReadiness(supabase, userId, data.timeZone);
+      const [readiness, athleteState] = await Promise.all([
+        getTodaysReadiness(supabase, userId, data.timeZone),
+        loadDigitalAthleteState(supabase, userId, undefined, data.timeZone),
+      ]);
+      todaysReadiness = readiness;
+      trainingResponseModifier = resolveTrainingResponseVolumeGuard(
+        athleteState.training.selfReportedResponse,
+      ).volumeModifier;
     }
 
     const entryGate = evaluateWorkoutStartGate({
@@ -83,8 +96,6 @@ export const startWorkout = createServerFn({ method: "POST" })
       if (todaysReadiness === null) {
         throw new Error("Complete today's readiness check-in before starting a new workout.");
       }
-      const adaptationModifier = todaysReadiness.modifier;
-
       const needsEquipmentCatalog = lifeContext.contexts.some(
         (context) =>
           context.context.kind === "travel" ||
@@ -106,14 +117,15 @@ export const startWorkout = createServerFn({ method: "POST" })
 
       executionSnapshot = buildWorkoutExecutionSnapshot({
         day: workout.workout,
-        readinessModifier: adaptationModifier,
+        readinessModifier: todaysReadiness.modifier,
+        trainingResponseModifier,
         lifeContexts: lifeContext.contexts,
         exerciseCatalog: catalog,
       });
       const started = await createOpenWorkoutSession(supabase, {
         ...identity,
         title: executionSnapshot.workout.title,
-        adaptationModifier: executionSnapshot.adaptation.readinessModifier,
+        adaptationModifier: loadModifierForWorkoutAdaptation(executionSnapshot.adaptation),
         workoutSnapshot: executionSnapshot,
       });
       session = started.session;

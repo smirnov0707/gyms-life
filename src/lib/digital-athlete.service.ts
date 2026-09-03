@@ -26,6 +26,7 @@ import {
 } from "./local-day";
 import { loadTrainingRhythm } from "./training-rhythm.server";
 import type { TrainingRhythm } from "./training-rhythm.schema";
+import { LOW_WORKOUT_FEELING_THRESHOLD } from "./training-response.schema";
 
 const DAY_MS = 86_400_000;
 
@@ -40,6 +41,15 @@ function average(values: number[]): number | null {
 
 function roundToTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function recentLowFeelingStreak(responses: DigitalAthleteSources["workoutResponses"]): number {
+  let streak = 0;
+  for (const response of responses) {
+    if (response.feeling === null || response.feeling > LOW_WORKOUT_FEELING_THRESHOLD) break;
+    streak += 1;
+  }
+  return streak;
 }
 
 function isWithinPastDays(dateValue: string, days: number, now: Date): boolean {
@@ -282,6 +292,9 @@ export function buildDigitalAthleteState(
       (response) => response.feeling !== null && isWithinPastDays(response.started_at, 28, now),
     ),
   );
+  const lowFeelingStreak = sources.availability.trainingResponse
+    ? recentLowFeelingStreak(ratedWorkoutResponsesLast28Days)
+    : 0;
   const checkinsLast7Days = newestFirst(
     sources.checkins.filter((checkin) => isDayWithinPastDays(checkin.checkin_on, 7, today)),
   );
@@ -324,7 +337,7 @@ export function buildDigitalAthleteState(
   if (!sources.availability.trainingRhythm) dataGaps.push("training_rhythm_data_unavailable");
 
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.5",
+    schemaVersion: "1.6",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -348,6 +361,7 @@ export function buildDigitalAthleteState(
               ),
             )
           : null,
+        recentLowFeelingStreak: lowFeelingStreak,
       },
     },
     recovery: {

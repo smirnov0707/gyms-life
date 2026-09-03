@@ -12,6 +12,7 @@ const TodayDecisionEngineVersionSchema = z.enum([
   "1.5",
   "1.6",
   "1.7",
+  "1.8",
 ]);
 
 export const TodayDecisionActionSchema = z.enum([
@@ -29,6 +30,7 @@ export const TodayDecisionSafetyConstraintSchema = z.enum([
   "avoid_progression_when_readiness_low",
   "apply_persisted_readiness_modifier",
   "apply_persisted_execution_snapshot",
+  "apply_training_response_volume_guard",
   "avoid_duplicate_training_prompt",
   "avoid_training_with_active_limitation",
 ]);
@@ -43,6 +45,7 @@ export const TodayDecisionEvidenceKeySchema = z.enum([
   "active_life_context",
   "recent_decision_feedback",
   "training_rhythm",
+  "recent_training_response",
 ]);
 
 export const TodayDecisionEvidenceSourceSchema = z.enum([
@@ -87,7 +90,7 @@ export const TodayDecisionInputSchema = z
 
 export const ProposedTodayDecisionSchema = z
   .object({
-    engineVersion: z.literal("1.7"),
+    engineVersion: z.literal("1.8"),
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema).max(5),

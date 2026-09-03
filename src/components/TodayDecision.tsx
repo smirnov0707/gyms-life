@@ -70,7 +70,7 @@ function copyFor(lang: string): Copy {
         train_adapted: {
           title: "Train with today's adaptation",
           summary:
-            "We will validate and persist the exact session using today's readiness and active context.",
+            "We will validate and persist the exact session using today's readiness, active context, and repeated workout feedback when it materially changes volume.",
           cta: "Start adapted session",
         },
         train_as_planned: {
@@ -115,6 +115,10 @@ function copyFor(lang: string): Copy {
           const [helpful, rated] = value.split("/");
           return `Recent daily recommendations you marked helpful: ${helpful} of ${rated}.`;
         },
+        recent_training_response: (value) => {
+          const [difficult, rated] = value.split("/");
+          return `${difficult} most recent rated sessions felt difficult (1–2/5), based on ${rated} ratings in 28 days.`;
+        },
       },
     };
   }
@@ -151,7 +155,7 @@ function copyFor(lang: string): Copy {
       train_adapted: {
         title: "Treniruokis su šiandienos adaptacija",
         summary:
-          "Prieš pirmą setą parinksime ir išsaugosime tikslią sesiją pagal pasiruošimą bei dabartinį kontekstą.",
+          "Prieš pirmą setą parinksime ir išsaugosime tikslią sesiją pagal pasiruošimą, dabartinį kontekstą ir pasikartojantį treniruočių grįžtamąjį ryšį, kai jis realiai keičia krūvį.",
         cta: "Pradėti adaptuotą treniruotę",
       },
       train_as_planned: {
@@ -197,6 +201,10 @@ function copyFor(lang: string): Copy {
       recent_decision_feedback: (value) => {
         const [helpful, rated] = value.split("/");
         return `Naujausias dienos rekomendacijas įvertinai kaip tinkamas: ${helpful} iš ${rated}.`;
+      },
+      recent_training_response: (value) => {
+        const [difficult, rated] = value.split("/");
+        return `${difficult} paskutinės įvertintos treniruotės buvo sunkios (1–2/5), remiantis ${rated} įvertinimais per 28 d.`;
       },
     },
   };

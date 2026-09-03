@@ -7,10 +7,12 @@ import {
   type TodayDecisionInput,
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
+import { resolveTrainingResponseVolumeGuard } from "./training-response.engine";
+import type { TrainingResponseVolumeGuard } from "./training-response.schema";
 
 // Versioned because the decision now consumes one canonical athlete-state
 // snapshot rather than independently re-querying current-day facts.
-export const TODAY_DECISION_ENGINE_VERSION = "1.7" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.8" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -167,6 +169,48 @@ function withDecisionFeedbackEvidence(
   return feedback === null ? items : [...items, feedback];
 }
 
+function trainingResponseEvidence(
+  guard: TrainingResponseVolumeGuard,
+  position: number,
+): TodayDecisionEvidence | null {
+  if (guard.status !== "temporary_reduced_volume") return null;
+  return evidence(
+    "recent_training_response",
+    `${guard.recentLowFeelingStreak}/${guard.ratedSessionsLast28Days}`,
+    "calculated",
+    position,
+  );
+}
+
+function withTrainingResponseEvidence(
+  items: TodayDecisionEvidence[],
+  guard: TrainingResponseVolumeGuard,
+  applies: boolean,
+): TodayDecisionEvidence[] {
+  if (!applies || items.length >= 5) return items;
+  const response = trainingResponseEvidence(guard, items.length);
+  return response === null ? items : [...items, response];
+}
+
+/**
+ * The response guard is shown only when it decreases the volume beyond the
+ * existing readiness and high-stress guards. Repeating a signal that would
+ * not change today's snapshot would be false precision.
+ */
+function trainingResponseGuardApplies(
+  input: TodayDecisionInput,
+  guard: TrainingResponseVolumeGuard,
+): boolean {
+  if (guard.status !== "temporary_reduced_volume") return false;
+  const score = input.state.recovery.latestReadinessScore;
+  const readinessModifier = score === null ? 1 : loadModifierFor(score);
+  const hasHighStress = input.state.currentContext.active.some(
+    (context) => context.context.kind === "high_stress",
+  );
+  const existingModifier = hasHighStress ? Math.min(readinessModifier, 0.8) : readinessModifier;
+  return guard.volumeModifier < existingModifier;
+}
+
 /**
  * Feedback can reduce the confidence label only after enough explicit user
  * outcomes exist. It never upgrades confidence, changes the chosen action,
@@ -303,6 +347,11 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
   }
 
   const score = input.state.recovery.latestReadinessScore;
+  const responseGuard = resolveTrainingResponseVolumeGuard(
+    input.state.training.selfReportedResponse,
+  );
+  const responseGuardApplies = trainingResponseGuardApplies(input, responseGuard);
+  const responseGuardEvidence = trainingResponseEvidence(responseGuard, 1);
   if (score < 55) {
     return ProposedTodayDecisionSchema.parse({
       ...base,
@@ -335,17 +384,22 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       safetyConstraints: [
         "apply_persisted_readiness_modifier",
         "apply_persisted_execution_snapshot",
+        ...(responseGuardApplies ? ["apply_training_response_volume_guard"] : []),
       ],
-      evidence: withDecisionFeedbackEvidence(
-        input,
-        withTrainingRhythmEvidence(
+      evidence: withTrainingResponseEvidence(
+        withDecisionFeedbackEvidence(
           input,
-          withLifeContextEvidence(input, [
-            readinessEvidence(input, 0),
-            loadModifierEvidence(input, 1),
-            dataQualityEvidence(input, 2),
-          ]),
+          withTrainingRhythmEvidence(
+            input,
+            withLifeContextEvidence(input, [
+              readinessEvidence(input, 0),
+              loadModifierEvidence(input, 1),
+              dataQualityEvidence(input, 2),
+            ]),
+          ),
         ),
+        responseGuard,
+        responseGuardApplies,
       ),
     });
   }
@@ -376,15 +430,41 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       action: "train_adapted",
       alternatives: ["recover"],
       confidence: 92,
-      safetyConstraints: ["apply_persisted_readiness_modifier"],
-      evidence: withTrainingRhythmEvidence(
-        input,
-        withLifeContextEvidence(input, [
-          readinessEvidence(input, 0),
-          loadModifierEvidence(input, 1),
-          sessionsEvidence(input, 2),
-        ]),
+      safetyConstraints: [
+        "apply_persisted_readiness_modifier",
+        ...(responseGuardApplies ? ["apply_training_response_volume_guard"] : []),
+      ],
+      evidence: withTrainingResponseEvidence(
+        withTrainingRhythmEvidence(
+          input,
+          withLifeContextEvidence(input, [
+            readinessEvidence(input, 0),
+            loadModifierEvidence(input, 1),
+            sessionsEvidence(input, 2),
+          ]),
+        ),
+        responseGuard,
+        responseGuardApplies,
       ),
+    });
+  }
+
+  if (responseGuardApplies && responseGuardEvidence !== null) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "train_adapted",
+      alternatives: ["recover", "train_as_planned"],
+      confidence: calibratedConfidence(input, Math.min(qualityConfidence(input), 82)),
+      safetyConstraints: [
+        "apply_persisted_readiness_modifier",
+        "apply_training_response_volume_guard",
+      ],
+      evidence: withTrainingRhythmEvidence(input, [
+        readinessEvidence(input, 0),
+        responseGuardEvidence,
+        loadModifierEvidence(input, 2),
+        dataQualityEvidence(input, 3),
+      ]),
     });
   }
 

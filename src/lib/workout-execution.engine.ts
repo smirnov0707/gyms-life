@@ -5,13 +5,15 @@ import type { TrainingPlanDay, TrainingPlanExercise } from "./training-plan.sche
 import { canonicalWorkoutEquipment, type WorkoutEquipment } from "./workout-equipment.schema";
 import {
   WorkoutExecutionSnapshotSchema,
+  WorkoutVolumeModifierSchema,
   type WorkoutAdaptationReason,
   type WorkoutExecutionSnapshot,
 } from "./workout-execution.schema";
 
-type WorkoutExecutionInput = {
+export type WorkoutExecutionInput = {
   day: TrainingPlanDay;
   readinessModifier: number;
+  trainingResponseModifier: number;
   lifeContexts: readonly ActiveLifeContext[];
   exerciseCatalog: readonly ExerciseCatalogItem[];
 };
@@ -234,17 +236,32 @@ function unique<T>(values: readonly T[]): T[] {
 export function buildWorkoutExecutionSnapshot(
   input: WorkoutExecutionInput,
 ): WorkoutExecutionSnapshot {
+  const readinessModifier = WorkoutVolumeModifierSchema.parse(input.readinessModifier);
+  const trainingResponseModifier = WorkoutVolumeModifierSchema.parse(
+    input.trainingResponseModifier,
+  );
   const highStress = activeContextsOf(input.lifeContexts, "high_stress");
-  const effectiveReadinessModifier =
-    highStress.length > 0 ? Math.min(input.readinessModifier, 0.8) : input.readinessModifier;
-  const readinessWorkout = adaptTrainingPlanDay(input.day, effectiveReadinessModifier);
-  const readinessApplied = readinessWorkout.exercises.some(
+  const modifierWithoutResponse =
+    highStress.length > 0 ? Math.min(readinessModifier, 0.8) : readinessModifier;
+  const volumeModifier = Math.min(modifierWithoutResponse, trainingResponseModifier);
+  const volumeWorkout = adaptTrainingPlanDay(input.day, volumeModifier);
+  const volumeReduced = volumeWorkout.exercises.some(
     (exercise, index) => exercise.sets !== input.day.exercises[index]?.sets,
   );
+  const modifierWithoutReadiness =
+    highStress.length > 0 ? Math.min(trainingResponseModifier, 0.8) : trainingResponseModifier;
+  const modifierWithoutStress = Math.min(readinessModifier, trainingResponseModifier);
+  const readinessApplied =
+    volumeReduced && readinessModifier < 1 && readinessModifier <= modifierWithoutReadiness;
+  const trainingResponseApplied =
+    volumeReduced &&
+    trainingResponseModifier < 1 &&
+    trainingResponseModifier <= modifierWithoutResponse;
+  const highStressApplied = volumeReduced && highStress.length > 0 && 0.8 <= modifierWithoutStress;
 
   const equipmentConstraint = equipmentConstraintFor(input.lifeContexts);
   const equipment = applyEquipmentConstraint(
-    readinessWorkout,
+    volumeWorkout,
     equipmentConstraint,
     input.exerciseCatalog,
   );
@@ -254,7 +271,8 @@ export function buildWorkoutExecutionSnapshot(
   const sourceContextIds: string[] = [];
 
   if (readinessApplied) reasons.push("readiness");
-  if (highStress.length > 0 && effectiveReadinessModifier < input.readinessModifier) {
+  if (trainingResponseApplied) reasons.push("training_response");
+  if (highStressApplied) {
     reasons.push("high_stress");
     sourceContextIds.push(...highStress.map((context) => context.id));
   }
@@ -268,11 +286,13 @@ export function buildWorkoutExecutionSnapshot(
   }
 
   return WorkoutExecutionSnapshotSchema.parse({
-    version: "1.0",
+    version: "1.1",
     workout: shortened.workout,
     adaptation: {
-      version: "1.0",
-      readinessModifier: effectiveReadinessModifier,
+      version: "1.1",
+      readinessModifier,
+      trainingResponseModifier,
+      volumeModifier,
       reasons,
       sourceContextIds: unique(sourceContextIds),
       timeBudgetMinutes: shortened.applied ? time.minutes : null,

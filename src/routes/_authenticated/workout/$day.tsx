@@ -105,6 +105,9 @@ function adaptationMessage(adaptation: WorkoutExecutionAdaptation): string | nul
   if (adaptation.reasons.length === 0) return null;
   const parts: string[] = [];
   if (adaptation.reasons.includes("readiness")) parts.push("pakoreguotos serijos pagal savijautą");
+  if (adaptation.reasons.includes("training_response")) {
+    parts.push("laikinai sumažintos serijos pagal pasikartojantį sunkios treniruotės įvertinimą");
+  }
   if (adaptation.reasons.includes("high_stress"))
     parts.push("sumažintas krūvis dėl įtemptos dienos");
   if (adaptation.reasons.includes("time_limit") && adaptation.timeBudgetMinutes !== null) {

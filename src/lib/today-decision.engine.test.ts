@@ -4,7 +4,7 @@ import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.e
 import { TodayDecisionInputSchema } from "./today-decision.schema";
 
 const baseState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.5",
+  schemaVersion: "1.6",
   training: {
     sessionsLast7Days: 2,
     sessionsLast28Days: 5,
@@ -16,6 +16,7 @@ const baseState = DigitalAthleteStateSchema.parse({
       ratedSessionsLast28Days: 2,
       latestFeeling: 4,
       averageFeelingLast28Days: 3.5,
+      recentLowFeelingStreak: 0,
     },
   },
   recovery: {
@@ -245,6 +246,58 @@ describe("buildTodayDecision", () => {
 
     expect(decision.action).toBe("train_adapted");
     expect(decision.evidence[1]).toMatchObject({ key: "load_modifier", value: "0.90" });
+  });
+
+  it("temporarily adapts training only after repeated difficult session feedback", () => {
+    const responseGuardState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      training: {
+        ...baseState.training,
+        selfReportedResponse: {
+          source: "user_reported",
+          available: true,
+          ratedSessionsLast28Days: 4,
+          latestFeeling: 2,
+          averageFeelingLast28Days: 1.8,
+          recentLowFeelingStreak: 3,
+        },
+      },
+    });
+
+    const decision = buildTodayDecision(input({ state: responseGuardState }));
+
+    expect(decision.action).toBe("train_adapted");
+    expect(decision.safetyConstraints).toContain("apply_training_response_volume_guard");
+    expect(decision.evidence).toContainEqual({
+      key: "recent_training_response",
+      value: "3/4",
+      sourceClass: "calculated",
+      position: 1,
+    });
+  });
+
+  it("does not let workout response feedback override a low-readiness recovery decision", () => {
+    const lowReadinessResponseState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      recovery: { ...baseState.recovery, latestReadinessScore: 42 },
+      training: {
+        ...baseState.training,
+        selfReportedResponse: {
+          source: "user_reported",
+          available: true,
+          ratedSessionsLast28Days: 4,
+          latestFeeling: 1,
+          averageFeelingLast28Days: 1.5,
+          recentLowFeelingStreak: 3,
+        },
+      },
+    });
+
+    const decision = buildTodayDecision(input({ state: lowReadinessResponseState }));
+
+    expect(decision.action).toBe("recover");
+    expect(decision.safetyConstraints).toEqual(["avoid_progression_when_readiness_low"]);
+    expect(decision.evidence.map((item) => item.key)).not.toContain("recent_training_response");
   });
 
   it("does not prompt a second training session after a completed workout", () => {

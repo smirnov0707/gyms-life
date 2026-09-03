@@ -6,6 +6,10 @@ import {
   buildWorkoutExecutionSnapshot,
   hasActiveWorkoutSafetyConstraint,
 } from "./workout-execution.engine";
+import {
+  loadModifierForWorkoutAdaptation,
+  volumeModifierForWorkoutAdaptation,
+} from "./workout-execution.schema";
 
 const day: TrainingPlanDay = {
   day: 1,
@@ -126,6 +130,7 @@ describe("buildWorkoutExecutionSnapshot", () => {
     const snapshot = buildWorkoutExecutionSnapshot({
       day,
       readinessModifier: 1,
+      trainingResponseModifier: 1,
       lifeContexts: [context({ kind: "time_limited", minutes: 30 })],
       exerciseCatalog: [],
     });
@@ -145,6 +150,7 @@ describe("buildWorkoutExecutionSnapshot", () => {
     const snapshot = buildWorkoutExecutionSnapshot({
       day,
       readinessModifier: 1,
+      trainingResponseModifier: 1,
       lifeContexts: [context({ kind: "equipment_limited", equipment: ["dumbbell"] })],
       exerciseCatalog: catalog,
     });
@@ -166,11 +172,13 @@ describe("buildWorkoutExecutionSnapshot", () => {
     const snapshot = buildWorkoutExecutionSnapshot({
       day,
       readinessModifier: 1,
+      trainingResponseModifier: 1,
       lifeContexts: [context({ kind: "high_stress" })],
       exerciseCatalog: [],
     });
 
-    expect(snapshot.adaptation.readinessModifier).toBe(0.8);
+    if (snapshot.version !== "1.1") throw new Error("Expected a current execution snapshot.");
+    expect(snapshot.adaptation.volumeModifier).toBe(0.8);
     expect(snapshot.workout.exercises.map((exercise) => exercise.sets)).toEqual([2, 2, 2]);
     expect(snapshot.adaptation.reasons).toContain("high_stress");
   });
@@ -179,6 +187,7 @@ describe("buildWorkoutExecutionSnapshot", () => {
     const snapshot = buildWorkoutExecutionSnapshot({
       day,
       readinessModifier: 1,
+      trainingResponseModifier: 1,
       lifeContexts: [context({ kind: "travel" })],
       exerciseCatalog: catalog,
     });
@@ -196,6 +205,7 @@ describe("buildWorkoutExecutionSnapshot", () => {
     const snapshot = buildWorkoutExecutionSnapshot({
       day,
       readinessModifier: 1,
+      trainingResponseModifier: 1,
       lifeContexts: [
         context({ kind: "travel" }),
         context({ kind: "equipment_limited", equipment: ["dumbbell"] }),
@@ -223,9 +233,32 @@ describe("buildWorkoutExecutionSnapshot", () => {
       buildWorkoutExecutionSnapshot({
         day: { ...day, exercises: [{ ...day.exercises[0]!, slug: "unknown-machine-lift" }] },
         readinessModifier: 1,
+        trainingResponseModifier: 1,
         lifeContexts: [context({ kind: "facility_closed" })],
         exerciseCatalog: catalog,
       }),
     ).toThrow("No safe workout exercises");
+  });
+
+  it("temporarily reduces sets after repeated difficult session feedback", () => {
+    const snapshot = buildWorkoutExecutionSnapshot({
+      day,
+      readinessModifier: 1,
+      trainingResponseModifier: 0.8,
+      lifeContexts: [],
+      exerciseCatalog: [],
+    });
+
+    if (snapshot.version !== "1.1") throw new Error("Expected a current execution snapshot.");
+    expect(snapshot.workout.exercises.map((exercise) => exercise.sets)).toEqual([2, 2, 2]);
+    expect(snapshot.adaptation).toMatchObject({
+      version: "1.1",
+      readinessModifier: 1,
+      trainingResponseModifier: 0.8,
+      volumeModifier: 0.8,
+    });
+    expect(snapshot.adaptation.reasons).toContain("training_response");
+    expect(volumeModifierForWorkoutAdaptation(snapshot.adaptation)).toBe(0.8);
+    expect(loadModifierForWorkoutAdaptation(snapshot.adaptation)).toBe(1);
   });
 });

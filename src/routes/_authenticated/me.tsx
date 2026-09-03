@@ -66,6 +66,7 @@ type Copy = {
   daysSince: string;
   sessionRatings: string;
   averageSessionFeeling: string;
+  difficultSessionStreak: string;
   readiness: string;
   sleep: string;
   weight: string;
@@ -129,6 +130,7 @@ function copyFor(lang: string): Copy {
       daysSince: "days since session",
       sessionRatings: "your ratings / 28d",
       averageSessionFeeling: "avg session feeling / 28d",
+      difficultSessionStreak: "recent difficult ratings (1–2/5)",
       readiness: "latest readiness",
       sleep: "avg sleep / 7d",
       weight: "latest weight",
@@ -193,6 +195,7 @@ function copyFor(lang: string): Copy {
     daysSince: "dienos nuo treniruotės",
     sessionRatings: "tavo įvertinimai / 28 d.",
     averageSessionFeeling: "vid. savijauta / 28 d.",
+    difficultSessionStreak: "paskutiniai sunkūs įvertinimai (1–2/5)",
     readiness: "naujausias pasiruošimas",
     sleep: "vid. miegas / 7 d.",
     weight: "naujausias svoris",
@@ -494,6 +497,14 @@ function AthleteModelPage() {
                           state.training.selfReportedResponse.averageFeelingLast28Days,
                           " / 5",
                         )
+                      : "—"
+                  }
+                />
+                <Metric
+                  label={copy.difficultSessionStreak}
+                  value={
+                    state.training.selfReportedResponse.available
+                      ? String(state.training.selfReportedResponse.recentLowFeelingStreak)
                       : "—"
                   }
                 />

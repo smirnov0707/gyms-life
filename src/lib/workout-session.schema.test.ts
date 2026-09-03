@@ -72,6 +72,51 @@ describe("workout session domain contract", () => {
     expect(() => parseWorkoutSession({ ...row, workout_snapshot: { version: "1.0" } })).toThrow();
   });
 
+  it("retains response and readiness provenance on current execution snapshots", () => {
+    const workoutSnapshot = {
+      version: "1.1",
+      workout: {
+        day: 1,
+        title: "Upper strength",
+        focus: "Strength",
+        warmup: "Rows",
+        cooldown: "Walk",
+        estimated_minutes: 30,
+        exercises: [
+          {
+            slug: "push-up",
+            name: "Push-Up",
+            sets: 2,
+            reps: "8-12",
+            rest_seconds: 60,
+            notes: "",
+          },
+        ],
+      },
+      adaptation: {
+        version: "1.1",
+        readinessModifier: 1,
+        trainingResponseModifier: 0.8,
+        volumeModifier: 0.8,
+        reasons: ["training_response"],
+        sourceContextIds: [],
+        timeBudgetMinutes: null,
+        substitutions: [],
+        omittedExerciseSlugs: [],
+      },
+    };
+
+    const parsed = parseWorkoutSession({ ...row, workout_snapshot: workoutSnapshot });
+    expect(parsed.workoutSnapshot).toMatchObject({
+      version: "1.1",
+      adaptation: {
+        trainingResponseModifier: 0.8,
+        volumeModifier: 0.8,
+        reasons: ["training_response"],
+      },
+    });
+  });
+
   it("excludes unfinished and malformed rows from completed-performance consumers", () => {
     const complete = {
       ...row,

@@ -58,7 +58,7 @@ describe("buildDigitalAthleteState", () => {
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.5",
+      schemaVersion: "1.6",
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
@@ -70,6 +70,7 @@ describe("buildDigitalAthleteState", () => {
           ratedSessionsLast28Days: 3,
           latestFeeling: 4,
           averageFeelingLast28Days: 4,
+          recentLowFeelingStreak: 0,
         },
       },
       recovery: {
@@ -200,8 +201,47 @@ describe("buildDigitalAthleteState", () => {
       ratedSessionsLast28Days: 1,
       latestFeeling: 2,
       averageFeelingLast28Days: 2,
+      recentLowFeelingStreak: 1,
     });
     expect(state.recovery.latestReadinessScore).toBeNull();
+  });
+
+  it("counts only the newest consecutive low-feeling reports", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [],
+        workoutResponses: [
+          { started_at: "2026-09-01T09:00:00.000Z", feeling: 1 },
+          { started_at: "2026-08-30T09:00:00.000Z", feeling: 2 },
+          { started_at: "2026-08-28T09:00:00.000Z", feeling: 2 },
+          { started_at: "2026-08-26T09:00:00.000Z", feeling: 4 },
+          { started_at: "2026-08-24T09:00:00.000Z", feeling: 1 },
+        ],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        availability: {
+          training: true,
+          trainingResponse: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+        },
+      },
+      now,
+    );
+
+    expect(state.training.selfReportedResponse).toMatchObject({
+      ratedSessionsLast28Days: 5,
+      latestFeeling: 1,
+      recentLowFeelingStreak: 3,
+    });
   });
 
   it("does not classify stale rows as current evidence", () => {

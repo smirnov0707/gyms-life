@@ -5,6 +5,7 @@ import {
   TrainingWeekdayListSchema,
   TrainingWeekdaySchema,
 } from "./training-rhythm.schema";
+import { TrainingResponseStateSchema } from "./training-response.schema";
 import { WorkoutFeelingSchema } from "./workout-reflection.schema";
 
 const TimestampSchema = z
@@ -215,21 +216,13 @@ export type CurrentDayState = z.infer<typeof CurrentDayStateSchema>;
 
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.5"),
+    schemaVersion: z.literal("1.6"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
       totalVolumeLast28Days: NonNegativeNumberSchema,
       daysSinceLastCompletedWorkout: z.number().int().nonnegative().nullable(),
-      selfReportedResponse: z
-        .object({
-          source: z.literal("user_reported"),
-          available: z.boolean(),
-          ratedSessionsLast28Days: z.number().int().nonnegative(),
-          latestFeeling: WorkoutFeelingSchema.nullable(),
-          averageFeelingLast28Days: z.number().finite().min(1).max(5).nullable(),
-        })
-        .strict(),
+      selfReportedResponse: TrainingResponseStateSchema,
     }),
     recovery: z.object({
       checkinsLast7Days: z.number().int().nonnegative(),
