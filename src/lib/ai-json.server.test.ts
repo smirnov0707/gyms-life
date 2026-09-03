@@ -47,4 +47,10 @@ describe("aiErrorMessage", () => {
       "ai.err.unavailable",
     );
   });
+
+  it("uses a safe AI fallback instead of an unknown provider error", () => {
+    expect(
+      aiErrorMessage(new Error("provider at https://gateway.example failed"), (key) => key),
+    ).toBe("ai.err.unavailable");
+  });
 });

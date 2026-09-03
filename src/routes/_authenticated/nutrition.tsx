@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { logMeal } from "@/lib/nutrition.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,7 +115,7 @@ function NutritionPage() {
       setText("");
       qc.invalidateQueries({ queryKey: ["nutrition", user?.id] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   const remove = useMutation({
@@ -123,7 +124,7 @@ function NutritionPage() {
       if (error) throw new Error(`Could not delete meal log: ${error.message}`);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition", user?.id] }),
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   const today = new Date().toISOString().slice(0, 10);

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { submitCheckin, readinessScore, loadModifier } from "@/lib/smart.functions";
 import { useAuth } from "@/lib/auth";
 import { useI18n, baseLang, type TKey } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -76,8 +77,8 @@ function ReadinessPage() {
       await run({ data: { ...form, lang } });
       await refetch();
       toast.success(t("rd.title"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setBusy(false);
     }

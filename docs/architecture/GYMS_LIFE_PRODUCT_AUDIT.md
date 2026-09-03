@@ -24,6 +24,7 @@ Every new capability must improve at least one of these:
 - AI inputs and outputs use Zod contracts at feature boundaries. Stored plans and meal plans are parsed before use.
 - The latest production schema includes durable workout-readiness snapshots, idempotent set logging and atomic activation for training and meal plans.
 - Core AI and plan-decision workflows emit privacy-bounded operational events through a server-only telemetry table. The events retain stable outcome/error codes and timing, never prompts, health facts, chat content, provider payloads or raw errors.
+- Client-facing failure handling uses localised, application-owned copy. Unknown server, database and provider messages cannot be rendered into a member-facing toast or production browser console.
 
 ### Current product capability
 
@@ -51,6 +52,7 @@ The live database currently contains only seed-stage member activity. It is ther
 
 - There is no end-to-end test that signs in, completes onboarding, generates a plan and starts a workout against controlled provider responses.
 - **Resolved in this audit:** the central AI boundary now records provider latency and normalized failure categories for every orchestrated task. Training-plan and meal-plan generation/activation plus Today-decision outcomes are captured in an internal, RLS-enabled, browser-denied telemetry stream.
+- **Resolved in this audit:** unknown server, database and provider error text is no longer trusted as user-interface copy. AI codes map to localized states; all other client failures use an owned fallback message.
 - Remaining telemetry coverage is limited to the core flows above. Generic unexpected server-function failures, client runtime errors and a controlled operational dashboard remain future work; their records must follow the same no-payload, stable-code contract.
 - Client bundle warnings should be addressed after the core product flow is stable; they are not a functional blocker.
 

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
 import type { ExerciseTrainingGuidance } from "@/lib/training-guidance.engine";
 import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
+import { errorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
 
@@ -131,8 +132,7 @@ function WorkoutPage() {
       setSetNumber(Math.min((completed || 0) + 1, exercise?.sets ?? 1));
       if (result.resumed) toast.info("Tęsiame nebaigtą treniruotę.");
     },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Nepavyko pradėti treniruotės"),
+    onError: (error) => toast.error(errorMessage(error, "Nepavyko pradėti treniruotės")),
   });
 
   const buildSetInput = (): WorkoutSetSync => {
@@ -186,8 +186,7 @@ function WorkoutPage() {
         toast.info("Serija išsaugota šiame įrenginyje ir bus persiųsta atkūrus ryšį.");
       }
     },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Nepavyko išsaugoti seto"),
+    onError: (error) => toast.error(errorMessage(error, "Nepavyko išsaugoti seto")),
   });
 
   const finishMutation = useMutation({
@@ -220,8 +219,7 @@ function WorkoutPage() {
       ]);
       toast.success("Treniruotė užbaigta!");
     },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Nepavyko užbaigti treniruotės"),
+    onError: (error) => toast.error(errorMessage(error, "Nepavyko užbaigti treniruotės")),
   });
 
   useEffect(() => {

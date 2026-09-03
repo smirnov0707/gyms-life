@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { applyAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
@@ -16,6 +17,7 @@ const COPY = {
     how: "Kaip jautiesi dabar?",
     save: "Išsaugoti",
     saved: "Pasiruošimas atnaujintas",
+    saveFailed: "Nepavyko atnaujinti pasiruošimo",
     load: "Rekomenduojamas krūvis",
     hint: {
       high: "Galima kelti svorį arba pridėti seriją.",
@@ -31,6 +33,7 @@ const COPY = {
     how: "How do you feel right now?",
     save: "Save",
     saved: "Readiness updated",
+    saveFailed: "Could not update readiness",
     load: "Recommended load",
     hint: {
       high: "You can add weight or an extra set.",
@@ -90,7 +93,7 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
       toast.success(`${c.saved} · ${Math.round(modifier * 100)}%`);
       setOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error");
+      toast.error(errorMessage(error, c.saveFailed));
     } finally {
       setSaving(false);
     }

@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
+import { aiErrorMessage } from "@/lib/ai-error";
+import { errorMessage } from "@/lib/error-message";
 import { generateMealPlan } from "@/lib/meal.functions";
 import { adaptMealPlan } from "@/lib/meal-adapt.functions";
 import { downloadShoppingListPdf } from "@/lib/shopping-pdf";
@@ -143,8 +145,8 @@ function MealPlanPage() {
       setFresh(res.plan);
       setOpenDay(1);
       refetch();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(aiErrorMessage(error, t));
     } finally {
       setBusy(false);
     }
@@ -159,8 +161,8 @@ function MealPlanPage() {
       setAdaptNote("");
       refetch();
       toast.success(t("mp.adapted"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(aiErrorMessage(error, t));
     } finally {
       setAdaptBusy(false);
     }
@@ -172,8 +174,8 @@ function MealPlanPage() {
     try {
       await downloadShoppingListPdf(plan, lang);
       toast.success(t("mp.pdfDone"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setPdfBusy(false);
     }

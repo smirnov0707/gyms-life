@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
+import { aiErrorMessage } from "@/lib/ai-error";
+import { errorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -67,7 +69,7 @@ type PlanSummary = {
 };
 
 export const GoalExerciseSuggestions: React.FC = () => {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const c = COPY[lang === "lt" ? "lt" : "en"];
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -106,7 +108,7 @@ export const GoalExerciseSuggestions: React.FC = () => {
       if (res.plan?.days.length) setDay(res.plan.days[0]!.day);
       if (!res.suggestions.length) toast.info(c.empty);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : c.fail);
+      toast.error(aiErrorMessage(error, t));
     } finally {
       setBusy(false);
     }
@@ -141,7 +143,7 @@ export const GoalExerciseSuggestions: React.FC = () => {
         );
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : c.fail);
+      toast.error(errorMessage(error, c.fail));
     } finally {
       setAdding(null);
     }

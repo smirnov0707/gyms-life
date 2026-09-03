@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { activatePlan } from "@/lib/activate-plan.functions";
+import { errorMessage } from "@/lib/error-message";
 import type { SupportedLanguage } from "@/lib/language.schema";
 
 export function ProgramActivationActions({
@@ -29,7 +30,9 @@ export function ProgramActivationActions({
       onActivated?.();
       toast.success(lang === "lt" ? "Programa aktyvuota" : "Program activated");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Activation failed");
+      toast.error(
+        errorMessage(error, lang === "lt" ? "Nepavyko aktyvuoti programos" : "Activation failed"),
+      );
     } finally {
       setActivating(false);
     }

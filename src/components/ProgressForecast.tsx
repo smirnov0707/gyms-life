@@ -4,6 +4,7 @@ import { LineChart, Loader2, Sparkles, TrendingDown, TrendingUp, Minus } from "l
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useI18n, type TKey } from "@/lib/i18n";
+import { aiErrorMessage } from "@/lib/ai-error";
 import { forecastProgress } from "@/lib/forecast.functions";
 import { cn } from "@/lib/utils";
 
@@ -42,8 +43,8 @@ export function ProgressForecast() {
       setLifts(res.lifts as Lift[]);
       setSummary(res.summary);
       setActions(res.actions);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "AI error");
+    } catch (error) {
+      toast.error(aiErrorMessage(error, t));
     } finally {
       setLoading(false);
     }

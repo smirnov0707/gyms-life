@@ -103,7 +103,14 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
         );
         onSetLogged?.(res.data);
       } else {
-        toast.error(res.reason);
+        toast.error(
+          errorMessage(
+            res.reason,
+            lang === "lt"
+              ? "Nepavyko apdoroti balso įrašo"
+              : "Could not process the voice recording",
+          ),
+        );
       }
     } catch (error: unknown) {
       toast.error(errorMessage(error, "Apdorojimo klaida"));

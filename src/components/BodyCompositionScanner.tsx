@@ -18,6 +18,7 @@ import { Input } from "./ui/input";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { analyzeBodyScan } from "@/lib/body-scan.functions";
+import { errorMessage } from "@/lib/error-message";
 
 type Result = {
   confidence: number;
@@ -461,7 +462,12 @@ export const BodyCompositionScanner: React.FC<{
         });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Scan failed");
+      toast.error(
+        errorMessage(
+          error,
+          lang === "lt" ? "Nepavyko atlikti kūno analizės" : "Could not complete the body scan",
+        ),
+      );
     } finally {
       setBusy(false);
     }

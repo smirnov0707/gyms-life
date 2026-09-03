@@ -15,6 +15,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { scanMicronutrients } from "@/lib/micronutrient.functions";
@@ -111,7 +112,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
       toast.success(t("sc.micro.applySuccess"));
       await qc.invalidateQueries({ queryKey: ["supplements", user?.id] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   const applyAll = useMutation({
@@ -128,7 +129,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
       toast.success(t("sc.micro.applySuccess"));
       await qc.invalidateQueries({ queryKey: ["supplements", user?.id] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   const data = scan.data;
@@ -172,7 +173,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
         </div>
       )}
 
-      {scan.isError && <p className="text-xs text-rose-400">{(scan.error as Error).message}</p>}
+      {scan.isError && <p className="text-xs text-rose-400">{t("common.error")}</p>}
 
       {data && (
         <>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { buildSchedule, type Supplement } from "@/lib/supplements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +105,7 @@ function SupplementsPage() {
       toast.success(t("supp.saved"));
       qc.invalidateQueries({ queryKey: ["supplements", user?.id] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   const toggle = useMutation({

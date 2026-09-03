@@ -1,6 +1,8 @@
-/** Returns a safe, user-facing message for an unknown failure value. */
-export function errorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  if (typeof error === "string" && error.trim()) return error;
+/**
+ * Transport errors may contain database, provider, framework, or user-input
+ * details. They are diagnostic data, not user-interface copy. Callers must
+ * supply a localized message that is safe to show to the member.
+ */
+export function errorMessage(_error: unknown, fallback: string): string {
   return fallback;
 }

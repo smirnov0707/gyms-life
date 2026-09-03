@@ -10,6 +10,8 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tactileClick } from "@/lib/tactile";
+import { aiErrorMessage } from "@/lib/ai-error";
+import { errorMessage } from "@/lib/error-message";
 
 const CATEGORIES = [
   "protein",
@@ -96,7 +98,7 @@ export function SupplementPhotoScanner() {
     try {
       const res = await analyze({ data: { image, lang } });
       if (!res.ok) {
-        toast.error(res.reason);
+        toast.error(errorMessage(res.reason, t("ai.err.unavailable")));
         return;
       }
       setDrafts(
@@ -113,8 +115,8 @@ export function SupplementPhotoScanner() {
         })),
       );
       stopCamera();
-    } catch (e) {
-      toast.error((e as Error).message);
+    } catch (error) {
+      toast.error(aiErrorMessage(error, t));
     } finally {
       setBusy(false);
     }
@@ -166,7 +168,7 @@ export function SupplementPhotoScanner() {
       toast.success(t("supp.scan.saved"));
       await qc.invalidateQueries({ queryKey: ["supplements", user?.id] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   return (

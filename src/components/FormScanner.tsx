@@ -19,6 +19,7 @@ import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { aiErrorMessage } from "@/lib/ai-error";
+import { errorMessage } from "@/lib/error-message";
 
 type Result = {
   score: number;
@@ -124,8 +125,8 @@ export function FormScanner() {
       const stream = await openCamera(next);
       video.srcObject = stream;
       await video.play();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("fc.denied"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("fc.denied")));
     }
   };
 

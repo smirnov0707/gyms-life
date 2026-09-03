@@ -9,6 +9,8 @@ import {
 } from "@/lib/ai-personalization-consent.functions";
 import { askCoach, listCoachMessages } from "@/lib/plan.functions";
 import { useI18n, type TKey } from "@/lib/i18n";
+import { aiErrorMessage } from "@/lib/ai-error";
+import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -64,8 +66,8 @@ function CoachPage() {
       try {
         const res = await ask({ data: { question, lang } });
         setMessages((m) => [...m, { role: "coach", text: res.answer }]);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : t("common.error"));
+      } catch (error) {
+        toast.error(aiErrorMessage(error, t));
       } finally {
         setBusy(false);
       }
@@ -147,7 +149,7 @@ function CoachPage() {
 }
 
 function AiPersonalizationConsentCard() {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const getConsent = useServerFn(getAiPersonalizationConsent);
   const recordConsent = useServerFn(recordAiPersonalizationConsent);
   const [granted, setGranted] = useState(false);
@@ -185,7 +187,7 @@ function AiPersonalizationConsentCard() {
         const current = await getConsent();
         if (active) setGranted(current.granted);
       } catch (error) {
-        if (active) toast.error(error instanceof Error ? error.message : "Could not load consent.");
+        if (active) toast.error(errorMessage(error, t("common.error")));
       } finally {
         if (active) setLoading(false);
       }
@@ -193,7 +195,7 @@ function AiPersonalizationConsentCard() {
     return () => {
       active = false;
     };
-  }, [getConsent]);
+  }, [getConsent, t]);
 
   const toggle = async () => {
     if (saving) return;
@@ -203,7 +205,7 @@ function AiPersonalizationConsentCard() {
       setGranted(recorded.granted);
       toast.success(copy.saved);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save consent.");
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setSaving(false);
     }

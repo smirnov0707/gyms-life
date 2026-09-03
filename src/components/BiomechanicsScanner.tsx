@@ -36,7 +36,12 @@ export const BiomechanicsScanner: React.FC = () => {
         if (res.ok) {
           toast.success(lang === "lt" ? "Formos analizė baigta!" : "Form analysis complete!");
         } else {
-          toast.error(res.reason || "Klaida analizuojant");
+          toast.error(
+            errorMessage(
+              res.reason,
+              lang === "lt" ? "Nepavyko išanalizuoti formos" : "Could not analyze form",
+            ),
+          );
         }
       } catch (error: unknown) {
         toast.error(errorMessage(error, "Klaida analizuojant formą"));

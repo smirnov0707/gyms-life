@@ -45,7 +45,9 @@ export const DineOutMenuScanner: React.FC = () => {
             : `Found menu: ${res.canonicalRestaurantName}`,
         );
       } else {
-        toast.error(res.reason || (lang === "lt" ? "Restoranas nerastas" : "Restaurant not found"));
+        toast.error(
+          errorMessage(res.reason, lang === "lt" ? "Restoranas nerastas" : "Restaurant not found"),
+        );
       }
     } catch (error: unknown) {
       toast.error(errorMessage(error, lang === "lt" ? "Klaida ieškant meniu" : "Search error"));

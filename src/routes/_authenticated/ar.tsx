@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { evaluateStep, type CalibFrame } from "@/lib/ar-calibration";
 import { useI18n, baseLang } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import {
   AR_EXERCISES,
@@ -342,8 +343,8 @@ function ArMode() {
       const stream = await openCamera(next);
       video.srcObject = stream;
       await video.play();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("ar.failed"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("ar.failed")));
     }
   };
 
@@ -379,8 +380,8 @@ function ArMode() {
       setLive(true);
       loop();
       speak(TX.ready, true);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("ar.failed"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("ar.failed")));
     } finally {
       setLoading(false);
     }
@@ -419,8 +420,8 @@ function ArMode() {
       });
       if (lErr) throw lErr;
       toast.success(t("nx.ar.saved"));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setSavingSet(false);
     }

@@ -5,6 +5,7 @@ import { ArrowLeft, History, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { clearCoachMessages, listCoachMessages } from "@/lib/plan.functions";
 import { useI18n } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -42,8 +43,8 @@ function CoachHistoryPage() {
     try {
       const res = await list({ data: { limit: 200 } });
       setRows(res.messages);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setLoading(false);
     }
@@ -78,8 +79,8 @@ function CoachHistoryPage() {
                 await clear({});
                 setRows([]);
                 toast.success(t("coach.cleared"));
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : t("common.error"));
+              } catch (error) {
+                toast.error(errorMessage(error, t("common.error")));
               }
             }}
           >

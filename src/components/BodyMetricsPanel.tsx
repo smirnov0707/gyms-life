@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { normalizeManualBodyMetric, type ManualBodyMetric } from "@/lib/body-metric.schema";
 import { useI18n } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,7 +103,7 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
         qc.invalidateQueries({ queryKey: ["latest-body-metric", user.id] }),
       ]);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("common.error"));
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setSaving(false);
     }

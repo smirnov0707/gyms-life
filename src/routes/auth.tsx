@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { errorMessage } from "@/lib/error-message";
 import { Logo, LangSwitch } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,8 +131,8 @@ function AuthPage() {
         await new Promise((r) => setTimeout(r, 100));
       }
       goNext();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -153,8 +154,8 @@ function AuthPage() {
         await new Promise((r) => setTimeout(r, 100));
       }
       goNext();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("common.error"));
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setGoogleBusy(false);
     }

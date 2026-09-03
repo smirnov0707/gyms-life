@@ -6,9 +6,9 @@ import type { TKey } from "@/lib/i18n";
  */
 export function aiErrorMessage(error: unknown, t: (key: TKey) => string): string {
   const raw = error instanceof Error ? error.message : String(error ?? "");
-  if (raw.includes("AI_DISABLED")) return t("ai.err.disabled" as TKey);
-  if (raw.includes("AI_CREDITS")) return t("ai.err.credits" as TKey);
-  if (raw.includes("AI_RATE_LIMIT")) return t("ai.err.rate" as TKey);
+  if (raw.includes("AI_DISABLED")) return t("ai.err.disabled");
+  if (raw.includes("AI_CREDITS")) return t("ai.err.credits");
+  if (raw.includes("AI_RATE_LIMIT")) return t("ai.err.rate");
   if (
     raw.includes("AI_QUOTA_UNAVAILABLE") ||
     raw.includes("AI_MODEL_UNAVAILABLE") ||
@@ -16,5 +16,5 @@ export function aiErrorMessage(error: unknown, t: (key: TKey) => string): string
   ) {
     return t("ai.err.unavailable");
   }
-  return raw || t("common.error" as TKey);
+  return t("ai.err.unavailable");
 }

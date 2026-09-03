@@ -1,9 +1,15 @@
+/**
+ * Browser consoles are visible to the member, so production diagnostics must
+ * not include transport errors or stack traces. Local development retains the
+ * original exception for fast debugging.
+ */
 export function reportClientError(error: unknown, context: Record<string, unknown> = {}) {
-  const message = error instanceof Error ? error.message : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
-  console.error("[GYMS.LIFE]", {
-    message,
-    stack,
+  if (import.meta.env.DEV) {
+    console.error("[GYMS.LIFE] client error", error, context);
+    return;
+  }
+
+  console.error("[GYMS.LIFE] client error", {
     route: typeof window !== "undefined" ? window.location.pathname : undefined,
     ...context,
   });
