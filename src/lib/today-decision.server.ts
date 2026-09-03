@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
-import { getActivePlanData } from "./active-plan.service";
+import { getActivePlanWorkoutProgress } from "./active-plan.service";
 import { IsoDaySchema, IanaTimeZoneSchema, dayBoundsInTimeZone, dayInTimeZone } from "./local-day";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
 import {
@@ -35,10 +35,10 @@ export async function getOrCreateTodayDecision(
   const decisionOn = dayInTimeZone(now, zone);
   const { start, end } = dayBoundsInTimeZone(decisionOn, zone);
 
-  const [athlete, activePlan, readinessResult, completedWorkoutResult, nutritionResult] =
+  const [athlete, activePlanProgress, readinessResult, completedWorkoutResult, nutritionResult] =
     await Promise.all([
       refreshAthleteStateSnapshot(supabase, userId, zone, now),
-      getActivePlanData(supabase, userId),
+      getActivePlanWorkoutProgress(supabase, userId, zone, now),
       supabase
         .from("daily_checkins")
         .select("id, readiness_score")
@@ -72,11 +72,16 @@ export async function getOrCreateTodayDecision(
 
   const proposal = buildTodayDecision({
     decisionOn,
-    hasActiveTrainingPlan: activePlan.status === "READY",
+    hasActiveTrainingPlan: activePlanProgress.status === "READY",
     hasCompletedReadinessToday:
       readinessResult.data !== null && readinessResult.data.readiness_score !== null,
     hasCompletedWorkoutToday: completedWorkoutResult.data !== null,
     hasLoggedNutritionToday: nutritionResult.data !== null,
+    hasOpenWorkout: activePlanProgress.status === "READY" && activePlanProgress.hasOpenWorkout,
+    activePlanDaysPerWeek:
+      activePlanProgress.status === "READY" ? activePlanProgress.plan.daysPerWeek : null,
+    activePlanSessionsLast7Days:
+      activePlanProgress.status === "READY" ? activePlanProgress.completedSessionsLast7Days : null,
     state: athlete.state,
   });
   const decisionFingerprint = fingerprintTodayDecision(proposal, athlete.snapshot.id);

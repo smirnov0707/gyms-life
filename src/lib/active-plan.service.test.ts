@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { normalizeActivePlan, type ActivePlanRow } from "./active-plan.service";
+import {
+  normalizeActivePlan,
+  selectNextPlanWorkout,
+  type ActivePlanRow,
+  type ActiveTrainingPlan,
+} from "./active-plan.service";
 
 const rawPlan: ActivePlanRow = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -55,5 +60,60 @@ describe("normalizeActivePlan", () => {
     });
 
     expect(result).toMatchObject({ status: "INVALID_PLAN", planId: rawPlan.id });
+  });
+
+  it("rejects an invalid persisted weekly frequency before it reaches Today decisions", () => {
+    const result = normalizeActivePlan({ ...rawPlan, days_per_week: 0 });
+
+    expect(result).toMatchObject({ status: "INVALID_PLAN", planId: rawPlan.id });
+  });
+});
+
+describe("selectNextPlanWorkout", () => {
+  function planWithThreeDays(): ActiveTrainingPlan {
+    const result = normalizeActivePlan(rawPlan);
+    if ("status" in result) throw new Error("Expected a valid active plan.");
+    const firstDay = result.data.days[0];
+    if (!firstDay) throw new Error("Expected a first program day.");
+
+    return {
+      ...result,
+      data: {
+        ...result.data,
+        days: [
+          { ...firstDay, day: 3, title: "Day three" },
+          { ...firstDay, day: 1, title: "Day one" },
+          { ...firstDay, day: 2, title: "Day two" },
+        ],
+      },
+    };
+  }
+
+  it("starts from the first ordered program day without inventing a calendar day", () => {
+    expect(
+      selectNextPlanWorkout(planWithThreeDays(), {
+        openDayIndex: null,
+        lastCompletedDayIndex: null,
+      }),
+    ).toMatchObject({ day: 1, title: "Day one" });
+  });
+
+  it("resumes an unfinished program day before advancing the sequence", () => {
+    expect(
+      selectNextPlanWorkout(planWithThreeDays(), {
+        openDayIndex: 1,
+        lastCompletedDayIndex: 0,
+      }),
+    ).toMatchObject({ day: 2, title: "Day two" });
+  });
+
+  it("advances from the latest completed day and wraps after the final day", () => {
+    const plan = planWithThreeDays();
+    expect(
+      selectNextPlanWorkout(plan, { openDayIndex: null, lastCompletedDayIndex: 1 }),
+    ).toMatchObject({ day: 3, title: "Day three" });
+    expect(
+      selectNextPlanWorkout(plan, { openDayIndex: null, lastCompletedDayIndex: 2 }),
+    ).toMatchObject({ day: 1, title: "Day one" });
   });
 });

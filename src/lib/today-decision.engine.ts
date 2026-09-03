@@ -8,7 +8,7 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.4" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.5" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -32,7 +32,7 @@ function dataQualityEvidence(input: TodayDecisionInput, position: number): Today
 function planEvidence(input: TodayDecisionInput, position: number): TodayDecisionEvidence {
   return evidence(
     "active_training_plan",
-    input.hasActiveTrainingPlan ? "present" : "absent",
+    input.hasActiveTrainingPlan ? (input.hasOpenWorkout ? "open_session" : "present") : "absent",
     "system_generated",
     position,
   );
@@ -76,6 +76,22 @@ function sessionsEvidence(input: TodayDecisionInput, position: number): TodayDec
     "calculated",
     position,
   );
+}
+
+function activePlanFrequencyEvidence(
+  input: TodayDecisionInput,
+  position: number,
+): TodayDecisionEvidence {
+  const sessions = input.activePlanSessionsLast7Days;
+  const target = input.activePlanDaysPerWeek;
+  if (sessions === null || target === null) return sessionsEvidence(input, position);
+  return evidence("sessions_last_7_days", `${sessions}/${target}`, "calculated", position);
+}
+
+function hasReachedActivePlanFrequencyTarget(input: TodayDecisionInput): boolean {
+  const sessions = input.activePlanSessionsLast7Days;
+  const target = input.activePlanDaysPerWeek;
+  return input.hasActiveTrainingPlan && sessions !== null && target !== null && sessions >= target;
 }
 
 function lifeContextEvidence(
@@ -194,6 +210,36 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       evidence: withLifeContextEvidence(input, [
         planEvidence(input, 0),
         dataQualityEvidence(input, 1),
+      ]),
+    });
+  }
+
+  if (input.hasOpenWorkout) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "train_as_planned",
+      alternatives: ["recover"],
+      confidence: 98,
+      safetyConstraints: ["apply_persisted_execution_snapshot"],
+      evidence: withLifeContextEvidence(input, [
+        planEvidence(input, 0),
+        sessionsEvidence(input, 1),
+        dataQualityEvidence(input, 2),
+      ]),
+    });
+  }
+
+  if (hasReachedActivePlanFrequencyTarget(input)) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "recover",
+      alternatives: ["complete_readiness"],
+      confidence: 95,
+      safetyConstraints: [],
+      evidence: withLifeContextEvidence(input, [
+        activePlanFrequencyEvidence(input, 0),
+        planEvidence(input, 1),
+        dataQualityEvidence(input, 2),
       ]),
     });
   }

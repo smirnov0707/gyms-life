@@ -4,11 +4,13 @@ import { Clock, Play, Dumbbell } from "lucide-react";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
+import { browserTimeZone } from "@/lib/local-day";
 
 export function TodaysWorkout() {
+  const timeZone = browserTimeZone();
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["todays-workout"],
-    queryFn: () => getTodaysWorkout({ data: {} }),
+    queryKey: ["todays-workout", timeZone],
+    queryFn: () => getTodaysWorkout({ data: { timeZone } }),
     staleTime: 60_000,
   });
 
@@ -30,6 +32,20 @@ export function TodaysWorkout() {
     return (
       <GlowCard className="panel p-6">
         <p className="font-semibold">Aktyvi programa turi netinkamus duomenis.</p>
+      </GlowCard>
+    );
+  if (data.status === "WEEKLY_TARGET_REACHED")
+    return (
+      <GlowCard className="panel p-6">
+        <p className="font-semibold">Savaitės treniruočių tikslas pasiektas.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Per paskutines 7 dienas užbaigei {data.completedSessionsLast7Days} iš{" "}
+          {data.plan.daysPerWeek} suplanuotų sesijų. Kita programos diena lauks, kai vėl būsi
+          pasiruošęs.
+        </p>
+        <Button asChild variant="outline" className="mt-4 rounded-full">
+          <Link to="/training">Peržiūrėti programą</Link>
+        </Button>
       </GlowCard>
     );
   if (data.status === "NO_WORKOUT")

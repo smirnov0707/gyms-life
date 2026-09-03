@@ -30,6 +30,7 @@ import { ReadinessBanner } from "@/components/ReadinessBanner";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
+import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 
 import { useCountUp } from "@/hooks/use-count-up";
 import { withTactile } from "@/lib/tactile";
@@ -108,7 +109,8 @@ export function Overview() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const localDay = dayInTimeZone(new Date(), browserTimeZone());
+  const timeZone = browserTimeZone();
+  const localDay = dayInTimeZone(new Date(), timeZone);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -137,6 +139,13 @@ export function Overview() {
       return data;
     },
     enabled: !!user,
+  });
+
+  const { data: nextWorkoutData } = useQuery({
+    queryKey: ["todays-workout", user?.id, timeZone],
+    queryFn: () => getTodaysWorkout({ data: { timeZone } }),
+    enabled: !!user,
+    staleTime: 60_000,
   });
 
   const { data: sessions } = useQuery({
@@ -293,7 +302,7 @@ export function Overview() {
     return n;
   }, [sessions]);
 
-  const today = planData?.days.length ? planData.days[done % planData.days.length] : undefined;
+  const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
 
   const nextMeal = useMemo(() => {
     if (!localizedSaved?.days.length) return null;
@@ -537,6 +546,40 @@ export function Overview() {
                     <Play className="size-4" /> {t("dash.start")}
                   </MagneticButton>
                 </>
+              ) : nextWorkoutData?.status === "WEEKLY_TARGET_REACHED" ? (
+                <div className="grid place-items-center gap-4 py-12 text-center">
+                  <Dumbbell className="size-8 text-primary" />
+                  <h2 className="text-2xl">Savaitės treniruočių tikslas pasiektas</h2>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    Per paskutines 7 dienas užbaigei {nextWorkoutData.completedSessionsLast7Days} iš{" "}
+                    {nextWorkoutData.plan.daysPerWeek} suplanuotų sesijų. Kita programos diena
+                    lauks, kai vėl būsi pasiruošęs.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="rounded-full px-7 font-bold"
+                  >
+                    <Link to="/training">Peržiūrėti programą</Link>
+                  </Button>
+                </div>
+              ) : planData ? (
+                <div className="grid place-items-center gap-4 py-12 text-center">
+                  <Dumbbell className="size-8 text-primary" />
+                  <h2 className="text-2xl">Tikriname kitą treniruotę</h2>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    Programos diena bus rodoma pagal tavo faktinę treniruočių eigą.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="rounded-full px-7 font-bold"
+                  >
+                    <Link to="/training">Peržiūrėti programą</Link>
+                  </Button>
+                </div>
               ) : (
                 <div className="grid place-items-center gap-4 py-12 text-center">
                   <Dumbbell className="size-8 text-primary" />

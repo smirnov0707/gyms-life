@@ -55,6 +55,9 @@ function input(overrides: Partial<Parameters<typeof buildTodayDecision>[0]> = {}
     hasCompletedReadinessToday: true,
     hasCompletedWorkoutToday: false,
     hasLoggedNutritionToday: false,
+    hasOpenWorkout: false,
+    activePlanDaysPerWeek: 3,
+    activePlanSessionsLast7Days: 2,
     state: baseState,
     ...overrides,
   };
@@ -73,6 +76,39 @@ describe("buildTodayDecision", () => {
 
     expect(decision.action).toBe("complete_readiness");
     expect(decision.evidence[0]).toMatchObject({ key: "today_readiness", value: "not_recorded" });
+  });
+
+  it("prioritizes recovery once the active plan frequency target is already met", () => {
+    const decision = buildTodayDecision(
+      input({
+        hasCompletedReadinessToday: false,
+        activePlanDaysPerWeek: 3,
+        activePlanSessionsLast7Days: 3,
+      }),
+    );
+
+    expect(decision.action).toBe("recover");
+    expect(decision.alternatives).toEqual(["complete_readiness"]);
+    expect(decision.safetyConstraints).toEqual([]);
+    expect(decision.evidence[0]).toMatchObject({ key: "sessions_last_7_days", value: "3/3" });
+  });
+
+  it("resumes an open planned session before applying the weekly frequency target", () => {
+    const decision = buildTodayDecision(
+      input({
+        hasCompletedReadinessToday: false,
+        hasOpenWorkout: true,
+        activePlanDaysPerWeek: 3,
+        activePlanSessionsLast7Days: 3,
+      }),
+    );
+
+    expect(decision.action).toBe("train_as_planned");
+    expect(decision.safetyConstraints).toEqual(["apply_persisted_execution_snapshot"]);
+    expect(decision.evidence[0]).toMatchObject({
+      key: "active_training_plan",
+      value: "open_session",
+    });
   });
 
   it("chooses recovery for low readiness without suggesting progression", () => {

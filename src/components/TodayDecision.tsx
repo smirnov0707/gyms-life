@@ -82,9 +82,11 @@ function copyFor(lang: string): Copy {
       },
       evidenceLabel: {
         active_training_plan: (value) =>
-          value === "present"
-            ? "An active training plan is ready."
-            : "No active training plan is available.",
+          value === "open_session"
+            ? "An unfinished program session is ready to resume."
+            : value === "present"
+              ? "An active training plan is ready."
+              : "No active training plan is available.",
         today_readiness: (value) =>
           value === "not_recorded"
             ? "Today's readiness has not been recorded."
@@ -93,7 +95,10 @@ function copyFor(lang: string): Copy {
           value === "completed_and_nutrition_logged"
             ? "A workout and nutrition are already logged today."
             : "A workout is already completed today.",
-        sessions_last_7_days: (value) => `Completed sessions in the last 7 days: ${value}.`,
+        sessions_last_7_days: (value) =>
+          value.includes("/")
+            ? `Current plan target in 7 days: ${value} sessions completed.`
+            : `Completed sessions in the last 7 days: ${value}.`,
         load_modifier: (value) => `Validated session load: ${Math.round(Number(value) * 100)}%.`,
         model_data_quality: (value) => `Model data quality: ${value.replace("_", " ")}.`,
         active_life_context: (value) =>
@@ -154,9 +159,11 @@ function copyFor(lang: string): Copy {
     },
     evidenceLabel: {
       active_training_plan: (value) =>
-        value === "present"
-          ? "Aktyvus treniruočių planas paruoštas."
-          : "Aktyvaus treniruočių plano nėra.",
+        value === "open_session"
+          ? "Neužbaigta programos sesija paruošta tęsti."
+          : value === "present"
+            ? "Aktyvus treniruočių planas paruoštas."
+            : "Aktyvaus treniruočių plano nėra.",
       today_readiness: (value) =>
         value === "not_recorded"
           ? "Šiandienos pasiruošimas dar neįvertintas."
@@ -165,7 +172,10 @@ function copyFor(lang: string): Copy {
         value === "completed_and_nutrition_logged"
           ? "Šiandien jau užregistruota treniruotė ir mityba."
           : "Šiandien jau yra baigta treniruotė.",
-      sessions_last_7_days: (value) => `Baigtos treniruotės per 7 dienas: ${value}.`,
+      sessions_last_7_days: (value) =>
+        value.includes("/")
+          ? `Dabartinio plano tikslas per 7 dienas: atlikta ${value} treniruočių.`
+          : `Baigtos treniruotės per 7 dienas: ${value}.`,
       load_modifier: (value) =>
         `Patikrintas treniruotės krūvis: ${Math.round(Number(value) * 100)}%.`,
       model_data_quality: (value) => `Modelio duomenų kokybė: ${value.replace("_", " ")}.`,
