@@ -60,7 +60,7 @@ function copyFor(lang: string): Copy {
         recover: {
           title: "Prioritize recovery today",
           summary:
-            "Your readiness, temporary context, or completed training makes recovery the best next step.",
+            "Your readiness, usual rhythm, temporary context, or completed training makes recovery the best next step.",
           cta: "Open recovery check-in",
         },
         train_adapted: {
@@ -103,6 +103,10 @@ function copyFor(lang: string): Copy {
         model_data_quality: (value) => `Model data quality: ${value.replace("_", " ")}.`,
         active_life_context: (value) =>
           `Current context considered: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
+        training_rhythm: (value) =>
+          value === "usual_training_day"
+            ? "Today is one of your usual training days."
+            : "Today is usually a recovery day; you can still choose a safe alternative.",
         recent_decision_feedback: (value) => {
           const [helpful, rated] = value.split("/");
           return `Recent daily recommendations you marked helpful: ${helpful} of ${rated}.`;
@@ -136,7 +140,7 @@ function copyFor(lang: string): Copy {
       recover: {
         title: "Šiandien pirmiausia atsistatymas",
         summary:
-          "Tavo pasiruošimas, laikinas kontekstas arba jau atlikta treniruotė reiškia, kad dabar geriausias žingsnis — atsistatymas.",
+          "Tavo pasiruošimas, įprastas ritmas, laikinas kontekstas arba jau atlikta treniruotė reiškia, kad dabar geriausias žingsnis — atsistatymas.",
         cta: "Atidaryti atsistatymo check-in",
       },
       train_adapted: {
@@ -181,6 +185,10 @@ function copyFor(lang: string): Copy {
       model_data_quality: (value) => `Modelio duomenų kokybė: ${value.replace("_", " ")}.`,
       active_life_context: (value) =>
         `Atsižvelgta į dabartinį kontekstą: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
+      training_rhythm: (value) =>
+        value === "usual_training_day"
+          ? "Šiandien yra viena iš tavo įprastų treniruočių dienų."
+          : "Šiandien paprastai yra atsistatymo diena, bet gali pasirinkti saugią alternatyvą.",
       recent_decision_feedback: (value) => {
         const [helpful, rated] = value.split("/");
         return `Naujausias dienos rekomendacijas įvertinai kaip tinkamas: ${helpful} iš ${rated}.`;
@@ -220,9 +228,11 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   useEffect(() => {
     const refresh = () => void load();
     window.addEventListener("gymslife:life-context", refresh);
+    window.addEventListener("gymslife:training-rhythm", refresh);
     window.addEventListener("gymslife:adaptation", refresh);
     return () => {
       window.removeEventListener("gymslife:life-context", refresh);
+      window.removeEventListener("gymslife:training-rhythm", refresh);
       window.removeEventListener("gymslife:adaptation", refresh);
     };
   }, [load]);

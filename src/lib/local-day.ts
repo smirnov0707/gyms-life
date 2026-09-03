@@ -91,6 +91,33 @@ export function dayInTimeZone(instant: Date, timeZone: string): string {
   return formatDay(parts.year, parts.month, parts.day);
 }
 
+const WeekdayIndexByEnglishShortName: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+/**
+ * Returns the user's local weekday with Sunday as 0. The fixed English locale
+ * keeps this mapping stable regardless of the server's locale.
+ */
+export function weekdayInTimeZone(instant: Date, timeZone: string): number {
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  if (Number.isNaN(instant.getTime())) throw new Error("Invalid instant.");
+
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    weekday: "short",
+  }).format(instant);
+  const index = WeekdayIndexByEnglishShortName[weekday];
+  if (index === undefined) throw new Error("Unsupported weekday output.");
+  return index;
+}
+
 /** Returns the browser's IANA zone, with UTC as the safe fallback. */
 export function browserTimeZone(): string {
   if (typeof window === "undefined" || typeof Intl === "undefined") return "UTC";

@@ -8,7 +8,7 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.5" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.6" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -111,6 +111,27 @@ function withLifeContextEvidence(
   return context === null ? items : [...items, context];
 }
 
+function trainingRhythmEvidence(
+  input: TodayDecisionInput,
+  position: number,
+): TodayDecisionEvidence | null {
+  if (input.hasPreferredTrainingDayToday === null) return null;
+  return evidence(
+    "training_rhythm",
+    input.hasPreferredTrainingDayToday ? "usual_training_day" : "usual_recovery_day",
+    "user_reported",
+    position,
+  );
+}
+
+function withTrainingRhythmEvidence(
+  input: TodayDecisionInput,
+  items: TodayDecisionEvidence[],
+): TodayDecisionEvidence[] {
+  const rhythm = trainingRhythmEvidence(input, items.length);
+  return rhythm === null ? items : [...items, rhythm];
+}
+
 function decisionFeedbackEvidence(
   input: TodayDecisionInput,
   position: number,
@@ -129,6 +150,11 @@ function withDecisionFeedbackEvidence(
   input: TodayDecisionInput,
   items: TodayDecisionEvidence[],
 ): TodayDecisionEvidence[] {
+  // A decision record deliberately stays compact. When all five evidence
+  // slots are already occupied by facts that determine today's action, the
+  // historical feedback signal remains available for confidence calibration
+  // but is not persisted as a sixth explanation item.
+  if (items.length >= 5) return items;
   const feedback = decisionFeedbackEvidence(input, items.length);
   return feedback === null ? items : [...items, feedback];
 }
@@ -251,11 +277,14 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       alternatives: ["recover"],
       confidence: 98,
       safetyConstraints: ["do_not_adapt_load_without_today_checkin"],
-      evidence: withLifeContextEvidence(input, [
-        readinessEvidence(input, 0),
-        planEvidence(input, 1),
-        dataQualityEvidence(input, 2),
-      ]),
+      evidence: withTrainingRhythmEvidence(
+        input,
+        withLifeContextEvidence(input, [
+          readinessEvidence(input, 0),
+          planEvidence(input, 1),
+          dataQualityEvidence(input, 2),
+        ]),
+      ),
     });
   }
 
@@ -267,21 +296,6 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       alternatives: ["train_adapted"],
       confidence: 95,
       safetyConstraints: ["avoid_progression_when_readiness_low"],
-      evidence: withLifeContextEvidence(input, [
-        readinessEvidence(input, 0),
-        loadModifierEvidence(input, 1),
-        sessionsEvidence(input, 2),
-      ]),
-    });
-  }
-
-  if (score < 70) {
-    return ProposedTodayDecisionSchema.parse({
-      ...base,
-      action: "train_adapted",
-      alternatives: ["recover"],
-      confidence: 92,
-      safetyConstraints: ["apply_persisted_readiness_modifier"],
       evidence: withLifeContextEvidence(input, [
         readinessEvidence(input, 0),
         loadModifierEvidence(input, 1),
@@ -310,10 +324,48 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ],
       evidence: withDecisionFeedbackEvidence(
         input,
+        withTrainingRhythmEvidence(
+          input,
+          withLifeContextEvidence(input, [
+            readinessEvidence(input, 0),
+            loadModifierEvidence(input, 1),
+            dataQualityEvidence(input, 2),
+          ]),
+        ),
+      ),
+    });
+  }
+
+  if (input.hasPreferredTrainingDayToday === false) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "recover",
+      alternatives: [score < 70 ? "train_adapted" : "train_as_planned"],
+      confidence: calibratedConfidence(input, Math.min(qualityConfidence(input), 88)),
+      safetyConstraints: [],
+      evidence: [
+        evidence("training_rhythm", "usual_recovery_day", "user_reported", 0),
+        readinessEvidence(input, 1),
+        loadModifierEvidence(input, 2),
+        activePlanFrequencyEvidence(input, 3),
+        dataQualityEvidence(input, 4),
+      ],
+    });
+  }
+
+  if (score < 70) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "train_adapted",
+      alternatives: ["recover"],
+      confidence: 92,
+      safetyConstraints: ["apply_persisted_readiness_modifier"],
+      evidence: withTrainingRhythmEvidence(
+        input,
         withLifeContextEvidence(input, [
           readinessEvidence(input, 0),
           loadModifierEvidence(input, 1),
-          dataQualityEvidence(input, 2),
+          sessionsEvidence(input, 2),
         ]),
       ),
     });
@@ -327,11 +379,14 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     safetyConstraints: ["apply_persisted_readiness_modifier"],
     evidence: withDecisionFeedbackEvidence(
       input,
-      withLifeContextEvidence(input, [
-        readinessEvidence(input, 0),
-        loadModifierEvidence(input, 1),
-        dataQualityEvidence(input, 2),
-      ]),
+      withTrainingRhythmEvidence(
+        input,
+        withLifeContextEvidence(input, [
+          readinessEvidence(input, 0),
+          loadModifierEvidence(input, 1),
+          dataQualityEvidence(input, 2),
+        ]),
+      ),
     ),
   });
 }

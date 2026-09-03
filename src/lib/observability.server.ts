@@ -9,6 +9,8 @@ const ObservabilityEventNameSchema = z.enum([
   "life_context.dismiss",
   "life_context.set",
   "today_decision.outcome",
+  "training_rhythm.clear",
+  "training_rhythm.set",
   "training_plan.activation",
   "training_plan.generation",
   "user_memory.correct",

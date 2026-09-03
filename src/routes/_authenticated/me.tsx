@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TrainingRhythmCard } from "@/components/TrainingRhythmCard";
 import { getAthleteModel } from "@/lib/athlete-model.functions";
 import type { AthleteModelResponse } from "@/lib/athlete-model.contract";
 import { useI18n } from "@/lib/i18n";
@@ -552,6 +553,8 @@ function AthleteModelPage() {
           </section>
         </>
       ) : null}
+
+      <TrainingRhythmCard />
 
       <section className="panel p-5 md:p-6">
         <div className="flex flex-col gap-1">

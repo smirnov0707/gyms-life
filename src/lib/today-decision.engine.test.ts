@@ -58,6 +58,7 @@ function input(overrides: Partial<Parameters<typeof buildTodayDecision>[0]> = {}
     hasOpenWorkout: false,
     activePlanDaysPerWeek: 3,
     activePlanSessionsLast7Days: 2,
+    hasPreferredTrainingDayToday: null,
     state: baseState,
     ...overrides,
   };
@@ -76,6 +77,44 @@ describe("buildTodayDecision", () => {
 
     expect(decision.action).toBe("complete_readiness");
     expect(decision.evidence[0]).toMatchObject({ key: "today_readiness", value: "not_recorded" });
+  });
+
+  it("still asks for a readiness check before applying a usual recovery-day preference", () => {
+    const decision = buildTodayDecision(
+      input({ hasCompletedReadinessToday: false, hasPreferredTrainingDayToday: false }),
+    );
+
+    expect(decision.action).toBe("complete_readiness");
+    expect(decision.evidence).toContainEqual({
+      key: "training_rhythm",
+      value: "usual_recovery_day",
+      sourceClass: "user_reported",
+      position: 3,
+    });
+  });
+
+  it("prefers recovery on a usual recovery day after readiness is known", () => {
+    const decision = buildTodayDecision(input({ hasPreferredTrainingDayToday: false }));
+
+    expect(decision.action).toBe("recover");
+    expect(decision.alternatives).toEqual(["train_as_planned"]);
+    expect(decision.safetyConstraints).toEqual([]);
+    expect(decision.evidence[0]).toMatchObject({
+      key: "training_rhythm",
+      value: "usual_recovery_day",
+    });
+  });
+
+  it("keeps a usual training day visible in an otherwise normal training decision", () => {
+    const decision = buildTodayDecision(input({ hasPreferredTrainingDayToday: true }));
+
+    expect(decision.action).toBe("train_as_planned");
+    expect(decision.evidence).toContainEqual({
+      key: "training_rhythm",
+      value: "usual_training_day",
+      sourceClass: "user_reported",
+      position: 3,
+    });
   });
 
   it("prioritizes recovery once the active plan frequency target is already met", () => {
@@ -255,6 +294,44 @@ describe("buildTodayDecision", () => {
       value: "1/3",
       sourceClass: "calculated",
       position: 3,
+    });
+  });
+
+  it("keeps evidence capped when life context, rhythm, and feedback are all available", () => {
+    const contextAndFeedbackState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      decisionFeedback: {
+        available: true,
+        ratedDecisionsLast28Days: 3,
+        helpfulDecisionOutcomesLast28Days: 1,
+        notHelpfulDecisionOutcomesLast28Days: 2,
+        helpfulnessRate: 0.33,
+      },
+      currentContext: {
+        active: [
+          {
+            id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d71",
+            content: "Temporary context: time_limited (30 min)",
+            expiresAt: "2026-09-04T12:00:00.000Z",
+            context: { kind: "time_limited", minutes: 30 },
+          },
+        ],
+        shortestAvailableSessionMinutes: 30,
+        hasTrainingConstraint: true,
+        hasSafetyConstraint: false,
+      },
+    });
+    const decision = buildTodayDecision(
+      input({ state: contextAndFeedbackState, hasPreferredTrainingDayToday: true }),
+    );
+
+    expect(decision.evidence).toHaveLength(5);
+    expect(decision.evidence.map((item) => item.key)).not.toContain("recent_decision_feedback");
+    expect(decision.evidence).toContainEqual({
+      key: "training_rhythm",
+      value: "usual_training_day",
+      sourceClass: "user_reported",
+      position: 4,
     });
   });
 

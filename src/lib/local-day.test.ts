@@ -6,6 +6,7 @@ import {
   dayBoundsInTimeZone,
   dayInTimeZone,
   isDayWithinPastDays,
+  weekdayInTimeZone,
 } from "./local-day";
 
 describe("local-day", () => {
@@ -16,6 +17,13 @@ describe("local-day", () => {
     expect(dayInTimeZone(new Date("2026-01-01T01:30:00.000Z"), "America/Los_Angeles")).toBe(
       "2025-12-31",
     );
+  });
+
+  it("derives a stable local weekday from the user's time zone", () => {
+    const instant = new Date("2026-09-07T00:30:00.000Z");
+
+    expect(weekdayInTimeZone(instant, "Europe/Vilnius")).toBe(1);
+    expect(weekdayInTimeZone(instant, "America/Los_Angeles")).toBe(0);
   });
 
   it("uses real local midnights across a daylight-saving transition", () => {

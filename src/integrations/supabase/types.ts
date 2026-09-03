@@ -964,6 +964,27 @@ export type Database = {
         }
         Relationships: []
       }
+      training_rhythms: {
+        Row: {
+          created_at: string
+          preferred_weekdays: number[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          preferred_weekdays: number[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          preferred_weekdays?: number[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_insights: {
         Row: {
           body: string
@@ -1258,6 +1279,10 @@ export type Database = {
           p_value: Json
         }
         Returns: string
+      }
+      training_rhythm_weekdays_are_unique: {
+        Args: { value: number[] }
+        Returns: boolean
       }
       record_ar_workout: {
         Args: {

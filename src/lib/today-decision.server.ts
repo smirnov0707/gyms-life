@@ -3,8 +3,15 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { getActivePlanWorkoutProgress } from "./active-plan.service";
-import { IsoDaySchema, IanaTimeZoneSchema, dayBoundsInTimeZone, dayInTimeZone } from "./local-day";
+import {
+  IsoDaySchema,
+  IanaTimeZoneSchema,
+  dayBoundsInTimeZone,
+  dayInTimeZone,
+  weekdayInTimeZone,
+} from "./local-day";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
+import { loadTrainingRhythm } from "./training-rhythm.server";
 import {
   StoredTodayDecisionEvidenceSchema,
   StoredTodayDecisionSchema,
@@ -33,35 +40,43 @@ export async function getOrCreateTodayDecision(
 ): Promise<TodayDecision> {
   const zone = IanaTimeZoneSchema.parse(timeZone);
   const decisionOn = dayInTimeZone(now, zone);
+  const localWeekday = weekdayInTimeZone(now, zone);
   const { start, end } = dayBoundsInTimeZone(decisionOn, zone);
 
-  const [athlete, activePlanProgress, readinessResult, completedWorkoutResult, nutritionResult] =
-    await Promise.all([
-      refreshAthleteStateSnapshot(supabase, userId, zone, now),
-      getActivePlanWorkoutProgress(supabase, userId, zone, now),
-      supabase
-        .from("daily_checkins")
-        .select("id, readiness_score")
-        .eq("user_id", userId)
-        .eq("checkin_on", decisionOn)
-        .maybeSingle(),
-      supabase
-        .from("workout_sessions")
-        .select("id")
-        .eq("user_id", userId)
-        .not("finished_at", "is", null)
-        .gte("started_at", start)
-        .lt("started_at", end)
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("nutrition_logs")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("logged_on", decisionOn)
-        .limit(1)
-        .maybeSingle(),
-    ]);
+  const [
+    athlete,
+    activePlanProgress,
+    trainingRhythm,
+    readinessResult,
+    completedWorkoutResult,
+    nutritionResult,
+  ] = await Promise.all([
+    refreshAthleteStateSnapshot(supabase, userId, zone, now),
+    getActivePlanWorkoutProgress(supabase, userId, zone, now),
+    loadTrainingRhythm(supabase, userId),
+    supabase
+      .from("daily_checkins")
+      .select("id, readiness_score")
+      .eq("user_id", userId)
+      .eq("checkin_on", decisionOn)
+      .maybeSingle(),
+    supabase
+      .from("workout_sessions")
+      .select("id")
+      .eq("user_id", userId)
+      .not("finished_at", "is", null)
+      .gte("started_at", start)
+      .lt("started_at", end)
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("nutrition_logs")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("logged_on", decisionOn)
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (readinessResult.error) throw new Error("Today readiness lookup failed.");
   if (completedWorkoutResult.error) throw new Error("Today workout lookup failed.");
@@ -82,6 +97,8 @@ export async function getOrCreateTodayDecision(
       activePlanProgress.status === "READY" ? activePlanProgress.plan.daysPerWeek : null,
     activePlanSessionsLast7Days:
       activePlanProgress.status === "READY" ? activePlanProgress.completedSessionsLast7Days : null,
+    hasPreferredTrainingDayToday:
+      trainingRhythm === null ? null : trainingRhythm.preferredWeekdays.includes(localWeekday),
     state: athlete.state,
   });
   const decisionFingerprint = fingerprintTodayDecision(proposal, athlete.snapshot.id);
