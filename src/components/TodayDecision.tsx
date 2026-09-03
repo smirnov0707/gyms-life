@@ -60,7 +60,7 @@ function copyFor(lang: string): Copy {
         recover: {
           title: "Prioritize recovery today",
           summary:
-            "Your reported readiness or temporary context calls for recovery before training volume.",
+            "Your readiness, temporary context, or completed training makes recovery the best next step.",
           cta: "Open recovery check-in",
         },
         train_adapted: {
@@ -89,7 +89,10 @@ function copyFor(lang: string): Copy {
           value === "not_recorded"
             ? "Today's readiness has not been recorded."
             : `Today's readiness: ${value}/100.`,
-        completed_workout_today: () => "A workout is already completed today.",
+        completed_workout_today: (value) =>
+          value === "completed_and_nutrition_logged"
+            ? "A workout and nutrition are already logged today."
+            : "A workout is already completed today.",
         sessions_last_7_days: (value) => `Completed sessions in the last 7 days: ${value}.`,
         load_modifier: (value) => `Validated session load: ${Math.round(Number(value) * 100)}%.`,
         model_data_quality: (value) => `Model data quality: ${value.replace("_", " ")}.`,
@@ -128,7 +131,7 @@ function copyFor(lang: string): Copy {
       recover: {
         title: "Šiandien pirmiausia atsistatymas",
         summary:
-          "Tavo nurodytas pasiruošimas arba laikinas kontekstas rodo, kad prieš treniruotės apimtį reikia atsigauti.",
+          "Tavo pasiruošimas, laikinas kontekstas arba jau atlikta treniruotė reiškia, kad dabar geriausias žingsnis — atsistatymas.",
         cta: "Atidaryti atsistatymo check-in",
       },
       train_adapted: {
@@ -158,7 +161,10 @@ function copyFor(lang: string): Copy {
         value === "not_recorded"
           ? "Šiandienos pasiruošimas dar neįvertintas."
           : `Šiandienos pasiruošimas: ${value}/100.`,
-      completed_workout_today: () => "Šiandien jau yra baigta treniruotė.",
+      completed_workout_today: (value) =>
+        value === "completed_and_nutrition_logged"
+          ? "Šiandien jau užregistruota treniruotė ir mityba."
+          : "Šiandien jau yra baigta treniruotė.",
       sessions_last_7_days: (value) => `Baigtos treniruotės per 7 dienas: ${value}.`,
       load_modifier: (value) =>
         `Patikrintas treniruotės krūvis: ${Math.round(Number(value) * 100)}%.`,
@@ -204,7 +210,11 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   useEffect(() => {
     const refresh = () => void load();
     window.addEventListener("gymslife:life-context", refresh);
-    return () => window.removeEventListener("gymslife:life-context", refresh);
+    window.addEventListener("gymslife:adaptation", refresh);
+    return () => {
+      window.removeEventListener("gymslife:life-context", refresh);
+      window.removeEventListener("gymslife:adaptation", refresh);
+    };
   }, [load]);
 
   const navigateToAction = (action: TodayDecisionAction) => {

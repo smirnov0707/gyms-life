@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
+import { applyAdaptation } from "@/lib/readiness-adapt";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 
@@ -77,7 +78,8 @@ function ReadinessPage() {
   const submit = async () => {
     setBusy(true);
     try {
-      await run({ data: { ...form, lang, timeZone } });
+      const result = await run({ data: { ...form, lang, timeZone } });
+      applyAdaptation(result.modifier);
       await refetch();
       toast.success(t("rd.title"));
     } catch (error) {

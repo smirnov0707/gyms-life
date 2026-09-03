@@ -35,28 +35,37 @@ export async function getOrCreateTodayDecision(
   const decisionOn = dayInTimeZone(now, zone);
   const { start, end } = dayBoundsInTimeZone(decisionOn, zone);
 
-  const [athlete, activePlan, readinessResult, completedWorkoutResult] = await Promise.all([
-    refreshAthleteStateSnapshot(supabase, userId, zone, now),
-    getActivePlanData(supabase, userId),
-    supabase
-      .from("daily_checkins")
-      .select("id, readiness_score")
-      .eq("user_id", userId)
-      .eq("checkin_on", decisionOn)
-      .maybeSingle(),
-    supabase
-      .from("workout_sessions")
-      .select("id")
-      .eq("user_id", userId)
-      .not("finished_at", "is", null)
-      .gte("started_at", start)
-      .lt("started_at", end)
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const [athlete, activePlan, readinessResult, completedWorkoutResult, nutritionResult] =
+    await Promise.all([
+      refreshAthleteStateSnapshot(supabase, userId, zone, now),
+      getActivePlanData(supabase, userId),
+      supabase
+        .from("daily_checkins")
+        .select("id, readiness_score")
+        .eq("user_id", userId)
+        .eq("checkin_on", decisionOn)
+        .maybeSingle(),
+      supabase
+        .from("workout_sessions")
+        .select("id")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null)
+        .gte("started_at", start)
+        .lt("started_at", end)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("nutrition_logs")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("logged_on", decisionOn)
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   if (readinessResult.error) throw new Error("Today readiness lookup failed.");
   if (completedWorkoutResult.error) throw new Error("Today workout lookup failed.");
+  if (nutritionResult.error) throw new Error("Today nutrition lookup failed.");
   if (!athlete.snapshot) {
     throw new Error("Today decision is unavailable until all athlete data sources respond.");
   }
@@ -67,6 +76,7 @@ export async function getOrCreateTodayDecision(
     hasCompletedReadinessToday:
       readinessResult.data !== null && readinessResult.data.readiness_score !== null,
     hasCompletedWorkoutToday: completedWorkoutResult.data !== null,
+    hasLoggedNutritionToday: nutritionResult.data !== null,
     state: athlete.state,
   });
   const decisionFingerprint = fingerprintTodayDecision(proposal, athlete.snapshot.id);

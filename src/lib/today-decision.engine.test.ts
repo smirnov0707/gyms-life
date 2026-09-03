@@ -54,6 +54,7 @@ function input(overrides: Partial<Parameters<typeof buildTodayDecision>[0]> = {}
     hasActiveTrainingPlan: true,
     hasCompletedReadinessToday: true,
     hasCompletedWorkoutToday: false,
+    hasLoggedNutritionToday: false,
     state: baseState,
     ...overrides,
   };
@@ -102,6 +103,19 @@ describe("buildTodayDecision", () => {
 
     expect(decision.action).toBe("log_nutrition");
     expect(decision.safetyConstraints).toEqual(["avoid_duplicate_training_prompt"]);
+  });
+
+  it("moves to recovery after a completed workout and same-day nutrition log", () => {
+    const decision = buildTodayDecision(
+      input({ hasCompletedWorkoutToday: true, hasLoggedNutritionToday: true }),
+    );
+
+    expect(decision.action).toBe("recover");
+    expect(decision.alternatives).toEqual(["log_nutrition"]);
+    expect(decision.evidence[0]).toMatchObject({
+      key: "completed_workout_today",
+      value: "completed_and_nutrition_logged",
+    });
   });
 
   it("prioritizes recovery when the user has an active temporary limitation", () => {

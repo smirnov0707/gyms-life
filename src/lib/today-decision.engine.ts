@@ -8,7 +8,7 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.3" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.4" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -47,6 +47,18 @@ function readinessEvidence(input: TodayDecisionInput, position: number): TodayDe
     "today_readiness",
     String(input.state.recovery.latestReadinessScore),
     "user_reported",
+    position,
+  );
+}
+
+function completedWorkoutEvidence(
+  input: TodayDecisionInput,
+  position: number,
+): TodayDecisionEvidence {
+  return evidence(
+    "completed_workout_today",
+    input.hasLoggedNutritionToday ? "completed_and_nutrition_logged" : "completed",
+    "calculated",
     position,
   );
 }
@@ -128,6 +140,21 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
   const base = { engineVersion: TODAY_DECISION_ENGINE_VERSION, decisionOn: input.decisionOn };
 
   if (input.hasCompletedWorkoutToday) {
+    if (input.hasLoggedNutritionToday) {
+      return ProposedTodayDecisionSchema.parse({
+        ...base,
+        action: "recover",
+        alternatives: ["log_nutrition"],
+        confidence: 95,
+        safetyConstraints: ["avoid_duplicate_training_prompt"],
+        evidence: [
+          completedWorkoutEvidence(input, 0),
+          sessionsEvidence(input, 1),
+          dataQualityEvidence(input, 2),
+        ],
+      });
+    }
+
     return ProposedTodayDecisionSchema.parse({
       ...base,
       action: "log_nutrition",
@@ -135,7 +162,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       confidence: 95,
       safetyConstraints: ["avoid_duplicate_training_prompt"],
       evidence: [
-        evidence("completed_workout_today", "completed", "calculated", 0),
+        completedWorkoutEvidence(input, 0),
         sessionsEvidence(input, 1),
         dataQualityEvidence(input, 2),
       ],
