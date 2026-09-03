@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { SupplementCategorySchema, SupplementPreferredTimeSchema } from "./supplement.schema";
 
 const looseNum = z.coerce.number().catch(0);
 
@@ -21,10 +22,10 @@ const FindingSchema = z.object({
     .object({
       name: z.string().default(""),
       dose: z.string().default(""),
-      category: z.string().default("vitamin"),
-      times_per_day: looseNum.default(1),
+      category: SupplementCategorySchema.catch("vitamin"),
+      times_per_day: z.coerce.number().int().min(1).max(4).catch(1),
       with_food: z.coerce.boolean().catch(true),
-      preferred_time: z.string().default("morning"),
+      preferred_time: SupplementPreferredTimeSchema.catch("morning"),
     })
     .nullable()
     .default(null),

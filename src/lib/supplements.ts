@@ -1,21 +1,12 @@
 // Smart supplement scheduling engine.
 // Distributes a user's supplements across the day using evidence-based
 // timing rules (absorption, interactions, stimulant curfews).
+import type { Supplement } from "./supplement.schema";
+
+export type { Supplement } from "./supplement.schema";
 
 export type SlotId =
   "wake" | "breakfast" | "lunch" | "pre_workout" | "post_workout" | "dinner" | "bedtime";
-
-export interface Supplement {
-  id: string;
-  name: string;
-  dose: string | null;
-  category: string;
-  times_per_day: number;
-  with_food: boolean;
-  preferred_time: string;
-  notes: string | null;
-  is_active: boolean;
-}
 
 export interface ScheduledItem {
   supplement: Supplement;

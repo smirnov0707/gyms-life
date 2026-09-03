@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, ScanLine, SwitchCamera, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { analyzeSupplementPhoto } from "@/lib/supplement-vision.functions";
+import { addSupplements } from "@/lib/supplements.functions";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -145,23 +145,20 @@ export function SupplementPhotoScanner() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("no user");
-      const rows = drafts
+      const supplements = drafts
         .filter((d) => d.name.trim())
         .map((d) => ({
-          user_id: user.id,
           name: d.name.trim(),
-          dose: d.dose.trim() || null,
+          dose: d.dose.trim(),
           category: d.category,
           times_per_day: d.timesPerDay,
           with_food: d.withFood,
           preferred_time: d.preferredTime,
-          notes: d.notes.trim() || null,
+          notes: d.notes.trim(),
           is_active: true,
         }));
-      if (rows.length === 0) return;
-      const { error } = await supabase.from("supplements").insert(rows);
-      if (error) throw error;
+      if (!supplements.length) return;
+      await addSupplements({ data: { supplements, skipExistingNames: false } });
     },
     onSuccess: async () => {
       setDrafts([]);

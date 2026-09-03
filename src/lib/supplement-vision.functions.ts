@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateOrchestratedJson } from "./ai-orchestrator.server";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { SupplementCategorySchema, SupplementPreferredTimeSchema } from "./supplement.schema";
 
 const SupplementVisionInput = z.object({
   image: z.string().min(10),
@@ -12,12 +13,10 @@ const SupplementVisionInput = z.object({
 const SupplementProductSchema = z.object({
   name: z.string().trim().min(1).max(160),
   dose: z.string().trim().max(120).default(""),
-  category: z.string().trim().min(1).max(80),
-  timesPerDay: z.coerce.number().int().min(1).max(6).default(1),
+  category: SupplementCategorySchema.default("general"),
+  timesPerDay: z.coerce.number().int().min(1).max(4).default(1),
   withFood: z.boolean().default(false),
-  preferredTime: z
-    .enum(["any", "morning", "pre_workout", "post_workout", "evening", "bedtime"])
-    .default("any"),
+  preferredTime: SupplementPreferredTimeSchema.default("any"),
   notes: z.string().trim().max(500).default(""),
   confidence: z.coerce.number().int().min(0).max(100).default(0),
   readable: z.string().trim().max(500).default(""),

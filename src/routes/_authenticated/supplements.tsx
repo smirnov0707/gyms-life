@@ -3,11 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Clock, Info, Pill, Plus, Trash2, Utensils } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { buildSchedule, type Supplement } from "@/lib/supplements";
+import {
+  addSupplements,
+  getSupplements,
+  removeSupplement,
+  setSupplementActive,
+} from "@/lib/supplements.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Reveal } from "@/components/Reveal";
@@ -68,31 +73,30 @@ function SupplementsPage() {
 
   const { data: rows } = useQuery({
     queryKey: ["supplements", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("supplements")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Supplement[];
-    },
+    queryFn: () => getSupplements(),
     enabled: !!user,
   });
 
+  const supplements = rows?.supplements ?? [];
+
   const add = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("supplements").insert({
-        user_id: user!.id,
-        name: name.trim(),
-        dose: dose.trim() || null,
-        category,
-        times_per_day: timesPerDay,
-        with_food: withFood,
-        preferred_time: prefTime,
-        notes: notes.trim() || null,
+      await addSupplements({
+        data: {
+          supplements: [
+            {
+              name: name.trim(),
+              dose: dose.trim(),
+              category,
+              times_per_day: timesPerDay,
+              with_food: withFood,
+              preferred_time: prefTime,
+              notes: notes.trim(),
+            },
+          ],
+          skipExistingNames: false,
+        },
       });
-      if (error) throw error;
     },
     onSuccess: () => {
       setName("");
@@ -110,19 +114,14 @@ function SupplementsPage() {
 
   const toggle = useMutation({
     mutationFn: async (s: Supplement) => {
-      const { error } = await supabase
-        .from("supplements")
-        .update({ is_active: !s.is_active })
-        .eq("id", s.id);
-      if (error) throw error;
+      await setSupplementActive({ data: { id: s.id, isActive: !s.is_active } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["supplements", user?.id] }),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("supplements").delete().eq("id", id);
-      if (error) throw error;
+      await removeSupplement({ data: { id } });
     },
     onSuccess: () => {
       toast.success(t("supp.deleted"));
@@ -130,7 +129,7 @@ function SupplementsPage() {
     },
   });
 
-  const schedule = buildSchedule(rows ?? []);
+  const schedule = buildSchedule(supplements);
 
   return (
     <div className="grid gap-8">
@@ -353,11 +352,11 @@ function SupplementsPage() {
               <h2 className="text-xs uppercase tracking-widest text-muted-foreground">
                 {t("supp.list")}
               </h2>
-              {(rows ?? []).length === 0 ? (
+              {supplements.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("supp.empty")}</p>
               ) : (
                 <ul className="grid gap-2">
-                  {(rows ?? []).map((s) => (
+                  {supplements.map((s) => (
                     <li
                       key={s.id}
                       className="panel flex items-center justify-between gap-3 px-4 py-3"

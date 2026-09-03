@@ -16,18 +16,12 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { scanMicronutrients } from "@/lib/micronutrient.functions";
+import { addSupplements } from "@/lib/supplements.functions";
+import type { SupplementInput } from "@/lib/supplement.schema";
 
-type Supplement = {
-  name: string;
-  dose: string;
-  category: string;
-  times_per_day: number;
-  with_food: boolean;
-  preferred_time: string;
-};
+type Supplement = Omit<SupplementInput, "notes" | "is_active">;
 
 type Finding = {
   key: string;
@@ -75,30 +69,14 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
   });
 
   const insertSupplements = async (items: Supplement[]) => {
-    if (!user) throw new Error("no user");
-    const { data: existing, error: readError } = await supabase
-      .from("supplements")
-      .select("name")
-      .eq("user_id", user.id);
-    if (readError) throw readError;
-    const have = new Set((existing ?? []).map((r) => r.name.trim().toLowerCase()));
-    const rows = items
-      .filter((s) => s.name && !have.has(s.name.trim().toLowerCase()))
-      .map((s) => ({
-        name: s.name,
-        dose: s.dose,
-        category: s.category || "vitamin",
-        times_per_day: Math.max(1, s.times_per_day || 1),
-        with_food: s.with_food ?? true,
-        preferred_time: s.preferred_time || "morning",
-        user_id: user.id,
-        is_active: true,
-      }));
-    if (rows.length > 0) {
-      const { error } = await supabase.from("supplements").insert(rows);
-      if (error) throw error;
-    }
-    return rows.length;
+    if (!items.length) return 0;
+    const result = await addSupplements({
+      data: {
+        supplements: items.map((item) => ({ ...item, notes: "" })),
+        skipExistingNames: true,
+      },
+    });
+    return result.created;
   };
 
   const applyOne = useMutation({
@@ -119,7 +97,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
     mutationFn: async () => {
       const items = (scan.data?.findings ?? [])
         .map((f) => f.supplement)
-        .filter(Boolean) as Supplement[];
+        .filter((supplement): supplement is Supplement => supplement !== null);
       return insertSupplements(items);
     },
     onSuccess: async () => {
