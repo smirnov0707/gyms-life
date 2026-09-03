@@ -1,0 +1,39 @@
+import { describe, expect, it } from "vitest";
+import { parseUserMemoryTransparencyItems } from "./user-memory.schema";
+
+const row = {
+  id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e",
+  memory_type: "training_pattern",
+  content: "Shorter sessions are easier to complete.",
+  source: "calculated",
+  confidence: 0.75,
+  importance: 0.8,
+  status: "active",
+  evidence_refs: ["workout-session-1", "workout-session-2"],
+  last_confirmed_at: "2026-09-03T09:00:00.000Z",
+  expires_at: null,
+};
+
+describe("user memory transparency contracts", () => {
+  it("exposes provenance and evidence count without leaking raw evidence", () => {
+    expect(parseUserMemoryTransparencyItems([row])).toEqual([
+      {
+        id: row.id,
+        type: "training_pattern",
+        content: row.content,
+        source: "calculated",
+        confidence: 0.75,
+        importance: 0.8,
+        status: "active",
+        evidenceCount: 2,
+        lastConfirmedAt: row.last_confirmed_at,
+        expiresAt: null,
+      },
+    ]);
+  });
+
+  it("rejects invalid raw rows before they reach the user interface", () => {
+    expect(() => parseUserMemoryTransparencyItems([{ ...row, source: "unknown" }])).toThrow();
+    expect(() => parseUserMemoryTransparencyItems([{ ...row, evidence_refs: {} }])).toThrow();
+  });
+});

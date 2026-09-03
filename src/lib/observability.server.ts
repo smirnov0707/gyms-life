@@ -11,6 +11,8 @@ const ObservabilityEventNameSchema = z.enum([
   "today_decision.outcome",
   "training_plan.activation",
   "training_plan.generation",
+  "user_memory.forget",
+  "user_memory.mark_incorrect",
 ]);
 
 const SafeMetadataValueSchema = z.union([

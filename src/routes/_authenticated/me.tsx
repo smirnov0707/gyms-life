@@ -4,19 +4,29 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Activity,
   Apple,
+  Brain,
   Dumbbell,
   HeartPulse,
+  Info,
   Loader2,
   RefreshCw,
   Scale,
   ShieldCheck,
   Sparkles,
+  ThumbsDown,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getAthleteModel } from "@/lib/athlete-model.functions";
 import type { AthleteModelResponse } from "@/lib/athlete-model.contract";
 import { useI18n } from "@/lib/i18n";
+import {
+  forgetMemory,
+  getUserMemoryTransparency,
+  markMemoryIncorrect,
+} from "@/lib/user-memory.functions";
+import type { UserMemorySource, UserMemoryTransparencyItem } from "@/lib/user-memory.schema";
 
 export const Route = createFileRoute("/_authenticated/me")({
   head: () => ({
@@ -60,6 +70,24 @@ type Copy = {
   saved: string;
   unavailable: string;
   error: string;
+  memory: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    loading: string;
+    empty: string;
+    source: string;
+    confidence: string;
+    evidence: (count: number) => string;
+    lastConfirmed: string;
+    expires: string;
+    updateContext: string;
+    incorrect: string;
+    forget: string;
+    incorrectSaved: string;
+    forgotten: string;
+    error: string;
+  };
 };
 
 function copyFor(lang: string): Copy {
@@ -97,6 +125,26 @@ function copyFor(lang: string): Copy {
       saved: "Historical state saved",
       unavailable: "A source was temporarily unavailable, so no new historical state was saved.",
       error: "Could not load your athlete model. Please try again.",
+      memory: {
+        eyebrow: "WHAT GYMS.LIFE KNOWS",
+        title: "Your active memory",
+        description:
+          "These are the active facts and patterns GYMS.LIFE can use. You remain in control of them.",
+        loading: "Loading your active memory…",
+        empty:
+          "There are no active memory entries yet. GYMS.LIFE will show facts only after they exist.",
+        source: "Source",
+        confidence: "Confidence",
+        evidence: (count) => `${count} evidence ${count === 1 ? "reference" : "references"}`,
+        lastConfirmed: "Last confirmed",
+        expires: "Expires",
+        updateContext: "Update in Today",
+        incorrect: "Not true",
+        forget: "Forget",
+        incorrectSaved: "This memory will no longer be used.",
+        forgotten: "This memory was permanently removed.",
+        error: "Could not update this memory. Please try again.",
+      },
     };
   }
   return {
@@ -133,6 +181,26 @@ function copyFor(lang: string): Copy {
     unavailable:
       "Vienas šaltinis laikinai nepasiekiamas, todėl nauja istorinė būsena nebuvo saugoma.",
     error: "Nepavyko įkelti sportininko modelio. Bandyk dar kartą.",
+    memory: {
+      eyebrow: "KĄ GYMS.LIFE ŽINO APIE TAVE",
+      title: "Tavo aktyvi atmintis",
+      description:
+        "Tai aktyvūs faktai ir dėsningumai, kuriuos GYMS.LIFE gali naudoti. Tu juos visada valdai.",
+      loading: "Įkeliama aktyvi atmintis…",
+      empty:
+        "Aktyvių atminties įrašų dar nėra. GYMS.LIFE faktus rodys tik tada, kai jie iš tikrųjų atsiras.",
+      source: "Šaltinis",
+      confidence: "Pasitikėjimas",
+      evidence: (count) => `Įrodymų nuorodos: ${count}`,
+      lastConfirmed: "Paskutinį kartą patvirtinta",
+      expires: "Galioja iki",
+      updateContext: "Keisti Today ekrane",
+      incorrect: "Neteisinga",
+      forget: "Pamiršti",
+      incorrectSaved: "Šis įrašas daugiau nebus naudojamas.",
+      forgotten: "Šis įrašas pašalintas visam laikui.",
+      error: "Nepavyko atnaujinti šio atminties įrašo. Bandyk dar kartą.",
+    },
   };
 }
 
@@ -157,6 +225,44 @@ function dataGapAction(
   return { label: isEnglish ? "Log nutrition" : "Užregistruok mitybą", to: "/nutrition" };
 }
 
+function memoryTypeLabel(type: UserMemoryTransparencyItem["type"], lang: string): string {
+  const english = lang === "en";
+  if (type.endsWith("_pattern") || type === "pattern") return english ? "Pattern" : "Dėsningumas";
+  const labels: Record<UserMemoryTransparencyItem["type"], string> = {
+    preference: english ? "Preference" : "Pirmenybė",
+    goal: english ? "Goal" : "Tikslas",
+    constraint: english ? "Constraint" : "Apribojimas",
+    pattern: english ? "Pattern" : "Dėsningumas",
+    fact: english ? "Fact" : "Faktas",
+    coaching: english ? "Coaching note" : "Trenerio pastaba",
+    nutrition: english ? "Nutrition" : "Mityba",
+    training: english ? "Training" : "Treniruotė",
+    recovery: english ? "Recovery" : "Atsistatymas",
+    behavior: english ? "Behavior" : "Elgsena",
+    training_pattern: english ? "Training pattern" : "Treniruočių dėsningumas",
+    recovery_pattern: english ? "Recovery pattern" : "Atsistatymo dėsningumas",
+    nutrition_pattern: english ? "Nutrition pattern" : "Mitybos dėsningumas",
+    coaching_insight: english ? "Coaching insight" : "Trenerio įžvalga",
+    discovery: english ? "Discovery" : "Atradimas",
+    current_context: english ? "Current context" : "Dabartinis kontekstas",
+  };
+  return labels[type];
+}
+
+function memorySourceLabel(source: UserMemorySource, lang: string): string {
+  const english = lang === "en";
+  const labels: Record<UserMemorySource, string> = {
+    user_reported: english ? "You reported this" : "Nurodyta tavo",
+    measured: english ? "Measured" : "Išmatuota",
+    wearable: english ? "Wearable data" : "Iš dėvimo įrenginio",
+    calculated: english ? "Calculated from logs" : "Apskaičiuota iš įrašų",
+    ai_inferred: english ? "AI inference" : "AI išvada",
+    experimental: english ? "Personal experiment" : "Asmeninis eksperimentas",
+    system_generated: english ? "System-generated" : "Sugeneruota sistemos",
+  };
+  return labels[source];
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-surface-2 px-3 py-3">
@@ -172,19 +278,35 @@ function AthleteModelPage() {
   const { lang } = useI18n();
   const copy = copyFor(lang);
   const loadModel = useServerFn(getAthleteModel);
+  const loadMemory = useServerFn(getUserMemoryTransparency);
+  const rejectMemory = useServerFn(markMemoryIncorrect);
+  const removeMemory = useServerFn(forgetMemory);
   const [model, setModel] = useState<AthleteModelResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [memories, setMemories] = useState<UserMemoryTransparencyItem[]>([]);
+  const [memoryLoading, setMemoryLoading] = useState(true);
+  const [pendingMemoryAction, setPendingMemoryAction] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      setModel(await loadModel({}));
-    } catch {
+    setMemoryLoading(true);
+    const [modelResult, memoryResult] = await Promise.allSettled([
+      loadModel({}),
+      loadMemory({}),
+    ] as const);
+    if (modelResult.status === "fulfilled") {
+      setModel(modelResult.value);
+    } else {
       toast.error(copy.error);
-    } finally {
-      setLoading(false);
     }
-  }, [copy.error, loadModel]);
+    if (memoryResult.status === "fulfilled") {
+      setMemories(memoryResult.value);
+    } else {
+      toast.error(copy.memory.error);
+    }
+    setLoading(false);
+    setMemoryLoading(false);
+  }, [copy.error, copy.memory.error, loadMemory, loadModel]);
 
   useEffect(() => {
     void load();
@@ -192,6 +314,25 @@ function AthleteModelPage() {
 
   const state = model?.state;
   const locale = lang === "en" ? "en-GB" : "lt-LT";
+
+  const changeMemory = async (memoryId: string, action: "incorrect" | "forget") => {
+    if (pendingMemoryAction !== null) return;
+    setPendingMemoryAction(`${action}:${memoryId}`);
+    try {
+      if (action === "incorrect") {
+        await rejectMemory({ data: { memoryId } });
+        toast.success(copy.memory.incorrectSaved);
+      } else {
+        await removeMemory({ data: { memoryId } });
+        toast.success(copy.memory.forgotten);
+      }
+      setMemories((current) => current.filter((memory) => memory.id !== memoryId));
+    } catch {
+      toast.error(copy.memory.error);
+    } finally {
+      setPendingMemoryAction(null);
+    }
+  };
 
   return (
     <div className="mx-auto grid max-w-5xl gap-6">
@@ -344,6 +485,110 @@ function AthleteModelPage() {
           </section>
         </>
       ) : null}
+
+      <section className="panel p-5 md:p-6">
+        <div className="flex flex-col gap-1">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+            {copy.memory.eyebrow}
+          </p>
+          <h2 className="flex items-center gap-2 text-xl">
+            <Brain className="size-5 text-primary" /> {copy.memory.title}
+          </h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">{copy.memory.description}</p>
+        </div>
+
+        {memoryLoading ? (
+          <div className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin text-primary" /> {copy.memory.loading}
+          </div>
+        ) : memories.length === 0 ? (
+          <p className="mt-5 rounded-2xl bg-surface-2 p-4 text-sm leading-relaxed text-muted-foreground">
+            {copy.memory.empty}
+          </p>
+        ) : (
+          <div className="mt-5 grid gap-3">
+            {memories.map((memory) => {
+              const incorrectPending = pendingMemoryAction === `incorrect:${memory.id}`;
+              const forgetPending = pendingMemoryAction === `forget:${memory.id}`;
+              return (
+                <article
+                  key={memory.id}
+                  className="rounded-2xl border border-border bg-surface-2 p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-primary">
+                      {memoryTypeLabel(memory.type, lang)}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Info className="size-3.5" /> {copy.memory.evidence(memory.evidenceCount)}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-foreground">
+                    {memory.content}
+                  </p>
+
+                  <dl className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                    <div className="rounded-xl bg-background/50 px-3 py-2">
+                      <dt className="font-semibold text-foreground">{copy.memory.source}</dt>
+                      <dd className="mt-0.5">{memorySourceLabel(memory.source, lang)}</dd>
+                    </div>
+                    <div className="rounded-xl bg-background/50 px-3 py-2">
+                      <dt className="font-semibold text-foreground">{copy.memory.confidence}</dt>
+                      <dd className="mt-0.5">{Math.round(memory.confidence * 100)}%</dd>
+                    </div>
+                    <div className="rounded-xl bg-background/50 px-3 py-2">
+                      <dt className="font-semibold text-foreground">{copy.memory.lastConfirmed}</dt>
+                      <dd className="mt-0.5">
+                        {new Date(memory.lastConfirmedAt).toLocaleDateString(locale)}
+                      </dd>
+                    </div>
+                    {memory.expiresAt ? (
+                      <div className="rounded-xl bg-background/50 px-3 py-2">
+                        <dt className="font-semibold text-foreground">{copy.memory.expires}</dt>
+                        <dd className="mt-0.5">
+                          {new Date(memory.expiresAt).toLocaleString(locale)}
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {memory.type === "current_context" ? (
+                      <Button asChild size="sm" variant="outline" className="rounded-full">
+                        <Link to="/">{copy.memory.updateContext}</Link>
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full"
+                        disabled={pendingMemoryAction !== null}
+                        onClick={() => void changeMemory(memory.id, "incorrect")}
+                      >
+                        {incorrectPending ? <Loader2 className="animate-spin" /> : <ThumbsDown />}
+                        {copy.memory.incorrect}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-full text-muted-foreground hover:text-destructive"
+                      disabled={pendingMemoryAction !== null}
+                      onClick={() => void changeMemory(memory.id, "forget")}
+                    >
+                      {forgetPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                      {copy.memory.forget}
+                    </Button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
