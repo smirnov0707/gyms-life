@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getActivePlanData } from "./active-plan.service";
 import { adaptTrainingPlanDay } from "./training-guidance.service";
+import { evaluateWorkoutCompletion } from "./workout-completion.engine";
 
 const Input = z.object({ sessionId: z.string().uuid() });
 
@@ -58,19 +59,16 @@ export const finishWorkout = createServerFn({ method: "POST" })
       throw new Error("Set log lookup failed: " + logsError.message);
     }
 
-    const expected = plannedDay.exercises.reduce((sum, exercise) => sum + exercise.sets, 0);
-    const completed = new Set(
-      logs.filter((log) => log.done).map((log) => log.exercise_slug + ":" + log.set_number),
-    );
-    const expectedKeys = plannedDay.exercises.flatMap((exercise) =>
-      Array.from({ length: exercise.sets }, (_, index) => exercise.slug + ":" + (index + 1)),
-    );
-    const missing = expectedKeys.filter((key) => !completed.has(key));
-
-    if (completed.size !== expected || missing.length > 0) {
+    const completion = evaluateWorkoutCompletion(plannedDay, logs);
+    if (!completion.canFinish && completion.missingSetKeys.length > 0) {
       throw new Error(
-        "Cannot finish workout: " + missing.length + " planned set(s) are still incomplete.",
+        "Cannot finish workout: " +
+          completion.missingSetKeys.length +
+          " planned set(s) are still incomplete.",
       );
+    }
+    if (!completion.canFinish) {
+      throw new Error("Cannot finish workout: unexpected completed set logs were found.");
     }
 
     const finishedAt = new Date();
@@ -79,16 +77,12 @@ export const finishWorkout = createServerFn({ method: "POST" })
       0,
       Math.round((finishedAt.getTime() - startedAt.getTime()) / 1000),
     );
-    const totalVolume = logs
-      .filter((log) => log.done)
-      .reduce((sum, log) => sum + Number(log.reps ?? 0) * Number(log.weight_kg ?? 0), 0);
-
     const { data: updated, error: updateError } = await supabase
       .from("workout_sessions")
       .update({
         finished_at: finishedAt.toISOString(),
         duration_seconds: durationSeconds,
-        total_volume: Math.round(totalVolume * 100) / 100,
+        total_volume: completion.totalVolume,
       })
       .eq("id", session.id)
       .eq("user_id", userId)
