@@ -231,7 +231,7 @@ function copyFor(lang: string): Copy {
       source: "Šaltinis",
       evidenceState: "Įrodymų būsena",
       evidenceStateLabel: {
-          user_confirmed: "Tavo patvirtinta",
+        user_confirmed: "Tavo patvirtinta",
         measured_record: "Užregistruota matavimu arba dėvimu įrenginiu",
         calculated_threshold_met: "Pasiektas duomenų pakankamumo slenkstis",
         hypothesis_needs_confirmation: "Reikia tavo patvirtinimo",
