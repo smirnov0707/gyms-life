@@ -36,7 +36,7 @@ export async function getOrCreateTodayDecision(
   const { start, end } = dayBoundsInTimeZone(decisionOn, zone);
 
   const [athlete, activePlan, readinessResult, completedWorkoutResult] = await Promise.all([
-    refreshAthleteStateSnapshot(supabase, userId),
+    refreshAthleteStateSnapshot(supabase, userId, zone, now),
     getActivePlanData(supabase, userId),
     supabase
       .from("daily_checkins")

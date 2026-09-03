@@ -16,6 +16,7 @@ import {
 } from "./digital-athlete.schema";
 import { loadActiveLifeContexts } from "./life-context.server";
 import type { ActiveLifeContext } from "./life-context.schema";
+import { IanaTimeZoneSchema, dayInTimeZone, dayOffset, isDayWithinPastDays } from "./local-day";
 
 const DAY_MS = 86_400_000;
 
@@ -105,6 +106,7 @@ function decisionFeedbackFor(
   outcomes: DigitalAthleteSources["decisionFeedback"],
   available: boolean,
   now: Date,
+  timeZone: string,
 ): DigitalAthleteState["decisionFeedback"] {
   if (!available) {
     return {
@@ -116,7 +118,8 @@ function decisionFeedbackFor(
     };
   }
 
-  const recent = outcomes.filter((outcome) => isWithinPastDays(outcome.decision_on, 28, now));
+  const today = dayInTimeZone(now, timeZone);
+  const recent = outcomes.filter((outcome) => isDayWithinPastDays(outcome.decision_on, 28, today));
   const helpful = recent.filter(
     (outcome) => outcome.outcome === "accepted" || outcome.outcome === "completed",
   ).length;
@@ -177,7 +180,10 @@ function parseDecisionFeedbackRows(value: unknown): {
 export function buildDigitalAthleteState(
   sourceValue: DigitalAthleteSources,
   now = new Date(),
+  timeZone = "UTC",
 ): DigitalAthleteState {
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const today = dayInTimeZone(now, zone);
   const sources = DigitalAthleteSourcesSchema.parse(sourceValue);
   const newestFirst = <
     T extends { started_at?: string; checkin_on?: string; measured_on?: string },
@@ -199,13 +205,13 @@ export function buildDigitalAthleteState(
     isWithinPastDays(workout.started_at, 28, now),
   );
   const checkinsLast7Days = newestFirst(
-    sources.checkins.filter((checkin) => isWithinPastDays(checkin.checkin_on, 7, now)),
+    sources.checkins.filter((checkin) => isDayWithinPastDays(checkin.checkin_on, 7, today)),
   );
   const bodyMetricsLast30Days = newestFirst(
-    sources.bodyMetrics.filter((metric) => isWithinPastDays(metric.measured_on, 30, now)),
+    sources.bodyMetrics.filter((metric) => isDayWithinPastDays(metric.measured_on, 30, today)),
   );
   const nutritionLogsLast14Days = sources.nutritionLogs.filter((log) =>
-    isWithinPastDays(log.logged_on, 14, now),
+    isDayWithinPastDays(log.logged_on, 14, today),
   );
   const latestWorkout = completedWorkouts[0];
   const latestCheckin = checkinsLast7Days[0];
@@ -270,6 +276,7 @@ export function buildDigitalAthleteState(
       sources.decisionFeedback,
       sources.availability.decisionFeedback,
       now,
+      zone,
     ),
     currentContext: currentContextFor(sources.lifeContexts, now),
     dataQuality: dataQualityFor(sources, {
@@ -291,10 +298,13 @@ export async function loadDigitalAthleteState(
   supabase: SupabaseClient<Database>,
   userId: string,
   now = new Date(),
+  timeZone = "UTC",
 ): Promise<DigitalAthleteState> {
-  const bodyMetricsSince = new Date(now.getTime() - 30 * DAY_MS).toISOString().slice(0, 10);
-  const nutritionSince = new Date(now.getTime() - 14 * DAY_MS).toISOString().slice(0, 10);
-  const decisionFeedbackSince = new Date(now.getTime() - 28 * DAY_MS).toISOString().slice(0, 10);
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const today = dayInTimeZone(now, zone);
+  const bodyMetricsSince = dayOffset(today, -30);
+  const nutritionSince = dayOffset(today, -14);
+  const decisionFeedbackSince = dayOffset(today, -28);
   const [
     workoutsResult,
     checkinsResult,
@@ -364,5 +374,6 @@ export async function loadDigitalAthleteState(
       },
     },
     now,
+    zone,
   );
 }

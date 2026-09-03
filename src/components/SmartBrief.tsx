@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
 import { cn } from "@/lib/utils";
 import { aiErrorMessage } from "@/lib/ai-error";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 
 const ROUTE_ICON: Record<BriefRoute, typeof Sparkles> = {
   "/app": Activity,
@@ -47,10 +48,12 @@ const ROUTE_ICON: Record<BriefRoute, typeof Sparkles> = {
   "/reminders": Flame,
 };
 
-const cacheKey = (lang: string) => `gl_brief_${lang}_${new Date().toISOString().slice(0, 10)}`;
+const cacheKey = (lang: string, timeZone: string) =>
+  `gl_brief_${lang}_${timeZone}_${dayInTimeZone(new Date(), timeZone)}`;
 
 export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
   const { t, lang } = useI18n();
+  const timeZone = browserTimeZone();
   const fetchBrief = useServerFn(getDailyBrief);
   const [brief, setBrief] = useState<DailyBrief | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,7 +61,7 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
 
   const load = useCallback(
     async (force: boolean) => {
-      const key = cacheKey(lang);
+      const key = cacheKey(lang, timeZone);
       if (!force) {
         const cached = window.localStorage.getItem(key);
         if (cached) {
@@ -73,7 +76,7 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
       setBusy(true);
       setFailed(null);
       try {
-        const res = await fetchBrief({ data: { lang } });
+        const res = await fetchBrief({ data: { lang, timeZone } });
         setBrief(res);
         window.localStorage.setItem(key, JSON.stringify(res));
       } catch (err) {
@@ -82,7 +85,7 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
         setBusy(false);
       }
     },
-    [fetchBrief, lang, t],
+    [fetchBrief, lang, t, timeZone],
   );
 
   useEffect(() => {

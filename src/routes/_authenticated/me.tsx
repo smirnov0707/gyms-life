@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { getAthleteModel } from "@/lib/athlete-model.functions";
 import type { AthleteModelResponse } from "@/lib/athlete-model.contract";
 import { useI18n } from "@/lib/i18n";
+import { browserTimeZone } from "@/lib/local-day";
 import {
   correctMemory,
   forgetMemory,
@@ -299,6 +300,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function AthleteModelPage() {
   const { lang } = useI18n();
+  const timeZone = browserTimeZone();
   const copy = copyFor(lang);
   const loadModel = useServerFn(getAthleteModel);
   const loadMemory = useServerFn(getUserMemoryTransparency);
@@ -317,7 +319,7 @@ function AthleteModelPage() {
     setLoading(true);
     setMemoryLoading(true);
     const [modelResult, memoryResult] = await Promise.allSettled([
-      loadModel({}),
+      loadModel({ data: timeZone }),
       loadMemory({}),
     ] as const);
     if (modelResult.status === "fulfilled") {
@@ -332,7 +334,7 @@ function AthleteModelPage() {
     }
     setLoading(false);
     setMemoryLoading(false);
-  }, [copy.error, copy.memory.error, loadMemory, loadModel]);
+  }, [copy.error, copy.memory.error, loadMemory, loadModel, timeZone]);
 
   useEffect(() => {
     void load();

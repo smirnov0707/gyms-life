@@ -4,6 +4,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { hasCurrentAiPersonalizationConsent } from "./ai-personalization-consent.policy";
 import { canonicalWorkoutEquipment } from "./workout-equipment.schema";
 import { buildDigitalAthleteState, loadDigitalAthleteState } from "./digital-athlete.service";
+import { IanaTimeZoneSchema, dayInTimeZone, dayOffset } from "./local-day";
 import type {
   AiPersonalizationSources,
   DigitalAthleteDataGap,
@@ -285,9 +286,11 @@ function currentDayGapList(
 export async function loadCurrentDayContext(
   supabase: SupabaseClient<Database>,
   userId: string,
+  timeZone = "UTC",
   now = new Date(),
 ): Promise<CurrentDayContext> {
-  const today = now.toISOString().slice(0, 10);
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const today = dayInTimeZone(now, zone);
   const [nutritionResult, mealTargetResult, sessionResult] = await Promise.all([
     supabase
       .from("nutrition_logs")
@@ -380,6 +383,7 @@ export async function loadCurrentDayContext(
 export function buildAiPersonalizationSummary(
   sources: AiPersonalizationSources,
   now = new Date(),
+  timeZone = "UTC",
 ): AiPersonalizationSummary {
   const state = buildDigitalAthleteState(
     {
@@ -395,6 +399,7 @@ export function buildAiPersonalizationSummary(
       },
     },
     now,
+    timeZone,
   );
   return {
     training: state.training,
@@ -423,7 +428,10 @@ function consentFrom(value: unknown, querySucceeded: boolean): AiPersonalization
 export async function buildUserContext(
   supabase: SupabaseClient<Database>,
   userId: string,
+  timeZone = "UTC",
+  now = new Date(),
 ): Promise<CentralUserContext> {
+  const zone = IanaTimeZoneSchema.parse(timeZone);
   const [{ data: rawProfile, error: profileError }, consentResult] = await Promise.all([
     supabase
       .from("profiles")
@@ -442,7 +450,7 @@ export async function buildUserContext(
 
   const profile = profileError === null ? parseAiProfilePreferences(rawProfile) : null;
   const aiPersonalization = consentFrom(consentResult.data, consentResult.error === null);
-  const currentDay = await loadCurrentDayContext(supabase, userId);
+  const currentDay = await loadCurrentDayContext(supabase, userId, zone, now);
   const consentGap = consentResult.error
     ? "personalization_consent_unavailable"
     : aiPersonalization.enabled
@@ -452,7 +460,7 @@ export async function buildUserContext(
   let activeMemory = emptyActiveMemory();
   if (aiPersonalization.enabled) {
     [digitalAthlete, activeMemory] = await Promise.all([
-      loadDigitalAthleteState(supabase, userId),
+      loadDigitalAthleteState(supabase, userId, now, zone),
       loadActiveMemoryForAi(supabase, userId),
     ]);
   }
@@ -566,22 +574,31 @@ export function contextForAi(context: CentralUserContext): string {
   );
 }
 
-export function calculateWorkoutStreak(workoutDates: string[]): number {
-  const activeDates = new Set(workoutDates.map((date) => date.slice(0, 10)));
-  const cursor = new Date();
+export function calculateWorkoutStreak(
+  workoutDates: string[],
+  timeZone = "UTC",
+  now = new Date(),
+): number {
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const activeDates = new Set(
+    workoutDates.flatMap((date) => {
+      const instant = new Date(date);
+      return Number.isNaN(instant.getTime()) ? [] : [dayInTimeZone(instant, zone)];
+    }),
+  );
+  let cursorDay = dayInTimeZone(now, zone);
   let streak = 0;
 
   while (true) {
-    const date = cursor.toISOString().slice(0, 10);
-    if (!activeDates.has(date)) {
+    if (!activeDates.has(cursorDay)) {
       if (streak === 0) {
-        cursor.setUTCDate(cursor.getUTCDate() - 1);
-        if (!activeDates.has(cursor.toISOString().slice(0, 10))) return 0;
+        cursorDay = dayOffset(cursorDay, -1);
+        if (!activeDates.has(cursorDay)) return 0;
         continue;
       }
       return streak;
     }
     streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    cursorDay = dayOffset(cursorDay, -1);
   }
 }

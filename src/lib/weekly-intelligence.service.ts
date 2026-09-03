@@ -15,9 +15,11 @@ import type { WeeklyIntelligenceReview } from "./weekly-intelligence.schema";
 export async function loadWeeklyIntelligenceReview(
   supabase: SupabaseClient<Database>,
   userId: string,
+  timeZone = "UTC",
+  now = new Date(),
 ): Promise<WeeklyIntelligenceReview> {
   const requests = [
-    loadDigitalAthleteState(supabase, userId),
+    loadDigitalAthleteState(supabase, userId, now, timeZone),
     loadUserMemoryTransparency(supabase, userId),
   ] satisfies readonly [Promise<DigitalAthleteState>, Promise<UserMemoryTransparencyItem[]>];
   const [stateResult, memoryResult] = await Promise.allSettled(requests);

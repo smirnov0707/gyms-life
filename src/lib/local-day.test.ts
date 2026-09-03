@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   IanaTimeZoneSchema,
   browserTimeZone,
+  dayOffset,
   dayBoundsInTimeZone,
   dayInTimeZone,
+  isDayWithinPastDays,
 } from "./local-day";
 
 describe("local-day", () => {
@@ -21,6 +23,15 @@ describe("local-day", () => {
       start: "2026-03-28T22:00:00.000Z",
       end: "2026-03-29T21:00:00.000Z",
     });
+  });
+
+  it("compares date-only facts using local calendar days", () => {
+    expect(dayOffset("2026-03-01", -1)).toBe("2026-02-28");
+    expect(dayOffset("2026-12-31", 1)).toBe("2027-01-01");
+    expect(isDayWithinPastDays("2026-09-04", 7, "2026-09-04")).toBe(true);
+    expect(isDayWithinPastDays("2026-08-28", 7, "2026-09-04")).toBe(true);
+    expect(isDayWithinPastDays("2026-08-27", 7, "2026-09-04")).toBe(false);
+    expect(isDayWithinPastDays("2026-09-05", 7, "2026-09-04")).toBe(false);
   });
 
   it("rejects invalid or unsupported values at the boundary", () => {

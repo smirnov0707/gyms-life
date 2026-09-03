@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 
 /** Vieninteliai maršrutai, į kuriuos AI gali nukreipti veiksmų kortelėse. */
 export const BRIEF_ROUTES = [
@@ -83,13 +84,19 @@ function isBriefRoute(route: string): route is BriefRoute {
 export const getDailyBrief = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z.object({ lang: SupportedLanguageSchema.default("lt") }).parse(input ?? {}),
+    z
+      .object({
+        lang: SupportedLanguageSchema.default("lt"),
+        timeZone: IanaTimeZoneSchema.default("UTC"),
+      })
+      .strict()
+      .parse(input ?? {}),
   )
   .handler(async ({ data, context }): Promise<DailyBrief> => {
     const { supabase, userId } = context;
 
     const { buildUserContext } = await import("./user-context.server");
-    const snapshot = await buildUserContext(supabase, userId);
+    const snapshot = await buildUserContext(supabase, userId, data.timeZone);
 
     const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
@@ -172,7 +179,7 @@ RETURN EXACTLY THIS JSON SHAPE:
         .limit(1)
         .maybeSingle(),
     ]);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = dayInTimeZone(new Date(), data.timeZone);
     const workoutDates = (recentWorkouts ?? []).map((workout) => workout.started_at);
     const { calculateWorkoutStreak } = await import("./user-context.server");
     const gaps = [
@@ -195,7 +202,7 @@ RETURN EXACTLY THIS JSON SHAPE:
       actions,
       watchouts: parsed.watchouts.slice(0, 2),
       gaps,
-      streakDays: calculateWorkoutStreak(workoutDates),
+      streakDays: calculateWorkoutStreak(workoutDates, data.timeZone),
       readiness: latestCheckin?.readiness_score ?? null,
     });
   });

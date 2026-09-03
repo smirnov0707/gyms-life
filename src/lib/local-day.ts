@@ -125,10 +125,28 @@ function midnightInTimeZone(day: string, timeZone: string): Date {
   return new Date(candidateEpoch);
 }
 
-function nextDay(day: string): string {
+/** Moves a canonical calendar day without involving the server's time zone. */
+export function dayOffset(day: string, offsetDays: number): string {
+  if (!Number.isSafeInteger(offsetDays)) throw new Error("Calendar-day offset must be an integer.");
   const parts = dayParts(day);
-  const next = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
-  return formatDay(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
+  const shifted = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + offsetDays));
+  return formatDay(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, shifted.getUTCDate());
+}
+
+/**
+ * Checks a date-only fact against a user's calendar day. Date-only rows such
+ * as readiness and nutrition logs must not be compared to a UTC instant.
+ */
+export function isDayWithinPastDays(day: string, days: number, today: string): boolean {
+  if (!Number.isSafeInteger(days) || days < 0) {
+    throw new Error("Calendar-day window must be a non-negative integer.");
+  }
+  const value = dayParts(day);
+  const current = dayParts(today);
+  const valueEpoch = Date.UTC(value.year, value.month - 1, value.day);
+  const currentEpoch = Date.UTC(current.year, current.month - 1, current.day);
+  const difference = Math.round((currentEpoch - valueEpoch) / 86_400_000);
+  return difference >= 0 && difference <= days;
 }
 
 /** UTC instants that enclose one calendar day in the supplied IANA zone. */
@@ -137,6 +155,6 @@ export function dayBoundsInTimeZone(day: string, timeZone: string): { start: str
   const zone = IanaTimeZoneSchema.parse(timeZone);
   return {
     start: midnightInTimeZone(canonicalDay, zone).toISOString(),
-    end: midnightInTimeZone(nextDay(canonicalDay), zone).toISOString(),
+    end: midnightInTimeZone(dayOffset(canonicalDay, 1), zone).toISOString(),
   };
 }

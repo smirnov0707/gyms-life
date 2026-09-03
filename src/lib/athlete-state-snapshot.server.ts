@@ -79,9 +79,11 @@ function toPublicSnapshot(snapshot: AthleteStateSnapshot) {
 export async function refreshAthleteStateSnapshot(
   supabase: SupabaseClient<Database>,
   userId: string,
+  timeZone = "UTC",
+  now = new Date(),
 ): Promise<AthleteModelResponse> {
-  const state = await loadDigitalAthleteState(supabase, userId);
-  const evaluatedAt = new Date().toISOString();
+  const state = await loadDigitalAthleteState(supabase, userId, now, timeZone);
+  const evaluatedAt = now.toISOString();
 
   if (!canPersistDigitalAthleteState(state)) {
     return { state, evaluatedAt, snapshot: null };

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Activity, ArrowRight, Brain, Dumbbell, HeartPulse, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { browserTimeZone } from "@/lib/local-day";
 import { displayedMemoryContent, memoryEvidenceSummary } from "@/lib/user-memory.presentation";
 import { getWeeklyIntelligenceReview } from "@/lib/weekly-intelligence.functions";
 import type {
@@ -126,10 +127,11 @@ function numberOrDash(value: number | null, suffix = ""): string {
 
 export function WeeklyIntelligenceReview() {
   const { lang } = useI18n();
+  const timeZone = browserTimeZone();
   const copy = copyFor(lang);
   const { data, isError, isLoading } = useQuery({
-    queryKey: ["weekly-intelligence-review"],
-    queryFn: () => getWeeklyIntelligenceReview(),
+    queryKey: ["weekly-intelligence-review", timeZone],
+    queryFn: () => getWeeklyIntelligenceReview({ data: timeZone }),
     staleTime: 60_000,
   });
 

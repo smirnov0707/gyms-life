@@ -229,4 +229,58 @@ describe("buildDigitalAthleteState", () => {
       helpfulnessRate: null,
     });
   });
+
+  it("uses the caller's local day for date-only evidence near a UTC boundary", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [],
+        checkins: [
+          { checkin_on: "2026-09-04", readiness_score: 83, sleep_hours: 8 },
+          { checkin_on: "2026-08-28", readiness_score: 68, sleep_hours: 7 },
+          { checkin_on: "2026-08-27", readiness_score: 30, sleep_hours: 4 },
+        ],
+        bodyMetrics: [
+          { measured_on: "2026-09-04", weight_kg: 80, body_fat: 18 },
+          { measured_on: "2026-08-05", weight_kg: 80.5, body_fat: 18.2 },
+          { measured_on: "2026-08-04", weight_kg: 81, body_fat: 18.4 },
+        ],
+        nutritionLogs: [
+          { logged_on: "2026-09-04", calories: 2200, protein: 160 },
+          { logged_on: "2026-08-21", calories: 2000, protein: 140 },
+          { logged_on: "2026-08-20", calories: 1800, protein: 120 },
+        ],
+        decisionFeedback: [
+          { decision_on: "2026-09-04", outcome: "completed" },
+          { decision_on: "2026-08-07", outcome: "accepted" },
+          { decision_on: "2026-08-06", outcome: "not_helpful" },
+        ],
+        lifeContexts: [],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+        },
+      },
+      new Date("2026-09-03T21:30:00.000Z"),
+      "Europe/Vilnius",
+    );
+
+    expect(state.recovery).toMatchObject({
+      checkinsLast7Days: 2,
+      latestReadinessScore: 83,
+      averageReadinessLast7Days: 75.5,
+    });
+    expect(state.body).toMatchObject({ measurementsLast30Days: 2, weightChangeKgLast30Days: -0.5 });
+    expect(state.nutrition).toMatchObject({
+      loggedDaysLast14Days: 2,
+      averageCaloriesOnLoggedDays: 2100,
+    });
+    expect(state.decisionFeedback).toMatchObject({
+      ratedDecisionsLast28Days: 2,
+      helpfulDecisionOutcomesLast28Days: 2,
+    });
+  });
 });

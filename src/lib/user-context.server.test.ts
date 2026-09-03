@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAiPersonalizationSummary,
+  calculateWorkoutStreak,
   contextForAi,
   parseAiProfilePreferences,
   type CentralUserContext,
@@ -143,6 +144,18 @@ describe("parseAiProfilePreferences", () => {
 
   it("rejects malformed source rows instead of forwarding them into AI context", () => {
     expect(parseAiProfilePreferences({ locale: "lt" })).toBeNull();
+  });
+});
+
+describe("calculateWorkoutStreak", () => {
+  it("normalizes completed sessions into the caller's local calendar days", () => {
+    expect(
+      calculateWorkoutStreak(
+        ["2026-09-03T21:30:00.000Z", "2026-09-02T22:00:00.000Z", "2026-09-01T21:30:00.000Z"],
+        "Europe/Vilnius",
+        new Date("2026-09-03T21:45:00.000Z"),
+      ),
+    ).toBe(3);
   });
 });
 
