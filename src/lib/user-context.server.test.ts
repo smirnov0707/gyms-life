@@ -139,6 +139,19 @@ describe("contextForAi", () => {
           averageCaloriesOnLoggedDays: 2200,
           averageProteinGOnLoggedDays: 155,
         },
+        currentContext: {
+          active: [
+            {
+              id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e",
+              content: "Private context summary",
+              expiresAt: "2026-09-03T12:00:00.000Z",
+              context: { kind: "time_limited", minutes: 30, note: "Private context note" },
+            },
+          ],
+          shortestAvailableSessionMinutes: 30,
+          hasTrainingConstraint: true,
+          hasSafetyConstraint: false,
+        },
         dataQuality: {
           level: "informed",
           evidenceCount: 24,
@@ -168,6 +181,8 @@ describe("contextForAi", () => {
       "Private session title",
       "Private health note",
       "Private memory",
+      "Private context summary",
+      "Private context note",
       "2026-09-01",
     ]) {
       expect(payload).not.toContain(privateValue);
@@ -178,6 +193,7 @@ describe("contextForAi", () => {
       recentSession: { totalSets: 18, averageRpe: 7.8, fatigueLevel: "medium" },
       trainingHistory: { sessionsLast28Days: 10 },
       recovery: { latestReadinessScore: 70 },
+      athleteModel: { currentContext: { shortestAvailableSessionMinutes: 30 } },
     });
   });
 
@@ -260,6 +276,12 @@ describe("contextForAi", () => {
           loggedDaysLast14Days: 7,
           averageCaloriesOnLoggedDays: 2200,
           averageProteinGOnLoggedDays: 155,
+        },
+        currentContext: {
+          active: [],
+          shortestAvailableSessionMinutes: null,
+          hasTrainingConstraint: false,
+          hasSafetyConstraint: false,
         },
         dataQuality: {
           level: "informed",

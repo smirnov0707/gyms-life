@@ -28,7 +28,14 @@ describe("buildDigitalAthleteState", () => {
           { logged_on: "2026-08-30", calories: 2300, protein: 170 },
           { logged_on: "2026-08-29", calories: 2050, protein: 145 },
         ],
-        availability: { training: true, recovery: true, body: true, nutrition: true },
+        lifeContexts: [],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          context: true,
+        },
       },
       now,
     );
@@ -56,6 +63,12 @@ describe("buildDigitalAthleteState", () => {
         averageCaloriesOnLoggedDays: 2130,
         averageProteinGOnLoggedDays: 153,
       },
+      currentContext: {
+        active: [],
+        shortestAvailableSessionMinutes: null,
+        hasTrainingConstraint: false,
+        hasSafetyConstraint: false,
+      },
       dataQuality: {
         level: "informed",
         evidenceCount: 13,
@@ -72,7 +85,14 @@ describe("buildDigitalAthleteState", () => {
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
-        availability: { training: false, recovery: false, body: false, nutrition: false },
+        lifeContexts: [],
+        availability: {
+          training: false,
+          recovery: false,
+          body: false,
+          nutrition: false,
+          context: false,
+        },
       },
       now,
     );
@@ -87,6 +107,7 @@ describe("buildDigitalAthleteState", () => {
       "recovery_data_unavailable",
       "body_measurements_unavailable",
       "nutrition_data_unavailable",
+      "current_context_unavailable",
     ]);
   });
 
@@ -97,7 +118,14 @@ describe("buildDigitalAthleteState", () => {
         checkins: [{ checkin_on: "2026-06-01", readiness_score: 80, sleep_hours: 8 }],
         bodyMetrics: [{ measured_on: "2026-06-01", weight_kg: 80, body_fat: 18 }],
         nutritionLogs: [{ logged_on: "2026-06-01", calories: 2200, protein: 160 }],
-        availability: { training: true, recovery: true, body: true, nutrition: true },
+        lifeContexts: [],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          context: true,
+        },
       },
       now,
     );
@@ -113,5 +141,38 @@ describe("buildDigitalAthleteState", () => {
       "no_body_measurements_30d",
       "no_nutrition_logs_14d",
     ]);
+  });
+
+  it("retains a user-reported temporary limitation as current state without inflating model maturity", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        lifeContexts: [
+          {
+            id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e",
+            content: "Temporary context: temporary_limitation",
+            expiresAt: "2026-09-03T18:00:00.000Z",
+            context: { kind: "temporary_limitation" },
+          },
+        ],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          context: true,
+        },
+      },
+      now,
+    );
+
+    expect(state.currentContext).toMatchObject({
+      hasSafetyConstraint: true,
+      hasTrainingConstraint: false,
+    });
+    expect(state.dataQuality.level).toBe("cold_start");
   });
 });

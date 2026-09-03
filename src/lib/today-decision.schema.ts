@@ -3,6 +3,7 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 
 const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/);
+const TodayDecisionEngineVersionSchema = z.enum(["1.0", "1.1"]);
 
 export const TodayDecisionActionSchema = z.enum([
   "generate_training_plan",
@@ -19,6 +20,7 @@ export const TodayDecisionSafetyConstraintSchema = z.enum([
   "avoid_progression_when_readiness_low",
   "apply_persisted_readiness_modifier",
   "avoid_duplicate_training_prompt",
+  "avoid_training_with_active_limitation",
 ]);
 
 export const TodayDecisionEvidenceKeySchema = z.enum([
@@ -28,6 +30,7 @@ export const TodayDecisionEvidenceKeySchema = z.enum([
   "sessions_last_7_days",
   "load_modifier",
   "model_data_quality",
+  "active_life_context",
 ]);
 
 export const TodayDecisionEvidenceSourceSchema = z.enum([
@@ -72,7 +75,7 @@ export const TodayDecisionInputSchema = z
 
 export const ProposedTodayDecisionSchema = z
   .object({
-    engineVersion: z.literal("1.0"),
+    engineVersion: z.literal("1.1"),
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema).max(5),
@@ -87,7 +90,7 @@ export const StoredTodayDecisionSchema = z
     id: z.string().uuid(),
     athlete_state_snapshot_id: z.string().uuid(),
     decision_on: DaySchema,
-    engine_version: z.literal("1.0"),
+    engine_version: TodayDecisionEngineVersionSchema,
     decision_fingerprint: Sha256Schema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema),
@@ -111,7 +114,7 @@ export const TodayDecisionSchema = z
   .object({
     id: z.string().uuid(),
     snapshotId: z.string().uuid(),
-    engineVersion: z.literal("1.0"),
+    engineVersion: TodayDecisionEngineVersionSchema,
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema),

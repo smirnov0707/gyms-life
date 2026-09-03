@@ -12,6 +12,8 @@ import {
   type DigitalAthleteSources,
   type DigitalAthleteState,
 } from "./digital-athlete.schema";
+import { loadActiveLifeContexts } from "./life-context.server";
+import type { ActiveLifeContext } from "./life-context.schema";
 
 const DAY_MS = 86_400_000;
 
@@ -68,6 +70,29 @@ function dataQualityFor(
         : "building";
 
   return { level, evidenceCount, availableDomains };
+}
+
+function currentContextFor(
+  contexts: ActiveLifeContext[],
+  now: Date,
+): DigitalAthleteState["currentContext"] {
+  const active = contexts.filter((context) => Date.parse(context.expiresAt) > now.getTime());
+  const timeBudgets = active.flatMap((context) =>
+    context.context.kind === "time_limited" ? [context.context.minutes] : [],
+  );
+  return {
+    active,
+    shortestAvailableSessionMinutes: timeBudgets.length ? Math.min(...timeBudgets) : null,
+    hasTrainingConstraint: active.some(
+      (context) =>
+        context.context.kind === "travel" ||
+        context.context.kind === "time_limited" ||
+        context.context.kind === "equipment_limited" ||
+        context.context.kind === "facility_closed" ||
+        context.context.kind === "high_stress",
+    ),
+    hasSafetyConstraint: active.some((context) => context.context.kind === "temporary_limitation"),
+  };
 }
 
 /**
@@ -130,6 +155,7 @@ export function buildDigitalAthleteState(
   else if (bodyMetricsLast30Days.length === 0) dataGaps.push("no_body_measurements_30d");
   if (!sources.availability.nutrition) dataGaps.push("nutrition_data_unavailable");
   else if (nutritionLogsLast14Days.length === 0) dataGaps.push("no_nutrition_logs_14d");
+  if (!sources.availability.context) dataGaps.push("current_context_unavailable");
 
   return DigitalAthleteStateSchema.parse({
     schemaVersion: "1.0",
@@ -164,6 +190,7 @@ export function buildDigitalAthleteState(
       averageCaloriesOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.calories)),
       averageProteinGOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.protein)),
     },
+    currentContext: currentContextFor(sources.lifeContexts, now),
     dataQuality: dataQualityFor(sources, {
       workouts: workoutsLast28Days.length,
       checkins: checkinsLast7Days.length,
@@ -186,36 +213,42 @@ export async function loadDigitalAthleteState(
 ): Promise<DigitalAthleteState> {
   const bodyMetricsSince = new Date(now.getTime() - 30 * DAY_MS).toISOString().slice(0, 10);
   const nutritionSince = new Date(now.getTime() - 14 * DAY_MS).toISOString().slice(0, 10);
-  const [workoutsResult, checkinsResult, bodyMetricsResult, nutritionLogsResult] =
-    await Promise.all([
-      supabase
-        .from("workout_sessions")
-        .select("started_at, total_volume")
-        .eq("user_id", userId)
-        .not("finished_at", "is", null)
-        .order("started_at", { ascending: false })
-        .limit(60),
-      supabase
-        .from("daily_checkins")
-        .select("checkin_on, readiness_score, sleep_hours")
-        .eq("user_id", userId)
-        .order("checkin_on", { ascending: false })
-        .limit(14),
-      supabase
-        .from("body_metrics")
-        .select("measured_on, weight_kg, body_fat")
-        .eq("user_id", userId)
-        .gte("measured_on", bodyMetricsSince)
-        .order("measured_on", { ascending: false })
-        .limit(60),
-      supabase
-        .from("nutrition_logs")
-        .select("logged_on, calories, protein")
-        .eq("user_id", userId)
-        .gte("logged_on", nutritionSince)
-        .order("logged_on", { ascending: false })
-        .limit(280),
-    ]);
+  const [
+    workoutsResult,
+    checkinsResult,
+    bodyMetricsResult,
+    nutritionLogsResult,
+    lifeContextResult,
+  ] = await Promise.all([
+    supabase
+      .from("workout_sessions")
+      .select("started_at, total_volume")
+      .eq("user_id", userId)
+      .not("finished_at", "is", null)
+      .order("started_at", { ascending: false })
+      .limit(60),
+    supabase
+      .from("daily_checkins")
+      .select("checkin_on, readiness_score, sleep_hours")
+      .eq("user_id", userId)
+      .order("checkin_on", { ascending: false })
+      .limit(14),
+    supabase
+      .from("body_metrics")
+      .select("measured_on, weight_kg, body_fat")
+      .eq("user_id", userId)
+      .gte("measured_on", bodyMetricsSince)
+      .order("measured_on", { ascending: false })
+      .limit(60),
+    supabase
+      .from("nutrition_logs")
+      .select("logged_on, calories, protein")
+      .eq("user_id", userId)
+      .gte("logged_on", nutritionSince)
+      .order("logged_on", { ascending: false })
+      .limit(280),
+    loadActiveLifeContexts(supabase, userId, now),
+  ]);
 
   const workouts = parseDigitalAthleteRows(CompletedWorkoutSourceSchema, workoutsResult.data);
   const checkins = parseDigitalAthleteRows(DailyCheckinSourceSchema, checkinsResult.data);
@@ -228,11 +261,13 @@ export async function loadDigitalAthleteState(
       checkins: checkins.rows,
       bodyMetrics: bodyMetrics.rows,
       nutritionLogs: nutritionLogs.rows,
+      lifeContexts: lifeContextResult.contexts,
       availability: {
         training: workoutsResult.error === null && workouts.valid,
         recovery: checkinsResult.error === null && checkins.valid,
         body: bodyMetricsResult.error === null && bodyMetrics.valid,
         nutrition: nutritionLogsResult.error === null && nutritionLogs.valid,
+        context: lifeContextResult.available,
       },
     },
     now,

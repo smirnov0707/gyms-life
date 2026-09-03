@@ -58,7 +58,8 @@ function copyFor(lang: string): Copy {
         },
         recover: {
           title: "Prioritize recovery today",
-          summary: "Your reported readiness calls for recovery before training volume.",
+          summary:
+            "Your reported readiness or temporary context calls for recovery before training volume.",
           cta: "Open recovery check-in",
         },
         train_adapted: {
@@ -90,6 +91,8 @@ function copyFor(lang: string): Copy {
         sessions_last_7_days: (value) => `Completed sessions in the last 7 days: ${value}.`,
         load_modifier: (value) => `Validated session load: ${Math.round(Number(value) * 100)}%.`,
         model_data_quality: (value) => `Model data quality: ${value.replace("_", " ")}.`,
+        active_life_context: (value) =>
+          `Current context considered: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
       },
     };
   }
@@ -118,7 +121,8 @@ function copyFor(lang: string): Copy {
       },
       recover: {
         title: "Šiandien pirmiausia atsistatymas",
-        summary: "Tavo nurodytas pasiruošimas rodo, kad prieš treniruotės apimtį reikia atsigauti.",
+        summary:
+          "Tavo nurodytas pasiruošimas arba laikinas kontekstas rodo, kad prieš treniruotės apimtį reikia atsigauti.",
         cta: "Atidaryti atsistatymo check-in",
       },
       train_adapted: {
@@ -152,6 +156,8 @@ function copyFor(lang: string): Copy {
       load_modifier: (value) =>
         `Patikrintas treniruotės krūvis: ${Math.round(Number(value) * 100)}%.`,
       model_data_quality: (value) => `Modelio duomenų kokybė: ${value.replace("_", " ")}.`,
+      active_life_context: (value) =>
+        `Atsižvelgta į dabartinį kontekstą: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
     },
   };
 }
@@ -182,6 +188,12 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => void load();
+    window.addEventListener("gymslife:life-context", refresh);
+    return () => window.removeEventListener("gymslife:life-context", refresh);
   }, [load]);
 
   const navigateToAction = (action: TodayDecisionAction) => {

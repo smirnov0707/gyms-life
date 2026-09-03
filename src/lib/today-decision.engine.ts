@@ -8,7 +8,7 @@ import {
 } from "./today-decision.schema";
 import { loadModifierFor } from "./readiness.engine";
 
-export const TODAY_DECISION_ENGINE_VERSION = "1.0" as const;
+export const TODAY_DECISION_ENGINE_VERSION = "1.1" as const;
 
 function qualityConfidence(input: TodayDecisionInput): number {
   if (input.state.dataQuality.level === "informed") return 92;
@@ -66,6 +66,23 @@ function sessionsEvidence(input: TodayDecisionInput, position: number): TodayDec
   );
 }
 
+function lifeContextEvidence(
+  input: TodayDecisionInput,
+  position: number,
+): TodayDecisionEvidence | null {
+  const contexts = input.state.currentContext.active.map((context) => context.context.kind);
+  if (contexts.length === 0) return null;
+  return evidence("active_life_context", contexts.join(","), "user_reported", position);
+}
+
+function withLifeContextEvidence(
+  input: TodayDecisionInput,
+  items: TodayDecisionEvidence[],
+): TodayDecisionEvidence[] {
+  const context = lifeContextEvidence(input, items.length);
+  return context === null ? items : [...items, context];
+}
+
 /**
  * Chooses one conservative, explainable next action from validated facts.
  * This is deliberately deterministic: AI may explain the decision elsewhere,
@@ -90,6 +107,21 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     });
   }
 
+  if (input.state.currentContext.hasSafetyConstraint) {
+    return ProposedTodayDecisionSchema.parse({
+      ...base,
+      action: "recover",
+      alternatives: ["complete_readiness"],
+      confidence: 96,
+      safetyConstraints: ["avoid_training_with_active_limitation"],
+      evidence: [
+        evidence("active_life_context", "temporary_limitation", "user_reported", 0),
+        sessionsEvidence(input, 1),
+        dataQualityEvidence(input, 2),
+      ],
+    });
+  }
+
   if (!input.hasActiveTrainingPlan) {
     return ProposedTodayDecisionSchema.parse({
       ...base,
@@ -97,7 +129,10 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       alternatives: ["complete_readiness"],
       confidence: 100,
       safetyConstraints: ["requires_active_plan_before_training"],
-      evidence: [planEvidence(input, 0), dataQualityEvidence(input, 1)],
+      evidence: withLifeContextEvidence(input, [
+        planEvidence(input, 0),
+        dataQualityEvidence(input, 1),
+      ]),
     });
   }
 
@@ -108,11 +143,11 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       alternatives: ["recover"],
       confidence: 98,
       safetyConstraints: ["do_not_adapt_load_without_today_checkin"],
-      evidence: [
+      evidence: withLifeContextEvidence(input, [
         readinessEvidence(input, 0),
         planEvidence(input, 1),
         dataQualityEvidence(input, 2),
-      ],
+      ]),
     });
   }
 
@@ -124,11 +159,11 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       alternatives: ["train_adapted"],
       confidence: 95,
       safetyConstraints: ["avoid_progression_when_readiness_low"],
-      evidence: [
+      evidence: withLifeContextEvidence(input, [
         readinessEvidence(input, 0),
         loadModifierEvidence(input, 1),
         sessionsEvidence(input, 2),
-      ],
+      ]),
     });
   }
 
@@ -139,11 +174,11 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       alternatives: ["recover"],
       confidence: 92,
       safetyConstraints: ["apply_persisted_readiness_modifier"],
-      evidence: [
+      evidence: withLifeContextEvidence(input, [
         readinessEvidence(input, 0),
         loadModifierEvidence(input, 1),
         sessionsEvidence(input, 2),
-      ],
+      ]),
     });
   }
 
@@ -153,11 +188,11 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     alternatives: ["recover"],
     confidence: qualityConfidence(input),
     safetyConstraints: ["apply_persisted_readiness_modifier"],
-    evidence: [
+    evidence: withLifeContextEvidence(input, [
       readinessEvidence(input, 0),
       loadModifierEvidence(input, 1),
       dataQualityEvidence(input, 2),
-    ],
+    ]),
   });
 }
 

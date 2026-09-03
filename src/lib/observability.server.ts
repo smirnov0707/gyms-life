@@ -6,6 +6,8 @@ const ObservabilityEventNameSchema = z.enum([
   "ai.voice_transcription",
   "meal_plan.activation",
   "meal_plan.generation",
+  "life_context.dismiss",
+  "life_context.set",
   "today_decision.outcome",
   "training_plan.activation",
   "training_plan.generation",

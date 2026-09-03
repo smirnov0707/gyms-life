@@ -30,6 +30,7 @@ import { SmartBrief } from "@/components/SmartBrief";
 import { ReadinessBanner } from "@/components/ReadinessBanner";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
+import { TodayLifeContext } from "@/components/TodayLifeContext";
 
 import { useCountUp } from "@/hooks/use-count-up";
 import { withTactile } from "@/lib/tactile";
@@ -355,6 +356,8 @@ export function Overview() {
       )}
 
       <TodayDecision workoutDay={today?.day ?? null} />
+
+      <TodayLifeContext />
 
       {/* Greeting + readiness ring */}
       <section

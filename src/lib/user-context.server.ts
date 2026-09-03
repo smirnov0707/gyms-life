@@ -122,13 +122,30 @@ function summaryFromDigitalAthlete(state: DigitalAthleteState): AiPersonalizatio
   };
 }
 
+/** Never send a free-text context note or display summary beyond GYMS.LIFE. */
+function aiSafeCurrentContext(context: DigitalAthleteState["currentContext"]) {
+  return {
+    active: context.active.map(({ context: item }) => {
+      if (item.kind === "time_limited") return { kind: item.kind, minutes: item.minutes };
+      if (item.kind === "equipment_limited") {
+        return { kind: item.kind, equipmentCount: item.equipment.length };
+      }
+      return { kind: item.kind };
+    }),
+    shortestAvailableSessionMinutes: context.shortestAvailableSessionMinutes,
+    hasTrainingConstraint: context.hasTrainingConstraint,
+    hasSafetyConstraint: context.hasSafetyConstraint,
+  };
+}
+
 function emptyDigitalAthleteState(): DigitalAthleteState {
   return buildDigitalAthleteState({
     workouts: [],
     checkins: [],
     bodyMetrics: [],
     nutritionLogs: [],
-    availability: { training: true, recovery: true, body: true, nutrition: true },
+    lifeContexts: [],
+    availability: { training: true, recovery: true, body: true, nutrition: true, context: true },
   });
 }
 
@@ -145,7 +162,8 @@ export function buildAiPersonalizationSummary(
       {
         ...sources,
         nutritionLogs: [],
-        availability: { ...sources.availability, nutrition: true },
+        lifeContexts: [],
+        availability: { ...sources.availability, nutrition: true, context: true },
       },
       now,
     ),
@@ -301,6 +319,7 @@ export async function buildUserContext(
       .select("memory_type, content, confidence, importance, last_confirmed_at")
       .eq("user_id", userId)
       .eq("status", "active")
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order("importance", { ascending: false })
       .order("last_confirmed_at", { ascending: false })
       .limit(30),
@@ -399,6 +418,7 @@ export function contextForAi(context: CentralUserContext): string {
           schemaVersion: context.digitalAthlete.schemaVersion,
           dataQuality: context.digitalAthlete.dataQuality,
           nutritionHistory: context.digitalAthlete.nutrition,
+          currentContext: aiSafeCurrentContext(context.digitalAthlete.currentContext),
         },
         dataGaps: context.aiSummary.dataGaps,
       }

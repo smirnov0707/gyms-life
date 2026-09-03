@@ -21,6 +21,12 @@ const baseState = DigitalAthleteStateSchema.parse({
     averageCaloriesOnLoggedDays: 2300,
     averageProteinGOnLoggedDays: 160,
   },
+  currentContext: {
+    active: [],
+    shortestAvailableSessionMinutes: null,
+    hasTrainingConstraint: false,
+    hasSafetyConstraint: false,
+  },
   dataQuality: {
     level: "informed",
     evidenceCount: 15,
@@ -83,6 +89,33 @@ describe("buildTodayDecision", () => {
 
     expect(decision.action).toBe("log_nutrition");
     expect(decision.safetyConstraints).toEqual(["avoid_duplicate_training_prompt"]);
+  });
+
+  it("prioritizes recovery when the user has an active temporary limitation", () => {
+    const limitedState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      currentContext: {
+        active: [
+          {
+            id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e",
+            content: "Temporary context: temporary_limitation",
+            expiresAt: "2026-09-04T12:00:00.000Z",
+            context: { kind: "temporary_limitation" },
+          },
+        ],
+        shortestAvailableSessionMinutes: null,
+        hasTrainingConstraint: false,
+        hasSafetyConstraint: true,
+      },
+    });
+    const decision = buildTodayDecision(input({ state: limitedState }));
+
+    expect(decision.action).toBe("recover");
+    expect(decision.safetyConstraints).toEqual(["avoid_training_with_active_limitation"]);
+    expect(decision.evidence[0]).toMatchObject({
+      key: "active_life_context",
+      value: "temporary_limitation",
+    });
   });
 
   it("fingerprints an exact decision and snapshot deterministically", () => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ActiveLifeContextSchema } from "./life-context.schema";
 
 const TimestampSchema = z
   .string()
@@ -77,7 +78,11 @@ export const DigitalAthleteSourcesSchema = z
     checkins: z.array(DailyCheckinSourceSchema),
     bodyMetrics: z.array(BodyMetricSourceSchema),
     nutritionLogs: z.array(NutritionLogSourceSchema),
-    availability: BaseAvailabilitySchema.extend({ nutrition: z.boolean() }).strict(),
+    lifeContexts: z.array(ActiveLifeContextSchema),
+    availability: BaseAvailabilitySchema.extend({
+      nutrition: z.boolean(),
+      context: z.boolean(),
+    }).strict(),
   })
   .strict();
 
@@ -92,6 +97,7 @@ export const DigitalAthleteDataGapSchema = z.enum([
   "no_body_measurements_30d",
   "nutrition_data_unavailable",
   "no_nutrition_logs_14d",
+  "current_context_unavailable",
   "personalization_consent_required",
   "personalization_consent_unavailable",
 ]);
@@ -122,6 +128,14 @@ export const DigitalAthleteStateSchema = z
       averageCaloriesOnLoggedDays: NonNegativeNumberSchema.nullable(),
       averageProteinGOnLoggedDays: NonNegativeNumberSchema.nullable(),
     }),
+    currentContext: z
+      .object({
+        active: z.array(ActiveLifeContextSchema).max(12),
+        shortestAvailableSessionMinutes: z.number().int().min(10).max(180).nullable(),
+        hasTrainingConstraint: z.boolean(),
+        hasSafetyConstraint: z.boolean(),
+      })
+      .strict(),
     dataQuality: z.object({
       level: z.enum(["cold_start", "building", "informed"]),
       evidenceCount: z.number().int().nonnegative(),

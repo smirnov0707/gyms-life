@@ -1008,48 +1008,68 @@ export type Database = {
           confidence: number
           content: string
           created_at: string
+          evidence_refs: Json
           expires_at: string | null
           first_seen_at: string
           id: string
           importance: number
           last_confirmed_at: string
+          memory_key: string | null
           memory_type: string
           source: string
           status: string
+          superseded_by: string | null
           updated_at: string
           user_id: string
+          value: Json | null
         }
         Insert: {
           confidence?: number
           content: string
           created_at?: string
+          evidence_refs?: Json
           expires_at?: string | null
           first_seen_at?: string
           id?: string
           importance?: number
           last_confirmed_at?: string
+          memory_key?: string | null
           memory_type: string
           source?: string
           status?: string
+          superseded_by?: string | null
           updated_at?: string
           user_id: string
+          value?: Json | null
         }
         Update: {
           confidence?: number
           content?: string
           created_at?: string
+          evidence_refs?: Json
           expires_at?: string | null
           first_seen_at?: string
           id?: string
           importance?: number
           last_confirmed_at?: string
+          memory_key?: string | null
           memory_type?: string
           source?: string
           status?: string
+          superseded_by?: string | null
           updated_at?: string
           user_id?: string
+          value?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_memory_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "user_memory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1213,6 +1233,17 @@ export type Database = {
       consume_ai_quota: {
         Args: { p_limit: number; p_user_id: string }
         Returns: boolean
+      }
+      replace_active_life_context: {
+        Args: {
+          p_content: string
+          p_expires_at: string
+          p_importance: number
+          p_memory_key: string
+          p_user_id: string
+          p_value: Json
+        }
+        Returns: string
       }
       record_ar_workout: {
         Args: {

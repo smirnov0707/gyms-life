@@ -24,6 +24,12 @@ const informedState = DigitalAthleteStateSchema.parse({
     averageCaloriesOnLoggedDays: 2360,
     averageProteinGOnLoggedDays: 164,
   },
+  currentContext: {
+    active: [],
+    shortestAvailableSessionMinutes: null,
+    hasTrainingConstraint: false,
+    hasSafetyConstraint: false,
+  },
   dataQuality: {
     level: "informed",
     evidenceCount: 31,
