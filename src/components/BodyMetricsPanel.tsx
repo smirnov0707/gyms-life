@@ -11,21 +11,12 @@ import {
 } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { normalizeManualBodyMetric, type ManualBodyMetric } from "@/lib/body-metric.schema";
+import { getBodyMetrics, recordManualBodyMetric } from "@/lib/body-metrics.functions";
 import { useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
-import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-function toBodyMetricWrite(metric: ManualBodyMetric) {
-  const write: Database["public"]["Tables"]["body_metrics"]["Update"] = {};
-  if (metric.weight_kg !== undefined) write.weight_kg = metric.weight_kg;
-  if (metric.body_fat !== undefined) write.body_fat = metric.body_fat;
-  return write;
-}
 
 /** Unified body metrics: log weight / body fat and see the progress curve in one place. */
 export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
@@ -38,62 +29,38 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
 
   const { data: rows } = useQuery({
     queryKey: ["metrics", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("body_metrics")
-        .select("measured_on, weight_kg, body_fat")
-        .eq("user_id", user!.id)
-        .order("measured_on", { ascending: true });
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => getBodyMetrics(),
     enabled: !!user,
   });
 
-  const list = rows ?? [];
-  const withWeight = list.filter((r) => r.weight_kg != null);
-  const withFat = list.filter((r) => r.body_fat != null);
-  const latestWeight = withWeight.at(-1)?.weight_kg ?? null;
-  const latestFat = withFat.at(-1)?.body_fat ?? null;
-  const firstWeight = withWeight[0]?.weight_kg ?? null;
+  const list = rows?.metrics ?? [];
+  const withWeight = list.filter((row) => row.weightKg != null);
+  const withFat = list.filter((row) => row.bodyFat != null);
+  const latestWeight = withWeight.at(-1)?.weightKg ?? null;
+  const latestFat = withFat.at(-1)?.bodyFat ?? null;
+  const firstWeight = withWeight[0]?.weightKg ?? null;
   const delta =
     latestWeight != null && firstWeight != null ? Number(latestWeight) - Number(firstWeight) : null;
 
   const chart = withWeight.map((r) => ({
-    date: new Date(r.measured_on).toLocaleDateString(undefined, {
+    date: new Date(r.measuredOn).toLocaleDateString(undefined, {
       month: "2-digit",
       day: "2-digit",
     }),
-    weight: Number(r.weight_kg),
-    fat: r.body_fat != null ? Number(r.body_fat) : null,
+    weight: r.weightKg,
+    fat: r.bodyFat,
   }));
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      const metric = normalizeManualBodyMetric({
-        ...(weight.trim() ? { weight_kg: weight } : {}),
-        ...(fat.trim() ? { body_fat: fat } : {}),
+      await recordManualBodyMetric({
+        data: {
+          ...(weight.trim() ? { weight_kg: weight } : {}),
+          ...(fat.trim() ? { body_fat: fat } : {}),
+        },
       });
-      const metricWrite = toBodyMetricWrite(metric);
-      const today = new Date().toISOString().slice(0, 10);
-      const { data: existing, error: existingError } = await supabase
-        .from("body_metrics")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("measured_on", today)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (existingError) throw existingError;
-
-      const { error } = existing
-        ? await supabase.from("body_metrics").update(metricWrite).eq("id", existing.id)
-        : await supabase
-            .from("body_metrics")
-            .insert({ user_id: user.id, measured_on: today, ...metricWrite });
-      if (error) throw error;
 
       setWeight("");
       setFat("");
