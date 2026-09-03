@@ -1214,6 +1214,36 @@ export type Database = {
         Args: { p_limit: number; p_user_id: string }
         Returns: boolean
       }
+      record_ar_workout: {
+        Args: {
+          p_exercise_name: string
+          p_exercise_slug: string
+          p_notes?: string
+          p_reps: number
+          p_session_id: string
+          p_weight_kg: number
+        }
+        Returns: {
+          session_adaptation_modifier: number
+          session_day_index: number
+          session_duration_seconds: number
+          session_finished_at: string
+          session_id: string
+          session_plan_id: string
+          session_started_at: string
+          session_title: string
+          session_total_volume: number
+          set_log_created_at: string
+          set_log_done: boolean
+          set_log_exercise_name: string
+          set_log_exercise_slug: string
+          set_log_id: string
+          set_log_reps: number
+          set_log_rpe: number
+          set_log_set_number: number
+          set_log_weight_kg: number
+        }[]
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean

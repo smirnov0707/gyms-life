@@ -42,8 +42,7 @@ import {
 } from "@/lib/ar-smart";
 import { VoiceCoach } from "@/lib/ar-voice-coach";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
+import { recordArWorkout } from "@/lib/ar-workout.functions";
 import { FormScanner } from "@/components/FormScanner";
 
 export const Route = createFileRoute("/_authenticated/ar")({
@@ -108,10 +107,11 @@ function ArMode() {
   const [repList, setRepList] = useState<RepRecord[]>([]);
   const [setWeight, setSetWeight] = useState("");
   const [savingSet, setSavingSet] = useState(false);
+  const [savedSet, setSavedSet] = useState(false);
+  const [completedSetId, setCompletedSetId] = useState<string | null>(null);
   const [tab, setTab] = useState<"live" | "scan">("live");
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [fullscreen, setFullscreen] = useState(false);
-  const { user } = useAuth();
 
   const [voice, setVoice] = useState(true);
   const [coachMode, setCoachMode] = useState(true);
@@ -372,6 +372,8 @@ function ArMode() {
       samplesRef.current = [];
       setCalib(null);
       setSummary(null);
+      setSavedSet(false);
+      setCompletedSetId(null);
       setReps(0);
       setLastRep(null);
       setRepList([]);
@@ -389,36 +391,23 @@ function ArMode() {
 
   /** Writes the analysed AR set into the real training history. */
   const saveSet = async () => {
-    if (!user || !summary) return;
+    if (!summary || !completedSetId || savedSet) return;
     setSavingSet(true);
     try {
       const ex = AR_EXERCISES.find((e) => e.slug === slugRef.current)!;
       const name = ex.name[base];
-      const volume = (Number(setWeight) || 0) * summary.reps;
-      const { data: session, error: sErr } = await supabase
-        .from("workout_sessions")
-        .insert({
-          user_id: user.id,
-          title: `AR · ${name}`,
-          started_at: new Date().toISOString(),
-          finished_at: new Date().toISOString(),
-          total_volume: volume,
+      const normalizedWeight = setWeight.trim().replace(",", ".");
+      await recordArWorkout({
+        data: {
+          sessionId: completedSetId,
+          exerciseSlug: ex.slug,
+          exerciseName: name,
+          reps: summary.reps,
+          weightKg: normalizedWeight === "" ? 0 : Number(normalizedWeight),
           notes: `${summary.headline} ${summary.fix}`.trim(),
-        })
-        .select("id")
-        .single();
-      if (sErr) throw sErr;
-      const { error: lErr } = await supabase.from("set_logs").insert({
-        user_id: user.id,
-        session_id: session!.id,
-        exercise_slug: ex.slug,
-        exercise_name: name,
-        set_number: 1,
-        reps: summary.reps,
-        weight_kg: Number(setWeight) || 0,
-        done: true,
+        },
       });
-      if (lErr) throw lErr;
+      setSavedSet(true);
       toast.success(t("nx.ar.saved"));
     } catch (error) {
       toast.error(errorMessage(error, t("common.error")));
@@ -430,6 +419,8 @@ function ArMode() {
   const finishSet = () => {
     const result = summarizeSet(analyserRef.current.reps, langRef.current);
     setSummary(result);
+    setSavedSet(false);
+    setCompletedSetId(result ? crypto.randomUUID() : null);
     if (result) speak(`${result.headline} ${result.fix}`.trim(), true);
     stopCamera();
   };
@@ -919,7 +910,12 @@ function ArMode() {
                   placeholder={t("nx.ar.weight")}
                   className="h-9 w-28"
                 />
-                <Button size="sm" onClick={saveSet} disabled={savingSet} className="font-bold">
+                <Button
+                  size="sm"
+                  onClick={saveSet}
+                  disabled={savingSet || savedSet}
+                  className="font-bold"
+                >
                   {savingSet ? <Loader2 className="mr-1 size-4 animate-spin" /> : null}
                   {t("nx.ar.saveSet")}
                 </Button>
