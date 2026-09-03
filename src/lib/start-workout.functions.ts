@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getTodaysWorkoutData } from "./active-plan.service";
-import { getTodaysReadinessModifier } from "./readiness.service";
+import { getTodaysReadiness } from "./readiness.service";
 import { adaptTrainingPlanDay, getWorkoutTrainingGuidance } from "./training-guidance.service";
 import { createOpenWorkoutSession, findOpenWorkoutSession } from "./workout-session.service";
 import {
@@ -16,6 +16,7 @@ import {
   type ExerciseCatalogItem,
 } from "./exercise-catalog.schema";
 import { IanaTimeZoneSchema } from "./local-day";
+import { evaluateWorkoutStartGate, type WorkoutStartRejection } from "./workout-start.gate";
 
 const Input = z
   .object({ day: z.coerce.number().int().min(1), timeZone: IanaTimeZoneSchema })
@@ -23,15 +24,25 @@ const Input = z
 const setSelect =
   "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
 
+function workoutStartMessage(reason: WorkoutStartRejection): string {
+  if (reason === "readiness_required") {
+    return "Complete today's readiness check-in before starting a new workout.";
+  }
+  if (reason === "not_next_workout") {
+    return "This is not the next workout in your active program. Return to Today to continue safely.";
+  }
+  return "The next workout is not available today. Return to Today for the current recommendation.";
+}
+
 export const startWorkout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const workout = await getTodaysWorkoutData(supabase, userId, data.day);
+    const workout = await getTodaysWorkoutData(supabase, userId, undefined, data.timeZone);
 
     if (workout.status !== "READY") {
-      throw new Error("The selected workout is not available from the active program.");
+      throw new Error(workoutStartMessage("workout_unavailable"));
     }
 
     const identity = {
@@ -52,11 +63,27 @@ export const startWorkout = createServerFn({ method: "POST" })
       );
     }
 
+    let todaysReadiness = null;
+    if (!existing) {
+      todaysReadiness = await getTodaysReadiness(supabase, userId, data.timeZone);
+    }
+
+    const entryGate = evaluateWorkoutStartGate({
+      availability: { status: "ready", nextWorkoutDay: workout.workout.day },
+      requestedDay: data.day,
+      hasOpenSession: Boolean(existing),
+      hasTodayReadiness: todaysReadiness !== null,
+    });
+    if (!entryGate.allowed) throw new Error(workoutStartMessage(entryGate.reason));
+
     let resumed = Boolean(existing);
     let session = existing;
     let executionSnapshot = existing?.workoutSnapshot ?? null;
     if (!session) {
-      const adaptationModifier = await getTodaysReadinessModifier(supabase, userId, data.timeZone);
+      if (todaysReadiness === null) {
+        throw new Error("Complete today's readiness check-in before starting a new workout.");
+      }
+      const adaptationModifier = todaysReadiness.modifier;
 
       const needsEquipmentCatalog = lifeContext.contexts.some(
         (context) =>

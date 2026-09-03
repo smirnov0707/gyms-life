@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   IanaTimeZoneSchema,
   browserTimeZone,
+  calculateConsecutiveCalendarDayStreak,
+  calendarDayDifference,
   dayOffset,
   dayBoundsInTimeZone,
   dayInTimeZone,
@@ -42,10 +44,29 @@ describe("local-day", () => {
   it("compares date-only facts using local calendar days", () => {
     expect(dayOffset("2026-03-01", -1)).toBe("2026-02-28");
     expect(dayOffset("2026-12-31", 1)).toBe("2027-01-01");
+    expect(calendarDayDifference("2026-09-01", "2026-09-04")).toBe(3);
+    expect(calendarDayDifference("2026-09-04", "2026-09-01")).toBe(-3);
     expect(isDayWithinPastDays("2026-09-04", 7, "2026-09-04")).toBe(true);
     expect(isDayWithinPastDays("2026-08-28", 7, "2026-09-04")).toBe(true);
     expect(isDayWithinPastDays("2026-08-27", 7, "2026-09-04")).toBe(false);
     expect(isDayWithinPastDays("2026-09-05", 7, "2026-09-04")).toBe(false);
+  });
+
+  it("counts activity streaks in the user's own calendar, not UTC", () => {
+    expect(
+      calculateConsecutiveCalendarDayStreak(
+        ["2026-09-03T21:30:00.000Z", "2026-09-02T22:00:00.000Z", "2026-09-01T21:30:00.000Z"],
+        "Europe/Vilnius",
+        new Date("2026-09-03T21:45:00.000Z"),
+      ),
+    ).toBe(3);
+    expect(
+      calculateConsecutiveCalendarDayStreak(
+        ["2026-09-02T21:30:00.000Z"],
+        "Europe/Vilnius",
+        new Date("2026-09-03T10:00:00.000Z"),
+      ),
+    ).toBe(1);
   });
 
   it("rejects invalid or unsupported values at the boundary", () => {

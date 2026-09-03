@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { calculateConsecutiveCalendarDayStreak } from "./local-day";
+import { resolvePersistedProfileTimeZone } from "./user-context.server";
 
 export interface Achievement {
   id: string;
@@ -11,51 +13,37 @@ export interface Achievement {
   maxProgress: number;
 }
 
-function calculateWorkoutStreak(workoutDates: string[]): number {
-  const dates = new Set(workoutDates.map((date) => date.slice(0, 10)));
-  const cursor = new Date();
-  let streak = 0;
-
-  while (true) {
-    const today = cursor.toISOString().slice(0, 10);
-    if (!dates.has(today)) {
-      if (streak === 0) {
-        cursor.setUTCDate(cursor.getUTCDate() - 1);
-        if (!dates.has(cursor.toISOString().slice(0, 10))) return 0;
-        continue;
-      }
-      return streak;
-    }
-    streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-}
-
 export const getUserAchievements = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
-    const [{ data: workouts, error: workoutsError }, { data: meals, error: mealsError }] =
-      await Promise.all([
-        supabase
-          .from("workout_sessions")
-          .select("started_at, total_volume")
-          .eq("user_id", userId)
-          .not("finished_at", "is", null)
-          .order("started_at", { ascending: false }),
-        supabase.from("vision_meal_scans").select("id").eq("user_id", userId),
-      ]);
-    if (workoutsError || mealsError) throw new Error("Could not load achievement progress.");
+    const [workoutsResult, mealsResult, profileResult] = await Promise.all([
+      supabase
+        .from("workout_sessions")
+        .select("started_at, total_volume")
+        .eq("user_id", userId)
+        .not("finished_at", "is", null)
+        .order("started_at", { ascending: false }),
+      supabase.from("vision_meal_scans").select("id").eq("user_id", userId),
+      supabase.from("profiles").select("time_zone").eq("id", userId).maybeSingle(),
+    ]);
+    if (workoutsResult.error || mealsResult.error || profileResult.error) {
+      throw new Error("Could not load achievement progress.");
+    }
 
-    const completedWorkouts = workouts ?? [];
-    const streak = calculateWorkoutStreak(completedWorkouts.map((workout) => workout.started_at));
+    const completedWorkouts = workoutsResult.data ?? [];
+    const timeZone = resolvePersistedProfileTimeZone(profileResult.data?.time_zone);
+    const streak = calculateConsecutiveCalendarDayStreak(
+      completedWorkouts.map((workout) => workout.started_at),
+      timeZone,
+    );
     const totalWorkouts = completedWorkouts.length;
     const totalVolume = completedWorkouts.reduce(
       (total, workout) => total + Number(workout.total_volume),
       0,
     );
-    const totalMeals = (meals ?? []).length;
+    const totalMeals = (mealsResult.data ?? []).length;
 
     const achievements: Achievement[] = [
       {

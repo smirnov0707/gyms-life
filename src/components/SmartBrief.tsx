@@ -51,7 +51,11 @@ const ROUTE_ICON: Record<BriefRoute, typeof Sparkles> = {
 const cacheKey = (lang: string, timeZone: string) =>
   `gl_brief_${lang}_${timeZone}_${dayInTimeZone(new Date(), timeZone)}`;
 
-export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
+/**
+ * An evidence-led interpretation layer. Training entry stays in TodayDecision
+ * so an AI-produced action card can never skip a deterministic safety check.
+ */
+export function SmartBrief() {
   const { t, lang } = useI18n();
   const timeZone = browserTimeZone();
   const fetchBrief = useServerFn(getDailyBrief);
@@ -214,7 +218,6 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
             <div className="grid gap-2 sm:grid-cols-2">
               {brief.actions.map((a, i) => {
                 const Icon = ROUTE_ICON[a.route] ?? Sparkles;
-                const startsWorkout = a.route === "/app" && workoutDay != null;
                 const cls = cn(
                   "lift press group flex items-start gap-3 rounded-2xl border p-4 transition-colors",
                   a.priority === "high"
@@ -249,16 +252,7 @@ export function SmartBrief({ workoutDay }: { workoutDay?: number | null }) {
                     </span>
                   </>
                 );
-                return startsWorkout ? (
-                  <Link
-                    key={i}
-                    to="/workout/$day"
-                    params={{ day: String(workoutDay) }}
-                    className={cls}
-                  >
-                    {inner}
-                  </Link>
-                ) : (
+                return (
                   <Link key={i} to={a.route} className={cls}>
                     {inner}
                   </Link>

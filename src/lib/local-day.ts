@@ -170,6 +170,50 @@ export function dayOffset(day: string, offsetDays: number): string {
   return formatDay(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, shifted.getUTCDate());
 }
 
+/** Returns the number of whole calendar days from `startDay` to `endDay`. */
+export function calendarDayDifference(startDay: string, endDay: string): number {
+  const start = dayParts(startDay);
+  const end = dayParts(endDay);
+  const startEpoch = Date.UTC(start.year, start.month - 1, start.day);
+  const endEpoch = Date.UTC(end.year, end.month - 1, end.day);
+  return Math.round((endEpoch - startEpoch) / 86_400_000);
+}
+
+/**
+ * Counts consecutive activity days in the caller's calendar. An activity on
+ * yesterday starts the streak when none has been recorded today, so a rest
+ * morning does not reset an otherwise consecutive training run.
+ */
+export function calculateConsecutiveCalendarDayStreak(
+  timestamps: readonly string[],
+  timeZone = "UTC",
+  now = new Date(),
+): number {
+  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const activeDays = new Set(
+    timestamps.flatMap((timestamp) => {
+      const instant = new Date(timestamp);
+      return Number.isNaN(instant.getTime()) ? [] : [dayInTimeZone(instant, zone)];
+    }),
+  );
+
+  let cursorDay = dayInTimeZone(now, zone);
+  let streak = 0;
+
+  while (true) {
+    if (!activeDays.has(cursorDay)) {
+      if (streak === 0) {
+        cursorDay = dayOffset(cursorDay, -1);
+        if (!activeDays.has(cursorDay)) return 0;
+        continue;
+      }
+      return streak;
+    }
+    streak += 1;
+    cursorDay = dayOffset(cursorDay, -1);
+  }
+}
+
 /**
  * Checks a date-only fact against a user's calendar day. Date-only rows such
  * as readiness and nutrition logs must not be compared to a UTC instant.

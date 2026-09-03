@@ -4,7 +4,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { hasCurrentAiPersonalizationConsent } from "./ai-personalization-consent.policy";
 import { canonicalWorkoutEquipment } from "./workout-equipment.schema";
 import { buildDigitalAthleteState, loadDigitalAthleteState } from "./digital-athlete.service";
-import { IanaTimeZoneSchema, dayInTimeZone, dayOffset } from "./local-day";
+import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
+export { calculateConsecutiveCalendarDayStreak as calculateWorkoutStreak } from "./local-day";
 import type {
   AiPersonalizationSources,
   DigitalAthleteDataGap,
@@ -635,33 +636,4 @@ export function contextForAi(context: CentralUserContext): string {
     null,
     2,
   );
-}
-
-export function calculateWorkoutStreak(
-  workoutDates: string[],
-  timeZone = "UTC",
-  now = new Date(),
-): number {
-  const zone = IanaTimeZoneSchema.parse(timeZone);
-  const activeDates = new Set(
-    workoutDates.flatMap((date) => {
-      const instant = new Date(date);
-      return Number.isNaN(instant.getTime()) ? [] : [dayInTimeZone(instant, zone)];
-    }),
-  );
-  let cursorDay = dayInTimeZone(now, zone);
-  let streak = 0;
-
-  while (true) {
-    if (!activeDates.has(cursorDay)) {
-      if (streak === 0) {
-        cursorDay = dayOffset(cursorDay, -1);
-        if (!activeDates.has(cursorDay)) return 0;
-        continue;
-      }
-      return streak;
-    }
-    streak += 1;
-    cursorDay = dayOffset(cursorDay, -1);
-  }
 }

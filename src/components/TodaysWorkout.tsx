@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Clock, Play, Dumbbell } from "lucide-react";
+import { ArrowRight, Clock, Dumbbell } from "lucide-react";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
@@ -98,8 +98,8 @@ export function TodaysWorkout() {
           ))}
         </div>
         <Button asChild size="lg" className="mt-6 w-full rounded-none font-bold hard-shadow">
-          <Link to="/workout/$day" params={{ day: String(workout.day) }}>
-            <Play className="mr-2 size-4" /> Start Workout
+          <Link to="/app">
+            Review today's decision <ArrowRight className="ml-2 size-4" />
           </Link>
         </Button>
       </div>

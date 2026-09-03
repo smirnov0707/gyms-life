@@ -6,9 +6,11 @@ import {
   ArrowRight,
   HeartPulse,
   Loader2,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   ThumbsDown,
+  TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GlowCard } from "@/components/GlowCard";
@@ -27,6 +29,7 @@ type Copy = {
   evidence: string;
   confidence: string;
   unavailable: string;
+  retry: string;
   notHelpful: string;
   feedbackRecorded: string;
   feedbackFailed: string;
@@ -42,6 +45,7 @@ function copyFor(lang: string): Copy {
       evidence: "Why this action",
       confidence: "Decision confidence",
       unavailable: "We couldn't load today's decision. You can still use all training tools.",
+      retry: "Try again",
       notHelpful: "This doesn't fit today",
       feedbackRecorded: "We recorded your feedback.",
       feedbackFailed: "We couldn't record that feedback. Please try again.",
@@ -121,6 +125,7 @@ function copyFor(lang: string): Copy {
     confidence: "Sprendimo patikimumas",
     unavailable:
       "Nepavyko įkelti šiandienos sprendimo. Visi treniruočių įrankiai vis tiek pasiekiami.",
+    retry: "Bandyti dar kartą",
     notHelpful: "Šis pasiūlymas šiandien netinka",
     feedbackRecorded: "Tavo grįžtamąjį ryšį užregistravome.",
     feedbackFailed: "Nepavyko užregistruoti grįžtamojo ryšio. Bandyk dar kartą.",
@@ -284,7 +289,24 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   };
 
   if (failed) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
+    return (
+      <GlowCard className="panel border-amber-500/30 p-6 md:p-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-500" />
+            <p className="text-sm leading-relaxed text-muted-foreground">{copy.unavailable}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11 shrink-0 self-start rounded-full px-4 text-sm font-bold sm:self-auto"
+            onClick={() => void load()}
+          >
+            <RefreshCw className="size-4" /> {copy.retry}
+          </Button>
+        </div>
+      </GlowCard>
+    );
   }
 
   if (loading || !decision) {

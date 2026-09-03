@@ -1,6 +1,6 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Play, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -41,9 +41,9 @@ export function ProgramActivationActions({
   if (active) {
     return (
       <Button asChild size="lg" className="hard-shadow rounded-none px-8 font-bold">
-        <Link to="/workout/$day" params={{ day: "1" }}>
-          <Play className="mr-1 size-4" />
-          Start Workout
+        <Link to="/app">
+          {lang === "lt" ? "Atidaryti šiandienos sprendimą" : "Open today's decision"}
+          <ArrowRight className="ml-1 size-4" />
         </Link>
       </Button>
     );

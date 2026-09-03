@@ -2,7 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
-import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
+import {
+  IanaTimeZoneSchema,
+  calculateConsecutiveCalendarDayStreak,
+  dayInTimeZone,
+} from "./local-day";
 
 /** Vieninteliai maršrutai, į kuriuos AI gali nukreipti veiksmų kortelėse. */
 export const BRIEF_ROUTES = [
@@ -110,7 +114,7 @@ export const getDailyBrief = createServerFn({ method: "POST" })
     const system = `You are the operating brain of GYMS.LIFE, a training + nutrition app. You receive only the permission-aware snapshot below and your job is to connect the dots between the app's features and tell the user exactly what to do today.
 
 APP FEATURES YOU CAN SEND THE USER TO (use the exact route string):
-- "/app" — dashboard, today's workout, start session
+- "/app" — today's canonical decision and next safe action
 - "/onboarding" — body scan + goal intake, generates a new training plan
 - "/exercises" — exercise library with technique videos and AI filters
 - "/ar" — live technique scanner / form check with camera
@@ -131,6 +135,7 @@ RULES
 - focus: 2-4 words, the single theme of the day.
 - actions: 3 or 4 items, ordered by importance. Each must reference REAL data from the snapshot and point to the most relevant route. Never recommend something already done today. Fill the biggest gaps first (see MISSING DATA FLAGS). reason = max 14 words, concrete. evidence = the exact data point from the snapshot that triggered this action, formatted like "readiness 62 / sleep 5.5h" or "0 kcal logged today" — numbers only from the snapshot, max 8 words. cta = 2-3 word button label.
 - watchouts: 0-2 short warnings (fatigue, missed protein, long inactivity, low form score). Empty array if nothing to warn about.
+- Never link directly to a workout session. When training is relevant, route to "/app" so GYMS.LIFE's deterministic Today decision selects the safe next action.
 - No medical claims. No generic motivational filler.
 
 PERSONALIZATION RULES
@@ -183,7 +188,6 @@ RETURN EXACTLY THIS JSON SHAPE:
     ]);
     const today = dayInTimeZone(new Date(), timeZone);
     const workoutDates = (recentWorkouts ?? []).map((workout) => workout.started_at);
-    const { calculateWorkoutStreak } = await import("./user-context.server");
     const gaps = [
       ...(latestCheckin?.checkin_on === today ? [] : ["daily_readiness_checkin"]),
       ...(snapshot.currentDay.nutrition.available &&
@@ -204,7 +208,7 @@ RETURN EXACTLY THIS JSON SHAPE:
       actions,
       watchouts: parsed.watchouts.slice(0, 2),
       gaps,
-      streakDays: calculateWorkoutStreak(workoutDates, timeZone),
+      streakDays: calculateConsecutiveCalendarDayStreak(workoutDates, timeZone),
       readiness: latestCheckin?.readiness_score ?? null,
     });
   });
