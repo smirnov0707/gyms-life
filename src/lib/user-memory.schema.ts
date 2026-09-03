@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CalculatedMemoryValueSchema } from "./calculated-memory.contract";
 
 const TimestampSchema = z
   .string()
@@ -57,26 +58,40 @@ const UserMemoryDbRowSchema = z
     confidence: z.number().finite().min(0).max(1),
     importance: z.number().finite().min(0).max(1),
     status: UserMemoryStatusSchema,
+    value: z.unknown().nullable().default(null),
     evidence_refs: z.array(z.unknown()),
     last_confirmed_at: TimestampSchema,
     expires_at: TimestampSchema.nullable(),
   })
   .strict();
 
-export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform((row) => ({
-  id: row.id,
-  type: row.memory_type,
-  content: row.content,
-  source: row.source,
-  confidence: row.confidence,
-  importance: row.importance,
-  status: row.status,
-  evidenceCount: row.evidence_refs.length,
-  lastConfirmedAt: row.last_confirmed_at,
-  expiresAt: row.expires_at,
-}));
+export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform((row) => {
+  const calculatedValue =
+    row.source === "calculated" ? CalculatedMemoryValueSchema.safeParse(row.value) : null;
+
+  return {
+    id: row.id,
+    type: row.memory_type,
+    content: row.content,
+    source: row.source,
+    confidence: row.confidence,
+    importance: row.importance,
+    status: row.status,
+    calculatedValue: calculatedValue?.success ? calculatedValue.data : null,
+    evidenceCount: row.evidence_refs.length,
+    lastConfirmedAt: row.last_confirmed_at,
+    expiresAt: row.expires_at,
+  };
+});
 
 export type UserMemoryTransparencyItem = z.infer<typeof UserMemoryTransparencyItemSchema>;
+
+/** Returns only an application-owned calculated value that matches a known contract. */
+export function calculatedMemoryValueForTransparency(
+  memory: UserMemoryTransparencyItem,
+): UserMemoryTransparencyItem["calculatedValue"] {
+  return memory.source === "calculated" ? memory.calculatedValue : null;
+}
 
 /** Bounded active memory that may reach an AI worker after explicit consent. */
 export const ActiveMemoryForAiItemSchema = z

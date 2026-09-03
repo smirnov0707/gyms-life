@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildActiveMemoryForAi,
+  calculatedMemoryValueForTransparency,
   CorrectUserMemoryInputSchema,
   parseUserMemoryTransparencyItems,
 } from "./user-memory.schema";
@@ -29,11 +30,36 @@ describe("user memory transparency contracts", () => {
         confidence: 0.75,
         importance: 0.8,
         status: "active",
+        calculatedValue: null,
         evidenceCount: 2,
         lastConfirmedAt: row.last_confirmed_at,
         expiresAt: null,
       },
     ]);
+  });
+
+  it("exposes only a validated calculated value for a user-facing evidence explanation", () => {
+    const memory = parseUserMemoryTransparencyItems([
+      {
+        ...row,
+        value: {
+          kind: "recovery_low_7d",
+          averageReadiness: 52.5,
+          checkinsLast7Days: 4,
+          windowDays: 7,
+        },
+      },
+    ]).at(0);
+    if (memory === undefined) throw new Error("Expected a parsed memory item.");
+
+    expect(calculatedMemoryValueForTransparency(memory)).toEqual({
+      kind: "recovery_low_7d",
+      averageReadiness: 52.5,
+      checkinsLast7Days: 4,
+      windowDays: 7,
+    });
+    expect(calculatedMemoryValueForTransparency({ ...memory, source: "user_reported" })).toBeNull();
+    expect(calculatedMemoryValueForTransparency({ ...memory, calculatedValue: null })).toBeNull();
   });
 
   it("rejects invalid raw rows before they reach the user interface", () => {

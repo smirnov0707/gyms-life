@@ -29,7 +29,11 @@ import {
   getUserMemoryTransparency,
   markMemoryIncorrect,
 } from "@/lib/user-memory.functions";
-import type { UserMemorySource, UserMemoryTransparencyItem } from "@/lib/user-memory.schema";
+import {
+  calculatedMemoryValueForTransparency,
+  type UserMemorySource,
+  type UserMemoryTransparencyItem,
+} from "@/lib/user-memory.schema";
 
 export const Route = createFileRoute("/_authenticated/me")({
   head: () => ({
@@ -283,6 +287,73 @@ function memorySourceLabel(source: UserMemorySource, lang: string): string {
     system_generated: english ? "System-generated" : "Sugeneruota sistemos",
   };
   return labels[source];
+}
+
+/** Renders app-owned evidence in the user's language without trusting free-form content. */
+function calculatedMemoryContent(memory: UserMemoryTransparencyItem, lang: string): string {
+  const value = calculatedMemoryValueForTransparency(memory);
+  if (value === null) return memory.content;
+
+  if (lang === "en") {
+    switch (value.kind) {
+      case "training_consistency_28d":
+        return `You completed ${value.sessionsLast28Days} workouts in the last ${value.windowDays} days.`;
+      case "recovery_low_7d":
+        return `Your average readiness was ${value.averageReadiness}/100 in the last ${value.windowDays} days.`;
+      case "weight_change_30d":
+        return `Your recorded weight changed by ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toFixed(1)} kg in the last ${value.windowDays} days.`;
+      case "nutrition_logging_14d":
+        return `You logged nutrition on ${value.loggedDaysLast14Days} of the last ${value.windowDays} days.`;
+    }
+  }
+
+  if (lang !== "lt") return memory.content;
+
+  switch (value.kind) {
+    case "training_consistency_28d":
+      return `Per pastarąsias ${value.windowDays} dienas atlikai ${value.sessionsLast28Days} treniruotes.`;
+    case "recovery_low_7d":
+      return `Per pastarąsias ${value.windowDays} dienas vidutinis tavo pasiruošimas buvo ${value.averageReadiness}/100.`;
+    case "weight_change_30d":
+      return `Per pastarąsias ${value.windowDays} dienas užregistruotas svorio pokytis: ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toFixed(1)} kg.`;
+    case "nutrition_logging_14d":
+      return `Per pastarąsias ${value.windowDays} dienas mitybą užregistravai ${value.loggedDaysLast14Days} dienų.`;
+  }
+}
+
+/** Explains the observed records behind a calculated memory without exposing IDs or raw rows. */
+function calculatedMemoryEvidenceSummary(
+  memory: UserMemoryTransparencyItem,
+  lang: string,
+): string | null {
+  const value = calculatedMemoryValueForTransparency(memory);
+  if (value === null) return null;
+
+  if (lang === "en") {
+    switch (value.kind) {
+      case "training_consistency_28d":
+        return `Evidence: ${value.sessionsLast28Days} completed workout records across ${value.windowDays} days.`;
+      case "recovery_low_7d":
+        return `Evidence: ${value.checkinsLast7Days} readiness check-ins across ${value.windowDays} days.`;
+      case "weight_change_30d":
+        return `Evidence: ${value.measurementsLast30Days} weight measurements across ${value.windowDays} days.`;
+      case "nutrition_logging_14d":
+        return `Evidence: nutrition logged on ${value.loggedDaysLast14Days} days across ${value.windowDays} days.`;
+    }
+  }
+
+  if (lang !== "lt") return null;
+
+  switch (value.kind) {
+    case "training_consistency_28d":
+      return `Įrodymai: ${value.sessionsLast28Days} baigtų treniruočių įrašai per ${value.windowDays} dienas.`;
+    case "recovery_low_7d":
+      return `Įrodymai: ${value.checkinsLast7Days} pasiruošimo check-in'ai per ${value.windowDays} dienas.`;
+    case "weight_change_30d":
+      return `Įrodymai: ${value.measurementsLast30Days} svorio matavimai per ${value.windowDays} dienas.`;
+    case "nutrition_logging_14d":
+      return `Įrodymai: mityba užregistruota ${value.loggedDaysLast14Days} dienų per ${value.windowDays} dienas.`;
+  }
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -576,6 +647,8 @@ function AthleteModelPage() {
               const incorrectPending = pendingMemoryAction === `incorrect:${memory.id}`;
               const forgetPending = pendingMemoryAction === `forget:${memory.id}`;
               const isEditing = editingMemoryId === memory.id;
+              const displayedContent = calculatedMemoryContent(memory, lang);
+              const evidenceSummary = calculatedMemoryEvidenceSummary(memory, lang);
               const correctionInvalid =
                 correctedContent.trim().length === 0 || correctedContent.trim().length > 400;
               return (
@@ -583,17 +656,18 @@ function AthleteModelPage() {
                   key={memory.id}
                   className="rounded-2xl border border-border bg-surface-2 p-4"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
                     <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-primary">
                       {memoryTypeLabel(memory.type, lang)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <Info className="size-3.5" /> {copy.memory.evidence(memory.evidenceCount)}
                     </span>
                   </div>
 
                   <p className="mt-3 text-sm font-medium leading-relaxed text-foreground">
-                    {memory.content}
+                    {displayedContent}
+                  </p>
+                  <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                    <Info className="mt-0.5 size-3.5 shrink-0" />
+                    {evidenceSummary ?? copy.memory.evidence(memory.evidenceCount)}
                   </p>
 
                   <dl className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
@@ -636,7 +710,7 @@ function AthleteModelPage() {
                           disabled={pendingMemoryAction !== null}
                           onClick={() => {
                             setEditingMemoryId(isEditing ? null : memory.id);
-                            setCorrectedContent(isEditing ? "" : memory.content);
+                            setCorrectedContent(isEditing ? "" : displayedContent);
                           }}
                         >
                           <Pencil />

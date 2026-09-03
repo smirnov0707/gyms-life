@@ -16,7 +16,7 @@ function activeMemoryQuery(supabase: SupabaseClient<Database>, userId: string, n
   return supabase
     .from("user_memory")
     .select(
-      "id, memory_type, content, source, confidence, importance, status, evidence_refs, last_confirmed_at, expires_at",
+      "id, memory_type, content, source, confidence, importance, status, value, evidence_refs, last_confirmed_at, expires_at",
     )
     .eq("user_id", userId)
     .eq("status", "active")
