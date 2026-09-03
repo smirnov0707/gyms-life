@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getTodaysWorkoutData } from "./active-plan.service";
-import { adaptTrainingPlanDay } from "./training-guidance.service";
+import { getActivePlanData } from "./active-plan.service";
 import { validateWorkoutSetAgainstPlan } from "./workout-set.engine";
+import { resolveWorkoutSessionDay } from "./workout-session-plan.engine";
 import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
 
 const Input = z.object({
@@ -47,13 +47,17 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Workout session is missing active plan metadata.");
     }
 
-    const workout = await getTodaysWorkoutData(supabase, userId, session.dayIndex + 1);
-    if (workout.status !== "READY" || workout.plan.id !== session.planId) {
+    const activePlan = await getActivePlanData(supabase, userId);
+    if (activePlan.status !== "READY" || activePlan.plan.id !== session.planId) {
       throw new Error("Workout plan is no longer available for this session.");
     }
 
-    const adjustedWorkout = adaptTrainingPlanDay(workout.workout, session.adaptationModifier);
-    validateWorkoutSetAgainstPlan(adjustedWorkout, data);
+    const legacyPlanDay = activePlan.plan.data.days.find((day) => day.day === session.dayIndex + 1);
+    const plannedDay = resolveWorkoutSessionDay(session, legacyPlanDay ?? null);
+    if (!plannedDay) {
+      throw new Error("The planned workout day could not be found for this session.");
+    }
+    validateWorkoutSetAgainstPlan(plannedDay, data);
 
     const { data: duplicate, error: duplicateError } = await supabase
       .from("set_logs")

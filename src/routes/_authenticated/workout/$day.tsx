@@ -1,7 +1,16 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, Clock, Dumbbell, Loader2, TimerReset, Trophy } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Clock,
+  Dumbbell,
+  Loader2,
+  SkipForward,
+  TimerReset,
+  Trophy,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GlowCard } from "@/components/GlowCard";
@@ -32,6 +41,20 @@ function parseOptionalWorkoutNumber(value: string, label: string): number | null
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) throw new Error(label + " turi būti skaičius.");
   return parsed;
+}
+
+function formatDuration(seconds: number): string {
+  const normalized = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(normalized / 60);
+  const remainingSeconds = normalized % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+function firstUnloggedSetNumber(totalSets: number, completedSetNumbers: Set<number>): number {
+  for (let set = 1; set <= totalSets; set += 1) {
+    if (!completedSetNumbers.has(set)) return set;
+  }
+  return totalSets + 1;
 }
 
 function coachMessage(guidance: ExerciseTrainingGuidance): string {
@@ -103,7 +126,6 @@ function adaptationMessage(adaptation: WorkoutExecutionAdaptation): string | nul
 
 function WorkoutPage() {
   const { day } = Route.useParams();
-  const dayNumber = Number(day);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -134,15 +156,29 @@ function WorkoutPage() {
   }, []);
 
   const workoutQuery = useQuery({
-    queryKey: ["workout", dayNumber],
-    queryFn: () => getTodaysWorkout({ data: { day: dayNumber } }),
-    enabled: Number.isInteger(dayNumber) && dayNumber > 0,
+    queryKey: ["workout", "next"],
+    queryFn: () => getTodaysWorkout({ data: { timeZone: browserTimeZone() } }),
   });
+
+  const canonicalWorkout = workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null;
+  const canonicalWorkoutDay = canonicalWorkout?.day ?? null;
+
+  useEffect(() => {
+    if (canonicalWorkoutDay === null || day === String(canonicalWorkoutDay)) return;
+    navigate({
+      to: "/workout/$day",
+      params: { day: String(canonicalWorkoutDay) },
+      replace: true,
+    });
+  }, [canonicalWorkoutDay, day, navigate]);
 
   const startMutation = useMutation({
     mutationFn: async () => {
+      if (canonicalWorkoutDay === null) {
+        throw new Error("Šiandienai nėra prieinamos treniruotės.");
+      }
       await syncQueuedSets();
-      return startWorkout({ data: { day: dayNumber, timeZone: browserTimeZone() } });
+      return startWorkout({ data: { day: canonicalWorkoutDay, timeZone: browserTimeZone() } });
     },
     onSuccess: (result) => {
       setSessionId(result.session.id);
@@ -158,11 +194,13 @@ function WorkoutPage() {
       const nextIndex =
         firstIncomplete === -1 ? result.workout.exercises.length - 1 : firstIncomplete;
       const exercise = result.workout.exercises[nextIndex];
-      const completed = result.logs.filter(
-        (log) => log.exercise_slug === exercise?.slug && log.done,
-      ).length;
+      const completedSetNumbers = new Set(
+        result.logs
+          .filter((log) => log.exercise_slug === exercise?.slug && log.done)
+          .map((log) => log.set_number),
+      );
       setExerciseIndex(Math.max(0, nextIndex));
-      setSetNumber(Math.min((completed || 0) + 1, exercise?.sets ?? 1));
+      setSetNumber(firstUnloggedSetNumber(exercise?.sets ?? 1, completedSetNumbers));
       if (result.resumed) toast.info("Tęsiame nebaigtą treniruotę.");
     },
     onError: (error) => toast.error(errorMessage(error, "Nepavyko pradėti treniruotės")),
@@ -242,6 +280,7 @@ function WorkoutPage() {
         volume: result.session.totalVolume,
       });
       await Promise.all([
+        qc.invalidateQueries({ queryKey: ["workout"] }),
         qc.invalidateQueries({ queryKey: ["sessions"] }),
         qc.invalidateQueries({ queryKey: ["sessions-all"] }),
         qc.invalidateQueries({ queryKey: ["performance-overview"] }),
@@ -250,6 +289,7 @@ function WorkoutPage() {
         qc.invalidateQueries({ queryKey: ["progress-intelligence"] }),
         qc.invalidateQueries({ queryKey: ["injury-risk"] }),
       ]);
+      window.dispatchEvent(new Event("gymslife:adaptation"));
       toast.success("Treniruotė užbaigta!");
     },
     onError: (error) => toast.error(errorMessage(error, "Nepavyko užbaigti treniruotės")),
@@ -268,8 +308,7 @@ function WorkoutPage() {
     return () => window.removeEventListener("online", onOnline);
   }, [syncQueuedSets]);
 
-  const workout =
-    activeWorkout ?? (workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null);
+  const workout = activeWorkout ?? canonicalWorkout;
   const exercise = workout?.exercises[exerciseIndex];
   const exerciseGuidance = workoutGuidance?.exercises.find(
     (guidance) => guidance.exerciseSlug === exercise?.slug,
@@ -296,13 +335,31 @@ function WorkoutPage() {
         <Loader2 className="size-8 animate-spin text-primary" />
       </main>
     );
-  if (workoutQuery.isError || !workout)
+  if (workoutQuery.isError || !workout) {
+    const unavailableMessage =
+      workoutQuery.data?.status === "WEEKLY_TARGET_REACHED"
+        ? "Šios savaitės treniruočių tikslas jau įvykdytas. Šiandien skirk laiko atsistatymui arba grįžk, kai bus kita rekomenduojama sesija."
+        : "Šiuo metu nėra prieinamos treniruotės. Atidaryk šiandienos sprendimą, kad pamatytum saugų kitą žingsnį.";
     return (
       <main className="mx-auto max-w-3xl px-4 py-8">
         <GlowCard className="panel p-6">
-          <p className="text-destructive">Treniruotės nepavyko įkelti.</p>
-          <Button className="mt-4" onClick={() => navigate({ to: "/training" })}>
-            Grįžti į Training Hub
+          <p className={workoutQuery.isError ? "text-destructive" : "text-muted-foreground"}>
+            {workoutQuery.isError ? "Treniruotės nepavyko įkelti." : unavailableMessage}
+          </p>
+          <Button className="mt-4 min-h-11" onClick={() => navigate({ to: "/app" })}>
+            Atidaryti šiandienos sprendimą
+          </Button>
+        </GlowCard>
+      </main>
+    );
+  }
+  if (sessionId && !exercise)
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-8">
+        <GlowCard className="panel p-6">
+          <p className="text-destructive">Nepavyko atkurti aktyvaus pratimo.</p>
+          <Button className="mt-4 min-h-11" onClick={() => navigate({ to: "/app" })}>
+            Grįžti į šiandienos sprendimą
           </Button>
         </GlowCard>
       </main>
@@ -313,23 +370,26 @@ function WorkoutPage() {
         <GlowCard className="panel p-8 text-center">
           <Trophy className="mx-auto size-14 text-primary" />
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.24em] text-primary">
-            Workout Complete
+            Treniruotė užbaigta
           </p>
           <h1 className="mt-2 text-4xl">Puiki treniruotė!</h1>
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl bg-surface-2 p-5">
-              <div className="text-3xl font-bold">{Math.floor(summary.duration / 60)} min</div>
+              <div className="text-3xl font-bold">{formatDuration(summary.duration)}</div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground">trukmė</div>
             </div>
             <div className="rounded-xl bg-surface-2 p-5">
               <div className="text-3xl font-bold">{summary.volume} kg</div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                total volume
+                bendras tūris
               </div>
             </div>
           </div>
-          <Button className="mt-7 w-full" onClick={() => navigate({ to: "/training" })}>
-            Grįžti į Training Hub
+          <Button
+            className="mt-7 min-h-12 w-full font-bold"
+            onClick={() => navigate({ to: "/app" })}
+          >
+            Atidaryti šiandienos sprendimą
           </Button>
         </GlowCard>
       </main>
@@ -338,8 +398,8 @@ function WorkoutPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 pb-12">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <Button variant="ghost" onClick={() => navigate({ to: "/training" })}>
-          <ArrowLeft className="mr-1 size-4" /> Training Hub
+        <Button variant="ghost" className="min-h-11" onClick={() => navigate({ to: "/app" })}>
+          <ArrowLeft className="mr-1 size-4" /> Šiandien
         </Button>
         <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Clock className="size-4" /> {workout.estimated_minutes} min
@@ -347,35 +407,43 @@ function WorkoutPage() {
       </div>
       <GlowCard className="panel p-6 md:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">
-          Workout Session
+          Treniruotės sesija
         </p>
-        <h1 className="mt-2 text-4xl">{workout.title}</h1>
+        <h1 className="mt-2 text-3xl sm:text-4xl">{workout.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{workout.focus}</p>
         {adaptedDescription ? (
           <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
             Šiandienos adaptacija: {adaptedDescription}
           </p>
         ) : null}
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-surface-2">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-          />
+        <div className="mt-5">
+          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <span>Sesijos progresas</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+            />
+          </div>
         </div>
         {!sessionId ? (
           <div className="mt-8 text-center">
             <Dumbbell className="mx-auto size-12 text-primary" />
             <p className="mt-4 text-sm text-muted-foreground">
-              Pradėsime realią treniruotės sesiją ir išsaugosime kiekvieną atliktą setą.
+              {workout.warmup
+                ? `Pradžia: ${workout.warmup}`
+                : "Pradėsime realią treniruotės sesiją ir išsaugosime kiekvieną atliktą setą."}
             </p>
             <Button
               size="lg"
-              className="mt-5 w-full rounded-none font-bold hard-shadow"
+              className="mt-5 min-h-12 w-full rounded-none font-bold hard-shadow"
               onClick={() => startMutation.mutate()}
               disabled={startMutation.isPending}
             >
               {startMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Start Workout
+              Pradėti arba tęsti treniruotę
             </Button>
           </div>
         ) : (
@@ -384,31 +452,49 @@ function WorkoutPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                    Exercise {exerciseIndex + 1} / {workout.exercises.length}
+                    Pratimas {exerciseIndex + 1} / {workout.exercises.length}
                   </p>
-                  <h2 className="mt-1 text-2xl">{exercise?.name}</h2>
+                  <h2 className="mt-1 text-2xl">{exercise.name}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Plan: {exercise?.sets} × {exercise?.reps}
+                    Plane: {exercise.sets} × {exercise.reps}
                   </p>
                 </div>
                 <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                  Set {Math.min(setNumber, totalSets)} / {totalSets}
+                  Setas {Math.min(setNumber, totalSets)} / {totalSets}
                 </span>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link
+                  to="/exercises/$slug"
+                  params={{ slug: exercise.slug }}
+                  className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  Peržiūrėti techniką
+                </Link>
+                {exercise.notes ? (
+                  <p className="text-sm leading-5 text-muted-foreground">{exercise.notes}</p>
+                ) : null}
               </div>
               {currentSetComplete ? (
                 <div className="mt-6">
                   <div className="grid place-items-center rounded-xl bg-primary/10 p-6">
                     <Check className="size-8 text-primary" />
-                    <p className="mt-2 font-semibold">Exercise complete</p>
+                    <p className="mt-2 font-semibold">Pratimas užbaigtas</p>
                   </div>
                   {lastExercise ? (
                     <>
                       <p className="mt-5 text-center text-sm text-muted-foreground">
                         Visi pratimai atlikti. Gali užbaigti treniruotę.
                       </p>
+                      {workout.cooldown ? (
+                        <p className="mt-3 rounded-xl bg-surface-2 px-4 py-3 text-left text-sm text-muted-foreground">
+                          <span className="font-semibold text-foreground">Pabaigai: </span>
+                          {workout.cooldown}
+                        </p>
+                      ) : null}
                       <Button
                         size="lg"
-                        className="mt-5 w-full rounded-none font-bold hard-shadow"
+                        className="mt-5 min-h-12 w-full rounded-none font-bold hard-shadow"
                         onClick={() => finishMutation.mutate()}
                         disabled={finishMutation.isPending}
                       >
@@ -417,19 +503,19 @@ function WorkoutPage() {
                         ) : (
                           <Trophy className="mr-2 size-4" />
                         )}
-                        Finish Workout
+                        Užbaigti treniruotę
                       </Button>
                     </>
                   ) : (
                     <Button
-                      className="mt-5 w-full"
+                      className="mt-5 min-h-12 w-full font-bold"
                       onClick={() => {
                         setExerciseIndex((i) => i + 1);
                         setSetNumber(1);
                         setRest(0);
                       }}
                     >
-                      Next Exercise
+                      Kitas pratimas
                     </Button>
                   )}
                 </div>
@@ -448,7 +534,7 @@ function WorkoutPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="mt-3 rounded-full"
+                          className="mt-3 min-h-11 rounded-full"
                           onClick={() => setWeight(String(exerciseGuidance.suggestedWeightKg))}
                         >
                           Naudoti {exerciseGuidance.suggestedWeightKg} kg
@@ -459,25 +545,27 @@ function WorkoutPage() {
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div>
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Reps
+                        Pakartojimai
                       </label>
                       <Input
-                        className="mt-1"
+                        className="mt-1 h-11 text-base"
+                        type="number"
                         inputMode="numeric"
                         min="1"
                         max="100"
                         step="1"
                         value={reps}
                         onChange={(e) => setReps(e.target.value)}
-                        placeholder={String(exercise?.reps ?? "")}
+                        placeholder={String(exercise.reps)}
                       />
                     </div>
                     <div>
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Weight kg
+                        Svoris, kg
                       </label>
                       <Input
-                        className="mt-1"
+                        className="mt-1 h-11 text-base"
+                        type="number"
                         inputMode="decimal"
                         min="0"
                         max="1000"
@@ -492,7 +580,8 @@ function WorkoutPage() {
                         RPE
                       </label>
                       <Input
-                        className="mt-1"
+                        className="mt-1 h-11 text-base"
+                        type="number"
                         inputMode="decimal"
                         min="1"
                         max="10"
@@ -504,7 +593,7 @@ function WorkoutPage() {
                     </div>
                   </div>
                   <Button
-                    className="mt-5 w-full rounded-none font-bold"
+                    className="mt-5 min-h-12 w-full rounded-none font-bold"
                     disabled={logMutation.isPending || !reps}
                     onClick={() => logMutation.mutate()}
                   >
@@ -513,11 +602,25 @@ function WorkoutPage() {
                     ) : (
                       <Check className="mr-2 size-4" />
                     )}
-                    Complete Set
+                    Užregistruoti setą
                   </Button>
                   {rest > 0 && (
-                    <div className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-primary">
-                      <TimerReset className="size-4" /> Rest: {rest}s
+                    <div
+                      className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary"
+                      role="status"
+                    >
+                      <span className="flex items-center gap-2">
+                        <TimerReset className="size-4" /> Poilsis: {formatDuration(rest)}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-10 px-2 text-primary hover:text-primary"
+                        onClick={() => setRest(0)}
+                      >
+                        <SkipForward className="size-4" /> Praleisti
+                      </Button>
                     </div>
                   )}
                 </>

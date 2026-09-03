@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getActivePlanData } from "./active-plan.service";
-import { adaptTrainingPlanDay } from "./training-guidance.service";
 import { evaluateWorkoutCompletion } from "./workout-completion.engine";
+import { resolveWorkoutSessionDay } from "./workout-session-plan.engine";
 import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
 import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 
@@ -43,9 +43,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
 
     const basePlannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
-    const plannedDay =
-      session.workoutSnapshot?.workout ??
-      (basePlannedDay ? adaptTrainingPlanDay(basePlannedDay, session.adaptationModifier) : null);
+    const plannedDay = resolveWorkoutSessionDay(session, basePlannedDay ?? null);
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found.");
     }
