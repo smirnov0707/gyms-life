@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
+  CorrectUserMemoryInputSchema,
   parseUserMemoryTransparencyItems,
   type UserMemoryTransparencyItem,
 } from "./user-memory.schema";
@@ -67,6 +68,29 @@ export async function markUserMemoryIncorrect(
     .select("id")
     .maybeSingle();
   if (error || data === null) throw new Error("Could not mark memory as incorrect.");
+}
+
+/**
+ * Replaces an active non-context memory atomically. The database keeps the
+ * corrected source record and only the explicit user-reported replacement
+ * remains active for decisions and AI context.
+ */
+export async function correctUserMemory(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  input: unknown,
+): Promise<{ id: string }> {
+  const parsedInput = CorrectUserMemoryInputSchema.parse(input);
+  await requireOwnedActiveMemory(supabase, userId, parsedInput.memoryId);
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.rpc("correct_user_memory", {
+    p_user_id: userId,
+    p_memory_id: parsedInput.memoryId,
+    p_content: parsedInput.content,
+  });
+  if (error) throw new Error("Could not correct memory.");
+  return { id: z.string().uuid().parse(data) };
 }
 
 /** Permanently removes a user-selected memory after an RLS-scoped ownership check. */

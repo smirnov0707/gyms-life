@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { observeServerAction } from "./observability.server";
+import { CorrectUserMemoryInputSchema } from "./user-memory.schema";
 
 const MemoryIdInputSchema = z.object({ memoryId: z.string().uuid() }).strict();
 
@@ -29,6 +30,25 @@ export const markMemoryIncorrect = createServerFn({ method: "POST" })
         const { markUserMemoryIncorrect } = await import("./user-memory.service");
         await markUserMemoryIncorrect(context.supabase, context.userId, data.memoryId);
         return { ok: true };
+      },
+    ),
+  );
+
+/** Replaces one active memory with an explicit correction and retained audit trail. */
+export const correctMemory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => CorrectUserMemoryInputSchema.parse(input))
+  .handler(async ({ data, context }) =>
+    observeServerAction(
+      {
+        eventName: "user_memory.correct",
+        userId: context.userId,
+        failureCode: "USER_MEMORY_CORRECT_FAILED",
+        metadata: {},
+      },
+      async () => {
+        const { correctUserMemory } = await import("./user-memory.service");
+        return correctUserMemory(context.supabase, context.userId, data);
       },
     ),
   );

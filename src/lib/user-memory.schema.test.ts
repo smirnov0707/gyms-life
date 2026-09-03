@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseUserMemoryTransparencyItems } from "./user-memory.schema";
+import {
+  CorrectUserMemoryInputSchema,
+  parseUserMemoryTransparencyItems,
+} from "./user-memory.schema";
 
 const row = {
   id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d6e",
@@ -35,5 +38,29 @@ describe("user memory transparency contracts", () => {
   it("rejects invalid raw rows before they reach the user interface", () => {
     expect(() => parseUserMemoryTransparencyItems([{ ...row, source: "unknown" }])).toThrow();
     expect(() => parseUserMemoryTransparencyItems([{ ...row, evidence_refs: {} }])).toThrow();
+  });
+
+  it("accepts a bounded explicit correction and normalizes surrounding whitespace", () => {
+    expect(
+      CorrectUserMemoryInputSchema.parse({
+        memoryId: row.id,
+        content: "  I prefer sessions closer to 45 minutes.  ",
+      }),
+    ).toEqual({
+      memoryId: row.id,
+      content: "I prefer sessions closer to 45 minutes.",
+    });
+  });
+
+  it("rejects blank, oversized, and malformed corrections", () => {
+    expect(() =>
+      CorrectUserMemoryInputSchema.parse({ memoryId: row.id, content: "   " }),
+    ).toThrow();
+    expect(() =>
+      CorrectUserMemoryInputSchema.parse({ memoryId: row.id, content: "a".repeat(401) }),
+    ).toThrow();
+    expect(() =>
+      CorrectUserMemoryInputSchema.parse({ memoryId: "not-a-uuid", content: "Updated fact" }),
+    ).toThrow();
   });
 });

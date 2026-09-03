@@ -9,6 +9,7 @@ import {
   HeartPulse,
   Info,
   Loader2,
+  Pencil,
   RefreshCw,
   Scale,
   ShieldCheck,
@@ -18,10 +19,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getAthleteModel } from "@/lib/athlete-model.functions";
 import type { AthleteModelResponse } from "@/lib/athlete-model.contract";
 import { useI18n } from "@/lib/i18n";
 import {
+  correctMemory,
   forgetMemory,
   getUserMemoryTransparency,
   markMemoryIncorrect,
@@ -82,8 +85,14 @@ type Copy = {
     lastConfirmed: string;
     expires: string;
     updateContext: string;
+    correct: string;
+    correctionLabel: string;
+    correctionHint: string;
+    cancel: string;
+    saveCorrection: string;
     incorrect: string;
     forget: string;
+    correctedSaved: string;
     incorrectSaved: string;
     forgotten: string;
     error: string;
@@ -139,8 +148,15 @@ function copyFor(lang: string): Copy {
         lastConfirmed: "Last confirmed",
         expires: "Expires",
         updateContext: "Update in Today",
+        correct: "Correct",
+        correctionLabel: "What should GYMS.LIFE remember instead?",
+        correctionHint:
+          "Your correction replaces this active memory and remains under your control.",
+        cancel: "Cancel",
+        saveCorrection: "Save correction",
         incorrect: "Not true",
         forget: "Forget",
+        correctedSaved: "Your correction is now the active memory.",
         incorrectSaved: "This memory will no longer be used.",
         forgotten: "This memory was permanently removed.",
         error: "Could not update this memory. Please try again.",
@@ -195,8 +211,14 @@ function copyFor(lang: string): Copy {
       lastConfirmed: "Paskutinį kartą patvirtinta",
       expires: "Galioja iki",
       updateContext: "Keisti Today ekrane",
+      correct: "Pataisyti",
+      correctionLabel: "Ką GYMS.LIFE turėtų įsiminti vietoje to?",
+      correctionHint: "Tavo pataisymas pakeis šį aktyvų įrašą ir liks tavo valdomas.",
+      cancel: "Atšaukti",
+      saveCorrection: "Išsaugoti pataisymą",
       incorrect: "Neteisinga",
       forget: "Pamiršti",
+      correctedSaved: "Tavo pataisymas dabar yra aktyvus įrašas.",
       incorrectSaved: "Šis įrašas daugiau nebus naudojamas.",
       forgotten: "Šis įrašas pašalintas visam laikui.",
       error: "Nepavyko atnaujinti šio atminties įrašo. Bandyk dar kartą.",
@@ -279,6 +301,7 @@ function AthleteModelPage() {
   const copy = copyFor(lang);
   const loadModel = useServerFn(getAthleteModel);
   const loadMemory = useServerFn(getUserMemoryTransparency);
+  const replaceMemory = useServerFn(correctMemory);
   const rejectMemory = useServerFn(markMemoryIncorrect);
   const removeMemory = useServerFn(forgetMemory);
   const [model, setModel] = useState<AthleteModelResponse | null>(null);
@@ -286,6 +309,8 @@ function AthleteModelPage() {
   const [memories, setMemories] = useState<UserMemoryTransparencyItem[]>([]);
   const [memoryLoading, setMemoryLoading] = useState(true);
   const [pendingMemoryAction, setPendingMemoryAction] = useState<string | null>(null);
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [correctedContent, setCorrectedContent] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -327,6 +352,45 @@ function AthleteModelPage() {
         toast.success(copy.memory.forgotten);
       }
       setMemories((current) => current.filter((memory) => memory.id !== memoryId));
+      if (editingMemoryId === memoryId) {
+        setEditingMemoryId(null);
+        setCorrectedContent("");
+      }
+    } catch {
+      toast.error(copy.memory.error);
+    } finally {
+      setPendingMemoryAction(null);
+    }
+  };
+
+  const submitMemoryCorrection = async (memory: UserMemoryTransparencyItem) => {
+    if (pendingMemoryAction !== null) return;
+    const content = correctedContent.trim();
+    if (content.length === 0 || content.length > 400) return;
+
+    setPendingMemoryAction(`correct:${memory.id}`);
+    try {
+      const result = await replaceMemory({ data: { memoryId: memory.id, content } });
+      const confirmedAt = new Date().toISOString();
+      setMemories((current) =>
+        current.map((item) =>
+          item.id === memory.id
+            ? {
+                ...item,
+                id: result.id,
+                content,
+                source: "user_reported",
+                confidence: 1,
+                evidenceCount: 0,
+                lastConfirmedAt: confirmedAt,
+                expiresAt: null,
+              }
+            : item,
+        ),
+      );
+      setEditingMemoryId(null);
+      setCorrectedContent("");
+      toast.success(copy.memory.correctedSaved);
     } catch {
       toast.error(copy.memory.error);
     } finally {
@@ -508,8 +572,12 @@ function AthleteModelPage() {
         ) : (
           <div className="mt-5 grid gap-3">
             {memories.map((memory) => {
+              const correctPending = pendingMemoryAction === `correct:${memory.id}`;
               const incorrectPending = pendingMemoryAction === `incorrect:${memory.id}`;
               const forgetPending = pendingMemoryAction === `forget:${memory.id}`;
+              const isEditing = editingMemoryId === memory.id;
+              const correctionInvalid =
+                correctedContent.trim().length === 0 || correctedContent.trim().length > 400;
               return (
                 <article
                   key={memory.id}
@@ -559,17 +627,33 @@ function AthleteModelPage() {
                         <Link to="/">{copy.memory.updateContext}</Link>
                       </Button>
                     ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="rounded-full"
-                        disabled={pendingMemoryAction !== null}
-                        onClick={() => void changeMemory(memory.id, "incorrect")}
-                      >
-                        {incorrectPending ? <Loader2 className="animate-spin" /> : <ThumbsDown />}
-                        {copy.memory.incorrect}
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="rounded-full"
+                          disabled={pendingMemoryAction !== null}
+                          onClick={() => {
+                            setEditingMemoryId(isEditing ? null : memory.id);
+                            setCorrectedContent(isEditing ? "" : memory.content);
+                          }}
+                        >
+                          <Pencil />
+                          {copy.memory.correct}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="rounded-full"
+                          disabled={pendingMemoryAction !== null}
+                          onClick={() => void changeMemory(memory.id, "incorrect")}
+                        >
+                          {incorrectPending ? <Loader2 className="animate-spin" /> : <ThumbsDown />}
+                          {copy.memory.incorrect}
+                        </Button>
+                      </>
                     )}
                     <Button
                       type="button"
@@ -583,6 +667,52 @@ function AthleteModelPage() {
                       {copy.memory.forget}
                     </Button>
                   </div>
+
+                  {isEditing ? (
+                    <div className="mt-4 rounded-xl border border-primary/30 bg-background/50 p-3">
+                      <label
+                        className="text-sm font-semibold text-foreground"
+                        htmlFor={`memory-correction-${memory.id}`}
+                      >
+                        {copy.memory.correctionLabel}
+                      </label>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {copy.memory.correctionHint}
+                      </p>
+                      <Input
+                        id={`memory-correction-${memory.id}`}
+                        value={correctedContent}
+                        maxLength={400}
+                        className="mt-3"
+                        onChange={(event) => setCorrectedContent(event.target.value)}
+                      />
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="rounded-full"
+                          disabled={pendingMemoryAction !== null || correctionInvalid}
+                          onClick={() => void submitMemoryCorrection(memory)}
+                        >
+                          {correctPending ? <Loader2 className="animate-spin" /> : <Pencil />}
+                          {copy.memory.saveCorrection}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-full"
+                          disabled={pendingMemoryAction !== null}
+                          onClick={() => {
+                            setEditingMemoryId(null);
+                            setCorrectedContent("");
+                          }}
+                        >
+                          {copy.memory.cancel}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </article>
               );
             })}

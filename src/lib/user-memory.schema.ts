@@ -78,6 +78,16 @@ export const UserMemoryTransparencyItemSchema = UserMemoryDbRowSchema.transform(
 
 export type UserMemoryTransparencyItem = z.infer<typeof UserMemoryTransparencyItemSchema>;
 
+/** A user correction becomes a new, explicitly user-reported memory record. */
+export const CorrectUserMemoryInputSchema = z
+  .object({
+    memoryId: z.string().uuid(),
+    content: z.string().trim().min(1).max(400),
+  })
+  .strict();
+
+export type CorrectUserMemoryInput = z.infer<typeof CorrectUserMemoryInputSchema>;
+
 /** Validates raw Supabase rows before rendering user-owned intelligence. */
 export function parseUserMemoryTransparencyItems(value: unknown): UserMemoryTransparencyItem[] {
   return z.array(UserMemoryTransparencyItemSchema).parse(value ?? []);

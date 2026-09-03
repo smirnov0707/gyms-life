@@ -1237,6 +1237,10 @@ export type Database = {
         Args: { p_limit: number; p_user_id: string }
         Returns: boolean
       }
+      correct_user_memory: {
+        Args: { p_content: string; p_memory_id: string; p_user_id: string }
+        Returns: string
+      }
       replace_active_life_context: {
         Args: {
           p_content: string
