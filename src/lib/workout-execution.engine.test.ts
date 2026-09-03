@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { ExerciseCatalogItem } from "./exercise-catalog.schema";
 import type { ActiveLifeContext } from "./life-context.schema";
 import type { TrainingPlanDay } from "./training-plan.schema";
-import { buildWorkoutExecutionSnapshot } from "./workout-execution.engine";
+import {
+  buildWorkoutExecutionSnapshot,
+  hasActiveWorkoutSafetyConstraint,
+} from "./workout-execution.engine";
 
 const day: TrainingPlanDay = {
   day: 1,
@@ -143,6 +146,13 @@ describe("buildWorkoutExecutionSnapshot", () => {
     expect(snapshot.adaptation.readinessModifier).toBe(0.8);
     expect(snapshot.workout.exercises.map((exercise) => exercise.sets)).toEqual([2, 2, 2]);
     expect(snapshot.adaptation.reasons).toContain("high_stress");
+  });
+
+  it("treats an explicit temporary limitation as a workout-entry safety constraint", () => {
+    expect(hasActiveWorkoutSafetyConstraint([context({ kind: "temporary_limitation" })])).toBe(
+      true,
+    );
+    expect(hasActiveWorkoutSafetyConstraint([context({ kind: "high_stress" })])).toBe(false);
   });
 
   it("refuses to invent a same-muscle replacement when no curated route is available", () => {

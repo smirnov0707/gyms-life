@@ -5,7 +5,10 @@ import { getTodaysWorkoutData } from "./active-plan.service";
 import { getTodaysReadinessModifier } from "./readiness.service";
 import { adaptTrainingPlanDay, getWorkoutTrainingGuidance } from "./training-guidance.service";
 import { createOpenWorkoutSession, findOpenWorkoutSession } from "./workout-session.service";
-import { buildWorkoutExecutionSnapshot } from "./workout-execution.engine";
+import {
+  buildWorkoutExecutionSnapshot,
+  hasActiveWorkoutSafetyConstraint,
+} from "./workout-execution.engine";
 import { WorkoutExecutionSnapshotSchema } from "./workout-execution.schema";
 import { loadActiveLifeContexts } from "./life-context.server";
 import {
@@ -33,20 +36,24 @@ export const startWorkout = createServerFn({ method: "POST" })
       planId: workout.plan.id,
       dayIndex: data.day - 1,
     };
-    const existing = await findOpenWorkoutSession(supabase, identity);
+    const [existing, lifeContext] = await Promise.all([
+      findOpenWorkoutSession(supabase, identity),
+      loadActiveLifeContexts(supabase, userId),
+    ]);
+    if (!lifeContext.available) {
+      throw new Error("Current life context is temporarily unavailable. Please try again shortly.");
+    }
+    if (hasActiveWorkoutSafetyConstraint(lifeContext.contexts)) {
+      throw new Error(
+        "Training is paused while a temporary limitation is active. Review recovery or remove the context when it no longer applies.",
+      );
+    }
+
     let resumed = Boolean(existing);
     let session = existing;
     let executionSnapshot = existing?.workoutSnapshot ?? null;
     if (!session) {
-      const [adaptationModifier, lifeContext] = await Promise.all([
-        getTodaysReadinessModifier(supabase, userId),
-        loadActiveLifeContexts(supabase, userId),
-      ]);
-      if (!lifeContext.available) {
-        throw new Error(
-          "Current life context is temporarily unavailable. Please try again shortly.",
-        );
-      }
+      const adaptationModifier = await getTodaysReadinessModifier(supabase, userId);
 
       const needsEquipmentCatalog = lifeContext.contexts.some(
         (context) =>

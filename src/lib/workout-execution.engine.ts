@@ -46,6 +46,11 @@ function activeContextsOf(
   return contexts.filter((context) => context.context.kind === kind);
 }
 
+/** A reported temporary limitation must stop every workout-entry path, not only Today. */
+export function hasActiveWorkoutSafetyConstraint(contexts: readonly ActiveLifeContext[]): boolean {
+  return activeContextsOf(contexts, "temporary_limitation").length > 0;
+}
+
 function equipmentConstraintFor(
   contexts: readonly ActiveLifeContext[],
 ): EquipmentConstraint | null {
