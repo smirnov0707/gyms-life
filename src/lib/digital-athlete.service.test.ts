@@ -12,6 +12,11 @@ describe("buildDigitalAthleteState", () => {
           { started_at: "2026-08-20T09:00:00.000Z", total_volume: 800 },
           { started_at: "2026-08-14T09:00:00.000Z", total_volume: 900 },
         ],
+        workoutResponses: [
+          { started_at: "2026-09-01T09:00:00.000Z", feeling: 4 },
+          { started_at: "2026-08-20T09:00:00.000Z", feeling: 3 },
+          { started_at: "2026-08-14T09:00:00.000Z", feeling: 5 },
+        ],
         checkins: [
           { checkin_on: "2026-09-02", readiness_score: 72, sleep_hours: 7.5 },
           { checkin_on: "2026-09-01", readiness_score: 68, sleep_hours: 6.5 },
@@ -46,18 +51,26 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       now,
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.4",
+      schemaVersion: "1.5",
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
         totalVolumeLast28Days: 2900,
         daysSinceLastCompletedWorkout: 1,
+        selfReportedResponse: {
+          source: "user_reported",
+          available: true,
+          ratedSessionsLast28Days: 3,
+          latestFeeling: 4,
+          averageFeelingLast28Days: 4,
+        },
       },
       recovery: {
         checkinsLast7Days: 3,
@@ -117,6 +130,7 @@ describe("buildDigitalAthleteState", () => {
     const state = buildDigitalAthleteState(
       {
         workouts: [],
+        workoutResponses: [],
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
@@ -131,6 +145,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: false,
           context: false,
           trainingRhythm: false,
+          trainingResponse: false,
         },
       },
       now,
@@ -151,10 +166,49 @@ describe("buildDigitalAthleteState", () => {
     ]);
   });
 
+  it("keeps explicit session feelings separate from inferred readiness", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [{ started_at: "2026-09-01T09:00:00.000Z", total_volume: 1200 }],
+        workoutResponses: [
+          { started_at: "2026-09-01T09:00:00.000Z", feeling: 2 },
+          { started_at: "2026-08-01T09:00:00.000Z", feeling: 5 },
+        ],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        availability: {
+          training: true,
+          trainingResponse: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+        },
+      },
+      now,
+    );
+
+    expect(state.training.selfReportedResponse).toEqual({
+      source: "user_reported",
+      available: true,
+      ratedSessionsLast28Days: 1,
+      latestFeeling: 2,
+      averageFeelingLast28Days: 2,
+    });
+    expect(state.recovery.latestReadinessScore).toBeNull();
+  });
+
   it("does not classify stale rows as current evidence", () => {
     const state = buildDigitalAthleteState(
       {
         workouts: [{ started_at: "2026-06-01T09:00:00.000Z", total_volume: 1200 }],
+        workoutResponses: [{ started_at: "2026-06-01T09:00:00.000Z", feeling: 4 }],
         checkins: [{ checkin_on: "2026-06-01", readiness_score: 80, sleep_hours: 8 }],
         bodyMetrics: [{ measured_on: "2026-06-01", weight_kg: 80, body_fat: 18 }],
         nutritionLogs: [{ logged_on: "2026-06-01", calories: 2200, protein: 160 }],
@@ -169,6 +223,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       now,
@@ -191,6 +246,7 @@ describe("buildDigitalAthleteState", () => {
     const state = buildDigitalAthleteState(
       {
         workouts: [],
+        workoutResponses: [],
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
@@ -212,6 +268,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       now,
@@ -228,6 +285,7 @@ describe("buildDigitalAthleteState", () => {
     const state = buildDigitalAthleteState(
       {
         workouts: [],
+        workoutResponses: [],
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
@@ -245,6 +303,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       now,
@@ -263,6 +322,7 @@ describe("buildDigitalAthleteState", () => {
     const state = buildDigitalAthleteState(
       {
         workouts: [],
+        workoutResponses: [],
         checkins: [
           { checkin_on: "2026-09-04", readiness_score: 83, sleep_hours: 8 },
           { checkin_on: "2026-08-28", readiness_score: 68, sleep_hours: 7 },
@@ -293,6 +353,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       new Date("2026-09-03T21:30:00.000Z"),
@@ -326,6 +387,7 @@ describe("buildDigitalAthleteState", () => {
     const state = buildDigitalAthleteState(
       {
         workouts: [{ started_at: "2026-09-03T21:40:00.000Z", total_volume: 900 }],
+        workoutResponses: [{ started_at: "2026-09-03T21:40:00.000Z", feeling: 3 }],
         checkins: [{ checkin_on: "2026-09-04", readiness_score: 78, sleep_hours: 8 }],
         bodyMetrics: [],
         nutritionLogs: [{ logged_on: "2026-09-04", calories: 2200, protein: 160 }],
@@ -340,6 +402,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       new Date("2026-09-03T21:45:00.000Z"),
@@ -365,6 +428,7 @@ describe("buildDigitalAthleteState", () => {
           { started_at: "2026-08-28T08:00:00.000Z", total_volume: 900 },
           { started_at: "2026-08-28T17:00:00.000Z", total_volume: 900 },
         ],
+        workoutResponses: [],
         checkins: [],
         bodyMetrics: [],
         nutritionLogs: [],
@@ -382,6 +446,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          trainingResponse: true,
         },
       },
       now,

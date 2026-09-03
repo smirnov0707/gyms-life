@@ -43,7 +43,8 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
     if (session.finishedAt) {
       throw new Error("Workout session is already finished.");
     }
-    if (session.planId === null || session.dayIndex === null) {
+    const sessionDayIndex = session.dayIndex;
+    if (session.planId === null || sessionDayIndex === null) {
       throw new Error("Workout session is missing active plan metadata.");
     }
 
@@ -52,7 +53,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Workout plan is no longer available for this session.");
     }
 
-    const legacyPlanDay = activePlan.plan.data.days.find((day) => day.day === session.dayIndex + 1);
+    const legacyPlanDay = activePlan.plan.data.days.find((day) => day.day === sessionDayIndex + 1);
     const plannedDay = resolveWorkoutSessionDay(session, legacyPlanDay ?? null);
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found for this session.");

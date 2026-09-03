@@ -3,12 +3,19 @@ import { buildCalculatedMemoryCandidates } from "./deterministic-memory.service"
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const completeState: DigitalAthleteState = {
-  schemaVersion: "1.4",
+  schemaVersion: "1.5",
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
     totalVolumeLast28Days: 14_200,
     daysSinceLastCompletedWorkout: 1,
+    selfReportedResponse: {
+      source: "user_reported",
+      available: true,
+      ratedSessionsLast28Days: 3,
+      latestFeeling: 3,
+      averageFeelingLast28Days: 3.7,
+    },
   },
   recovery: {
     checkinsLast7Days: 4,

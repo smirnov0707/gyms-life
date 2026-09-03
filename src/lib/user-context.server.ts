@@ -285,6 +285,7 @@ function profileContextFrom(
 function emptyDigitalAthleteState(): DigitalAthleteState {
   return buildDigitalAthleteState({
     workouts: [],
+    workoutResponses: [],
     checkins: [],
     bodyMetrics: [],
     nutritionLogs: [],
@@ -299,6 +300,7 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
       decisionFeedback: true,
       context: true,
       trainingRhythm: true,
+      trainingResponse: true,
     },
   });
 }
@@ -447,6 +449,9 @@ export function buildAiPersonalizationSummary(
   const state = buildDigitalAthleteState(
     {
       ...sources,
+      // This compatibility adapter receives aggregate workout sources only;
+      // response feedback remains on the canonical athlete-state path.
+      workoutResponses: [],
       nutritionLogs: [],
       decisionFeedback: [],
       lifeContexts: [],
@@ -457,6 +462,7 @@ export function buildAiPersonalizationSummary(
         decisionFeedback: true,
         context: true,
         trainingRhythm: true,
+        trainingResponse: true,
       },
     },
     now,
@@ -552,7 +558,7 @@ export async function buildUserContext(
  */
 export function contextForAi(context: CentralUserContext): string {
   const baseContext = {
-    schemaVersion: "1.4",
+    schemaVersion: "1.5",
     preferences: context.profile,
     personalization: {
       enabled: context.aiPersonalization.enabled,

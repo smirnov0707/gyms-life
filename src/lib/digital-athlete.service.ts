@@ -9,6 +9,7 @@ import {
   DigitalAthleteSourcesSchema,
   DigitalAthleteStateSchema,
   NutritionLogSourceSchema,
+  WorkoutResponseSourceSchema,
   parseDigitalAthleteRows,
   type DigitalAthleteDataGap,
   type DigitalAthleteSources,
@@ -276,6 +277,11 @@ export function buildDigitalAthleteState(
   const workoutsLast28Days = completedWorkouts.filter((workout) =>
     isWithinPastDays(workout.started_at, 28, now),
   );
+  const ratedWorkoutResponsesLast28Days = newestFirst(
+    sources.workoutResponses.filter(
+      (response) => response.feeling !== null && isWithinPastDays(response.started_at, 28, now),
+    ),
+  );
   const checkinsLast7Days = newestFirst(
     sources.checkins.filter((checkin) => isDayWithinPastDays(checkin.checkin_on, 7, today)),
   );
@@ -318,7 +324,7 @@ export function buildDigitalAthleteState(
   if (!sources.availability.trainingRhythm) dataGaps.push("training_rhythm_data_unavailable");
 
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.4",
+    schemaVersion: "1.5",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -326,6 +332,23 @@ export function buildDigitalAthleteState(
         workoutsLast28Days.reduce((sum, workout) => sum + workout.total_volume, 0),
       ),
       daysSinceLastCompletedWorkout: daysSince(latestWorkout?.started_at, now),
+      selfReportedResponse: {
+        source: "user_reported",
+        available: sources.availability.trainingResponse,
+        ratedSessionsLast28Days: sources.availability.trainingResponse
+          ? ratedWorkoutResponsesLast28Days.length
+          : 0,
+        latestFeeling: sources.availability.trainingResponse
+          ? (ratedWorkoutResponsesLast28Days[0]?.feeling ?? null)
+          : null,
+        averageFeelingLast28Days: sources.availability.trainingResponse
+          ? average(
+              ratedWorkoutResponsesLast28Days.flatMap((response) =>
+                response.feeling === null ? [] : [response.feeling],
+              ),
+            )
+          : null,
+      },
     },
     recovery: {
       checkinsLast7Days: checkinsLast7Days.length,
@@ -401,6 +424,7 @@ export async function loadDigitalAthleteState(
   const decisionFeedbackSince = dayOffset(today, -28);
   const [
     workoutsResult,
+    workoutResponsesResult,
     checkinsResult,
     bodyMetricsResult,
     nutritionLogsResult,
@@ -411,6 +435,13 @@ export async function loadDigitalAthleteState(
     supabase
       .from("workout_sessions")
       .select("started_at, total_volume")
+      .eq("user_id", userId)
+      .not("finished_at", "is", null)
+      .order("started_at", { ascending: false })
+      .limit(60),
+    supabase
+      .from("workout_sessions")
+      .select("started_at, feeling")
       .eq("user_id", userId)
       .not("finished_at", "is", null)
       .order("started_at", { ascending: false })
@@ -449,6 +480,10 @@ export async function loadDigitalAthleteState(
   ]);
 
   const workouts = parseDigitalAthleteRows(CompletedWorkoutSourceSchema, workoutsResult.data);
+  const workoutResponses = parseDigitalAthleteRows(
+    WorkoutResponseSourceSchema,
+    workoutResponsesResult.data,
+  );
   const checkins = parseDigitalAthleteRows(DailyCheckinSourceSchema, checkinsResult.data);
   const bodyMetrics = parseDigitalAthleteRows(BodyMetricSourceSchema, bodyMetricsResult.data);
   const nutritionLogs = parseDigitalAthleteRows(NutritionLogSourceSchema, nutritionLogsResult.data);
@@ -457,6 +492,7 @@ export async function loadDigitalAthleteState(
   return buildDigitalAthleteState(
     {
       workouts: workouts.rows,
+      workoutResponses: workoutResponses.rows,
       checkins: checkins.rows,
       bodyMetrics: bodyMetrics.rows,
       nutritionLogs: nutritionLogs.rows,
@@ -465,6 +501,10 @@ export async function loadDigitalAthleteState(
       trainingRhythm: trainingRhythmResult.trainingRhythm,
       availability: {
         training: workoutsResult.error === null && workouts.valid,
+        // Training-response parsing is intentionally isolated from the
+        // completed-workout source: malformed historical ratings never erase
+        // valid training evidence or block a Today decision.
+        trainingResponse: workoutResponsesResult.error === null && workoutResponses.valid,
         recovery: checkinsResult.error === null && checkins.valid,
         body: bodyMetricsResult.error === null && bodyMetrics.valid,
         nutrition: nutritionLogsResult.error === null && nutritionLogs.valid,

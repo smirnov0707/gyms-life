@@ -5,6 +5,7 @@ import {
   TrainingWeekdayListSchema,
   TrainingWeekdaySchema,
 } from "./training-rhythm.schema";
+import { WorkoutFeelingSchema } from "./workout-reflection.schema";
 
 const TimestampSchema = z
   .string()
@@ -27,6 +28,17 @@ export const CompletedWorkoutSourceSchema = z
   .object({
     started_at: TimestampSchema,
     total_volume: NonNegativeNumberSchema,
+  })
+  .strict();
+
+/**
+ * A separate optional source keeps an invalid legacy reflection from
+ * invalidating the canonical completed-workout source or a Today decision.
+ */
+export const WorkoutResponseSourceSchema = z
+  .object({
+    started_at: TimestampSchema,
+    feeling: WorkoutFeelingSchema.nullable(),
   })
   .strict();
 
@@ -92,6 +104,7 @@ export type AiPersonalizationSources = z.infer<typeof AiPersonalizationSourcesSc
 export const DigitalAthleteSourcesSchema = z
   .object({
     workouts: z.array(CompletedWorkoutSourceSchema),
+    workoutResponses: z.array(WorkoutResponseSourceSchema),
     checkins: z.array(DailyCheckinSourceSchema),
     bodyMetrics: z.array(BodyMetricSourceSchema),
     nutritionLogs: z.array(NutritionLogSourceSchema),
@@ -103,6 +116,7 @@ export const DigitalAthleteSourcesSchema = z
       decisionFeedback: z.boolean(),
       context: z.boolean(),
       trainingRhythm: z.boolean(),
+      trainingResponse: z.boolean(),
     }).strict(),
   })
   .strict();
@@ -201,12 +215,21 @@ export type CurrentDayState = z.infer<typeof CurrentDayStateSchema>;
 
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.4"),
+    schemaVersion: z.literal("1.5"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
       totalVolumeLast28Days: NonNegativeNumberSchema,
       daysSinceLastCompletedWorkout: z.number().int().nonnegative().nullable(),
+      selfReportedResponse: z
+        .object({
+          source: z.literal("user_reported"),
+          available: z.boolean(),
+          ratedSessionsLast28Days: z.number().int().nonnegative(),
+          latestFeeling: WorkoutFeelingSchema.nullable(),
+          averageFeelingLast28Days: z.number().finite().min(1).max(5).nullable(),
+        })
+        .strict(),
     }),
     recovery: z.object({
       checkinsLast7Days: z.number().int().nonnegative(),

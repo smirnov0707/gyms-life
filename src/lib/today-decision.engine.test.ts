@@ -4,12 +4,19 @@ import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.e
 import { TodayDecisionInputSchema } from "./today-decision.schema";
 
 const baseState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.4",
+  schemaVersion: "1.5",
   training: {
     sessionsLast7Days: 2,
     sessionsLast28Days: 5,
     totalVolumeLast28Days: 6400,
     daysSinceLastCompletedWorkout: 1,
+    selfReportedResponse: {
+      source: "user_reported",
+      available: true,
+      ratedSessionsLast28Days: 2,
+      latestFeeling: 4,
+      averageFeelingLast28Days: 3.5,
+    },
   },
   recovery: {
     checkinsLast7Days: 4,

@@ -10,12 +10,19 @@ import {
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const digitalAthlete: DigitalAthleteState = {
-  schemaVersion: "1.4" as const,
+  schemaVersion: "1.5" as const,
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
     totalVolumeLast28Days: 7000,
     daysSinceLastCompletedWorkout: 1,
+    selfReportedResponse: {
+      source: "user_reported",
+      available: true,
+      ratedSessionsLast28Days: 3,
+      latestFeeling: 4,
+      averageFeelingLast28Days: 3.7,
+    },
   },
   recovery: {
     checkinsLast7Days: 4,
@@ -119,6 +126,13 @@ describe("buildAiPersonalizationSummary", () => {
         sessionsLast28Days: 2,
         totalVolumeLast28Days: 2000,
         daysSinceLastCompletedWorkout: 1,
+        selfReportedResponse: {
+          source: "user_reported",
+          available: true,
+          ratedSessionsLast28Days: 0,
+          latestFeeling: null,
+          averageFeelingLast28Days: null,
+        },
       },
       recovery: {
         checkinsLast7Days: 2,
@@ -230,13 +244,20 @@ describe("contextForAi", () => {
       expect(payload).not.toContain(privateValue);
     }
     expect(JSON.parse(payload)).toMatchObject({
-      schemaVersion: "1.4",
+      schemaVersion: "1.5",
       preferences: { goal: "strength", daysPerWeek: 4 },
       personalization: { enabled: true, policyVersion: "2026-09-03-memory-context-v1" },
       nutritionToday: { calories: 1800, targetCalories: 2400 },
       recentSession: { totalSets: 18, averageRpe: 7.8, fatigueLevel: "medium" },
       athleteModel: {
-        training: { sessionsLast28Days: 10 },
+        training: {
+          sessionsLast28Days: 10,
+          selfReportedResponse: {
+            source: "user_reported",
+            ratedSessionsLast28Days: 3,
+            latestFeeling: 4,
+          },
+        },
         recovery: { latestReadinessScore: 70 },
         currentContext: { shortestAvailableSessionMinutes: 30 },
       },
@@ -282,7 +303,7 @@ describe("contextForAi", () => {
     const payload = contextForAi(context);
 
     expect(JSON.parse(payload)).toMatchObject({
-      schemaVersion: "1.4",
+      schemaVersion: "1.5",
       personalization: { enabled: false },
       dataGaps: ["personalization_consent_required"],
     });

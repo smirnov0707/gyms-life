@@ -22,6 +22,9 @@ const baseDay: TrainingPlanDay = {
   ],
 };
 
+const [baseExercise] = baseDay.exercises;
+if (!baseExercise) throw new Error("Test training plan must include an exercise.");
+
 function executionSource(
   overrides: Partial<
     Pick<WorkoutSession, "dayIndex" | "adaptationModifier" | "workoutSnapshot">
@@ -40,7 +43,7 @@ describe("workout session plan engine", () => {
     const snapshotDay: TrainingPlanDay = {
       ...baseDay,
       title: "Upper — adapted",
-      exercises: [{ ...baseDay.exercises[0], sets: 2 }],
+      exercises: [{ ...baseExercise, sets: 2 }],
     };
 
     const result = resolveWorkoutSessionDay(

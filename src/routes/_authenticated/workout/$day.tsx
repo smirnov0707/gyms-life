@@ -18,6 +18,7 @@ import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { startWorkout } from "@/lib/start-workout.functions";
 import { logWorkoutSet } from "@/lib/set-log.functions";
 import { finishWorkout } from "@/lib/finish-workout.functions";
+import { recordWorkoutReflection } from "@/lib/workout-reflection.functions";
 import {
   flushOfflineWorkoutSets,
   hasQueuedWorkoutSets,
@@ -124,6 +125,14 @@ function adaptationMessage(adaptation: WorkoutExecutionAdaptation): string | nul
   return parts.join(" · ");
 }
 
+const workoutFeelingOptions = [
+  { value: 1, label: "Labai sunku" },
+  { value: 2, label: "Sunku" },
+  { value: 3, label: "Gerai" },
+  { value: 4, label: "Lengvai" },
+  { value: 5, label: "Labai gerai" },
+] as const;
+
 function WorkoutPage() {
   const { day } = Route.useParams();
   const navigate = useNavigate();
@@ -142,6 +151,7 @@ function WorkoutPage() {
   const [rest, setRest] = useState(0);
   const [finished, setFinished] = useState(false);
   const [summary, setSummary] = useState<{ duration: number; volume: number } | null>(null);
+  const [workoutFeeling, setWorkoutFeeling] = useState<number | null>(null);
 
   const syncQueuedSets = useCallback(async () => {
     const result = await flushOfflineWorkoutSets((input) => logWorkoutSet({ data: input }));
@@ -295,6 +305,22 @@ function WorkoutPage() {
     onError: (error) => toast.error(errorMessage(error, "Nepavyko užbaigti treniruotės")),
   });
 
+  const reflectionMutation = useMutation({
+    mutationFn: async (feeling: number) => {
+      if (!sessionId) throw new Error("Workout session is not started.");
+      return recordWorkoutReflection({ data: { sessionId, feeling } });
+    },
+    onSuccess: (reflection) => {
+      setWorkoutFeeling(reflection.feeling);
+      // Today recomputes its canonical athlete snapshot from this new,
+      // user-reported signal. The decision engine still applies its own
+      // evidence and safety thresholds before adapting a future workout.
+      window.dispatchEvent(new Event("gymslife:adaptation"));
+      toast.success("Tavo treniruotės įvertinimas išsaugotas.");
+    },
+    onError: (error) => toast.error(errorMessage(error, "Nepavyko išsaugoti įvertinimo")),
+  });
+
   useEffect(() => {
     if (rest <= 0) return;
     const timer = window.setInterval(() => setRest((seconds) => Math.max(0, seconds - 1)), 1000);
@@ -353,7 +379,7 @@ function WorkoutPage() {
       </main>
     );
   }
-  if (sessionId && !exercise)
+  if (!exercise)
     return (
       <main className="mx-auto max-w-3xl px-4 py-8">
         <GlowCard className="panel p-6">
@@ -372,7 +398,7 @@ function WorkoutPage() {
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.24em] text-primary">
             Treniruotė užbaigta
           </p>
-          <h1 className="mt-2 text-4xl">Puiki treniruotė!</h1>
+          <h1 className="mt-2 text-4xl">Treniruotė išsaugota</h1>
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl bg-surface-2 p-5">
               <div className="text-3xl font-bold">{formatDuration(summary.duration)}</div>
@@ -385,6 +411,52 @@ function WorkoutPage() {
               </div>
             </div>
           </div>
+          <section
+            className="mt-6 rounded-2xl border border-border bg-surface-2 p-5 text-left"
+            aria-labelledby="workout-reflection-title"
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              Tavo signalas
+            </p>
+            <h2 id="workout-reflection-title" className="mt-2 text-xl">
+              Kaip jautėsi ši treniruotė?
+            </h2>
+            <p className="mt-2 text-sm leading-5 text-muted-foreground">
+              Tai tavo nurodytas įvertinimas, ne automatinis rodiklis. Vienas įvertinimas savaime
+              nekeičia plano.
+            </p>
+            <div
+              className="mt-4 grid grid-cols-5 gap-2"
+              role="radiogroup"
+              aria-label="Treniruotės savijautos įvertinimas nuo 1 iki 5"
+            >
+              {workoutFeelingOptions.map((option) => {
+                const selected = workoutFeeling === option.value;
+                const isSaving =
+                  reflectionMutation.isPending && reflectionMutation.variables === option.value;
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selected ? "default" : "outline"}
+                    className="min-h-12 px-2 text-base font-bold"
+                    aria-label={`${option.value}: ${option.label}`}
+                    aria-checked={selected}
+                    role="radio"
+                    disabled={reflectionMutation.isPending}
+                    onClick={() => reflectionMutation.mutate(option.value)}
+                  >
+                    {isSaving ? <Loader2 className="size-4 animate-spin" /> : option.value}
+                  </Button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              {workoutFeeling === null
+                ? "1 — labai sunku · 5 — labai gerai"
+                : `${workoutFeeling} — ${workoutFeelingOptions[workoutFeeling - 1]?.label ?? ""}`}
+            </p>
+          </section>
           <Button
             className="mt-7 min-h-12 w-full font-bold"
             onClick={() => navigate({ to: "/app" })}
