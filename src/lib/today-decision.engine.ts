@@ -219,6 +219,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
 
   const hasExecutableLifeConstraint = input.state.currentContext.active.some(
     (context) =>
+      context.context.kind === "travel" ||
       context.context.kind === "time_limited" ||
       context.context.kind === "equipment_limited" ||
       context.context.kind === "facility_closed" ||

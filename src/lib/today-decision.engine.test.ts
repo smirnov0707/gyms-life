@@ -158,6 +158,33 @@ describe("buildTodayDecision", () => {
     });
   });
 
+  it("routes travel through the persisted adapted-session path", () => {
+    const travelState = DigitalAthleteStateSchema.parse({
+      ...baseState,
+      currentContext: {
+        active: [
+          {
+            id: "018f2e48-5e6d-7b8c-9d0e-1f2a3b4c5d70",
+            content: "Temporary context: travel",
+            expiresAt: "2026-09-04T12:00:00.000Z",
+            context: { kind: "travel" },
+          },
+        ],
+        shortestAvailableSessionMinutes: null,
+        hasTrainingConstraint: true,
+        hasSafetyConstraint: false,
+      },
+    });
+    const decision = buildTodayDecision(input({ state: travelState }));
+
+    expect(decision.action).toBe("train_adapted");
+    expect(decision.safetyConstraints).toContain("apply_persisted_execution_snapshot");
+    expect(decision.evidence.at(-1)).toMatchObject({
+      key: "active_life_context",
+      value: "travel",
+    });
+  });
+
   it("uses several explicit negative outcomes only to lower the confidence label", () => {
     const feedbackState = DigitalAthleteStateSchema.parse({
       ...baseState,

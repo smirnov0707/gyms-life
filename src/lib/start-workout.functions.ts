@@ -57,6 +57,7 @@ export const startWorkout = createServerFn({ method: "POST" })
 
       const needsEquipmentCatalog = lifeContext.contexts.some(
         (context) =>
+          context.context.kind === "travel" ||
           context.context.kind === "equipment_limited" ||
           context.context.kind === "facility_closed",
       );

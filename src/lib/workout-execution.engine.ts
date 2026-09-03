@@ -19,7 +19,7 @@ type WorkoutExecutionInput = {
 type EquipmentConstraint = {
   allowed: Set<WorkoutEquipment>;
   sourceContextIds: string[];
-  reason: WorkoutAdaptationReason;
+  reasons: WorkoutAdaptationReason[];
 };
 
 /**
@@ -55,25 +55,26 @@ function equipmentConstraintFor(
   contexts: readonly ActiveLifeContext[],
 ): EquipmentConstraint | null {
   const limited = activeContextsOf(contexts, "equipment_limited");
-  if (limited.length > 0) {
-    const allowed = new Set<WorkoutEquipment>(["bodyweight"]);
-    for (const context of limited) {
-      if (context.context.kind !== "equipment_limited") continue;
-      for (const item of context.context.equipment) allowed.add(item);
-    }
-    return {
-      allowed,
-      sourceContextIds: limited.map((context) => context.id),
-      reason: "equipment_limit",
-    };
+  const facilityClosed = activeContextsOf(contexts, "facility_closed");
+  const traveling = activeContextsOf(contexts, "travel");
+  if (limited.length === 0 && facilityClosed.length === 0 && traveling.length === 0) return null;
+
+  // A traveler has not yet told us which equipment is available. Bodyweight is
+  // the only safe default; an explicit equipment context remains more precise.
+  const allowed = new Set<WorkoutEquipment>(["bodyweight"]);
+  for (const context of limited) {
+    if (context.context.kind !== "equipment_limited") continue;
+    for (const item of context.context.equipment) allowed.add(item);
   }
 
-  const facilityClosed = activeContextsOf(contexts, "facility_closed");
-  if (facilityClosed.length === 0) return null;
   return {
-    allowed: new Set<WorkoutEquipment>(["bodyweight"]),
-    sourceContextIds: facilityClosed.map((context) => context.id),
-    reason: "facility_closed",
+    allowed,
+    sourceContextIds: [...limited, ...facilityClosed, ...traveling].map((context) => context.id),
+    reasons: [
+      ...(limited.length > 0 ? (["equipment_limit"] as const) : []),
+      ...(facilityClosed.length > 0 ? (["facility_closed"] as const) : []),
+      ...(traveling.length > 0 ? (["travel"] as const) : []),
+    ],
   };
 }
 
@@ -257,8 +258,8 @@ export function buildWorkoutExecutionSnapshot(
     reasons.push("high_stress");
     sourceContextIds.push(...highStress.map((context) => context.id));
   }
-  if (equipment.applied && equipmentConstraint !== null) {
-    reasons.push(equipmentConstraint.reason);
+  if (equipmentConstraint !== null) {
+    reasons.push(...equipmentConstraint.reasons);
     sourceContextIds.push(...equipmentConstraint.sourceContextIds);
   }
   if (shortened.applied) {

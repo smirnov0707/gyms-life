@@ -83,6 +83,33 @@ const catalog: ExerciseCatalogItem[] = [
     location: "both",
     difficulty: "beginner",
   },
+  {
+    slug: "bodyweight-squat",
+    name_en: "Bodyweight Squat",
+    name_lt: "Pritūpimai su kūno svoriu",
+    muscle_group: "legs",
+    equipment: "bodyweight",
+    location: "both",
+    difficulty: "beginner",
+  },
+  {
+    slug: "push-up",
+    name_en: "Push-Up",
+    name_lt: "Atsispaudimai",
+    muscle_group: "chest",
+    equipment: "bodyweight",
+    location: "both",
+    difficulty: "beginner",
+  },
+  {
+    slug: "inverted-row",
+    name_en: "Inverted Row",
+    name_lt: "Horizonali trauka",
+    muscle_group: "back",
+    equipment: "bodyweight",
+    location: "both",
+    difficulty: "beginner",
+  },
 ];
 
 function context(contextValue: ActiveLifeContext["context"]): ActiveLifeContext {
@@ -146,6 +173,42 @@ describe("buildWorkoutExecutionSnapshot", () => {
     expect(snapshot.adaptation.readinessModifier).toBe(0.8);
     expect(snapshot.workout.exercises.map((exercise) => exercise.sets)).toEqual([2, 2, 2]);
     expect(snapshot.adaptation.reasons).toContain("high_stress");
+  });
+
+  it("uses bodyweight-only curated substitutions while traveling until equipment is reported", () => {
+    const snapshot = buildWorkoutExecutionSnapshot({
+      day,
+      readinessModifier: 1,
+      lifeContexts: [context({ kind: "travel" })],
+      exerciseCatalog: catalog,
+    });
+
+    expect(snapshot.workout.exercises.map((exercise) => exercise.slug)).toEqual([
+      "bodyweight-squat",
+      "push-up",
+      "inverted-row",
+    ]);
+    expect(snapshot.adaptation.reasons).toContain("travel");
+    expect(snapshot.adaptation.sourceContextIds).toEqual(["00000000-0000-4000-8000-000000000100"]);
+  });
+
+  it("keeps an explicit equipment report more precise than the travel fallback", () => {
+    const snapshot = buildWorkoutExecutionSnapshot({
+      day,
+      readinessModifier: 1,
+      lifeContexts: [
+        context({ kind: "travel" }),
+        context({ kind: "equipment_limited", equipment: ["dumbbell"] }),
+      ],
+      exerciseCatalog: catalog,
+    });
+
+    expect(snapshot.workout.exercises.map((exercise) => exercise.slug)).toEqual([
+      "goblet-squat",
+      "dumbbell-press",
+      "one-arm-db-row",
+    ]);
+    expect(snapshot.adaptation.reasons).toEqual(["equipment_limit", "travel"]);
   });
 
   it("treats an explicit temporary limitation as a workout-entry safety constraint", () => {

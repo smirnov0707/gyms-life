@@ -85,6 +85,9 @@ function adaptationMessage(adaptation: WorkoutExecutionAdaptation): string | nul
   if (adaptation.reasons.includes("time_limit") && adaptation.timeBudgetMinutes !== null) {
     parts.push(`sesija sutrumpinta iki maždaug ${adaptation.timeBudgetMinutes} min.`);
   }
+  if (adaptation.reasons.includes("travel")) {
+    parts.push("kelionėje parinkti pratimai, kuriems pakanka kūno svorio");
+  }
   if (adaptation.reasons.includes("equipment_limit")) {
     parts.push("pratimai pritaikyti turimai įrangai");
   }

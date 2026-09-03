@@ -5,6 +5,7 @@ export const WorkoutAdaptationReasonSchema = z.enum([
   "readiness",
   "high_stress",
   "time_limit",
+  "travel",
   "equipment_limit",
   "facility_closed",
 ]);
