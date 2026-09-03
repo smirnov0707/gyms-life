@@ -23,9 +23,9 @@ const validMealPlan = {
         slot: "Breakfast",
         name: "Oats and yoghurt",
         kcal: "2400",
-        protein: "40",
-        carbs: "75",
-        fat: "18",
+        protein: "170",
+        carbs: "250",
+        fat: "75",
         minutes: "10",
         ingredients: ["Oats 80 g", "Greek yoghurt 200 g"],
         steps: ["Combine the ingredients."],
@@ -85,5 +85,65 @@ describe("stored meal plan validation", () => {
         { mealsPerDay: 1, fixedKcalTarget: null },
       ),
     ).toThrow("inconsistent daily calorie totals");
+  });
+
+  it("rejects daily macro totals that do not add up to the meals", () => {
+    const plan = parseStoredMealPlan(validMealPlan);
+    expect(plan).not.toBeNull();
+    if (!plan) return;
+
+    expect(() =>
+      validateGeneratedMealPlan(
+        { ...plan, days: [{ ...plan.days[0]!, total_protein: 120 }, ...plan.days.slice(1)] },
+        { mealsPerDay: 1, fixedKcalTarget: null },
+      ),
+    ).toThrow("inconsistent daily macro totals");
+  });
+
+  it("rejects calorie totals that contradict their macronutrients", () => {
+    const plan = parseStoredMealPlan(validMealPlan);
+    expect(plan).not.toBeNull();
+    if (!plan) return;
+
+    const firstDay = plan.days[0]!;
+    expect(() =>
+      validateGeneratedMealPlan(
+        {
+          ...plan,
+          days: [
+            {
+              ...firstDay,
+              total_kcal: 3000,
+              meals: firstDay.meals.map((meal) => ({ ...meal, kcal: 3000 })),
+            },
+            ...plan.days.slice(1),
+          ],
+        },
+        { mealsPerDay: 1, fixedKcalTarget: null },
+      ),
+    ).toThrow("calories that do not match its macros");
+  });
+
+  it("rejects meals without a usable recipe", () => {
+    const plan = parseStoredMealPlan(validMealPlan);
+    expect(plan).not.toBeNull();
+    if (!plan) return;
+
+    const firstDay = plan.days[0]!;
+    expect(() =>
+      validateGeneratedMealPlan(
+        {
+          ...plan,
+          days: [
+            {
+              ...firstDay,
+              meals: firstDay.meals.map((meal) => ({ ...meal, ingredients: [] })),
+            },
+            ...plan.days.slice(1),
+          ],
+        },
+        { mealsPerDay: 1, fixedKcalTarget: null },
+      ),
+    ).toThrow("incomplete recipe");
   });
 });

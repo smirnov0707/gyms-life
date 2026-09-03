@@ -27,6 +27,7 @@ Every new capability must improve at least one of these:
 - Client-facing failure handling uses localised, application-owned copy. Unknown server, database and provider messages cannot be rendered into a member-facing toast or production browser console.
 - Lithuanian and English translations remain synchronous; each optional locale is loaded in a separate on-demand bundle, preserving English as the non-blocking fallback.
 - Training-plan generation accepts only the requested daily schedule, with 4–6 distinct exercises per day drawn from the demonstrated exercise catalogue.
+- Meal-plan generation validates requested meal count, daily calorie and macro aggregation, macro-derived energy, and complete recipe instructions before persistence.
 
 ### Current product capability
 
