@@ -1,7 +1,7 @@
 import { createCoachContext, type CoachContext } from "./ai-coach.contract";
 import type { ActiveTrainingPlan } from "./active-plan.service";
+import type { DeterministicPerformanceForecast } from "./forecast.schema";
 import type { PerformanceOverviewData } from "./performance.service";
-import type { ProgressInsight } from "./progress-intelligence.service";
 
 type CoachPlanInput = Pick<ActiveTrainingPlan, "id" | "title"> & {
   dayIndex?: number | null;
@@ -9,12 +9,23 @@ type CoachPlanInput = Pick<ActiveTrainingPlan, "id" | "title"> & {
 
 type CoachPerformanceInput = Pick<PerformanceOverviewData, "metrics" | "exercises">;
 
+function performanceSignalsFor(forecast: DeterministicPerformanceForecast) {
+  if (forecast.status === "learning") return [];
+  return forecast.lifts.map((lift) => ({
+    exerciseSlug: lift.exerciseSlug,
+    exerciseName: lift.exerciseName,
+    trend: lift.trend,
+    evidenceStrength: lift.evidenceStrength,
+    evidence: lift.evidence,
+  }));
+}
+
 export function buildCoachContext(input: {
   userId: string;
   goal?: string | null;
   activePlan?: CoachPlanInput | null;
   performance: CoachPerformanceInput;
-  insights: ProgressInsight[];
+  performanceForecast: DeterministicPerformanceForecast;
 }): CoachContext {
   return createCoachContext({
     user: { id: input.userId },
@@ -34,15 +45,7 @@ export function buildCoachContext(input: {
       totalReps: input.performance.metrics.totalReps,
       averageRpe: input.performance.metrics.averageRpe,
     },
-    insights: input.insights.map(({ exerciseSlug, exerciseName, insight }) => ({
-      exerciseSlug,
-      exerciseName,
-      signal: insight.signal,
-      confidence: insight.confidence,
-      evidence: insight.evidence,
-      explanation: insight.explanation,
-      recommendation: insight.recommendation,
-    })),
+    performanceSignals: performanceSignalsFor(input.performanceForecast),
     exercises: input.performance.exercises.map(({ totalVolume, ...exercise }) => ({
       ...exercise,
       totalVolumeKg: totalVolume,

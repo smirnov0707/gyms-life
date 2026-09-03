@@ -1,14 +1,26 @@
 import { z } from "zod";
+import { ForecastEvidenceStrengthSchema, ForecastTrendSchema } from "./forecast.schema";
 
-export const CoachSignalSchema = z.enum([
-  "PROGRESSING",
-  "STAGNATING",
-  "FATIGUE_RISK",
-  "INSUFFICIENT_DATA",
-]);
+export const CoachPerformanceSignalSchema = z
+  .object({
+    exerciseSlug: z.string().min(1).max(120),
+    exerciseName: z.string().min(1).max(200),
+    trend: ForecastTrendSchema,
+    evidenceStrength: ForecastEvidenceStrengthSchema,
+    evidence: z
+      .object({
+        sessionCount: z.number().int().positive(),
+        weeksTracked: z.number().int().positive(),
+        spanDays: z.number().int().nonnegative(),
+        averageRpe: z.number().min(1).max(10).nullable(),
+        observedWeeklyChangeKg: z.number().finite(),
+      })
+      .strict(),
+  })
+  .strict();
 
 export const CoachContextSchema = z.object({
-  schemaVersion: z.literal("1.0"),
+  schemaVersion: z.literal("1.1"),
   user: z.object({ id: z.string().uuid() }),
   generatedAt: z.string().datetime(),
   goal: z.string().nullable(),
@@ -26,17 +38,10 @@ export const CoachContextSchema = z.object({
     totalReps: z.number().int().nonnegative(),
     averageRpe: z.number().nullable(),
   }),
-  insights: z.array(
-    z.object({
-      exerciseSlug: z.string(),
-      exerciseName: z.string(),
-      signal: CoachSignalSchema,
-      confidence: z.number().min(0).max(1),
-      evidence: z.array(z.object({ metric: z.string(), value: z.union([z.string(), z.number()]) })),
-      explanation: z.string(),
-      recommendation: z.string(),
-    }),
-  ),
+  // This is a fact-only subset of the canonical deterministic performance
+  // forecast. A provider can interpret these observations but may not treat
+  // them as a load prescription or fabricated probability.
+  performanceSignals: z.array(CoachPerformanceSignalSchema).max(6),
   exercises: z.array(
     z.object({
       exerciseSlug: z.string(),
@@ -101,7 +106,7 @@ export interface AICoachWorker {
 }
 
 export function createCoachContext(input: Omit<CoachContext, "schemaVersion">): CoachContext {
-  return CoachContextSchema.parse({ schemaVersion: "1.0", ...input });
+  return CoachContextSchema.parse({ schemaVersion: "1.1", ...input });
 }
 
 export function parseCoachRecommendation(value: unknown): CoachRecommendation {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LineChart,
@@ -44,19 +44,34 @@ export function ProgressForecast() {
   const [loading, setLoading] = useState(false);
   const [forecast, setForecast] = useState<DeterministicPerformanceForecast | null>(null);
   const [failed, setFailed] = useState(false);
+  const initialLoadRequested = useRef(false);
 
-  const go = async () => {
-    setLoading(true);
-    setFailed(false);
-    try {
-      setForecast(await run({ data: {} }));
-    } catch {
-      setFailed(true);
-      toast.error(t("nx.fc.unavailable"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadForecast = useCallback(
+    async (announceFailure: boolean) => {
+      setLoading(true);
+      setFailed(false);
+      try {
+        setForecast(await run({ data: {} }));
+      } catch {
+        setFailed(true);
+        if (announceFailure) toast.error(t("nx.fc.unavailable"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [run, t],
+  );
+
+  // A forecast is a local deterministic calculation over bounded, completed
+  // logs, so the Progress screen can show it immediately without asking the
+  // athlete to "generate AI" output. The button remains an explicit refresh.
+  useEffect(() => {
+    if (initialLoadRequested.current) return;
+    initialLoadRequested.current = true;
+    void loadForecast(false);
+  }, [loadForecast]);
+
+  const refresh = () => loadForecast(true);
 
   return (
     <section className="panel space-y-4 p-5">
@@ -70,7 +85,7 @@ export function ProgressForecast() {
             <p className="text-xs text-muted-foreground">{t("nx.fc.subtitle")}</p>
           </div>
         </div>
-        <Button size="sm" onClick={() => void go()} disabled={loading} className="font-bold">
+        <Button size="sm" onClick={() => void refresh()} disabled={loading} className="font-bold">
           {loading ? (
             <Loader2 className="mr-1 size-4 animate-spin" />
           ) : (

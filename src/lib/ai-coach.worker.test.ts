@@ -3,13 +3,13 @@ import { runCoachWorker } from "./ai-coach.worker";
 import type { CoachContext } from "./ai-coach.contract";
 
 const context: CoachContext = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   user: { id: "00000000-0000-4000-8000-000000000001" },
   generatedAt: "2026-09-01T00:00:00.000Z",
   goal: "strength",
   activePlan: null,
   performance: { workouts: 1, totalVolumeKg: 100, totalSets: 3, totalReps: 30, averageRpe: 7 },
-  insights: [],
+  performanceSignals: [],
   exercises: [],
 };
 

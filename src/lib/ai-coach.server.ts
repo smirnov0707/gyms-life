@@ -3,8 +3,8 @@ import type { Database } from "@/integrations/supabase/types";
 import type { CoachContext } from "./ai-coach.contract";
 import { getActivePlanData } from "./active-plan.service";
 import { buildCoachContext } from "./ai-coach.context";
+import { loadDeterministicPerformanceForecast } from "./forecast.server";
 import { getPerformanceOverviewData } from "./performance.service";
-import { getProgressIntelligenceData } from "./progress-intelligence.service";
 
 export async function assembleCoachContext(args: {
   supabase: SupabaseClient<Database>;
@@ -12,9 +12,9 @@ export async function assembleCoachContext(args: {
   goal?: string | null;
   dayIndex?: number | null;
 }): Promise<CoachContext> {
-  const [performance, intelligence, activePlan] = await Promise.all([
+  const [performance, performanceForecast, activePlan] = await Promise.all([
     getPerformanceOverviewData(args.supabase, args.userId),
-    getProgressIntelligenceData(args.supabase, args.userId),
+    loadDeterministicPerformanceForecast(args.supabase, args.userId),
     getActivePlanData(args.supabase, args.userId),
   ]);
   const plan = activePlan.status === "READY" ? activePlan.plan : null;
@@ -30,6 +30,6 @@ export async function assembleCoachContext(args: {
         }
       : null,
     performance,
-    insights: intelligence.insights,
+    performanceForecast,
   });
 }

@@ -299,7 +299,6 @@ function WorkoutPage() {
         qc.invalidateQueries({ queryKey: ["performance-overview"] }),
         qc.invalidateQueries({ queryKey: ["volume-trend"] }),
         qc.invalidateQueries({ queryKey: ["strength-trend"] }),
-        qc.invalidateQueries({ queryKey: ["progress-intelligence"] }),
         qc.invalidateQueries({ queryKey: ["injury-risk"] }),
       ]);
       window.dispatchEvent(new Event("gymslife:adaptation"));

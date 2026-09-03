@@ -11,7 +11,6 @@ import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
 import { ProgressForecast } from "@/components/ProgressForecast";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
-import { AIProgressInsights } from "@/components/AIProgressInsights";
 import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
 
 export const Route = createFileRoute("/_authenticated/progress")({
@@ -79,7 +78,6 @@ function ProgressPage() {
       <h1 className="text-5xl">{t("pr.title")}</h1>
       <PerformanceProgressPanel />
       <WeeklyIntelligenceReview />
-      <AIProgressInsights />
       <ProgressForecast />
       <InjuryRiskRadar />
       <WorkoutReportExporter />
