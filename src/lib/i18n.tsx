@@ -32,26 +32,37 @@ import { parseSupportedLanguage, type SupportedLanguage } from "./language.schem
 export type Lang = SupportedLanguage;
 
 type Dict = Record<string, { lt: string; en: string }>;
-type SupplementalLocales = Record<string, Record<string, string>>;
+type SupplementalLanguage = Exclude<Lang, "lt" | "en">;
+type SupplementalLocale = Record<string, string>;
+type SupplementalLocales = Partial<Record<SupplementalLanguage, SupplementalLocale>>;
 
-let supplementalLocales: SupplementalLocales | null = null;
-let supplementalLocalesPromise: Promise<SupplementalLocales> | null = null;
+const supplementalLocaleLoaders: Record<SupplementalLanguage, () => Promise<SupplementalLocale>> = {
+  ru: () => import("./i18n-locales/ru").then(({ locale }) => locale),
+  uk: () => import("./i18n-locales/uk").then(({ locale }) => locale),
+  pl: () => import("./i18n-locales/pl").then(({ locale }) => locale),
+  de: () => import("./i18n-locales/de").then(({ locale }) => locale),
+  es: () => import("./i18n-locales/es").then(({ locale }) => locale),
+  fr: () => import("./i18n-locales/fr").then(({ locale }) => locale),
+};
+let supplementalLocales: SupplementalLocales = {};
+const supplementalLocalePromises = new Map<SupplementalLanguage, Promise<SupplementalLocale>>();
 
-/** Loads translations that are not needed by Lithuanian or English visitors. */
-export function preloadSupplementalLocales(): Promise<SupplementalLocales> {
-  if (!supplementalLocalesPromise) {
-    supplementalLocalesPromise = import("./i18n-locales")
-      .then(({ locales }) => {
-        supplementalLocales = locales;
-        return locales;
-      })
-      .catch((error: unknown) => {
-        supplementalLocalesPromise = null;
-        throw error;
-      });
-  }
+/** Loads only the visitor's selected non-base language pack. */
+export function preloadSupplementalLocale(lang: SupplementalLanguage): Promise<SupplementalLocale> {
+  const existing = supplementalLocalePromises.get(lang);
+  if (existing) return existing;
 
-  return supplementalLocalesPromise;
+  const loading = supplementalLocaleLoaders[lang]()
+    .then((locale) => {
+      supplementalLocales = { ...supplementalLocales, [lang]: locale };
+      return locale;
+    })
+    .catch((error: unknown) => {
+      supplementalLocalePromises.delete(lang);
+      throw error;
+    });
+  supplementalLocalePromises.set(lang, loading);
+  return loading;
 }
 
 const baseDict = {
@@ -945,10 +956,10 @@ const LangContext = createContext<{
 function translate(
   lang: Lang,
   key: TKey,
-  loadedSupplementalLocales: SupplementalLocales | null = supplementalLocales,
+  loadedSupplementalLocales: SupplementalLocales = supplementalLocales,
 ): string {
   if (lang === "lt" || lang === "en") return dict[key][lang];
-  return loadedSupplementalLocales?.[lang]?.[key] ?? dict[key].en;
+  return loadedSupplementalLocales[lang]?.[key] ?? dict[key].en;
 }
 
 function detectLang(): Lang {
@@ -963,7 +974,7 @@ function detectLang(): Lang {
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("lt");
   const [loadedSupplementalLocales, setLoadedSupplementalLocales] =
-    useState<SupplementalLocales | null>(supplementalLocales);
+    useState<SupplementalLocales>(supplementalLocales);
 
   useEffect(() => {
     const stored = parseSupportedLanguage(window.localStorage.getItem("forma_lang"));
@@ -980,12 +991,14 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (lang === "lt" || lang === "en" || loadedSupplementalLocales?.[lang]) return;
+    if (lang === "lt" || lang === "en" || loadedSupplementalLocales[lang]) return;
 
     let active = true;
-    void preloadSupplementalLocales()
-      .then(() => {
-        if (active) setLoadedSupplementalLocales(supplementalLocales);
+    void preloadSupplementalLocale(lang)
+      .then((locale) => {
+        if (active) {
+          setLoadedSupplementalLocales((current) => ({ ...current, [lang]: locale }));
+        }
       })
       .catch(() => {
         // English remains the safe fallback if optional translations cannot load.
