@@ -319,6 +319,7 @@ export type Database = {
           athlete_state_snapshot_id: string
           confidence: number
           created_at: string
+          decision_basis: string
           decision_on: string
           decision_fingerprint: string
           decision_type: string
@@ -332,8 +333,9 @@ export type Database = {
           action: string
           alternatives?: string[]
           athlete_state_snapshot_id: string
-          confidence: number
+          confidence?: number
           created_at?: string
+          decision_basis?: string
           decision_on: string
           decision_fingerprint: string
           decision_type?: string
@@ -349,6 +351,7 @@ export type Database = {
           athlete_state_snapshot_id?: string
           confidence?: number
           created_at?: string
+          decision_basis?: string
           decision_on?: string
           decision_fingerprint?: string
           decision_type?: string

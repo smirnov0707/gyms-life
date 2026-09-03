@@ -63,7 +63,7 @@ export async function getOrCreateTodayDecision(
       decision_fingerprint: decisionFingerprint,
       action: proposal.action,
       alternatives: proposal.alternatives,
-      confidence: proposal.confidence,
+      decision_basis: proposal.basis,
       safety_constraints: proposal.safetyConstraints,
     },
     {
@@ -76,7 +76,7 @@ export async function getOrCreateTodayDecision(
   const { data: record, error: recordError } = await supabaseAdmin
     .from("decision_records")
     .select(
-      "id, athlete_state_snapshot_id, decision_on, engine_version, decision_fingerprint, action, alternatives, confidence, safety_constraints, status, created_at",
+      "id, athlete_state_snapshot_id, decision_on, engine_version, decision_fingerprint, action, alternatives, decision_basis, safety_constraints, status, created_at",
     )
     .eq("user_id", userId)
     .eq("decision_on", proposal.decisionOn)
@@ -117,7 +117,7 @@ export async function getOrCreateTodayDecision(
     decisionOn: parsedRecord.data.decision_on,
     action: parsedRecord.data.action,
     alternatives: parsedRecord.data.alternatives,
-    confidence: parsedRecord.data.confidence,
+    basis: parsedRecord.data.decision_basis,
     safetyConstraints: parsedRecord.data.safety_constraints,
     status: parsedRecord.data.status,
     evidence: parsedEvidence.data.map((item) => ({

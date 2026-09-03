@@ -10,15 +10,9 @@ import { loadModifierFor } from "./readiness.engine";
 import { resolveTrainingResponseVolumeGuard } from "./training-response.engine";
 import type { TrainingResponseVolumeGuard } from "./training-response.schema";
 
-// Versioned because the decision now consumes one canonical athlete-state
-// snapshot rather than independently re-querying current-day facts.
-export const TODAY_DECISION_ENGINE_VERSION = "1.8" as const;
-
-function qualityConfidence(input: TodayDecisionInput): number {
-  if (input.state.dataQuality.level === "informed") return 92;
-  if (input.state.dataQuality.level === "building") return 85;
-  return 75;
-}
+// Versioned because the decision now records an explainable, non-probabilistic
+// basis rather than displaying an uncalibrated confidence percentage.
+export const TODAY_DECISION_ENGINE_VERSION = "1.9" as const;
 
 function evidence(
   key: TodayDecisionEvidence["key"],
@@ -161,9 +155,9 @@ function withDecisionFeedbackEvidence(
   items: TodayDecisionEvidence[],
 ): TodayDecisionEvidence[] {
   // A decision record deliberately stays compact. When all five evidence
-  // slots are already occupied by facts that determine today's action, the
-  // historical feedback signal remains available for confidence calibration
-  // but is not persisted as a sixth explanation item.
+  // slots are occupied by facts that determine today's action, historical
+  // feedback remains available in the athlete state without displacing a
+  // more direct explanation item.
   if (items.length >= 5) return items;
   const feedback = decisionFeedbackEvidence(input, items.length);
   return feedback === null ? items : [...items, feedback];
@@ -212,19 +206,6 @@ function trainingResponseGuardApplies(
 }
 
 /**
- * Feedback can reduce the confidence label only after enough explicit user
- * outcomes exist. It never upgrades confidence, changes the chosen action,
- * or weakens a safety constraint.
- */
-function calibratedConfidence(input: TodayDecisionInput, baseConfidence: number): number {
-  const helpfulnessRate = input.state.decisionFeedback.helpfulnessRate;
-  if (helpfulnessRate === null) return baseConfidence;
-  if (helpfulnessRate < 0.5) return Math.max(baseConfidence - 15, 60);
-  if (helpfulnessRate < 0.7) return Math.max(baseConfidence - 8, 65);
-  return baseConfidence;
-}
-
-/**
  * Chooses one conservative, explainable next action from validated facts.
  * This is deliberately deterministic: AI may explain the decision elsewhere,
  * but no provider decides training load or writes the athlete record.
@@ -242,7 +223,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
         ...base,
         action: "recover",
         alternatives: ["log_nutrition"],
-        confidence: 95,
+        basis: "current_day_fact",
         safetyConstraints: ["avoid_duplicate_training_prompt"],
         evidence: [
           completedWorkoutEvidence(input, 0),
@@ -256,7 +237,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "log_nutrition",
       alternatives: ["recover"],
-      confidence: 95,
+      basis: "current_day_fact",
       safetyConstraints: ["avoid_duplicate_training_prompt"],
       evidence: [
         completedWorkoutEvidence(input, 0),
@@ -271,7 +252,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "recover",
       alternatives: ["complete_readiness"],
-      confidence: 96,
+      basis: "safety_rule",
       safetyConstraints: ["avoid_training_with_active_limitation"],
       evidence: [
         evidence("active_life_context", "temporary_limitation", "user_reported", 0),
@@ -286,7 +267,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "generate_training_plan",
       alternatives: ["complete_readiness"],
-      confidence: 100,
+      basis: "safety_rule",
       safetyConstraints: ["requires_active_plan_before_training"],
       evidence: withLifeContextEvidence(input, [
         planEvidence(input, 0),
@@ -300,7 +281,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "train_as_planned",
       alternatives: ["recover"],
-      confidence: 98,
+      basis: "current_day_fact",
       safetyConstraints: ["apply_persisted_execution_snapshot"],
       evidence: withLifeContextEvidence(input, [
         planEvidence(input, 0),
@@ -315,7 +296,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "recover",
       alternatives: ["complete_readiness"],
-      confidence: 95,
+      basis: "current_day_fact",
       safetyConstraints: [],
       evidence: withLifeContextEvidence(input, [
         activePlanFrequencyEvidence(input, 0),
@@ -333,7 +314,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "complete_readiness",
       alternatives: ["recover"],
-      confidence: 98,
+      basis: "current_day_fact",
       safetyConstraints: ["do_not_adapt_load_without_today_checkin"],
       evidence: withTrainingRhythmEvidence(
         input,
@@ -357,7 +338,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "recover",
       alternatives: ["train_adapted"],
-      confidence: 95,
+      basis: "current_checkin",
       safetyConstraints: ["avoid_progression_when_readiness_low"],
       evidence: withLifeContextEvidence(input, [
         readinessEvidence(input, 0),
@@ -380,7 +361,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "train_adapted",
       alternatives: ["recover", "train_as_planned"],
-      confidence: calibratedConfidence(input, Math.min(qualityConfidence(input), 92)),
+      basis: "current_day_fact",
       safetyConstraints: [
         "apply_persisted_readiness_modifier",
         "apply_persisted_execution_snapshot",
@@ -412,7 +393,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "recover",
       alternatives: [score < 70 ? "train_adapted" : "train_as_planned"],
-      confidence: calibratedConfidence(input, Math.min(qualityConfidence(input), 88)),
+      basis: "observed_pattern",
       safetyConstraints: [],
       evidence: [
         evidence("training_rhythm", "usual_recovery_day", "user_reported", 0),
@@ -429,7 +410,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "train_adapted",
       alternatives: ["recover"],
-      confidence: 92,
+      basis: "current_checkin",
       safetyConstraints: [
         "apply_persisted_readiness_modifier",
         ...(responseGuardApplies ? ["apply_training_response_volume_guard"] : []),
@@ -454,7 +435,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
       ...base,
       action: "train_adapted",
       alternatives: ["recover", "train_as_planned"],
-      confidence: calibratedConfidence(input, Math.min(qualityConfidence(input), 82)),
+      basis: "observed_pattern",
       safetyConstraints: [
         "apply_persisted_readiness_modifier",
         "apply_training_response_volume_guard",
@@ -472,7 +453,7 @@ export function buildTodayDecision(value: TodayDecisionInput): ProposedTodayDeci
     ...base,
     action: "train_as_planned",
     alternatives: ["recover"],
-    confidence: calibratedConfidence(input, qualityConfidence(input)),
+    basis: "current_checkin",
     safetyConstraints: ["apply_persisted_readiness_modifier"],
     evidence: withDecisionFeedbackEvidence(
       input,

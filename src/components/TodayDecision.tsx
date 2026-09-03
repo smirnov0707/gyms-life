@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Activity,
   ArrowRight,
-  HeartPulse,
+  Info,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -21,13 +21,14 @@ import { getTodayDecision, recordTodayDecisionOutcome } from "@/lib/today-decisi
 import type {
   TodayDecision,
   TodayDecisionAction,
+  TodayDecisionBasis,
   TodayDecisionEvidence,
 } from "@/lib/today-decision.schema";
 
 type Copy = {
   eyebrow: string;
   evidence: string;
-  confidence: string;
+  basis: string;
   unavailable: string;
   retry: string;
   notHelpful: string;
@@ -35,6 +36,7 @@ type Copy = {
   feedbackFailed: string;
   alternativePrompt: string;
   action: Record<TodayDecisionAction, { title: string; summary: string; cta: string }>;
+  basisLabel: Record<TodayDecisionBasis, string>;
   evidenceLabel: Record<TodayDecisionEvidence["key"], (value: string) => string>;
 };
 
@@ -43,13 +45,19 @@ function copyFor(lang: string): Copy {
     return {
       eyebrow: "TODAY'S DECISION",
       evidence: "Why this action",
-      confidence: "Decision confidence",
+      basis: "Decision basis",
       unavailable: "We couldn't load today's decision. You can still use all training tools.",
       retry: "Try again",
       notHelpful: "This doesn't fit today",
       feedbackRecorded: "We recorded your feedback.",
       feedbackFailed: "We couldn't record that feedback. Please try again.",
       alternativePrompt: "Choose a safe alternative:",
+      basisLabel: {
+        safety_rule: "A safety rule or prerequisite",
+        current_day_fact: "A confirmed fact from today",
+        current_checkin: "Your check-in from today",
+        observed_pattern: "A measured pattern from your history",
+      },
       action: {
         generate_training_plan: {
           title: "Build your training plan",
@@ -126,7 +134,7 @@ function copyFor(lang: string): Copy {
   return {
     eyebrow: "ŠIANDIENOS SPRENDIMAS",
     evidence: "Kodėl šis veiksmas",
-    confidence: "Sprendimo patikimumas",
+    basis: "Sprendimo pagrindas",
     unavailable:
       "Nepavyko įkelti šiandienos sprendimo. Visi treniruočių įrankiai vis tiek pasiekiami.",
     retry: "Bandyti dar kartą",
@@ -134,6 +142,12 @@ function copyFor(lang: string): Copy {
     feedbackRecorded: "Tavo grįžtamąjį ryšį užregistravome.",
     feedbackFailed: "Nepavyko užregistruoti grįžtamojo ryšio. Bandyk dar kartą.",
     alternativePrompt: "Pasirink saugią alternatyvą:",
+    basisLabel: {
+      safety_rule: "Saugumo taisyklė arba būtina sąlyga",
+      current_day_fact: "Patvirtintas šios dienos faktas",
+      current_checkin: "Tavo šiandienos check-in",
+      observed_pattern: "Iš tavo istorijos pamatuotas dėsningumas",
+    },
     action: {
       generate_training_plan: {
         title: "Sukurk treniruočių planą",
@@ -373,7 +387,7 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
 
       <div className="relative z-10 mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <HeartPulse className="size-3.5 text-primary" /> {copy.confidence}: {decision.confidence}%
+          <Info className="size-3.5 text-primary" /> {copy.basis}: {copy.basisLabel[decision.basis]}
         </div>
         {feedbackRecorded ? (
           <p className="text-xs text-muted-foreground">{copy.feedbackRecorded}</p>

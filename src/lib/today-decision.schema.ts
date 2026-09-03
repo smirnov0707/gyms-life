@@ -13,6 +13,7 @@ const TodayDecisionEngineVersionSchema = z.enum([
   "1.6",
   "1.7",
   "1.8",
+  "1.9",
 ]);
 
 export const TodayDecisionActionSchema = z.enum([
@@ -22,6 +23,17 @@ export const TodayDecisionActionSchema = z.enum([
   "train_adapted",
   "train_as_planned",
   "log_nutrition",
+]);
+
+/**
+ * A deterministic Today decision is not a probability prediction. Its basis
+ * tells the user which validated class of evidence determined the next step.
+ */
+export const TodayDecisionBasisSchema = z.enum([
+  "safety_rule",
+  "current_day_fact",
+  "current_checkin",
+  "observed_pattern",
 ]);
 
 export const TodayDecisionSafetyConstraintSchema = z.enum([
@@ -90,11 +102,11 @@ export const TodayDecisionInputSchema = z
 
 export const ProposedTodayDecisionSchema = z
   .object({
-    engineVersion: z.literal("1.8"),
+    engineVersion: z.literal("1.9"),
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema).max(5),
-    confidence: z.number().int().min(0).max(100),
+    basis: TodayDecisionBasisSchema,
     safetyConstraints: z.array(TodayDecisionSafetyConstraintSchema).max(5),
     evidence: z.array(TodayDecisionEvidenceSchema).min(1).max(5),
   })
@@ -109,7 +121,7 @@ export const StoredTodayDecisionSchema = z
     decision_fingerprint: Sha256Schema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema),
-    confidence: z.number().int().min(0).max(100),
+    decision_basis: TodayDecisionBasisSchema,
     safety_constraints: z.array(TodayDecisionSafetyConstraintSchema),
     status: TodayDecisionStatusSchema,
     created_at: z.string().min(1),
@@ -133,7 +145,7 @@ export const TodayDecisionSchema = z
     decisionOn: DaySchema,
     action: TodayDecisionActionSchema,
     alternatives: z.array(TodayDecisionActionSchema),
-    confidence: z.number().int().min(0).max(100),
+    basis: TodayDecisionBasisSchema,
     safetyConstraints: z.array(TodayDecisionSafetyConstraintSchema),
     status: TodayDecisionStatusSchema,
     evidence: z.array(TodayDecisionEvidenceSchema).min(1).max(5),
@@ -142,6 +154,7 @@ export const TodayDecisionSchema = z
   .strict();
 
 export type TodayDecisionAction = z.infer<typeof TodayDecisionActionSchema>;
+export type TodayDecisionBasis = z.infer<typeof TodayDecisionBasisSchema>;
 export type TodayDecisionEvidence = z.infer<typeof TodayDecisionEvidenceSchema>;
 export type TodayDecisionInput = z.infer<typeof TodayDecisionInputSchema>;
 export type ProposedTodayDecision = z.infer<typeof ProposedTodayDecisionSchema>;

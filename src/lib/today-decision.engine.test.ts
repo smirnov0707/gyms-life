@@ -408,7 +408,7 @@ describe("buildTodayDecision", () => {
     });
   });
 
-  it("uses several explicit negative outcomes only to lower the confidence label", () => {
+  it("keeps feedback as evidence without inventing a calibration percentage", () => {
     const feedbackState = DigitalAthleteStateSchema.parse({
       ...baseState,
       decisionFeedback: {
@@ -422,7 +422,8 @@ describe("buildTodayDecision", () => {
     const decision = buildTodayDecision(input({ state: feedbackState }));
 
     expect(decision.action).toBe("train_as_planned");
-    expect(decision.confidence).toBe(77);
+    expect(decision.basis).toBe("current_checkin");
+    expect(decision).not.toHaveProperty("confidence");
     expect(decision.evidence).toContainEqual({
       key: "recent_decision_feedback",
       value: "1/3",
