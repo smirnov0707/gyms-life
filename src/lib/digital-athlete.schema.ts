@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { ActiveLifeContextSchema } from "./life-context.schema";
+import {
+  TrainingRhythmSchema,
+  TrainingWeekdayListSchema,
+  TrainingWeekdaySchema,
+} from "./training-rhythm.schema";
 
 const TimestampSchema = z
   .string()
@@ -92,10 +97,12 @@ export const DigitalAthleteSourcesSchema = z
     nutritionLogs: z.array(NutritionLogSourceSchema),
     decisionFeedback: z.array(DecisionFeedbackSourceSchema),
     lifeContexts: z.array(ActiveLifeContextSchema),
+    trainingRhythm: TrainingRhythmSchema.nullable(),
     availability: BaseAvailabilitySchema.extend({
       nutrition: z.boolean(),
       decisionFeedback: z.boolean(),
       context: z.boolean(),
+      trainingRhythm: z.boolean(),
     }).strict(),
   })
   .strict();
@@ -112,15 +119,72 @@ export const DigitalAthleteDataGapSchema = z.enum([
   "nutrition_data_unavailable",
   "no_nutrition_logs_14d",
   "current_context_unavailable",
+  "training_rhythm_data_unavailable",
   "personalization_consent_required",
   "personalization_consent_unavailable",
 ]);
 
 export type DigitalAthleteDataGap = z.infer<typeof DigitalAthleteDataGapSchema>;
 
+/**
+ * A factual comparison of completed workout days with a user's optional
+ * rhythm. It never treats a non-usual day as a failure or a usual day as a
+ * required session; the values only describe observed schedule fit.
+ */
+export const TrainingBehaviorSchema = z
+  .discriminatedUnion("status", [
+    z
+      .object({
+        status: z.literal("measured"),
+        preferredWeekdays: TrainingWeekdayListSchema,
+        usualTrainingDaysLast28Days: z.number().int().positive().max(28),
+        completedUsualTrainingDaysLast28Days: z.number().int().nonnegative().max(28),
+        completedFlexibleTrainingDaysLast28Days: z.number().int().nonnegative().max(28),
+        usualDayCompletionRateLast28Days: z.number().finite().min(0).max(1),
+      })
+      .strict(),
+    z
+      .object({
+        status: z.enum(["not_configured", "unavailable"]),
+        preferredWeekdays: z.array(TrainingWeekdaySchema).length(0),
+        usualTrainingDaysLast28Days: z.null(),
+        completedUsualTrainingDaysLast28Days: z.null(),
+        completedFlexibleTrainingDaysLast28Days: z.null(),
+        usualDayCompletionRateLast28Days: z.null(),
+      })
+      .strict(),
+  ])
+  .superRefine((value, context) => {
+    if (
+      value.status === "measured" &&
+      value.completedUsualTrainingDaysLast28Days > value.usualTrainingDaysLast28Days
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Completed usual days cannot exceed the available usual days.",
+        path: ["completedUsualTrainingDaysLast28Days"],
+      });
+    }
+    if (value.status === "measured") {
+      const expectedRate =
+        Math.round(
+          (value.completedUsualTrainingDaysLast28Days / value.usualTrainingDaysLast28Days) * 100,
+        ) / 100;
+      if (value.usualDayCompletionRateLast28Days !== expectedRate) {
+        context.addIssue({
+          code: "custom",
+          message: "Usual-day completion rate must match the counted training days.",
+          path: ["usualDayCompletionRateLast28Days"],
+        });
+      }
+    }
+  });
+
+export type TrainingBehavior = z.infer<typeof TrainingBehaviorSchema>;
+
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.2"),
+    schemaVersion: z.literal("1.3"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
@@ -144,6 +208,7 @@ export const DigitalAthleteStateSchema = z
       averageCaloriesOnLoggedDays: NonNegativeNumberSchema.nullable(),
       averageProteinGOnLoggedDays: NonNegativeNumberSchema.nullable(),
     }),
+    behavior: TrainingBehaviorSchema,
     decisionFeedback: z
       .object({
         available: z.boolean(),

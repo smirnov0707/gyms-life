@@ -6,7 +6,7 @@ import {
 } from "./athlete-state-snapshot.server";
 
 const informedState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -29,6 +29,14 @@ const informedState = DigitalAthleteStateSchema.parse({
     loggedDaysLast14Days: 9,
     averageCaloriesOnLoggedDays: 2360,
     averageProteinGOnLoggedDays: 164,
+  },
+  behavior: {
+    status: "measured",
+    preferredWeekdays: [1, 3, 5],
+    usualTrainingDaysLast28Days: 12,
+    completedUsualTrainingDaysLast28Days: 8,
+    completedFlexibleTrainingDaysLast28Days: 2,
+    usualDayCompletionRateLast28Days: 0.67,
   },
   decisionFeedback: {
     available: true,

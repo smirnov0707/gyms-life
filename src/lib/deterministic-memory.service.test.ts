@@ -3,7 +3,7 @@ import { buildCalculatedMemoryCandidates } from "./deterministic-memory.service"
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const completeState: DigitalAthleteState = {
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -26,6 +26,14 @@ const completeState: DigitalAthleteState = {
     loggedDaysLast14Days: 11,
     averageCaloriesOnLoggedDays: 2_120,
     averageProteinGOnLoggedDays: 154,
+  },
+  behavior: {
+    status: "measured",
+    preferredWeekdays: [1, 3, 5],
+    usualTrainingDaysLast28Days: 12,
+    completedUsualTrainingDaysLast28Days: 8,
+    completedFlexibleTrainingDaysLast28Days: 2,
+    usualDayCompletionRateLast28Days: 0.67,
   },
   decisionFeedback: {
     available: true,
@@ -54,6 +62,7 @@ describe("calculated user memory", () => {
 
     expect(candidates.map((candidate) => candidate.memoryKey)).toEqual([
       "derived:training_consistency_28d",
+      "derived:training_rhythm_observation_28d",
       "derived:recovery_low_7d",
       "derived:weight_change_30d",
       "derived:nutrition_logging_14d",
@@ -92,6 +101,14 @@ describe("calculated user memory", () => {
         weightChangeKgLast30Days: null,
       },
       nutrition: { ...completeState.nutrition, loggedDaysLast14Days: 9 },
+      behavior: {
+        status: "not_configured",
+        preferredWeekdays: [],
+        usualTrainingDaysLast28Days: null,
+        completedUsualTrainingDaysLast28Days: null,
+        completedFlexibleTrainingDaysLast28Days: null,
+        usualDayCompletionRateLast28Days: null,
+      },
     });
 
     expect(candidates).toEqual([]);

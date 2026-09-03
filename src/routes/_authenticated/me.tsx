@@ -319,21 +319,20 @@ function AthleteModelPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMemoryLoading(true);
-    const [modelResult, memoryResult] = await Promise.allSettled([
-      loadModel({ data: timeZone }),
-      loadMemory({}),
-    ] as const);
-    if (modelResult.status === "fulfilled") {
-      setModel(modelResult.value);
-    } else {
+    try {
+      // The model refresh reconciles deterministic memory. Load it first so a
+      // newly verified observation is visible without requiring a second tap.
+      setModel(await loadModel({ data: timeZone }));
+    } catch {
       toast.error(copy.error);
     }
-    if (memoryResult.status === "fulfilled") {
-      setMemories(memoryResult.value);
-    } else {
+    setLoading(false);
+
+    try {
+      setMemories(await loadMemory({}));
+    } catch {
       toast.error(copy.memory.error);
     }
-    setLoading(false);
     setMemoryLoading(false);
   }, [copy.error, copy.memory.error, loadMemory, loadModel, timeZone]);
 

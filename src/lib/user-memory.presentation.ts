@@ -23,6 +23,8 @@ export function displayedMemoryContent(memory: MemoryPresentationItem, lang: str
         return `Your recorded weight changed by ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toFixed(1)} kg in the last ${value.windowDays} days.`;
       case "nutrition_logging_14d":
         return `You logged nutrition on ${value.loggedDaysLast14Days} of the last ${value.windowDays} days.`;
+      case "training_rhythm_observation_28d":
+        return `You completed workouts on ${value.completedUsualTrainingDaysLast28Days} of your ${value.usualTrainingDaysLast28Days} usual training days across the previous ${value.windowDays} complete days.`;
     }
   }
 
@@ -37,6 +39,8 @@ export function displayedMemoryContent(memory: MemoryPresentationItem, lang: str
       return `Per pastarąsias ${value.windowDays} dienas užregistruotas svorio pokytis: ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toFixed(1)} kg.`;
     case "nutrition_logging_14d":
       return `Per pastarąsias ${value.windowDays} dienas mitybą užregistravai ${value.loggedDaysLast14Days} dienų.`;
+    case "training_rhythm_observation_28d":
+      return `Per ankstesnes ${value.windowDays} užbaigtas dienas treniruotę atlikai ${value.completedUsualTrainingDaysLast28Days} iš ${value.usualTrainingDaysLast28Days} tavo pasirinktų įprastų treniruočių dienų.`;
   }
 }
 
@@ -55,6 +59,8 @@ export function memoryEvidenceSummary(memory: MemoryPresentationItem, lang: stri
         return `Evidence: ${value.measurementsLast30Days} weight measurements across ${value.windowDays} days.`;
       case "nutrition_logging_14d":
         return `Evidence: nutrition logged on ${value.loggedDaysLast14Days} days across ${value.windowDays} days.`;
+      case "training_rhythm_observation_28d":
+        return `Evidence: ${value.completedUsualTrainingDaysLast28Days} completed training days matched your selected rhythm across ${value.windowDays} complete days.`;
     }
   }
 
@@ -69,5 +75,7 @@ export function memoryEvidenceSummary(memory: MemoryPresentationItem, lang: stri
       return `Įrodymai: ${value.measurementsLast30Days} svorio matavimai per ${value.windowDays} dienas.`;
     case "nutrition_logging_14d":
       return `Įrodymai: mityba užregistruota ${value.loggedDaysLast14Days} dienų per ${value.windowDays} dienas.`;
+    case "training_rhythm_observation_28d":
+      return `Įrodymai: ${value.completedUsualTrainingDaysLast28Days} baigtos treniruočių dienos sutapo su tavo pasirinktu ritmu per ${value.windowDays} užbaigtas dienas.`;
   }
 }

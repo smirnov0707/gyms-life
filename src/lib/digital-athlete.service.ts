@@ -16,7 +16,15 @@ import {
 } from "./digital-athlete.schema";
 import { loadActiveLifeContexts } from "./life-context.server";
 import type { ActiveLifeContext } from "./life-context.schema";
-import { IanaTimeZoneSchema, dayInTimeZone, dayOffset, isDayWithinPastDays } from "./local-day";
+import {
+  IanaTimeZoneSchema,
+  dayInTimeZone,
+  dayOffset,
+  isDayWithinPastDays,
+  weekdayForDay,
+} from "./local-day";
+import { loadTrainingRhythm } from "./training-rhythm.server";
+import type { TrainingRhythm } from "./training-rhythm.schema";
 
 const DAY_MS = 86_400_000;
 
@@ -99,6 +107,70 @@ function currentContextFor(
         context.context.kind === "high_stress",
     ),
     hasSafetyConstraint: active.some((context) => context.context.kind === "temporary_limitation"),
+  };
+}
+
+function trainingBehaviorFor(
+  workouts: DigitalAthleteSources["workouts"],
+  trainingRhythm: TrainingRhythm | null,
+  available: boolean,
+  today: string,
+  timeZone: string,
+): DigitalAthleteState["behavior"] {
+  if (!available) {
+    return {
+      status: "unavailable",
+      preferredWeekdays: [],
+      usualTrainingDaysLast28Days: null,
+      completedUsualTrainingDaysLast28Days: null,
+      completedFlexibleTrainingDaysLast28Days: null,
+      usualDayCompletionRateLast28Days: null,
+    };
+  }
+
+  if (trainingRhythm === null) {
+    return {
+      status: "not_configured",
+      preferredWeekdays: [],
+      usualTrainingDaysLast28Days: null,
+      completedUsualTrainingDaysLast28Days: null,
+      completedFlexibleTrainingDaysLast28Days: null,
+      usualDayCompletionRateLast28Days: null,
+    };
+  }
+
+  // Excluding the still-open local day avoids calling an uncompleted usual day
+  // a miss. This is an observation window, not a required workout calendar.
+  const windowDays = 28;
+  const firstDay = dayOffset(today, -windowDays);
+  const completedWindowDays = Array.from({ length: windowDays }, (_, index) =>
+    dayOffset(firstDay, index),
+  );
+  const lastDay = completedWindowDays.at(-1);
+  if (lastDay === undefined) throw new Error("Training behavior window is unexpectedly empty.");
+
+  const preferredWeekdays = new Set(trainingRhythm.preferredWeekdays);
+  const usualDays = completedWindowDays.filter((day) =>
+    preferredWeekdays.has(weekdayForDay(day, timeZone)),
+  );
+  const completedWorkoutDays = new Set(
+    workouts.flatMap((workout) => {
+      const workoutDay = dayInTimeZone(new Date(workout.started_at), timeZone);
+      return workoutDay >= firstDay && workoutDay <= lastDay ? [workoutDay] : [];
+    }),
+  );
+  const completedUsualDays = usualDays.filter((day) => completedWorkoutDays.has(day)).length;
+  const completedFlexibleDays = [...completedWorkoutDays].filter(
+    (day) => !preferredWeekdays.has(weekdayForDay(day, timeZone)),
+  ).length;
+
+  return {
+    status: "measured",
+    preferredWeekdays: trainingRhythm.preferredWeekdays,
+    usualTrainingDaysLast28Days: usualDays.length,
+    completedUsualTrainingDaysLast28Days: completedUsualDays,
+    completedFlexibleTrainingDaysLast28Days: completedFlexibleDays,
+    usualDayCompletionRateLast28Days: roundToTwoDecimals(completedUsualDays / usualDays.length),
   };
 }
 
@@ -236,9 +308,10 @@ export function buildDigitalAthleteState(
   if (!sources.availability.nutrition) dataGaps.push("nutrition_data_unavailable");
   else if (nutritionLogsLast14Days.length === 0) dataGaps.push("no_nutrition_logs_14d");
   if (!sources.availability.context) dataGaps.push("current_context_unavailable");
+  if (!sources.availability.trainingRhythm) dataGaps.push("training_rhythm_data_unavailable");
 
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.2",
+    schemaVersion: "1.3",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -272,6 +345,13 @@ export function buildDigitalAthleteState(
       averageCaloriesOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.calories)),
       averageProteinGOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.protein)),
     },
+    behavior: trainingBehaviorFor(
+      completedWorkouts,
+      sources.trainingRhythm,
+      sources.availability.training && sources.availability.trainingRhythm,
+      today,
+      zone,
+    ),
     decisionFeedback: decisionFeedbackFor(
       sources.decisionFeedback,
       sources.availability.decisionFeedback,
@@ -312,6 +392,7 @@ export async function loadDigitalAthleteState(
     nutritionLogsResult,
     decisionFeedbackResult,
     lifeContextResult,
+    trainingRhythmResult,
   ] = await Promise.all([
     supabase
       .from("workout_sessions")
@@ -348,6 +429,9 @@ export async function loadDigitalAthleteState(
       .order("decision_on", { ascending: false })
       .limit(56),
     loadActiveLifeContexts(supabase, userId, now),
+    loadTrainingRhythm(supabase, userId)
+      .then((trainingRhythm) => ({ trainingRhythm, available: true }))
+      .catch(() => ({ trainingRhythm: null, available: false })),
   ]);
 
   const workouts = parseDigitalAthleteRows(CompletedWorkoutSourceSchema, workoutsResult.data);
@@ -364,6 +448,7 @@ export async function loadDigitalAthleteState(
       nutritionLogs: nutritionLogs.rows,
       decisionFeedback: decisionFeedback.rows,
       lifeContexts: lifeContextResult.contexts,
+      trainingRhythm: trainingRhythmResult.trainingRhythm,
       availability: {
         training: workoutsResult.error === null && workouts.valid,
         recovery: checkinsResult.error === null && checkins.valid,
@@ -371,6 +456,7 @@ export async function loadDigitalAthleteState(
         nutrition: nutritionLogsResult.error === null && nutritionLogs.valid,
         decisionFeedback: decisionFeedbackResult.error === null && decisionFeedback.valid,
         context: lifeContextResult.available,
+        trainingRhythm: trainingRhythmResult.available,
       },
     },
     now,

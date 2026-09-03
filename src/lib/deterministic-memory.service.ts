@@ -56,6 +56,25 @@ export function buildCalculatedMemoryCandidates(
     });
   }
 
+  if (state.behavior.status === "measured" && state.behavior.usualTrainingDaysLast28Days >= 4) {
+    candidates.push({
+      memoryKey: "derived:training_rhythm_observation_28d",
+      memoryType: "behavior",
+      content: `Completed a workout on ${state.behavior.completedUsualTrainingDaysLast28Days} of ${state.behavior.usualTrainingDaysLast28Days} user-stated usual training days across the previous 28 complete days.`,
+      value: {
+        kind: "training_rhythm_observation_28d",
+        usualTrainingDaysLast28Days: state.behavior.usualTrainingDaysLast28Days,
+        completedUsualTrainingDaysLast28Days: state.behavior.completedUsualTrainingDaysLast28Days,
+        completedFlexibleTrainingDaysLast28Days:
+          state.behavior.completedFlexibleTrainingDaysLast28Days,
+        usualDayCompletionRateLast28Days: state.behavior.usualDayCompletionRateLast28Days,
+        windowDays: 28,
+      },
+      confidence: state.behavior.usualTrainingDaysLast28Days >= 8 ? 0.8 : 0.65,
+      importance: 0.7,
+    });
+  }
+
   if (
     state.recovery.checkinsLast7Days >= 3 &&
     state.recovery.averageReadinessLast7Days !== null &&

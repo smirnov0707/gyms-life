@@ -8,6 +8,7 @@ export const WeeklyIntelligenceActionSchema = z.enum([
   "check_readiness",
   "log_nutrition",
   "log_body_metrics",
+  "set_training_rhythm",
   "open_today",
 ]);
 

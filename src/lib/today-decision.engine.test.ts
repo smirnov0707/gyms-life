@@ -3,7 +3,7 @@ import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
 
 const baseState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   training: {
     sessionsLast7Days: 2,
     sessionsLast28Days: 5,
@@ -26,6 +26,14 @@ const baseState = DigitalAthleteStateSchema.parse({
     loggedDaysLast14Days: 8,
     averageCaloriesOnLoggedDays: 2300,
     averageProteinGOnLoggedDays: 160,
+  },
+  behavior: {
+    status: "not_configured",
+    preferredWeekdays: [],
+    usualTrainingDaysLast28Days: null,
+    completedUsualTrainingDaysLast28Days: null,
+    completedFlexibleTrainingDaysLast28Days: null,
+    usualDayCompletionRateLast28Days: null,
   },
   decisionFeedback: {
     available: true,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CalculatedMemoryValueSchema } from "./calculated-memory.contract";
 import {
   buildActiveMemoryForAi,
   calculatedMemoryValueForTransparency,
@@ -65,6 +66,20 @@ describe("user memory transparency contracts", () => {
   it("rejects invalid raw rows before they reach the user interface", () => {
     expect(() => parseUserMemoryTransparencyItems([{ ...row, source: "unknown" }])).toThrow();
     expect(() => parseUserMemoryTransparencyItems([{ ...row, evidence_refs: {} }])).toThrow();
+    const invalidRhythmValue = {
+      kind: "training_rhythm_observation_28d",
+      usualTrainingDaysLast28Days: 4,
+      completedUsualTrainingDaysLast28Days: 3,
+      completedFlexibleTrainingDaysLast28Days: 0,
+      usualDayCompletionRateLast28Days: 0.5,
+      windowDays: 28,
+    };
+    expect(CalculatedMemoryValueSchema.safeParse(invalidRhythmValue).success).toBe(false);
+    expect(
+      parseUserMemoryTransparencyItems([
+        { ...row, memory_type: "behavior", value: invalidRhythmValue },
+      ])[0]?.calculatedValue,
+    ).toBeNull();
   });
 
   it("creates a bounded AI-memory contract without IDs, dates, evidence references, or context", () => {

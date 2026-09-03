@@ -10,7 +10,7 @@ import {
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const digitalAthlete: DigitalAthleteState = {
-  schemaVersion: "1.2" as const,
+  schemaVersion: "1.3" as const,
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
@@ -33,6 +33,14 @@ const digitalAthlete: DigitalAthleteState = {
     loggedDaysLast14Days: 7,
     averageCaloriesOnLoggedDays: 2200,
     averageProteinGOnLoggedDays: 155,
+  },
+  behavior: {
+    status: "measured" as const,
+    preferredWeekdays: [1, 3, 5],
+    usualTrainingDaysLast28Days: 12,
+    completedUsualTrainingDaysLast28Days: 8,
+    completedFlexibleTrainingDaysLast28Days: 2,
+    usualDayCompletionRateLast28Days: 0.67,
   },
   decisionFeedback: {
     available: true,
@@ -215,7 +223,7 @@ describe("contextForAi", () => {
       expect(payload).not.toContain(privateValue);
     }
     expect(JSON.parse(payload)).toMatchObject({
-      schemaVersion: "1.2",
+      schemaVersion: "1.3",
       preferences: { goal: "strength", daysPerWeek: 4 },
       personalization: { enabled: true, policyVersion: "2026-09-03-memory-context-v1" },
       nutritionToday: { calories: 1800, targetCalories: 2400 },
@@ -267,7 +275,7 @@ describe("contextForAi", () => {
     const payload = contextForAi(context);
 
     expect(JSON.parse(payload)).toMatchObject({
-      schemaVersion: "1.2",
+      schemaVersion: "1.3",
       personalization: { enabled: false },
       dataGaps: ["personalization_consent_required"],
     });

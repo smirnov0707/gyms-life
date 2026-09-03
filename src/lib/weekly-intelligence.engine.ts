@@ -14,11 +14,15 @@ const WeeklyIntelligenceInputSchema = z
   })
   .strict();
 
-function nextActionFor(gaps: string[]): WeeklyIntelligenceAction {
+function nextActionFor(state: z.infer<typeof DigitalAthleteStateSchema>): WeeklyIntelligenceAction {
+  const gaps = state.dataGaps;
   if (gaps.includes("no_completed_workouts_28d")) return "start_training";
   if (gaps.includes("no_recovery_checkins_7d")) return "check_readiness";
   if (gaps.includes("no_nutrition_logs_14d")) return "log_nutrition";
   if (gaps.includes("no_body_measurements_30d")) return "log_body_metrics";
+  if (state.behavior.status === "not_configured" && state.training.sessionsLast28Days > 0) {
+    return "set_training_rhythm";
+  }
   return "open_today";
 }
 
@@ -54,7 +58,7 @@ export function buildWeeklyIntelligenceReview(value: unknown): WeeklyIntelligenc
       averageReadiness: input.state.recovery.averageReadinessLast7Days,
     },
     discoveries,
-    nextAction: { action: nextActionFor(input.state.dataGaps) },
+    nextAction: { action: nextActionFor(input.state) },
     stillLearning: input.state.dataGaps,
   });
 }

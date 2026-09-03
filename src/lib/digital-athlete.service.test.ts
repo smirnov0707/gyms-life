@@ -34,6 +34,10 @@ describe("buildDigitalAthleteState", () => {
           { decision_on: "2026-08-31", outcome: "not_helpful" },
         ],
         lifeContexts: [],
+        trainingRhythm: {
+          preferredWeekdays: [1, 3, 5],
+          updatedAt: "2026-08-01T09:00:00.000Z",
+        },
         availability: {
           training: true,
           recovery: true,
@@ -41,13 +45,14 @@ describe("buildDigitalAthleteState", () => {
           nutrition: true,
           decisionFeedback: true,
           context: true,
+          trainingRhythm: true,
         },
       },
       now,
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.2",
+      schemaVersion: "1.3",
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
@@ -70,6 +75,14 @@ describe("buildDigitalAthleteState", () => {
         loggedDaysLast14Days: 5,
         averageCaloriesOnLoggedDays: 2130,
         averageProteinGOnLoggedDays: 153,
+      },
+      behavior: {
+        status: "measured",
+        preferredWeekdays: [1, 3, 5],
+        usualTrainingDaysLast28Days: 12,
+        completedUsualTrainingDaysLast28Days: 1,
+        completedFlexibleTrainingDaysLast28Days: 2,
+        usualDayCompletionRateLast28Days: 0.08,
       },
       decisionFeedback: {
         available: true,
@@ -102,6 +115,7 @@ describe("buildDigitalAthleteState", () => {
         nutritionLogs: [],
         decisionFeedback: [],
         lifeContexts: [],
+        trainingRhythm: null,
         availability: {
           training: false,
           recovery: false,
@@ -109,6 +123,7 @@ describe("buildDigitalAthleteState", () => {
           nutrition: false,
           decisionFeedback: false,
           context: false,
+          trainingRhythm: false,
         },
       },
       now,
@@ -125,6 +140,7 @@ describe("buildDigitalAthleteState", () => {
       "body_measurements_unavailable",
       "nutrition_data_unavailable",
       "current_context_unavailable",
+      "training_rhythm_data_unavailable",
     ]);
   });
 
@@ -137,6 +153,7 @@ describe("buildDigitalAthleteState", () => {
         nutritionLogs: [{ logged_on: "2026-06-01", calories: 2200, protein: 160 }],
         decisionFeedback: [],
         lifeContexts: [],
+        trainingRhythm: null,
         availability: {
           training: true,
           recovery: true,
@@ -144,6 +161,7 @@ describe("buildDigitalAthleteState", () => {
           nutrition: true,
           decisionFeedback: true,
           context: true,
+          trainingRhythm: true,
         },
       },
       now,
@@ -178,6 +196,7 @@ describe("buildDigitalAthleteState", () => {
             context: { kind: "temporary_limitation" },
           },
         ],
+        trainingRhythm: null,
         availability: {
           training: true,
           recovery: true,
@@ -185,6 +204,7 @@ describe("buildDigitalAthleteState", () => {
           nutrition: true,
           decisionFeedback: true,
           context: true,
+          trainingRhythm: true,
         },
       },
       now,
@@ -209,6 +229,7 @@ describe("buildDigitalAthleteState", () => {
           { decision_on: "2026-09-01", outcome: "not_helpful" },
         ],
         lifeContexts: [],
+        trainingRhythm: null,
         availability: {
           training: true,
           recovery: true,
@@ -216,6 +237,7 @@ describe("buildDigitalAthleteState", () => {
           nutrition: true,
           decisionFeedback: true,
           context: true,
+          trainingRhythm: true,
         },
       },
       now,
@@ -255,6 +277,7 @@ describe("buildDigitalAthleteState", () => {
           { decision_on: "2026-08-06", outcome: "not_helpful" },
         ],
         lifeContexts: [],
+        trainingRhythm: null,
         availability: {
           training: true,
           recovery: true,
@@ -262,6 +285,7 @@ describe("buildDigitalAthleteState", () => {
           nutrition: true,
           decisionFeedback: true,
           context: true,
+          trainingRhythm: true,
         },
       },
       new Date("2026-09-03T21:30:00.000Z"),
@@ -281,6 +305,49 @@ describe("buildDigitalAthleteState", () => {
     expect(state.decisionFeedback).toMatchObject({
       ratedDecisionsLast28Days: 2,
       helpfulDecisionOutcomesLast28Days: 2,
+    });
+  });
+
+  it("observes schedule fit from completed local days without treating today or flexible days as misses", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [
+          { started_at: "2026-09-02T08:00:00.000Z", total_volume: 900 },
+          { started_at: "2026-09-01T08:00:00.000Z", total_volume: 900 },
+          { started_at: "2026-08-31T08:00:00.000Z", total_volume: 900 },
+          { started_at: "2026-08-28T08:00:00.000Z", total_volume: 900 },
+          { started_at: "2026-08-28T17:00:00.000Z", total_volume: 900 },
+        ],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: {
+          preferredWeekdays: [1, 3, 5],
+          updatedAt: "2026-08-01T09:00:00.000Z",
+        },
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+        },
+      },
+      now,
+      "UTC",
+    );
+
+    expect(state.behavior).toEqual({
+      status: "measured",
+      preferredWeekdays: [1, 3, 5],
+      usualTrainingDaysLast28Days: 12,
+      completedUsualTrainingDaysLast28Days: 2,
+      completedFlexibleTrainingDaysLast28Days: 1,
+      usualDayCompletionRateLast28Days: 0.17,
     });
   });
 });

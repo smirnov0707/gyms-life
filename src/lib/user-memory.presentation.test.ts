@@ -41,4 +41,27 @@ describe("user-memory presentation", () => {
     expect(displayedMemoryContent(userMemory, "lt")).toBe(userMemory.content);
     expect(memoryEvidenceSummary(userMemory, "lt")).toBeNull();
   });
+
+  it("presents a rhythm observation from its structured value rather than stored prose", () => {
+    const rhythmMemory = UserMemoryTransparencyItemResultSchema.parse({
+      ...calculatedMemory,
+      type: "behavior",
+      content: "Untrusted stored wording.",
+      calculatedValue: {
+        kind: "training_rhythm_observation_28d",
+        usualTrainingDaysLast28Days: 12,
+        completedUsualTrainingDaysLast28Days: 8,
+        completedFlexibleTrainingDaysLast28Days: 2,
+        usualDayCompletionRateLast28Days: 0.67,
+        windowDays: 28,
+      },
+    });
+
+    expect(displayedMemoryContent(rhythmMemory, "en")).toBe(
+      "You completed workouts on 8 of your 12 usual training days across the previous 28 complete days.",
+    );
+    expect(memoryEvidenceSummary(rhythmMemory, "lt")).toBe(
+      "Įrodymai: 8 baigtos treniruočių dienos sutapo su tavo pasirinktu ritmu per 28 užbaigtas dienas.",
+    );
+  });
 });

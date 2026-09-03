@@ -118,6 +118,16 @@ export function weekdayInTimeZone(instant: Date, timeZone: string): number {
   return index;
 }
 
+/**
+ * Returns the local weekday for an ISO calendar day. It deliberately goes
+ * through that day's local midnight instead of guessing from a UTC noon,
+ * which would shift the day for far-east or far-west time zones.
+ */
+export function weekdayForDay(day: string, timeZone: string): number {
+  const { start } = dayBoundsInTimeZone(day, timeZone);
+  return weekdayInTimeZone(new Date(start), timeZone);
+}
+
 /** Returns the browser's IANA zone, with UTC as the safe fallback. */
 export function browserTimeZone(): string {
   if (typeof window === "undefined" || typeof Intl === "undefined") return "UTC";

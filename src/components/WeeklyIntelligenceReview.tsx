@@ -53,6 +53,7 @@ function copyFor(lang: string): Copy {
         check_readiness: { title: "Add a readiness check-in", cta: "Check readiness" },
         log_nutrition: { title: "Log nutrition", cta: "Open nutrition" },
         log_body_metrics: { title: "Add a body measurement", cta: "Open progress" },
+        set_training_rhythm: { title: "Set your usual training days", cta: "Set rhythm" },
         open_today: { title: "Follow today's decision", cta: "Open Today" },
       },
       gap: {
@@ -65,6 +66,7 @@ function copyFor(lang: string): Copy {
         nutrition_data_unavailable: "Nutrition data is temporarily unavailable.",
         no_nutrition_logs_14d: "There are no nutrition logs in the last 14 days.",
         current_context_unavailable: "Current-life context is temporarily unavailable.",
+        training_rhythm_data_unavailable: "Training-rhythm data is temporarily unavailable.",
         personalization_consent_required: "Personalized AI context is not enabled.",
         personalization_consent_unavailable: "Personalization consent is temporarily unavailable.",
       },
@@ -92,6 +94,10 @@ function copyFor(lang: string): Copy {
       check_readiness: { title: "Įvertink šiandienos pasiruošimą", cta: "Įvertinti pasiruošimą" },
       log_nutrition: { title: "Užregistruok mitybą", cta: "Atidaryti mitybą" },
       log_body_metrics: { title: "Pridėk kūno matavimą", cta: "Atidaryti progresą" },
+      set_training_rhythm: {
+        title: "Nustatyk įprastas treniruočių dienas",
+        cta: "Nustatyti ritmą",
+      },
       open_today: { title: "Sek šiandienos sprendimą", cta: "Atidaryti šiandieną" },
     },
     gap: {
@@ -104,6 +110,7 @@ function copyFor(lang: string): Copy {
       nutrition_data_unavailable: "Mitybos duomenys laikinai nepasiekiami.",
       no_nutrition_logs_14d: "Per pastarąsias 14 dienų nėra mitybos įrašų.",
       current_context_unavailable: "Dabartinis gyvenimo kontekstas laikinai nepasiekiamas.",
+      training_rhythm_data_unavailable: "Treniruočių ritmo duomenys laikinai nepasiekiami.",
       personalization_consent_required: "Asmeninis AI kontekstas neįjungtas.",
       personalization_consent_unavailable: "Asmeninio konteksto sutikimas laikinai nepasiekiamas.",
     },
@@ -112,12 +119,13 @@ function copyFor(lang: string): Copy {
 
 const actionRoute: Record<
   WeeklyIntelligenceAction,
-  "/" | "/training" | "/readiness" | "/nutrition" | "/progress"
+  "/" | "/training" | "/readiness" | "/nutrition" | "/progress" | "/me"
 > = {
   start_training: "/training",
   check_readiness: "/readiness",
   log_nutrition: "/nutrition",
   log_body_metrics: "/progress",
+  set_training_rhythm: "/me",
   open_today: "/",
 };
 

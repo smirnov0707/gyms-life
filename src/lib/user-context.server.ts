@@ -289,6 +289,7 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
     nutritionLogs: [],
     decisionFeedback: [],
     lifeContexts: [],
+    trainingRhythm: null,
     availability: {
       training: true,
       recovery: true,
@@ -296,6 +297,7 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
       nutrition: true,
       decisionFeedback: true,
       context: true,
+      trainingRhythm: true,
     },
   });
 }
@@ -447,11 +449,13 @@ export function buildAiPersonalizationSummary(
       nutritionLogs: [],
       decisionFeedback: [],
       lifeContexts: [],
+      trainingRhythm: null,
       availability: {
         ...sources.availability,
         nutrition: true,
         decisionFeedback: true,
         context: true,
+        trainingRhythm: true,
       },
     },
     now,
@@ -547,7 +551,7 @@ export async function buildUserContext(
  */
 export function contextForAi(context: CentralUserContext): string {
   const baseContext = {
-    schemaVersion: "1.2",
+    schemaVersion: "1.3",
     preferences: context.profile,
     personalization: {
       enabled: context.aiPersonalization.enabled,
@@ -623,6 +627,7 @@ export function contextForAi(context: CentralUserContext): string {
         recovery: context.digitalAthlete.recovery,
         body: context.digitalAthlete.body,
         nutrition: context.digitalAthlete.nutrition,
+        behavior: context.digitalAthlete.behavior,
         currentContext,
       },
       activeMemory: context.activeMemory.entries,

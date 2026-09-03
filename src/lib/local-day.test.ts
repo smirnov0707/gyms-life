@@ -6,6 +6,7 @@ import {
   dayBoundsInTimeZone,
   dayInTimeZone,
   isDayWithinPastDays,
+  weekdayForDay,
   weekdayInTimeZone,
 } from "./local-day";
 
@@ -24,6 +25,11 @@ describe("local-day", () => {
 
     expect(weekdayInTimeZone(instant, "Europe/Vilnius")).toBe(1);
     expect(weekdayInTimeZone(instant, "America/Los_Angeles")).toBe(0);
+  });
+
+  it("derives a calendar day's weekday without shifting a far-east time zone", () => {
+    expect(weekdayForDay("2026-09-07", "Pacific/Kiritimati")).toBe(1);
+    expect(weekdayForDay("2026-09-07", "Europe/Vilnius")).toBe(1);
   });
 
   it("uses real local midnights across a daylight-saving transition", () => {
