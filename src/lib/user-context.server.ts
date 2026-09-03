@@ -39,6 +39,10 @@ const ProfileSourceSchema = z
   })
   .strict();
 
+const ProfileRowSourceSchema = ProfileSourceSchema.extend({
+  time_zone: z.string().nullable(),
+});
+
 const NutritionLogSourceSchema = z
   .object({
     calories: NonNegativeNumberSchema.max(20_000),
@@ -200,15 +204,13 @@ function defaultProfilePreferences(): AiProfilePreferences {
   });
 }
 
-/** Converts a legacy profile row into a small, canonical, non-sensitive preference contract. */
-export function parseAiProfilePreferences(value: unknown): AiProfilePreferences | null {
-  const parsed = ProfileSourceSchema.safeParse(value);
-  if (!parsed.success) return null;
-
-  const locale = LocaleSchema.safeParse(parsed.data.locale.trim());
+function profilePreferencesFrom(
+  profile: z.output<typeof ProfileSourceSchema>,
+): AiProfilePreferences {
+  const locale = LocaleSchema.safeParse(profile.locale.trim());
   const equipment = [
     ...new Set(
-      parsed.data.equipment.flatMap((item) => {
+      profile.equipment.flatMap((item) => {
         const canonical = canonicalWorkoutEquipment(item);
         return canonical === null ? [] : [canonical];
       }),
@@ -217,12 +219,36 @@ export function parseAiProfilePreferences(value: unknown): AiProfilePreferences 
 
   return AiProfilePreferencesSchema.parse({
     locale: locale.success ? locale.data : "lt",
-    goal: canonicalGoal(parsed.data.goal),
-    experience: canonicalExperience(parsed.data.experience),
-    daysPerWeek: parsed.data.days_per_week,
-    sessionMinutes: parsed.data.session_minutes,
+    goal: canonicalGoal(profile.goal),
+    experience: canonicalExperience(profile.experience),
+    daysPerWeek: profile.days_per_week,
+    sessionMinutes: profile.session_minutes,
     equipment,
   });
+}
+
+/** Converts a legacy profile row into a small, canonical, non-sensitive preference contract. */
+export function parseAiProfilePreferences(value: unknown): AiProfilePreferences | null {
+  const parsed = ProfileSourceSchema.safeParse(value);
+  return parsed.success ? profilePreferencesFrom(parsed.data) : null;
+}
+
+/** Invalid persisted legacy values never create an invalid calendar boundary. */
+export function resolvePersistedProfileTimeZone(value: unknown): string {
+  const parsed = IanaTimeZoneSchema.safeParse(value);
+  return parsed.success ? parsed.data : "UTC";
+}
+
+function profileContextFrom(
+  value: unknown,
+): { profile: AiProfilePreferences; timeZone: string } | null {
+  const parsed = ProfileRowSourceSchema.safeParse(value);
+  if (!parsed.success) return null;
+
+  return {
+    profile: profilePreferencesFrom(parsed.data),
+    timeZone: resolvePersistedProfileTimeZone(parsed.data.time_zone),
+  };
 }
 
 function emptyDigitalAthleteState(): DigitalAthleteState {
@@ -428,14 +454,14 @@ function consentFrom(value: unknown, querySucceeded: boolean): AiPersonalization
 export async function buildUserContext(
   supabase: SupabaseClient<Database>,
   userId: string,
-  timeZone = "UTC",
+  timeZone?: string,
   now = new Date(),
 ): Promise<CentralUserContext> {
-  const zone = IanaTimeZoneSchema.parse(timeZone);
+  const requestedTimeZone = timeZone === undefined ? null : IanaTimeZoneSchema.parse(timeZone);
   const [{ data: rawProfile, error: profileError }, consentResult] = await Promise.all([
     supabase
       .from("profiles")
-      .select("locale, goal, experience, days_per_week, session_minutes, equipment")
+      .select("locale, goal, experience, days_per_week, session_minutes, equipment, time_zone")
       .eq("id", userId)
       .maybeSingle(),
     supabase
@@ -448,7 +474,9 @@ export async function buildUserContext(
       .maybeSingle(),
   ]);
 
-  const profile = profileError === null ? parseAiProfilePreferences(rawProfile) : null;
+  const profileContext = profileError === null ? profileContextFrom(rawProfile) : null;
+  const zone = requestedTimeZone ?? profileContext?.timeZone ?? "UTC";
+  const profile = profileContext?.profile ?? null;
   const aiPersonalization = consentFrom(consentResult.data, consentResult.error === null);
   const currentDay = await loadCurrentDayContext(supabase, userId, zone, now);
   const consentGap = consentResult.error

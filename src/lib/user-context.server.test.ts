@@ -4,6 +4,7 @@ import {
   calculateWorkoutStreak,
   contextForAi,
   parseAiProfilePreferences,
+  resolvePersistedProfileTimeZone,
   type CentralUserContext,
 } from "./user-context.server";
 import type { DigitalAthleteState } from "./digital-athlete.schema";
@@ -144,6 +145,14 @@ describe("parseAiProfilePreferences", () => {
 
   it("rejects malformed source rows instead of forwarding them into AI context", () => {
     expect(parseAiProfilePreferences({ locale: "lt" })).toBeNull();
+  });
+});
+
+describe("resolvePersistedProfileTimeZone", () => {
+  it("uses only validated IANA names and safely falls back for invalid legacy data", () => {
+    expect(resolvePersistedProfileTimeZone("Europe/Vilnius")).toBe("Europe/Vilnius");
+    expect(resolvePersistedProfileTimeZone("not-a-time-zone")).toBe("UTC");
+    expect(resolvePersistedProfileTimeZone(null)).toBe("UTC");
   });
 });
 

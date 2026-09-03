@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { AccessGate } from "@/components/AccessGate";
 import { RelatedLinks } from "@/components/RelatedLinks";
+import { ProfileTimeZoneSync } from "@/components/ProfileTimeZoneSync";
 import { RELATED } from "@/lib/nav-map";
 import { useAuth } from "@/lib/auth";
 
@@ -40,12 +41,15 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <AppShell>
-      <AccessGate>
-        <Outlet />
-        <RelatedForRoute />
-      </AccessGate>
-    </AppShell>
+    <>
+      <ProfileTimeZoneSync userId={user.id} />
+      <AppShell>
+        <AccessGate>
+          <Outlet />
+          <RelatedForRoute />
+        </AccessGate>
+      </AppShell>
+    </>
   );
 }
 

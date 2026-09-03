@@ -703,6 +703,7 @@ export type Database = {
           onboarded: boolean
           session_minutes: number | null
           target_weight_kg: number | null
+          time_zone: string
           updated_at: string
           weight_kg: number | null
         }
@@ -728,6 +729,7 @@ export type Database = {
           onboarded?: boolean
           session_minutes?: number | null
           target_weight_kg?: number | null
+          time_zone?: string
           updated_at?: string
           weight_kg?: number | null
         }
@@ -753,6 +755,7 @@ export type Database = {
           onboarded?: boolean
           session_minutes?: number | null
           target_weight_kg?: number | null
+          time_zone?: string
           updated_at?: string
           weight_kg?: number | null
         }
