@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { createAiModel, type AiModelId } from "./ai-gateway.server";
-import { generateJson, normalizeAiError } from "./ai-json.server";
+import { generateJson, isAiModelUnavailable, normalizeAiError } from "./ai-json.server";
 import { reserveAiRequest } from "./ai-quota.server";
 import { recordObservabilityEvent } from "./observability.server";
 import { buildUserContext, contextForAi, type CentralUserContext } from "./user-context.server";
@@ -12,6 +12,8 @@ type AiContextScope = "none" | "personalized";
 
 type AiTaskPolicy = {
   model: AiModelId;
+  /** Ordered, schema-compatible backup models for a provider-side model removal. */
+  fallbackModels?: readonly AiModelId[];
   contextScope: AiContextScope;
   allowProviderFallback?: boolean;
 };
@@ -35,7 +37,11 @@ const AI_TASK_POLICIES = {
   "coach.warmup": { model: "google/gemini-2.5-flash", contextScope: "personalized" },
   "daily-brief": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
   "daily-readiness": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
-  dineout: { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
+  dineout: {
+    model: "groq/openai/gpt-oss-120b",
+    fallbackModels: ["google/gemini-3.1-flash-lite"],
+    contextScope: "personalized",
+  },
   "exercise-filter": { model: "groq/openai/gpt-oss-120b", contextScope: "none" },
   "exercise-suggestion": {
     model: "google/gemini-3.1-flash-lite",
@@ -55,7 +61,11 @@ const AI_TASK_POLICIES = {
   fridge: { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
   "ghost-coach": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
   "meal-adaptation": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
-  "meal-plan": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
+  "meal-plan": {
+    model: "google/gemini-3.1-flash-lite",
+    fallbackModels: ["groq/openai/gpt-oss-120b"],
+    contextScope: "personalized",
+  },
   "meal-translation": { model: "google/gemini-3.1-flash-lite", contextScope: "none" },
   "medical-report": { model: "google/gemini-3.1-flash-lite", contextScope: "none" },
   micronutrients: { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
@@ -74,7 +84,12 @@ const AI_TASK_POLICIES = {
     contextScope: "none",
     allowProviderFallback: false,
   },
-  "training-plan": { model: "google/gemini-2.5-flash", contextScope: "personalized" },
+  "training-plan": {
+    model: "google/gemini-2.5-flash",
+    // Gemini 3.1 Flash Lite is already verified by a live production brief.
+    fallbackModels: ["google/gemini-3.1-flash-lite", "groq/openai/gpt-oss-120b"],
+    contextScope: "personalized",
+  },
   "voice-log-structuring": {
     model: "groq/openai/gpt-oss-120b",
     contextScope: "none",
@@ -94,6 +109,14 @@ export function getAiTaskPolicy(task: AiTask): Readonly<AiTaskPolicy> {
   return AI_TASK_POLICIES[task];
 }
 
+/** The policy-owned route never lets features pick their own fallback model. */
+export function getAiTaskModelRoute(task: AiTask): readonly AiModelId[] {
+  const policy = getAiTaskPolicy(task);
+  return [policy.model, ...(policy.fallbackModels ?? [])].filter(
+    (model, index, models) => models.indexOf(model) === index,
+  );
+}
+
 type OrchestrationRequest = {
   task: AiTask;
   supabase?: SupabaseClient<Database>;
@@ -104,6 +127,7 @@ type OrchestrationRequest = {
 
 type OrchestratedExecution = {
   model: ReturnType<typeof createAiModel>;
+  modelId: AiModelId;
   contextPrompt: string;
 };
 
@@ -130,15 +154,16 @@ function aiFailureCode(error: unknown): string {
     case "AI_DAILY_LIMIT":
     case "AI_QUOTA_UNAVAILABLE":
     case "AI_RATE_LIMIT":
+    case "AI_MODEL_UNAVAILABLE":
       return error.message;
     default:
       return "AI_REQUEST_FAILED";
   }
 }
 
-async function prepareOrchestratedExecution(
+async function prepareOrchestratedExecutions(
   request: OrchestrationRequest,
-): Promise<OrchestratedExecution> {
+): Promise<OrchestratedExecution[]> {
   const policy = getAiTaskPolicy(request.task);
   let contextPrompt = "";
   if (policy.contextScope === "personalized") {
@@ -153,10 +178,38 @@ async function prepareOrchestratedExecution(
     contextPrompt = contextInstruction(request.task, contextForAi(userContext));
   }
 
-  return {
-    model: createAiModel(policy.model, policy.allowProviderFallback),
+  return getAiTaskModelRoute(request.task).map((modelId) => ({
+    model: createAiModel(modelId, policy.allowProviderFallback),
+    modelId,
     contextPrompt,
-  };
+  }));
+}
+
+/**
+ * A provider failure must not make a compatible, centrally approved worker
+ * unreachable. Invalid domain output is deliberately not retried: a fallback
+ * cannot turn an invalid recommendation into trusted data.
+ */
+export async function executeAiModelRoute<T, TExecution extends { modelId: AiModelId }>(
+  executions: readonly TExecution[],
+  execute: (execution: TExecution) => Promise<T>,
+): Promise<{ result: T; execution: TExecution; attemptedModels: AiModelId[] }> {
+  const attemptedModels: AiModelId[] = [];
+
+  for (const execution of executions) {
+    attemptedModels.push(execution.modelId);
+    try {
+      return { result: await execute(execution), execution, attemptedModels };
+    } catch (error) {
+      const normalized = normalizeAiError(error);
+      if (isAiModelUnavailable(normalized) && attemptedModels.length < executions.length) {
+        continue;
+      }
+      throw normalized;
+    }
+  }
+
+  throw new Error("AI_REQUEST_FAILED");
 }
 
 async function executeObservedAiRequest<T>(
@@ -165,26 +218,43 @@ async function executeObservedAiRequest<T>(
 ): Promise<T> {
   const startedAt = Date.now();
   const policy = getAiTaskPolicy(request.task);
-  const metadata = { model: policy.model, task: request.task };
+  const attemptedModels: AiModelId[] = [];
 
   try {
-    const result = await execute(await prepareOrchestratedExecution(request));
+    const executions = await prepareOrchestratedExecutions(request);
+    // A provider fallback is one member action, not multiple quota debits.
+    await reserveAiRequest(request.userId);
+    const routed = await executeAiModelRoute(executions, async (execution) => {
+      attemptedModels.push(execution.modelId);
+      return execute(execution);
+    });
     await recordObservabilityEvent({
       eventName: "ai.request",
       outcome: "success",
       userId: request.userId,
       durationMs: observabilityDuration(startedAt),
-      metadata,
+      metadata: {
+        task: request.task,
+        model: routed.execution.modelId,
+        attempt_count: attemptedModels.length,
+        ...(attemptedModels.length > 1 ? { fallback_from: policy.model } : {}),
+      },
     });
-    return result;
+    return routed.result;
   } catch (error) {
+    const lastModel = attemptedModels.at(-1) ?? policy.model;
     await recordObservabilityEvent({
       eventName: "ai.request",
       outcome: "failure",
       userId: request.userId,
       durationMs: observabilityDuration(startedAt),
       errorCode: aiFailureCode(error),
-      metadata,
+      metadata: {
+        task: request.task,
+        model: lastModel,
+        attempt_count: attemptedModels.length,
+        ...(attemptedModels.length > 1 ? { fallback_from: policy.model } : {}),
+      },
     });
     throw error;
   }
@@ -206,6 +276,7 @@ export async function generateOrchestratedJson<T>(
   return executeObservedAiRequest(request, (execution) =>
     generateJson(execution.model, {
       userId: request.userId,
+      reserveQuota: false,
       system: addContextToSystem(request.system, execution.contextPrompt),
       schema: request.schema,
       ...(request.prompt === undefined ? {} : { prompt: request.prompt }),
@@ -228,7 +299,6 @@ export async function generateOrchestratedText(
 ): Promise<string> {
   return executeObservedAiRequest(request, async (execution) => {
     try {
-      await reserveAiRequest(request.userId);
       const { text } = await generateText({
         model: execution.model,
         system: addContextToSystem(request.system, execution.contextPrompt),

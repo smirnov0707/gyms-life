@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { aiErrorMessage } from "./ai-error";
-import { AiUnavailableError, normalizeAiError, parseAiJson } from "./ai-json.server";
+import {
+  AiUnavailableError,
+  isAiModelUnavailable,
+  normalizeAiError,
+  parseAiJson,
+} from "./ai-json.server";
 
 describe("parseAiJson", () => {
   const schema = z.object({
@@ -49,6 +54,7 @@ describe("aiErrorMessage", () => {
     });
 
     expect(error.message).toBe("AI_MODEL_UNAVAILABLE");
+    expect(isAiModelUnavailable(error)).toBe(true);
   });
 
   it("does not expose quota infrastructure failures to the member", () => {

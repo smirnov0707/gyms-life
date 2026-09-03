@@ -17,6 +17,8 @@ export async function generateJson<T>(
     messages?: ModelMessage[];
     schema: z.ZodType<T, unknown>;
     maxOutputTokens?: number;
+    /** The orchestrator reserves once before a provider fallback route. */
+    reserveQuota?: boolean;
   },
 ): Promise<T> {
   const { generateText } = await import("ai");
@@ -25,7 +27,7 @@ export async function generateJson<T>(
 
   let text: string;
   try {
-    await reserveAiRequest(opts.userId);
+    if (opts.reserveQuota !== false) await reserveAiRequest(opts.userId);
     ({ text } = await generateText({
       model,
       system,
@@ -88,6 +90,11 @@ export function normalizeAiError(error: unknown): Error {
     return new AiUnavailableError("other", "AI_MODEL_UNAVAILABLE");
   }
   return error instanceof Error ? error : new Error(String(error));
+}
+
+/** A route may try its next provider only when the selected model is unavailable. */
+export function isAiModelUnavailable(error: unknown): boolean {
+  return error instanceof AiUnavailableError && error.message === "AI_MODEL_UNAVAILABLE";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
