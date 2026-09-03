@@ -2,6 +2,7 @@ import type { ExerciseCatalogItem } from "./exercise-catalog.schema";
 import type { ActiveLifeContext } from "./life-context.schema";
 import { adaptTrainingPlanDay } from "./training-guidance.service";
 import type { TrainingPlanDay, TrainingPlanExercise } from "./training-plan.schema";
+import { canonicalWorkoutEquipment, type WorkoutEquipment } from "./workout-equipment.schema";
 import {
   WorkoutExecutionSnapshotSchema,
   type WorkoutAdaptationReason,
@@ -16,7 +17,7 @@ type WorkoutExecutionInput = {
 };
 
 type EquipmentConstraint = {
-  allowed: Set<string>;
+  allowed: Set<WorkoutEquipment>;
   sourceContextIds: string[];
   reason: WorkoutAdaptationReason;
 };
@@ -38,21 +39,6 @@ const CURATED_SUBSTITUTIONS: Readonly<Record<string, readonly string[]>> = {
   squat: ["goblet-squat", "bodyweight-squat", "lunge"],
 };
 
-function canonicalEquipment(value: string): string {
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-  const aliases: Readonly<Record<string, string>> = {
-    bands: "band",
-    dumbbells: "dumbbell",
-    kettlebells: "kettlebell",
-    pull_up_bar: "pullup_bar",
-    resistance_band: "band",
-  };
-  return aliases[normalized] ?? normalized;
-}
-
 function activeContextsOf(
   contexts: readonly ActiveLifeContext[],
   kind: ActiveLifeContext["context"]["kind"],
@@ -65,10 +51,10 @@ function equipmentConstraintFor(
 ): EquipmentConstraint | null {
   const limited = activeContextsOf(contexts, "equipment_limited");
   if (limited.length > 0) {
-    const allowed = new Set(["bodyweight"]);
+    const allowed = new Set<WorkoutEquipment>(["bodyweight"]);
     for (const context of limited) {
       if (context.context.kind !== "equipment_limited") continue;
-      for (const item of context.context.equipment) allowed.add(canonicalEquipment(item));
+      for (const item of context.context.equipment) allowed.add(item);
     }
     return {
       allowed,
@@ -80,7 +66,7 @@ function equipmentConstraintFor(
   const facilityClosed = activeContextsOf(contexts, "facility_closed");
   if (facilityClosed.length === 0) return null;
   return {
-    allowed: new Set(["bodyweight"]),
+    allowed: new Set<WorkoutEquipment>(["bodyweight"]),
     sourceContextIds: facilityClosed.map((context) => context.id),
     reason: "facility_closed",
   };
@@ -121,7 +107,14 @@ function applyEquipmentConstraint(
 
   for (const exercise of day.exercises) {
     const canonical = catalogBySlug.get(exercise.slug);
-    if (canonical && constraint.allowed.has(canonicalEquipment(canonical.equipment))) {
+    const canonicalExerciseEquipment = canonical
+      ? canonicalWorkoutEquipment(canonical.equipment)
+      : null;
+    if (
+      canonical !== undefined &&
+      canonicalExerciseEquipment !== null &&
+      constraint.allowed.has(canonicalExerciseEquipment)
+    ) {
       exercises.push(exercise);
       usedSlugs.add(exercise.slug);
       continue;
@@ -130,12 +123,11 @@ function applyEquipmentConstraint(
     const candidates = CURATED_SUBSTITUTIONS[exercise.slug] ?? [];
     const replacement = candidates
       .map((slug) => catalogBySlug.get(slug))
-      .find(
-        (candidate) =>
-          candidate !== undefined &&
-          constraint.allowed.has(canonicalEquipment(candidate.equipment)) &&
-          !usedSlugs.has(candidate.slug),
-      );
+      .find((candidate) => {
+        if (candidate === undefined || usedSlugs.has(candidate.slug)) return false;
+        const candidateEquipment = canonicalWorkoutEquipment(candidate.equipment);
+        return candidateEquipment !== null && constraint.allowed.has(candidateEquipment);
+      });
 
     if (!replacement) {
       omittedExerciseSlugs.push(exercise.slug);

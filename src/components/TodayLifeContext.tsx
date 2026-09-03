@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Clock3, Loader2, MapPin, ShieldAlert, Sparkles, Trash2, Waves } from "lucide-react";
+import {
+  Check,
+  Clock3,
+  Dumbbell,
+  Loader2,
+  MapPin,
+  ShieldAlert,
+  Sparkles,
+  Trash2,
+  Waves,
+} from "lucide-react";
 import { toast } from "sonner";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useI18n } from "@/lib/i18n";
 import {
   dismissActiveLifeContext,
@@ -11,6 +28,7 @@ import {
   setActiveLifeContext,
 } from "@/lib/life-context.functions";
 import type { ActiveLifeContext, LifeContextInput } from "@/lib/life-context.schema";
+import { TemporaryEquipmentChoices, type WorkoutEquipment } from "@/lib/workout-equipment.schema";
 
 type Copy = {
   eyebrow: string;
@@ -20,12 +38,34 @@ type Copy = {
   saveFailed: string;
   dismissFailed: string;
   remove: string;
+  equipment: {
+    action: string;
+    dialogTitle: string;
+    dialogDescription: string;
+    save: string;
+    cancel: string;
+    names: Record<WorkoutEquipment, string>;
+  };
   actions: Array<{ label: string; input: LifeContextInput; icon: typeof Clock3 }>;
   active: (context: ActiveLifeContext) => string;
 };
 
 function copyFor(lang: string): Copy {
   if (lang === "en") {
+    const equipmentNames: Record<WorkoutEquipment, string> = {
+      bodyweight: "Bodyweight",
+      barbell: "Barbell",
+      dumbbell: "Dumbbells",
+      kettlebell: "Kettlebells",
+      band: "Resistance bands",
+      machine: "Machines",
+      cable: "Cable station",
+      pullup_bar: "Pull-up bar",
+      trx: "TRX",
+      ball: "Exercise ball",
+      cardio: "Cardio equipment",
+      other: "Other equipment",
+    };
     return {
       eyebrow: "REAL LIFE CONTEXT",
       title: "What is different today?",
@@ -34,6 +74,15 @@ function copyFor(lang: string): Copy {
       saveFailed: "We couldn't save that context. Please try again.",
       dismissFailed: "We couldn't clear that context. Please try again.",
       remove: "Remove current context",
+      equipment: {
+        action: "Available equipment",
+        dialogTitle: "What equipment is available today?",
+        dialogDescription:
+          "GYMS.LIFE will adapt only with exercises that match this equipment. This context expires in 24 hours.",
+        save: "Apply available equipment",
+        cancel: "Cancel",
+        names: equipmentNames,
+      },
       actions: [
         { label: "Traveling", input: { kind: "travel", durationHours: 24 * 7 }, icon: MapPin },
         {
@@ -57,11 +106,30 @@ function copyFor(lang: string): Copy {
         if (context.context.kind === "time_limited") {
           return `Up to ${context.context.minutes} min available`;
         }
+        if (context.context.kind === "equipment_limited") {
+          return `Available: ${context.context.equipment
+            .map((item) => equipmentNames[item])
+            .join(", ")}`;
+        }
         return context.context.kind.replaceAll("_", " ");
       },
     };
   }
 
+  const equipmentNames: Record<WorkoutEquipment, string> = {
+    bodyweight: "Kūno svoris",
+    barbell: "Štanga",
+    dumbbell: "Hanteliai",
+    kettlebell: "Svarsčiai",
+    band: "Gumos",
+    machine: "Treniruokliai",
+    cable: "Skriemuliai",
+    pullup_bar: "Skersinis",
+    trx: "TRX",
+    ball: "Kamuolys",
+    cardio: "Kardio įranga",
+    other: "Kita įranga",
+  };
   return {
     eyebrow: "GYVENIMO KONTEKSTAS",
     title: "Kas šiandien kitaip?",
@@ -70,6 +138,15 @@ function copyFor(lang: string): Copy {
     saveFailed: "Nepavyko išsaugoti konteksto. Bandyk dar kartą.",
     dismissFailed: "Nepavyko pašalinti konteksto. Bandyk dar kartą.",
     remove: "Pašalinti dabartinį kontekstą",
+    equipment: {
+      action: "Turiu kitą įrangą",
+      dialogTitle: "Kokia įranga šiandien prieinama?",
+      dialogDescription:
+        "GYMS.LIFE keis planą tik į pratimus, kuriems ši įranga tinka. Kontekstas baigs galioti po 24 val.",
+      save: "Pritaikyti pagal įrangą",
+      cancel: "Atšaukti",
+      names: equipmentNames,
+    },
     actions: [
       { label: "Keliauju", input: { kind: "travel", durationHours: 24 * 7 }, icon: MapPin },
       {
@@ -96,6 +173,11 @@ function copyFor(lang: string): Copy {
     active: (context) => {
       if (context.context.kind === "time_limited") {
         return `Turiu iki ${context.context.minutes} min.`;
+      }
+      if (context.context.kind === "equipment_limited") {
+        return `Prieinama: ${context.context.equipment
+          .map((item) => equipmentNames[item])
+          .join(", ")}`;
       }
       const labels: Record<ActiveLifeContext["context"]["kind"], string> = {
         travel: "Keliaujate",
@@ -125,6 +207,8 @@ export function TodayLifeContext() {
   const [loading, setLoading] = useState(true);
   const [pendingKind, setPendingKind] = useState<LifeContextInput["kind"] | null>(null);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
+  const [equipmentDialogOpen, setEquipmentDialogOpen] = useState(false);
+  const [availableEquipment, setAvailableEquipment] = useState<WorkoutEquipment[]>(["bodyweight"]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -141,18 +225,48 @@ export function TodayLifeContext() {
     void load();
   }, [load]);
 
-  const activate = async (input: LifeContextInput) => {
-    if (pendingKind !== null || dismissingId !== null) return;
+  const activate = async (input: LifeContextInput): Promise<boolean> => {
+    if (pendingKind !== null || dismissingId !== null) return false;
     setPendingKind(input.kind);
     try {
       await setContext({ data: input });
       await load();
       notifyContextChanged();
+      return true;
     } catch {
       toast.error(copy.saveFailed);
+      return false;
     } finally {
       setPendingKind(null);
     }
+  };
+
+  const openEquipmentDialog = () => {
+    const activeEquipment = contexts.find(
+      (
+        context,
+      ): context is ActiveLifeContext & {
+        context: { kind: "equipment_limited"; equipment: WorkoutEquipment[] };
+      } => context.context.kind === "equipment_limited",
+    );
+    setAvailableEquipment(activeEquipment?.context.equipment ?? ["bodyweight"]);
+    setEquipmentDialogOpen(true);
+  };
+
+  const toggleEquipment = (equipment: WorkoutEquipment) => {
+    setAvailableEquipment((current) => {
+      if (!current.includes(equipment)) return [...current, equipment];
+      return current.length === 1 ? current : current.filter((item) => item !== equipment);
+    });
+  };
+
+  const saveAvailableEquipment = async () => {
+    const saved = await activate({
+      kind: "equipment_limited",
+      durationHours: 24,
+      availableEquipment,
+    });
+    if (saved) setEquipmentDialogOpen(false);
   };
 
   const dismiss = async (contextId: string) => {
@@ -227,7 +341,69 @@ export function TodayLifeContext() {
                 {label}
               </Button>
             ))}
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-11 shrink-0 rounded-full px-4 text-xs font-semibold"
+              disabled={pendingKind !== null || dismissingId !== null}
+              onClick={openEquipmentDialog}
+            >
+              <Dumbbell />
+              {copy.equipment.action}
+            </Button>
           </div>
+
+          <Dialog open={equipmentDialogOpen} onOpenChange={setEquipmentDialogOpen}>
+            <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl border-border bg-surface p-5 sm:max-w-md sm:p-6">
+              <DialogHeader>
+                <DialogTitle>{copy.equipment.dialogTitle}</DialogTitle>
+                <DialogDescription>{copy.equipment.dialogDescription}</DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-2 gap-2" role="group">
+                {TemporaryEquipmentChoices.map((equipment) => {
+                  const selected = availableEquipment.includes(equipment);
+                  return (
+                    <Button
+                      key={equipment}
+                      type="button"
+                      variant={selected ? "default" : "outline"}
+                      className="min-h-12 justify-start gap-2 rounded-2xl px-3 text-left text-sm"
+                      aria-pressed={selected}
+                      disabled={pendingKind !== null}
+                      onClick={() => toggleEquipment(equipment)}
+                    >
+                      {selected ? <Check className="size-4" /> : <Dumbbell className="size-4" />}
+                      {copy.equipment.names[equipment]}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={pendingKind !== null}
+                  onClick={() => setEquipmentDialogOpen(false)}
+                >
+                  {copy.equipment.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={pendingKind !== null}
+                  onClick={() => void saveAvailableEquipment()}
+                >
+                  {pendingKind === "equipment_limited" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Dumbbell />
+                  )}
+                  {copy.equipment.save}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </GlowCard>

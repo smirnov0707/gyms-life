@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AvailableWorkoutEquipmentSchema } from "./workout-equipment.schema";
 
 const TimestampSchema = z
   .string()
@@ -29,7 +30,7 @@ export const LifeContextValueSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("equipment_limited"),
-      equipment: z.array(z.string().trim().min(1).max(80)).min(1).max(12),
+      equipment: AvailableWorkoutEquipmentSchema,
       note: OptionalNoteSchema,
     })
     .strict(),
@@ -49,7 +50,7 @@ export const LifeContextInputSchema = z
       .min(1)
       .max(24 * 30),
     timeAvailableMinutes: z.number().int().min(10).max(180).optional(),
-    availableEquipment: z.array(z.string().trim().min(1).max(80)).min(1).max(12).optional(),
+    availableEquipment: AvailableWorkoutEquipmentSchema.optional(),
     note: OptionalNoteSchema,
   })
   .strict()

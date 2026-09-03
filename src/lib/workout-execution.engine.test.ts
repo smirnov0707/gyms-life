@@ -115,7 +115,7 @@ describe("buildWorkoutExecutionSnapshot", () => {
     const snapshot = buildWorkoutExecutionSnapshot({
       day,
       readinessModifier: 1,
-      lifeContexts: [context({ kind: "equipment_limited", equipment: ["dumbbells"] })],
+      lifeContexts: [context({ kind: "equipment_limited", equipment: ["dumbbell"] })],
       exerciseCatalog: catalog,
     });
 

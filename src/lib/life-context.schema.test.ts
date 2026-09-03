@@ -22,6 +22,19 @@ describe("life context contracts", () => {
     expect(value).toEqual({ kind: "time_limited", minutes: 30 });
   });
 
+  it("normalizes temporary equipment at the input boundary", () => {
+    const input = LifeContextInputSchema.parse({
+      kind: "equipment_limited",
+      durationHours: 24,
+      availableEquipment: ["dumbbells", "bands", "pull-up bar"],
+    });
+
+    expect(lifeContextValueFromInput(input)).toEqual({
+      kind: "equipment_limited",
+      equipment: ["dumbbell", "band", "pullup_bar"],
+    });
+  });
+
   it("rejects an invalid raw memory value at the database boundary", () => {
     expect(() =>
       parseActiveLifeContext({
