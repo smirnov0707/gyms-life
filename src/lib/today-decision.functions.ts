@@ -5,7 +5,7 @@ import { observeServerAction } from "./observability.server";
 import { IanaTimeZoneSchema } from "./local-day";
 import { TodayDecisionOutcomeSchema } from "./today-decision.schema";
 
-const GetTodayDecisionInputSchema = z.object({ timeZone: IanaTimeZoneSchema }).strict();
+const GetTodayDecisionInputSchema = z.object({ timeZone: IanaTimeZoneSchema.optional() }).strict();
 
 const RecordOutcomeInputSchema = z
   .object({
@@ -17,10 +17,13 @@ const RecordOutcomeInputSchema = z
 /** Returns the server-owned, deterministic primary action for the current day. */
 export const getTodayDecision = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => GetTodayDecisionInputSchema.parse(input))
+  .validator((input: unknown) => GetTodayDecisionInputSchema.parse(input ?? {}))
   .handler(async ({ data, context }) => {
     const { getOrCreateTodayDecision } = await import("./today-decision.server");
-    return getOrCreateTodayDecision(context.supabase, context.userId, data.timeZone);
+    const { loadPersistedProfileTimeZone } = await import("./user-context.server");
+    const timeZone =
+      data.timeZone ?? (await loadPersistedProfileTimeZone(context.supabase, context.userId));
+    return getOrCreateTodayDecision(context.supabase, context.userId, timeZone);
   });
 
 /** Stores an explicit user outcome without granting browser writes to audit tables. */

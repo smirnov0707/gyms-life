@@ -43,6 +43,13 @@ const ProfileRowSourceSchema = ProfileSourceSchema.extend({
   time_zone: z.string().nullable(),
 });
 
+/** Minimal validated projection for server entry points that only need a calendar boundary. */
+const ProfileTimeZoneSourceSchema = z
+  .object({
+    time_zone: z.string().nullable(),
+  })
+  .strict();
+
 const NutritionLogSourceSchema = z
   .object({
     calories: NonNegativeNumberSchema.max(20_000),
@@ -237,6 +244,29 @@ export function parseAiProfilePreferences(value: unknown): AiProfilePreferences 
 export function resolvePersistedProfileTimeZone(value: unknown): string {
   const parsed = IanaTimeZoneSchema.safeParse(value);
   return parsed.success ? parsed.data : "UTC";
+}
+
+/**
+ * Resolves the authenticated user's persisted calendar boundary for server
+ * actions that do not receive a fresh browser zone. A failed profile read is
+ * explicit: silently choosing an arbitrary day is worse than retrying.
+ */
+export async function loadPersistedProfileTimeZone(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("time_zone")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error || data === null) throw new Error("Could not load profile time zone.");
+
+  const parsed = ProfileTimeZoneSourceSchema.safeParse(data);
+  if (!parsed.success) throw new Error("Invalid profile time zone response.");
+
+  return resolvePersistedProfileTimeZone(parsed.data.time_zone);
 }
 
 function profileContextFrom(

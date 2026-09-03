@@ -87,7 +87,7 @@ export const getDailyBrief = createServerFn({ method: "POST" })
     z
       .object({
         lang: SupportedLanguageSchema.default("lt"),
-        timeZone: IanaTimeZoneSchema.default("UTC"),
+        timeZone: IanaTimeZoneSchema.optional(),
       })
       .strict()
       .parse(input ?? {}),
@@ -95,8 +95,10 @@ export const getDailyBrief = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<DailyBrief> => {
     const { supabase, userId } = context;
 
-    const { buildUserContext } = await import("./user-context.server");
-    const snapshot = await buildUserContext(supabase, userId, data.timeZone);
+    const { buildUserContext, loadPersistedProfileTimeZone } =
+      await import("./user-context.server");
+    const timeZone = data.timeZone ?? (await loadPersistedProfileTimeZone(supabase, userId));
+    const snapshot = await buildUserContext(supabase, userId, timeZone);
 
     const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
@@ -179,7 +181,7 @@ RETURN EXACTLY THIS JSON SHAPE:
         .limit(1)
         .maybeSingle(),
     ]);
-    const today = dayInTimeZone(new Date(), data.timeZone);
+    const today = dayInTimeZone(new Date(), timeZone);
     const workoutDates = (recentWorkouts ?? []).map((workout) => workout.started_at);
     const { calculateWorkoutStreak } = await import("./user-context.server");
     const gaps = [
@@ -202,7 +204,7 @@ RETURN EXACTLY THIS JSON SHAPE:
       actions,
       watchouts: parsed.watchouts.slice(0, 2),
       gaps,
-      streakDays: calculateWorkoutStreak(workoutDates, data.timeZone),
+      streakDays: calculateWorkoutStreak(workoutDates, timeZone),
       readiness: latestCheckin?.readiness_score ?? null,
     });
   });
