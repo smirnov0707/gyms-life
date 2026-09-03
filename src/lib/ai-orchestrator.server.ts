@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { createAiModel, type AiModelId } from "./ai-gateway.server";
-import { generateJson, isAiModelUnavailable, normalizeAiError } from "./ai-json.server";
+import { generateJson, isAiProviderRecoverable, normalizeAiError } from "./ai-json.server";
 import { reserveAiRequest } from "./ai-quota.server";
 import { recordObservabilityEvent } from "./observability.server";
 import { buildUserContext, contextForAi, type CentralUserContext } from "./user-context.server";
@@ -12,10 +12,9 @@ type AiContextScope = "none" | "personalized";
 
 type AiTaskPolicy = {
   model: AiModelId;
-  /** Ordered, schema-compatible backup models for a provider-side model removal. */
+  /** Ordered, schema-compatible backup models for a recoverable provider failure. */
   fallbackModels?: readonly AiModelId[];
   contextScope: AiContextScope;
-  allowProviderFallback?: boolean;
 };
 
 /**
@@ -26,7 +25,6 @@ const AI_TASK_POLICIES = {
   "body-scan": {
     model: "google/gemini-3.1-flash-lite",
     contextScope: "none",
-    allowProviderFallback: false,
   },
   "coach.ask": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
   "coach.session-debrief": {
@@ -50,13 +48,11 @@ const AI_TASK_POLICIES = {
   "food-vision": {
     model: "google/gemini-2.5-flash",
     contextScope: "personalized",
-    allowProviderFallback: false,
   },
   forecast: { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
   "form-analysis": {
     model: "google/gemini-3.1-flash-lite",
     contextScope: "none",
-    allowProviderFallback: false,
   },
   fridge: { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
   "ghost-coach": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
@@ -82,12 +78,14 @@ const AI_TASK_POLICIES = {
   "supplement-vision": {
     model: "google/gemini-2.5-flash",
     contextScope: "none",
-    allowProviderFallback: false,
   },
   "training-plan": {
-    model: "google/gemini-2.5-flash",
-    // Gemini 3.1 Flash Lite is already verified by a live production brief.
-    fallbackModels: ["google/gemini-3.1-flash-lite", "groq/openai/gpt-oss-120b"],
+    model: "openai/gpt-4o-mini",
+    fallbackModels: [
+      "google/gemini-2.5-flash",
+      "groq/openai/gpt-oss-120b",
+      "google/gemini-3.1-flash-lite",
+    ],
     contextScope: "personalized",
   },
   "voice-log-structuring": {
@@ -99,7 +97,6 @@ const AI_TASK_POLICIES = {
   biomechanics: {
     model: "google/gemini-2.5-flash",
     contextScope: "none",
-    allowProviderFallback: false,
   },
 } satisfies Record<string, AiTaskPolicy>;
 
@@ -154,6 +151,7 @@ function aiFailureCode(error: unknown): string {
     case "AI_DAILY_LIMIT":
     case "AI_QUOTA_UNAVAILABLE":
     case "AI_RATE_LIMIT":
+    case "AI_PROVIDER_UNAVAILABLE":
     case "AI_MODEL_UNAVAILABLE":
       return error.message;
     default:
@@ -178,11 +176,22 @@ async function prepareOrchestratedExecutions(
     contextPrompt = contextInstruction(request.task, contextForAi(userContext));
   }
 
-  return getAiTaskModelRoute(request.task).map((modelId) => ({
-    model: createAiModel(modelId, policy.allowProviderFallback),
-    modelId,
-    contextPrompt,
-  }));
+  const executions: OrchestratedExecution[] = [];
+  for (const modelId of getAiTaskModelRoute(request.task)) {
+    try {
+      executions.push({
+        model: createAiModel(modelId),
+        modelId,
+        contextPrompt,
+      });
+    } catch (error) {
+      const normalized = normalizeAiError(error);
+      if (!isAiProviderRecoverable(normalized)) throw normalized;
+    }
+  }
+
+  if (executions.length === 0) throw new Error("AI_MODEL_UNAVAILABLE");
+  return executions;
 }
 
 /**
@@ -202,7 +211,7 @@ export async function executeAiModelRoute<T, TExecution extends { modelId: AiMod
       return { result: await execute(execution), execution, attemptedModels };
     } catch (error) {
       const normalized = normalizeAiError(error);
-      if (isAiModelUnavailable(normalized) && attemptedModels.length < executions.length) {
+      if (isAiProviderRecoverable(normalized) && attemptedModels.length < executions.length) {
         continue;
       }
       throw normalized;

@@ -51,7 +51,7 @@ export function parseAiJson<T>(text: string, schema: z.ZodType<T, unknown>): T {
   return schema.parse(extractJson(text));
 }
 
-export type AiFailureKind = "credits" | "rate_limit" | "other";
+export type AiFailureKind = "credits" | "rate_limit" | "provider_unavailable" | "other";
 
 /** Error thrown when the AI gateway itself refused the request. */
 export class AiUnavailableError extends Error {
@@ -84,8 +84,21 @@ export function normalizeAiError(error: unknown): Error {
     return new AiUnavailableError("rate_limit", "AI_RATE_LIMIT");
   }
   if (
-    (status === 400 || status === 404) &&
-    (text.includes("model") || text.includes("does not exist") || text.includes("no access"))
+    status === 408 ||
+    status >= 500 ||
+    text.includes("timeout") ||
+    text.includes("timed out") ||
+    text.includes("network error") ||
+    text.includes("fetch failed") ||
+    text.includes("service unavailable") ||
+    text.includes("overloaded")
+  ) {
+    return new AiUnavailableError("provider_unavailable", "AI_PROVIDER_UNAVAILABLE");
+  }
+  if (
+    text.includes("ai_model_unavailable") ||
+    ((status === 400 || status === 404) &&
+      (text.includes("model") || text.includes("does not exist") || text.includes("no access")))
   ) {
     return new AiUnavailableError("other", "AI_MODEL_UNAVAILABLE");
   }
@@ -95,6 +108,16 @@ export function normalizeAiError(error: unknown): Error {
 /** A route may try its next provider only when the selected model is unavailable. */
 export function isAiModelUnavailable(error: unknown): boolean {
   return error instanceof AiUnavailableError && error.message === "AI_MODEL_UNAVAILABLE";
+}
+
+/** Only provider-route failures can use another centrally approved worker. */
+export function isAiProviderRecoverable(error: unknown): boolean {
+  return (
+    error instanceof AiUnavailableError &&
+    ["AI_MODEL_UNAVAILABLE", "AI_CREDITS", "AI_RATE_LIMIT", "AI_PROVIDER_UNAVAILABLE"].includes(
+      error.message,
+    )
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -12,6 +12,7 @@ export function aiErrorMessage(error: unknown, t: (key: TKey) => string): string
   if (
     raw.includes("AI_QUOTA_UNAVAILABLE") ||
     raw.includes("AI_MODEL_UNAVAILABLE") ||
+    raw.includes("AI_PROVIDER_UNAVAILABLE") ||
     raw.includes("specificationVersion")
   ) {
     return t("ai.err.unavailable");

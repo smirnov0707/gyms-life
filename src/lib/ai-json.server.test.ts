@@ -4,6 +4,7 @@ import { aiErrorMessage } from "./ai-error";
 import {
   AiUnavailableError,
   isAiModelUnavailable,
+  isAiProviderRecoverable,
   normalizeAiError,
   parseAiJson,
 } from "./ai-json.server";
@@ -34,6 +35,18 @@ describe("normalizeAiError", () => {
     if (!(error instanceof AiUnavailableError))
       throw new Error("Expected an AI availability error");
     expect(error.kind).toBe("rate_limit");
+    expect(isAiProviderRecoverable(error)).toBe(true);
+  });
+
+  it("marks transient provider outages as recoverable without treating output errors as routes", () => {
+    const outage = normalizeAiError(
+      Object.assign(new Error("Service unavailable"), { status: 503 }),
+    );
+
+    expect(outage).toBeInstanceOf(AiUnavailableError);
+    expect(outage.message).toBe("AI_PROVIDER_UNAVAILABLE");
+    expect(isAiProviderRecoverable(outage)).toBe(true);
+    expect(isAiProviderRecoverable(new Error("Invalid JSON from AI."))).toBe(false);
   });
 });
 
