@@ -5,41 +5,44 @@ import {
   type ActivePlanRow,
   type ActiveTrainingPlan,
 } from "./active-plan.service";
+import type { TrainingPlanData } from "./training-plan.schema";
+
+const rawPlanData: TrainingPlanData = {
+  title: "Strength",
+  summary: "Build strength.",
+  weeks: 8,
+  progression: "Add load.",
+  nutrition: "Eat enough protein.",
+  days: [
+    {
+      day: 1,
+      title: "Upper body",
+      focus: "Strength",
+      warmup: "Rows",
+      cooldown: "Walk",
+      estimated_minutes: 45,
+      exercises: [
+        {
+          slug: "bench-press",
+          name: "Bench press",
+          sets: 3,
+          reps: "8",
+          rest_seconds: 90,
+          notes: "Keep the bar path controlled.",
+        },
+      ],
+    },
+  ],
+};
 
 const rawPlan: ActivePlanRow = {
   id: "00000000-0000-4000-8000-000000000001",
   title: "Strength",
   goal: "strength",
   weeks: 8,
-  days_per_week: 3,
+  days_per_week: 1,
   created_at: "2026-09-01T00:00:00.000Z",
-  data: {
-    title: "Strength",
-    summary: "Build strength.",
-    weeks: 8,
-    progression: "Add load.",
-    nutrition: "Eat enough protein.",
-    days: [
-      {
-        day: 1,
-        title: "Upper body",
-        focus: "Strength",
-        warmup: "Rows",
-        cooldown: "Walk",
-        estimated_minutes: 45,
-        exercises: [
-          {
-            slug: "bench-press",
-            name: "Bench press",
-            sets: 3,
-            reps: "8",
-            rest_seconds: 90,
-            notes: "Keep the bar path controlled.",
-          },
-        ],
-      },
-    ],
-  },
+  data: rawPlanData,
 };
 
 describe("normalizeActivePlan", () => {
@@ -49,7 +52,7 @@ describe("normalizeActivePlan", () => {
     expect("status" in result).toBe(false);
     if (!("status" in result)) {
       expect(result.data.title).toBe("Strength");
-      expect(result.daysPerWeek).toBe(3);
+      expect(result.daysPerWeek).toBe(1);
     }
   });
 
@@ -67,6 +70,24 @@ describe("normalizeActivePlan", () => {
 
     expect(result).toMatchObject({ status: "INVALID_PLAN", planId: rawPlan.id });
   });
+
+  it("rejects an active plan whose metadata does not match its validated JSON program", () => {
+    const result = normalizeActivePlan({ ...rawPlan, days_per_week: 2 });
+
+    expect(result).toMatchObject({ status: "INVALID_PLAN", planId: rawPlan.id });
+  });
+
+  it("rejects a program that skips a day even when its day count matches", () => {
+    const result = normalizeActivePlan({
+      ...rawPlan,
+      data: {
+        ...rawPlanData,
+        days: [{ ...rawPlanData.days[0]!, day: 2 }],
+      },
+    });
+
+    expect(result).toMatchObject({ status: "INVALID_PLAN", planId: rawPlan.id });
+  });
 });
 
 describe("selectNextPlanWorkout", () => {
@@ -78,6 +99,7 @@ describe("selectNextPlanWorkout", () => {
 
     return {
       ...result,
+      daysPerWeek: 3,
       data: {
         ...result.data,
         days: [

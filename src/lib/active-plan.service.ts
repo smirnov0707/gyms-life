@@ -10,6 +10,7 @@ import { IanaTimeZoneSchema, dayBoundsInTimeZone, dayInTimeZone, dayOffset } fro
 
 const ACTIVE_PLAN_SELECT = "id, title, goal, weeks, days_per_week, created_at, data";
 const PlanDaysPerWeekSchema = z.number().int().min(1).max(7);
+const PlanWeeksSchema = z.number().int().min(1).max(104);
 
 export type ActivePlanRow = Pick<
   Tables<"plans">,
@@ -77,13 +78,36 @@ const CompletedPlanSessionSourceSchema = z
   })
   .strict();
 
+/**
+ * `plans` keeps quick-query metadata alongside the structured program JSON.
+ * Both representations must agree before an active plan can drive sequence or
+ * frequency decisions. The database remains the raw source; this is the
+ * validation boundary that prevents inconsistent legacy rows from becoming a
+ * domain plan.
+ */
+function matchesActivePlanMetadata(
+  data: TrainingPlanData,
+  weeks: number,
+  daysPerWeek: number,
+): boolean {
+  if (data.weeks !== weeks || data.days.length !== daysPerWeek) return false;
+  const dayNumbers = data.days.map((day) => day.day).sort((left, right) => left - right);
+  return dayNumbers.every((day, index) => day === index + 1);
+}
+
 export function normalizeActivePlan(
   row: ActivePlanRow,
 ): ActiveTrainingPlan | ActivePlanUnavailableState {
   const data = parseStoredTrainingPlan(row.data);
   const daysPerWeek = PlanDaysPerWeekSchema.safeParse(row.days_per_week);
+  const weeks = PlanWeeksSchema.safeParse(row.weeks);
 
-  if (!data || !daysPerWeek.success) {
+  if (
+    !data ||
+    !daysPerWeek.success ||
+    !weeks.success ||
+    !matchesActivePlanMetadata(data, weeks.data, daysPerWeek.data)
+  ) {
     return {
       status: "INVALID_PLAN",
       planId: row.id,
@@ -95,7 +119,7 @@ export function normalizeActivePlan(
     id: row.id,
     title: row.title,
     goal: row.goal,
-    weeks: row.weeks,
+    weeks: weeks.data,
     daysPerWeek: daysPerWeek.data,
     createdAt: row.created_at,
     data,
