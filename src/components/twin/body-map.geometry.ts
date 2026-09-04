@@ -23,10 +23,11 @@ export type BodyView = "front" | "back";
 export type BodySegment = { d: string };
 
 /**
- * The figure occupies x 37..163 and y 14..448; the box is padded so the
- * HUD framing has room to breathe without clipping the silhouette.
+ * The figure occupies x 37..163 and y 17..448; the box is padded just enough
+ * for the framing ticks and the ground glow, so the figure stays the
+ * dominant thing in its container rather than floating in empty space.
  */
-export const BODY_VIEW_BOX = { minX: -14, minY: -16, width: 228, height: 492 } as const;
+export const BODY_VIEW_BOX = { minX: -8, minY: -10, width: 216, height: 478 } as const;
 
 const CENTRE_X = 100;
 
