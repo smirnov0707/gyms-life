@@ -8,8 +8,11 @@ import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.e
 import {
   StoredTodayDecisionEvidenceSchema,
   StoredTodayDecisionSchema,
+  TodayDecisionModelVersionsSchema,
   TodayDecisionOutcomeSchema,
+  TodayDecisionSafetyCheckSchema,
   TodayDecisionSchema,
+  TodayDecisionUserOverrideSchema,
   type TodayDecision,
   type TodayDecisionOutcome,
 } from "./today-decision.schema";
@@ -53,6 +56,16 @@ export async function getOrCreateTodayDecision(
   });
   const decisionFingerprint = fingerprintTodayDecision(proposal, athlete.snapshot.id);
 
+  // Real, already-computed facts only. No probabilistic prediction exists yet,
+  // so `prediction`/`uncertainty` are deliberately left unset.
+  const modelVersions = TodayDecisionModelVersionsSchema.parse({
+    decisionEngine: proposal.engineVersion,
+  });
+  const safetyCheck = TodayDecisionSafetyCheckSchema.parse({
+    constraintsApplied: proposal.safetyConstraints,
+    basis: proposal.basis,
+  });
+
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error: insertError } = await supabaseAdmin.from("decision_records").upsert(
     {
@@ -65,6 +78,8 @@ export async function getOrCreateTodayDecision(
       alternatives: proposal.alternatives,
       decision_basis: proposal.basis,
       safety_constraints: proposal.safetyConstraints,
+      model_versions: modelVersions,
+      safety_check: safetyCheck,
     },
     {
       onConflict: "user_id,decision_on,decision_fingerprint,engine_version",
@@ -152,9 +167,20 @@ export async function recordTodayDecisionOutcome(
     .upsert({ decision_id: decisionId, outcome: validatedOutcome }, { onConflict: "decision_id" });
   if (outcomeError) throw new Error("Could not store today decision outcome.");
 
+  // A dismissal or a "not helpful" rating is the user overriding the engine's
+  // proposed action; record it on the ledger row itself so a single read
+  // shows what GYMS.LIFE proposed against what the person actually did.
+  const isOverride = validatedOutcome === "dismissed" || validatedOutcome === "not_helpful";
+  const userOverride = isOverride
+    ? TodayDecisionUserOverrideSchema.parse({
+        outcome: validatedOutcome,
+        recordedAt: new Date().toISOString(),
+      })
+    : null;
+
   const { error: statusError } = await supabaseAdmin
     .from("decision_records")
-    .update({ status: statusForOutcome(validatedOutcome) })
+    .update({ status: statusForOutcome(validatedOutcome), user_override: userOverride })
     .eq("id", decisionId)
     .eq("user_id", userId);
   if (statusError) throw new Error("Could not update today decision status.");

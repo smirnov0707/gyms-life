@@ -153,6 +153,35 @@ export const TodayDecisionSchema = z
   })
   .strict();
 
+/**
+ * Structured Decision Ledger metadata (Future Lab Phase 1). These mirror
+ * facts the engine already computes; none of them are a probabilistic
+ * prediction. `prediction`/`uncertainty` stay unset until a real forecasting
+ * model exists — writing them now would be exactly the fabricated confidence
+ * this engine deliberately removed (see `decision_basis`).
+ */
+export const TodayDecisionModelVersionsSchema = z
+  .object({ decisionEngine: TodayDecisionEngineVersionSchema })
+  .strict();
+
+export const TodayDecisionSafetyCheckSchema = z
+  .object({
+    constraintsApplied: z.array(TodayDecisionSafetyConstraintSchema).max(5),
+    basis: TodayDecisionBasisSchema,
+  })
+  .strict();
+
+export const TodayDecisionUserOverrideSchema = z
+  .object({
+    outcome: TodayDecisionOutcomeSchema,
+    recordedAt: z.string().min(1),
+  })
+  .strict();
+
+export type TodayDecisionModelVersions = z.infer<typeof TodayDecisionModelVersionsSchema>;
+export type TodayDecisionSafetyCheck = z.infer<typeof TodayDecisionSafetyCheckSchema>;
+export type TodayDecisionUserOverride = z.infer<typeof TodayDecisionUserOverrideSchema>;
+
 export type TodayDecisionAction = z.infer<typeof TodayDecisionActionSchema>;
 export type TodayDecisionBasis = z.infer<typeof TodayDecisionBasisSchema>;
 export type TodayDecisionEvidence = z.infer<typeof TodayDecisionEvidenceSchema>;
