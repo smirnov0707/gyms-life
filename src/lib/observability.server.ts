@@ -8,6 +8,7 @@ const ObservabilityEventNameSchema = z.enum([
   "meal_plan.generation",
   "life_context.dismiss",
   "life_context.set",
+  "personal_timeline.record",
   "today_decision.outcome",
   "training_rhythm.clear",
   "training_rhythm.set",

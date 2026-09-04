@@ -115,6 +115,18 @@ export async function getOrCreateTodayDecision(
   );
   if (evidenceError) throw new Error("Could not store today decision evidence.");
 
+  const { recordPersonalTimelineEvent } = await import("./personal-timeline.server");
+  await recordPersonalTimelineEvent(userId, {
+    eventType: "decision_recorded",
+    occurredAt: parsedRecord.data.created_at,
+    timeZone: zone,
+    provenance: "calculated",
+    sourceSystem: "gymslife",
+    sourceTable: "decision_records",
+    sourceReference: parsedRecord.data.id,
+    summary: { action: parsedRecord.data.action, basis: parsedRecord.data.decision_basis },
+  });
+
   const { data: storedEvidence, error: storedEvidenceError } = await supabaseAdmin
     .from("decision_evidence")
     .select("evidence_key, evidence_value, source_class, position")

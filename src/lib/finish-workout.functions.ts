@@ -101,6 +101,18 @@ export const finishWorkout = createServerFn({ method: "POST" })
       dayInTimeZone(new Date(session.startedAt), data.timeZone),
     );
 
+    const { recordPersonalTimelineEvent } = await import("./personal-timeline.server");
+    await recordPersonalTimelineEvent(userId, {
+      eventType: "workout_completed",
+      occurredAt: finishedAt.toISOString(),
+      timeZone: data.timeZone,
+      provenance: "measured",
+      sourceSystem: "gymslife",
+      sourceTable: "workout_sessions",
+      sourceReference: session.id,
+      summary: { durationSeconds, totalVolume: completion.totalVolume, dayIndex },
+    });
+
     return {
       ok: true,
       session: parseWorkoutSession(updated),
