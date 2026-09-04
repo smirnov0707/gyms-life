@@ -842,39 +842,6 @@ export type Database = {
         }
         Relationships: []
       }
-      readiness_checkins: {
-        Row: {
-          created_at: string
-          energy: number
-          id: string
-          score: number
-          sleep_hours: number
-          soreness: string
-          stress: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          energy: number
-          id?: string
-          score: number
-          sleep_hours: number
-          soreness: string
-          stress: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          energy?: number
-          id?: string
-          score?: number
-          sleep_hours?: number
-          soreness?: string
-          stress?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       reminders: {
         Row: {
           evening_recovery: boolean
