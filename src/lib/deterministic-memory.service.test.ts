@@ -3,7 +3,8 @@ import { buildCalculatedMemoryCandidates } from "./deterministic-memory.service"
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const completeState: DigitalAthleteState = {
-  schemaVersion: "1.6",
+  schemaVersion: "1.7",
+  muscleLoad: [],
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,
