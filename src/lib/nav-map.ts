@@ -15,7 +15,13 @@ import type { TKey } from "./i18n";
 
 export type NavItem = { to: string; key: TKey; icon: typeof Activity };
 
-export const nav: NavItem[] = [
+/**
+ * Backs `byRoute` only. The primary bottom-tab bar (Today/Training/
+ * Nutrition/Progress) is defined once, in AppShell.tsx — this list is the
+ * secondary "More" surface and its icon/label metadata, not a second
+ * definition of the primary navigation.
+ */
+const nav: NavItem[] = [
   { to: "/app", key: "nav.dashboard", icon: Activity },
   { to: "/exercises", key: "nav.exercises", icon: Dumbbell },
   { to: "/ar", key: "nav.ar", icon: Box },
