@@ -1,14 +1,11 @@
 import { z } from "zod";
+import { EvidenceMetricSchema } from "./evidence.schema";
 
 export const AthleteLearningDomainSchema = z.enum(["training_response", "training_behavior", "recovery", "nutrition", "performance"]);
 export const AthleteHypothesisStatusSchema = z.enum(["insufficient_evidence", "monitoring", "supported", "contradicted"]);
 
-export const AthleteEvidenceMetricSchema = z.object({
-  key: z.string().trim().min(1).max(80),
-  value: z.number().finite(),
-  unit: z.string().trim().min(1).max(24),
-  source: z.enum(["calculated", "user_reported", "measured"]),
-}).strict();
+/** @deprecated Use the canonical EvidenceMetricSchema. Kept as an alias during the brownfield migration. */
+export const AthleteEvidenceMetricSchema = EvidenceMetricSchema;
 
 export const AthleteHypothesisSchema = z.object({
   id: z.string().trim().min(1).max(120),
