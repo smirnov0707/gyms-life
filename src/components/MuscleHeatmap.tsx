@@ -5,6 +5,10 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateMuscleGroupLoad } from "@/lib/muscle-load.engine";
+import {
+  MUSCLE_RECOVERY_FRESH_THRESHOLD,
+  MUSCLE_RECOVERY_MODERATE_THRESHOLD,
+} from "@/lib/muscle-load.schema";
 
 export interface MuscleGroupStatus {
   key: string;
@@ -85,9 +89,9 @@ export const MuscleHeatmap: React.FC = () => {
               <div className="w-full bg-surface-2 h-2 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    m.recoveryPct >= 80
+                    m.recoveryPct >= MUSCLE_RECOVERY_FRESH_THRESHOLD
                       ? "bg-emerald-400"
-                      : m.recoveryPct >= 55
+                      : m.recoveryPct >= MUSCLE_RECOVERY_MODERATE_THRESHOLD
                         ? "bg-amber-400"
                         : "bg-rose-500"
                   }`}
@@ -103,16 +107,16 @@ export const MuscleHeatmap: React.FC = () => {
                 </span>
                 <span
                   className={
-                    m.recoveryPct >= 80
+                    m.recoveryPct >= MUSCLE_RECOVERY_FRESH_THRESHOLD
                       ? "text-primary"
-                      : m.recoveryPct >= 55
+                      : m.recoveryPct >= MUSCLE_RECOVERY_MODERATE_THRESHOLD
                         ? "text-accent"
                         : "text-rose-400"
                   }
                 >
-                  {m.recoveryPct >= 80
+                  {m.recoveryPct >= MUSCLE_RECOVERY_FRESH_THRESHOLD
                     ? t("tl.heat.ready")
-                    : m.recoveryPct >= 55
+                    : m.recoveryPct >= MUSCLE_RECOVERY_MODERATE_THRESHOLD
                       ? t("tl.heat.optimal")
                       : t("tl.heat.fatigued")}{" "}
                   ({m.recoveryPct}%)

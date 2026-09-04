@@ -44,6 +44,14 @@ export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v1" as const
 /** The widest lookback any domain calculation below uses (body metrics, 30 days). */
 export const DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS = 30;
 
+/**
+ * How far back muscle-load set logs are fetched. Matches the engine's 40h
+ * fatigue-decay half-life: older sets barely register. Exported so any
+ * consumer of `muscleLoad` (e.g. the Digital Twin mapper) can state the
+ * evidence window truthfully instead of guessing or re-hardcoding it.
+ */
+export const MUSCLE_LOAD_LOOKBACK_DAYS = 7;
+
 function roundToOneDecimal(value: number): number {
   return Math.round(value * 10) / 10;
 }
@@ -459,9 +467,9 @@ export async function loadDigitalAthleteState(
   const bodyMetricsSince = dayOffset(today, -30);
   const nutritionSince = dayOffset(today, -14);
   const decisionFeedbackSince = dayOffset(today, -28);
-  // Matches the fatigue-decay half-life (40h): sets older than this barely
-  // register, and this is the same window the model has shown users since.
-  const muscleLoadSince = new Date(now.getTime() - 7 * DAY_MS).toISOString();
+  const muscleLoadSince = new Date(
+    now.getTime() - MUSCLE_LOAD_LOOKBACK_DAYS * DAY_MS,
+  ).toISOString();
   const [
     workoutsResult,
     workoutResponsesResult,
