@@ -60,9 +60,9 @@ export const MuscleGroupLoadSchema = z
 export type MuscleGroupLoad = z.infer<typeof MuscleGroupLoadSchema>;
 
 /**
- * Shared recovery-band thresholds on `recoveryPct`. One definition for both
- * the existing MuscleHeatmap UI and the Digital Twin mapper, so "what counts
- * as recovered" cannot silently drift between the two.
+ * Shared recovery-band thresholds on `recoveryPct`. One definition for every
+ * surface that colours recovery (Twin page, Today card, mapper), so "what
+ * counts as recovered" cannot silently drift between them.
  */
 export const MUSCLE_RECOVERY_FRESH_THRESHOLD = 80;
 export const MUSCLE_RECOVERY_MODERATE_THRESHOLD = 55;
