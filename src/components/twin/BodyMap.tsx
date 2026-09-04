@@ -60,6 +60,11 @@ export function BodyMap({
     (region) => isAnatomicalRegion(region.region) && segmentsFor(region.region, view).length > 0,
   );
   const { minX, minY, width, height } = BODY_VIEW_BOX;
+  // Every muscle path drawn in this view, as one `d`. Shading each belly
+  // against its own edges is what stops them reading as flat pillows.
+  const muscleOutlines = drawable
+    .flatMap((region) => segmentsFor(region.region, view).map((segment) => segment.d))
+    .join(" ");
 
   return (
     <svg
@@ -86,12 +91,21 @@ export function BodyMap({
         <clipPath id={`${uid}-clip`}>
           <path d={BODY_FRAME.silhouette} />
         </clipPath>
+        <clipPath id={`${uid}-muscles`}>
+          <path d={muscleOutlines} />
+        </clipPath>
         {(Object.keys(BAND_GRADIENT) as TwinRegionRecoveryBand[]).map((band) => (
           <linearGradient key={band} id={`${uid}-${band}`} x1="0" y1="0" x2="0.35" y2="1">
             <stop offset="0%" stopColor={BAND_GRADIENT[band].top} />
             <stop offset="100%" stopColor={BAND_GRADIENT[band].bottom} />
           </linearGradient>
         ))}
+        {/* Blurring a stroke of the silhouette and clipping it back to the
+            body gives an inner shadow along every edge: the cheapest honest
+            way to make a flat fill read as a rounded limb. */}
+        <filter id={`${uid}-soft`} x="-25%" y="-25%" width="150%" height="150%">
+          <feGaussianBlur stdDeviation="3.4" />
+        </filter>
         <filter id={`${uid}-glow`} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="2.4" result="blur" />
           <feMerge>
@@ -146,16 +160,6 @@ export function BodyMap({
         clipPath={`url(#${uid}-clip)`}
         aria-hidden="true"
       />
-      {/* Collarbones from the front, spinal groove from the back. */}
-      <path
-        d={BODY_FRAME.contours[view]}
-        fill="none"
-        className="stroke-foreground/20"
-        strokeWidth={0.8}
-        strokeLinecap="round"
-        aria-hidden="true"
-      />
-
       {drawable.map((region) => {
         const isSelected = selectedRegion === region.region;
         return (
@@ -191,6 +195,59 @@ export function BodyMap({
           </g>
         );
       })}
+
+      {/* Each muscle belly, rounded against its own outline. */}
+      <g clipPath={`url(#${uid}-muscles)`} aria-hidden="true" className="pointer-events-none">
+        <path
+          d={muscleOutlines}
+          fill="none"
+          stroke="#000"
+          strokeOpacity={0.42}
+          strokeWidth={4.5}
+          filter={`url(#${uid}-soft)`}
+        />
+        <path
+          d={muscleOutlines}
+          fill="none"
+          stroke="#fff"
+          strokeOpacity={0.28}
+          strokeWidth={2.4}
+          filter={`url(#${uid}-soft)`}
+          transform="translate(1.6 1.6)"
+        />
+      </g>
+
+      {/* Then the body as a whole, over everything it is made of. */}
+      <g clipPath={`url(#${uid}-clip)`} aria-hidden="true" className="pointer-events-none">
+        <path
+          d={BODY_FRAME.silhouette}
+          fill="none"
+          stroke="#000"
+          strokeOpacity={0.42}
+          strokeWidth={9}
+          filter={`url(#${uid}-soft)`}
+        />
+        {/* Light from above-left: the same stroke, nudged out of the way. */}
+        <path
+          d={BODY_FRAME.silhouette}
+          fill="none"
+          stroke="#fff"
+          strokeOpacity={0.22}
+          strokeWidth={3.5}
+          filter={`url(#${uid}-soft)`}
+          transform="translate(2.6 2.6)"
+        />
+      </g>
+
+      {/* Jawline, clavicles, serratus, patella… anatomy that claims nothing. */}
+      <path
+        d={BODY_FRAME.contours[view]}
+        fill="none"
+        className="stroke-foreground/25"
+        strokeWidth={0.7}
+        strokeLinecap="round"
+        aria-hidden="true"
+      />
     </svg>
   );
 }
