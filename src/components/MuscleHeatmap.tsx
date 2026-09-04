@@ -4,6 +4,7 @@ import { Flame } from "lucide-react";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateMuscleGroupLoad } from "@/lib/muscle-load.engine";
 
 export interface MuscleGroupStatus {
   key: string;
@@ -12,9 +13,6 @@ export interface MuscleGroupStatus {
   recoveryPct: number; // 0 (fatigued) to 100 (fully recovered)
   lastHours: number | null;
 }
-
-const HALF_LIFE_HOURS = 40; // fatigue decays with this time constant
-const VOLUME_FATIGUE_FACTOR = 7; // fatigue points per ton of fresh volume
 
 export const MuscleHeatmap: React.FC = () => {
   const { t } = useI18n();
@@ -44,36 +42,13 @@ export const MuscleHeatmap: React.FC = () => {
 
   const muscles: MuscleGroupStatus[] = useMemo(() => {
     if (!data) return [];
-    const groupBySlug = new Map<string, string>();
-    for (const e of data.exercises) groupBySlug.set(e.slug, e.muscle_group);
-
-    const acc = new Map<string, { volume: number; fatigue: number; lastHours: number | null }>();
-    const now = Date.now();
-
-    for (const log of data.logs) {
-      if (log.done === false) continue;
-      const group = groupBySlug.get(log.exercise_slug);
-      if (!group) continue;
-      const reps = Number(log.reps ?? 0);
-      const weight = Number(log.weight_kg ?? 0);
-      const volume = reps * weight;
-      const hours = Math.max(0, (now - new Date(log.created_at).getTime()) / 3_600_000);
-      const entry = acc.get(group) ?? { volume: 0, fatigue: 0, lastHours: null };
-      entry.volume += volume;
-      entry.fatigue += (volume / 1000) * Math.exp(-hours / HALF_LIFE_HOURS) * VOLUME_FATIGUE_FACTOR;
-      entry.lastHours = entry.lastHours === null ? hours : Math.min(entry.lastHours, hours);
-      acc.set(group, entry);
-    }
-
-    return [...acc.entries()]
-      .map(([key, v]) => ({
-        key,
-        name: t(`mg.${key}` as TKey),
-        volumeKg: Math.round(v.volume),
-        recoveryPct: Math.max(0, Math.min(100, Math.round(100 - v.fatigue))),
-        lastHours: v.lastHours === null ? null : Math.round(v.lastHours),
-      }))
-      .sort((a, b) => a.recoveryPct - b.recoveryPct);
+    return calculateMuscleGroupLoad(data.logs, data.exercises).map((group) => ({
+      key: group.muscleGroup,
+      name: t(`mg.${group.muscleGroup}` as TKey),
+      volumeKg: group.volumeKg,
+      recoveryPct: group.recoveryPct,
+      lastHours: group.lastTrainedHoursAgo,
+    }));
   }, [data, t]);
 
   return (
