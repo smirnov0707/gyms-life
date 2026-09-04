@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, PersonStanding } from "lucide-react";
 import { GlowCard } from "@/components/GlowCard";
+import { BodyMap } from "@/components/twin/BodyMap";
+import { isAnatomicalRegion, type BodyView } from "@/components/twin/body-map.geometry";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinSnapshot } from "@/lib/digital-twin.functions";
@@ -9,7 +12,7 @@ import type { TwinRegionRecoveryBand, TwinRegionState } from "@/lib/digital-twin
 
 const KNOWN_MUSCLE_GROUP_SET = new Set<string>(KNOWN_MUSCLE_GROUPS);
 
-function regionLabel(region: string, t: (key: TKey) => string): string {
+function regionLabelFor(region: string, t: (key: TKey) => string): string {
   if (KNOWN_MUSCLE_GROUP_SET.has(region)) return t(`mg.${region}` as TKey);
   return region.charAt(0).toUpperCase() + region.slice(1).replaceAll("_", " ");
 }
@@ -26,6 +29,11 @@ type Copy = {
   volume: string;
   lastTrained: (hours: number) => string;
   noEvidence: string;
+  viewLabel: Record<BodyView, string>;
+  selectPrompt: string;
+  otherTraining: string;
+  otherTrainingNote: string;
+  allRegions: string;
 };
 
 function copyFor(lang: string): Copy {
@@ -44,6 +52,11 @@ function copyFor(lang: string): Copy {
       volume: "Recent volume",
       lastTrained: (hours) => (hours < 1 ? "Trained under an hour ago" : `Trained ${hours}h ago`),
       noEvidence: "No sets logged for this region recently.",
+      viewLabel: { front: "Front", back: "Back" },
+      selectPrompt: "Select a region on the body to see its evidence.",
+      otherTraining: "Other logged training",
+      otherTrainingNote: "These are not body regions, so they are not placed on the body.",
+      allRegions: "All regions",
     };
   }
 
@@ -66,31 +79,34 @@ function copyFor(lang: string): Copy {
     lastTrained: (hours) =>
       hours < 1 ? "Treniruota mažiau nei prieš valandą" : `Treniruota prieš ${hours} val.`,
     noEvidence: "Šiam regionui pastaruoju metu setų neregistruota.",
+    viewLabel: { front: "Priekis", back: "Nugara" },
+    selectPrompt: "Pasirink kūno regioną, kad pamatytum jo įrodymus.",
+    otherTraining: "Kita registruota veikla",
+    otherTrainingNote: "Tai nėra kūno regionai, todėl jie nežymimi ant kūno.",
+    allRegions: "Visi regionai",
   };
 }
 
-function bandTone(band: TwinRegionRecoveryBand): string {
-  if (band === "fresh") return "border-emerald-400/40 bg-emerald-400/10 text-emerald-400";
-  if (band === "moderate") return "border-amber-400/40 bg-amber-400/10 text-amber-400";
-  if (band === "fatigued") return "border-rose-500/40 bg-rose-500/10 text-rose-400";
-  return "border-border bg-surface-2 text-muted-foreground";
-}
+const BAND_TONE: Record<TwinRegionRecoveryBand, string> = {
+  fresh: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
+  moderate: "border-amber-400/40 bg-amber-400/10 text-amber-400",
+  fatigued: "border-rose-500/40 bg-rose-500/10 text-rose-400",
+  unknown: "border-border bg-surface-2 text-muted-foreground",
+};
 
-function RegionCard({
+function RegionDetail({
   region,
   copy,
-  t,
+  label,
 }: {
   region: TwinRegionState;
   copy: Copy;
-  t: (key: TKey) => string;
+  label: string;
 }) {
   return (
-    <article className={`rounded-2xl border p-4 ${bandTone(region.recoveryBand)}`}>
+    <div className={`rounded-2xl border p-4 ${BAND_TONE[region.recoveryBand]}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground">
-          {regionLabel(region.region, t)}
-        </span>
+        <span className="text-sm font-semibold text-foreground">{label}</span>
         <span className="text-[10px] font-bold uppercase tracking-wider">
           {copy.bandLabel[region.recoveryBand]}
         </span>
@@ -99,7 +115,7 @@ function RegionCard({
         <>
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2/60">
             <div
-              className="h-full rounded-full bg-current transition-all duration-500"
+              className="h-full rounded-full bg-current transition-[width] duration-500 motion-reduce:transition-none"
               style={{ width: `${region.recoveryPct}%` }}
             />
           </div>
@@ -115,7 +131,7 @@ function RegionCard({
       ) : (
         <p className="mt-3 text-xs text-muted-foreground">{copy.noEvidence}</p>
       )}
-    </article>
+    </div>
   );
 }
 
@@ -123,6 +139,9 @@ export function TwinView() {
   const { lang, t } = useI18n();
   const timeZone = browserTimeZone();
   const copy = copyFor(lang);
+  const [view, setView] = useState<BodyView>("front");
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["twin-snapshot", timeZone],
     queryFn: () => getTwinSnapshot({ data: timeZone }),
@@ -142,6 +161,13 @@ export function TwinView() {
   if (isError || !data) {
     return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
   }
+
+  const label = (region: string) => regionLabelFor(region, t);
+  const anatomical = data.regions.filter((region) => isAnatomicalRegion(region.region));
+  const other = data.regions.filter((region) => !isAnatomicalRegion(region.region));
+  const selected = selectedRegion
+    ? (data.regions.find((region) => region.region === selectedRegion) ?? null)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -164,11 +190,77 @@ export function TwinView() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {data.regions.map((region) => (
-          <RegionCard key={region.region} region={region} copy={copy} t={t} />
-        ))}
-      </div>
+      <section className="grid gap-5 md:grid-cols-[auto_1fr] md:items-start">
+        <div className="mx-auto w-full max-w-[260px]">
+          <div className="flex justify-center gap-1 rounded-xl border border-border bg-surface-2 p-1">
+            {(["front", "back"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setView(option)}
+                className={`min-h-9 flex-1 rounded-lg px-3 text-xs font-bold uppercase tracking-wider transition-colors motion-reduce:transition-none ${
+                  view === option
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {copy.viewLabel[option]}
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 h-[380px]">
+            <BodyMap
+              regions={anatomical}
+              view={view}
+              selectedRegion={selectedRegion}
+              onSelectRegion={setSelectedRegion}
+              regionLabel={label}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {selected ? (
+            <RegionDetail region={selected} copy={copy} label={label(selected.region)} />
+          ) : (
+            <p className="rounded-2xl border border-border bg-surface-2 p-4 text-sm text-muted-foreground">
+              {copy.selectPrompt}
+            </p>
+          )}
+
+          {other.length > 0 ? (
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">{copy.otherTraining}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">{copy.otherTrainingNote}</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {other.map((region) => (
+                  <RegionDetail
+                    key={region.region}
+                    region={region}
+                    copy={copy}
+                    label={label(region.region)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {/* The body map is never the only path to this data (accessibility). */}
+      <section>
+        <h2 className="text-sm font-semibold text-foreground">{copy.allRegions}</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {data.regions.map((region) => (
+            <RegionDetail
+              key={region.region}
+              region={region}
+              copy={copy}
+              label={label(region.region)}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
