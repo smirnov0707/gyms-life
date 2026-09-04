@@ -272,6 +272,19 @@ export const DigitalAthleteStateSchema = z
 export type DigitalAthleteState = z.infer<typeof DigitalAthleteStateSchema>;
 
 /**
+ * Future Lab canonical naming. These aliases deliberately point to the
+ * existing Digital Athlete contracts so there is one evolving state model,
+ * not a parallel V2 architecture. Existing imports remain valid during the
+ * brownfield migration.
+ */
+export const DigitalTwinStateSchema = DigitalAthleteStateSchema;
+export type DigitalTwinState = DigitalAthleteState;
+export const DigitalTwinSourcesSchema = DigitalAthleteSourcesSchema;
+export type DigitalTwinSources = DigitalAthleteSources;
+export const DigitalTwinDataGapSchema = DigitalAthleteDataGapSchema;
+export type DigitalTwinDataGap = DigitalAthleteDataGap;
+
+/**
  * Re-validates DB select results at the Database -> domain boundary. An
  * invalid historical row invalidates only that source, never an AI request.
  */
