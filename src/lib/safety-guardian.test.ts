@@ -38,7 +38,7 @@ function makeTwinState(hasSafetyConstraint: boolean): DigitalTwinState {
     },
     currentDay: {
       day: "2026-09-04",
-      weekday: "friday",
+      weekday: 5,
       hasCompletedReadiness: false,
       hasCompletedWorkout: false,
       hasLoggedNutrition: false,
