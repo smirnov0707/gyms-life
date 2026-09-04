@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DataProvenanceSchema, isDerivedProvenance, isObservedProvenance } from "./data-provenance.schema";
+import {
+  DataProvenanceSchema,
+  isDerivedProvenance,
+  isObservedProvenance,
+} from "./data-provenance.schema";
 import { EvidenceMetricSchema } from "./evidence.schema";
 
 describe("Future Lab provenance contracts", () => {
