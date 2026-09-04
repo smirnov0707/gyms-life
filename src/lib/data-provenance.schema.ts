@@ -25,9 +25,19 @@ export type DataProvenance = z.infer<typeof DataProvenanceSchema>;
 export const DATA_PROVENANCE = DataProvenanceSchema.options;
 
 export function isObservedProvenance(value: DataProvenance): boolean {
-  return value === "known" || value === "measured" || value === "user_reported" || value === "device_reported";
+  return (
+    value === "known" ||
+    value === "measured" ||
+    value === "user_reported" ||
+    value === "device_reported"
+  );
 }
 
 export function isDerivedProvenance(value: DataProvenance): boolean {
-  return value === "calculated" || value === "inferred" || value === "predicted" || value === "simulated";
+  return (
+    value === "calculated" ||
+    value === "inferred" ||
+    value === "predicted" ||
+    value === "simulated"
+  );
 }
