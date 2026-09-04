@@ -34,6 +34,11 @@ type Copy = {
   outcomeLabel: Record<NonNullable<LabDecision["outcome"]>, string>;
   noOutcome: string;
   evidenceCount: (count: number) => string;
+  accuracyTitle: string;
+  accuracyNote: string;
+  accuracyPending: (needed: number) => string;
+  fitRate: string;
+  answeredOf: (answered: number, proposed: number) => string;
 };
 
 function copyFor(lang: string): Copy {
@@ -92,6 +97,13 @@ function copyFor(lang: string): Copy {
       },
       noOutcome: "No response yet",
       evidenceCount: (count) => `${count} evidence point${count === 1 ? "" : "s"}`,
+      accuracyTitle: "How our proposals landed",
+      accuracyNote:
+        "How often a proposed action was taken up, grouped by what the decision was based on. This is not a measure of whether the training advice was right — only whether it fitted your day.",
+      accuracyPending: (needed) =>
+        `At least ${needed} answered decisions are needed before a rate is shown.`,
+      fitRate: "Taken up",
+      answeredOf: (answered, proposed) => `${answered} answered of ${proposed} proposed`,
     };
   }
 
@@ -149,6 +161,13 @@ function copyFor(lang: string): Copy {
     },
     noOutcome: "Dar be atsakymo",
     evidenceCount: (count) => `${count} įrodymo taškas(-ai)`,
+    accuracyTitle: "Kaip pavyko mūsų pasiūlymai",
+    accuracyNote:
+      "Kaip dažnai pasiūlytas veiksmas buvo priimtas, pagal sprendimo pagrindą. Tai nematuoja, ar treniruočių patarimas buvo teisingas — tik ar jis tiko tavo dienai.",
+    accuracyPending: (needed) =>
+      `Reikia bent ${needed} atsakytų sprendimų, kad būtų rodomas santykis.`,
+    fitRate: "Priimta",
+    answeredOf: (answered, proposed) => `atsakyta ${answered} iš ${proposed} pasiūlytų`,
   };
 }
 
@@ -258,6 +277,46 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {data.decisions.map((decision) => (
               <DecisionRow key={decision.id} decision={decision} copy={copy} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold text-foreground">{copy.accuracyTitle}</h2>
+        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+          {copy.accuracyNote}
+        </p>
+        {data.decisionAccuracy.byBasis.length === 0 ? (
+          <p className="mt-3 rounded-2xl bg-surface-2 p-4 text-sm text-muted-foreground">
+            {copy.decisionsEmpty}
+          </p>
+        ) : (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {data.decisionAccuracy.byBasis.map((entry) => (
+              <article
+                key={entry.basis}
+                className="rounded-2xl border border-border bg-surface-2 p-4"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {copy.basisLabel[entry.basis]}
+                </p>
+                {entry.fitRate === null ? (
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {copy.accuracyPending(data.decisionAccuracy.minimumAnswered)}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-display text-2xl text-foreground">
+                    {Math.round(entry.fitRate * 100)}%
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">
+                      {copy.fitRate}
+                    </span>
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {copy.answeredOf(entry.answered, entry.proposed)}
+                </p>
+              </article>
             ))}
           </div>
         )}

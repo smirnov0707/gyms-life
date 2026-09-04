@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { AthleteHypothesisSchema } from "./athlete-hypothesis.schema";
+import { DecisionAccuracySchema } from "./decision-accuracy.schema";
 import { DigitalAthleteDataGapSchema } from "./digital-athlete.schema";
 import {
   TodayDecisionActionSchema,
@@ -37,6 +38,7 @@ export const LabOverviewSchema = z
   .object({
     hypotheses: z.array(AthleteHypothesisSchema),
     decisions: z.array(LabDecisionSchema),
+    decisionAccuracy: DecisionAccuracySchema,
     dataGaps: z.array(DigitalAthleteDataGapSchema),
   })
   .strict();

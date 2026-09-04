@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
+import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { LabOverviewSchema, type LabDecision, type LabOverview } from "./lab.schema";
 import { dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
@@ -157,6 +158,7 @@ export async function loadLabOverview(
   return LabOverviewSchema.parse({
     hypotheses,
     decisions,
+    decisionAccuracy: buildDecisionAccuracy(decisions),
     dataGaps: athlete.state.dataGaps,
   });
 }
