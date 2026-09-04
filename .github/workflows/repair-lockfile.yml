@@ -26,7 +26,7 @@ jobs:
           cache: npm
 
       - name: Regenerate lockfile from package.json
-        run: npm install --package-lock-only --ignore-scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
 
       - name: Commit repaired lockfile
         run: |
@@ -38,4 +38,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
           git commit -m "chore: synchronize npm lockfile"
+          git pull --rebase origin phase-1/foundation-hardening
           git push origin HEAD:phase-1/foundation-hardening
