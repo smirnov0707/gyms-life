@@ -30,6 +30,18 @@ import { LOW_WORKOUT_FEELING_THRESHOLD } from "./training-response.schema";
 
 const DAY_MS = 86_400_000;
 
+/**
+ * Identifies the deterministic calculation logic that produced a Digital
+ * Athlete state, independent of `DigitalAthleteStateSchema.schemaVersion`
+ * (which versions the stored shape, not the derivation logic). Bump this
+ * when the calculation rules below change in a way that could explain a
+ * different state for the same underlying facts.
+ */
+export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v1" as const;
+
+/** The widest lookback any domain calculation below uses (body metrics, 30 days). */
+export const DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS = 30;
+
 function roundToOneDecimal(value: number): number {
   return Math.round(value * 10) / 10;
 }
