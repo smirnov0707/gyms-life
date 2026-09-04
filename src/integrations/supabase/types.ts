@@ -94,30 +94,45 @@ export type Database = {
       }
       athlete_state_snapshots: {
         Row: {
+          calculation_version: string
           computed_at: string
           created_at: string
           id: string
+          provenance_summary: Json
           schema_version: string
+          source_window_end: string | null
+          source_window_start: string | null
           state: Json
           state_fingerprint: string
+          uncertainty_summary: Json
           user_id: string
         }
         Insert: {
+          calculation_version?: string
           computed_at?: string
           created_at?: string
           id?: string
+          provenance_summary?: Json
           schema_version: string
+          source_window_end?: string | null
+          source_window_start?: string | null
           state: Json
           state_fingerprint: string
+          uncertainty_summary?: Json
           user_id: string
         }
         Update: {
+          calculation_version?: string
           computed_at?: string
           created_at?: string
           id?: string
+          provenance_summary?: Json
           schema_version?: string
+          source_window_end?: string | null
+          source_window_start?: string | null
           state?: Json
           state_fingerprint?: string
+          uncertainty_summary?: Json
           user_id?: string
         }
         Relationships: []
@@ -320,14 +335,19 @@ export type Database = {
           confidence: number
           created_at: string
           decision_basis: string
-          decision_on: string
           decision_fingerprint: string
+          decision_on: string
           decision_type: string
           engine_version: string
           id: string
+          model_versions: Json
+          prediction: Json | null
+          safety_check: Json | null
           safety_constraints: string[]
           status: string
+          uncertainty: Json | null
           user_id: string
+          user_override: Json | null
         }
         Insert: {
           action: string
@@ -336,14 +356,19 @@ export type Database = {
           confidence?: number
           created_at?: string
           decision_basis?: string
-          decision_on: string
           decision_fingerprint: string
+          decision_on: string
           decision_type?: string
           engine_version: string
           id?: string
+          model_versions?: Json
+          prediction?: Json | null
+          safety_check?: Json | null
           safety_constraints?: string[]
           status?: string
+          uncertainty?: Json | null
           user_id: string
+          user_override?: Json | null
         }
         Update: {
           action?: string
@@ -352,14 +377,19 @@ export type Database = {
           confidence?: number
           created_at?: string
           decision_basis?: string
-          decision_on?: string
           decision_fingerprint?: string
+          decision_on?: string
           decision_type?: string
           engine_version?: string
           id?: string
+          model_versions?: Json
+          prediction?: Json | null
+          safety_check?: Json | null
           safety_constraints?: string[]
           status?: string
+          uncertainty?: Json | null
           user_id?: string
+          user_override?: Json | null
         }
         Relationships: [
           {
@@ -635,6 +665,54 @@ export type Database = {
           event_id?: string
           event_type?: string
           received_at?: string
+        }
+        Relationships: []
+      }
+      personal_timeline_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          occurred_at: string
+          provenance: string
+          quality: string
+          schema_version: string
+          source_reference: string | null
+          source_system: string
+          source_table: string | null
+          summary: Json
+          timezone: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          occurred_at: string
+          provenance: string
+          quality?: string
+          schema_version?: string
+          source_reference?: string | null
+          source_system: string
+          source_table?: string | null
+          summary?: Json
+          timezone?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          provenance?: string
+          quality?: string
+          schema_version?: string
+          source_reference?: string | null
+          source_system?: string
+          source_table?: string | null
+          summary?: Json
+          timezone?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1252,14 +1330,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      activate_meal_plan: {
-        Args: { p_meal_plan_id: string }
-        Returns: string
-      }
-      activate_training_plan: {
-        Args: { p_plan_id: string }
-        Returns: string
-      }
+      activate_meal_plan: { Args: { p_meal_plan_id: string }; Returns: string }
+      activate_training_plan: { Args: { p_plan_id: string }; Returns: string }
       consume_ai_quota: {
         Args: { p_limit: number; p_user_id: string }
         Returns: boolean
@@ -1268,24 +1340,20 @@ export type Database = {
         Args: { p_content: string; p_memory_id: string; p_user_id: string }
         Returns: string
       }
+      has_active_subscription: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       reconcile_calculated_user_memory: {
         Args: { p_entries: Json; p_user_id: string }
         Returns: undefined
-      }
-      replace_active_life_context: {
-        Args: {
-          p_content: string
-          p_expires_at: string
-          p_importance: number
-          p_memory_key: string
-          p_user_id: string
-          p_value: Json
-        }
-        Returns: string
-      }
-      training_rhythm_weekdays_are_unique: {
-        Args: { value: number[] }
-        Returns: boolean
       }
       record_ar_workout: {
         Args: {
@@ -1317,15 +1385,19 @@ export type Database = {
           set_log_weight_kg: number
         }[]
       }
-      has_active_subscription: {
-        Args: { check_env?: string; user_uuid: string }
-        Returns: boolean
-      }
-      has_role: {
+      replace_active_life_context: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
+          p_content: string
+          p_expires_at: string
+          p_importance: number
+          p_memory_key: string
+          p_user_id: string
+          p_value: Json
         }
+        Returns: string
+      }
+      training_rhythm_weekdays_are_unique: {
+        Args: { value: number[] }
         Returns: boolean
       }
     }
@@ -1346,12 +1418,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1375,11 +1447,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1400,11 +1472,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1425,11 +1497,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1442,11 +1514,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
