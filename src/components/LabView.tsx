@@ -9,7 +9,7 @@ import type {
   AthleteHypothesisStatusSchema,
   AthleteLearningDomainSchema,
 } from "@/lib/athlete-hypothesis.schema";
-import type { LabDecision } from "@/lib/lab.schema";
+import type { LabDecision, LabOverview } from "@/lib/lab.schema";
 import type { z } from "zod";
 
 type HypothesisStatus = z.infer<typeof AthleteHypothesisStatusSchema>;
@@ -177,7 +177,12 @@ function HypothesisCard({ hypothesis, copy }: { hypothesis: AthleteHypothesis; c
       </p>
       <p className="mt-2 text-xs text-muted-foreground">
         {copy.evidenceCount(hypothesis.evidenceCount)}
-        {hypothesis.status !== "supported" ? ` / ${hypothesis.minimumEvidenceCount}` : ""}
+        {/* Only show the target when evidence is genuinely short of it.
+            A hypothesis can hold enough evidence and still be "monitoring"
+            for other reasons; "12 / 8" would misread as insufficient. */}
+        {hypothesis.evidenceCount < hypothesis.minimumEvidenceCount
+          ? ` / ${hypothesis.minimumEvidenceCount}`
+          : ""}
       </p>
     </article>
   );
@@ -209,30 +214,11 @@ function DecisionRow({ decision, copy }: { decision: LabDecision; copy: Copy }) 
   );
 }
 
-export function LabView() {
-  const { lang } = useI18n();
-  const timeZone = browserTimeZone();
-  const copy = copyFor(lang);
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["lab-overview", timeZone],
-    queryFn: () => getLabOverview({ data: timeZone }),
-    staleTime: 60_000,
-  });
-
-  if (isLoading) {
-    return (
-      <section className="panel p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
-        </div>
-      </section>
-    );
-  }
-
-  if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
-  }
-
+/**
+ * Presentational half of the Lab page, kept free of data fetching so the
+ * layout can be rendered and reviewed from a known overview.
+ */
+export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy }) {
   return (
     <div className="space-y-6">
       <GlowCard className="panel relative overflow-hidden p-6 md:p-7">
@@ -279,3 +265,33 @@ export function LabView() {
     </div>
   );
 }
+
+/** Container: loads the overview and hands it to the presentational view. */
+export function LabView() {
+  const { lang } = useI18n();
+  const timeZone = browserTimeZone();
+  const copy = copyFor(lang);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["lab-overview", timeZone],
+    queryFn: () => getLabOverview({ data: timeZone }),
+    staleTime: 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <section className="panel p-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
+        </div>
+      </section>
+    );
+  }
+
+  if (isError || !data) {
+    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
+  }
+
+  return <LabOverviewView data={data} copy={copy} />;
+}
+
+export { copyFor as labCopyFor };

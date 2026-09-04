@@ -8,7 +8,11 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinSnapshot } from "@/lib/digital-twin.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
-import type { TwinRegionRecoveryBand, TwinRegionState } from "@/lib/digital-twin.schema";
+import type {
+  TwinRegionRecoveryBand,
+  TwinRegionState,
+  TwinSnapshot,
+} from "@/lib/digital-twin.schema";
 
 const KNOWN_MUSCLE_GROUP_SET = new Set<string>(KNOWN_MUSCLE_GROUPS);
 
@@ -120,7 +124,10 @@ function RegionDetail({
             />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {region.recoveryPct}% · {copy.volume}: {region.volumeKg} kg
+            {region.recoveryPct}%
+            {/* Cardio and similar groups log real sets with no external load;
+                "0 kg" would read as a broken number rather than a fact. */}
+            {region.volumeKg ? ` · ${copy.volume}: ${region.volumeKg} kg` : ""}
           </p>
           {region.lastTrainedHoursAgo !== null ? (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -135,34 +142,21 @@ function RegionDetail({
   );
 }
 
-export function TwinView() {
-  const { lang, t } = useI18n();
-  const timeZone = browserTimeZone();
-  const copy = copyFor(lang);
+/**
+ * Presentational half of the Twin page. Kept free of data fetching so the
+ * layout can be rendered and reviewed from a known snapshot.
+ */
+export function TwinSnapshotView({
+  data,
+  copy,
+  label,
+}: {
+  data: TwinSnapshot;
+  copy: Copy;
+  label: (region: string) => string;
+}) {
   const [view, setView] = useState<BodyView>("front");
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["twin-snapshot", timeZone],
-    queryFn: () => getTwinSnapshot({ data: timeZone }),
-    staleTime: 60_000,
-  });
-
-  if (isLoading) {
-    return (
-      <section className="panel p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
-        </div>
-      </section>
-    );
-  }
-
-  if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
-  }
-
-  const label = (region: string) => regionLabelFor(region, t);
   const anatomical = data.regions.filter((region) => isAnatomicalRegion(region.region));
   const other = data.regions.filter((region) => !isAnatomicalRegion(region.region));
   const selected = selectedRegion
@@ -190,8 +184,8 @@ export function TwinView() {
         </p>
       ) : null}
 
-      <section className="grid gap-5 md:grid-cols-[auto_1fr] md:items-start">
-        <div className="mx-auto w-full max-w-[260px]">
+      <section className="grid gap-6 md:grid-cols-[minmax(280px,340px)_1fr] md:items-start">
+        <div className="mx-auto w-full max-w-[340px]">
           <div className="flex justify-center gap-1 rounded-xl border border-border bg-surface-2 p-1">
             {(["front", "back"] as const).map((option) => (
               <button
@@ -208,7 +202,7 @@ export function TwinView() {
               </button>
             ))}
           </div>
-          <div className="mt-4 h-[380px]">
+          <div className="mt-5 h-[500px]">
             <BodyMap
               regions={anatomical}
               view={view}
@@ -229,17 +223,18 @@ export function TwinView() {
           )}
 
           {other.length > 0 ? (
-            <div>
+            <div className="rounded-2xl border border-border bg-surface-2 p-4">
               <h2 className="text-sm font-semibold text-foreground">{copy.otherTraining}</h2>
               <p className="mt-1 text-xs text-muted-foreground">{copy.otherTrainingNote}</p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {/* Compact chips: full detail for these lives in "All regions". */}
+              <div className="mt-3 flex flex-wrap gap-2">
                 {other.map((region) => (
-                  <RegionDetail
+                  <span
                     key={region.region}
-                    region={region}
-                    copy={copy}
-                    label={label(region.region)}
-                  />
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${BAND_TONE[region.recoveryBand]}`}
+                  >
+                    {label(region.region)} · {copy.bandLabel[region.recoveryBand]}
+                  </span>
                 ))}
               </div>
             </div>
@@ -264,3 +259,34 @@ export function TwinView() {
     </div>
   );
 }
+
+/** Container: loads the snapshot and hands it to the presentational view. */
+export function TwinView() {
+  const { lang, t } = useI18n();
+  const timeZone = browserTimeZone();
+  const copy = copyFor(lang);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["twin-snapshot", timeZone],
+    queryFn: () => getTwinSnapshot({ data: timeZone }),
+    staleTime: 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <section className="panel p-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
+        </div>
+      </section>
+    );
+  }
+
+  if (isError || !data) {
+    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
+  }
+
+  return <TwinSnapshotView data={data} copy={copy} label={(region) => regionLabelFor(region, t)} />;
+}
+
+export { copyFor as twinCopyFor };
