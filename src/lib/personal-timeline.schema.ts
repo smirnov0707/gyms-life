@@ -13,7 +13,10 @@ export const PersonalTimelineEventSchema = z
   .object({
     id: z.string().uuid(),
     userId: z.string().uuid(),
-    eventType: z.string().trim().regex(/^[a-z][a-z0-9_]{2,79}$/),
+    eventType: z
+      .string()
+      .trim()
+      .regex(/^[a-z][a-z0-9_]{2,79}$/),
     occurredAt: TimestampSchema,
     timezone: z.string().trim().min(1).max(80).nullable(),
     provenance: DataProvenanceSchema,
@@ -21,7 +24,10 @@ export const PersonalTimelineEventSchema = z
     sourceSystem: z.string().trim().min(1).max(80),
     sourceTable: z.string().trim().min(1).max(120).nullable(),
     sourceReference: z.string().trim().min(1).max(240).nullable(),
-    schemaVersion: z.string().trim().regex(/^[1-9][0-9]*[.][0-9]+$/),
+    schemaVersion: z
+      .string()
+      .trim()
+      .regex(/^[1-9][0-9]*[.][0-9]+$/),
     summary: z.record(z.string(), z.unknown()),
     createdAt: TimestampSchema,
   })
