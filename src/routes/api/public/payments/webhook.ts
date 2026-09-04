@@ -102,8 +102,31 @@ async function handleSubscriptionCanceled(data: SubscriptionCanceledData, env: P
     .eq("environment", env);
 }
 
+/**
+ * Real idempotency, not just an audit log: Paddle retries webhook delivery,
+ * and event_id is this table's primary key, so a second insert for the same
+ * event fails with a unique violation. That failure IS the duplicate check.
+ */
+async function isDuplicateWebhookEvent(
+  eventId: string,
+  eventType: string,
+  env: PaddleEnv,
+): Promise<boolean> {
+  const { error } = await getSupabase()
+    .from("paddle_webhook_events")
+    .insert({ event_id: eventId, event_type: eventType, environment: env });
+  if (!error) return false;
+  if (error.code === "23505") return true;
+  throw new Error(`Could not record Paddle webhook event: ${error.message}`);
+}
+
 async function handleWebhook(req: Request, env: PaddleEnv) {
   const event = await verifyWebhook(req, env);
+
+  if (await isDuplicateWebhookEvent(event.eventId, event.eventType, env)) {
+    console.log("Skipping already-processed Paddle webhook event:", event.eventId);
+    return;
+  }
 
   switch (event.eventType) {
     case EventName.SubscriptionCreated:
