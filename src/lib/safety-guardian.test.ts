@@ -11,11 +11,12 @@ function makeTwinState(hasSafetyConstraint: boolean): DigitalTwinState {
       totalVolumeLast28Days: 0,
       daysSinceLastCompletedWorkout: null,
       selfReportedResponse: {
+        source: "user_reported",
         available: false,
         ratedSessionsLast28Days: 0,
         recentLowFeelingStreak: 0,
         latestFeeling: null,
-        averageFeelingScoreLast28Days: null,
+        averageFeelingLast28Days: null,
       },
     },
     recovery: {
