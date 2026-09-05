@@ -1,5 +1,6 @@
 import type { GeneratedMealPlan } from "./meal-types";
 import { tr, type Lang } from "./i18n";
+import { browserTimeZone, dayInTimeZone } from "./local-day";
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -13,7 +14,10 @@ export function printShoppingList(plan: GeneratedMealPlan, lang: Lang) {
     items: tr(lang, "rm.shopping.items"),
     tips: tr(lang, "rm.shopping.tips"),
   };
-  const today = new Date().toISOString().slice(0, 10);
+  // These documents are built in the browser and carry the athlete's own
+  // date. The UTC slice put yesterday's date on a report generated in the
+  // evening west of Greenwich, and tomorrow's east of it.
+  const today = dayInTimeZone(new Date(), browserTimeZone());
   const totalItems = plan.shopping_list.reduce((n, g) => n + g.items.length, 0);
 
   const groups = plan.shopping_list
