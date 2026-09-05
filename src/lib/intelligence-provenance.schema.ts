@@ -19,15 +19,7 @@ export const TemporalEvidenceRefSchema = z.object({
   recordedAt: z.string().datetime({ offset: true }).nullable(),
   timezone: z.string().trim().min(1).max(80).nullable(),
   quality: z.enum(["unknown", "available", "partial", "degraded"]),
-}).strict().superRefine((value, context) => {
-  if (value.occurredAt && value.recordedAt && Date.parse(value.recordedAt) < Date.parse(value.occurredAt)) {
-    context.addIssue({
-      code: "custom",
-      message: "recordedAt must not precede occurredAt",
-      path: ["recordedAt"],
-    });
-  }
-});
+}).strict();
 
 export type IntelligenceProvenance = z.infer<typeof IntelligenceProvenanceSchema>;
 export type TemporalEvidenceRef = z.infer<typeof TemporalEvidenceRefSchema>;
