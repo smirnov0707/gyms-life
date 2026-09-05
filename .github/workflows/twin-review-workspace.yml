@@ -1,0 +1,40 @@
+name: Twin review workspace
+on:
+  push:
+    branches: [future-lab-twin-review-workspace]
+    paths: [.github/workflows/twin-review-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: efaee8ddaae8f88b4e40f3538ed207c38e59092d
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Export tracked source and dependency workspace without credentials
+        run: |
+          set -eu
+          mkdir -p /tmp/twin-review/export /tmp/twin-review/workspace
+          git archive HEAD | tar -x -C /tmp/twin-review/workspace
+          cp -a node_modules /tmp/twin-review/workspace/node_modules
+          git rev-parse HEAD > /tmp/twin-review/workspace/REVIEW_HEAD.txt
+          tar -czf /tmp/twin-review/export/workspace.tar.gz -C /tmp/twin-review/workspace .
+          git archive --format=tar b7680640ade7f2a6e1be9b551b528b9467956746 | gzip > /tmp/twin-review/export/main.tar.gz
+          BASE=$(git merge-base HEAD b7680640ade7f2a6e1be9b551b528b9467956746)
+          git archive --format=tar "$BASE" | gzip > /tmp/twin-review/export/base.tar.gz
+          printf 'head=%s\nmain=%s\nbase=%s\n' "$(git rev-parse HEAD)" b7680640ade7f2a6e1be9b551b528b9467956746 "$BASE" > /tmp/twin-review/export/refs.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twin-isolated-review-source
+          path: /tmp/twin-review/export
+          retention-days: 1
+          compression-level: 0
