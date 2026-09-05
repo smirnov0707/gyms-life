@@ -142,8 +142,7 @@ export function ActivePlanLoader() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(75% 120% at 0% 0%, rgba(16,185,129,.10), transparent 60%)",
+            background: "radial-gradient(75% 120% at 0% 0%, rgba(16,185,129,.10), transparent 60%)",
           }}
         />
 
@@ -208,7 +207,9 @@ export function ActivePlanLoader() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-white">{copy.inspectPlan}</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.inspectPlanHint}</p>
+              <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+                {copy.inspectPlanHint}
+              </p>
             </div>
             <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
           </div>
@@ -216,7 +217,9 @@ export function ActivePlanLoader() {
 
         <div className="border-t border-white/[0.06] p-4 sm:p-6">
           {plan.data.summary ? (
-            <p className="mb-6 max-w-3xl text-sm leading-relaxed text-neutral-500">{plan.data.summary}</p>
+            <p className="mb-6 max-w-3xl text-sm leading-relaxed text-neutral-500">
+              {plan.data.summary}
+            </p>
           ) : null}
 
           <div className="divide-y divide-white/[0.06]">
@@ -231,8 +234,7 @@ export function ActivePlanLoader() {
                     <p className="mt-1 text-sm text-neutral-500">{day.focus}</p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-neutral-600">
-                    <Clock3 className="size-3.5" />
-                    ~{day.estimated_minutes} {copy.minutes}
+                    <Clock3 className="size-3.5" /> ~{day.estimated_minutes} {copy.minutes}
                   </div>
                 </div>
 
@@ -242,7 +244,9 @@ export function ActivePlanLoader() {
                       key={`${day.day}-${exercise.slug}`}
                       className="rounded-xl border border-white/[0.05] bg-black/20 px-3 py-3"
                     >
-                      <p className="truncate text-sm font-medium text-neutral-300">{exercise.name}</p>
+                      <p className="truncate text-sm font-medium text-neutral-300">
+                        {exercise.name}
+                      </p>
                       <p className="mt-1 font-mono text-xs text-neutral-600">
                         {exercise.sets} × {exercise.reps}
                       </p>
