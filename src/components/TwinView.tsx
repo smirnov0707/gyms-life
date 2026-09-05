@@ -180,7 +180,9 @@ function RegionReadout({
   }
 
   return (
-    <div className={`rounded-[1.75rem] border p-5 backdrop-blur-xl ${BAND_TONE[region.recoveryBand]}`}>
+    <div
+      className={`rounded-[1.75rem] border p-5 backdrop-blur-xl ${BAND_TONE[region.recoveryBand]}`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-500">
@@ -246,7 +248,9 @@ export function TwinSnapshotView({
       ? viewShowing(leastRecovered.region, "front")
       : "front",
   );
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(leastRecovered?.region ?? null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(
+    leastRecovered?.region ?? null,
+  );
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const anatomical = data.regions.filter((region) => isAnatomicalRegion(region.region));
@@ -331,7 +335,9 @@ export function TwinSnapshotView({
                     className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2 text-left text-xs text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-white"
                   >
                     <span className="flex min-w-0 items-center gap-2">
-                      <span className={`size-1.5 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
+                      <span
+                        className={`size-1.5 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
+                      />
                       <span className="truncate">{label(region.region)}</span>
                     </span>
                     <span className="font-mono text-neutral-600">{region.recoveryPct ?? "—"}%</span>
@@ -411,7 +417,9 @@ export function TwinSnapshotView({
         >
           <div>
             <p className="text-sm font-semibold text-white">{copy.allRegions}</p>
-            <p className="mt-1 text-xs text-neutral-600">{copy.evidenceWindow(data.evidenceWindowDays)}</p>
+            <p className="mt-1 text-xs text-neutral-600">
+              {copy.evidenceWindow(data.evidenceWindowDays)}
+            </p>
           </div>
           <ChevronDown
             className={`size-4 text-neutral-500 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
@@ -428,7 +436,9 @@ export function TwinSnapshotView({
                 className="flex items-center justify-between gap-4 border-b border-white/[0.05] px-5 py-3 text-left hover:bg-white/[0.025] sm:odd:border-r"
               >
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
+                  <span
+                    className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
+                  />
                   <span className="truncate text-sm text-neutral-300">{label(region.region)}</span>
                 </span>
                 <span className="shrink-0 font-mono text-xs text-neutral-600">
