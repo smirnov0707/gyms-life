@@ -758,3 +758,16 @@ export function segmentsFor(region: string, view: BodyView): BodySegment[] {
 export function isAnatomicalRegion(region: string): boolean {
   return BODY_REGION_SEGMENTS[region] !== undefined;
 }
+
+/**
+ * The side a region should be read on. A region can appear on both — the
+ * upper trapezius is genuinely visible from the front — so "drawable here"
+ * is not enough to stay put, or selecting the back would leave the figure on
+ * the front with only that one strip lit.
+ */
+export function viewShowing(region: string, current: BodyView): BodyView {
+  const other: BodyView = current === "front" ? "back" : "front";
+  const here = segmentsFor(region, current).length;
+  if (here === 0) return other;
+  return segmentsFor(region, other).length > here ? other : current;
+}

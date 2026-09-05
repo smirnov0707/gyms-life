@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, PersonStanding } from "lucide-react";
-import { BodyMap } from "@/components/twin/BodyMap";
+import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
 import {
   isAnatomicalRegion,
-  segmentsFor,
+  viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
 import { useI18n, type TKey } from "@/lib/i18n";
@@ -270,19 +270,6 @@ function RegionRow({
   );
 }
 
-/**
- * Shows the selected region on the side most of it is actually on. A region
- * can appear on both — the upper trapezius is visible from the front — so
- * "drawable here" is not enough to stay put, or picking Back would leave the
- * figure on Front with only that one strip lit.
- */
-function viewShowing(region: string, current: BodyView): BodyView {
-  const other: BodyView = current === "front" ? "back" : "front";
-  const here = segmentsFor(region, current).length;
-  if (here === 0) return other;
-  return segmentsFor(region, other).length > here ? other : current;
-}
-
 function formatUpdated(computedAt: string, lang: string): string {
   const parsed = new Date(computedAt);
   if (Number.isNaN(parsed.getTime())) return "—";
@@ -429,7 +416,11 @@ export function TwinSnapshotView({
 
             <div className="mt-3 h-[600px]">
               <BodyMap
-                regions={anatomical}
+                regions={anatomical.map((region) => ({
+                  region: region.region,
+                  tone: toneForRecoveryBand(region.recoveryBand),
+                  value: region.recoveryPct === null ? null : `${region.recoveryPct}%`,
+                }))}
                 view={view}
                 selectedRegion={selectedRegion}
                 onSelectRegion={selectRegion}

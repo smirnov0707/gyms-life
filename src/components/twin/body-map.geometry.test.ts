@@ -9,6 +9,7 @@ import {
   NON_ANATOMICAL_GROUPS,
   isAnatomicalRegion,
   segmentsFor,
+  viewShowing,
   type BodyView,
 } from "./body-map.geometry";
 
@@ -88,6 +89,25 @@ describe("body map geometry", () => {
   it("returns nothing for a region it has never heard of", () => {
     expect(isAnatomicalRegion("forearms")).toBe(false);
     expect(segmentsFor("forearms", "front")).toEqual([]);
+  });
+
+  describe("viewShowing", () => {
+    it("stays put when the region is fully drawn on the current side", () => {
+      expect(viewShowing("chest", "front")).toBe("front");
+      expect(viewShowing("glutes", "back")).toBe("back");
+    });
+
+    it("turns the figure around when the region is not on this side at all", () => {
+      expect(viewShowing("glutes", "front")).toBe("back");
+      expect(viewShowing("chest", "back")).toBe("front");
+    });
+
+    it("turns to the side that shows more of a region drawn on both", () => {
+      // The upper trapezius shows from the front, but selecting "back" must
+      // not leave the figure facing forward with one strip lit.
+      expect(viewShowing("back", "front")).toBe("back");
+      expect(viewShowing("shoulders", "front")).toBe("front");
+    });
   });
 
   it("draws every segment as a closed path", () => {
