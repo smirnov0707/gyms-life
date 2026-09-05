@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, PersonStanding } from "lucide-react";
+import { ChevronDown, Loader2, PersonStanding } from "lucide-react";
 import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
 import {
   isAnatomicalRegion,
@@ -134,155 +134,97 @@ function copyFor(lang: Lang): Copy {
 }
 
 const BAND_TONE: Record<TwinRegionRecoveryBand, string> = {
-  fresh: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
-  moderate: "border-amber-400/40 bg-amber-400/10 text-amber-400",
-  fatigued: "border-rose-500/40 bg-rose-500/10 text-rose-400",
-  unknown: "border-border bg-surface-2 text-muted-foreground",
+  fresh: "border-emerald-400/35 bg-emerald-400/[0.07] text-emerald-300",
+  moderate: "border-amber-400/35 bg-amber-400/[0.07] text-amber-300",
+  fatigued: "border-rose-500/40 bg-rose-500/[0.07] text-rose-300",
+  unknown: "border-white/[0.08] bg-white/[0.025] text-neutral-500",
 };
 
 const BAND_DOT: Record<TwinRegionRecoveryBand, string> = {
   fresh: "bg-emerald-400",
   moderate: "bg-amber-400",
   fatigued: "bg-rose-500",
-  unknown: "bg-muted-foreground/50",
+  unknown: "bg-neutral-600",
 };
-
-const ALL_BANDS: TwinRegionRecoveryBand[] = ["fresh", "moderate", "fatigued", "unknown"];
-
-/** A thin instrument readout: label above, value in monospace below. */
-function MetaCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate font-mono text-sm text-foreground">{value}</p>
-    </div>
-  );
-}
-
-/** The selected region, read out at instrument scale rather than as a chip. */
-function SelectedRegionPanel({
-  region,
-  copy,
-  label,
-}: {
-  region: TwinRegionState;
-  copy: Copy;
-  label: string;
-}) {
-  return (
-    <div className={`rounded-3xl border p-5 ${BAND_TONE[region.recoveryBand]}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            {copy.recovery}
-          </p>
-          <h2 className="mt-1 truncate text-xl font-bold text-foreground">{label}</h2>
-        </div>
-        <span
-          className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${BAND_TONE[region.recoveryBand]}`}
-        >
-          {copy.bandLabel[region.recoveryBand]}
-        </span>
-      </div>
-
-      {region.provenance === "calculated" ? (
-        <>
-          <p className="mt-4 font-mono text-5xl leading-none tracking-tight text-foreground">
-            {region.recoveryPct}
-            <span className="ml-1 text-2xl text-muted-foreground">%</span>
-          </p>
-          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-surface-2/70">
-            <div
-              className="h-full rounded-full bg-current transition-[width] duration-500 motion-reduce:transition-none"
-              style={{ width: `${region.recoveryPct}%` }}
-            />
-          </div>
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-            {/* Cardio and similar groups log real sets with no external load;
-                "0 kg" would read as a broken number rather than a fact. */}
-            {region.volumeKg ? (
-              <div>
-                <dt className="text-muted-foreground">{copy.volume}</dt>
-                <dd className="mt-0.5 font-mono text-sm text-foreground">{`${region.volumeKg} kg`}</dd>
-              </div>
-            ) : null}
-            {region.lastTrainedHoursAgo !== null ? (
-              <div>
-                <dt className="text-muted-foreground">{copy.metaLastTrained}</dt>
-                <dd className="mt-0.5 text-sm text-foreground">
-                  {copy.hoursAgo(Math.round(region.lastTrainedHoursAgo))}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        </>
-      ) : (
-        <p className="mt-4 text-sm text-muted-foreground">{copy.noEvidence}</p>
-      )}
-
-      {/* Say why the figure did not light up, rather than leaving it silent. */}
-      {!isAnatomicalRegion(region.region) ? (
-        <p className="mt-3 text-xs text-muted-foreground">{copy.otherTrainingNote}</p>
-      ) : null}
-    </div>
-  );
-}
-
-/** One row of the complete list: dense, and never omits a region. */
-function RegionRow({
-  region,
-  copy,
-  label,
-}: {
-  region: TwinRegionState;
-  copy: Copy;
-  label: string;
-}) {
-  const evidence = [
-    region.volumeKg ? `${copy.volume}: ${region.volumeKg} kg` : null,
-    region.lastTrainedHoursAgo !== null
-      ? copy.lastTrained(Math.round(region.lastTrainedHoursAgo))
-      : null,
-  ].filter((part): part is string => part !== null);
-
-  return (
-    <div className="flex items-start justify-between gap-3 border-b border-border py-2.5 last:border-b-0">
-      <div className="min-w-0">
-        <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <span className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
-          <span className="truncate">{label}</span>
-        </p>
-        <p className="mt-0.5 pl-4 text-xs text-muted-foreground">
-          {evidence.length > 0 ? evidence.join(" · ") : copy.noEvidence}
-        </p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="font-mono text-sm text-foreground">
-          {region.recoveryPct === null ? "—" : `${region.recoveryPct}%`}
-        </p>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          {copy.bandLabel[region.recoveryBand]}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function formatUpdated(computedAt: string, lang: Lang): string {
   const parsed = new Date(computedAt);
   if (Number.isNaN(parsed.getTime())) return "—";
-  return parsed.toLocaleTimeString(formatLocale(lang), {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return parsed.toLocaleTimeString(formatLocale(lang), { hour: "2-digit", minute: "2-digit" });
 }
 
-/**
- * Presentational half of the Twin page. Kept free of data fetching so the
- * layout can be rendered and reviewed from a known snapshot.
- */
+function Instrument({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-600">{label}</p>
+      <p className="mt-1 truncate font-mono text-xs text-neutral-300">{value}</p>
+    </div>
+  );
+}
+
+function RegionReadout({
+  region,
+  copy,
+  label,
+}: {
+  region: TwinRegionState | null;
+  copy: Copy;
+  label: string | null;
+}) {
+  if (!region || !label) {
+    return (
+      <div className="rounded-[1.75rem] border border-white/[0.07] bg-black/30 p-5 backdrop-blur-xl">
+        <p className="text-sm leading-relaxed text-neutral-500">{copy.selectPrompt}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`rounded-[1.75rem] border p-5 backdrop-blur-xl ${BAND_TONE[region.recoveryBand]}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+            {copy.recovery}
+          </p>
+          <h2 className="mt-1 truncate text-xl font-semibold text-white">{label}</h2>
+        </div>
+        <span className="flex shrink-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em]">
+          <span className={`size-2 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
+          {copy.bandLabel[region.recoveryBand]}
+        </span>
+      </div>
+
+      {region.provenance === "calculated" && region.recoveryPct !== null ? (
+        <>
+          <div className="mt-5 flex items-end gap-2">
+            <span className="font-mono text-6xl leading-none tracking-[-0.08em] text-white">
+              {region.recoveryPct}
+            </span>
+            <span className="pb-1 font-mono text-lg text-neutral-500">%</span>
+          </div>
+          <div className="mt-4 h-px bg-white/[0.08]" />
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <Instrument
+              label={copy.volume}
+              value={region.volumeKg ? `${region.volumeKg} kg` : "—"}
+            />
+            <Instrument
+              label={copy.metaLastTrained}
+              value={
+                region.lastTrainedHoursAgo === null
+                  ? "—"
+                  : copy.hoursAgo(Math.round(region.lastTrainedHoursAgo))
+              }
+            />
+          </div>
+        </>
+      ) : (
+        <p className="mt-4 text-sm text-neutral-500">{copy.noEvidence}</p>
+      )}
+    </div>
+  );
+}
+
 export function TwinSnapshotView({
   data,
   copy,
@@ -299,17 +241,14 @@ export function TwinSnapshotView({
     (left, right) => (left.recoveryPct ?? 100) - (right.recoveryPct ?? 100),
   );
   const leastRecovered = ranked.find((region) => isAnatomicalRegion(region.region)) ?? ranked[0];
-
-  // Open on the region that most needs attention rather than on an empty
-  // prompt: with evidence present there is always something real to show.
   const [view, setView] = useState<BodyView>(() =>
     leastRecovered && isAnatomicalRegion(leastRecovered.region)
       ? viewShowing(leastRecovered.region, "front")
       : "front",
   );
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(
-    leastRecovered?.region ?? null,
-  );
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(leastRecovered?.region ?? null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   const anatomical = data.regions.filter((region) => isAnatomicalRegion(region.region));
   const selected = selectedRegion
     ? (data.regions.find((region) => region.region === selectedRegion) ?? null)
@@ -321,92 +260,99 @@ export function TwinSnapshotView({
   };
 
   return (
-    <div className="space-y-6">
-      <header className="panel relative overflow-hidden rounded-3xl border border-border p-6 md:p-7">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "radial-gradient(90% 140% at 8% 0%, var(--primary-dim), transparent 55%)",
-            opacity: 0.7,
-          }}
-        />
-        <div className="relative">
-          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-primary">
-            <PersonStanding className="size-4" /> {copy.eyebrow}
-          </p>
-          <h1 className="mt-2 text-2xl sm:text-3xl">{copy.title}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {copy.description}
-          </p>
-
-          {/* The instrument strip: what produced these numbers, in the open. */}
-          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-4">
-            <MetaCell label={copy.metaModel} value={data.calculationVersion} />
-            <MetaCell label={copy.metaWindow} value={copy.windowDays(data.evidenceWindowDays)} />
-            <MetaCell label={copy.metaUpdated} value={formatUpdated(data.computedAt, lang)} />
-            <MetaCell
-              label={copy.metaCoverage}
-              value={copy.coverage(withEvidence.length, data.regions.length)}
-            />
-          </div>
-        </div>
-      </header>
-
+    <div className="space-y-4">
       {!data.dataAvailable ? (
-        <p className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-400">
+        <p className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-300">
           {copy.dataGapBanner}
         </p>
       ) : null}
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(280px,340px)_1fr] lg:items-start">
-        {/* The chamber: the figure, its controls and its key, framed together. */}
+      <section className="relative min-h-[760px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] lg:min-h-[820px]">
         <div
-          className="relative overflow-hidden rounded-3xl border border-border p-4"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
           style={{
-            background: "radial-gradient(120% 75% at 50% 0%, var(--surface-2), var(--surface) 70%)",
+            background:
+              "radial-gradient(55% 60% at 50% 40%, rgba(16,185,129,.12), transparent 72%), radial-gradient(80% 80% at 50% 100%, rgba(16,185,129,.05), transparent 70%)",
           }}
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{
-              backgroundImage:
-                "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-              backgroundSize: "32px 32px",
-              opacity: 0.6,
-            }}
-          />
-          {/* Corner brackets: framing, the way a measuring rig is framed. */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-3 size-5 rounded-tl-md border-l border-t border-primary/40"
-          />
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3 top-3 size-5 rounded-tr-md border-r border-t border-primary/40"
-          />
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-3 left-3 size-5 rounded-bl-md border-b border-l border-primary/40"
-          />
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-3 right-3 size-5 rounded-br-md border-b border-r border-primary/40"
-          />
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.16]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
 
-          <div className="relative">
-            <div className="mx-auto flex w-full max-w-[210px] gap-1 rounded-full border border-border bg-surface-2/80 p-1 backdrop-blur">
+        <header className="relative z-10 flex flex-col gap-5 p-5 sm:p-7 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-xl">
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
+              <PersonStanding className="size-4" /> {copy.eyebrow}
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              {copy.title}
+            </h1>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-neutral-500">
+              {copy.description}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/[0.06] pt-4 sm:grid-cols-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+            <Instrument label={copy.metaModel} value={data.calculationVersion} />
+            <Instrument label={copy.metaWindow} value={copy.windowDays(data.evidenceWindowDays)} />
+            <Instrument label={copy.metaUpdated} value={formatUpdated(data.computedAt, lang)} />
+            <Instrument
+              label={copy.metaCoverage}
+              value={copy.coverage(withEvidence.length, data.regions.length)}
+            />
+          </div>
+        </header>
+
+        <div className="relative z-10 grid min-h-[630px] grid-cols-1 lg:grid-cols-[300px_minmax(360px,1fr)_300px] lg:items-center">
+          <aside className="order-2 px-5 pb-5 lg:order-1 lg:px-7 lg:pb-8">
+            <RegionReadout
+              region={selected}
+              copy={copy}
+              label={selected ? label(selected.region) : null}
+            />
+
+            <div className="mt-4 hidden lg:block">
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-600">
+                {copy.ranking}
+              </p>
+              <div className="mt-2 space-y-1">
+                {ranked.slice(0, 4).map((region) => (
+                  <button
+                    key={region.region}
+                    type="button"
+                    onClick={() => selectRegion(region.region)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2 text-left text-xs text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-white"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className={`size-1.5 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
+                      <span className="truncate">{label(region.region)}</span>
+                    </span>
+                    <span className="font-mono text-neutral-600">{region.recoveryPct ?? "—"}%</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <div className="order-1 flex min-h-[500px] flex-col items-center justify-center px-2 sm:min-h-[560px] lg:order-2 lg:min-h-[640px]">
+            <div className="mb-2 flex w-[190px] rounded-full border border-white/[0.08] bg-black/45 p-1 backdrop-blur-xl">
               {(["front", "back"] as const).map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setView(option)}
                   aria-pressed={view === option}
-                  className={`min-h-8 flex-1 rounded-full px-3 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors motion-reduce:transition-none ${
+                  className={`min-h-8 flex-1 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] transition-colors ${
                     view === option
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "bg-emerald-400 text-black"
+                      : "text-neutral-500 hover:text-neutral-300"
                   }`}
                 >
                   {copy.viewLabel[option]}
@@ -414,7 +360,7 @@ export function TwinSnapshotView({
               ))}
             </div>
 
-            <div className="mt-3 h-[600px]">
+            <div className="h-[470px] w-full max-w-[390px] sm:h-[540px] lg:h-[610px]">
               <BodyMap
                 regions={anatomical.map((region) => ({
                   region: region.region,
@@ -428,118 +374,75 @@ export function TwinSnapshotView({
                 showFraming
               />
             </div>
-
-            <div className="mt-4 border-t border-border pt-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {copy.legend}
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
-                {ALL_BANDS.map((band) => (
-                  <li
-                    key={band}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                  >
-                    <span className={`size-2 rounded-full ${BAND_DOT[band]}`} aria-hidden="true" />
-                    {copy.bandLabel[band]}
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
-        </div>
 
-        <div className="space-y-4">
-          {selected ? (
-            <SelectedRegionPanel region={selected} copy={copy} label={label(selected.region)} />
-          ) : (
-            <p className="rounded-3xl border border-border bg-surface-2 p-5 text-sm text-muted-foreground">
-              {copy.selectPrompt}
+          <aside className="order-3 hidden px-7 pb-8 lg:block">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-600">
+              {copy.legend}
             </p>
-          )}
-
-          {/* A keyboard-reachable route to every region the map can select. */}
-          <div className="rounded-3xl border border-border bg-surface p-5">
-            <h2 className="text-sm font-semibold text-foreground">{copy.ranking}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">{copy.rankingNote}</p>
-            {ranked.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">{copy.rankingEmpty}</p>
-            ) : (
-              <ul className="mt-3 space-y-2.5">
-                {ranked.map((region) => (
-                  <li key={region.region}>
-                    <button
-                      type="button"
-                      onClick={() => selectRegion(region.region)}
-                      aria-pressed={selectedRegion === region.region}
-                      className={`w-full rounded-xl border px-3 py-2 text-left transition-colors motion-reduce:transition-none ${
-                        selectedRegion === region.region
-                          ? "border-primary/50 bg-primary/5"
-                          : "border-transparent hover:border-border hover:bg-surface-2"
-                      }`}
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <span
-                            className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
-                            aria-hidden="true"
-                          />
-                          <span className="truncate text-sm font-medium text-foreground">
-                            {label(region.region)}
-                          </span>
-                          {/* Cardio and the like are real training with no
-                              place on a body; say so where they are listed. */}
-                          {!isAnatomicalRegion(region.region) ? (
-                            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                              {copy.offBody}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {region.recoveryPct}%
-                        </span>
-                      </span>
-                      <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                        <span
-                          className={`block h-full rounded-full ${BAND_DOT[region.recoveryBand]}`}
-                          style={{ width: `${region.recoveryPct}%` }}
-                        />
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* The body map is never the only path to this data (accessibility).
-              It lives beside the figure rather than below it: with only a
-              region or two ranked — which is where most people start — a
-              full-width section under the fold left the column half empty. */}
-          <div className="rounded-3xl border border-border bg-surface px-5 py-2">
-            <div className="flex items-baseline justify-between gap-3 border-b border-border pb-2 pt-3">
-              <h2 className="text-sm font-semibold text-foreground">{copy.allRegions}</h2>
-              <p className="text-xs text-muted-foreground">
-                {copy.evidenceWindow(data.evidenceWindowDays)}
-              </p>
+            <div className="mt-3 space-y-3">
+              {(["fresh", "moderate", "fatigued", "unknown"] as TwinRegionRecoveryBand[]).map(
+                (band) => (
+                  <div key={band} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="flex items-center gap-2 text-neutral-500">
+                      <span className={`size-2 rounded-full ${BAND_DOT[band]}`} />
+                      {copy.bandLabel[band]}
+                    </span>
+                    <span className="font-mono text-neutral-700">
+                      {data.regions.filter((region) => region.recoveryBand === band).length}
+                    </span>
+                  </div>
+                ),
+              )}
             </div>
-            <div className="grid gap-x-8 sm:grid-cols-2">
-              {data.regions.map((region) => (
-                <RegionRow
-                  key={region.region}
-                  region={region}
-                  copy={copy}
-                  label={label(region.region)}
-                />
-              ))}
-            </div>
-          </div>
+            <p className="mt-6 text-xs leading-relaxed text-neutral-600">
+              {copy.evidenceWindow(data.evidenceWindowDays)}
+            </p>
+          </aside>
         </div>
+      </section>
+
+      <section className="overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02]">
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((open) => !open)}
+          aria-expanded={detailsOpen}
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+        >
+          <div>
+            <p className="text-sm font-semibold text-white">{copy.allRegions}</p>
+            <p className="mt-1 text-xs text-neutral-600">{copy.evidenceWindow(data.evidenceWindowDays)}</p>
+          </div>
+          <ChevronDown
+            className={`size-4 text-neutral-500 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {detailsOpen ? (
+          <div className="grid border-t border-white/[0.06] sm:grid-cols-2">
+            {data.regions.map((region) => (
+              <button
+                key={region.region}
+                type="button"
+                onClick={() => selectRegion(region.region)}
+                className="flex items-center justify-between gap-4 border-b border-white/[0.05] px-5 py-3 text-left hover:bg-white/[0.025] sm:odd:border-r"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
+                  <span className="truncate text-sm text-neutral-300">{label(region.region)}</span>
+                </span>
+                <span className="shrink-0 font-mono text-xs text-neutral-600">
+                  {region.recoveryPct === null ? "—" : `${region.recoveryPct}%`}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </section>
     </div>
   );
 }
 
-/** Container: loads the snapshot and hands it to the presentational view. */
 export function TwinView() {
   const { lang, t } = useI18n();
   const timeZone = browserTimeZone();
@@ -553,8 +456,8 @@ export function TwinView() {
 
   if (isLoading) {
     return (
-      <section className="panel p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <section className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
           <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
         </div>
       </section>
@@ -562,7 +465,7 @@ export function TwinView() {
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
+    return <p className="text-sm text-neutral-500">{copy.unavailable}</p>;
   }
 
   return (
