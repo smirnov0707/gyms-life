@@ -62,11 +62,13 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
       sourceHint:
         "This state is calculated from the sleep, soreness, stress, energy and mood you report. Wearable physiology is not part of this score yet.",
       noState: "No recovery state recorded today",
-      noStateHint: "Complete the short check-in below before GYMS.LIFE uses today's self-reported recovery signal.",
+      noStateHint:
+        "Complete the short check-in below before GYMS.LIFE uses today's self-reported recovery signal.",
       calculated: "Calculated state",
       influence: "Training load modifier",
       checkin: "Update today's recovery evidence",
-      checkinHint: "These inputs are subjective evidence. GYMS.LIFE stores them as your report, not as measured physiology.",
+      checkinHint:
+        "These inputs are subjective evidence. GYMS.LIFE stores them as your report, not as measured physiology.",
       preview: "Preview from current inputs",
     };
   }
@@ -77,11 +79,13 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
     sourceHint:
       "Ši būsena apskaičiuojama iš tavo nurodyto miego, raumenų skausmo, streso, energijos ir nuotaikos. Dėvimų įrenginių fiziologiniai signalai į šį balą kol kas neįtraukti.",
     noState: "Šiandienos atsistatymo būsena dar neužregistruota",
-    noStateHint: "Atlik trumpą patikrą žemiau prieš GYMS.LIFE naudojant šiandienos subjektyvų atsistatymo signalą.",
+    noStateHint:
+      "Atlik trumpą patikrą žemiau prieš GYMS.LIFE naudojant šiandienos subjektyvų atsistatymo signalą.",
     calculated: "Apskaičiuota būsena",
     influence: "Treniruočių krūvio modifikatorius",
     checkin: "Atnaujinti šiandienos atsistatymo duomenis",
-    checkinHint: "Šie atsakymai yra subjektyvūs įrodymai. GYMS.LIFE juos saugo kaip tavo pateiktą informaciją, o ne kaip išmatuotą fiziologiją.",
+    checkinHint:
+      "Šie atsakymai yra subjektyvūs įrodymai. GYMS.LIFE juos saugo kaip tavo pateiktą informaciją, o ne kaip išmatuotą fiziologiją.",
     preview: "Peržiūra pagal dabartinius atsakymus",
   };
 }
@@ -142,8 +146,7 @@ function ReadinessPage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
+            background: "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
           }}
         />
         <div className="relative">
@@ -158,7 +161,9 @@ function ReadinessPage() {
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {t("rd.title")}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">{copy.sourceHint}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
+            {copy.sourceHint}
+          </p>
 
           {today ? (
             <div className="mt-7 grid gap-6 border-t border-white/[0.06] pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -168,7 +173,9 @@ function ReadinessPage() {
                 </div>
                 <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-4">
                   <div>
-                    <p className="font-mono text-5xl leading-none text-white">{today.readiness_score}</p>
+                    <p className="font-mono text-5xl leading-none text-white">
+                      {today.readiness_score}
+                    </p>
                     <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-600">
                       {t("rd.score")} / 100
                     </p>
@@ -182,13 +189,17 @@ function ReadinessPage() {
                     </p>
                   </div>
                 </div>
-                <p className="mt-5 max-w-2xl text-sm leading-relaxed text-neutral-400">{today.advice}</p>
+                <p className="mt-5 max-w-2xl text-sm leading-relaxed text-neutral-400">
+                  {today.advice}
+                </p>
               </div>
             </div>
           ) : (
             <div className="mt-7 border-t border-white/[0.06] pt-6">
               <p className="text-lg font-medium text-white">{copy.noState}</p>
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-neutral-500">{copy.noStateHint}</p>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-neutral-500">
+                {copy.noStateHint}
+              </p>
             </div>
           )}
         </div>
@@ -253,8 +264,8 @@ function ReadinessPage() {
                 <Activity className="size-3.5 text-emerald-400" /> {copy.preview}
               </p>
               <p className="mt-2 text-sm text-neutral-400">
-                {t("rd.score")}: <span className="font-mono text-white">{preview}</span> · {t("rd.load")}:{" "}
-                <span className="font-mono text-emerald-400">{previewLoad}%</span>
+                {t("rd.score")}: <span className="font-mono text-white">{preview}</span> ·{" "}
+                {t("rd.load")}: <span className="font-mono text-emerald-400">{previewLoad}%</span>
               </p>
             </div>
             <Button onClick={submit} disabled={busy} className="rounded-full px-6 font-bold">
