@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { bmiBodyFat, navyBodyFat } from "./body-composition.engine";
 import { dayInTimeZone } from "./local-day";
 import { loadPersistedProfileTimeZone } from "./user-context.server";
 
@@ -58,43 +59,6 @@ const ScanSchema = z.object({
 });
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
-
-/** US Navy circumference method — the clinical standard for tape-based body fat. */
-function navyBodyFat(
-  sex: "male" | "female" | "unknown",
-  heightCm: number,
-  waistCm?: number,
-  neckCm?: number,
-  hipsCm?: number,
-): number | null {
-  if (!waistCm || !neckCm) return null;
-  const log10 = Math.log10;
-  if (sex === "female") {
-    if (!hipsCm) return null;
-    const inner = waistCm + hipsCm - neckCm;
-    if (inner <= 0) return null;
-    const bf = 495 / (1.29579 - 0.35004 * log10(inner) + 0.221 * log10(heightCm)) - 450;
-    return Number.isFinite(bf) ? bf : null;
-  }
-  const inner = waistCm - neckCm;
-  if (inner <= 0) return null;
-  const bf = 495 / (1.0324 - 0.19077 * log10(inner) + 0.15456 * log10(heightCm)) - 450;
-  return Number.isFinite(bf) ? bf : null;
-}
-
-/** Deurenberg BMI equation — independent cross-check when weight is known. */
-function bmiBodyFat(
-  sex: "male" | "female" | "unknown",
-  heightCm: number,
-  weightKg?: number,
-  age = 30,
-): number | null {
-  if (!weightKg) return null;
-  const bmi = weightKg / (heightCm / 100) ** 2;
-  const sexFactor = sex === "female" ? 0 : sex === "male" ? 1 : 0.5;
-  const bf = 1.2 * bmi + 0.23 * age - 10.8 * sexFactor - 5.4;
-  return Number.isFinite(bf) ? bf : null;
-}
 
 export const analyzeBodyScan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

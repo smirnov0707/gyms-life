@@ -16,11 +16,11 @@ export type MicroSnapshot = {
   avgProtein: number;
   supplements: { name: string; dose: string; times_per_day: number }[];
   profile: {
-    /** Null when no body weight has ever been recorded. */
+    /** Each is null when it has never been recorded. */
     weight: number | null;
-    height: number;
+    height: number | null;
     gender: string;
-    goal: string;
+    goal: string | null;
     diet: string;
     birthYear: number | null;
   };
@@ -95,12 +95,15 @@ export async function loadMicroSnapshot(
       times_per_day: s.times_per_day ?? 1,
     })),
     profile: {
-      // No stored weight means no weight, not 75 kg. A micronutrient scan
-      // reasoned from an invented body would read as personal advice.
+      // No stored measurement means no measurement. A scan reasoned from an
+      // invented body reads as personal advice, and the system prompt for
+      // this task tells the model to use only the data below — handing it a
+      // 178 cm athlete chasing muscle gain, when we know neither, made that
+      // instruction false before the model ever saw it.
       weight: profile?.weight_kg == null ? null : Number(profile.weight_kg),
-      height: Number(profile?.height_cm ?? 178),
+      height: profile?.height_cm == null ? null : Number(profile.height_cm),
       gender: profile?.gender ?? "unknown",
-      goal: profile?.goal ?? "muscle",
+      goal: profile?.goal ?? null,
       diet: profile?.diet ?? "any",
       birthYear: profile?.birth_year ?? null,
     },
