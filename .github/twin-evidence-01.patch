@@ -1,0 +1,250 @@
+diff --git a/src/lib/athlete-state-snapshot.server.test.ts b/src/lib/athlete-state-snapshot.server.test.ts
+index 94e1212..77642ad 100644
+--- a/src/lib/athlete-state-snapshot.server.test.ts
++++ b/src/lib/athlete-state-snapshot.server.test.ts
+@@ -97,0 +98,6 @@ describe("Digital Athlete snapshot persistence", () => {
++
++it("keeps snapshots from different calculation versions distinct", () => {
++  expect(fingerprintDigitalAthleteState(informedState, "digital-athlete-v1")).not.toBe(
++    fingerprintDigitalAthleteState(informedState, "digital-athlete-v2"),
++  );
++});
+diff --git a/src/lib/athlete-state-snapshot.server.ts b/src/lib/athlete-state-snapshot.server.ts
+index 63fc32c..291acb1 100644
+--- a/src/lib/athlete-state-snapshot.server.ts
++++ b/src/lib/athlete-state-snapshot.server.ts
+@@ -94,2 +94,7 @@ function stableJson(value: unknown): string {
+-export function fingerprintDigitalAthleteState(state: DigitalAthleteState): string {
+-  return createHash("sha256").update(stableJson(state)).digest("hex");
++export function fingerprintDigitalAthleteState(
++  state: DigitalAthleteState,
++  calculationVersion: string = DIGITAL_ATHLETE_CALCULATION_VERSION,
++): string {
++  // Identical values under a different derivation must retain their own model
++  // identity. Existing snapshots are immutable; no historical row is rewritten.
++  return createHash("sha256").update(stableJson({ calculationVersion, state })).digest("hex");
+diff --git a/src/lib/digital-athlete.service.ts b/src/lib/digital-athlete.service.ts
+index 429ca26..faddede 100644
+--- a/src/lib/digital-athlete.service.ts
++++ b/src/lib/digital-athlete.service.ts
+@@ -42 +42 @@ const DAY_MS = 86_400_000;
+-export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v1" as const;
++export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v2" as const;
+@@ -49 +49 @@ export const DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS = 30;
+- * fatigue-decay half-life: older sets barely register. Exported so any
++ * fatigue-decay time constant: older sets barely register. Exported so any
+diff --git a/src/lib/digital-twin.mapper.test.ts b/src/lib/digital-twin.mapper.test.ts
+index f599b38..a44a4e4 100644
+--- a/src/lib/digital-twin.mapper.test.ts
++++ b/src/lib/digital-twin.mapper.test.ts
+@@ -3,0 +4 @@ import { mapDigitalAthleteStateToTwinSnapshot } from "./digital-twin.mapper";
++import { calculateMuscleGroupLoad } from "./muscle-load.engine";
+@@ -159 +160 @@ describe("mapDigitalAthleteStateToTwinSnapshot", () => {
+-    expect(snapshot.calculationVersion).toBe("digital-athlete-v1");
++    expect(snapshot.calculationVersion).toBe("digital-athlete-v2");
+@@ -163,0 +165,40 @@ describe("mapDigitalAthleteStateToTwinSnapshot", () => {
++
++describe("Twin evidence regressions", () => {
++  const now = new Date("2026-09-05T12:00:00Z");
++  it("does not promote a missing weight to a recovered region", () => {
++    const muscleLoad = calculateMuscleGroupLoad(
++      [
++        {
++          exercise_slug: "bench",
++          reps: 8,
++          weight_kg: null,
++          done: true,
++          performed_at: "2026-09-05T11:00:00Z",
++        },
++      ],
++      [{ slug: "bench", muscle_group: "chest" }],
++      now,
++    );
++    const twin = mapDigitalAthleteStateToTwinSnapshot({ ...baseState, muscleLoad }, now);
++    expect(twin.regions.find((region) => region.region === "chest")).toMatchObject({
++      provenance: "unknown",
++      recoveryPct: null,
++      volumeKg: null,
++    });
++  });
++
++  it("does not display stale calculated regions when their source is unavailable", () => {
++    const twin = mapDigitalAthleteStateToTwinSnapshot(
++      {
++        ...baseState,
++        dataGaps: ["muscle_load_data_unavailable"],
++        muscleLoad: [
++          { muscleGroup: "chest", volumeKg: 500, recoveryPct: 100, lastTrainedHoursAgo: 48 },
++        ],
++      },
++      now,
++    );
++    expect(twin.dataAvailable).toBe(false);
++    expect(twin.regions.every((region) => region.provenance === "unknown")).toBe(true);
++  });
++});
+diff --git a/src/lib/digital-twin.mapper.ts b/src/lib/digital-twin.mapper.ts
+index a7fe12c..aff7053 100644
+--- a/src/lib/digital-twin.mapper.ts
++++ b/src/lib/digital-twin.mapper.ts
+@@ -63 +63,4 @@ export function mapDigitalAthleteStateToTwinSnapshot(
+-  const calculatedRegions = state.muscleLoad.map(calculatedRegion);
++  const dataAvailable = !state.dataGaps.includes("muscle_load_data_unavailable");
++  const calculatedRegions = state.muscleLoad.map((load) =>
++    dataAvailable ? calculatedRegion(load) : unknownRegion(load.muscleGroup),
++  );
+@@ -73 +76 @@ export function mapDigitalAthleteStateToTwinSnapshot(
+-    dataAvailable: !state.dataGaps.includes("muscle_load_data_unavailable"),
++    dataAvailable,
+diff --git a/src/lib/digital-twin.schema.ts b/src/lib/digital-twin.schema.ts
+index 5aa9f64..335c0ef 100644
+--- a/src/lib/digital-twin.schema.ts
++++ b/src/lib/digital-twin.schema.ts
+@@ -7,5 +7,3 @@ export type TwinRegionRecoveryBand = z.infer<typeof TwinRegionRecoveryBandSchema
+- * One body region's state for the Digital Twin renderer. Deliberately has
+- * no `layer` field yet: recovery (fatigue-decay from logged volume) is the
+- * only calculated per-region signal that exists today. Add a layer axis
+- * only when a second, genuinely distinct calculation exists to back it —
+- * not to pre-build a taxonomy for data that isn't real yet.
++ * One canonical region's calculated recovery and logged weight × reps.
++ * Layers are presentation choices, not a second persisted source of truth.
++ * Unknown region values must not become zero-volume or recovered defaults.
+diff --git a/src/lib/digital-twin.visual-state.test.ts b/src/lib/digital-twin.visual-state.test.ts
+index c666295..437ca3d 100644
+--- a/src/lib/digital-twin.visual-state.test.ts
++++ b/src/lib/digital-twin.visual-state.test.ts
+@@ -41,0 +42,2 @@ describe("mapTwinSnapshotToVisualState", () => {
++    expect(visual.evidenceCoverage).toBe(0);
++    expect(visual.regions.every((region) => region.attention === "unknown")).toBe(true);
+diff --git a/src/lib/digital-twin.visual-state.ts b/src/lib/digital-twin.visual-state.ts
+index d3517de..b1de4f2 100644
+--- a/src/lib/digital-twin.visual-state.ts
++++ b/src/lib/digital-twin.visual-state.ts
+@@ -36,0 +37 @@ export function mapTwinSnapshotToVisualState(snapshot: TwinSnapshot): TwinVisual
++      snapshot.dataAvailable &&
+diff --git a/src/lib/muscle-load.engine.test.ts b/src/lib/muscle-load.engine.test.ts
+index ebe6ad9..042797b 100644
+--- a/src/lib/muscle-load.engine.test.ts
++++ b/src/lib/muscle-load.engine.test.ts
+@@ -158,0 +159,69 @@ describe("performance time versus write time", () => {
++
++describe("incomplete and unsupported set evidence", () => {
++  const now = new Date("2026-09-05T12:00:00.000Z");
++  const complete = {
++    exercise_slug: "bench-press",
++    reps: 8,
++    weight_kg: 60,
++    done: true,
++    performed_at: "2026-09-05T10:00:00.000Z",
++  };
++
++  it.each([
++    { reps: null },
++    { weight_kg: null },
++    { reps: 0 },
++    { reps: -1 },
++    { weight_kg: 0 },
++    { weight_kg: -20 },
++    { performed_at: "not-a-date" },
++  ])("abstains instead of reporting full recovery for %j", (partial) => {
++    expect(calculateMuscleGroupLoad([{ ...complete, ...partial }], exercises, now)).toEqual([]);
++  });
++
++  it("does not treat unknown completion as a completed set", () => {
++    expect(calculateMuscleGroupLoad([{ ...complete, done: null }], exercises, now)).toEqual([]);
++  });
++
++  it("withholds the whole affected group rather than presenting a partial sum as complete", () => {
++    const legs = { ...complete, exercise_slug: "squat" };
++    const unsupported = { ...complete, weight_kg: null };
++    const result = calculateMuscleGroupLoad([complete, unsupported, legs], exercises, now);
++    expect(result.map((entry) => entry.muscleGroup)).toEqual(["legs"]);
++    expect(result[0]?.volumeKg).toBe(480);
++    expect(calculateMuscleGroupLoad([unsupported, complete], exercises, now)).toEqual([]);
++  });
++
++  it("does not let an unfinished set erase confirmed evidence", () => {
++    const result = calculateMuscleGroupLoad(
++      [complete, { ...complete, weight_kg: null, done: false }],
++      exercises,
++      now,
++    );
++    expect(result[0]?.volumeKg).toBe(480);
++  });
++
++  it("does not treat future-dated activity as freshly performed", () => {
++    expect(
++      calculateMuscleGroupLoad(
++        [{ ...complete, performed_at: "2026-09-06T10:00:00.000Z" }],
++        exercises,
++        now,
++      ),
++    ).toEqual([]);
++  });
++
++  it("rejects an invalid evaluation clock", () => {
++    expect(() => calculateMuscleGroupLoad([], exercises, new Date("invalid"))).toThrow();
++  });
++
++  it("abstains on numeric overflow instead of clamping it into a plausible score", () => {
++    expect(
++      calculateMuscleGroupLoad(
++        [{ ...complete, reps: Number.MAX_VALUE, weight_kg: Number.MAX_VALUE }],
++        exercises,
++        now,
++      ),
++    ).toEqual([]);
++  });
++});
+diff --git a/src/lib/muscle-load.engine.ts b/src/lib/muscle-load.engine.ts
+index fa2a8bf..9a50df6 100644
+--- a/src/lib/muscle-load.engine.ts
++++ b/src/lib/muscle-load.engine.ts
+@@ -12 +12 @@ import {
+-export const MUSCLE_LOAD_HALF_LIFE_HOURS = 40;
++export const MUSCLE_LOAD_DECAY_TIME_CONSTANT_HOURS = 40;
+@@ -21,0 +22,2 @@ export const MUSCLE_LOAD_VOLUME_FATIGUE_FACTOR = 7;
++ * Groups with incomplete or unsupported completed-set inputs are omitted so
++ * the canonical Twin mapper can mark them unknown. Raw set logs are unchanged.
+@@ -36,0 +39,4 @@ export function calculateMuscleGroupLoad(
++  if (!Number.isFinite(nowMs)) throw new RangeError("Muscle load requires a valid evaluation time");
++  // Missing/unsupported load in a completed set invalidates the group's estimate,
++  // not the athlete's raw log. A partial sum must not masquerade as full evidence.
++  const unsupportedGroups = new Set<string>();
+@@ -39 +45 @@ export function calculateMuscleGroupLoad(
+-    if (set.done === false) continue;
++    if (set.done !== true) continue;
+@@ -43,2 +49,17 @@ export function calculateMuscleGroupLoad(
+-    const reps = set.reps ?? 0;
+-    const weight = set.weight_kg ?? 0;
++    const performedMs = Date.parse(set.performed_at);
++    // A future entry is not a past workout and must not be clamped to "just now".
++    if (Number.isFinite(performedMs) && performedMs > nowMs) continue;
++    const reps = set.reps;
++    const weight = set.weight_kg;
++    if (
++      !Number.isFinite(performedMs) ||
++      reps === null ||
++      reps <= 0 ||
++      weight === null ||
++      weight <= 0
++    ) {
++      // Zero external weight is not zero effort: bodyweight/assisted/timed work
++      // needs a different model. Do not invent a weight or a recovery percentage.
++      unsupportedGroups.add(group);
++      continue;
++    }
+@@ -46 +67,5 @@ export function calculateMuscleGroupLoad(
+-    const hoursAgo = Math.max(0, (nowMs - new Date(set.performed_at).getTime()) / 3_600_000);
++    if (!Number.isFinite(volume) || volume > Number.MAX_SAFE_INTEGER) {
++      unsupportedGroups.add(group);
++      continue;
++    }
++    const hoursAgo = (nowMs - performedMs) / 3_600_000;
+@@ -49,0 +75 @@ export function calculateMuscleGroupLoad(
++    if (entry.volume > Number.MAX_SAFE_INTEGER) unsupportedGroups.add(group);
+@@ -52 +78 @@ export function calculateMuscleGroupLoad(
+-      Math.exp(-hoursAgo / MUSCLE_LOAD_HALF_LIFE_HOURS) *
++      Math.exp(-hoursAgo / MUSCLE_LOAD_DECAY_TIME_CONSTANT_HOURS) *
+@@ -58,0 +85 @@ export function calculateMuscleGroupLoad(
++    .filter(([group]) => !unsupportedGroups.has(group))
