@@ -1,0 +1,276 @@
+diff --git a/.gitignore b/.gitignore
+index 523caca..a6e4f80 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -47,0 +48,3 @@ supabase/migrations_backup_v6/
++
++# Browser-test artifacts are never shipped as application assets
++test-results/
+diff --git a/docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md b/docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+new file mode 100644
+index 0000000..e546061
+--- /dev/null
++++ b/docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+@@ -0,0 +1,76 @@
++# Twin evidence guard and logged-volume layer
++
++## Baseline and scope
++
++Continues `92817c0f6151d823758a00df55f870d060b177fd`, including PR #31's
++continuous 360-degree surface. Do not apply the obsolete primitive-body patch.
++This change preserves geometry, authentication, Supabase schema, camera and
++provider orchestration. It adds no physiology model or wearable data.
++
++## Evidence correction
++
++Only explicitly completed sets (`done === true`) count. Missing/non-positive
++reps or external weight, invalid timestamps and unsafe numeric aggregates
++withhold the **whole affected muscle group** from the volume-decay estimator.
++Mixing one incomplete completed set into several complete sets must not make a
++partial sum look complete. Other groups remain available. Raw logs are never
++modified or deleted; the existing mapper represents omitted groups as unknown.
++Future-dated sets are not past evidence and are skipped, not dated to "now".
++
++Zero external load does not mean zero effort. Bodyweight, assisted, timed and
++other unsupported work require another model. This conservative gate may show
++fewer estimates than before. It must not tell a person they did not exercise.
++Unknown-state copy now explains insufficient/unsupported data instead of
++claiming that no sets were recorded.
++
++The existing exponential-decay equation is unchanged for supported inputs.
++Its 40-hour denominator is a time constant, not a mathematical half-life; the
++constant name/comments are corrected without altering its numerical value.
++This is still a heuristic, not a validated physiological recovery measurement.
++
++Derivation identity advances to `digital-athlete-v2`. Snapshot fingerprints
++include the calculation version so identical values under different derivations
++do not silently reuse the old model identity. Existing history is not rewritten;
++no schema or database migration is required.
++
++When a source is unavailable, the mapper and both display layers withhold old
++values. Unknown provenance always wins over any leftover number.
++
++## Two views of the same canonical state
++
++- Recovery: existing calculated percentage and canonical recovery bands.
++- Logged volume: existing `volumeKg`, sum of registered weight × repetitions.
++  No new physiological calculation and no fabricated set weights.
++
++The single layer selection lives in `TwinSnapshotView`. Inspector, ranking,
++legend, accessible selector, 2D map and 3D runtime read the same selection.
++Switching a layer updates materials without recreating WebGL, changing camera
++position, dropping selection or re-requesting the backend. Context-loss and
++manual 2D fallback retain the selected layer.
++
++Blue volume tones use thirds of the largest known group volume in the current
++snapshot (including listed off-body groups). These are **display categories**,
++not clinical thresholds, training targets or valid comparisons of muscular
++effort. The legend and copy explain the relative scale. Whole-body/cardio data
++remain in the list; they are never distributed onto individual body regions.
++An explicit recorded zero differs from missing volume; a null stays unknown.
++The incomplete-group guard deliberately withholds partial totals as well.
++
++## Verification
++
++Run `npm run typecheck`, `npm run test`, `npm run lint`, `npm run build` and
++`node scripts/test-twin-browser.mjs`. The browser harness uses synthetic data,
++not an authenticated user or a production bypass. It now tests layer agreement,
++units, camera/selection preservation, source failures, restoration, mobile
++volume views and missing inputs as well as the previous orbit/fallback checks.
++An optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE` selects an installed browser for
++local testing; CI uses the pinned Playwright Chromium by default.
++
++Physical iPhone/Android GPU, battery and authenticated production smoke tests
++remain separate checks. This change does not resolve unrelated dependency
++advisories or existing lint warnings. Browser artifact directories are ignored.
++
++## Rollback
++
++Revert this release through a reviewed PR. No user-data rollback is needed.
++Do not blindly reuse previous derivation identifiers for different equations.
+diff --git a/scripts/test-twin-browser.mjs b/scripts/test-twin-browser.mjs
+index c700a84..a940980 100644
+--- a/scripts/test-twin-browser.mjs
++++ b/scripts/test-twin-browser.mjs
+@@ -57,0 +58 @@ try {
++    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
+@@ -108,0 +110,38 @@ try {
++  // Changing a presentation layer must not remount WebGL or reset the user's camera.
++  const identity = await canvas.elementHandle();
++  const layerYaw = await canvas.getAttribute("data-twin-yaw");
++  const layerZoom = await canvas.getAttribute("data-twin-distance");
++  await page.getByRole("button", { name: "Logged volume", exact: true }).click();
++  await expect(canvas).toHaveAttribute("data-twin-layer", "logged_volume");
++  expect(await canvas.evaluate((element, previous) => element === previous, identity)).toBe(true);
++  expect(await canvas.getAttribute("data-twin-yaw")).toBe(layerYaw);
++  expect(await canvas.getAttribute("data-twin-distance")).toBe(layerZoom);
++  await page.getByLabel("Inspect a region", { exact: true }).selectOption("chest");
++  await expect(page.locator("[data-twin-reading-value]")).toContainText("3,000");
++  await expect(page.locator("[data-twin-reading-value]")).toContainText("kg × reps");
++  await expect(page.locator('[data-twin-legend="logged_volume"]')).toContainText(
++    "Relative logged volume",
++  );
++  await page.getByRole("button", { name: "Front", exact: true }).click();
++  await page.screenshot({ path: path.join(artifacts, "desktop-volume.png"), fullPage: true });
++  await page.getByRole("button", { name: "2D", exact: true }).click();
++  await expect(page.locator("canvas")).toHaveCount(0);
++  await expect(page.locator('[data-twin-stage="2d"]')).toHaveAttribute(
++    "data-twin-layer",
++    "logged_volume",
++  );
++  await expect(page.locator("[data-twin-stage] svg")).toContainText("3,000 kg × reps");
++  await page.getByRole("button", { name: "3D", exact: true }).click();
++  await expect(canvas).toHaveAttribute("data-twin-layer", "logged_volume");
++  record("layer changes preserve camera and selection; volume units agree in 3D and 2D");
++
++  await page.getByRole("button", { name: "Fail source", exact: true }).click();
++  await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
++  expect(await page.locator("select").textContent()).not.toContain("3,000");
++  await page.getByRole("button", { name: "Recovery", exact: true }).click();
++  await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
++  expect(await page.locator("select").textContent()).not.toContain("Fresh");
++  await page.getByRole("button", { name: "Restore source", exact: true }).click();
++  await expect(page.locator("[data-twin-reading-value]")).toContainText("77");
++  record("source failure withholds old values in both layers and restoration refreshes them");
++
+@@ -112 +151,4 @@ try {
+-    page.getByText("No sets logged for this region recently.", { exact: true }),
++    page.getByText(
++      "Not enough complete, supported set data for this region. Missing weights or reps and bodyweight effort cannot produce a recovery estimate.",
++      { exact: true },
++    ),
+@@ -185,0 +228,10 @@ try {
++  await page.getByRole("button", { name: "Logged volume", exact: true }).click();
++  await page.getByLabel("Inspect a region", { exact: true }).selectOption("chest");
++  await page.getByRole("button", { name: "Front", exact: true }).click();
++  await page.screenshot({ path: path.join(artifacts, "mobile-volume.png"), fullPage: true });
++  await page.getByRole("button", { name: "Clear evidence", exact: true }).click();
++  await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
++  expect(await page.locator("select").textContent()).not.toContain("kg × reps");
++  await page.getByRole("button", { name: "Restore evidence", exact: true }).click();
++  await expect(page.locator("[data-twin-reading-value]")).toContainText("3,000");
++  record("mobile volume selection and missing-evidence updates");
+diff --git a/src/components/twin/twin-layer.copy.test.ts b/src/components/twin/twin-layer.copy.test.ts
+new file mode 100644
+index 0000000..12d7a1d
+--- /dev/null
++++ b/src/components/twin/twin-layer.copy.test.ts
+@@ -0,0 +1,16 @@
++import { describe, expect, it } from "vitest";
++import { formatTwinValue, twinLayerCopy } from "./twin-layer.copy";
++import { TWIN_LAYERS, TWIN_DISPLAY_COLORS } from "./twin-scene.model";
++
++describe("Twin layer labels", () => {
++  it("never prints an unknown reading as zero or a percentage", () => {
++    expect(formatTwinValue(null, "logged_volume", "lt")).toBe("—");
++    expect(formatTwinValue(0, "logged_volume", "en")).toBe("0 kg × reps");
++    expect(formatTwinValue(55, "recovery", "en")).toBe("55%");
++  });
++  it.each(["lt", "en"] as const)("labels every layer and tone in %s", (language) => {
++    const copy = twinLayerCopy(language);
++    for (const layer of TWIN_LAYERS) expect(copy.label[layer].length).toBeGreaterThan(0);
++    expect(Object.keys(copy.band).sort()).toEqual(Object.keys(TWIN_DISPLAY_COLORS).sort());
++  });
++});
+diff --git a/src/components/twin/twin-scene.model.test.ts b/src/components/twin/twin-scene.model.test.ts
+index 7318cbb..c93b854 100644
+--- a/src/components/twin/twin-scene.model.test.ts
++++ b/src/components/twin/twin-scene.model.test.ts
+@@ -7,0 +8 @@ import {
++  getTwinRegionDisplay,
+@@ -147,0 +149,69 @@ describe("schematic 3D geometry", () => {
++
++describe("truthful layer projections", () => {
++  it("separates logged volume from recovery without mutating the snapshot", () => {
++    const source = fixture([{ ...chest, recoveryPct: 100, recoveryBand: "fresh", volumeKg: 3000 }]);
++    const before = structuredClone(source);
++    const recovery = mapTwinScene(source, "recovery").regions.find((r) => r.id === "chest");
++    const volume = mapTwinScene(source, "logged_volume").regions.find((r) => r.id === "chest");
++    expect(recovery?.display).toEqual({ value: 100, tone: "fresh" });
++    expect(volume?.display).toEqual({ value: 3000, tone: "volume_high" });
++    expect(source).toEqual(before);
++  });
++
++  it("uses documented relative thirds, never physiological volume thresholds", () => {
++    const source = fixture([
++      { ...chest, volumeKg: 1000 },
++      { ...chest, region: "back", volumeKg: 2000 },
++      { ...chest, region: "legs", volumeKg: 3000 },
++    ]);
++    expect(getTwinRegionDisplay(source, "chest", "logged_volume").tone).toBe("volume_low");
++    expect(getTwinRegionDisplay(source, "back", "logged_volume").tone).toBe("volume_medium");
++    expect(getTwinRegionDisplay(source, "legs", "logged_volume").tone).toBe("volume_high");
++  });
++
++  it("keeps explicit zero different from absent volume, with no division by zero", () => {
++    const source = fixture([
++      { ...chest, volumeKg: 0 },
++      { ...chest, region: "legs", volumeKg: null },
++    ]);
++    expect(getTwinRegionDisplay(source, "chest", "logged_volume")).toEqual({
++      value: 0,
++      tone: "volume_low",
++    });
++    expect(getTwinRegionDisplay(source, "legs", "logged_volume")).toEqual({
++      value: null,
++      tone: "unknown",
++    });
++  });
++
++  it.each([null, -1, Number.NaN, Infinity])("does not draw invalid volume %s", (volumeKg) => {
++    expect(
++      getTwinRegionDisplay(fixture([{ ...chest, volumeKg }]), "chest", "logged_volume"),
++    ).toEqual({ value: null, tone: "unknown" });
++  });
++
++  it.each(["recovery", "logged_volume"] as const)(
++    "withholds %s on source failure and unknown provenance",
++    (layer) => {
++      const missing = mapTwinScene({ ...fixture([chest]), dataAvailable: false }, layer);
++      expect(
++        missing.regions.every((r) => r.display.value === null && r.display.tone === "unknown"),
++      ).toBe(true);
++      const unknown = fixture([{ ...chest, provenance: "unknown", volumeKg: 1000 }]);
++      expect(getTwinRegionDisplay(unknown, "chest", layer).value).toBeNull();
++    },
++  );
++
++  it("does not distribute a whole-body volume onto anatomical regions", () => {
++    const source = fixture([{ ...chest, region: "fullbody" }]);
++    expect(
++      mapTwinScene(source, "logged_volume").regions.every((r) => r.display.value === null),
++    ).toBe(true);
++    expect(getTwinRegionDisplay(source, "fullbody", "logged_volume").value).toBe(1000);
++  });
++
++  it("refuses an unsupported layer at runtime", () => {
++    // @ts-expect-error test a malformed external selection
++    expect(getTwinRegionDisplay(fixture([chest]), "chest", "future").value).toBeNull();
++  });
++});
+diff --git a/tests/twin-browser/fixture.tsx b/tests/twin-browser/fixture.tsx
+index 28bd89f..59f12a4 100644
+--- a/tests/twin-browser/fixture.tsx
++++ b/tests/twin-browser/fixture.tsx
+@@ -18 +18,2 @@ const known: Record<
+-function snapshot(empty: boolean): TwinSnapshot {
++const volumes: Record<string, number> = { chest: 3000, back: 1500, arms: 250, legs: 2000 };
++function snapshot(empty: boolean, unavailable: boolean): TwinSnapshot {
+@@ -23 +24 @@ function snapshot(empty: boolean): TwinSnapshot {
+-    dataAvailable: true,
++    dataAvailable: !unavailable,
+@@ -31 +32 @@ function snapshot(empty: boolean): TwinSnapshot {
+-        volumeKg: value ? 1000 : null,
++        volumeKg: value ? (volumes[region] ?? null) : null,
+@@ -39,0 +41 @@ export function Fixture() {
++  const [unavailable, setUnavailable] = useState(false);
+@@ -43 +45 @@ export function Fixture() {
+-      <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
++      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 12 }}>
+@@ -47,0 +50,3 @@ export function Fixture() {
++        <button onClick={() => setUnavailable((value) => !value)}>
++          {unavailable ? "Restore source" : "Fail source"}
++        </button>
+@@ -51 +56 @@ export function Fixture() {
+-          data={snapshot(empty)}
++          data={snapshot(empty, unavailable)}
