@@ -1,0 +1,42 @@
+name: Fix nutrition i18n usage
+
+on:
+  push:
+    branches:
+      - future-lab-phase-2-nutrition-surface
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: future-lab-phase-2-nutrition-surface
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Use retained nutrition translations
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/_authenticated/nutrition.tsx')
+          s = p.read_text()
+          s = s.replace('{copy.eyebrow}\n          </p>', '{copy.eyebrow} · {t("nut.today")}\n          </p>')
+          s = s.replace('value={sum("calories")} target={targets.kcal} label={copy.kcal} unit=""', 'value={sum("calories")} target={targets.kcal} label={copy.kcal} unit={t("nut.kcal")}')
+          p.write_text(s)
+          PY
+      - run: npx prettier --write src/routes/_authenticated/nutrition.tsx
+      - run: npm run typecheck
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/_authenticated/nutrition.tsx
+          git diff --cached --quiet || git commit -m "fix(nutrition): retain useful i18n keys"
+          git push
