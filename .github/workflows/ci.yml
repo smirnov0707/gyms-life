@@ -5,55 +5,18 @@ on:
   push:
     branches:
       - main
-      - future-lab-phase-1-5-work
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lockfile:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'push' && github.ref_name || '' }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Regenerate lockfile
-        run: npm install --package-lock-only --ignore-scripts
-
-      - name: Repair branch lockfile
-        if: github.event_name == 'push' && github.ref_name == 'future-lab-phase-1-5-work'
-        shell: bash
-        run: |
-          if git diff --quiet -- package-lock.json; then
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "chore: synchronize npm lockfile"
-          git push
-
-      - name: Require committed lockfile to be current
-        run: git diff --exit-code -- package-lock.json
-
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: lockfile
 
     steps:
       - name: Checkout
