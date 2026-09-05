@@ -42,6 +42,19 @@ describe("body map geometry", () => {
     }
   });
 
+  it("accounts for every muscle group the database can hold", () => {
+    // The other direction of the check above, and the one that actually
+    // loses data: a group that is neither drawable nor explicitly
+    // non-anatomical would have its training load computed and then rendered
+    // nowhere. `exercises_muscle_group_known` lets exactly these values into
+    // the database, so exactly these must have somewhere to go.
+    const offBody = new Set<string>(NON_ANATOMICAL_GROUPS);
+    for (const group of KNOWN_MUSCLE_GROUPS) {
+      const placed = isAnatomicalRegion(group) || offBody.has(group);
+      expect(placed, `${group} has nowhere to render`).toBe(true);
+    }
+  });
+
   it("gives every mapped region at least one drawable view", () => {
     for (const region of Object.keys(BODY_REGION_SEGMENTS)) {
       const total = segmentsFor(region, "front").length + segmentsFor(region, "back").length;

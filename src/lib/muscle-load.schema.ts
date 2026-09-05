@@ -1,10 +1,14 @@
 import { z } from "zod";
 
 /**
- * `exercises.muscle_group` has no DB check constraint — it is open text, not
- * a closed set. This lists the values seeded today for reference only; the
- * engine must never reject or drop a group outside this list, since a new
- * exercise added later can carry any value here.
+ * The muscle groups an exercise can belong to. Backed by the
+ * `exercises_muscle_group_known` check constraint, so a value outside this
+ * list now fails at write time rather than silently vanishing from the body
+ * map — change one without the other and they drift apart.
+ *
+ * The engine still never rejects or drops an unlisted group. The constraint
+ * stops bad data arriving; it is not a reason for the Twin to break if it
+ * ever does.
  */
 export const KNOWN_MUSCLE_GROUPS = [
   "legs",
