@@ -3,10 +3,8 @@ import { TemporalEvidenceRefSchema } from "./intelligence-provenance.schema";
 
 /**
  * Durable prediction contracts for Future Lab.
- *
- * A prediction is a falsifiable claim about a future observable outcome.
- * It is deliberately distinct from an inference (about current/past state)
- * and a simulation/counterfactual (an alternative scenario).
+ * A prediction is a falsifiable claim about a future observable outcome,
+ * distinct from an inference and from a simulated/counterfactual scenario.
  */
 export const PredictionTargetSchema = z.enum([
   "workout_completion",
@@ -14,7 +12,6 @@ export const PredictionTargetSchema = z.enum([
   "readiness",
   "short_term_fatigue",
 ]);
-
 export const PredictionMaturitySchema = z.enum(["shadow", "canary", "production"]);
 export const PredictionEvidenceLevelSchema = z.enum(["insufficient", "early", "moderate", "strong"]);
 
@@ -43,28 +40,18 @@ export const AthletePredictionSchema = z.object({
   actual: PredictionValueSchema.nullable(),
   evaluatedAt: z.string().datetime({ offset: true }).nullable(),
 }).strict().superRefine((value, context) => {
-  if (Date.parse(value.horizonEndsAt) <= Date.parse(value.generatedAt)) {
-    context.addIssue({ code: "custom", message: "Prediction horizon must end after generation", path: ["horizonEndsAt"] });
-  }
-  if (value.evaluatedAt && !value.actual) {
-    context.addIssue({ code: "custom", message: "An evaluated prediction requires an actual outcome", path: ["actual"] });
-  }
-  if (value.actual && !value.evaluatedAt) {
-    context.addIssue({ code: "custom", message: "An actual outcome requires evaluatedAt", path: ["evaluatedAt"] });
-  }
-  if (value.target === "workout_completion" && value.predicted.kind !== "probability") {
-    context.addIssue({ code: "custom", message: "Workout completion predictions must be probabilities", path: ["predicted"] });
-  }
-  if (value.target === "workout_completion" && value.actual && value.actual.kind !== "boolean") {
-    context.addIssue({ code: "custom", message: "Workout completion actual outcomes must be boolean", path: ["actual"] });
-  }
+  if (Date.parse(value.horizonEndsAt) <= Date.parse(value.generatedAt)) context.addIssue({ code: "custom", message: "Prediction horizon must end after generation", path: ["horizonEndsAt"] });
+  if (value.evaluatedAt && !value.actual) context.addIssue({ code: "custom", message: "An evaluated prediction requires an actual outcome", path: ["actual"] });
+  if (value.actual && !value.evaluatedAt) context.addIssue({ code: "custom", message: "An actual outcome requires evaluatedAt", path: ["evaluatedAt"] });
+  if (value.target === "workout_completion" && value.predicted.kind !== "probability") context.addIssue({ code: "custom", message: "Workout completion predictions must be probabilities", path: ["predicted"] });
+  if (value.target === "workout_completion" && value.actual && value.actual.kind !== "boolean") context.addIssue({ code: "custom", message: "Workout completion actual outcomes must be boolean", path: ["actual"] });
 });
 
 export type PredictionTarget = z.infer<typeof PredictionTargetSchema>;
 export type PredictionValue = z.infer<typeof PredictionValueSchema>;
 export type AthletePrediction = z.infer<typeof AthletePredictionSchema>;
 
-/** Separate contract so Future Me / What If can never be mistaken for a forecast. */
+/** Future Me / What If is intentionally a different domain object. */
 export const SimulationScenarioSchema = z.object({
   id: z.string().uuid(),
   generatedAt: z.string().datetime({ offset: true }),
@@ -76,9 +63,7 @@ export const SimulationScenarioSchema = z.object({
   outputs: z.record(z.string(), PredictionValueSchema),
   evidenceLevel: PredictionEvidenceLevelSchema,
 }).strict().superRefine((value, context) => {
-  if (Date.parse(value.horizonEndsAt) <= Date.parse(value.generatedAt)) {
-    context.addIssue({ code: "custom", message: "Simulation horizon must end after generation", path: ["horizonEndsAt"] });
-  }
+  if (Date.parse(value.horizonEndsAt) <= Date.parse(value.generatedAt)) context.addIssue({ code: "custom", message: "Simulation horizon must end after generation", path: ["horizonEndsAt"] });
 });
 
 export type SimulationScenario = z.infer<typeof SimulationScenarioSchema>;
