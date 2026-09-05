@@ -3,11 +3,11 @@
 ## Baseline and scope
 
 Started from `92817c0f6151d823758a00df55f870d060b177fd` and integrated main
-through `b7680640ade7f2a6e1be9b551b528b9467956746`, including PR #31's
-continuous 360-degree surface and PR #32's mobile cockpit. Do not apply the
-obsolete primitive-body patch. This change preserves geometry, authentication,
-Supabase schema, camera and provider orchestration. It adds no physiology model
-or wearable data.
+through `77cca61fde5dc07163b8d5313d980cf91c3e4810`, including PR #31's
+continuous 360-degree surface, PR #32's mobile cockpit and the concurrent
+light-theme contrast regression. Do not apply the obsolete primitive-body patch.
+This change preserves geometry, authentication, Supabase schema, camera and
+provider orchestration. It adds no physiology model or wearable data.
 
 ## Evidence correction
 
@@ -38,6 +38,10 @@ no schema or database migration is required.
 When a source is unavailable, the mapper and both display layers withhold old
 values. Unknown provenance always wins over any leftover number.
 
+A new account with no supported training evidence must still have usable 360-degree
+controls and a textual inspector, but no invented recovery or volume. Unsupported
+work remains in the workout log even when this particular estimator abstains.
+
 ## Two views of the same canonical state
 
 - Recovery: existing calculated percentage and canonical recovery bands.
@@ -61,10 +65,12 @@ The incomplete-group guard deliberately withholds partial totals as well.
 ## Verification
 
 Run `npm run typecheck`, `npm run test`, `npm run lint`, `npm run build` and
-`node scripts/test-twin-browser.mjs`. The browser harness uses synthetic data,
-not an authenticated user or a production bypass. It now tests layer agreement,
-units, camera/selection preservation, source failures, restoration, mobile
-volume views and missing inputs as well as the previous orbit/fallback checks.
+`npm run test:browser`. The browser harness uses synthetic data, not an authenticated
+user or a production bypass. It tests layer agreement, units, camera/selection
+preservation, source failures, restoration, mobile volume views and missing inputs
+as well as the orbit/fallback, mobile cockpit, Lithuanian/large-text and light-theme
+contrast checks. The test fixture preserves theme and source-failure controls
+independently; neither requires production data access.
 An optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser for
 local testing; CI uses the pinned Playwright Chromium by default.
 
@@ -85,8 +91,8 @@ Do not blindly reuse previous derivation identifiers for different equations.
 
 ## Concurrent mobile cockpit integration
 
-Preserves main through `b7680640`, including PR #32: compact viewport,
-progressive view controls/evidence details, 44px targets, Escape focus,
-Lithuanian/large-text checks, the on-demand visibility fix and updated
-athlete-timezone rules. The layer switch is compact; its vertical space is
-accounted for in the mobile viewport budget. No earlier dashboard UI is restored.
+Preserves main through `77cca61`: compact viewport, progressive view controls and
+evidence details, 44px targets, Escape focus, Lithuanian/large-text checks,
+on-demand visibility handling, athlete-timezone rules and light-theme contrast.
+The layer switch is compact; its vertical space is accounted for in the mobile
+viewport budget. No earlier dashboard UI is restored.
