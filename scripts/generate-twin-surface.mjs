@@ -263,7 +263,7 @@ for (let i = 0; i < indices.length; i += 3) {
   );
   rawGroups[regionAt(...centre)].push(...face);
 }
-const reducedIndices = [];
+let reducedIndices = [];
 const floatPositions = new Float32Array(positions);
 for (const group of Object.values(rawGroups)) {
   const target = Math.max(3, Math.floor((group.length / indices.length) * 16000) * 3);
@@ -277,6 +277,31 @@ for (const group of Object.values(rawGroups)) {
   );
   reducedIndices.push(...reduced);
 }
+// Simplification can collapse a tiny tetrahedral spur to two coincident,
+// oppositely wound faces. These enclose zero volume; remove BOTH faces.
+// Other duplicates or significant removals fail rather than hide a defect.
+const duplicateFaces = new Map();
+for (let i = 0; i < reducedIndices.length; i += 3) {
+  const face = reducedIndices.slice(i, i + 3);
+  const key = [...face].sort((a, b) => a - b).join(":");
+  const records = duplicateFaces.get(key) ?? [];
+  const parity =
+    ((face[0] > face[1] ? 1 : 0) + (face[0] > face[2] ? 1 : 0) + (face[1] > face[2] ? 1 : 0)) % 2;
+  records.push({ offset: i, parity });
+  duplicateFaces.set(key, records);
+}
+const removeOffsets = new Set();
+for (const records of duplicateFaces.values()) {
+  if (records.length === 1) continue;
+  if (records.length !== 2 || records[0].parity === records[1].parity) {
+    throw new Error("Unexpected duplicated surface faces require review");
+  }
+  records.forEach(({ offset }) => removeOffsets.add(offset));
+}
+if (removeOffsets.size * 3 > reducedIndices.length * 0.001) {
+  throw new Error("Excess zero-volume surface faces require review");
+}
+reducedIndices = reducedIndices.filter((_, index) => !removeOffsets.has(index - (index % 3)));
 // Tiny disconnected sampling islands are not anatomy. Keep the dominant
 // closed surface, failing rather than hiding a meaningful disconnection.
 const connections = new Map();
@@ -309,6 +334,23 @@ for (let i = 0; i < reducedIndices.length; i += 3) {
 }
 if (connected.length < reducedIndices.length * 0.99)
   throw new Error("Meaningful body disconnection requires review");
+// The baked outer surface must be manifold and consistently oriented.
+const edgeUse = new Map();
+for (let i = 0; i < connected.length; i += 3) {
+  const face = connected.slice(i, i + 3);
+  for (let j = 0; j < 3; j++) {
+    const a = face[j],
+      b = face[(j + 1) % 3];
+    const key = `${Math.min(a, b)}:${Math.max(a, b)}`;
+    const value = edgeUse.get(key) ?? { count: 0, orientation: 0 };
+    value.count++;
+    value.orientation += a < b ? 1 : -1;
+    edgeUse.set(key, value);
+  }
+}
+if ([...edgeUse.values()].some(({ count, orientation }) => count !== 2 || orientation !== 0)) {
+  throw new Error("Baked body must form a closed consistently oriented manifold");
+}
 const simplified = new Uint32Array(connected);
 const [remap, vertexCount] = MeshoptSimplifier.compactMesh(simplified);
 const compact = new Array(vertexCount * 3).fill(0);
