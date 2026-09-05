@@ -48,7 +48,15 @@ describe("AthletePredictionSchema", () => {
 
   it("requires actual outcome and evaluation time together", () => {
     expect(() => AthletePredictionSchema.parse({ ...basePrediction, evaluatedAt: "2026-09-05T22:01:00+03:00" })).toThrow();
-    expect(() => AthletePredictionSchema.parse({ ...basePrediction, actual: { kind: "category", value: "completed" } })).toThrow();
+    expect(() => AthletePredictionSchema.parse({ ...basePrediction, actual: { kind: "boolean", value: true } })).toThrow();
+  });
+
+  it("requires workout completion actual outcomes to be boolean", () => {
+    expect(() => AthletePredictionSchema.parse({
+      ...basePrediction,
+      actual: { kind: "category", value: "completed" },
+      evaluatedAt: "2026-09-05T22:01:00+03:00",
+    })).toThrow();
   });
 });
 
