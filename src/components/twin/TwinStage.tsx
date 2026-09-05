@@ -235,7 +235,7 @@ export function TwinStage(props: TwinStageProps) {
           role="status"
           className="mx-3 rounded-xl border border-amber-300/25 p-3 text-xs text-amber-200"
         >
-          {copy.fallback}
+          <p>{copy.fallback}</p>
           <button
             type="button"
             className={`${controlClass} mt-1 block underline`}
