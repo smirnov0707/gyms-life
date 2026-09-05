@@ -52,7 +52,9 @@ function emphasisForRecovery(recoveryPct: number | null): number {
  * No new health fact is created here.
  */
 export function mapTwinSnapshotToVisualState(snapshot: TwinSnapshot): TwinVisualState {
-  const evidenceCount = snapshot.regions.filter((region) => region.provenance === "calculated").length;
+  const evidenceCount = snapshot.regions.filter(
+    (region) => region.provenance === "calculated",
+  ).length;
   const coverage = snapshot.regions.length === 0 ? 0 : evidenceCount / snapshot.regions.length;
   const calculatedRecovery = snapshot.regions
     .filter((region) => region.provenance === "calculated" && region.recoveryPct !== null)

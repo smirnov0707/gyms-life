@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader2, PersonStanding } from "lucide-react";
 import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
+import { LivingTwinPresence } from "@/components/twin/LivingTwinPresence";
 import {
   isAnatomicalRegion,
   viewShowing,
@@ -272,6 +273,7 @@ export function TwinSnapshotView({
       ) : null}
 
       <section className="relative min-h-[760px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] lg:min-h-[820px]">
+        <LivingTwinPresence snapshot={data} />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
