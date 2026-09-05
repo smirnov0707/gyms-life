@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { TrainingRhythmCard } from "@/components/TrainingRhythmCard";
 import { getAthleteModel } from "@/lib/athlete-model.functions";
 import type { AthleteModelResponse } from "@/lib/athlete-model.contract";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, formatLocale, useI18n, type Lang } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import {
   correctMemory,
@@ -107,8 +107,8 @@ type Copy = {
   };
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "DIGITAL ATHLETE",
       title: "Your athlete model",
@@ -264,9 +264,9 @@ function numberOrDash(value: number | null, suffix = ""): string {
 
 function dataGapAction(
   gap: string,
-  lang: string,
+  lang: Lang,
 ): { label: string; to: "/training" | "/readiness" | "/progress" | "/nutrition" } {
-  const isEnglish = lang === "en";
+  const isEnglish = baseLang(lang) === "en";
   if (gap.startsWith("training")) {
     return { label: isEnglish ? "Log a workout" : "Užregistruok treniruotę", to: "/training" };
   }
@@ -279,8 +279,8 @@ function dataGapAction(
   return { label: isEnglish ? "Log nutrition" : "Užregistruok mitybą", to: "/nutrition" };
 }
 
-function memoryTypeLabel(type: UserMemoryTransparencyItem["type"], lang: string): string {
-  const english = lang === "en";
+function memoryTypeLabel(type: UserMemoryTransparencyItem["type"], lang: Lang): string {
+  const english = baseLang(lang) === "en";
   if (type.endsWith("_pattern") || type === "pattern") return english ? "Pattern" : "Dėsningumas";
   const labels: Record<UserMemoryTransparencyItem["type"], string> = {
     preference: english ? "Preference" : "Pirmenybė",
@@ -303,8 +303,8 @@ function memoryTypeLabel(type: UserMemoryTransparencyItem["type"], lang: string)
   return labels[type];
 }
 
-function memorySourceLabel(source: UserMemorySource, lang: string): string {
-  const english = lang === "en";
+function memorySourceLabel(source: UserMemorySource, lang: Lang): string {
+  const english = baseLang(lang) === "en";
   const labels: Record<UserMemorySource, string> = {
     user_reported: english ? "You reported this" : "Nurodyta tavo",
     measured: english ? "Measured" : "Išmatuota",
@@ -370,7 +370,7 @@ function AthleteModelPage() {
   }, [load]);
 
   const state = model?.state;
-  const locale = lang === "en" ? "en-GB" : "lt-LT";
+  const locale = formatLocale(lang);
 
   const changeMemory = async (memoryId: string, action: "incorrect" | "forget") => {
     if (pendingMemoryAction !== null) return;

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Award, Flame, Lock, Trophy, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { formatLocale, useI18n, type TKey } from "@/lib/i18n";
 import {
   browserTimeZone,
   calculateConsecutiveCalendarDayStreak,
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/achievements")({
 });
 
 function AchievementsPage() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const { user } = useAuth();
 
   const { data } = useQuery({
@@ -121,7 +121,7 @@ function AchievementsPage() {
           <div className="flex items-center gap-6">
             <div>
               <div className="text-display text-4xl leading-none text-primary">
-                {xp.toLocaleString("lt-LT")}
+                {xp.toLocaleString(formatLocale(lang))}
               </div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground">
                 {t("ach.xp")}

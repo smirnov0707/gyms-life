@@ -4,7 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { formatLocale, useI18n } from "@/lib/i18n";
 import { WorkoutReportExporter } from "@/components/WorkoutReportExporter";
 import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/progress")({
 });
 
 function ProgressPage() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const { user } = useAuth();
   const { data: sessions } = useQuery({
     queryKey: ["sessions-all", user?.id],
@@ -70,7 +70,10 @@ function ProgressPage() {
     enabled: !!user,
   });
   const volumeData = (sessions ?? []).map((s) => ({
-    date: new Date(s.started_at).toLocaleDateString("lt-LT", { month: "2-digit", day: "2-digit" }),
+    date: new Date(s.started_at).toLocaleDateString(formatLocale(lang), {
+      month: "2-digit",
+      day: "2-digit",
+    }),
     volume: Math.round(Number(s.total_volume ?? 0)),
   }));
   return (
@@ -140,7 +143,7 @@ function ProgressPage() {
             >
               <span className="font-semibold">{s.title}</span>
               <span className="text-muted-foreground">
-                {new Date(s.started_at).toLocaleDateString("lt-LT")} ·{" "}
+                {new Date(s.started_at).toLocaleDateString(formatLocale(lang))} ·{" "}
                 {Math.round(Number(s.total_volume ?? 0))} kg ·{" "}
                 {Math.round((s.duration_seconds ?? 0) / 60)} min
               </span>

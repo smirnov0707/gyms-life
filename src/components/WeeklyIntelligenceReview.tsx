@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Activity, ArrowRight, Brain, Dumbbell, HeartPulse, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { displayedMemoryContent, memoryEvidenceSummary } from "@/lib/user-memory.presentation";
 import { getWeeklyIntelligenceReview } from "@/lib/weekly-intelligence.functions";
@@ -30,8 +30,8 @@ type Copy = {
   gap: Record<WeeklyIntelligenceReview["stillLearning"][number], string>;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "WEEKLY INTELLIGENCE",
       title: "What GYMS.LIFE learned this week",

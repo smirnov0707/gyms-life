@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Apple, Clock, Dumbbell, Plus, Utensils } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
 import { TwinTodayCard } from "@/components/twin/TwinTodayCard";
@@ -30,8 +30,8 @@ type Copy = {
   viewProgram: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       weeklyTargetTitle: "This week's training target is met",
       weeklyTargetBody: (completed, planned) =>

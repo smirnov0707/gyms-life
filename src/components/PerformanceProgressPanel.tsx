@@ -6,7 +6,7 @@ import {
   getVolumeTrend,
 } from "@/lib/performance.functions";
 import { GlowCard } from "@/components/GlowCard";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
 function Metric({
   label,
@@ -37,8 +37,8 @@ function Metric({
 
 type Copy = { loadFailed: string; tryAgain: string; note: string };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       loadFailed: "Could not load performance data.",
       tryAgain: "Try again in a moment.",

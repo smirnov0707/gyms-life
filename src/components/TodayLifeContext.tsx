@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import {
   dismissActiveLifeContext,
   getActiveLifeContexts,
@@ -50,8 +50,8 @@ type Copy = {
   active: (context: ActiveLifeContext) => string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     const equipmentNames: Record<WorkoutEquipment, string> = {
       bodyweight: "Bodyweight",
       barbell: "Barbell",

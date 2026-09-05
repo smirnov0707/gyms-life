@@ -1,5 +1,5 @@
 import type { MedicalReport } from "./medical-report.functions";
-import { tr, type Lang } from "./i18n";
+import { formatLocale, tr, type Lang } from "./i18n";
 
 /**
  * Draws the 30-day report on canvases first (so diacritics render correctly)
@@ -173,7 +173,10 @@ export async function downloadMedicalReportPdf(
   {
     const cells: [string, string][] = [
       [tr(lang, "sc.report.sessions"), `${s.sessions} (${s.sessionsPerWeek}/w)`],
-      [tr(lang, "sc.report.totalTonnage"), `${s.totalVolumeKg.toLocaleString("lt-LT")} kg`],
+      [
+        tr(lang, "sc.report.totalTonnage"),
+        `${s.totalVolumeKg.toLocaleString(formatLocale(lang))} kg`,
+      ],
       [tr(lang, "sc.report.trainingTime"), `${s.trainingMinutes} min`],
       [tr(lang, "sc.report.readiness"), s.avgReadiness != null ? `${s.avgReadiness}/100` : "—"],
       [tr(lang, "sc.report.sleep"), s.avgSleepHours != null ? `${s.avgSleepHours} h` : "—"],

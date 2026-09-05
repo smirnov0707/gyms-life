@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Droplets, Plus, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "sonner";
@@ -46,8 +46,8 @@ type Copy = {
   resetToday: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       breakdown: "How this number is made",
       componentLabel: {

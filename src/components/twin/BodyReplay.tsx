@@ -7,7 +7,7 @@ import {
   viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import {
   stimulusFor,
@@ -28,8 +28,8 @@ type Copy = {
   offBody: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "SESSION EFFECT",
       title: "What this session worked",
