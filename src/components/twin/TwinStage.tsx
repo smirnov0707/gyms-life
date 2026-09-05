@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ChevronDown, Minus, Plus, RotateCcw, RotateCw, Settings2, Undo2 } from "lucide-react";
 import type { TwinSnapshot } from "@/lib/digital-twin.schema";
 import { BodyMap, toneForRecoveryBand } from "./BodyMap";
 import { viewShowing, type BodyView } from "./body-map.geometry";
@@ -42,6 +43,8 @@ const COPY = {
     motion: "Ambient motion",
     recovery: "Calculated recovery",
     note: "Schematic body, not a personal scan. Colour shows the calculated recovery band; motion is decorative, not a biometric signal.",
+    controls: "View controls",
+    renderer: "Twin renderer",
     unknown: "No data",
     fresh: "Fresh",
     moderate: "Moderate",
@@ -68,6 +71,8 @@ const COPY = {
     motion: "Subtilus judesys",
     recovery: "Apskaičiuotas atsistatymas",
     note: "Scheminis kūnas, ne asmeninis skenavimas. Spalva rodo apskaičiuotą atsistatymo būseną; judesys dekoratyvus, ne biometrinis signalas.",
+    controls: "Vaizdo valdymas",
+    renderer: "Dvynio vaizdas",
     unknown: "Nėra duomenų",
     fresh: "Švieži",
     moderate: "Vidutiniškai",
@@ -79,6 +84,9 @@ export function TwinStage(props: TwinStageProps) {
   const { snapshot, selectedRegion, onSelectRegion, view, onViewChange, regionLabel, language } =
     props;
   const copy = COPY[language];
+  const controlsId = useId();
+  const controlToggle = useRef<HTMLButtonElement>(null);
+  const [controlsOpen, setControlsOpen] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<TwinSceneHandle | null>(null);
   const latest = useRef(props);
@@ -173,7 +181,7 @@ export function TwinStage(props: TwinStageProps) {
         </p>
         <div
           className="flex rounded-full border border-white/10 bg-black/30 p-1"
-          aria-label="Twin renderer"
+          aria-label={copy.renderer}
         >
           <button
             type="button"
@@ -198,7 +206,10 @@ export function TwinStage(props: TwinStageProps) {
           </button>
         </div>
       </div>
-      <div className="relative w-full h-[clamp(360px,54svh,580px)]">
+      <div
+        data-twin-viewport
+        className="relative h-[clamp(240px,calc(100svh_-_520px),540px)] w-full lg:h-[540px]"
+      >
         {mode === "3d" && (
           <div
             ref={host}
@@ -245,71 +256,16 @@ export function TwinStage(props: TwinStageProps) {
           </button>
         </div>
       )}
-      {show3D ? (
-        <>
-          <p className="px-3 text-center text-[11px] leading-relaxed text-neutral-400">
-            {copy.hint}
-          </p>
-          <div className="flex flex-wrap justify-center gap-1 p-2">
-            {(
-              [
-                ["rotate-left", "↶", copy.rotateLeft],
-                ["rotate-right", "↷", copy.rotateRight],
-                ["zoom-in", "+", copy.zoomIn],
-                ["zoom-out", "−", copy.zoomOut],
-                ["reset", "↺", copy.reset],
-              ] as const
-            ).map(([action, symbol, name]) => (
-              <button
-                key={action}
-                type="button"
-                onClick={() => command(action)}
-                className={controlClass}
-                aria-label={name}
-                title={name}
-              >
-                {symbol}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap justify-center gap-1">
-            {(["front", "back", "left", "right"] as const).map((action) => (
-              <button
-                key={action}
-                type="button"
-                className={controlClass}
-                onClick={() => command(action)}
-              >
-                {copy[action]}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div className="flex justify-center gap-2">
-          {(["front", "back"] as const).map((side) => (
-            <button
-              key={side}
-              type="button"
-              className={controlClass}
-              aria-pressed={view === side}
-              onClick={() => onViewChange(side)}
-            >
-              {copy[side]}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="grid gap-3 px-3 pb-4 pt-2">
-        <label className="grid gap-2 text-xs text-neutral-300">
-          {copy.region}
+      <div className="mx-3 mb-3 flex min-w-0 items-center gap-2">
+        <label className="relative block min-w-0 flex-1">
+          <span className="sr-only">{copy.region}</span>
           <select
             aria-label={copy.region}
             value={selectedRegion && isTwinBodyRegion(selectedRegion) ? selectedRegion : ""}
             onChange={(event) => {
               if (event.target.value) selectRegion(event.target.value);
             }}
-            className="min-h-11 min-w-0 w-full rounded-xl border border-white/15 bg-[#101615] px-3 text-sm text-white"
+            className="min-h-11 w-full min-w-0 appearance-none rounded-xl border border-white/15 bg-[#101615] py-2 pl-3 pr-10 text-sm text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"
           >
             <option value="">{copy.choose}</option>
             {TWIN_BODY_REGIONS.map((region) => (
@@ -319,9 +275,80 @@ export function TwinStage(props: TwinStageProps) {
               </option>
             ))}
           </select>
+          <ChevronDown
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400"
+          />
         </label>
+        <button
+          ref={controlToggle}
+          type="button"
+          aria-label={copy.controls}
+          title={copy.controls}
+          aria-expanded={controlsOpen}
+          aria-controls={controlsId}
+          onClick={() => setControlsOpen((value) => !value)}
+          className={`${controlClass} ${controlsOpen ? "bg-white/10" : ""}`}
+        >
+          <Settings2 aria-hidden="true" className="size-4" />
+        </button>
+      </div>
+      <div
+        id={controlsId}
+        hidden={!controlsOpen}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setControlsOpen(false);
+            controlToggle.current?.focus();
+          }
+        }}
+        className="mx-3 mb-3 rounded-2xl border border-white/10 bg-black/30 p-3"
+      >
+        <p className="text-xs leading-relaxed text-neutral-300">{copy.hint}</p>
+        <div className="flex flex-wrap justify-center gap-1 pt-2">
+          {show3D &&
+            (
+              [
+                ["rotate-left", RotateCcw, copy.rotateLeft],
+                ["rotate-right", RotateCw, copy.rotateRight],
+                ["zoom-in", Plus, copy.zoomIn],
+                ["zoom-out", Minus, copy.zoomOut],
+                ["reset", Undo2, copy.reset],
+              ] as const
+            ).map(([action, Icon, name]) => (
+              <button
+                key={action}
+                type="button"
+                onClick={() => command(action)}
+                className={controlClass}
+                aria-label={name}
+                title={name}
+              >
+                <Icon aria-hidden="true" className="size-4" />
+              </button>
+            ))}
+        </div>
+
+        <div className="mt-2 flex flex-wrap justify-center gap-1">
+          {(show3D
+            ? (["front", "back", "left", "right"] as const)
+            : (["front", "back"] as const)
+          ).map((action) => (
+            <button
+              key={action}
+              type="button"
+              className={controlClass}
+              onClick={() => {
+                if (show3D) command(action);
+                else if (action === "front" || action === "back") onViewChange(action);
+              }}
+            >
+              {copy[action]}
+            </button>
+          ))}
+        </div>
         {show3D && (
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-xs text-neutral-400">
+          <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-3 text-xs text-neutral-300">
             <input
               type="checkbox"
               checked={motion}
@@ -331,7 +358,7 @@ export function TwinStage(props: TwinStageProps) {
             {copy.motion}
           </label>
         )}
-        <p className="text-[11px] leading-relaxed text-neutral-400">{copy.note}</p>
+        <p className="mt-2 text-xs leading-relaxed text-neutral-300">{copy.note}</p>
       </div>
     </div>
   );
