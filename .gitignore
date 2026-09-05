@@ -46,5 +46,5 @@ supabase/migrations_backup_v6/
 # Local Netlify folder
 .netlify
 
-# Browser-test artifacts are never shipped as application assets
+# Playwright browser-test evidence
 test-results/
