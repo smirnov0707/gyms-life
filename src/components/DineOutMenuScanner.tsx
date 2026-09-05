@@ -76,19 +76,19 @@ export const DineOutMenuScanner: React.FC = () => {
   ];
 
   return (
-    <div className="rounded-2xl bg-neutral-900/80 border border-white/10 p-4 sm:p-6 backdrop-blur-xl shadow-2xl space-y-5">
+    <div className="rounded-2xl bg-surface-2 border border-border p-4 sm:p-6 backdrop-blur-xl shadow-2xl space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-400">
+          <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-orange-400 light:text-orange-700">
             <Utensils className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white">
+            <h3 className="text-base sm:text-lg font-bold text-foreground">
               {lang === "lt"
                 ? "Restoranų ir Kavinių AI Asistentas"
                 : "Restaurant & Cafe AI Assistant"}
             </h3>
-            <p className="text-xs font-mono text-neutral-400">
+            <p className="text-xs font-mono text-muted-foreground">
               {lang === "lt"
                 ? "Smart fuzzy-matching & fitneso patiekalų parinkimas"
                 : "Smart fuzzy-matching & healthy picks"}
@@ -96,21 +96,23 @@ export const DineOutMenuScanner: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 border border-orange-500/30">
-          <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-          <span className="text-[10px] font-mono text-orange-300 font-bold">NEURAL PICK</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-orange-500/30">
+          <Sparkles className="w-3.5 h-3.5 text-orange-400 light:text-orange-700" />
+          <span className="text-[10px] font-mono text-orange-300 light:text-orange-700 font-bold">
+            NEURAL PICK
+          </span>
         </div>
       </div>
 
       {/* Tikslo pasirinkimas */}
-      <div className="flex items-center gap-2 p-1 rounded-xl bg-black/40 border border-white/5 text-xs">
+      <div className="flex items-center gap-2 p-1 rounded-xl bg-surface border border-border text-xs">
         <button
           type="button"
           onClick={() => setGoal("muscle_gain")}
           className={`flex-1 py-1.5 px-3 rounded-lg font-medium transition-all ${
             goal === "muscle_gain"
-              ? "bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold"
-              : "text-neutral-400 hover:text-white"
+              ? "bg-orange-500/20 text-orange-300 light:text-orange-700 border border-orange-500/30 font-bold"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           💪 {lang === "lt" ? "Raumenų auginimas" : "Muscle Gain"}
@@ -120,8 +122,8 @@ export const DineOutMenuScanner: React.FC = () => {
           onClick={() => setGoal("fat_loss")}
           className={`flex-1 py-1.5 px-3 rounded-lg font-medium transition-all ${
             goal === "fat_loss"
-              ? "bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold"
-              : "text-neutral-400 hover:text-white"
+              ? "bg-orange-500/20 text-orange-300 light:text-orange-700 border border-orange-500/30 font-bold"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           🔥 {lang === "lt" ? "Svorio metimas" : "Fat Loss"}
@@ -131,8 +133,8 @@ export const DineOutMenuScanner: React.FC = () => {
           onClick={() => setGoal("healthy")}
           className={`flex-1 py-1.5 px-3 rounded-lg font-medium transition-all ${
             goal === "healthy"
-              ? "bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold"
-              : "text-neutral-400 hover:text-white"
+              ? "bg-orange-500/20 text-orange-300 light:text-orange-700 border border-orange-500/30 font-bold"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           🥗 {lang === "lt" ? "Balansas" : "Balanced"}
@@ -151,7 +153,7 @@ export const DineOutMenuScanner: React.FC = () => {
                 ? "Pvz.: mcdonals, hesburger, subway, cili..."
                 : "E.g. mcdonalds, chipotle, subway..."
             }
-            className="bg-black/50 border-white/10 text-white placeholder:text-neutral-500 pl-3 pr-3 text-sm focus:border-orange-500/50"
+            className="bg-surface border-border text-foreground placeholder:text-muted-foreground pl-3 pr-3 text-sm focus:border-orange-500/50"
           />
         </div>
         <Button
@@ -170,7 +172,7 @@ export const DineOutMenuScanner: React.FC = () => {
 
       {/* Greitos parinktys */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[11px] font-mono text-neutral-500 mr-1">
+        <span className="text-[11px] font-mono text-muted-foreground mr-1">
           {lang === "lt" ? "Populiarūs:" : "Popular:"}
         </span>
         {popularPlaces.map((p) => (
@@ -181,7 +183,7 @@ export const DineOutMenuScanner: React.FC = () => {
               setSearchQuery(p.query);
               void search(p.query);
             }}
-            className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 text-neutral-300 border border-white/5 transition-colors"
+            className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-foreground/[0.06] hover:bg-foreground/10 text-foreground border border-border transition-colors"
           >
             {p.name}
           </button>
@@ -190,27 +192,27 @@ export const DineOutMenuScanner: React.FC = () => {
 
       {/* Rezultatų rodymas */}
       {result && (
-        <div className="space-y-4 pt-2 border-t border-white/10">
+        <div className="space-y-4 pt-2 border-t border-border">
           {result.ok ? (
             <>
               <div className="flex items-center justify-between bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl">
                 <div>
-                  <span className="text-[10px] font-mono text-orange-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-mono text-orange-400 light:text-orange-700 uppercase tracking-wider block">
                     {lang === "lt" ? "ATPAŽINTAS RESTORANAS" : "RECOGNIZED RESTAURANT"}
                   </span>
-                  <h4 className="text-base sm:text-lg font-bold text-white">
+                  <h4 className="text-base sm:text-lg font-bold text-foreground">
                     {result.canonicalRestaurantName}
                   </h4>
                 </div>
-                <span className="text-xs font-mono px-2.5 py-1 rounded bg-black/40 text-neutral-300 border border-white/10">
+                <span className="text-xs font-mono px-2.5 py-1 rounded bg-surface text-foreground border border-border">
                   {result.category}
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl bg-neutral-950/80 border border-white/10 text-xs text-neutral-300 leading-relaxed flex items-start gap-2">
+              <div className="p-3 rounded-xl bg-surface border border-border text-xs text-foreground leading-relaxed flex items-start gap-2">
                 <span className="text-base">💡</span>
                 <div>
-                  <strong className="text-orange-400 font-medium block mb-0.5">
+                  <strong className="text-orange-400 light:text-orange-700 font-medium block mb-0.5">
                     {lang === "lt" ? "Trenerio patarimas užsakymui:" : "Coach Ordering Tip:"}
                   </strong>
                   {result.coachTip}
@@ -218,7 +220,7 @@ export const DineOutMenuScanner: React.FC = () => {
               </div>
 
               <div className="space-y-2.5">
-                <span className="text-xs font-mono text-neutral-400 uppercase tracking-wider block">
+                <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider block">
                   {lang === "lt"
                     ? "REKOMENDUOJAMI PATIEKALAI PAGAL JŪSŲ TIKSLĄ:"
                     : "TOP PICKS FOR YOUR GOAL:"}
@@ -227,39 +229,51 @@ export const DineOutMenuScanner: React.FC = () => {
                 {result.dishes.map((dish, idx) => (
                   <div
                     key={idx}
-                    className="p-3.5 rounded-xl bg-black/50 border border-white/10 hover:border-orange-500/30 transition-all space-y-2"
+                    className="p-3.5 rounded-xl bg-surface border border-border hover:border-orange-500/30 transition-all space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                        <h5 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-orange-400 light:text-orange-700 shrink-0" />
                           {dish.name}
                         </h5>
-                        <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                           {dish.recommendationReason}
                         </p>
                       </div>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 shrink-0">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 light:text-orange-700 border border-orange-500/30 shrink-0">
                         {dish.fitScore}% FIT
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-1.5 text-center pt-1.5 border-t border-white/5 text-xs font-mono">
-                      <div className="bg-neutral-900/80 py-1 rounded">
-                        <span className="text-neutral-500 text-[9px] block">KCAL</span>
-                        <span className="font-bold text-white">{dish.calories}</span>
+                    <div className="grid grid-cols-4 gap-1.5 text-center pt-1.5 border-t border-border text-xs font-mono">
+                      <div className="bg-surface-2 py-1 rounded">
+                        <span className="text-muted-foreground text-[9px] block">KCAL</span>
+                        <span className="font-bold text-foreground">{dish.calories}</span>
                       </div>
-                      <div className="bg-neutral-900/80 py-1 rounded">
-                        <span className="text-blue-400 text-[9px] block">BALTYMAI</span>
-                        <span className="font-bold text-blue-300">{dish.protein}g</span>
+                      <div className="bg-surface-2 py-1 rounded">
+                        <span className="text-blue-400 light:text-blue-700 text-[9px] block">
+                          BALTYMAI
+                        </span>
+                        <span className="font-bold text-blue-300 light:text-blue-700">
+                          {dish.protein}g
+                        </span>
                       </div>
-                      <div className="bg-neutral-900/80 py-1 rounded">
-                        <span className="text-amber-400 text-[9px] block">ANGLIAV.</span>
-                        <span className="font-bold text-amber-300">{dish.carbs}g</span>
+                      <div className="bg-surface-2 py-1 rounded">
+                        <span className="text-amber-400 light:text-amber-700 text-[9px] block">
+                          ANGLIAV.
+                        </span>
+                        <span className="font-bold text-amber-300 light:text-amber-700">
+                          {dish.carbs}g
+                        </span>
                       </div>
-                      <div className="bg-neutral-900/80 py-1 rounded">
-                        <span className="text-rose-400 text-[9px] block">RIEBALAI</span>
-                        <span className="font-bold text-rose-300">{dish.fat}g</span>
+                      <div className="bg-surface-2 py-1 rounded">
+                        <span className="text-rose-400 light:text-rose-700 text-[9px] block">
+                          RIEBALAI
+                        </span>
+                        <span className="font-bold text-rose-300 light:text-rose-700">
+                          {dish.fat}g
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -268,8 +282,8 @@ export const DineOutMenuScanner: React.FC = () => {
             </>
           ) : (
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center space-y-2">
-              <AlertCircle className="w-5 h-5 text-amber-400 mx-auto" />
-              <p className="text-xs text-neutral-300">{result.reason}</p>
+              <AlertCircle className="w-5 h-5 text-amber-400 light:text-amber-700 mx-auto" />
+              <p className="text-xs text-foreground">{result.reason}</p>
             </div>
           )}
         </div>

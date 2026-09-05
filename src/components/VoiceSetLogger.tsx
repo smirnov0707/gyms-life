@@ -123,20 +123,23 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
     <div className="glass-panel rounded-3xl p-5 space-y-4 relative overflow-hidden">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+          <div className="p-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 light:text-red-700">
             <Radio className="w-4 h-4 animate-pulse" />
           </div>
           <div>
-            <h4 className="text-sm font-black uppercase tracking-tight text-white">
+            <h4 className="text-sm font-black uppercase tracking-tight text-foreground">
               {lang === "lt" ? "Balso serijų registratorius" : "Voice Set Logger"}
             </h4>
-            <p className="text-[11px] font-mono text-neutral-400">
-              {lang === "lt" ? "Groq Whisper Turbo (<200ms)" : "Instant speech-to-set"}
-            </p>
+            {/* The provider and model are real — the request goes to Groq
+                with whisper-large-v3-turbo. The "<200ms" that used to sit
+                here was the vendor's figure for the transcription call
+                alone; the athlete waits for the upload, the transcription
+                and an LLM parse on top of it. */}
+            <p className="text-[11px] font-mono text-muted-foreground">Groq Whisper Turbo</p>
           </div>
         </div>
 
-        <span className="badge-tech text-red-400 border-red-500/20 bg-red-500/5">
+        <span className="badge-tech text-red-400 light:text-red-700 border-red-500/20 bg-red-500/5">
           VOICE TELEMETRY
         </span>
       </div>
@@ -169,9 +172,9 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
           <Button
             type="button"
             onClick={stopRecording}
-            className="w-full bg-neutral-900 text-red-400 border border-red-500/40 font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl animate-pulse shadow-lg shadow-red-950/40"
+            className="w-full bg-surface-2 text-red-400 light:text-red-700 border border-red-500/40 font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl animate-pulse shadow-lg shadow-red-950/40"
           >
-            <MicOff className="w-4 h-4 text-red-400" />
+            <MicOff className="w-4 h-4 text-red-400 light:text-red-700" />
             <span className="text-xs">
               {lang === "lt" ? "Baigti kalbėti (Spauskite)" : "Stop Recording"}
             </span>
@@ -180,8 +183,8 @@ export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) =
       </div>
 
       {lastTranscript && (
-        <div className="p-3 rounded-xl bg-black/60 border border-white/[0.06] flex items-center gap-2.5 text-xs text-neutral-300 font-mono">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-surface border border-border flex items-center gap-2.5 text-xs text-foreground font-mono">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 light:text-emerald-700 shrink-0" />
           <span className="truncate">„{lastTranscript}“</span>
         </div>
       )}

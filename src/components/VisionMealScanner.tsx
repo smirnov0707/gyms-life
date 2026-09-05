@@ -152,25 +152,27 @@ export const VisionMealScanner: React.FC = () => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-neutral-900/80 border border-white/10 p-4 sm:p-6 backdrop-blur-xl shadow-2xl">
+    <div className="relative overflow-hidden rounded-2xl bg-surface-2 border border-border p-4 sm:p-6 backdrop-blur-xl shadow-2xl">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 light:text-emerald-700">
             <Camera className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+            <h3 className="text-base sm:text-lg font-bold text-foreground tracking-wide">
               {lang === "lt" ? "Food Vision AI Skeneris" : "Food Vision AI Scanner"}
             </h3>
-            <p className="text-xs font-mono text-neutral-400">
+            <p className="text-xs font-mono text-muted-foreground">
               {lang === "lt" ? "Momentinė makroelementų analizė" : "Real-time macro breakdown"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 border border-emerald-500/30">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-emerald-500/30">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-mono text-emerald-300 font-bold">NEURAL VISION</span>
+          <span className="text-[10px] font-mono text-emerald-300 light:text-emerald-700 font-bold">
+            NEURAL VISION
+          </span>
         </div>
       </div>
 
@@ -186,17 +188,17 @@ export const VisionMealScanner: React.FC = () => {
       {!imagePreview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="relative group cursor-pointer flex flex-col items-center justify-center p-8 sm:p-12 rounded-xl border-2 border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-950/10 transition-all duration-300 text-center"
+          className="relative group cursor-pointer flex flex-col items-center justify-center p-8 sm:p-12 rounded-xl border-2 border-dashed border-border hover:border-emerald-500/50 hover:bg-emerald-950/10 transition-all duration-300 text-center"
         >
-          <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-emerald-500/40 transition-transform">
-            <Upload className="w-6 h-6 text-neutral-300 group-hover:text-emerald-400 transition-colors" />
+          <div className="w-14 h-14 rounded-full bg-foreground/[0.06] border border-border flex items-center justify-center mb-3 group-hover:scale-110 group-hover:border-emerald-500/40 transition-transform">
+            <Upload className="w-6 h-6 text-foreground group-hover:text-emerald-400 light:text-emerald-700 transition-colors" />
           </div>
           <span className="text-sm font-semibold text-neutral-200 mb-1">
             {lang === "lt"
               ? "Nufotografuok arba įkelk patiekalo nuotrauką"
               : "Snap or upload a meal photo"}
           </span>
-          <span className="text-xs font-mono text-neutral-500">
+          <span className="text-xs font-mono text-muted-foreground">
             {lang === "lt"
               ? "JPG, PNG • Automatinis porcijos ir makro nustatymas"
               : "JPG, PNG • Auto weight & macro detection"}
@@ -223,51 +225,53 @@ export const VisionMealScanner: React.FC = () => {
           </div>
 
           {scanResult && (
-            <div className="p-4 rounded-xl bg-black/60 border border-white/10 space-y-3">
+            <div className="p-4 rounded-xl bg-surface border border-border space-y-3">
               {scanResult.ok ? (
                 <>
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">
+                      <span className="text-[10px] font-mono text-emerald-400 light:text-emerald-700 uppercase tracking-wider">
                         {lang === "lt" ? "ATPAŽINTAS PATIEKALAS" : "IDENTIFIED DISH"}
                       </span>
-                      <h4 className="text-base sm:text-lg font-bold text-white">
+                      <h4 className="text-base sm:text-lg font-bold text-foreground">
                         {scanResult.dishName}
                       </h4>
                     </div>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 light:text-emerald-700 border border-emerald-500/20">
                       {lang === "lt" ? "ĮVERTIS PAGAL NUOTRAUKĄ" : "PHOTO-BASED ESTIMATE"}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/10 text-center">
-                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-neutral-400">KCAL</span>
-                      <span className="text-sm sm:text-base font-bold text-white">
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border text-center">
+                    <div className="p-2 rounded-lg bg-surface-2 border border-border">
+                      <span className="block text-[10px] font-mono text-muted-foreground">
+                        KCAL
+                      </span>
+                      <span className="text-sm sm:text-base font-bold text-foreground">
                         {scanResult.calories}
                       </span>
                     </div>
-                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-blue-400">
+                    <div className="p-2 rounded-lg bg-surface-2 border border-border">
+                      <span className="block text-[10px] font-mono text-blue-400 light:text-blue-700">
                         {lang === "lt" ? "BALTYMAI" : "PROT"}
                       </span>
-                      <span className="text-sm sm:text-base font-bold text-blue-300">
+                      <span className="text-sm sm:text-base font-bold text-blue-300 light:text-blue-700">
                         {scanResult.protein}g
                       </span>
                     </div>
-                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-amber-400">
+                    <div className="p-2 rounded-lg bg-surface-2 border border-border">
+                      <span className="block text-[10px] font-mono text-amber-400 light:text-amber-700">
                         {lang === "lt" ? "ANGLIAV." : "CARB"}
                       </span>
-                      <span className="text-sm sm:text-base font-bold text-amber-300">
+                      <span className="text-sm sm:text-base font-bold text-amber-300 light:text-amber-700">
                         {scanResult.carbs}g
                       </span>
                     </div>
-                    <div className="p-2 rounded-lg bg-neutral-900 border border-white/5">
-                      <span className="block text-[10px] font-mono text-rose-400">
+                    <div className="p-2 rounded-lg bg-surface-2 border border-border">
+                      <span className="block text-[10px] font-mono text-rose-400 light:text-rose-700">
                         {lang === "lt" ? "RIEBALAI" : "FAT"}
                       </span>
-                      <span className="text-sm sm:text-base font-bold text-rose-300">
+                      <span className="text-sm sm:text-base font-bold text-rose-300 light:text-rose-700">
                         {scanResult.fat}g
                       </span>
                     </div>
@@ -278,7 +282,7 @@ export const VisionMealScanner: React.FC = () => {
                       {scanResult.items.map((it, idx) => (
                         <span
                           key={idx}
-                          className="text-[11px] font-mono bg-white/5 px-2 py-0.5 rounded text-neutral-300 border border-white/5"
+                          className="text-[11px] font-mono bg-foreground/[0.06] px-2 py-0.5 rounded text-foreground border border-border"
                         >
                           {it}
                         </span>
@@ -287,7 +291,7 @@ export const VisionMealScanner: React.FC = () => {
                   )}
 
                   {scanResult.note && (
-                    <p className="text-xs text-neutral-400 italic bg-neutral-950/50 p-2.5 rounded-lg border border-white/5">
+                    <p className="text-xs text-muted-foreground italic bg-neutral-950/50 p-2.5 rounded-lg border border-border">
                       💡 {scanResult.note}
                     </p>
                   )}
@@ -308,7 +312,7 @@ export const VisionMealScanner: React.FC = () => {
                     <Button
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-white/10 hover:bg-white/5"
+                      className="border-border hover:bg-foreground/[0.06]"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </Button>
@@ -316,13 +320,13 @@ export const VisionMealScanner: React.FC = () => {
                 </>
               ) : (
                 <div className="text-center py-3 space-y-2">
-                  <AlertTriangle className="w-6 h-6 text-amber-400 mx-auto" />
-                  <p className="text-xs font-mono text-neutral-300">{failureMessage(scanResult)}</p>
+                  <AlertTriangle className="w-6 h-6 text-amber-400 light:text-amber-700 mx-auto" />
+                  <p className="text-xs font-mono text-foreground">{failureMessage(scanResult)}</p>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-white/10 text-xs"
+                    className="border-border text-xs"
                   >
                     {lang === "lt" ? "Bandykite dar kartą" : "Try Again"}
                   </Button>
