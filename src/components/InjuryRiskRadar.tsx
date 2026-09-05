@@ -135,7 +135,15 @@ export function InjuryRiskRadar() {
             {lang === "lt" ? "SĄNARIŲ APKROVOS ŽEMĖLAPIS" : "JOINT LOAD HEATMAP"}
           </div>
 
-          <svg viewBox="0 0 200 280" className="w-44 h-60 drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+          {/* Decorative: every risk it encodes is also listed as text beside
+              it, so a screen reader should skip the figure rather than read
+              out dozens of unlabelled shapes. */}
+          <svg
+            viewBox="0 0 200 280"
+            aria-hidden="true"
+            focusable="false"
+            className="w-44 h-60 drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]"
+          >
             {/* Galva / Kaklas */}
             <circle cx="100" cy="35" r="18" fill="#262626" stroke="#404040" strokeWidth="2" />
 

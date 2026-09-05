@@ -37,7 +37,8 @@ type Draft = {
   withFood: boolean;
   preferredTime: string;
   notes: string;
-  confidence: number;
+  /** Absent when the model did not state one. */
+  confidence?: number | undefined;
   readable: string;
 };
 
@@ -277,7 +278,8 @@ export function SupplementPhotoScanner() {
 
               <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                  {t("supp.scan.confidence")} {d.confidence}%
+                  {t("supp.scan.confidence")}{" "}
+                  {d.confidence === undefined ? "—" : `${d.confidence}%`}
                 </span>
                 {d.readable ? <span className="truncate">{d.readable}</span> : null}
               </div>

@@ -547,4 +547,19 @@ button {
   .live-sweep::after {
     animation: none;
   }
+
+  /* Tailwind's looping attention animations. These were scattered across a
+     dozen components without a motion-reduce variant, so someone who asks
+     the system for less motion still got pulsing dots and pinging markers.
+     Handled once here rather than per component, so a new `animate-pulse`
+     added tomorrow is covered without anyone remembering to do it.
+
+     `animate-spin` is deliberately left running: it reports that work is in
+     progress rather than drawing attention to itself, and freezing it makes
+     a loading state look stalled. */
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce {
+    animation: none;
+  }
 }
