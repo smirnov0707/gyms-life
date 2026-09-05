@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 import { logMeal } from "@/lib/nutrition.functions";
@@ -77,8 +77,8 @@ function Ring({
 }
 
 /** Says where the targets came from, so an estimate never reads as a plan. */
-function targetsNote(targets: NutritionTargets, lang: string): string {
-  const en = lang === "en";
+function targetsNote(targets: NutritionTargets, lang: Lang): string {
+  const en = baseLang(lang) === "en";
   if (targets.basis === "meal_plan") {
     return en ? "Targets from your active meal plan." : "Tikslai iš tavo aktyvaus mitybos plano.";
   }

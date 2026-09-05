@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Brain, FlaskConical, Loader2 } from "lucide-react";
 import { GlowCard } from "@/components/GlowCard";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getLabOverview } from "@/lib/lab.functions";
 import type {
@@ -41,8 +41,8 @@ type Copy = {
   answeredOf: (answered: number, proposed: number) => string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "LAB",
       title: "What GYMS.LIFE is investigating",

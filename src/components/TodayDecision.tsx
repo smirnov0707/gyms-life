@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTodayDecision, recordTodayDecisionOutcome } from "@/lib/today-decision.functions";
 import type {
@@ -40,8 +40,8 @@ type Copy = {
   evidenceLabel: Record<TodayDecisionEvidence["key"], (value: string) => string>;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "TODAY'S DECISION",
       evidence: "Why this action",

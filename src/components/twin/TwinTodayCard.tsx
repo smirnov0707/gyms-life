@@ -9,7 +9,7 @@ import {
   viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinSnapshot } from "@/lib/digital-twin.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
@@ -38,8 +38,8 @@ type Copy = {
   open: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "YOUR TWIN",
       title: "This is your body today",

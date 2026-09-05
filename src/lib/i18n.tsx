@@ -1028,6 +1028,18 @@ export function useI18n() {
 export type BaseLang = "lt" | "en";
 export const baseLang = (l: Lang): BaseLang => (l === "lt" ? "lt" : "en");
 
+/**
+ * The locale tag to format dates, times and numbers with.
+ *
+ * `baseLang` collapses the eight shipped locales into two copy branches
+ * because we only write copy in two languages. Formatting has no such
+ * limit — Intl knows every one of them — so a German athlete reads German
+ * dates instead of the Lithuanian ones this app used to hand everybody.
+ * English is pinned to en-GB for the 24-hour clock and day-first dates the
+ * rest of the app assumes.
+ */
+export const formatLocale = (l: Lang): string => (l === "en" ? "en-GB" : l);
+
 /** Standalone translator for non-React code (server helpers, PDF/print builders). */
 export function tr(lang: Lang, k: TKey): string {
   return translate(lang, k);

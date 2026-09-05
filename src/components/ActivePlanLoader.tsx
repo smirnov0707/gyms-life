@@ -3,7 +3,7 @@ import { getActivePlan } from "@/lib/active-plan.functions";
 import { GlowCard } from "@/components/GlowCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
 type Copy = {
   loadFailed: string;
@@ -19,8 +19,8 @@ type Copy = {
   trainingDays: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       loadFailed: "Could not load your active program.",
       tryAgain: "Try again in a moment.",

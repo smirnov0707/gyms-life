@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, Check, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import {
   clearTrainingRhythm,
   getTrainingRhythm,
@@ -34,8 +34,8 @@ type Copy = {
   weekday: Record<TrainingWeekday, string>;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "TRAINING RHYTHM",
       title: "Your usual training days",

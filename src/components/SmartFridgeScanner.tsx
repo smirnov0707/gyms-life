@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { generateFridgeRecipe, type FridgeRecipe } from "@/lib/fridge.functions";
@@ -20,7 +20,9 @@ export const SmartFridgeScanner: React.FC = () => {
   // Lithuanian words would get a recipe built around words they did not
   // choose.
   const [ingredients, setIngredients] = useState<string[]>(
-    lang === "en" ? ["Eggs", "Cottage cheese", "Oats"] : ["Kiaušiniai", "Varškė", "Avižos"],
+    baseLang(lang) === "en"
+      ? ["Eggs", "Cottage cheese", "Oats"]
+      : ["Kiaušiniai", "Varškė", "Avižos"],
   );
   const [inputVal, setInputVal] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);

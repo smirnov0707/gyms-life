@@ -45,7 +45,7 @@ import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
 import type { WorkoutExecutionAdaptation } from "@/lib/workout-execution.schema";
 import { errorMessage } from "@/lib/error-message";
 import { browserTimeZone } from "@/lib/local-day";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
 
@@ -132,8 +132,8 @@ type Copy = {
   skipRest: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       mustBeNumber: (label) => `${label} must be a number.`,
       repsLabelPlain: "Reps",

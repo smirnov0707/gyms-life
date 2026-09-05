@@ -7,7 +7,7 @@ import {
   viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, formatLocale, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinSnapshot } from "@/lib/digital-twin.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
@@ -56,8 +56,8 @@ type Copy = {
   legend: string;
 };
 
-function copyFor(lang: string): Copy {
-  if (lang === "en") {
+function copyFor(lang: Lang): Copy {
+  if (baseLang(lang) === "en") {
     return {
       eyebrow: "TWIN",
       title: "Your Digital Twin",
@@ -270,10 +270,10 @@ function RegionRow({
   );
 }
 
-function formatUpdated(computedAt: string, lang: string): string {
+function formatUpdated(computedAt: string, lang: Lang): string {
   const parsed = new Date(computedAt);
   if (Number.isNaN(parsed.getTime())) return "—";
-  return parsed.toLocaleTimeString(lang === "en" ? "en-GB" : "lt-LT", {
+  return parsed.toLocaleTimeString(formatLocale(lang), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -292,7 +292,7 @@ export function TwinSnapshotView({
   data: TwinSnapshot;
   copy: Copy;
   label: (region: string) => string;
-  lang?: string;
+  lang?: Lang;
 }) {
   const withEvidence = data.regions.filter((region) => region.provenance === "calculated");
   const ranked = [...withEvidence].sort(
