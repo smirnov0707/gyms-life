@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:browser": "node scripts/test-twin-browser.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

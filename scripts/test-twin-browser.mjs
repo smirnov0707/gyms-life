@@ -73,6 +73,11 @@ try {
   });
   await server.listen();
   browser = await chromium.launch({
+    // CI runs `npx playwright install`, so it needs nothing here. Elsewhere —
+    // a container with a pre-installed Chromium, a machine that cannot reach
+    // the download host — this points the harness at an existing binary.
+    // Without it these checks only ever run in CI, which is a poor place to
+    // discover you have broken them.
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
       : {}),
@@ -295,6 +300,81 @@ try {
   await expect(page.getByLabel("Inspect a region", { exact: true })).toBeVisible();
   record("WebGL unavailable preserves an accessible 2D evidence surface");
   await unsupported.close();
+
+  // The evidence list sits outside the Twin's deliberately dark stage, on the
+  // page ground. When the shell started honouring the light palette this list
+  // was still painted `text-white` on `bg-white/[0.02]` — white on white, and
+  // nothing failed. Measuring real computed colours is the only check that
+  // catches that, so this asserts contrast rather than class names.
+  const themed = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  page = await themed.newPage();
+  await loaded(page);
+  await page.getByRole("button", { name: "Light theme", exact: true }).click();
+  await page
+    .getByRole("button", { name: /All regions|regions/i })
+    .first()
+    .click();
+
+  const contrast = await page.evaluate(() => {
+    // Resolve colours through the browser rather than by parsing strings:
+    // Tailwind v4 computes `oklab(...)`, and the alpha channel decides which
+    // ancestor the text actually sits on. Reading both back off a canvas
+    // keeps this honest about syntaxes a regex would misread.
+    const probe = document.createElement("canvas").getContext("2d", {
+      willReadFrequently: true,
+    });
+    const resolve = (value) => {
+      probe.clearRect(0, 0, 1, 1);
+      probe.fillStyle = "rgba(0, 0, 0, 0)";
+      probe.fillStyle = value;
+      probe.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
+      return { r, g, b, a: a / 255 };
+    };
+    const channel = (value) => {
+      const c = value / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = ({ r, g, b }) =>
+      0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    // The nearest ancestor that actually paints is what the text sits on.
+    const groundOf = (node) => {
+      for (let el = node; el; el = el.parentElement) {
+        const colour = resolve(getComputedStyle(el).backgroundColor);
+        if (colour.a > 0.5) return colour;
+      }
+      return { r: 255, g: 255, b: 255, a: 1 };
+    };
+    // Two buttons carry this label: the stage's own ranked list, and the
+    // expanded evidence list below it. The second is the one on the page
+    // ground, so take the last in document order.
+    const rows = [...document.querySelectorAll("button")].filter((el) =>
+      (el.textContent ?? "").trim().startsWith("Chest"),
+    );
+    const row = rows[rows.length - 1];
+    // The leaf that carries the text, not an ancestor of it. The wrapper span
+    // holds only a dot and the label, so its own textContent is "Chest" too —
+    // and its colour is inherited, so it stays readable even when the label's
+    // own class does not. Measuring it hid the very bug this check is for.
+    const label = row
+      ? [...row.querySelectorAll("span")].find(
+          (el) => el.childElementCount === 0 && el.textContent?.trim() === "Chest",
+        )
+      : undefined;
+    if (!label) return null;
+    const text = resolve(getComputedStyle(label).color);
+    const ground = groundOf(label);
+    const light = Math.max(luminance(text), luminance(ground));
+    const dark = Math.min(luminance(text), luminance(ground));
+    return Math.round(((light + 0.05) / (dark + 0.05)) * 100) / 100;
+  });
+
+  expect(contrast).not.toBeNull();
+  // WCAG AA for body text. White on white scores 1.
+  expect(contrast).toBeGreaterThanOrEqual(4.5);
+  await page.screenshot({ path: path.join(artifacts, "light-theme.png"), fullPage: true });
+  record(`evidence list stays legible in the light theme (contrast ${contrast}:1)`);
+  await themed.close();
 } catch (error) {
   if (page && !page.isClosed())
     await page
