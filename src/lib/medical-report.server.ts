@@ -98,9 +98,11 @@ export async function buildReportStats(
         .order("measured_on", { ascending: true }),
       supabase
         .from("set_logs")
-        .select("exercise_name, weight_kg, reps, created_at")
+        // Windowed by when the training happened, not when the row was
+        // written, so an offline-synced set lands in the right period.
+        .select("exercise_name, weight_kg, reps, performed_at")
         .eq("user_id", userId)
-        .gte("created_at", fromIso)
+        .gte("performed_at", fromIso)
         .limit(2000),
       supabase
         .from("supplements")
