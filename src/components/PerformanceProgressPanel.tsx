@@ -6,6 +6,7 @@ import {
   getVolumeTrend,
 } from "@/lib/performance.functions";
 import { GlowCard } from "@/components/GlowCard";
+import { useI18n } from "@/lib/i18n";
 
 function Metric({
   label,
@@ -34,7 +35,26 @@ function Metric({
   );
 }
 
+type Copy = { loadFailed: string; tryAgain: string; note: string };
+
+function copyFor(lang: string): Copy {
+  if (lang === "en") {
+    return {
+      loadFailed: "Could not load performance data.",
+      tryAgain: "Try again in a moment.",
+      note: "Figures are calculated from finished sessions and completed sets. Estimated 1RM is a derived figure, not a weight actually lifted.",
+    };
+  }
+  return {
+    loadFailed: "Nepavyko įkelti performance duomenų.",
+    tryAgain: "Pabandyk dar kartą po akimirkos.",
+    note: "Rodikliai apskaičiuoti iš užbaigtų treniruočių ir atliktų setų. Estimated 1RM yra išvestinis rodiklis, o ne faktinis pakeltas svoris.",
+  };
+}
+
 export function PerformanceProgressPanel() {
+  const { lang } = useI18n();
+  const copy = copyFor(lang);
   const overview = useQuery({
     queryKey: ["performance-overview"],
     queryFn: () => getPerformanceOverview(),
@@ -62,8 +82,8 @@ export function PerformanceProgressPanel() {
   if (overview.isError || !overview.data || overview.data.status !== "READY")
     return (
       <GlowCard className="panel p-6">
-        <p className="font-semibold">Nepavyko įkelti performance duomenų.</p>
-        <p className="mt-1 text-sm text-muted-foreground">Pabandyk dar kartą po akimirkos.</p>
+        <p className="font-semibold">{copy.loadFailed}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.tryAgain}</p>
       </GlowCard>
     );
 
@@ -77,10 +97,7 @@ export function PerformanceProgressPanel() {
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Performance</p>
         <h2 className="mt-1 text-3xl">Real training progress</h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Rodikliai apskaičiuoti iš užbaigtų treniruočių ir atliktų setų. Estimated 1RM yra
-          išvestinis rodiklis, o ne faktinis pakeltas svoris.
-        </p>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{copy.note}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="Workouts" value={m.workouts} icon={Dumbbell} />

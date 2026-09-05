@@ -22,6 +22,35 @@ import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
 import { parseStoredMealPlan } from "@/lib/meal-plan.schema";
 import { browserTimeZone, calendarDayDifference, dayInTimeZone } from "@/lib/local-day";
 
+type Copy = {
+  weeklyTargetTitle: string;
+  weeklyTargetBody: (completed: number, planned: number) => string;
+  checkingNext: string;
+  checkingNextBody: string;
+  viewProgram: string;
+};
+
+function copyFor(lang: string): Copy {
+  if (lang === "en") {
+    return {
+      weeklyTargetTitle: "This week's training target is met",
+      weeklyTargetBody: (completed, planned) =>
+        `You finished ${completed} of ${planned} planned sessions in the last 7 days. The next program day waits until you are ready again.`,
+      checkingNext: "Checking your next session",
+      checkingNextBody: "The program day is chosen from your actual training progress.",
+      viewProgram: "View program",
+    };
+  }
+  return {
+    weeklyTargetTitle: "Savaitės treniruočių tikslas pasiektas",
+    weeklyTargetBody: (completed, planned) =>
+      `Per paskutines 7 dienas užbaigei ${completed} iš ${planned} suplanuotų sesijų. Kita programos diena lauks, kai vėl būsi pasiruošęs.`,
+    checkingNext: "Tikriname kitą treniruotę",
+    checkingNextBody: "Programos diena bus rodoma pagal tavo faktinę treniruočių eigą.",
+    viewProgram: "Peržiūrėti programą",
+  };
+}
+
 function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
@@ -68,6 +97,7 @@ function ReadinessRing({ score }: { score: number }) {
  */
 export function Overview() {
   const { t, lang } = useI18n();
+  const copy = copyFor(lang);
   const { user } = useAuth();
   const timeZone = browserTimeZone();
   const localDay = dayInTimeZone(new Date(), timeZone);
@@ -365,11 +395,12 @@ export function Overview() {
               ) : nextWorkoutData?.status === "WEEKLY_TARGET_REACHED" ? (
                 <div className="grid place-items-center gap-4 py-12 text-center">
                   <Dumbbell className="size-8 text-primary" />
-                  <h2 className="text-2xl">Savaitės treniruočių tikslas pasiektas</h2>
+                  <h2 className="text-2xl">{copy.weeklyTargetTitle}</h2>
                   <p className="max-w-md text-sm text-muted-foreground">
-                    Per paskutines 7 dienas užbaigei {nextWorkoutData.completedSessionsLast7Days} iš{" "}
-                    {nextWorkoutData.plan.daysPerWeek} suplanuotų sesijų. Kita programos diena
-                    lauks, kai vėl būsi pasiruošęs.
+                    {copy.weeklyTargetBody(
+                      nextWorkoutData.completedSessionsLast7Days,
+                      nextWorkoutData.plan.daysPerWeek,
+                    )}
                   </p>
                   <Button
                     asChild
@@ -377,23 +408,21 @@ export function Overview() {
                     size="lg"
                     className="rounded-full px-7 font-bold"
                   >
-                    <Link to="/training">Peržiūrėti programą</Link>
+                    <Link to="/training">{copy.viewProgram}</Link>
                   </Button>
                 </div>
               ) : planData ? (
                 <div className="grid place-items-center gap-4 py-12 text-center">
                   <Dumbbell className="size-8 text-primary" />
-                  <h2 className="text-2xl">Tikriname kitą treniruotę</h2>
-                  <p className="max-w-md text-sm text-muted-foreground">
-                    Programos diena bus rodoma pagal tavo faktinę treniruočių eigą.
-                  </p>
+                  <h2 className="text-2xl">{copy.checkingNext}</h2>
+                  <p className="max-w-md text-sm text-muted-foreground">{copy.checkingNextBody}</p>
                   <Button
                     asChild
                     variant="outline"
                     size="lg"
                     className="rounded-full px-7 font-bold"
                   >
-                    <Link to="/training">Peržiūrėti programą</Link>
+                    <Link to="/training">{copy.viewProgram}</Link>
                   </Button>
                 </div>
               ) : (
