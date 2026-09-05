@@ -1,0 +1,30 @@
+name: Twin validation workspace
+on:
+  push:
+    branches: [future-lab-twin-mobile-cockpit]
+    paths: [.github/workflows/twin-validation-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Package only source and public dependencies, never credentials
+        run: |
+          git rev-parse HEAD > validation-base-sha.txt
+          tar -czf /tmp/twin-workspace.tar.gz src scripts tests docs supabase node_modules package.json package-lock.json tsconfig.json vite.config.ts eslint.config.js .prettierrc .prettierignore netlify.toml AGENTS.md validation-base-sha.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twin-validation-workspace
+          path: /tmp/twin-workspace.tar.gz
+          retention-days: 1
+          compression-level: 0
