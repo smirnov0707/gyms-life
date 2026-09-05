@@ -117,9 +117,50 @@ export function BodyMap({
             <stop offset="100%" stopColor={BAND_GRADIENT[band].bottom} />
           </linearGradient>
         ))}
-        {/* Blurring a stroke of an outline and clipping it back inside gives
-            an inner shadow along every edge: the cheapest honest way to make
-            a flat fill read as a rounded belly. */}
+        {/* Real relief, not a painted approximation of it: blurring a shape's
+            own alpha gives a height map, and lighting that map rounds the
+            form the way its own outline says it should be rounded. One light
+            direction for the whole figure, so the body reads as lit rather
+            than as a set of separately shaded stickers. */}
+        {[
+          { id: "relief", blur: 3.2, scale: 2.1, specular: 0.16 },
+          { id: "relief-body", blur: 6, scale: 2.6, specular: 0.1 },
+        ].map((preset) => (
+          <filter
+            key={preset.id}
+            id={`${uid}-${preset.id}`}
+            x="-15%"
+            y="-15%"
+            width="130%"
+            height="130%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feGaussianBlur in="SourceAlpha" stdDeviation={preset.blur} result="bump" />
+            <feDiffuseLighting
+              in="bump"
+              surfaceScale={preset.scale}
+              diffuseConstant={1.12}
+              lightingColor="#ffffff"
+              result="diffuse"
+            >
+              <feDistantLight azimuth={230} elevation={52} />
+            </feDiffuseLighting>
+            <feComposite in="diffuse" in2="SourceAlpha" operator="in" result="shade" />
+            <feBlend in="SourceGraphic" in2="shade" mode="multiply" result="lit" />
+            <feSpecularLighting
+              in="bump"
+              surfaceScale={preset.scale}
+              specularConstant={preset.specular}
+              specularExponent={9}
+              lightingColor="#ffffff"
+              result="spec"
+            >
+              <feDistantLight azimuth={230} elevation={58} />
+            </feSpecularLighting>
+            <feComposite in="spec" in2="SourceAlpha" operator="in" result="sheen" />
+            <feComposite in="sheen" in2="lit" operator="arithmetic" k1={0} k2={1} k3={1} k4={0} />
+          </filter>
+        ))}
         <filter id={`${uid}-soft`} x="-25%" y="-25%" width="150%" height="150%">
           <feGaussianBlur stdDeviation="3.4" />
         </filter>
@@ -184,6 +225,7 @@ export function BodyMap({
         className="stroke-foreground/30"
         strokeWidth={1.1}
         strokeLinejoin="round"
+        filter={`url(#${uid}-relief-body)`}
       />
       {/* Clipped so the highlight can only ever fall on the body itself. */}
       <rect
@@ -235,46 +277,29 @@ export function BodyMap({
                 <path
                   d={region.d}
                   fill={BAND_GRADIENT[region.recoveryBand].top}
-                  fillOpacity={isSelected ? 0.26 : 0.12}
+                  fillOpacity={isSelected ? 0.3 : 0.14}
                   filter={`url(#${uid}-bloom)`}
                   aria-hidden="true"
                 />
               ) : null}
-              <path
-                d={region.d}
-                fill={`url(#${uid}-${region.recoveryBand})`}
-                fillOpacity={isSelected ? 1 : BAND_OPACITY[region.recoveryBand]}
-                strokeWidth={isSelected ? 1.2 : 0.7}
-                strokeLinejoin="round"
-                filter={isSelected ? `url(#${uid}-glow)` : undefined}
-                className={`${
-                  isSelected ? "stroke-foreground/55" : BAND_STROKE[region.recoveryBand]
-                } transition-[fill-opacity,stroke-width] duration-300 motion-reduce:transition-none`}
-              />
+              {/* Opacity rides the group, so the relief filter still sees an
+                  opaque shape to derive its height map from. */}
+              <g
+                opacity={isSelected ? 1 : BAND_OPACITY[region.recoveryBand]}
+                className="transition-opacity duration-300 motion-reduce:transition-none"
+              >
+                <path
+                  d={region.d}
+                  fill={`url(#${uid}-${region.recoveryBand})`}
+                  strokeWidth={isSelected ? 1.2 : 0.7}
+                  strokeLinejoin="round"
+                  filter={`url(#${uid}-relief)`}
+                  className={isSelected ? "stroke-foreground/55" : BAND_STROKE[region.recoveryBand]}
+                />
+              </g>
             </g>
           );
         })}
-
-        {/* Each muscle belly, rounded against its own outline. */}
-        <g clipPath={`url(#${uid}-muscles)`} aria-hidden="true" className="pointer-events-none">
-          <path
-            d={muscleOutlines}
-            fill="none"
-            stroke="#000"
-            strokeOpacity={0.38}
-            strokeWidth={4}
-            filter={`url(#${uid}-soft)`}
-          />
-          <path
-            d={muscleOutlines}
-            fill="none"
-            stroke="#fff"
-            strokeOpacity={0.15}
-            strokeWidth={1.7}
-            filter={`url(#${uid}-soft)`}
-            transform="translate(1.6 1.6)"
-          />
-        </g>
       </g>
 
       {/* Then the body as a whole, over everything it is made of. */}

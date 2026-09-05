@@ -110,10 +110,10 @@ function line(shape: Shape): string {
 const BODY_HALF: Shape = {
   from: [100, 16],
   curves: [
-    c(109, 16, 115, 26, 115, 37), // cranium
-    c(115, 47, 114, 53, 112, 59), // temple into the cheekbone
-    c(111, 65, 109, 70, 108, 77), // jaw angle into the neck
-    c(115, 82, 124, 87, 133, 94), // upper trapezius
+    c(112, 16, 121, 26, 121, 38), // cranium
+    c(121, 50, 119, 57, 115, 63), // temple into the cheekbone
+    c(113, 69, 111, 74, 110, 79), // jaw angle into the neck
+    c(117, 84, 125, 88, 133, 94), // upper trapezius
     c(142, 99, 150, 106, 156, 116), // shoulder
     c(160, 126, 161, 136, 159, 147), // deltoid
     c(151, 142, 143, 132, 135, 120), // armpit
@@ -160,9 +160,13 @@ const ARM_OUTLINE: Shape = {
 
 // Stroke-only anatomy. None of these carry a measurement; they exist so the
 // figure reads as a body rather than as a diagram of coloured shapes.
-const JAWLINE: Shape = { from: [112, 59], curves: [c(111, 66, 107, 71, 100, 72)] };
-const EAR: Shape = { from: [112, 45], curves: [c(116, 46, 116, 55, 112, 57)] };
-const HAIRLINE: Shape = { from: [100, 26], curves: [c(107, 25, 112, 28, 114, 34)] };
+const JAWLINE: Shape = { from: [115, 62], curves: [c(114, 69, 109, 74, 100, 75)] };
+const EYE_LINE: Shape = { from: [103, 48], curves: [c(107, 46, 113, 47, 117, 49)] };
+const NOSE_EDGE: Shape = {
+  from: [101, 47],
+  curves: [c(102, 52, 103, 57, 104, 60), c(103, 62, 101, 62, 100, 62)],
+};
+const EAR: Shape = { from: [118, 44], curves: [c(123, 45, 123, 57, 118, 59)] };
 const STERNOCLEIDOMASTOID: Shape = { from: [110, 64], curves: [c(108, 72, 105, 79, 101, 87)] };
 const CLAVICLE: Shape = { from: [101, 98], curves: [c(111, 95, 122, 99, 131, 107)] };
 const PECTORAL_HEADS: Shape = { from: [103, 121], curves: [c(113, 118, 124, 116, 133, 118)] };
@@ -204,8 +208,9 @@ export const BODY_FRAME = {
   contours: {
     front: [
       line(JAWLINE),
+      line(EYE_LINE),
+      line(NOSE_EDGE),
       line(EAR),
-      line(HAIRLINE),
       line(STERNOCLEIDOMASTOID),
       line(CLAVICLE),
       line(PECTORAL_HEADS),
@@ -225,7 +230,6 @@ export const BODY_FRAME = {
     back: [
       trace(SPINE),
       line(EAR),
-      line(HAIRLINE),
       line(SCAPULA_MEDIAL),
       line(SCAPULA_SPINE),
       line(DELTOID_HEADS),
@@ -657,13 +661,23 @@ const LEG_BACK: BodySegment[] = [
 // --- structure with no training group ---------------------------------------
 
 const STERNOCLEIDOMASTOID_BELLY: Shape = {
-  from: [108, 63],
+  from: [111, 63],
   curves: [
-    c(107, 71, 105, 79, 103, 88),
-    c(102, 90, 101, 89, 101, 87),
-    c(102, 78, 103, 70, 105, 62),
-    c(106, 61, 107, 61, 108, 63),
+    c(110, 71, 106, 80, 103, 89),
+    c(101, 91, 99, 89, 100, 86),
+    c(102, 77, 104, 68, 106, 61),
+    c(108, 60, 110, 61, 111, 63),
   ],
+};
+
+/**
+ * Facial structure, at the level an anatomy model carries it: a brow ridge
+ * and a nose that catch the light, with the eye line and mouth as creases.
+ * Enough that the head reads as a head, and no more — this is nobody's face.
+ */
+const BROW_RIDGE: Shape = {
+  from: [100, 41],
+  curves: [c(106, 39, 113, 40, 118, 44), c(116, 47, 108, 46, 100, 46)],
 };
 
 const PATELLA_BELLY: Shape = {
