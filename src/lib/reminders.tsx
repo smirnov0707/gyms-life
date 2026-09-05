@@ -10,6 +10,10 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useI18n, tr, type Lang } from "./i18n";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "./auth";
+import { clearHydrationToday, getHydrationIntake, logHydration } from "./hydration.functions";
+import { browserTimeZone, dayInTimeZone } from "./local-day";
 
 export type ReminderKind = "water" | "meal" | "workout";
 
@@ -127,46 +131,63 @@ const beep = () => {
 
 export function ReminderProvider({ children }: { children: ReactNode }) {
   const { lang } = useI18n();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const timeZone = browserTimeZone();
   const [settings, setSettings] = useState<ReminderSettings>(DEFAULT_REMINDERS);
-  const [waterMl, setWaterMl] = useState(0);
+
+  // Water drunk from a reminder is the same fact as water logged in the
+  // hydration widget, so it is the same rows. Keeping a private
+  // localStorage counter here meant two totals that could never agree, and
+  // neither the coach nor the widget could see what was drunk from a
+  // reminder.
+  const intakeKey = ["hydration-intake", user?.id, dayInTimeZone(new Date(), timeZone)];
+  const { data: intake } = useQuery({
+    queryKey: intakeKey,
+    queryFn: () => getHydrationIntake({ data: timeZone }),
+    enabled: !!user,
+  });
+  const waterMl = intake?.totalMl ?? 0;
+
+  const logWater = useMutation({
+    mutationFn: (amountMl: number) => logHydration({ data: { amountMl, timeZone } }),
+    onSuccess: (result) => queryClient.setQueryData(intakeKey, result),
+  });
+  const clearWater = useMutation({
+    mutationFn: () => clearHydrationToday({ data: timeZone }),
+    onSuccess: (result) => queryClient.setQueryData(intakeKey, result),
+  });
+  // The scheduler compares against local wall-clock hours, so its "already
+  // fired today" stamp has to be the local day too. A UTC stamp kept
+  // yesterday's marks alive until 03:00 in Vilnius, silently suppressing
+  // the morning reminders.
+  const today = useCallback(() => dayInTimeZone(new Date(), timeZone), [timeZone]);
+
   const langRef = useRef<Lang>(lang);
   langRef.current = lang;
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const today = useCallback(() => new Date().toISOString().slice(0, 10), []);
-
   useEffect(() => {
     setSettings(loadReminders());
-    const stored = window.localStorage.getItem("forma_water");
-    if (stored) {
-      try {
-        const p = JSON.parse(stored) as { date: string; ml: number };
-        if (p.date === today()) setWaterMl(p.ml);
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [today]);
+    // The old per-device water counter. Its rows now live in the database,
+    // so the key is cleared rather than read: leaving it would keep a
+    // second, silently diverging total on the device.
+    window.localStorage.removeItem("forma_water");
+  }, []);
 
   const save = useCallback((next: ReminderSettings) => {
     setSettings(next);
     window.localStorage.setItem(KEY, JSON.stringify(next));
   }, []);
 
-  const persistWater = useCallback(
-    (ml: number) => {
-      setWaterMl(ml);
-      window.localStorage.setItem("forma_water", JSON.stringify({ date: today(), ml }));
-    },
-    [today],
-  );
-
   const addWater = useCallback(
-    (ml: number) => persistWater(Math.max(0, waterMl + ml)),
-    [persistWater, waterMl],
+    (ml: number) => {
+      if (ml > 0) logWater.mutate(ml);
+    },
+    [logWater],
   );
-  const resetWater = useCallback(() => persistWater(0), [persistWater]);
+  const resetWater = useCallback(() => clearWater.mutate(), [clearWater]);
 
   const fire = useCallback((kind: ReminderKind) => {
     const l = langRef.current;
