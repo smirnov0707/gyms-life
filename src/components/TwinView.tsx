@@ -266,7 +266,7 @@ export function TwinSnapshotView({
   return (
     <div className="space-y-4">
       {!data.dataAvailable ? (
-        <p className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-300">
+        <p className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-300 light:text-amber-700">
           {copy.dataGapBanner}
         </p>
       ) : null}
@@ -408,7 +408,7 @@ export function TwinSnapshotView({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02]">
+      <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
           type="button"
           onClick={() => setDetailsOpen((open) => !open)}
@@ -416,32 +416,32 @@ export function TwinSnapshotView({
           className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
         >
           <div>
-            <p className="text-sm font-semibold text-white">{copy.allRegions}</p>
-            <p className="mt-1 text-xs text-neutral-600">
+            <p className="text-sm font-semibold text-foreground">{copy.allRegions}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               {copy.evidenceWindow(data.evidenceWindowDays)}
             </p>
           </div>
           <ChevronDown
-            className={`size-4 text-neutral-500 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+            className={`size-4 text-muted-foreground transition-transform ${detailsOpen ? "rotate-180" : ""}`}
           />
         </button>
 
         {detailsOpen ? (
-          <div className="grid border-t border-white/[0.06] sm:grid-cols-2">
+          <div className="grid border-t border-border sm:grid-cols-2">
             {data.regions.map((region) => (
               <button
                 key={region.region}
                 type="button"
                 onClick={() => selectRegion(region.region)}
-                className="flex items-center justify-between gap-4 border-b border-white/[0.05] px-5 py-3 text-left hover:bg-white/[0.025] sm:odd:border-r"
+                className="flex items-center justify-between gap-4 border-b border-border px-5 py-3 text-left hover:bg-foreground/[0.03] sm:odd:border-r"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span
                     className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
                   />
-                  <span className="truncate text-sm text-neutral-300">{label(region.region)}</span>
+                  <span className="truncate text-sm text-foreground">{label(region.region)}</span>
                 </span>
-                <span className="shrink-0 font-mono text-xs text-neutral-600">
+                <span className="shrink-0 font-mono text-xs text-muted-foreground">
                   {region.recoveryPct === null ? "—" : `${region.recoveryPct}%`}
                 </span>
               </button>
@@ -466,8 +466,8 @@ export function TwinView() {
 
   if (isLoading) {
     return (
-      <section className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6">
-        <div className="flex items-center gap-2 text-sm text-neutral-500">
+      <section className="rounded-3xl border border-border bg-surface-2 p-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
         </div>
       </section>
@@ -475,7 +475,7 @@ export function TwinView() {
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-neutral-500">{copy.unavailable}</p>;
+    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
   }
 
   return (

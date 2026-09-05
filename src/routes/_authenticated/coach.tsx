@@ -84,15 +84,22 @@ function CoachPage() {
     <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-4xl flex-col">
       <header className="flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400 light:text-emerald-700">
             <Sparkles className="size-3.5" /> GYMS.LIFE COACH
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {t("coach.title")}
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">{t("coach.sub")}</p>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            {t("coach.sub")}
+          </p>
         </div>
-        <Button asChild variant="ghost" size="sm" className="text-neutral-500 hover:text-white">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground"
+        >
           <Link to="/coach-history">
             <History className="size-4" /> {t("coach.history")}
           </Link>
@@ -247,26 +254,30 @@ function AiPersonalizationConsentCard() {
   };
 
   return (
-    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={cn(
             "grid size-8 shrink-0 place-items-center rounded-xl border",
             enabled
-              ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400"
-              : "border-white/[0.07] bg-white/[0.025] text-neutral-600",
+              ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400 light:text-emerald-700"
+              : "border-border bg-foreground/[0.03] text-muted-foreground",
           )}
         >
           <ShieldCheck className="size-4" />
         </span>
         <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-x-2 text-[9px] font-bold uppercase tracking-[0.16em] text-neutral-600">
+          <p className="flex flex-wrap items-center gap-x-2 text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
             <span>{copy.eyebrow}</span>
-            <span className={enabled ? "text-emerald-400" : "text-neutral-500"}>
+            <span
+              className={
+                enabled ? "text-emerald-400 light:text-emerald-700" : "text-muted-foreground"
+              }
+            >
               {loading ? "…" : enabled ? copy.active : copy.inactive}
             </span>
           </p>
-          <p className="mt-1 text-xs text-neutral-500" title={copy.description}>
+          <p className="mt-1 text-xs text-muted-foreground" title={copy.description}>
             {copy.title}
           </p>
         </div>
@@ -277,7 +288,7 @@ function AiPersonalizationConsentCard() {
         size="sm"
         disabled={loading || saving}
         onClick={toggle}
-        className="text-neutral-500 hover:text-white"
+        className="text-muted-foreground hover:text-foreground"
         title={copy.description}
       >
         {saving ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
