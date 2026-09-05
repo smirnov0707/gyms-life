@@ -17,40 +17,114 @@ export type TwinBodyRegion = (typeof TWIN_BODY_REGIONS)[number];
 export const isTwinBodyRegion = (value: string): value is TwinBodyRegion =>
   TWIN_BODY_REGIONS.some((region) => region === value);
 
+export const TWIN_LAYERS = ["recovery", "logged_volume"] as const;
+export type TwinLayer = (typeof TWIN_LAYERS)[number];
+export type TwinDisplayTone =
+  TwinRegionRecoveryBand | "volume_low" | "volume_medium" | "volume_high";
+export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
+  fresh: "#438c7a",
+  moderate: "#a58b55",
+  fatigued: "#a65e6c",
+  unknown: "#566068",
+  volume_low: "#49657c",
+  volume_medium: "#659fc3",
+  volume_high: "#9bd4ee",
+};
+
+/** Existing 2D renderer tones, sharing the same semantic layer vocabulary. */
+export function twinDisplayToneFor2D(tone: TwinDisplayTone) {
+  if (tone === "fresh") return "cool";
+  if (tone === "moderate") return "warm";
+  if (tone === "fatigued") return "hot";
+  if (tone === "unknown") return "muted";
+  return tone;
+}
+
+export type TwinRegionDisplay = { value: number | null; tone: TwinDisplayTone };
+
+/**
+ * A presentation projection of existing facts, not another load/recovery model.
+ * Volume is sum(weight × reps). Relative thirds are only a visual legend within
+ * this snapshot, NOT thresholds for stimulus, effort, injury or recovery.
+ */
+export function getTwinRegionDisplay(
+  snapshot: TwinSnapshot,
+  id: string,
+  layer: TwinLayer,
+): TwinRegionDisplay {
+  const unknown: TwinRegionDisplay = { value: null, tone: "unknown" };
+  if (!snapshot.dataAvailable) return unknown;
+  const source = snapshot.regions.find((region) => region.region === id);
+  if (!source || source.provenance !== "calculated") return unknown;
+  if (layer === "recovery") {
+    return source.recoveryBand !== "unknown" &&
+      source.recoveryPct !== null &&
+      Number.isFinite(source.recoveryPct) &&
+      source.recoveryPct >= 0 &&
+      source.recoveryPct <= 100
+      ? { value: source.recoveryPct, tone: source.recoveryBand }
+      : unknown;
+  }
+  if (
+    layer !== "logged_volume" ||
+    source.volumeKg === null ||
+    !Number.isFinite(source.volumeKg) ||
+    source.volumeKg < 0
+  )
+    return unknown;
+  const maxVolume = snapshot.regions.reduce(
+    (max, region) =>
+      region.provenance === "calculated" &&
+      region.volumeKg !== null &&
+      Number.isFinite(region.volumeKg) &&
+      region.volumeKg >= 0
+        ? Math.max(max, region.volumeKg)
+        : max,
+    0,
+  );
+  const fraction = maxVolume > 0 ? source.volumeKg / maxVolume : 0;
+  return {
+    value: source.volumeKg,
+    tone: fraction <= 1 / 3 ? "volume_low" : fraction <= 2 / 3 ? "volume_medium" : "volume_high",
+  };
+}
+
 export type TwinSceneRegion = {
   id: TwinBodyRegion;
   band: TwinRegionRecoveryBand;
   recoveryPct: number | null;
   emphasis: number;
+  display: TwinRegionDisplay;
 };
 export type TwinSceneState = {
-  layer: "recovery";
+  layer: TwinLayer;
   dataAvailable: boolean;
   regions: TwinSceneRegion[];
 };
 
-/** No new physiological calculation: bands come from the canonical snapshot. */
-export function mapTwinScene(snapshot: TwinSnapshot): TwinSceneState {
+/** No new physiological calculation: both values come from the canonical snapshot. */
+export function mapTwinScene(
+  snapshot: TwinSnapshot,
+  layer: TwinLayer = "recovery",
+): TwinSceneState {
   const visual = mapTwinSnapshotToVisualState(snapshot);
   return {
-    layer: "recovery",
+    layer,
     dataAvailable: snapshot.dataAvailable,
     regions: TWIN_BODY_REGIONS.map((id) => {
-      const source = snapshot.regions.find((region) => region.region === id);
-      const known =
-        source?.provenance === "calculated" &&
-        source.recoveryBand !== "unknown" &&
-        source.recoveryPct !== null &&
-        Number.isFinite(source.recoveryPct) &&
-        source.recoveryPct >= 0 &&
-        source.recoveryPct <= 100;
+      const recovery = getTwinRegionDisplay(snapshot, id, "recovery");
       return {
         id,
-        band: known ? source.recoveryBand : "unknown",
-        recoveryPct: known ? source.recoveryPct : null,
-        emphasis: known
-          ? (visual.regions.find((region) => region.region === id)?.emphasis ?? 0)
-          : 0,
+        band:
+          recovery.tone === "fresh" || recovery.tone === "moderate" || recovery.tone === "fatigued"
+            ? recovery.tone
+            : "unknown",
+        recoveryPct: recovery.value,
+        emphasis:
+          recovery.value !== null
+            ? (visual.regions.find((region) => region.region === id)?.emphasis ?? 0)
+            : 0,
+        display: getTwinRegionDisplay(snapshot, id, layer),
       };
     }),
   };

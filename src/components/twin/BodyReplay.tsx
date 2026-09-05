@@ -54,14 +54,14 @@ function copyFor(lang: Lang): Copy {
 }
 
 /** Stimulus has its own vocabulary; here is where it becomes display tone. */
-function toneForStimulus(stimulus: SessionStimulus): BodyMapTone {
+function toneForStimulus(stimulus: SessionStimulus): Exclude<BodyMapTone, `volume_${string}`> {
   if (stimulus === "primary") return "hot";
   if (stimulus === "secondary") return "warm";
   if (stimulus === "light") return "cool";
   return "muted";
 }
 
-const TONE_DOT: Record<BodyMapTone, string> = {
+const TONE_DOT: Record<ReturnType<typeof toneForStimulus>, string> = {
   hot: "bg-rose-500",
   warm: "bg-amber-400",
   cool: "bg-emerald-400",

@@ -1,17 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import type { TwinSnapshot } from "@/lib/digital-twin.schema";
-import { BodyMap, toneForRecoveryBand } from "./BodyMap";
+import { BodyMap } from "./BodyMap";
 import { viewShowing, type BodyView } from "./body-map.geometry";
 import {
   TWIN_BODY_REGIONS,
+  TWIN_LAYERS,
+  twinDisplayToneFor2D,
+  type TwinLayer,
   isTwinBodyRegion,
   mapTwinScene,
   type TwinCameraCommand,
 } from "./twin-scene.model";
+import { twinLayerCopy, formatTwinValue } from "./twin-layer.copy";
 import type { TwinSceneHandle } from "./twin-scene.runtime";
 
 export type TwinStageProps = {
   snapshot: TwinSnapshot;
+  layer: TwinLayer;
+  onLayerChange: (layer: TwinLayer) => void;
   selectedRegion: string | null;
   onSelectRegion: (region: string) => void;
   view: BodyView;
@@ -41,7 +47,7 @@ const COPY = {
     choose: "Choose a region",
     motion: "Ambient motion",
     recovery: "Calculated recovery",
-    note: "Schematic body, not a personal scan. Colour shows the calculated recovery band; motion is decorative, not a biometric signal.",
+    note: "Schematic body, not a personal scan. Motion is decorative, not a biometric signal.",
     unknown: "No data",
     fresh: "Fresh",
     moderate: "Moderate",
@@ -67,7 +73,7 @@ const COPY = {
     choose: "Pasirink regioną",
     motion: "Subtilus judesys",
     recovery: "Apskaičiuotas atsistatymas",
-    note: "Scheminis kūnas, ne asmeninis skenavimas. Spalva rodo apskaičiuotą atsistatymo būseną; judesys dekoratyvus, ne biometrinis signalas.",
+    note: "Scheminis kūnas, ne asmeninis skenavimas. Judesys dekoratyvus, ne biometrinis signalas.",
     unknown: "Nėra duomenų",
     fresh: "Švieži",
     moderate: "Vidutiniškai",
@@ -76,9 +82,19 @@ const COPY = {
 } as const;
 
 export function TwinStage(props: TwinStageProps) {
-  const { snapshot, selectedRegion, onSelectRegion, view, onViewChange, regionLabel, language } =
-    props;
+  const {
+    snapshot,
+    selectedRegion,
+    onSelectRegion,
+    view,
+    onViewChange,
+    regionLabel,
+    language,
+    layer,
+    onLayerChange,
+  } = props;
   const copy = COPY[language];
+  const layerCopy = twinLayerCopy(language);
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<TwinSceneHandle | null>(null);
   const latest = useRef(props);
@@ -87,7 +103,7 @@ export function TwinStage(props: TwinStageProps) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [motion, setMotion] = useState(true);
-  const mapped = mapTwinScene(snapshot);
+  const mapped = mapTwinScene(snapshot, layer);
 
   useEffect(() => {
     latest.current = props;
@@ -115,7 +131,7 @@ export function TwinStage(props: TwinStageProps) {
         if (cancelled || timedOut) return;
         const current = latest.current;
         const handle = mountTwinScene(target, {
-          state: mapTwinScene(current.snapshot),
+          state: mapTwinScene(current.snapshot, current.layer),
           selectedRegion: current.selectedRegion,
           label: COPY[current.language].scene,
           onSelect: (region) => latest.current.onSelectRegion(region),
@@ -144,8 +160,8 @@ export function TwinStage(props: TwinStageProps) {
   }, [mode, attempt]);
 
   useEffect(() => {
-    scene.current?.setState(mapTwinScene(snapshot));
-  }, [snapshot, ready]);
+    scene.current?.setState(mapTwinScene(snapshot, layer));
+  }, [snapshot, layer, ready]);
   useEffect(() => {
     scene.current?.select(selectedRegion);
   }, [selectedRegion, ready]);
@@ -166,10 +182,27 @@ export function TwinStage(props: TwinStageProps) {
     "min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300";
 
   return (
-    <div className="w-full min-w-0" data-twin-stage={show3D ? "3d" : "2d"}>
+    <div className="w-full min-w-0" data-twin-stage={show3D ? "3d" : "2d"} data-twin-layer={layer}>
+      <div
+        role="group"
+        aria-label={layerCopy.selector}
+        className="mx-3 mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1"
+      >
+        {TWIN_LAYERS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={layer === option}
+            onClick={() => onLayerChange(option)}
+            className={`${controlClass} ${layer === option ? "bg-white/10 text-white" : ""}`}
+          >
+            {layerCopy.label[option]}
+          </button>
+        ))}
+      </div>
       <div className="flex items-center justify-between gap-2 px-3">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-          {copy.recovery}
+          {layerCopy.unit[layer]}
         </p>
         <div
           className="flex rounded-full border border-white/10 bg-black/30 p-1"
@@ -210,8 +243,8 @@ export function TwinStage(props: TwinStageProps) {
             <BodyMap
               regions={mapped.regions.map((region) => ({
                 region: region.id,
-                tone: toneForRecoveryBand(region.band),
-                value: region.recoveryPct === null ? null : `${region.recoveryPct}%`,
+                tone: twinDisplayToneFor2D(region.display.tone),
+                value: formatTwinValue(region.display.value, layer, language),
               }))}
               view={view}
               selectedRegion={selectedRegion}
@@ -315,7 +348,15 @@ export function TwinStage(props: TwinStageProps) {
             {TWIN_BODY_REGIONS.map((region) => (
               <option key={region} value={region}>
                 {regionLabel(region)} ·{" "}
-                {copy[mapped.regions.find((entry) => entry.id === region)?.band ?? "unknown"]}
+                {layer === "recovery"
+                  ? layerCopy.band[
+                      mapped.regions.find((entry) => entry.id === region)?.display.tone ?? "unknown"
+                    ]
+                  : formatTwinValue(
+                      mapped.regions.find((entry) => entry.id === region)?.display.value ?? null,
+                      layer,
+                      language,
+                    )}
               </option>
             ))}
           </select>
@@ -332,6 +373,9 @@ export function TwinStage(props: TwinStageProps) {
           </label>
         )}
         <p className="text-[11px] leading-relaxed text-neutral-400">{copy.note}</p>
+        {layer === "logged_volume" && (
+          <p className="text-[11px] leading-relaxed text-neutral-400">{layerCopy.volumeNote}</p>
+        )}
       </div>
     </div>
   );

@@ -46,7 +46,8 @@ function copyFor(lang: Lang): Copy {
       loading: "Building today's Twin…",
       unavailable: "Your Twin is temporarily unavailable.",
       empty: "Your Twin is still learning",
-      emptyHint: "Finish a workout and evidence will begin appearing on the body.",
+      emptyHint:
+        "Complete set logs with weight and reps can inform this estimate. Unsupported or incomplete groups remain unknown.",
       attention: "Lowest recovery",
       coverage: (withEvidence, total) => `${withEvidence}/${total} regions evidenced`,
       window: (days) => `${days}-day evidence window`,
@@ -63,7 +64,8 @@ function copyFor(lang: Lang): Copy {
     loading: "Kuriamas šiandienos dvynys…",
     unavailable: "Tavo dvynys šiuo metu nepasiekiamas.",
     empty: "Tavo dvynys dar mokosi",
-    emptyHint: "Užbaik treniruotę ir ant kūno pradės atsirasti realūs įrodymai.",
+    emptyHint:
+      "Įverčiui reikia užbaigtų setų su svoriu ir pakartojimais. Nepalaikomos ar neišsamios grupės lieka nežinomos.",
     attention: "Mažiausias atsistatymas",
     coverage: (withEvidence, total) => `${withEvidence}/${total} regionų su įrodymais`,
     window: (days) => `${days} d. įrodymų langas`,

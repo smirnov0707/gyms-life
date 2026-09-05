@@ -55,6 +55,7 @@ try {
   });
   await server.listen();
   browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
   const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
@@ -106,10 +107,51 @@ try {
   await expect.poll(async () => Number(await canvas.getAttribute("data-twin-yaw"))).not.toBe(0);
   record("zoom and keyboard camera controls");
 
+  // Changing a presentation layer must not remount WebGL or reset the user's camera.
+  const identity = await canvas.elementHandle();
+  const layerYaw = await canvas.getAttribute("data-twin-yaw");
+  const layerZoom = await canvas.getAttribute("data-twin-distance");
+  await page.getByRole("button", { name: "Logged volume", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-twin-layer", "logged_volume");
+  expect(await canvas.evaluate((element, previous) => element === previous, identity)).toBe(true);
+  expect(await canvas.getAttribute("data-twin-yaw")).toBe(layerYaw);
+  expect(await canvas.getAttribute("data-twin-distance")).toBe(layerZoom);
+  await page.getByLabel("Inspect a region", { exact: true }).selectOption("chest");
+  await expect(page.locator("[data-twin-reading-value]")).toContainText("3,000");
+  await expect(page.locator("[data-twin-reading-value]")).toContainText("kg × reps");
+  await expect(page.locator('[data-twin-legend="logged_volume"]')).toContainText(
+    "Relative logged volume",
+  );
+  await page.getByRole("button", { name: "Front", exact: true }).click();
+  await page.screenshot({ path: path.join(artifacts, "desktop-volume.png"), fullPage: true });
+  await page.getByRole("button", { name: "2D", exact: true }).click();
+  await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.locator('[data-twin-stage="2d"]')).toHaveAttribute(
+    "data-twin-layer",
+    "logged_volume",
+  );
+  await expect(page.locator("[data-twin-stage] svg")).toContainText("3,000 kg × reps");
+  await page.getByRole("button", { name: "3D", exact: true }).click();
+  await expect(canvas).toHaveAttribute("data-twin-layer", "logged_volume");
+  record("layer changes preserve camera and selection; volume units agree in 3D and 2D");
+
+  await page.getByRole("button", { name: "Fail source", exact: true }).click();
+  await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
+  expect(await page.locator("select").textContent()).not.toContain("3,000");
+  await page.getByRole("button", { name: "Recovery", exact: true }).click();
+  await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
+  expect(await page.locator("select").textContent()).not.toContain("Fresh");
+  await page.getByRole("button", { name: "Restore source", exact: true }).click();
+  await expect(page.locator("[data-twin-reading-value]")).toContainText("77");
+  record("source failure withholds old values in both layers and restoration refreshes them");
+
   await page.getByLabel("Inspect a region", { exact: true }).selectOption("glutes");
   await expect(page.getByRole("heading", { name: "Glutes", exact: true })).toBeVisible();
   await expect(
-    page.getByText("No sets logged for this region recently.", { exact: true }),
+    page.getByText(
+      "Not enough complete, supported set data for this region. Missing weights or reps and bodyweight effort cannot produce a recovery estimate.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await page.getByRole("button", { name: "Clear evidence", exact: true }).click();
   expect(await page.locator("select").textContent()).not.toContain("Fresh");
@@ -183,6 +225,16 @@ try {
   await page.screenshot({ path: path.join(artifacts, "mobile-back.png"), fullPage: true });
   await page.getByRole("button", { name: "Left side", exact: true }).click();
   await page.screenshot({ path: path.join(artifacts, "mobile-side.png"), fullPage: true });
+  await page.getByRole("button", { name: "Logged volume", exact: true }).click();
+  await page.getByLabel("Inspect a region", { exact: true }).selectOption("chest");
+  await page.getByRole("button", { name: "Front", exact: true }).click();
+  await page.screenshot({ path: path.join(artifacts, "mobile-volume.png"), fullPage: true });
+  await page.getByRole("button", { name: "Clear evidence", exact: true }).click();
+  await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
+  expect(await page.locator("select").textContent()).not.toContain("kg × reps");
+  await page.getByRole("button", { name: "Restore evidence", exact: true }).click();
+  await expect(page.locator("[data-twin-reading-value]")).toContainText("3,000");
+  record("mobile volume selection and missing-evidence updates");
   await page.setViewportSize({ width: 320, height: 740 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

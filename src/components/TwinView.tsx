@@ -2,6 +2,12 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader2, PersonStanding } from "lucide-react";
+import {
+  getTwinRegionDisplay,
+  TWIN_DISPLAY_COLORS,
+  type TwinLayer,
+} from "@/components/twin/twin-scene.model";
+import { twinLayerCopy, formatTwinValue } from "@/components/twin/twin-layer.copy";
 import { TwinStage } from "@/components/twin/TwinStage";
 import { LivingTwinPresence } from "@/components/twin/LivingTwinPresence";
 import {
@@ -68,13 +74,14 @@ function copyFor(lang: Lang): Copy {
       loading: "Loading your Twin…",
       unavailable: "Your Twin is temporarily unavailable.",
       dataGapBanner:
-        "Training-load data could not be loaded right now. Showing what we already know.",
+        "Training-load data could not be loaded. Region estimates are unavailable until the source recovers.",
       evidenceWindow: (days) => `Based on the last ${days} days of logged sets.`,
       bandLabel: { fresh: "Fresh", moderate: "Moderate", fatigued: "Fatigued", unknown: "No data" },
       volume: "Recent volume",
       lastTrained: (hours) => (hours < 1 ? "Trained under an hour ago" : `Trained ${hours}h ago`),
       hoursAgo: (hours) => (hours < 1 ? "under 1h ago" : `${hours}h ago`),
-      noEvidence: "No sets logged for this region recently.",
+      noEvidence:
+        "Not enough complete, supported set data for this region. Missing weights or reps and bodyweight effort cannot produce a recovery estimate.",
       viewLabel: { front: "Front", back: "Back" },
       selectPrompt: "Select a region on the body to see its evidence.",
       offBody: "Not on the body",
@@ -102,7 +109,8 @@ function copyFor(lang: Lang): Copy {
       "Apskaičiuotas atsistatymas kiekvienam kūno regionui pagal tavo registruotas treniruotes — ne diagnozė ir ne prognozė.",
     loading: "Kraunamas tavo dvynys…",
     unavailable: "Tavo dvynys šiuo metu nepasiekiamas.",
-    dataGapBanner: "Nepavyko įkelti krūvio duomenų. Rodome tai, ką jau žinome.",
+    dataGapBanner:
+      "Nepavyko įkelti krūvio duomenų. Regionų įverčiai nepasiekiami, kol neatsinaujins duomenų šaltinis.",
     evidenceWindow: (days) => `Remiantis pastarųjų ${days} dienų registruotais setais.`,
     bandLabel: {
       fresh: "Švieži",
@@ -114,7 +122,8 @@ function copyFor(lang: Lang): Copy {
     lastTrained: (hours) =>
       hours < 1 ? "Treniruota mažiau nei prieš valandą" : `Treniruota prieš ${hours} val.`,
     hoursAgo: (hours) => (hours < 1 ? "mažiau nei prieš 1 val." : `prieš ${hours} val.`),
-    noEvidence: "Šiam regionui pastaruoju metu setų neregistruota.",
+    noEvidence:
+      "Šiam regionui nepakanka išsamių, modelio palaikomų setų duomenų. Trūkstamas svoris ar pakartojimai ir pratimų su kūno svoriu pastangos neleidžia įvertinti atsistatymo.",
     viewLabel: { front: "Priekis", back: "Nugara" },
     selectPrompt: "Pasirink kūno regioną, kad pamatytum jo įrodymus.",
     offBody: "Ne ant kūno",
@@ -142,13 +151,6 @@ const BAND_TONE: Record<TwinRegionRecoveryBand, string> = {
   unknown: "border-white/[0.08] bg-white/[0.025] text-neutral-500",
 };
 
-const BAND_DOT: Record<TwinRegionRecoveryBand, string> = {
-  fresh: "bg-emerald-400",
-  moderate: "bg-amber-400",
-  fatigued: "bg-rose-500",
-  unknown: "bg-neutral-600",
-};
-
 function formatUpdated(computedAt: string, lang: Lang): string {
   const parsed = new Date(computedAt);
   if (Number.isNaN(parsed.getTime())) return "—";
@@ -168,11 +170,18 @@ function RegionReadout({
   region,
   copy,
   label,
+  snapshot,
+  layer,
+  language,
 }: {
   region: TwinRegionState | null;
   copy: Copy;
   label: string | null;
+  snapshot: TwinSnapshot;
+  layer: TwinLayer;
+  language: "lt" | "en";
 }) {
+  const layerCopy = twinLayerCopy(language);
   if (!region || !label) {
     return (
       <div className="rounded-[1.75rem] border border-white/[0.07] bg-black/30 p-5 backdrop-blur-xl">
@@ -180,38 +189,55 @@ function RegionReadout({
       </div>
     );
   }
-
+  const reading = getTwinRegionDisplay(snapshot, region.region, layer);
+  const known = reading.value !== null;
+  const tone =
+    layer === "recovery"
+      ? BAND_TONE[known ? region.recoveryBand : "unknown"]
+      : "border-sky-300/20 bg-sky-300/[0.04] text-sky-200";
   return (
     <div
-      className={`rounded-[1.75rem] border p-5 backdrop-blur-xl ${BAND_TONE[region.recoveryBand]}`}
+      className={`rounded-[1.75rem] border p-5 backdrop-blur-xl ${tone}`}
+      data-twin-reading={layer}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-500">
-            {copy.recovery}
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-400">
+            {layerCopy.label[layer]}
           </p>
-          <h2 className="mt-1 truncate text-xl font-semibold text-white">{label}</h2>
+          <h2 className="mt-1 break-words text-xl font-semibold text-white">{label}</h2>
         </div>
-        <span className="flex shrink-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em]">
-          <span className={`size-2 rounded-full ${BAND_DOT[region.recoveryBand]}`} />
-          {copy.bandLabel[region.recoveryBand]}
+        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em]">
+          <span
+            className="size-2 shrink-0 rounded-full"
+            style={{ backgroundColor: TWIN_DISPLAY_COLORS[reading.tone] }}
+          />
+          {layerCopy.band[reading.tone]}
         </span>
       </div>
-
-      {region.provenance === "calculated" && region.recoveryPct !== null ? (
+      {known ? (
         <>
-          <div className="mt-5 flex items-end gap-2">
-            <span className="font-mono text-6xl leading-none tracking-[-0.08em] text-white">
-              {region.recoveryPct}
+          <div className="mt-5" data-twin-reading-value>
+            <span className="break-all font-mono text-5xl leading-none tracking-[-0.06em] text-white">
+              {new Intl.NumberFormat(language === "lt" ? "lt-LT" : "en-GB", {
+                maximumFractionDigits: 0,
+              }).format(reading.value!)}
             </span>
-            <span className="pb-1 font-mono text-lg text-neutral-500">%</span>
+            <p className="mt-2 font-mono text-xs text-neutral-400">{layerCopy.unit[layer]}</p>
           </div>
+          <p className="mt-3 text-xs text-neutral-400">{layerCopy.source}</p>
           <div className="mt-4 h-px bg-white/[0.08]" />
           <div className="mt-4 grid grid-cols-2 gap-4">
-            <Instrument
-              label={copy.volume}
-              value={region.volumeKg !== null ? `${region.volumeKg} kg` : "—"}
-            />
+            {layer === "recovery" && (
+              <Instrument
+                label={copy.volume}
+                value={formatTwinValue(
+                  getTwinRegionDisplay(snapshot, region.region, "logged_volume").value,
+                  "logged_volume",
+                  language,
+                )}
+              />
+            )}
             <Instrument
               label={copy.metaLastTrained}
               value={
@@ -223,7 +249,7 @@ function RegionReadout({
           </div>
         </>
       ) : (
-        <p className="mt-4 text-sm text-neutral-500">{copy.noEvidence}</p>
+        <p className="mt-4 text-sm text-neutral-400">{copy.noEvidence}</p>
       )}
     </div>
   );
@@ -240,9 +266,15 @@ export function TwinSnapshotView({
   label: (region: string) => string;
   lang?: Lang;
 }) {
-  const withEvidence = data.regions.filter((region) => region.provenance === "calculated");
-  const ranked = [...withEvidence].sort(
-    (left, right) => (left.recoveryPct ?? 100) - (right.recoveryPct ?? 100),
+  const [layer, setLayer] = useState<TwinLayer>("recovery");
+  const language = baseLang(lang);
+  const layerCopy = twinLayerCopy(language);
+  const display = (id: string) => getTwinRegionDisplay(data, id, layer);
+  const withEvidence = data.regions.filter((region) => display(region.region).value !== null);
+  const ranked = [...withEvidence].sort((left, right) =>
+    layer === "recovery"
+      ? (left.recoveryPct ?? 100) - (right.recoveryPct ?? 100)
+      : (right.volumeKg ?? 0) - (left.volumeKg ?? 0),
   );
   const leastRecovered = ranked.find((region) => isAnatomicalRegion(region.region)) ?? ranked[0];
   const [view, setView] = useState<BodyView>(() =>
@@ -301,7 +333,7 @@ export function TwinSnapshotView({
               {copy.title}
             </h1>
             <p className="mt-2 max-w-lg text-sm leading-relaxed text-neutral-500">
-              {copy.description}
+              {layer === "recovery" ? copy.description : layerCopy.volumeDescription}
             </p>
           </div>
 
@@ -324,13 +356,16 @@ export function TwinSnapshotView({
           >
             <RegionReadout
               region={selected}
+              snapshot={data}
+              layer={layer}
+              language={language}
               copy={copy}
               label={selected ? label(selected.region) : null}
             />
 
             <div className="mt-4 hidden lg:block">
               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-600">
-                {copy.ranking}
+                {layer === "recovery" ? copy.ranking : layerCopy.ranking}
               </p>
               <div className="mt-2 space-y-1">
                 {ranked.slice(0, 4).map((region) => (
@@ -342,11 +377,16 @@ export function TwinSnapshotView({
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span
-                        className={`size-1.5 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
+                        className="size-1.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor: TWIN_DISPLAY_COLORS[display(region.region).tone],
+                        }}
                       />
                       <span className="truncate">{label(region.region)}</span>
                     </span>
-                    <span className="font-mono text-neutral-600">{region.recoveryPct ?? "—"}%</span>
+                    <span className="shrink-0 font-mono text-neutral-400">
+                      {formatTwinValue(display(region.region).value, layer, language)}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -356,6 +396,8 @@ export function TwinSnapshotView({
           <div className="order-1 min-w-0 px-2 pb-4 lg:order-2">
             <TwinStage
               snapshot={data}
+              layer={layer}
+              onLayerChange={setLayer}
               selectedRegion={selectedRegion}
               onSelectRegion={selectRegion}
               view={view}
@@ -365,28 +407,37 @@ export function TwinSnapshotView({
             />
           </div>
 
-          <aside className="order-3 hidden px-7 pb-8 lg:block">
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-600">
-              {copy.legend}
+          <aside className="order-3 hidden px-7 pb-8 lg:block" data-twin-legend={layer}>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-400">
+              {layer === "recovery" ? copy.legend : layerCopy.volumeLegend}
             </p>
             <div className="mt-3 space-y-3">
-              {(["fresh", "moderate", "fatigued", "unknown"] as TwinRegionRecoveryBand[]).map(
-                (band) => (
-                  <div key={band} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="flex items-center gap-2 text-neutral-500">
-                      <span className={`size-2 rounded-full ${BAND_DOT[band]}`} />
-                      {copy.bandLabel[band]}
-                    </span>
-                    <span className="font-mono text-neutral-700">
-                      {data.regions.filter((region) => region.recoveryBand === band).length}
-                    </span>
-                  </div>
-                ),
-              )}
+              {(layer === "recovery"
+                ? (["fresh", "moderate", "fatigued", "unknown"] as const)
+                : (["volume_low", "volume_medium", "volume_high", "unknown"] as const)
+              ).map((band) => (
+                <div key={band} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="flex items-center gap-2 text-neutral-400">
+                    <span
+                      className="size-2 rounded-full"
+                      style={{ backgroundColor: TWIN_DISPLAY_COLORS[band] }}
+                    />
+                    {layerCopy.band[band]}
+                  </span>
+                  <span className="font-mono text-neutral-500">
+                    {data.regions.filter((region) => display(region.region).tone === band).length}
+                  </span>
+                </div>
+              ))}
             </div>
-            <p className="mt-6 text-xs leading-relaxed text-neutral-600">
+            <p className="mt-6 text-xs leading-relaxed text-neutral-400">
               {copy.evidenceWindow(data.evidenceWindowDays)}
             </p>
+            {layer === "logged_volume" && (
+              <p className="mt-3 text-xs leading-relaxed text-neutral-400">
+                {layerCopy.volumeNote}
+              </p>
+            )}
           </aside>
         </div>
       </section>
@@ -420,12 +471,13 @@ export function TwinSnapshotView({
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span
-                    className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: TWIN_DISPLAY_COLORS[display(region.region).tone] }}
                   />
                   <span className="truncate text-sm text-foreground">{label(region.region)}</span>
                 </span>
                 <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                  {region.recoveryPct === null ? "—" : `${region.recoveryPct}%`}
+                  {formatTwinValue(display(region.region).value, layer, language)}
                 </span>
               </button>
             ))}
