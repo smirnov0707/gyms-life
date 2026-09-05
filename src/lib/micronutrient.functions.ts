@@ -64,7 +64,7 @@ foodFix = concrete foods with portions.
 supplement = a supplement row to add, or null when food is enough or it is already covered.
 strengths = 2-3 things already good. warnings = interaction/overdose/medical cautions plus a note that this is not a diagnosis.
 
-ATHLETE: ${snap.profile.gender}, ${age ?? "?"} y, ${snap.profile.weight} kg, ${snap.profile.height} cm, goal ${snap.profile.goal}, diet ${snap.profile.diet}.
+ATHLETE: ${snap.profile.gender}, ${age ?? "?"} y, ${snap.profile.weight === null ? "weight not recorded" : `${snap.profile.weight} kg`}, ${snap.profile.height} cm, goal ${snap.profile.goal}, diet ${snap.profile.diet}.
 TRAINING: ${snap.training.sessions14d} sessions in 14 days, avg sleep ${snap.training.avgSleep} h, avg readiness ${snap.training.avgReadiness}.
 NUTRITION: ${snap.days} logged days, avg ${snap.avgKcal} kcal/day, avg ${snap.avgProtein} g protein/day.
 FOOD LOG: ${snap.foodEntries.map((f) => `${f.day} ${f.food} (${f.kcal}kcal P${f.protein}/C${f.carbs}/F${f.fat})`).join("; ") || "empty"}.
