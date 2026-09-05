@@ -1,3 +1,7 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Mesh, Raycaster, Vector3 } from "three";
 import { createTwinBody } from "./twin-body.geometry";
@@ -7,6 +11,19 @@ import surface from "./twin-body.surface.json";
 const faces = Object.values(surface.groups).flat();
 
 describe("continuous generic Twin surface", () => {
+  it("reproduces the checked-in surface without touching production data", () => {
+    const directory = mkdtempSync(join(tmpdir(), "twin-surface-"));
+    const output = join(directory, "surface.json");
+    try {
+      execFileSync(process.execPath, [resolve("scripts/generate-twin-surface.mjs")], {
+        env: { ...process.env, TWIN_SURFACE_OUTPUT: output },
+        timeout: 20000,
+      });
+      expect(JSON.parse(readFileSync(output, "utf8"))).toEqual(surface);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }, 30000);
   it("retains exactly the supported groups and a neutral non-measured surface", () => {
     expect(Object.keys(surface.groups).sort()).toEqual(["neutral", ...TWIN_BODY_REGIONS].sort());
     expect(surface.version).toBe("generic-human-surface-1");
@@ -16,7 +33,9 @@ describe("continuous generic Twin surface", () => {
     expect(count).toBeGreaterThan(1000);
     expect(count).toBeLessThanOrEqual(15000);
     expect(faces.length / 3).toBeLessThanOrEqual(24000);
-    expect(faces.every((index) => Number.isInteger(index) && index >= 0 && index < count)).toBe(true);
+    expect(faces.every((index) => Number.isInteger(index) && index >= 0 && index < count)).toBe(
+      true,
+    );
     for (const indices of Object.values(surface.groups)) {
       expect(indices.length).toBeGreaterThan(0);
       expect(indices.length % 3).toBe(0);
@@ -59,7 +78,9 @@ describe("continuous generic Twin surface", () => {
       expect(model.meshes).toHaveLength(9);
       const first = model.meshes[0]!;
       for (const mesh of model.meshes) {
-        expect(mesh.geometry.getAttribute("position")).toBe(first.geometry.getAttribute("position"));
+        expect(mesh.geometry.getAttribute("position")).toBe(
+          first.geometry.getAttribute("position"),
+        );
         expect(mesh.geometry.getAttribute("normal")).toBe(first.geometry.getAttribute("normal"));
       }
       const normal = first.geometry.getAttribute("normal");
@@ -70,9 +91,9 @@ describe("continuous generic Twin surface", () => {
       }
       first.geometry.computeBoundingBox();
       const bounds = first.geometry.boundingBox!;
-      expect(bounds.max.y).toBeLessThan(1.90);
+      expect(bounds.max.y).toBeLessThan(1.9);
       expect(bounds.min.y).toBeGreaterThan(0);
-      expect(bounds.max.x - bounds.min.x).toBeLessThan(0.90);
+      expect(bounds.max.x - bounds.min.x).toBeLessThan(0.9);
     } finally {
       model.dispose();
       model.dispose();
@@ -85,11 +106,11 @@ describe("continuous generic Twin surface", () => {
     ["chest", 0.08, 1.36, 2, 0, 0, -1],
     ["back", 0.08, 1.32, -2, 0, 0, 1],
     ["arms", 0.28, 1.24, 2, 0, 0, -1],
-    ["legs", 0.10, 0.75, 2, 0, 0, -1],
+    ["legs", 0.1, 0.75, 2, 0, 0, -1],
     ["glutes", 0.08, 0.95, -2, 0, 0, 1],
     ["abs", 0, 1.15, 2, 0, 0, -1],
     ["shoulders", 2, 1.43, 0, -1, 0, 0],
-    ["core", 2, 1.13, 0, -1, 0, 0],
+    ["core", 0.125, 1.13, 2, 0, 0, -1],
   ] as const)("raycasts the visible %s region", (expected, x, y, z, dx, dy, dz) => {
     const model = createTwinBody();
     try {
@@ -97,7 +118,9 @@ describe("continuous generic Twin surface", () => {
       const ray = new Raycaster(new Vector3(x, y, z), new Vector3(dx, dy, dz));
       const first = ray.intersectObjects(model.meshes, false)[0];
       expect(first?.object).toBeInstanceOf(Mesh);
-      expect(first?.object instanceof Mesh ? model.regionOf.get(first.object) : null).toBe(expected);
+      expect(first?.object instanceof Mesh ? model.regionOf.get(first.object) : null).toBe(
+        expected,
+      );
     } finally {
       model.dispose();
     }
