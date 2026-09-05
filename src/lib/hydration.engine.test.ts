@@ -118,6 +118,18 @@ describe("calculateHydrationTarget", () => {
     expect(result.missingInputs).toEqual([]);
   });
 
+  it("reports a failed read separately from an absent one", () => {
+    // Both leave the target generic, but only one of them is the athlete's
+    // fault to fix — the other will correct itself.
+    const absent = calculateHydrationTarget({ ...base, bodyWeightKg: null });
+    expect(absent.readFailed).toBe(false);
+    expect(absent.basis).toBe("generic");
+
+    const failed = calculateHydrationTarget({ ...base, bodyWeightKg: null, readFailed: true });
+    expect(failed.readFailed).toBe(true);
+    expect(failed.basis).toBe("generic");
+  });
+
   it("clamps to a safe range and says when it did", () => {
     // Drinking far past need is not harmless, so the ceiling is a safety
     // feature and the UI has to be able to explain the number it shows.

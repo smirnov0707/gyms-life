@@ -41,6 +41,7 @@ type Copy = {
   electrolyteNote: string;
   cappedNote: (fromMl: number) => string;
   estimateNote: string;
+  readFailedNote: string;
   saveFailed: string;
   resetToday: string;
 };
@@ -75,6 +76,8 @@ function copyFor(lang: string): Copy {
         `The components add up to ${fromMl} ml. Held at the daily ceiling, since drinking well past need carries its own risk.`,
       estimateNote:
         "A calculated estimate from your logged data, not a measurement or medical advice.",
+      readFailedNote:
+        "Some of your data could not be read just now, so this target may be incomplete.",
       saveFailed: "Could not save that",
       resetToday: "Clear today's intake",
     };
@@ -107,6 +110,8 @@ function copyFor(lang: string): Copy {
       `Dedamosios sudaro ${fromMl} ml. Paliktas dienos maksimumas, nes gerti gerokai daugiau nei reikia taip pat rizikinga.`,
     estimateNote:
       "Apskaičiuotas įvertis pagal tavo registruotus duomenis — ne matavimas ir ne medicininis patarimas.",
+    readFailedNote:
+      "Dalies tavo duomenų dabar nepavyko perskaityti, todėl šis tikslas gali būti nepilnas.",
     saveFailed: "Nepavyko išsaugoti",
     resetToday: "Išvalyti šios dienos suvartojimą",
   };
@@ -275,6 +280,12 @@ export const QuickHydrationWidget: React.FC = () => {
             {target.cappedFromMl !== null ? (
               <p className="mt-3 text-xs leading-5 text-muted-foreground">
                 {copy.cappedNote(target.cappedFromMl)}
+              </p>
+            ) : null}
+
+            {target.readFailed ? (
+              <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                {copy.readFailedNote}
               </p>
             ) : null}
 
