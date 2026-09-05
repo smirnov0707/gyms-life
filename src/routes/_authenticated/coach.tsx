@@ -81,69 +81,103 @@ function CoachPage() {
   };
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-4xl flex-col">
+      <header className="flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
-          <h1 className="text-5xl">{t("coach.title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("coach.sub")}</p>
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
+            <Sparkles className="size-3.5" /> GYMS.LIFE COACH
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            {t("coach.title")}
+          </h1>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">{t("coach.sub")}</p>
         </div>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="ghost" size="sm" className="text-neutral-500 hover:text-white">
           <Link to="/coach-history">
             <History className="size-4" /> {t("coach.history")}
           </Link>
         </Button>
-      </div>
+      </header>
 
       <AiPersonalizationConsentCard />
 
-      <div className="panel min-h-[45vh] p-5">
-        {messages.length === 0 && !busy && (
-          <div className="grid place-items-center gap-3 py-10 text-center text-sm text-muted-foreground">
-            <Sparkles className="size-7 text-primary" />
-            {t("coach.sub")}
-            <div className="mt-2 flex flex-wrap justify-center gap-2">
-              {QUICK.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => void run(t(k))}
-                  className="press lift rounded-full border border-border bg-surface-2 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-                >
-                  {t(k)}
-                </button>
-              ))}
+      <section className="relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(65% 65% at 50% 0%, rgba(16,185,129,.08), transparent 70%)",
+          }}
+        />
+
+        <div className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+          {messages.length === 0 && !busy ? (
+            <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+              <span className="grid size-14 place-items-center rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-400">
+                <Sparkles className="size-5" />
+              </span>
+              <p className="mt-5 max-w-md text-sm leading-relaxed text-neutral-500">{t("coach.sub")}</p>
+              <div className="mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
+                {QUICK.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => void run(t(k))}
+                    className="rounded-full border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-xs text-neutral-400 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/[0.04] hover:text-white"
+                  >
+                    {t(k)}
+                  </button>
+                ))}
+              </div>
             </div>
+          ) : null}
+
+          <div className="mx-auto grid max-w-3xl gap-5">
+            {messages.map((m, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "whitespace-pre-wrap text-sm leading-7",
+                  m.role === "user"
+                    ? "ml-auto max-w-[82%] rounded-2xl bg-emerald-400 px-4 py-3 text-black"
+                    : "max-w-[92%] border-l border-emerald-400/20 pl-4 text-neutral-200",
+                )}
+              >
+                {m.text}
+              </div>
+            ))}
+            {busy ? (
+              <div className="flex items-center gap-2 border-l border-emerald-400/20 pl-4 text-sm text-neutral-500">
+                <Loader2 className="size-4 animate-spin text-emerald-400" /> {t("common.loading")}
+              </div>
+            ) : null}
           </div>
-        )}
-
-        <div className="grid gap-3">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={cn(
-                "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                m.role === "user"
-                  ? "ml-auto bg-primary text-primary-foreground"
-                  : "bg-surface-2 text-foreground",
-              )}
-            >
-              {m.text}
-            </div>
-          ))}
-          {busy && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin text-primary" /> {t("common.loading")}
-            </div>
-          )}
         </div>
-      </div>
 
-      <form onSubmit={send} className="flex gap-2">
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("coach.ph")} />
-        <Button type="submit" disabled={busy} aria-label={t("coach.send")} className="font-bold">
-          <Send className="size-4" />
-        </Button>
-      </form>
+        <form
+          onSubmit={send}
+          className="relative border-t border-white/[0.06] bg-black/30 p-3 backdrop-blur-xl sm:p-4"
+        >
+          <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-1.5 focus-within:border-emerald-400/30">
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("coach.ph")}
+              className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+            />
+            <Button
+              type="submit"
+              disabled={busy || !q.trim()}
+              aria-label={t("coach.send")}
+              size="icon"
+              className="shrink-0 rounded-xl"
+            >
+              <Send className="size-4" />
+            </Button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }
@@ -159,24 +193,24 @@ function AiPersonalizationConsentCard() {
     lang === "lt"
       ? {
           eyebrow: "AI PRIVATUMAS",
-          title: "Leisti asmeninį AI kontekstą",
+          title: "Asmeninis kontekstas",
           description:
-            "Įjungus, Coach ir Daily Brief AI tiekėjui perduos tik 7/28/30 dienų suvestines bei iki 12 aktyvių faktų, pirmenybių ir dėsningumų, kuriuos matai ir gali pataisyti sportininko modelyje. Neperduodami žali įrašai, paskyros vardas ar pokalbių istorija.",
-          active: "Aktyvuota — galite bet kada atšaukti.",
-          inactive: "Išjungta — AI naudoja tik bazinius treniruočių nustatymus.",
-          enable: "Įjungti kontekstą",
-          disable: "Atšaukti sutikimą",
+            "Coach ir Daily Brief AI tiekėjui gali perduoti tik 7/28/30 dienų suvestines bei iki 12 aktyvių faktų, pirmenybių ir dėsningumų. Neperduodami žali įrašai, paskyros vardas ar pokalbių istorija.",
+          active: "Asmeninis kontekstas įjungtas",
+          inactive: "Naudojami tik baziniai treniruočių nustatymai",
+          enable: "Įjungti",
+          disable: "Išjungti",
           saved: "AI privatumo pasirinkimas išsaugotas.",
         }
       : {
           eyebrow: "AI PRIVACY",
-          title: "Allow personalized AI context",
+          title: "Personal context",
           description:
-            "When enabled, Coach and Daily Brief send only 7/28/30-day summaries and up to 12 active facts, preferences, and patterns you can inspect and correct in your athlete model. Raw records, your account name, and chat history are never sent.",
-          active: "Enabled — you can withdraw this at any time.",
-          inactive: "Disabled — AI uses only basic training preferences.",
-          enable: "Enable context",
-          disable: "Withdraw consent",
+            "Coach and Daily Brief can send only 7/28/30-day summaries and up to 12 active facts, preferences, and patterns. Raw records, your account name, and chat history are never sent.",
+          active: "Personal context enabled",
+          inactive: "Using basic training preferences only",
+          enable: "Enable",
+          disable: "Disable",
           saved: "AI privacy preference saved.",
         };
 
@@ -212,27 +246,38 @@ function AiPersonalizationConsentCard() {
   };
 
   return (
-    <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex gap-3">
-        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-            {copy.eyebrow}
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          className={cn(
+            "grid size-8 shrink-0 place-items-center rounded-xl border",
+            enabled
+              ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400"
+              : "border-white/[0.07] bg-white/[0.025] text-neutral-600",
+          )}
+        >
+          <ShieldCheck className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-x-2 text-[9px] font-bold uppercase tracking-[0.16em] text-neutral-600">
+            <span>{copy.eyebrow}</span>
+            <span className={enabled ? "text-emerald-400" : "text-neutral-500"}>
+              {loading ? "…" : enabled ? copy.active : copy.inactive}
+            </span>
           </p>
-          <h2 className="mt-1 text-lg font-semibold">{copy.title}</h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {copy.description}
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {loading ? "…" : enabled ? copy.active : copy.inactive}
+          <p className="mt-1 text-xs text-neutral-500" title={copy.description}>
+            {copy.title}
           </p>
         </div>
       </div>
       <Button
         type="button"
-        variant={enabled ? "outline" : "default"}
+        variant="ghost"
+        size="sm"
         disabled={loading || saving}
         onClick={toggle}
+        className="text-neutral-500 hover:text-white"
+        title={copy.description}
       >
         {saving ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
         {enabled ? copy.disable : copy.enable}
