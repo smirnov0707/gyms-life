@@ -278,14 +278,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         className="fixed bottom-[max(.75rem,var(--sab))] left-[max(.75rem,var(--sal))] right-[max(.75rem,var(--sar))] z-50 md:hidden"
       >
         <div className="relative mx-auto grid max-w-md grid-cols-5 items-end rounded-[1.65rem] border border-white/[0.10] bg-black/88 px-1.5 pb-1.5 pt-2 shadow-[0_20px_80px_rgba(0,0,0,.65)] backdrop-blur-2xl">
-          <MobileDockLink
-            item={mobileSideItems[0]}
-            active={isActive(mobileSideItems[0].to)}
-          />
-          <MobileDockLink
-            item={mobileSideItems[1]}
-            active={isActive(mobileSideItems[1].to)}
-          />
+          <MobileDockLink item={mobileSideItems[0]} active={isActive(mobileSideItems[0].to)} />
+          <MobileDockLink item={mobileSideItems[1]} active={isActive(mobileSideItems[1].to)} />
 
           <Link
             to={twinNavItem.to}
@@ -317,10 +311,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             </span>
           </Link>
 
-          <MobileDockLink
-            item={mobileSideItems[2]}
-            active={isActive(mobileSideItems[2].to)}
-          />
+          <MobileDockLink item={mobileSideItems[2]} active={isActive(mobileSideItems[2].to)} />
           <MoreNavigation dock />
         </div>
       </nav>
