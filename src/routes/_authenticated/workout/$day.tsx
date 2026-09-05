@@ -1,18 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
   Clock,
   Dumbbell,
   Loader2,
+  Minus,
+  Plus,
   SkipForward,
   TimerReset,
   Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  REPS_STEP,
+  WEIGHT_STEP_KG,
+  plannedRepsPrefill,
+  stepValue,
+  suggestedWeightPrefill,
+} from "@/lib/workout-set-prefill";
 import { GlowCard } from "@/components/GlowCard";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { startWorkout } from "@/lib/start-workout.functions";
@@ -256,8 +265,13 @@ function WorkoutPage() {
       }
     },
     onSuccess: (result) => {
-      setReps("");
-      setWeight("");
+      // Reps and weight carry into the next set: the set after this one is
+      // almost always the same, and clearing them made every set of an
+      // exercise cost the same two keyboard entries as the first.
+      //
+      // RPE never carries. It is a fresh subjective judgement each set, and
+      // a stale one re-submitted would be a USER_REPORTED value the person
+      // never actually reported.
       setRpe("");
       setRest(
         (
@@ -342,6 +356,22 @@ function WorkoutPage() {
     (guidance) => guidance.exerciseSlug === exercise?.slug,
   );
   const totalSets = exercise?.sets ?? 0;
+  const suggestedWeight = suggestedWeightPrefill(exerciseGuidance?.suggestedWeightKg);
+
+  // Pre-fill once per exercise, from what the plan and the person's own
+  // history already state. Recording the set that was planned should cost a
+  // single tap; it used to cost two keyboard entries even when nothing had
+  // changed from the plan.
+  const prefilledFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!exercise) return;
+    const key = `${exercise.slug}:${suggestedWeight}`;
+    if (prefilledFor.current === key) return;
+    prefilledFor.current = key;
+    setReps(plannedRepsPrefill(exercise.reps));
+    setWeight(suggestedWeight);
+  }, [exercise, suggestedWeight]);
+
   const adaptedDescription = workoutAdaptation ? adaptationMessage(workoutAdaptation) : null;
   const currentSetComplete = setNumber > totalSets;
   const lastExercise = Boolean(workout && exerciseIndex === workout.exercises.length - 1);
@@ -618,36 +648,105 @@ function WorkoutPage() {
                   )}
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <label
+                        className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                        htmlFor="set-reps"
+                      >
                         Pakartojimai
                       </label>
-                      <Input
-                        className="mt-1 h-11 text-base"
-                        type="number"
-                        inputMode="numeric"
-                        min="1"
-                        max="100"
-                        step="1"
-                        value={reps}
-                        onChange={(e) => setReps(e.target.value)}
-                        placeholder={String(exercise.reps)}
-                      />
+                      {/* Steppers so adjusting a set never opens the keyboard. */}
+                      <div className="mt-1 flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="Sumažinti pakartojimus"
+                          className="size-11 shrink-0 rounded-xl"
+                          onClick={() =>
+                            setReps((v) =>
+                              stepValue(v, -REPS_STEP, { min: 1, max: 100, fallback: 9 }),
+                            )
+                          }
+                        >
+                          <Minus className="size-4" />
+                        </Button>
+                        <Input
+                          id="set-reps"
+                          className="h-11 text-center text-base"
+                          type="number"
+                          inputMode="numeric"
+                          min="1"
+                          max="100"
+                          step="1"
+                          value={reps}
+                          onChange={(e) => setReps(e.target.value)}
+                          placeholder={String(exercise.reps)}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="Padidinti pakartojimus"
+                          className="size-11 shrink-0 rounded-xl"
+                          onClick={() =>
+                            setReps((v) =>
+                              stepValue(v, REPS_STEP, { min: 1, max: 100, fallback: 7 }),
+                            )
+                          }
+                        >
+                          <Plus className="size-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      <label
+                        className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                        htmlFor="set-weight"
+                      >
                         Svoris, kg
                       </label>
-                      <Input
-                        className="mt-1 h-11 text-base"
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        max="1000"
-                        step="0.5"
-                        value={weight}
-                        onChange={(e) => setWeight(e.target.value)}
-                        placeholder="0"
-                      />
+                      <div className="mt-1 flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="Sumažinti svorį"
+                          className="size-11 shrink-0 rounded-xl"
+                          onClick={() =>
+                            setWeight((v) =>
+                              stepValue(v, -WEIGHT_STEP_KG, { min: 0, max: 1000, fallback: 2.5 }),
+                            )
+                          }
+                        >
+                          <Minus className="size-4" />
+                        </Button>
+                        <Input
+                          id="set-weight"
+                          className="h-11 text-center text-base"
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          max="1000"
+                          step="0.5"
+                          value={weight}
+                          onChange={(e) => setWeight(e.target.value)}
+                          placeholder="0"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="Padidinti svorį"
+                          className="size-11 shrink-0 rounded-xl"
+                          onClick={() =>
+                            setWeight((v) =>
+                              stepValue(v, WEIGHT_STEP_KG, { min: 0, max: 1000, fallback: 0 }),
+                            )
+                          }
+                        >
+                          <Plus className="size-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
