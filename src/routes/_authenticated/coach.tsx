@@ -140,7 +140,7 @@ function CoachPage() {
 
       <form onSubmit={send} className="flex gap-2">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("coach.ph")} />
-        <Button type="submit" disabled={busy} className="font-bold">
+        <Button type="submit" disabled={busy} aria-label={t("coach.send")} className="font-bold">
           <Send className="size-4" />
         </Button>
       </form>

@@ -265,6 +265,7 @@ function RemindersPage() {
                 <Button
                   size="icon"
                   variant="ghost"
+                  aria-label={t("rem.removeMealTime")}
                   onClick={() =>
                     save({
                       ...settings,
