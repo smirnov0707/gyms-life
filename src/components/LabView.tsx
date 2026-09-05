@@ -184,10 +184,13 @@ function copyFor(lang: Lang): Copy {
 }
 
 function statusTone(status: HypothesisStatus): string {
-  if (status === "supported") return "text-emerald-400";
-  if (status === "contradicted") return "text-rose-400";
-  if (status === "monitoring") return "text-amber-300";
-  return "text-neutral-500";
+  // These rows sit on the page ground rather than the dark stage, so each
+  // tone carries a light-mode shade: a 400-weight accent that reads on
+  // onyx disappears on near-white.
+  if (status === "supported") return "text-emerald-400 light:text-emerald-700";
+  if (status === "contradicted") return "text-rose-400 light:text-rose-700";
+  if (status === "monitoring") return "text-amber-300 light:text-amber-700";
+  return "text-muted-foreground";
 }
 
 function progressFor(hypothesis: AthleteHypothesis): number {
@@ -200,13 +203,13 @@ function progressFor(hypothesis: AthleteHypothesis): number {
 
 function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; copy: Copy }) {
   return (
-    <article className="border-b border-white/[0.06] py-4 last:border-b-0">
+    <article className="border-b border-border py-4 last:border-b-0">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
             {copy.domainLabel[hypothesis.domain]}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-neutral-300">
+          <p className="mt-1 text-sm leading-relaxed text-foreground">
             {copy.statementLabel[hypothesis.statementKey] ?? copy.statementFallback}
           </p>
         </div>
@@ -217,13 +220,13 @@ function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; co
         </span>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-foreground/[0.08]">
           <div
             className="h-full rounded-full bg-emerald-400/70"
             style={{ width: `${progressFor(hypothesis)}%` }}
           />
         </div>
-        <span className="shrink-0 font-mono text-[10px] text-neutral-600">
+        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
           {hypothesis.evidenceCount}/{hypothesis.minimumEvidenceCount}
         </span>
       </div>
@@ -233,14 +236,14 @@ function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; co
 
 function DecisionRow({ decision, copy }: { decision: LabDecision; copy: Copy }) {
   return (
-    <article className="flex items-start justify-between gap-4 border-b border-white/[0.06] py-3 last:border-b-0">
+    <article className="flex items-start justify-between gap-4 border-b border-border py-3 last:border-b-0">
       <div className="min-w-0">
-        <p className="text-sm text-neutral-300">{copy.actionLabel[decision.action]}</p>
-        <p className="mt-1 text-[11px] text-neutral-600">
+        <p className="text-sm text-foreground">{copy.actionLabel[decision.action]}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
           {decision.decisionOn} · {copy.basisLabel[decision.basis]}
         </p>
       </div>
-      <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+      <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
         {decision.outcome ? copy.outcomeLabel[decision.outcome] : copy.noOutcome}
       </span>
     </article>
@@ -326,8 +329,8 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
       </section>
 
       {secondary.length > 0 ? (
-        <section className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] px-5 py-2 sm:px-6">
-          <p className="pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600">
+        <section className="rounded-[1.75rem] border border-border bg-surface-2 px-5 py-2 sm:px-6">
+          <p className="pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             {copy.otherInvestigations}
           </p>
           <div className="mt-1">
@@ -338,7 +341,7 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02]">
+      <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
           type="button"
           onClick={() => setHistoryOpen((open) => !open)}
@@ -346,22 +349,22 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
         >
           <div>
-            <p className="text-sm font-semibold text-white">{copy.decisionHistory}</p>
-            <p className="mt-1 text-xs text-neutral-600">{copy.accuracyNote}</p>
+            <p className="text-sm font-semibold text-foreground">{copy.decisionHistory}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{copy.accuracyNote}</p>
           </div>
           <ChevronDown
-            className={`size-4 shrink-0 text-neutral-500 transition-transform ${historyOpen ? "rotate-180" : ""}`}
+            className={`size-4 shrink-0 text-muted-foreground transition-transform ${historyOpen ? "rotate-180" : ""}`}
           />
         </button>
 
         {historyOpen ? (
-          <div className="grid gap-0 border-t border-white/[0.06] lg:grid-cols-2">
-            <div className="px-5 py-4 sm:px-6 lg:border-r lg:border-white/[0.06]">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+          <div className="grid gap-0 border-t border-border lg:grid-cols-2">
+            <div className="px-5 py-4 sm:px-6 lg:border-r lg:border-border">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                 {copy.decisionsTitle}
               </p>
               {data.decisions.length === 0 ? (
-                <p className="mt-3 text-sm text-neutral-500">{copy.decisionsEmpty}</p>
+                <p className="mt-3 text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
               ) : (
                 <div className="mt-1">
                   {data.decisions.map((decision) => (
@@ -372,33 +375,35 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
             </div>
 
             <div className="px-5 py-4 sm:px-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                 {copy.accuracyTitle}
               </p>
               <div className="mt-2 space-y-3">
                 {data.decisionAccuracy.byBasis.length === 0 ? (
-                  <p className="text-sm text-neutral-500">{copy.decisionsEmpty}</p>
+                  <p className="text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
                 ) : (
                   data.decisionAccuracy.byBasis.map((entry) => (
                     <div
                       key={entry.basis}
-                      className="flex items-center justify-between gap-4 border-b border-white/[0.06] py-3 last:border-b-0"
+                      className="flex items-center justify-between gap-4 border-b border-border py-3 last:border-b-0"
                     >
                       <div>
-                        <p className="text-xs text-neutral-400">{copy.basisLabel[entry.basis]}</p>
-                        <p className="mt-1 text-[10px] text-neutral-600">
+                        <p className="text-xs text-muted-foreground">
+                          {copy.basisLabel[entry.basis]}
+                        </p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
                           {copy.answeredOf(entry.answered, entry.proposed)}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
                         {entry.fitRate === null ? (
-                          <p className="max-w-36 text-[10px] leading-relaxed text-neutral-600">
+                          <p className="max-w-36 text-[10px] leading-relaxed text-muted-foreground">
                             {copy.accuracyPending(data.decisionAccuracy.minimumAnswered)}
                           </p>
                         ) : (
-                          <p className="font-mono text-2xl text-white">
+                          <p className="font-mono text-2xl text-foreground">
                             {Math.round(entry.fitRate * 100)}%
-                            <span className="ml-1 text-[9px] uppercase tracking-[0.12em] text-neutral-600">
+                            <span className="ml-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                               {copy.fitRate}
                             </span>
                           </p>
@@ -428,8 +433,8 @@ export function LabView() {
 
   if (isLoading) {
     return (
-      <section className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6">
-        <div className="flex items-center gap-2 text-sm text-neutral-500">
+      <section className="rounded-3xl border border-border bg-surface-2 p-6">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
         </div>
       </section>
@@ -437,7 +442,7 @@ export function LabView() {
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-neutral-500">{copy.unavailable}</p>;
+    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
   }
 
   return <LabOverviewView data={data} copy={copy} />;
