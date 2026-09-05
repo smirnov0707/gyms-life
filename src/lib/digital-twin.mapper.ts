@@ -60,7 +60,10 @@ export function mapDigitalAthleteStateToTwinSnapshot(
   state: DigitalAthleteState,
   computedAt: Date,
 ): TwinSnapshot {
-  const calculatedRegions = state.muscleLoad.map(calculatedRegion);
+  const dataAvailable = !state.dataGaps.includes("muscle_load_data_unavailable");
+  const calculatedRegions = state.muscleLoad.map((load) =>
+    dataAvailable ? calculatedRegion(load) : unknownRegion(load.muscleGroup),
+  );
   const calculatedRegionNames = new Set(calculatedRegions.map((region) => region.region));
   const placeholderRegions = KNOWN_MUSCLE_GROUPS.filter(
     (group) => !calculatedRegionNames.has(group),
@@ -70,7 +73,7 @@ export function mapDigitalAthleteStateToTwinSnapshot(
     calculationVersion: DIGITAL_ATHLETE_CALCULATION_VERSION,
     computedAt: computedAt.toISOString(),
     evidenceWindowDays: MUSCLE_LOAD_LOOKBACK_DAYS,
-    dataAvailable: !state.dataGaps.includes("muscle_load_data_unavailable"),
+    dataAvailable,
     regions: [...calculatedRegions, ...placeholderRegions],
   });
 }

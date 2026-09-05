@@ -9,7 +9,7 @@ import {
 } from "./muscle-load.schema";
 
 /** Fatigue decays with this time constant. Change deliberately: it is user-visible. */
-export const MUSCLE_LOAD_HALF_LIFE_HOURS = 40;
+export const MUSCLE_LOAD_DECAY_TIME_CONSTANT_HOURS = 40;
 /** Fatigue points contributed per ton (1000 kg) of fresh volume. */
 export const MUSCLE_LOAD_VOLUME_FATIGUE_FACTOR = 7;
 
@@ -19,6 +19,8 @@ export const MUSCLE_LOAD_VOLUME_FATIGUE_FACTOR = 7;
  * involved. `recoveryPct` is a calculated estimate (exponential fatigue
  * decay from logged volume), never a physiological measurement.
  *
+ * Groups with incomplete or unsupported completed-set inputs are omitted so
+ * the canonical Twin mapper can mark them unknown. Raw set logs are unchanged.
  * Sorted by recoveryPct ascending: most-fatigued groups first.
  */
 export function calculateMuscleGroupLoad(
@@ -34,28 +36,53 @@ export function calculateMuscleGroupLoad(
 
   const byGroup = new Map<string, { volume: number; fatigue: number; lastHours: number | null }>();
   const nowMs = now.getTime();
+  if (!Number.isFinite(nowMs)) throw new RangeError("Muscle load requires a valid evaluation time");
+  // Missing/unsupported load in a completed set invalidates the group's estimate,
+  // not the athlete's raw log. A partial sum must not masquerade as full evidence.
+  const unsupportedGroups = new Set<string>();
 
   for (const set of parsedSets) {
-    if (set.done === false) continue;
+    if (set.done !== true) continue;
     const group = groupBySlug.get(set.exercise_slug);
     if (!group) continue;
 
-    const reps = set.reps ?? 0;
-    const weight = set.weight_kg ?? 0;
+    const performedMs = Date.parse(set.performed_at);
+    // A future entry is not a past workout and must not be clamped to "just now".
+    if (Number.isFinite(performedMs) && performedMs > nowMs) continue;
+    const reps = set.reps;
+    const weight = set.weight_kg;
+    if (
+      !Number.isFinite(performedMs) ||
+      reps === null ||
+      reps <= 0 ||
+      weight === null ||
+      weight <= 0
+    ) {
+      // Zero external weight is not zero effort: bodyweight/assisted/timed work
+      // needs a different model. Do not invent a weight or a recovery percentage.
+      unsupportedGroups.add(group);
+      continue;
+    }
     const volume = reps * weight;
-    const hoursAgo = Math.max(0, (nowMs - new Date(set.performed_at).getTime()) / 3_600_000);
+    if (!Number.isFinite(volume) || volume > Number.MAX_SAFE_INTEGER) {
+      unsupportedGroups.add(group);
+      continue;
+    }
+    const hoursAgo = (nowMs - performedMs) / 3_600_000;
 
     const entry = byGroup.get(group) ?? { volume: 0, fatigue: 0, lastHours: null };
     entry.volume += volume;
+    if (entry.volume > Number.MAX_SAFE_INTEGER) unsupportedGroups.add(group);
     entry.fatigue +=
       (volume / 1000) *
-      Math.exp(-hoursAgo / MUSCLE_LOAD_HALF_LIFE_HOURS) *
+      Math.exp(-hoursAgo / MUSCLE_LOAD_DECAY_TIME_CONSTANT_HOURS) *
       MUSCLE_LOAD_VOLUME_FATIGUE_FACTOR;
     entry.lastHours = entry.lastHours === null ? hoursAgo : Math.min(entry.lastHours, hoursAgo);
     byGroup.set(group, entry);
   }
 
   return [...byGroup.entries()]
+    .filter(([group]) => !unsupportedGroups.has(group))
     .map(([muscleGroup, value]) =>
       MuscleGroupLoadSchema.parse({
         muscleGroup,

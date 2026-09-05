@@ -19,7 +19,8 @@ import {
  * legend, so the colour always carries the meaning that screen defines.
  * `hot` is always "most worth your attention".
  */
-export type BodyMapTone = "cool" | "warm" | "hot" | "muted";
+export type BodyMapTone =
+  "cool" | "warm" | "hot" | "muted" | "volume_low" | "volume_medium" | "volume_high";
 
 export type BodyMapRegion = {
   region: string;
@@ -35,6 +36,9 @@ const TONE_GRADIENT: Record<BodyMapTone, { top: string; bottom: string }> = {
   warm: { top: "#fcd34d", bottom: "#d97706" },
   hot: { top: "#fb7185", bottom: "#be123c" },
   muted: { top: "#94a3b8", bottom: "#64748b" },
+  volume_low: { top: "#6585a0", bottom: "#49657c" },
+  volume_medium: { top: "#88bfdf", bottom: "#659fc3" },
+  volume_high: { top: "#c9e9f8", bottom: "#9bd4ee" },
 };
 
 /** Recovery's own vocabulary, mapped onto the display scale. */
@@ -50,6 +54,9 @@ const TONE_STROKE: Record<BodyMapTone, string> = {
   warm: "stroke-amber-200/70",
   hot: "stroke-rose-200/70",
   muted: "stroke-muted-foreground/35",
+  volume_low: "stroke-sky-200/40",
+  volume_medium: "stroke-sky-200/60",
+  volume_high: "stroke-sky-100/80",
 };
 
 /** Regions with nothing behind them stay quiet: present, not claiming. */
@@ -58,6 +65,9 @@ const TONE_OPACITY: Record<BodyMapTone, number> = {
   warm: 0.92,
   hot: 0.94,
   muted: 0.3,
+  volume_low: 0.85,
+  volume_medium: 0.9,
+  volume_high: 0.94,
 };
 
 export type BodyMapProps = {

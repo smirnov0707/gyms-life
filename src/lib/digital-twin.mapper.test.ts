@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 import { mapDigitalAthleteStateToTwinSnapshot } from "./digital-twin.mapper";
+import { calculateMuscleGroupLoad } from "./muscle-load.engine";
 import { KNOWN_MUSCLE_GROUPS } from "./muscle-load.schema";
 
 const baseState: DigitalAthleteState = {
@@ -156,8 +157,48 @@ describe("mapDigitalAthleteStateToTwinSnapshot", () => {
 
   it("carries the calculation version and evidence window through, not a fabricated value", () => {
     const snapshot = mapDigitalAthleteStateToTwinSnapshot(baseState, now);
-    expect(snapshot.calculationVersion).toBe("digital-athlete-v1");
+    expect(snapshot.calculationVersion).toBe("digital-athlete-v2");
     expect(snapshot.evidenceWindowDays).toBe(7);
     expect(snapshot.computedAt).toBe(now.toISOString());
+  });
+});
+
+describe("Twin evidence regressions", () => {
+  const now = new Date("2026-09-05T12:00:00Z");
+  it("does not promote a missing weight to a recovered region", () => {
+    const muscleLoad = calculateMuscleGroupLoad(
+      [
+        {
+          exercise_slug: "bench",
+          reps: 8,
+          weight_kg: null,
+          done: true,
+          performed_at: "2026-09-05T11:00:00Z",
+        },
+      ],
+      [{ slug: "bench", muscle_group: "chest" }],
+      now,
+    );
+    const twin = mapDigitalAthleteStateToTwinSnapshot({ ...baseState, muscleLoad }, now);
+    expect(twin.regions.find((region) => region.region === "chest")).toMatchObject({
+      provenance: "unknown",
+      recoveryPct: null,
+      volumeKg: null,
+    });
+  });
+
+  it("does not display stale calculated regions when their source is unavailable", () => {
+    const twin = mapDigitalAthleteStateToTwinSnapshot(
+      {
+        ...baseState,
+        dataGaps: ["muscle_load_data_unavailable"],
+        muscleLoad: [
+          { muscleGroup: "chest", volumeKg: 500, recoveryPct: 100, lastTrainedHoursAgo: 48 },
+        ],
+      },
+      now,
+    );
+    expect(twin.dataAvailable).toBe(false);
+    expect(twin.regions.every((region) => region.provenance === "unknown")).toBe(true);
   });
 });

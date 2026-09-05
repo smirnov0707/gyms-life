@@ -91,8 +91,13 @@ function stableJson(value: unknown): string {
 }
 
 /** A source-state digest lets one evolving state be stored only once. */
-export function fingerprintDigitalAthleteState(state: DigitalAthleteState): string {
-  return createHash("sha256").update(stableJson(state)).digest("hex");
+export function fingerprintDigitalAthleteState(
+  state: DigitalAthleteState,
+  calculationVersion: string = DIGITAL_ATHLETE_CALCULATION_VERSION,
+): string {
+  // Identical values under a different derivation must retain their own model
+  // identity. Existing snapshots are immutable; no historical row is rewritten.
+  return createHash("sha256").update(stableJson({ calculationVersion, state })).digest("hex");
 }
 
 /** Do not turn a transient source-query failure into permanent user history. */

@@ -4,11 +4,9 @@ export const TwinRegionRecoveryBandSchema = z.enum(["fresh", "moderate", "fatigu
 export type TwinRegionRecoveryBand = z.infer<typeof TwinRegionRecoveryBandSchema>;
 
 /**
- * One body region's state for the Digital Twin renderer. Deliberately has
- * no `layer` field yet: recovery (fatigue-decay from logged volume) is the
- * only calculated per-region signal that exists today. Add a layer axis
- * only when a second, genuinely distinct calculation exists to back it —
- * not to pre-build a taxonomy for data that isn't real yet.
+ * One canonical region's calculated recovery and logged weight × reps.
+ * Layers are presentation choices, not a second persisted source of truth.
+ * Unknown region values must not become zero-volume or recovered defaults.
  */
 export const TwinRegionStateSchema = z
   .object({

@@ -19,6 +19,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import {
   TWIN_CAMERA,
+  TWIN_DISPLAY_COLORS,
   fittedTwinDistance,
   isTwinTap,
   moveTwinCamera,
@@ -28,7 +29,6 @@ import {
   type TwinSceneState,
 } from "./twin-scene.model";
 
-const COLORS = { fresh: "#438c7a", moderate: "#a58b55", fatigued: "#a65e6c", unknown: "#566068" };
 export type TwinSceneHandle = {
   setState: (state: TwinSceneState) => void;
   select: (region: string | null) => void;
@@ -148,7 +148,7 @@ export function mountTwinScene(
       const moving =
         shouldAnimateTwin(true, reducedMotion.matches, motionEnabled) &&
         state.dataAvailable &&
-        state.regions.some((region) => region.band !== "unknown");
+        state.regions.some((region) => region.display.value !== null);
       if (moving && time - lastPaint < 1000 / 30) {
         requestRender();
         return;
@@ -173,9 +173,13 @@ export function mountTwinScene(
     cleanups.push(() => controls.removeEventListener("change", requestRender));
 
     function applyState() {
+      canvas.dataset["twinLayer"] = state.layer;
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
-        const color = new Color("#48565d").lerp(new Color(COLORS[value?.band ?? "unknown"]), 0.55);
+        const color = new Color("#48565d").lerp(
+          new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]),
+          0.55,
+        );
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
           material.color.copy(color);

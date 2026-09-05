@@ -34,6 +34,7 @@ export function mapTwinSnapshotToVisualState(snapshot: TwinSnapshot): TwinVisual
   } as const;
   const regions = snapshot.regions.map((region) => {
     const known =
+      snapshot.dataAvailable &&
       region.provenance === "calculated" &&
       region.recoveryBand !== "unknown" &&
       region.recoveryPct !== null &&

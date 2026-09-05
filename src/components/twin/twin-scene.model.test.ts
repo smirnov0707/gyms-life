@@ -5,6 +5,7 @@ import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { createTwinBody } from "./twin-body.geometry";
 import {
   TWIN_BODY_REGIONS,
+  getTwinRegionDisplay,
   TWIN_CAMERA,
   fittedTwinDistance,
   isTwinBodyRegion,
@@ -143,5 +144,74 @@ describe("schematic 3D geometry", () => {
     } finally {
       model.dispose();
     }
+  });
+});
+
+describe("truthful layer projections", () => {
+  it("separates logged volume from recovery without mutating the snapshot", () => {
+    const source = fixture([{ ...chest, recoveryPct: 100, recoveryBand: "fresh", volumeKg: 3000 }]);
+    const before = structuredClone(source);
+    const recovery = mapTwinScene(source, "recovery").regions.find((r) => r.id === "chest");
+    const volume = mapTwinScene(source, "logged_volume").regions.find((r) => r.id === "chest");
+    expect(recovery?.display).toEqual({ value: 100, tone: "fresh" });
+    expect(volume?.display).toEqual({ value: 3000, tone: "volume_high" });
+    expect(source).toEqual(before);
+  });
+
+  it("uses documented relative thirds, never physiological volume thresholds", () => {
+    const source = fixture([
+      { ...chest, volumeKg: 1000 },
+      { ...chest, region: "back", volumeKg: 2000 },
+      { ...chest, region: "legs", volumeKg: 3000 },
+    ]);
+    expect(getTwinRegionDisplay(source, "chest", "logged_volume").tone).toBe("volume_low");
+    expect(getTwinRegionDisplay(source, "back", "logged_volume").tone).toBe("volume_medium");
+    expect(getTwinRegionDisplay(source, "legs", "logged_volume").tone).toBe("volume_high");
+  });
+
+  it("keeps explicit zero different from absent volume, with no division by zero", () => {
+    const source = fixture([
+      { ...chest, volumeKg: 0 },
+      { ...chest, region: "legs", volumeKg: null },
+    ]);
+    expect(getTwinRegionDisplay(source, "chest", "logged_volume")).toEqual({
+      value: 0,
+      tone: "volume_low",
+    });
+    expect(getTwinRegionDisplay(source, "legs", "logged_volume")).toEqual({
+      value: null,
+      tone: "unknown",
+    });
+  });
+
+  it.each([null, -1, Number.NaN, Infinity])("does not draw invalid volume %s", (volumeKg) => {
+    expect(
+      getTwinRegionDisplay(fixture([{ ...chest, volumeKg }]), "chest", "logged_volume"),
+    ).toEqual({ value: null, tone: "unknown" });
+  });
+
+  it.each(["recovery", "logged_volume"] as const)(
+    "withholds %s on source failure and unknown provenance",
+    (layer) => {
+      const missing = mapTwinScene({ ...fixture([chest]), dataAvailable: false }, layer);
+      expect(
+        missing.regions.every((r) => r.display.value === null && r.display.tone === "unknown"),
+      ).toBe(true);
+      const unknown = fixture([{ ...chest, provenance: "unknown", volumeKg: 1000 }]);
+      expect(getTwinRegionDisplay(unknown, "chest", layer).value).toBeNull();
+    },
+  );
+
+  it("does not distribute a whole-body volume onto anatomical regions", () => {
+    const source = fixture([{ ...chest, region: "fullbody" }]);
+    expect(
+      mapTwinScene(source, "logged_volume").regions.every((r) => r.display.value === null),
+    ).toBe(true);
+    expect(getTwinRegionDisplay(source, "fullbody", "logged_volume").value).toBe(1000);
+  });
+
+  it("refuses an unsupported layer at runtime", () => {
+    // @ts-expect-error test a malformed external selection
+    expect(getTwinRegionDisplay(fixture([chest]), "chest", "future").value).toBeNull();
   });
 });

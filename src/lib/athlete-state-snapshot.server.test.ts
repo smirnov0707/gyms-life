@@ -95,3 +95,9 @@ describe("Digital Athlete snapshot persistence", () => {
     expect(canPersistDigitalAthleteState(unavailableState)).toBe(false);
   });
 });
+
+it("keeps snapshots from different calculation versions distinct", () => {
+  expect(fingerprintDigitalAthleteState(informedState, "digital-athlete-v1")).not.toBe(
+    fingerprintDigitalAthleteState(informedState, "digital-athlete-v2"),
+  );
+});
