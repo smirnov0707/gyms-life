@@ -188,14 +188,9 @@ function NutritionPage() {
       </div>
 
       {/* Fluids are intake like the rest of this page, so they are logged
-          here. A target is only derived when a real body weight exists —
-          otherwise the widget uses its own stated default rather than a
-          number computed from a weight we do not have. */}
-      <QuickHydrationWidget
-        {...(profile?.weight_kg
-          ? { targetMl: Math.max(1500, Math.round((Number(profile.weight_kg) * 35) / 100) * 100) }
-          : {})}
-      />
+          here. The widget derives its own target from body mass, today's
+          training, protein and supplements, and shows that arithmetic. */}
+      <QuickHydrationWidget />
 
       <section>
         <h2 className="flex items-center gap-2 text-3xl">
