@@ -74,4 +74,48 @@ describe("workout completion engine", () => {
     expect(result.unexpectedCompletedSetKeys).toEqual(["curl:1"]);
     expect(result.totalVolume).toBe(2600);
   });
+
+  it("still finishes when the athlete did more sets than the plan asked for", () => {
+    // Blocking here would leave the session permanently unfinishable the
+    // moment someone logs a third squat, which they are now able to do.
+    const result = evaluateWorkoutCompletion(day, [
+      set("squat", 1, 8, 100),
+      set("squat", 2, 8, 100),
+      set("squat", 3, 8, 100),
+      set("row", 1, 10, 50),
+      set("row", 2, 10, 50),
+    ]);
+
+    expect(result.canFinish).toBe(true);
+    expect(result.unexpectedCompletedSetKeys).toEqual([]);
+    expect(result.extraSetKeys).toEqual(["squat:3"]);
+  });
+
+  it("counts the extra set in the volume the session actually moved", () => {
+    const result = evaluateWorkoutCompletion(day, [
+      set("squat", 1, 8, 100),
+      set("squat", 2, 8, 100),
+      set("squat", 3, 8, 100),
+      set("row", 1, 10, 50),
+      set("row", 2, 10, 50),
+    ]);
+
+    // 2600 planned + 800 from the third squat.
+    expect(result.totalVolume).toBe(3400);
+  });
+
+  it("separates work past the plan from an exercise the day never prescribed", () => {
+    const result = evaluateWorkoutCompletion(day, [
+      set("squat", 1, 8, 100),
+      set("squat", 2, 8, 100),
+      set("squat", 3, 8, 100),
+      set("row", 1, 10, 50),
+      set("row", 2, 10, 50),
+      set("curl", 1, 10, 999),
+    ]);
+
+    expect(result.extraSetKeys).toEqual(["squat:3"]);
+    expect(result.unexpectedCompletedSetKeys).toEqual(["curl:1"]);
+    expect(result.canFinish).toBe(false);
+  });
 });
