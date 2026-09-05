@@ -771,3 +771,15 @@ export function viewShowing(region: string, current: BodyView): BodyView {
   if (here === 0) return other;
   return segmentsFor(region, other).length > here ? other : current;
 }
+
+/**
+ * The side a figure should open on, given regions in priority order.
+ *
+ * Opening on the front by default hides the whole reading when the only
+ * regions carrying evidence live on the back: the figure renders entirely
+ * grey and reads as "no data" when there is data.
+ */
+export function openingView(regionsByPriority: readonly string[]): BodyView {
+  const first = regionsByPriority.find(isAnatomicalRegion);
+  return first === undefined ? "front" : viewShowing(first, "front");
+}

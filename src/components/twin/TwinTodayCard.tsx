@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Loader2, PersonStanding } from "lucide-react";
 import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
 import {
   isAnatomicalRegion,
+  openingView,
   viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
@@ -123,6 +124,18 @@ export function TwinTodayView({
 
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
+
+  // The snapshot arrives after mount, so the opening side cannot be decided
+  // in the initial state the way the Twin page does it. Aligned once, the
+  // first time data lands: without this the card opens on the front and a
+  // body whose only evidence is on the back renders entirely grey — reading
+  // as "nothing logged" when something was.
+  const aligned = useRef(false);
+  useEffect(() => {
+    if (aligned.current || !data) return;
+    aligned.current = true;
+    setView(openingView(leastRecovered(data.regions).map((region) => region.region)));
+  }, [data]);
 
   const selectRegion = (region: string) => {
     setSelected(region);
