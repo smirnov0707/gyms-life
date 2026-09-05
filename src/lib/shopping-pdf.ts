@@ -1,5 +1,6 @@
 import type { GeneratedMealPlan } from "./meal-types";
 import { tr, type Lang } from "./i18n";
+import { browserTimeZone, dayInTimeZone } from "./local-day";
 
 /**
  * Renders the weekly shopping list to a downloadable PDF.
@@ -54,7 +55,10 @@ export async function downloadShoppingListPdf(plan: GeneratedMealPlan, lang: Lan
     items: tr(lang, "rm.shopping.items"),
     footer: tr(lang, "rm.shopping.footer"),
   };
-  const today = new Date().toISOString().slice(0, 10);
+  // These documents are built in the browser and carry the athlete's own
+  // date. The UTC slice put yesterday's date on a report generated in the
+  // evening west of Greenwich, and tomorrow's east of it.
+  const today = dayInTimeZone(new Date(), browserTimeZone());
 
   const pages: HTMLCanvasElement[] = [];
   let page = newPage();

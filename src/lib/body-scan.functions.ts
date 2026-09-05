@@ -3,25 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { bmiBodyFat, navyBodyFat } from "./body-composition.engine";
-import { dayInTimeZone } from "./local-day";
-import { loadPersistedProfileTimeZone } from "./user-context.server";
-
-/**
- * Today in the athlete's stored timezone, falling back to UTC.
- *
- * A missing or unreadable timezone must not cost the measurement itself, so
- * this never throws: an approximate date is worth more than a lost scan.
- */
-async function athleteDay(
-  supabase: Parameters<typeof loadPersistedProfileTimeZone>[0],
-  userId: string,
-): Promise<string> {
-  try {
-    return dayInTimeZone(new Date(), await loadPersistedProfileTimeZone(supabase, userId));
-  } catch {
-    return dayInTimeZone(new Date(), "UTC");
-  }
-}
+import { athleteDay } from "./athlete-day.server";
 
 const BodyScanInput = z.object({
   images: z.array(z.string().startsWith("data:image/")).min(1).max(3),

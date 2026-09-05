@@ -1,5 +1,6 @@
 import type { MedicalReport } from "./medical-report.functions";
 import { formatLocale, tr, type Lang } from "./i18n";
+import { browserTimeZone, dayInTimeZone } from "./local-day";
 
 /**
  * Draws the 30-day report on canvases first (so diacritics render correctly)
@@ -49,7 +50,10 @@ export async function downloadMedicalReportPdf(
 ) {
   const { jsPDF } = await import("jspdf");
   const s = report.stats;
-  const today = new Date().toISOString().slice(0, 10);
+  // These documents are built in the browser and carry the athlete's own
+  // date. The UTC slice put yesterday's date on a report generated in the
+  // evening west of Greenwich, and tomorrow's east of it.
+  const today = dayInTimeZone(new Date(), browserTimeZone());
 
   const txt = {
     title: tr(lang, "sc.report.pdfTitle"),
