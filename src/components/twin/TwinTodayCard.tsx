@@ -259,13 +259,13 @@ export function TwinTodayView({
                       {copy.attention}
                     </p>
                     <p className="mt-1 flex items-center gap-2 truncate text-sm font-semibold text-foreground">
-                      <span className={`size-2 shrink-0 rounded-full ${BAND_DOT[focus.recoveryBand]}`} />
+                      <span
+                        className={`size-2 shrink-0 rounded-full ${BAND_DOT[focus.recoveryBand]}`}
+                      />
                       {label(focus.region)}
                     </p>
                   </div>
-                  <p className="shrink-0 font-mono text-sm text-foreground">
-                    {focus.recoveryPct}%
-                  </p>
+                  <p className="shrink-0 font-mono text-sm text-foreground">{focus.recoveryPct}%</p>
                 </div>
               ) : (
                 <div>

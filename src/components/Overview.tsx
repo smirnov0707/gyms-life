@@ -141,8 +141,7 @@ export function Overview() {
 
   const hour = new Date().getHours();
   const greeting = t(hour < 12 ? "dash.morning" : hour < 18 ? "dash.afternoon" : "dash.evening");
-  const readinessScore =
-    checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;
+  const readinessScore = checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;
   const recoveryState = useMemo(() => {
     if (readinessScore == null) return null;
     if (readinessScore >= 80) return t("tl.heat.ready");
