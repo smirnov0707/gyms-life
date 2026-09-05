@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { BodyMap } from "@/components/twin/BodyMap";
 import type { BodyMapRegion, BodyMapTone } from "@/components/twin/BodyMap";
-import { isAnatomicalRegion, type BodyView } from "@/components/twin/body-map.geometry";
+import {
+  isAnatomicalRegion,
+  viewShowing,
+  type BodyView,
+} from "@/components/twin/body-map.geometry";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import {
@@ -89,11 +93,21 @@ export function BodyReplay({ contributions }: { contributions: SessionMuscleCont
     };
   });
 
+  const untouched = KNOWN_MUSCLE_GROUPS.filter((group) => !worked.has(group));
+
   const heaviest = contributions.find((entry) => isAnatomicalRegion(entry.muscleGroup));
+  // Open on the side that shows most of the heaviest group, by the same rule
+  // the Twin turns by — a hardcoded list of "back regions" drifts the moment
+  // the geometry changes.
   const [view, setView] = useState<BodyView>(() =>
-    heaviest && !segmentsOnFront(heaviest.muscleGroup) ? "back" : "front",
+    heaviest ? viewShowing(heaviest.muscleGroup, "front") : "front",
   );
   const [selected, setSelected] = useState<string | null>(heaviest?.muscleGroup ?? null);
+
+  const selectRegion = (region: string) => {
+    setSelected(region);
+    if (isAnatomicalRegion(region)) setView((current) => viewShowing(region, current));
+  };
 
   return (
     <section className="mt-6 rounded-2xl border border-border bg-surface-2 p-5 text-left">
@@ -130,7 +144,7 @@ export function BodyReplay({ contributions }: { contributions: SessionMuscleCont
             regions={regions}
             view={view}
             selectedRegion={selected}
-            onSelectRegion={setSelected}
+            onSelectRegion={selectRegion}
             regionLabel={(region) => regionLabelFor(region, t)}
           />
         </div>
@@ -180,11 +194,19 @@ export function BodyReplay({ contributions }: { contributions: SessionMuscleCont
           })}
         </ul>
       </div>
+
+      {/* The groups today did not touch were only ever grey on the figure.
+          Naming them keeps the map from being the sole path to that fact. */}
+      {untouched.length > 0 && (
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            {copy.notWorked}
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            {untouched.map((group) => regionLabelFor(group, t)).join(" · ")}
+          </p>
+        </div>
+      )}
     </section>
   );
-}
-
-/** Front-only groups decide which side the replay opens on. */
-function segmentsOnFront(region: string): boolean {
-  return !["back", "glutes"].includes(region);
 }
