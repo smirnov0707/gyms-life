@@ -8,35 +8,26 @@ permissions:
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: efaee8ddaae8f88b4e40f3538ed207c38e59092d
+          ref: 37b51a69d27f83ccc40cf41b046cb8147e0f8f10
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Export tracked source and dependencies without credentials or duplicate media
+      - name: Export tracked source only; exclude unchanged media and credentials
         run: |
           set -eu
-          mkdir -p /tmp/twin-review/{export,workspace,main,base}
-          git archive HEAD | tar -x -C /tmp/twin-review/workspace
-          cp -a node_modules /tmp/twin-review/workspace/node_modules
-          git rev-parse HEAD > /tmp/twin-review/workspace/REVIEW_HEAD.txt
-          tar -czf /tmp/twin-review/export/workspace.tar.gz -C /tmp/twin-review/workspace .
-          git archive b7680640ade7f2a6e1be9b551b528b9467956746 | tar -x --exclude=public -C /tmp/twin-review/main
-          tar -czf /tmp/twin-review/export/main.tar.gz -C /tmp/twin-review/main .
-          BASE=$(git merge-base HEAD b7680640ade7f2a6e1be9b551b528b9467956746)
+          mkdir -p /tmp/twin-review/{export,head,main,base}
+          git archive HEAD | tar -x --exclude=public -C /tmp/twin-review/head
+          git archive 77cca61fde5dc07163b8d5313d980cf91c3e4810 | tar -x --exclude=public -C /tmp/twin-review/main
+          BASE=$(git merge-base HEAD 77cca61fde5dc07163b8d5313d980cf91c3e4810)
           git archive "$BASE" | tar -x --exclude=public -C /tmp/twin-review/base
-          tar -czf /tmp/twin-review/export/base.tar.gz -C /tmp/twin-review/base .
-          printf 'head=%s\nmain=%s\nbase=%s\n' "$(git rev-parse HEAD)" b7680640ade7f2a6e1be9b551b528b9467956746 "$BASE" > /tmp/twin-review/export/refs.txt
+          for TREE in head main base; do tar -czf /tmp/twin-review/export/$TREE.tar.gz -C /tmp/twin-review/$TREE .; done
+          printf 'head=%s\nmain=%s\nbase=%s\n' "$(git rev-parse HEAD)" 77cca61fde5dc07163b8d5313d980cf91c3e4810 "$BASE" > /tmp/twin-review/export/refs.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: twin-isolated-review-source
+          name: twin-concurrent-review-source
           path: /tmp/twin-review/export
           retention-days: 1
           compression-level: 0
