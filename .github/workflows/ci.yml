@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - future-lab-phase-1-5-work
 
 permissions:
   contents: read
