@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, PersonStanding } from "lucide-react";
-import { BodyMap } from "@/components/twin/BodyMap";
+import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
 import {
   isAnatomicalRegion,
   segmentsFor,
@@ -429,7 +429,11 @@ export function TwinSnapshotView({
 
             <div className="mt-3 h-[600px]">
               <BodyMap
-                regions={anatomical}
+                regions={anatomical.map((region) => ({
+                  region: region.region,
+                  tone: toneForRecoveryBand(region.recoveryBand),
+                  value: region.recoveryPct === null ? null : `${region.recoveryPct}%`,
+                }))}
                 view={view}
                 selectedRegion={selectedRegion}
                 onSelectRegion={selectRegion}

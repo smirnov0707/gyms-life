@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BodyReplay } from "@/components/twin/BodyReplay";
+import type { SessionMuscleContribution } from "@/lib/session-muscle-breakdown";
 import {
   REPS_STEP,
   WEIGHT_STEP_KG,
@@ -163,6 +165,7 @@ function WorkoutPage() {
   const [rest, setRest] = useState(0);
   const [finished, setFinished] = useState(false);
   const [summary, setSummary] = useState<{ duration: number; volume: number } | null>(null);
+  const [replay, setReplay] = useState<SessionMuscleContribution[]>([]);
   const [workoutFeeling, setWorkoutFeeling] = useState<number | null>(null);
 
   const syncQueuedSets = useCallback(async () => {
@@ -306,6 +309,7 @@ function WorkoutPage() {
         duration: result.session.durationSeconds ?? 0,
         volume: result.session.totalVolume,
       });
+      setReplay(result.muscleBreakdown);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["workout"] }),
         qc.invalidateQueries({ queryKey: ["sessions"] }),
@@ -443,6 +447,7 @@ function WorkoutPage() {
               </div>
             </div>
           </div>
+          {replay.length > 0 && <BodyReplay contributions={replay} />}
           <section
             className="mt-6 rounded-2xl border border-border bg-surface-2 p-5 text-left"
             aria-labelledby="workout-reflection-title"

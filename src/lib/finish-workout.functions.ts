@@ -30,7 +30,7 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
     const session = parseWorkoutSession(rawSession);
     if (session.finishedAt) {
-      return { ok: true, session, alreadyFinished: true };
+      return { ok: true, session, alreadyFinished: true, muscleBreakdown: [] };
     }
     if (session.planId === null || session.dayIndex === null) {
       throw new Error("Workout session is missing active plan metadata.");
@@ -59,6 +59,21 @@ export const finishWorkout = createServerFn({ method: "POST" })
     }
 
     const completion = evaluateWorkoutCompletion(plannedDay, logs);
+
+    // Part IX body replay: what this session actually worked. Measured from
+    // the sets just logged, not modelled — recovery decay is a separate
+    // question answered by muscle-load.engine over a window.
+    const { data: catalogue } = await supabase.from("exercises").select("slug, muscle_group");
+    const { buildSessionMuscleBreakdown } = await import("./session-muscle-breakdown");
+    const muscleBreakdown = buildSessionMuscleBreakdown(
+      (logs ?? []).map((log) => ({
+        exercise_slug: log.exercise_slug,
+        reps: log.reps,
+        weight_kg: log.weight_kg,
+        done: log.done,
+      })),
+      catalogue ?? [],
+    );
     if (!completion.canFinish && completion.missingSetKeys.length > 0) {
       throw new Error(
         "Cannot finish workout: " +
@@ -117,5 +132,6 @@ export const finishWorkout = createServerFn({ method: "POST" })
       ok: true,
       session: parseWorkoutSession(updated),
       alreadyFinished: false,
+      muscleBreakdown,
     };
   });

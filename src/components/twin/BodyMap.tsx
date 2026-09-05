@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { TwinRegionRecoveryBand, TwinRegionState } from "@/lib/digital-twin.schema";
+import type { TwinRegionRecoveryBand } from "@/lib/digital-twin.schema";
 import {
   BODY_ANATOMY,
   BODY_FRAME,
@@ -11,34 +11,57 @@ import {
 } from "./body-map.geometry";
 
 /**
- * Band colours as literal stops so the gradients read identically in light
- * and dark themes. Emerald / amber / rose are the same three tones the
- * textual band chips use, so the figure and the list can't disagree.
+ * How loudly a region reads, as display tone rather than as a meaning.
+ *
+ * The figure draws bodies for more than one question — how recovered a group
+ * is, and how much of a session landed on it — and those answer differently.
+ * Each caller maps its own vocabulary onto this scale and labels its own
+ * legend, so the colour always carries the meaning that screen defines.
+ * `hot` is always "most worth your attention".
  */
-const BAND_GRADIENT: Record<TwinRegionRecoveryBand, { top: string; bottom: string }> = {
-  fresh: { top: "#6ee7b7", bottom: "#059669" },
-  moderate: { top: "#fcd34d", bottom: "#d97706" },
-  fatigued: { top: "#fb7185", bottom: "#be123c" },
-  unknown: { top: "#94a3b8", bottom: "#64748b" },
+export type BodyMapTone = "cool" | "warm" | "hot" | "muted";
+
+export type BodyMapRegion = {
+  region: string;
+  tone: BodyMapTone;
+  /** What the callout shows for this region, already formatted by the caller
+   *  — a recovery percentage on the Twin, a session's volume on the replay. */
+  value?: string | null;
 };
 
-const BAND_STROKE: Record<TwinRegionRecoveryBand, string> = {
-  fresh: "stroke-emerald-200/70",
-  moderate: "stroke-amber-200/70",
-  fatigued: "stroke-rose-200/70",
-  unknown: "stroke-muted-foreground/35",
+/** Colours as literal stops so the gradients read the same in both themes. */
+const TONE_GRADIENT: Record<BodyMapTone, { top: string; bottom: string }> = {
+  cool: { top: "#6ee7b7", bottom: "#059669" },
+  warm: { top: "#fcd34d", bottom: "#d97706" },
+  hot: { top: "#fb7185", bottom: "#be123c" },
+  muted: { top: "#94a3b8", bottom: "#64748b" },
 };
 
-/** Regions with no evidence stay deliberately quiet: present, not claiming. */
-const BAND_OPACITY: Record<TwinRegionRecoveryBand, number> = {
-  fresh: 0.92,
-  moderate: 0.92,
-  fatigued: 0.94,
-  unknown: 0.3,
+/** Recovery's own vocabulary, mapped onto the display scale. */
+export function toneForRecoveryBand(band: TwinRegionRecoveryBand): BodyMapTone {
+  if (band === "fresh") return "cool";
+  if (band === "moderate") return "warm";
+  if (band === "fatigued") return "hot";
+  return "muted";
+}
+
+const TONE_STROKE: Record<BodyMapTone, string> = {
+  cool: "stroke-emerald-200/70",
+  warm: "stroke-amber-200/70",
+  hot: "stroke-rose-200/70",
+  muted: "stroke-muted-foreground/35",
+};
+
+/** Regions with nothing behind them stay quiet: present, not claiming. */
+const TONE_OPACITY: Record<BodyMapTone, number> = {
+  cool: 0.92,
+  warm: 0.92,
+  hot: 0.94,
+  muted: 0.3,
 };
 
 export type BodyMapProps = {
-  regions: TwinRegionState[];
+  regions: BodyMapRegion[];
   view: BodyView;
   selectedRegion: string | null;
   onSelectRegion: (region: string) => void;
@@ -111,10 +134,10 @@ export function BodyMap({
         <clipPath id={`${uid}-muscles`}>
           <path d={muscleOutlines} />
         </clipPath>
-        {(Object.keys(BAND_GRADIENT) as TwinRegionRecoveryBand[]).map((band) => (
+        {(Object.keys(TONE_GRADIENT) as BodyMapTone[]).map((band) => (
           <linearGradient key={band} id={`${uid}-${band}`} x1="0" y1="0" x2="0.35" y2="1">
-            <stop offset="0%" stopColor={BAND_GRADIENT[band].top} />
-            <stop offset="100%" stopColor={BAND_GRADIENT[band].bottom} />
+            <stop offset="0%" stopColor={TONE_GRADIENT[band].top} />
+            <stop offset="100%" stopColor={TONE_GRADIENT[band].bottom} />
           </linearGradient>
         ))}
         {/* Real relief, not a painted approximation of it: blurring a shape's
@@ -255,7 +278,7 @@ export function BodyMap({
 
         {drawable.map((region) => {
           const isSelected = selectedRegion === region.region;
-          const hasEvidence = region.recoveryBand !== "unknown";
+          const hasEvidence = region.tone !== "muted";
           return (
             <g
               key={region.region}
@@ -276,7 +299,7 @@ export function BodyMap({
               {hasEvidence ? (
                 <path
                   d={region.d}
-                  fill={BAND_GRADIENT[region.recoveryBand].top}
+                  fill={TONE_GRADIENT[region.tone].top}
                   fillOpacity={isSelected ? 0.3 : 0.14}
                   filter={`url(#${uid}-bloom)`}
                   aria-hidden="true"
@@ -285,16 +308,16 @@ export function BodyMap({
               {/* Opacity rides the group, so the relief filter still sees an
                   opaque shape to derive its height map from. */}
               <g
-                opacity={isSelected ? 1 : BAND_OPACITY[region.recoveryBand]}
+                opacity={isSelected ? 1 : TONE_OPACITY[region.tone]}
                 className="transition-opacity duration-300 motion-reduce:transition-none"
               >
                 <path
                   d={region.d}
-                  fill={`url(#${uid}-${region.recoveryBand})`}
+                  fill={`url(#${uid}-${region.tone})`}
                   strokeWidth={isSelected ? 1.2 : 0.7}
                   strokeLinejoin="round"
                   filter={`url(#${uid}-relief)`}
-                  className={isSelected ? "stroke-foreground/55" : BAND_STROKE[region.recoveryBand]}
+                  className={isSelected ? "stroke-foreground/55" : TONE_STROKE[region.tone]}
                 />
               </g>
             </g>
@@ -363,16 +386,16 @@ export function BodyMap({
           >
             {regionLabel(selected.region).toUpperCase()}
           </text>
-          {selected.recoveryPct !== null ? (
+          {selected.value ? (
             <text
               x={calloutX}
               y={calloutY + 10.5}
               textAnchor="end"
-              fill={BAND_GRADIENT[selected.recoveryBand].top}
+              fill={TONE_GRADIENT[selected.tone].top}
               fontSize={7}
               fontWeight={700}
             >
-              {`${selected.recoveryPct}%`}
+              {selected.value}
             </text>
           ) : null}
         </g>

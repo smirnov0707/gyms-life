@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Loader2, PersonStanding } from "lucide-react";
-import { BodyMap } from "@/components/twin/BodyMap";
+import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
 import { isAnatomicalRegion } from "@/components/twin/body-map.geometry";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
@@ -105,7 +105,12 @@ export function TwinTodayCard() {
         <div className="flex items-center gap-5">
           <div className="h-[190px] w-[110px] shrink-0">
             <BodyMap
-              regions={data.regions.filter((region) => isAnatomicalRegion(region.region))}
+              regions={data.regions
+                .filter((region) => isAnatomicalRegion(region.region))
+                .map((region) => ({
+                  region: region.region,
+                  tone: toneForRecoveryBand(region.recoveryBand),
+                }))}
               view="front"
               selectedRegion={null}
               onSelectRegion={() => {}}
