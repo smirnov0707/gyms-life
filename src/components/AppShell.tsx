@@ -9,6 +9,7 @@ import {
   PersonStanding,
   UserRound,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { NAV_GROUPS, byRoute, type NavItem } from "@/lib/nav-map";
 import {
@@ -57,8 +58,8 @@ function MoreNavigation({
           aria-label={t("nav.more")}
           className={
             compact
-              ? `grid size-11 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-neutral-300 transition-colors hover:border-primary/40 hover:text-white ${className}`
-              : `inline-flex min-h-11 items-center rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-neutral-400 transition-all hover:bg-white/[0.03] hover:text-white ${className}`
+              ? `grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-foreground/[0.04] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground ${className}`
+              : `inline-flex min-h-11 items-center rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-all hover:bg-foreground/[0.04] hover:text-foreground ${className}`
           }
         >
           <span className={compact ? "" : "flex items-center gap-2"}>
@@ -68,7 +69,7 @@ function MoreNavigation({
         </button>
       </DrawerTrigger>
 
-      <DrawerContent className="max-h-[85vh] overflow-y-auto rounded-t-[1.75rem] border-border bg-[#0b0b0d] px-4 pb-[max(1.5rem,var(--sab))] text-foreground sm:mx-auto sm:max-w-2xl">
+      <DrawerContent className="max-h-[85vh] overflow-y-auto rounded-t-[1.75rem] border-border bg-surface px-4 pb-[max(1.5rem,var(--sab))] text-foreground sm:mx-auto sm:max-w-2xl">
         <DrawerHeader className="px-1 pb-4 pt-5 text-left">
           <DrawerTitle className="text-display text-2xl text-foreground">
             {t("nav.more")}
@@ -123,6 +124,16 @@ function MoreNavigation({
               <ArrowUpRight className="size-4 text-primary transition-transform group-hover:-translate-y-0.5" />
             </Link>
           </DrawerClose>
+
+          {/* The theme control lived only on the marketing page, so an
+              athlete who switched to light before signing in had no way
+              back once inside the app. This is the way back. */}
+          <section className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              {t("theme.label")}
+            </span>
+            <ThemeToggle />
+          </section>
         </div>
       </DrawerContent>
     </Drawer>
@@ -142,10 +153,10 @@ export const Logo: React.FC<{ className?: string; href?: string }> = ({
       G
     </div>
     <div className="flex flex-col text-left">
-      <span className="text-base font-black tracking-wider uppercase text-white font-mono leading-none">
-        GYMS<span className="text-emerald-400">.LIFE</span>
+      <span className="text-base font-black tracking-wider uppercase text-foreground font-mono leading-none">
+        GYMS<span className="text-emerald-400 light:text-emerald-600">.LIFE</span>
       </span>
-      <span className="text-[9px] font-mono tracking-widest text-neutral-500 uppercase">
+      <span className="text-[9px] font-mono tracking-widest text-muted-foreground uppercase">
         ATHLETIC INTELLIGENCE
       </span>
     </div>
@@ -161,7 +172,7 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
 
   return (
     <div
-      className={`flex min-h-11 items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.04] p-1 ${className}`}
+      className={`flex min-h-11 items-center gap-1 rounded-xl border border-border bg-foreground/[0.04] p-1 ${className}`}
     >
       {languages.map((l) => (
         <button
@@ -171,7 +182,7 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
           className={`min-h-9 min-w-9 rounded-lg px-2 py-0.5 text-[10px] font-mono font-bold transition-all ${
             lang === l.code
               ? "bg-emerald-500 text-black shadow-sm font-black"
-              : "text-neutral-400 hover:text-white"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {l.label}
@@ -186,9 +197,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#030303] text-[#f4f4f5] flex flex-col selection:bg-emerald-500/30 selection:text-emerald-300">
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/30 selection:text-foreground">
       {/* Viršutinis statuso baras */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#030303]/85 pt-[var(--sat)] backdrop-blur-2xl">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/85 pt-[var(--sat)] backdrop-blur-2xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Logo />
 
@@ -203,12 +214,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   to={item.to}
                   className={`flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
                     isActive
-                      ? "bg-white/[0.08] text-white border border-white/10 shadow-inner"
-                      : "text-neutral-400 hover:text-white hover:bg-white/[0.03]"
+                      ? "bg-foreground/[0.08] text-foreground border border-border shadow-inner"
+                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]"
                   }`}
                 >
                   <Icon
-                    className={`w-3.5 h-3.5 ${isActive ? "text-emerald-400" : "text-neutral-400"}`}
+                    className={`w-3.5 h-3.5 ${isActive ? "text-emerald-400 light:text-emerald-600" : "text-muted-foreground"}`}
                   />
                   {t(item.labelKey)}
                 </Link>
@@ -231,7 +242,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
       {/* Mobilus plaukiojantis apatinis dokas */}
       <nav className="fixed bottom-[max(1rem,var(--sab))] left-[max(1rem,var(--sal))] right-[max(1rem,var(--sar))] z-50 md:hidden">
-        <div className="glass-panel rounded-2xl p-1.5 flex items-center justify-around shadow-2xl border border-white/15 bg-black/85 backdrop-blur-2xl">
+        <div className="glass-panel rounded-2xl p-1.5 flex items-center justify-around shadow-2xl border border-border bg-background/85 backdrop-blur-2xl">
           {primaryNavItems.map((item) => {
             const isActive = location.pathname.startsWith(item.to);
             const Icon = item.icon;
@@ -241,11 +252,13 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 to={item.to}
                 className={`flex min-h-12 min-w-12 flex-col items-center justify-center rounded-xl px-3 py-2 transition-all ${
                   isActive
-                    ? "bg-white/10 text-white border border-white/10"
-                    : "text-neutral-400 hover:text-white"
+                    ? "bg-foreground/10 text-foreground border border-border"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? "text-emerald-400 scale-110" : ""}`} />
+                <Icon
+                  className={`w-4 h-4 ${isActive ? "text-emerald-400 light:text-emerald-600 scale-110" : ""}`}
+                />
                 <span className="text-[9px] font-bold uppercase tracking-tight mt-1">
                   {t(item.labelKey)}
                 </span>
