@@ -1,0 +1,50 @@
+name: Connect Living Twin presence
+
+on:
+  push:
+    branches:
+      - future-lab-phase-3-living-twin-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  connect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: future-lab-phase-3-living-twin-foundation
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Connect visual presence to Twin stage
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src/components/TwinView.tsx')
+          s = p.read_text()
+          s = s.replace(
+              'import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";\n',
+              'import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";\nimport { LivingTwinPresence } from "@/components/twin/LivingTwinPresence";\n',
+          )
+          marker = '      <section className="relative min-h-[760px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] lg:min-h-[820px]">\n'
+          replacement = marker + '        <LivingTwinPresence snapshot={data} />\n'
+          if marker not in s:
+              raise SystemExit('Twin stage marker not found')
+          s = s.replace(marker, replacement, 1)
+          p.write_text(s)
+          PY
+      - run: npx prettier --write src/components/TwinView.tsx src/components/twin/LivingTwinPresence.tsx src/lib/digital-twin.visual-state.ts src/lib/digital-twin.visual-state.test.ts
+      - run: npm run typecheck
+      - run: npm run test -- --run src/lib/digital-twin.visual-state.test.ts
+      - name: Commit connection
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/TwinView.tsx src/components/twin/LivingTwinPresence.tsx src/lib/digital-twin.visual-state.ts src/lib/digital-twin.visual-state.test.ts
+          git diff --cached --quiet || git commit -m "feat(twin): connect living visual presence to stage"
+          git push
