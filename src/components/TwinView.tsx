@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader2, PersonStanding } from "lucide-react";
 import { TwinStage } from "@/components/twin/TwinStage";
@@ -315,7 +316,7 @@ export function TwinSnapshotView({
           </div>
         </header>
 
-        <div className="relative z-10 grid min-h-[630px] grid-cols-1 lg:grid-cols-[300px_minmax(360px,1fr)_300px] lg:items-center">
+        <div className="relative z-10 grid min-h-[630px] grid-cols-1 lg:grid-cols-[minmax(180px,0.8fr)_minmax(280px,1.3fr)_minmax(160px,0.7fr)] lg:items-center">
           <aside
             aria-live="polite"
             data-twin-inspector
@@ -436,17 +437,19 @@ export function TwinSnapshotView({
 }
 
 export function TwinView() {
+  const { user, loading: authLoading } = useAuth();
   const { lang, t } = useI18n();
   const timeZone = browserTimeZone();
   const copy = copyFor(lang);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["twin-snapshot", timeZone],
+    queryKey: ["twin-snapshot", user?.id, timeZone],
+    enabled: Boolean(user),
     queryFn: () => getTwinSnapshot({ data: timeZone }),
     staleTime: 60_000,
   });
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <section className="rounded-3xl border border-border bg-surface-2 p-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

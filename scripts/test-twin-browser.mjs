@@ -103,9 +103,7 @@ try {
   await canvas.focus();
   await page.keyboard.press("Home");
   await page.keyboard.press("ArrowRight");
-  await expect
-    .poll(async () => Number(await canvas.getAttribute("data-twin-yaw")))
-    .not.toBe(0);
+  await expect.poll(async () => Number(await canvas.getAttribute("data-twin-yaw"))).not.toBe(0);
   record("zoom and keyboard camera controls");
 
   await page.getByLabel("Inspect a region", { exact: true }).selectOption("glutes");
@@ -123,10 +121,9 @@ try {
   );
   await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible();
   await expect(
-    page.getByText(
-      "3D is unavailable on this device. Your evidence is still available in 2D.",
-      { exact: true },
-    ),
+    page.getByText("3D is unavailable on this device. Your evidence is still available in 2D.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Try 3D again", exact: true }).click();
   await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
@@ -187,9 +184,9 @@ try {
   await page.getByRole("button", { name: "Left side", exact: true }).click();
   await page.screenshot({ path: path.join(artifacts, "mobile-side.png"), fullPage: true });
   await page.setViewportSize({ width: 320, height: 740 });
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-  ).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   record("mobile two-finger zoom, front/back/side views and 320px layout");
   await mobile.close();
 
@@ -216,10 +213,9 @@ try {
   page = await unsupported.newPage();
   await page.goto("http://127.0.0.1:4179");
   await expect(
-    page.getByText(
-      "3D is unavailable on this device. Your evidence is still available in 2D.",
-      { exact: true },
-    ),
+    page.getByText("3D is unavailable on this device. Your evidence is still available in 2D.", {
+      exact: true,
+    }),
   ).toBeVisible({ timeout: 30000 });
   await expect(page.getByLabel("Inspect a region", { exact: true })).toBeVisible();
   record("WebGL unavailable preserves an accessible 2D evidence surface");

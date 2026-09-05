@@ -4,6 +4,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   SphereGeometry,
+  SplineCurve,
   Vector2,
   Vector3,
 } from "three";
@@ -79,7 +80,7 @@ export function createTwinBody() {
 
   // Closed, elliptical trunk: shoulder girdle, ribcage, waist, pelvis.
   const trunk = new LatheGeometry(
-    [
+    new SplineCurve([
       new Vector2(0, 0.84),
       new Vector2(0.125, 0.86),
       new Vector2(0.166, 0.96),
@@ -90,20 +91,20 @@ export function createTwinBody() {
       new Vector2(0.18, 1.49),
       new Vector2(0.058, 1.53),
       new Vector2(0, 1.54),
-    ],
+    ]).getPoints(64),
     40,
   );
   const torso = new Mesh(trunk, material());
   torso.scale.z = 0.59;
   register(torso);
-  limb([0, 1.48, 0], [0, 1.65, 0], 0.056);
+  oval([0, 1.574, 0], [0.052, 0.096, 0.058]);
   oval([0, 1.741, 0], [0.083, 0.119, 0.087]);
-  oval([0, 1.68, 0.031], [0.066, 0.06, 0.062]);
+  oval([0, 1.687, 0.009], [0.062, 0.052, 0.061]);
   // A subdued facial plane, not a face reconstructed from the user.
-  oval([0, 1.726, 0.082], [0.014, 0.027, 0.016]);
+  oval([0, 1.728, 0.08], [0.009, 0.02, 0.012]);
 
   for (const side of [-1, 1]) {
-    oval([side * 0.103, 1.357, 0.103], [0.103, 0.101, 0.042], "chest", side * -0.12);
+    oval([side * 0.103, 1.363, 0.084], [0.112, 0.08, 0.038], "chest", side * -0.12);
     oval([side * 0.105, 1.306, -0.092], [0.104, 0.173, 0.047], "back", side * -0.13);
     oval([side * 0.137, 1.117, 0.027], [0.035, 0.119, 0.075], "core", side * -0.13);
     oval([side * 0.085, 0.891, -0.062], [0.09, 0.101, 0.075], "glutes");
@@ -122,7 +123,7 @@ export function createTwinBody() {
       );
     }
     limb([side * 0.38, 0.825, 0.025], [side * 0.357, 0.777, 0.037], 0.01, "arms");
-    limb([side * 0.087, 0.938, 0], [side * 0.11, 0.529, 0.009], 0.093, "legs");
+    limb([side * 0.087, 0.987, 0], [side * 0.11, 0.529, 0.009], 0.093, "legs");
     oval([side * 0.11, 0.518, 0.017], [0.049, 0.053, 0.05], "legs");
     limb([side * 0.11, 0.5, 0.009], [side * 0.112, 0.13, -0.008], 0.054, "legs");
     oval([side * 0.112, 0.083, 0.045], [0.046, 0.054, 0.108], "legs");

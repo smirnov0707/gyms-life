@@ -34,7 +34,7 @@ function snapshot(empty: boolean): TwinSnapshot {
     }),
   };
 }
-function Fixture() {
+export function Fixture() {
   const [mounted, setMounted] = useState(true);
   const [empty, setEmpty] = useState(false);
   return (

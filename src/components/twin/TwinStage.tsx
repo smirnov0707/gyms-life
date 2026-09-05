@@ -304,6 +304,7 @@ export function TwinStage(props: TwinStageProps) {
         <label className="grid gap-2 text-xs text-neutral-300">
           {copy.region}
           <select
+            aria-label={copy.region}
             value={selectedRegion && isTwinBodyRegion(selectedRegion) ? selectedRegion : ""}
             onChange={(event) => {
               if (event.target.value) selectRegion(event.target.value);

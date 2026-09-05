@@ -99,11 +99,11 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 2.6));
+    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 1.6));
     for (const [position, color, intensity] of [
-      [[2, 3, 4], 0xfff1db, 3.2],
-      [[-3, 1.7, 1], 0x9ccbe7, 1.9],
-      [[0, 2.8, -3], 0xc4f0dd, 3.6],
+      [[2, 3, 4], 0xfff1db, 2.2],
+      [[-3, 1.7, 1], 0x9ccbe7, 0.9],
+      [[0, 2.8, -3], 0xc4f0dd, 2.0],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
@@ -162,7 +162,7 @@ export function mountTwinScene(
     function applyState() {
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
-        const color = new Color(COLORS[value?.band ?? "unknown"]);
+        const color = new Color("#48565d").lerp(new Color(COLORS[value?.band ?? "unknown"]), 0.55);
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
           material.color.copy(color);
