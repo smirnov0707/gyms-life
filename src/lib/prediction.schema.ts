@@ -19,6 +19,7 @@ export const PredictionMaturitySchema = z.enum(["shadow", "canary", "production"
 export const PredictionEvidenceLevelSchema = z.enum(["insufficient", "early", "moderate", "strong"]);
 
 export const PredictionValueSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("boolean"), value: z.boolean() }).strict(),
   z.object({ kind: z.literal("probability"), value: z.number().min(0).max(1) }).strict(),
   z.object({ kind: z.literal("number"), value: z.number().finite(), unit: z.string().trim().min(1).max(32) }).strict(),
   z.object({ kind: z.literal("range"), low: z.number().finite(), high: z.number().finite(), unit: z.string().trim().min(1).max(32) }).strict().superRefine((value, context) => {
@@ -50,6 +51,12 @@ export const AthletePredictionSchema = z.object({
   }
   if (value.actual && !value.evaluatedAt) {
     context.addIssue({ code: "custom", message: "An actual outcome requires evaluatedAt", path: ["evaluatedAt"] });
+  }
+  if (value.target === "workout_completion" && value.predicted.kind !== "probability") {
+    context.addIssue({ code: "custom", message: "Workout completion predictions must be probabilities", path: ["predicted"] });
+  }
+  if (value.target === "workout_completion" && value.actual && value.actual.kind !== "boolean") {
+    context.addIssue({ code: "custom", message: "Workout completion actual outcomes must be boolean", path: ["actual"] });
   }
 });
 
