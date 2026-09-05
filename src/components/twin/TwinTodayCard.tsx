@@ -29,8 +29,7 @@ type Copy = {
   unavailable: string;
   empty: string;
   emptyHint: string;
-  needsAttention: string;
-  noEvidenceYet: string;
+  attention: string;
   coverage: (withEvidence: number, total: number) => string;
   window: (days: number) => string;
   viewLabel: Record<BodyView, string>;
@@ -41,42 +40,41 @@ type Copy = {
 function copyFor(lang: Lang): Copy {
   if (baseLang(lang) === "en") {
     return {
-      eyebrow: "YOUR TWIN",
-      title: "This is your body today",
-      subtitle: "Recovery per region, calculated from the sets you logged.",
-      loading: "Loading your Twin…",
-      unavailable: "Twin is temporarily unavailable.",
-      empty: "Nothing logged yet",
-      emptyHint: "Finish a session and your Twin starts filling in region by region.",
-      needsAttention: "Needs attention",
-      noEvidenceYet: "No sets logged in this window",
-      coverage: (withEvidence, total) => `${withEvidence}/${total} regions with evidence`,
-      window: (days) => `Last ${days} days`,
+      eyebrow: "LIVE DIGITAL TWIN",
+      title: "Your body, as GYMS.LIFE understands it today",
+      subtitle: "Calculated from your logged training. Unknown regions stay unknown.",
+      loading: "Building today's Twin…",
+      unavailable: "Your Twin is temporarily unavailable.",
+      empty: "Your Twin is still learning",
+      emptyHint: "Finish a workout and evidence will begin appearing on the body.",
+      attention: "Lowest recovery",
+      coverage: (withEvidence, total) => `${withEvidence}/${total} regions evidenced`,
+      window: (days) => `${days}-day evidence window`,
       viewLabel: { front: "Front", back: "Back" },
-      bandLabel: { fresh: "Fresh", moderate: "Moderate", fatigued: "Fatigued", unknown: "No data" },
-      open: "Open full Twin",
+      bandLabel: { fresh: "Fresh", moderate: "Moderate", fatigued: "Fatigued", unknown: "Unknown" },
+      open: "Enter Twin",
     };
   }
+
   return {
-    eyebrow: "TAVO DVYNYS",
-    title: "Toks tavo kūnas šiandien",
-    subtitle: "Atsistatymas pagal regionus, apskaičiuotas iš registruotų setų.",
-    loading: "Kraunamas tavo dvynys…",
-    unavailable: "Dvynys šiuo metu nepasiekiamas.",
-    empty: "Kol kas nieko neregistruota",
-    emptyHint: "Užbaik treniruotę ir dvynys pradės pildytis regionas po regiono.",
-    needsAttention: "Reikia dėmesio",
-    noEvidenceYet: "Šiame lange setų neregistruota",
+    eyebrow: "GYVAS SKAITMENINIS DVYNYS",
+    title: "Tavo kūnas toks, kokį GYMS.LIFE jį supranta šiandien",
+    subtitle: "Apskaičiuota iš tavo treniruočių. Nežinomi regionai lieka nežinomi.",
+    loading: "Kuriamas šiandienos dvynys…",
+    unavailable: "Tavo dvynys šiuo metu nepasiekiamas.",
+    empty: "Tavo dvynys dar mokosi",
+    emptyHint: "Užbaik treniruotę ir ant kūno pradės atsirasti realūs įrodymai.",
+    attention: "Mažiausias atsistatymas",
     coverage: (withEvidence, total) => `${withEvidence}/${total} regionų su įrodymais`,
-    window: (days) => `Paskutinės ${days} d.`,
+    window: (days) => `${days} d. įrodymų langas`,
     viewLabel: { front: "Priekis", back: "Nugara" },
     bandLabel: {
-      fresh: "Švieži",
+      fresh: "Atsistatę",
       moderate: "Vidutiniškai",
       fatigued: "Nuvargę",
-      unknown: "Nėra duomenų",
+      unknown: "Nežinoma",
     },
-    open: "Atidaryti visą dvynį",
+    open: "Atidaryti dvynį",
   };
 }
 
@@ -84,7 +82,7 @@ const BAND_DOT: Record<TwinRegionRecoveryBand, string> = {
   fresh: "bg-emerald-400",
   moderate: "bg-amber-400",
   fatigued: "bg-rose-500",
-  unknown: "bg-muted-foreground/50",
+  unknown: "bg-muted-foreground/40",
 };
 
 function regionLabelFor(region: string, t: (key: TKey) => string): string {
@@ -92,7 +90,6 @@ function regionLabelFor(region: string, t: (key: TKey) => string): string {
   return region.charAt(0).toUpperCase() + region.slice(1).replaceAll("_", " ");
 }
 
-/** The regions actually carrying evidence, least recovered first. */
 function leastRecovered(regions: TwinRegionState[]): TwinRegionState[] {
   return regions
     .filter((region) => region.provenance === "calculated" && region.recoveryPct !== null)
@@ -100,13 +97,9 @@ function leastRecovered(regions: TwinRegionState[]): TwinRegionState[] {
 }
 
 /**
- * The Twin at the head of Today. It is the screen's visual heart rather than
- * a tile in a grid: the figure is read first, and the regions beside it say
- * in words what the figure says in colour. The full page at /twin carries the
- * evidence for each region; this shows the state and what needs attention.
- *
- * Presentational: kept free of data fetching so the layout can be rendered
- * and reviewed from a known snapshot, the way the Twin page is.
+ * Today treats the Twin as the visual stage, not as another dashboard card.
+ * The renderer is still the honest segmented BodyMap: the interface is ready
+ * for a future 3D renderer because all visual state comes from TwinSnapshot.
  */
 export function TwinTodayView({
   data,
@@ -119,22 +112,22 @@ export function TwinTodayView({
   label: (region: string) => string;
   status?: "loading" | "error" | "ready";
 }) {
-  const isLoading = status === "loading";
-  const isError = status === "error";
-
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
-
-  // The snapshot arrives after mount, so the opening side cannot be decided
-  // in the initial state the way the Twin page does it. Aligned once, the
-  // first time data lands: without this the card opens on the front and a
-  // body whose only evidence is on the back renders entirely grey — reading
-  // as "nothing logged" when something was.
   const aligned = useRef(false);
+
+  const ranked = data ? leastRecovered(data.regions) : [];
+  const focus = selected
+    ? (data?.regions.find((region) => region.region === selected) ?? ranked[0] ?? null)
+    : (ranked[0] ?? null);
+
   useEffect(() => {
     if (aligned.current || !data) return;
     aligned.current = true;
-    setView(openingView(leastRecovered(data.regions).map((region) => region.region)));
+    const initial = leastRecovered(data.regions)[0];
+    if (!initial) return;
+    setSelected(initial.region);
+    setView(openingView([initial.region]));
   }, [data]);
 
   const selectRegion = (region: string) => {
@@ -142,56 +135,68 @@ export function TwinTodayView({
     if (isAnatomicalRegion(region)) setView((current) => viewShowing(region, current));
   };
 
-  const ranked = data ? leastRecovered(data.regions) : [];
-  // Regions the window has nothing to say about are named rather than left to
-  // the figure's grey: the body map is never the only path to the data.
-  const silent = data ? data.regions.filter((region) => region.provenance !== "calculated") : [];
+  const evidenceCount =
+    data?.regions.filter((region) => region.provenance === "calculated").length ?? 0;
 
   return (
-    <section
-      className="panel relative overflow-hidden rounded-3xl border border-border p-6 md:p-8"
-      style={{
-        background: "radial-gradient(90% 130% at 12% 0%, var(--primary-dim), transparent 58%)",
-      }}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.28em] text-primary">
-            <PersonStanding className="size-4" /> {copy.eyebrow}
-          </p>
-          <h2 className="mt-2 text-2xl leading-tight md:text-3xl">{copy.title}</h2>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            {copy.subtitle}
-          </p>
-        </div>
-        <Link
-          to="/twin"
-          className="group inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-4 py-2 text-xs font-bold text-primary"
-        >
-          {copy.open}
-          <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 motion-reduce:transition-none" />
-        </Link>
-      </div>
+    <section className="relative min-h-[620px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050607] sm:min-h-[680px] lg:min-h-[720px]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-80"
+        style={{
+          background:
+            "radial-gradient(55% 60% at 50% 42%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 72%), radial-gradient(55% 50% at 50% 100%, rgba(255,255,255,.035), transparent 72%)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-[18%] top-[15%] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
+      />
 
-      {isLoading ? (
-        <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
-        </p>
-      ) : isError || !data ? (
-        <p className="mt-6 text-sm text-muted-foreground">{copy.unavailable}</p>
-      ) : (
-        <div className="mt-6 grid gap-6 sm:grid-cols-[minmax(200px,300px)_1fr]">
-          <div>
-            <div className="mx-auto flex w-full max-w-[220px] gap-1 rounded-full border border-border bg-surface-2/80 p-1">
+      <div className="relative z-10 flex min-h-[620px] flex-col sm:min-h-[680px] lg:min-h-[720px]">
+        <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-7 sm:pt-7">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.26em] text-primary">
+              <PersonStanding className="size-3.5" /> {copy.eyebrow}
+            </p>
+            <h2 className="mt-2 max-w-xl text-xl leading-tight text-foreground sm:text-2xl lg:text-3xl">
+              {copy.title}
+            </h2>
+            <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
+              {copy.subtitle}
+            </p>
+          </div>
+          <Link
+            to="/twin"
+            aria-label={copy.open}
+            className="group grid size-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-primary backdrop-blur-xl transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
+          >
+            <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+          </Link>
+        </header>
+
+        {status === "loading" ? (
+          <div className="grid flex-1 place-items-center px-6 text-sm text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
+            </span>
+          </div>
+        ) : status === "error" || !data ? (
+          <div className="grid flex-1 place-items-center px-6 text-sm text-muted-foreground">
+            {copy.unavailable}
+          </div>
+        ) : (
+          <div className="relative flex flex-1 flex-col px-4 pb-5 sm:px-7 sm:pb-7">
+            <div className="absolute left-1/2 top-3 z-20 flex -translate-x-1/2 rounded-full border border-white/[0.08] bg-black/45 p-1 backdrop-blur-xl">
               {(["front", "back"] as const).map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => setView(option)}
                   aria-pressed={view === option}
-                  className={`min-h-8 flex-1 rounded-full px-3 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors motion-reduce:transition-none ${
+                  onClick={() => setView(option)}
+                  className={`min-h-8 rounded-full px-3 text-[9px] font-bold uppercase tracking-[0.15em] transition-colors motion-reduce:transition-none ${
                     view === option
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-white/10 text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -199,7 +204,8 @@ export function TwinTodayView({
                 </button>
               ))}
             </div>
-            <div className="mt-3 h-[420px] md:h-[520px]">
+
+            <div className="relative mx-auto mt-4 h-[400px] w-full max-w-[330px] flex-1 sm:h-[470px] sm:max-w-[390px] lg:max-w-[430px]">
               <BodyMap
                 regions={data.regions
                   .filter((region) => isAnatomicalRegion(region.region))
@@ -214,93 +220,71 @@ export function TwinTodayView({
                 regionLabel={label}
               />
             </div>
-          </div>
 
-          <div className="flex min-w-0 flex-col">
-            {/* What produced this reading, stated before the reading itself. */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border pb-3 font-mono text-xs text-muted-foreground">
-              <span>{copy.window(data.evidenceWindowDays)}</span>
-              <span>
-                {copy.coverage(
-                  data.regions.filter((region) => region.provenance === "calculated").length,
-                  data.regions.length,
-                )}
-              </span>
+            <div className="pointer-events-none absolute left-4 top-16 hidden max-w-40 rounded-2xl border border-white/[0.08] bg-black/35 p-3 backdrop-blur-xl sm:block lg:left-7">
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                {copy.window(data.evidenceWindowDays)}
+              </p>
+              <p className="mt-1 font-mono text-sm text-foreground">
+                {copy.coverage(evidenceCount, data.regions.length)}
+              </p>
             </div>
 
-            {/* Early on this column is much shorter than the figure beside
-                it. Centring it against the body keeps the two reading as one
-                object instead of leaving a void under the text. */}
-            <div className="flex flex-1 flex-col justify-center">
-              {ranked.length === 0 ? (
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-foreground">{copy.empty}</p>
-                  <p className="mt-1 max-w-md text-sm text-muted-foreground">{copy.emptyHint}</p>
+            {focus ? (
+              <div className="absolute right-4 top-24 hidden w-44 rounded-2xl border border-white/[0.08] bg-black/40 p-3 backdrop-blur-xl sm:block lg:right-7">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  {copy.attention}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => selectRegion(focus.region)}
+                  className="mt-2 block w-full text-left"
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className={`size-2 rounded-full ${BAND_DOT[focus.recoveryBand]}`} />
+                    {label(focus.region)}
+                  </span>
+                  <span className="mt-1 block font-mono text-xs text-muted-foreground">
+                    {focus.recoveryPct}% · {copy.bandLabel[focus.recoveryBand]}
+                  </span>
+                </button>
+              </div>
+            ) : null}
+
+            <div className="mt-auto rounded-2xl border border-white/[0.08] bg-black/35 p-3 backdrop-blur-xl sm:hidden">
+              {focus ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                      {copy.attention}
+                    </p>
+                    <p className="mt-1 flex items-center gap-2 truncate text-sm font-semibold text-foreground">
+                      <span
+                        className={`size-2 shrink-0 rounded-full ${BAND_DOT[focus.recoveryBand]}`}
+                      />
+                      {label(focus.region)}
+                    </p>
+                  </div>
+                  <p className="shrink-0 font-mono text-sm text-foreground">{focus.recoveryPct}%</p>
                 </div>
               ) : (
-                <>
-                  <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                    {copy.needsAttention}
-                  </p>
-                  <ul className="mt-2 space-y-2">
-                    {ranked.map((region) => (
-                      <li key={region.region}>
-                        <button
-                          type="button"
-                          onClick={() => selectRegion(region.region)}
-                          aria-pressed={selected === region.region}
-                          className={`w-full rounded-xl border px-3 py-2 text-left transition-colors motion-reduce:transition-none ${
-                            selected === region.region
-                              ? "border-primary/50 bg-primary/5"
-                              : "border-transparent hover:border-border hover:bg-surface-2"
-                          }`}
-                        >
-                          <span className="flex items-center justify-between gap-2">
-                            <span className="flex min-w-0 items-center gap-2">
-                              <span
-                                className={`size-2 shrink-0 rounded-full ${BAND_DOT[region.recoveryBand]}`}
-                                aria-hidden="true"
-                              />
-                              <span className="truncate text-sm font-medium text-foreground">
-                                {label(region.region)}
-                              </span>
-                            </span>
-                            <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                              {region.recoveryPct}% · {copy.bandLabel[region.recoveryBand]}
-                            </span>
-                          </span>
-                          <span className="mt-1.5 block h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                            <span
-                              className={`block h-full rounded-full ${BAND_DOT[region.recoveryBand]}`}
-                              style={{ width: `${region.recoveryPct}%` }}
-                            />
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-
-              {silent.length > 0 && (
-                <div className="mt-4 border-t border-border pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                    {copy.noEvidenceYet}
-                  </p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                    {silent.map((region) => label(region.region)).join(" · ")}
-                  </p>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{copy.empty}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{copy.emptyHint}</p>
                 </div>
               )}
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/[0.07] pt-2 text-[10px] text-muted-foreground">
+                <span>{copy.window(data.evidenceWindowDays)}</span>
+                <span>{copy.coverage(evidenceCount, data.regions.length)}</span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
 
-/** Container: loads the same snapshot the Twin page reads, so they agree. */
 export function TwinTodayCard() {
   const { lang, t } = useI18n();
   const timeZone = browserTimeZone();

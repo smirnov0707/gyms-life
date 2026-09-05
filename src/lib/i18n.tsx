@@ -149,9 +149,7 @@ const baseDict = {
   },
   "landing.goToPlan": { lt: "Eiti į mano planą", en: "Go to my plan" },
   "landing.newPlan": { lt: "Generuoti naują", en: "Generate new" },
-  "landing.cmd.todaySession": { lt: "Šiandienos treniruotė", en: "Today's session" },
   "landing.cmd.bodyMetrics": { lt: "Kūno rodikliai", en: "Body metrics" },
-  "landing.cmd.nextMeal": { lt: "Kitas valgymas", en: "Next meal" },
 
   "bm.weight": { lt: "Svoris", en: "Weight" },
   "bm.bodyFat": { lt: "Kūno riebalai", en: "Body fat" },
@@ -246,15 +244,10 @@ const baseDict = {
   "dash.afternoon": { lt: "Laba diena", en: "Good afternoon" },
   "dash.evening": { lt: "Labas vakaras", en: "Good evening" },
   "dash.welcomeBack": { lt: "Malonu matyti", en: "Good to see you" },
-
-  "dash.week": { lt: "Savaitės planas", en: "Weekly plan" },
   "dash.streak": { lt: "Serija", en: "Streak" },
-  "dash.noplan": { lt: "Dar neturi plano", en: "You don't have a plan yet" },
-  "dash.noplanCta": { lt: "Užpildyti anketą", en: "Fill in the intake" },
   "dash.regenerate": { lt: "Generuoti naują planą", en: "Generate a new plan" },
 
   "plan.day": { lt: "Diena", en: "Day" },
-  "plan.exercises": { lt: "pratimai", en: "exercises" },
   "plan.min": { lt: "min", en: "min" },
 
   "w.watch": { lt: "Žiūrėti techniką", en: "Watch technique" },
