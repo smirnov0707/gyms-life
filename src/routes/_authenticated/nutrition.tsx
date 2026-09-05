@@ -99,7 +99,8 @@ function Metric({
   label: string;
   unit: string;
 }) {
-  const pct = target === null ? null : Math.min(100, Math.round((value / Math.max(1, target)) * 100));
+  const pct =
+    target === null ? null : Math.min(100, Math.round((value / Math.max(1, target)) * 100));
 
   return (
     <div className="border-b border-white/[0.06] py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:py-0 sm:last:border-r-0">
@@ -122,7 +123,9 @@ function Metric({
           style={{ width: `${pct ?? 0}%` }}
         />
       </div>
-      <p className="mt-2 font-mono text-[10px] text-neutral-600">{pct === null ? "—" : `${pct}%`}</p>
+      <p className="mt-2 font-mono text-[10px] text-neutral-600">
+        {pct === null ? "—" : `${pct}%`}
+      </p>
     </div>
   );
 }
@@ -235,21 +238,27 @@ function NutritionPage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
+            background: "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
           }}
         />
         <div className="relative">
           <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
-            {copy.eyebrow}
+            {copy.eyebrow} · {t("nut.today")}
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {copy.state}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">{copy.stateHint}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
+            {copy.stateHint}
+          </p>
 
           <div className="mt-7 grid sm:grid-cols-4">
-            <Metric value={sum("calories")} target={targets.kcal} label={copy.kcal} unit="" />
+            <Metric
+              value={sum("calories")}
+              target={targets.kcal}
+              label={copy.kcal}
+              unit={t("nut.kcal")}
+            />
             <Metric
               value={sum("protein")}
               target={targets.proteinG}
