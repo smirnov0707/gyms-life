@@ -2,10 +2,12 @@
 
 ## Baseline and scope
 
-Continues `92817c0f6151d823758a00df55f870d060b177fd`, including PR #31's
-continuous 360-degree surface. Do not apply the obsolete primitive-body patch.
-This change preserves geometry, authentication, Supabase schema, camera and
-provider orchestration. It adds no physiology model or wearable data.
+Started from `92817c0f6151d823758a00df55f870d060b177fd` and integrated main
+through `b7680640ade7f2a6e1be9b551b528b9467956746`, including PR #31's
+continuous 360-degree surface and PR #32's mobile cockpit. Do not apply the
+obsolete primitive-body patch. This change preserves geometry, authentication,
+Supabase schema, camera and provider orchestration. It adds no physiology model
+or wearable data.
 
 ## Evidence correction
 
@@ -65,6 +67,12 @@ units, camera/selection preservation, source failures, restoration, mobile
 volume views and missing inputs as well as the previous orbit/fallback checks.
 An optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser for
 local testing; CI uses the pinned Playwright Chromium by default.
+
+Release requires both ordinary CI and Twin browser checks for the final PR head
+or its verified merge candidate. An earlier setup job is not sufficient evidence
+for a later merge resolution. Review final screenshots in both layers, preserve
+the 2D fallback, and verify Netlify's production commit reference after merging.
+Do not describe synthetic-fixture coverage as an authenticated production test.
 
 Physical iPhone/Android GPU, battery and authenticated production smoke tests
 remain separate checks. This change does not resolve unrelated dependency
