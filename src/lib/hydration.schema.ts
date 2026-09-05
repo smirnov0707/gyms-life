@@ -61,3 +61,22 @@ export const HydrationInputSchema = z
   })
   .strict();
 export type HydrationInput = z.infer<typeof HydrationInputSchema>;
+
+/** Today's intake, as read back from `hydration_logs`. */
+export const HydrationIntakeSchema = z
+  .object({
+    loggedOn: z.string().min(1),
+    totalMl: z.number().int().nonnegative(),
+    entries: z.array(
+      z.object({
+        id: z.string().uuid(),
+        amountMl: z.number().int().positive(),
+        consumedAt: z.string().min(1),
+      }),
+    ),
+  })
+  .strict();
+export type HydrationIntake = z.infer<typeof HydrationIntakeSchema>;
+
+/** The single amount one tap may log. Mirrors the database check. */
+export const HYDRATION_MAX_ENTRY_ML = 3000;
