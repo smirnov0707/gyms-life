@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { IntelligenceProvenanceSchema } from "./intelligence-provenance.schema";
 
 /**
  * Canonical Future Lab timeline event types. Kept intentionally small and
@@ -11,26 +12,23 @@ export const PersonalTimelineEventTypeSchema = z.enum([
   "decision_recorded",
 ]);
 
-/** Matches the `personal_timeline_provenance` check constraint exactly. */
-export const PersonalTimelineProvenanceSchema = z.enum([
-  "known",
-  "measured",
-  "user_reported",
-  "device_reported",
-  "calculated",
-  "inferred",
-  "predicted",
-  "simulated",
-  "unknown",
-]);
+/**
+ * Timeline provenance uses the same Future Lab vocabulary as predictions,
+ * wearable evidence and future normalized observations. "known" / "unknown"
+ * describe epistemic state, not provenance, and therefore do not belong here.
+ */
+export const PersonalTimelineProvenanceSchema = IntelligenceProvenanceSchema;
 
-/** Matches the `personal_timeline_quality` check constraint exactly. */
+/**
+ * Timeline quality is intentionally separate from provenance. It describes
+ * the evidentiary quality of a compact timeline summary, not where it came from.
+ */
 export const PersonalTimelineQualitySchema = z.enum(["unknown", "low", "moderate", "high"]);
 
 export const PersonalTimelineEventInputSchema = z
   .object({
     eventType: PersonalTimelineEventTypeSchema,
-    occurredAt: z.string().min(1),
+    occurredAt: z.string().datetime({ offset: true }),
     timeZone: z.string().trim().min(1).max(64).nullable(),
     provenance: PersonalTimelineProvenanceSchema,
     sourceSystem: z.literal("gymslife"),

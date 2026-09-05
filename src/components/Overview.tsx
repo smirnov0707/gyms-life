@@ -1,64 +1,29 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Apple, Clock, Dumbbell, Plus, Utensils } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { GlowCard } from "@/components/GlowCard";
 import { TwinTodayCard } from "@/components/twin/TwinTodayCard";
-import { GoalExerciseSuggestions } from "@/components/GoalExerciseSuggestions";
-import { CoachDock } from "@/components/CoachDock";
 import { SmartBrief } from "@/components/SmartBrief";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
-
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
 import { useLocalizedPlan } from "@/lib/use-localized-plan";
-import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
-import { parseStoredMealPlan } from "@/lib/meal-plan.schema";
-import { browserTimeZone, calendarDayDifference, dayInTimeZone } from "@/lib/local-day";
-
-type Copy = {
-  weeklyTargetTitle: string;
-  weeklyTargetBody: (completed: number, planned: number) => string;
-  checkingNext: string;
-  checkingNextBody: string;
-  viewProgram: string;
-};
-
-function copyFor(lang: Lang): Copy {
-  if (baseLang(lang) === "en") {
-    return {
-      weeklyTargetTitle: "This week's training target is met",
-      weeklyTargetBody: (completed, planned) =>
-        `You finished ${completed} of ${planned} planned sessions in the last 7 days. The next program day waits until you are ready again.`,
-      checkingNext: "Checking your next session",
-      checkingNextBody: "The program day is chosen from your actual training progress.",
-      viewProgram: "View program",
-    };
-  }
-  return {
-    weeklyTargetTitle: "Savaitės treniruočių tikslas pasiektas",
-    weeklyTargetBody: (completed, planned) =>
-      `Per paskutines 7 dienas užbaigei ${completed} iš ${planned} suplanuotų sesijų. Kita programos diena lauks, kai vėl būsi pasiruošęs.`,
-    checkingNext: "Tikriname kitą treniruotę",
-    checkingNextBody: "Programos diena bus rodoma pagal tavo faktinę treniruočių eigą.",
-    viewProgram: "Peržiūrėti programą",
-  };
-}
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 
 function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(100, Math.max(0, score)) / 100);
   const tone = score >= 80 ? "text-primary" : score >= 55 ? "text-accent" : "text-destructive";
+
   return (
     <div className="relative grid size-14 place-items-center">
-      <svg className="absolute inset-0 size-14 -rotate-90">
+      <svg className="absolute inset-0 size-14 -rotate-90" aria-hidden="true">
         <circle
           cx="28"
           cy="28"
@@ -71,7 +36,7 @@ function ReadinessRing({ score }: { score: number }) {
           cx="28"
           cy="28"
           r={radius}
-          className={`${tone} transition-all duration-700`}
+          className={`${tone} transition-all duration-700 motion-reduce:transition-none`}
           strokeWidth="4"
           fill="transparent"
           strokeDasharray={circumference}
@@ -85,22 +50,23 @@ function ReadinessRing({ score }: { score: number }) {
 }
 
 /**
- * The single authenticated overview — shared by "/" and "/app" so both look
- * identical.
+ * Today is the decision surface, not a dashboard.
  *
- * The screen follows one spine: greet, show the body, state where it is,
- * name the one change that matters, then the single action to take. Counters
- * and side panels that competed with that spine live on the pages they belong
- * to — streak on /achievements, sessions on /progress, calories and fluids on
- * /nutrition, body metrics on /progress — so Today stays a decision, not a
- * dashboard.
+ * The user sees one living representation of themselves, the current state,
+ * the one meaningful change, and the best next action. Nutrition, supplements,
+ * weekly programme detail, achievements and discovery browsing remain available
+ * in their dedicated surfaces instead of competing for attention here.
  */
 export function Overview() {
-  const { t, lang } = useI18n();
-  const copy = copyFor(lang);
+  const { t } = useI18n();
   const { user } = useAuth();
   const timeZone = browserTimeZone();
   const localDay = dayInTimeZone(new Date(), timeZone);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -120,7 +86,7 @@ export function Overview() {
     queryFn: async () => {
       const { data } = await supabase
         .from("plans")
-        .select("*")
+        .select("id, data, lang")
         .eq("user_id", user!.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
@@ -143,7 +109,7 @@ export function Overview() {
     queryFn: async () => {
       const { data } = await supabase
         .from("daily_checkins")
-        .select("load_modifier, readiness_score, checkin_on")
+        .select("readiness_score")
         .eq("user_id", user!.id)
         .eq("checkin_on", localDay)
         .maybeSingle();
@@ -152,55 +118,12 @@ export function Overview() {
     enabled: !!user,
   });
 
-  const { data: savedMeal } = useQuery({
-    queryKey: ["meal-plan", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("meal_plans")
-        .select("id, data, lang, created_at")
-        .eq("user_id", user!.id)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user,
-  });
-
-  const { data: supplements } = useQuery({
-    queryKey: ["supplements", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("supplements")
-        .select("name, dose, category, times_per_day, preferred_time, is_active")
-        .eq("user_id", user!.id)
-        .eq("is_active", true)
-        .order("created_at", { ascending: true });
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const savedPlan = savedMeal ? parseStoredMealPlan(savedMeal.data) : null;
-  const { plan: localizedSaved } = useLocalizedMealPlan(
-    savedMeal?.id,
-    savedPlan,
-    savedMeal?.lang ?? "lt",
-  );
-
   const storedPlan = plan ? parseStoredTrainingPlan(plan.data) : null;
   const { plan: planData } = useLocalizedPlan(
     plan?.id,
     storedPlan ?? undefined,
     plan?.lang ?? "lt",
   );
-
-  const readinessScore = checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const firstName = useMemo(() => {
     const metadata = user?.user_metadata ?? {};
@@ -218,329 +141,83 @@ export function Overview() {
 
   const hour = new Date().getHours();
   const greeting = t(hour < 12 ? "dash.morning" : hour < 18 ? "dash.afternoon" : "dash.evening");
-
-  const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
-
-  const nextMeal = useMemo(() => {
-    if (!localizedSaved?.days.length) return null;
-    const now = new Date();
-    const createdAt = savedMeal?.created_at ? new Date(savedMeal.created_at) : null;
-    const createdDay =
-      createdAt !== null && !Number.isNaN(createdAt.getTime())
-        ? dayInTimeZone(createdAt, timeZone)
-        : localDay;
-    const dayIndex =
-      Math.max(0, calendarDayDifference(createdDay, localDay)) % localizedSaved.days.length;
-    const day = localizedSaved.days[dayIndex];
-    if (!day?.meals.length) return null;
-    const currentSlot =
-      now.getHours() < 10
-        ? 0
-        : now.getHours() < 13
-          ? 2
-          : now.getHours() < 17
-            ? 3
-            : now.getHours() < 20
-              ? 4
-              : 5;
-    const meal = day.meals[currentSlot] ?? day.meals[day.meals.length - 1];
-    if (!meal) return null;
-    return { meal, dayTitle: day.title };
-  }, [localDay, localizedSaved, savedMeal?.created_at, timeZone]);
-
-  const nextSupps = useMemo(() => {
-    if (!supplements?.length) return [];
-    const order: Record<string, number> = {
-      morning: 6,
-      pre_workout: 11,
-      post_workout: 14,
-      evening: 18,
-      bedtime: 21,
-      any: 12,
-    };
-    return [...supplements]
-      .sort((a, b) => (order[a.preferred_time] ?? 12) - (order[b.preferred_time] ?? 12))
-      .slice(0, 3);
-  }, [supplements]);
-
+  const readinessScore = checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;
   const recoveryState = useMemo(() => {
     if (readinessScore == null) return null;
     if (readinessScore >= 80) return t("tl.heat.ready");
     if (readinessScore >= 55) return t("tl.heat.optimal");
     return t("tl.heat.fatigued");
   }, [readinessScore, t]);
+  const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
 
   const anim = (delay: string) =>
-    `transition-all duration-700 ${delay} ${mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}`;
+    `transition-all duration-700 motion-reduce:transition-none ${delay} ${
+      mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+    }`;
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
 
   return (
-    <div className="grid gap-6">
-      {/* 1 — Greeting. Who this is and what plan they are on. */}
+    <div className="grid gap-5 md:gap-6">
       <section
-        className={`flex flex-col justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-end ${anim("")}`}
+        className={`flex items-end justify-between gap-4 border-b border-border/70 pb-4 md:pb-5 ${anim("")}`}
       >
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-primary">
             {t("dash.welcomeBack")}
           </p>
-          <h1 className="mt-1 text-4xl shine-text md:text-5xl">
+          <h1 className="mt-1 truncate text-3xl shine-text sm:text-4xl md:text-5xl">
             {greeting}
             {firstName ? `, ${firstName}` : ""}
           </h1>
           {planData ? (
-            <>
-              <p className="mt-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                {planData.title}
-              </p>
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{planData.summary}</p>
-            </>
+            <p className="mt-1.5 truncate text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:text-sm">
+              {planData.title}
+            </p>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">{t("ob.sub")}</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">{t("ob.sub")}</p>
           )}
         </div>
 
-        {planData && (
+        {planData ? (
           <Button
             asChild
-            variant="outline"
-            size="default"
-            className="shrink-0 whitespace-nowrap rounded-full px-5"
+            variant="ghost"
+            size="sm"
+            className="hidden shrink-0 rounded-full text-xs text-muted-foreground sm:inline-flex"
           >
             <Link to="/onboarding">{t("dash.regenerate")}</Link>
           </Button>
-        )}
+        ) : null}
       </section>
 
-      {/* 2 — The Twin. The body itself, read before any number about it. */}
-      <div className={anim("delay-100")}>
+      <div className={anim("delay-75")}>
         <TwinTodayCard />
       </div>
 
-      {/* 3 — Current state: how ready the athlete is, and what is true today. */}
-      <div
-        className={`grid gap-6 ${readinessScore != null ? "lg:grid-cols-2" : ""} ${anim("delay-150")}`}
+      <section
+        aria-label={t("nav.today")}
+        className={`grid gap-4 ${readinessScore != null ? "lg:grid-cols-2" : ""} ${anim("delay-100")}`}
       >
-        {readinessScore != null && (
+        {readinessScore != null ? (
           <ReadinessCard
             score={readinessScore}
             state={recoveryState}
             ring={<ReadinessRing score={readinessScore} />}
           />
-        )}
+        ) : null}
         <TodayLifeContext />
-      </div>
+      </section>
 
-      {/* 4 — The one change worth knowing about, interpreted from the data. */}
-      <div className={anim("delay-200")}>
+      <div className={anim("delay-150")}>
         <SmartBrief />
       </div>
 
-      {/* 5 — The best next action, why it was chosen, and the button that
-          starts it. Training entry stays here so an AI-written brief above can
-          never skip the deterministic safety check behind this card. */}
-      <div className={anim("delay-300")}>
+      <div className={anim("delay-200")}>
         <TodayDecision workoutDay={today?.day ?? null} />
       </div>
-
-      {/* Everything below supports the decision above rather than competing
-          with it. */}
-      <div className={anim("delay-500")}>
-        <CoachDock progression={planData?.progression} nutrition={planData?.nutrition} />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-12">
-        <div className={`md:col-span-8 ${anim("delay-500")}`}>
-          <GlowCard className="panel relative h-full overflow-hidden p-6 md:p-8">
-            <div className="grain-hero pointer-events-none absolute inset-0 opacity-40" />
-            <div className="relative z-10">
-              {today ? (
-                <>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="min-w-0 break-words text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      {planData?.title}
-                    </p>
-                    <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-tighter text-primary">
-                      {t("landing.cmd.todaySession")}
-                    </span>
-                  </div>
-                  <h2 className="mt-2 break-words text-2xl leading-tight md:text-4xl">
-                    {today.title}
-                  </h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {today.focus} · {today.exercises.length} {t("plan.exercises")} ·{" "}
-                    {today.estimated_minutes} {t("plan.min")}
-                  </p>
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {today.exercises.map((e) => (
-                      <span
-                        key={e.slug}
-                        className="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-semibold"
-                      >
-                        {e.name} · {e.sets}×{e.reps}
-                      </span>
-                    ))}
-                  </div>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="mt-6 rounded-full px-5 text-sm font-bold"
-                  >
-                    <Link to="/training">{t("nav.training")}</Link>
-                  </Button>
-                </>
-              ) : nextWorkoutData?.status === "WEEKLY_TARGET_REACHED" ? (
-                <div className="grid place-items-center gap-4 py-12 text-center">
-                  <Dumbbell className="size-8 text-primary" />
-                  <h2 className="text-2xl">{copy.weeklyTargetTitle}</h2>
-                  <p className="max-w-md text-sm text-muted-foreground">
-                    {copy.weeklyTargetBody(
-                      nextWorkoutData.completedSessionsLast7Days,
-                      nextWorkoutData.plan.daysPerWeek,
-                    )}
-                  </p>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full px-7 font-bold"
-                  >
-                    <Link to="/training">{copy.viewProgram}</Link>
-                  </Button>
-                </div>
-              ) : planData ? (
-                <div className="grid place-items-center gap-4 py-12 text-center">
-                  <Dumbbell className="size-8 text-primary" />
-                  <h2 className="text-2xl">{copy.checkingNext}</h2>
-                  <p className="max-w-md text-sm text-muted-foreground">{copy.checkingNextBody}</p>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full px-7 font-bold"
-                  >
-                    <Link to="/training">{copy.viewProgram}</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid place-items-center gap-4 py-12 text-center">
-                  <Dumbbell className="size-8 text-primary" />
-                  <h2 className="text-2xl">{t("dash.noplan")}</h2>
-                  <p className="max-w-md text-sm text-muted-foreground">{t("ob.sub")}</p>
-                  <Button asChild size="lg" className="glow-ring rounded-full px-7 font-bold">
-                    <Link to="/onboarding">{t("dash.noplanCta")}</Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="pointer-events-none absolute -bottom-10 -right-10 size-64 rounded-full bg-primary/5 blur-3xl" />
-          </GlowCard>
-        </div>
-
-        <div className={`flex flex-col gap-6 md:col-span-4 ${anim("delay-500")}`}>
-          <GlowCard className="panel flex-1 p-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                {t("supp.title")}
-              </h3>
-              <Button asChild variant="ghost" size="sm" className="h-8 gap-1 text-xs">
-                <Link to="/supplements">
-                  <Plus className="size-3.5" /> {t("supp.add")}
-                </Link>
-              </Button>
-            </div>
-            {nextSupps.length === 0 ? (
-              <p className="mt-4 text-sm text-muted-foreground">{t("supp.empty")}</p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {nextSupps.map((s, i) => (
-                  <li key={`${s.name}-${i}`} className="flex items-center gap-3">
-                    <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                      <Utensils className="size-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-foreground">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.dose ? `${s.dose} · ` : ""}
-                        {t(`supp.pref.${s.preferred_time}` as TKey)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </GlowCard>
-
-          <GlowCard className="panel p-6">
-            <div className="flex items-center gap-2">
-              <Apple className="size-5 text-accent" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                {t("landing.cmd.nextMeal")}
-              </h3>
-            </div>
-            {nextMeal ? (
-              <div className="mt-5">
-                <p className="text-xs font-bold uppercase tracking-widest text-accent">
-                  {nextMeal.dayTitle}
-                </p>
-                <p className="mt-1 text-lg font-semibold text-foreground">{nextMeal.meal.name}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {Math.round(nextMeal.meal.kcal)} kcal · {t("nut.protein")}{" "}
-                  {Math.round(nextMeal.meal.protein)}g · {t("nut.carbs")}{" "}
-                  {Math.round(nextMeal.meal.carbs)}g · {t("nut.fat")}{" "}
-                  {Math.round(nextMeal.meal.fat)}g
-                </p>
-                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="size-3.5" />
-                  <span>{nextMeal.meal.minutes} min</span>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-5 grid place-items-center gap-3 py-6 text-center">
-                <Utensils className="size-7 text-accent" />
-                <p className="text-sm text-muted-foreground">{t("mp.none")}</p>
-                <Button asChild variant="outline" size="sm" className="rounded-full">
-                  <Link to="/meal-plan">{t("mp.generate")}</Link>
-                </Button>
-              </div>
-            )}
-          </GlowCard>
-        </div>
-      </div>
-
-      <GoalExerciseSuggestions />
-
-      {planData && (
-        <div className={anim("delay-700")}>
-          <h2 className="text-3xl">{t("dash.week")}</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {planData.days.map((d) => (
-              <Link key={d.day} to="/training" className="panel lift block p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                    {t("plan.day")} {d.day}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="size-3" /> {d.estimated_minutes} {t("plan.min")}
-                  </span>
-                </div>
-                <h3 className="mt-1 text-2xl">{d.title}</h3>
-                <p className="text-sm text-primary">{d.focus}</p>
-                <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
-                  {d.exercises.slice(0, 5).map((e) => (
-                    <li key={e.slug}>
-                      {e.name} — {e.sets}×{e.reps}
-                    </li>
-                  ))}
-                </ul>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
