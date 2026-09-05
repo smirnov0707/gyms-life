@@ -18,7 +18,12 @@ const SupplementProductSchema = z.object({
   withFood: z.boolean().default(false),
   preferredTime: SupplementPreferredTimeSchema.default("any"),
   notes: z.string().trim().max(500).default(""),
-  confidence: z.coerce.number().int().min(0).max(100).default(0),
+  /**
+   * Optional, and left absent when the model does not state it. Defaulting a
+   * missing confidence to 0 showed "0%" — which reads as "certainly wrong"
+   * rather than "not assessed", and the two are not the same claim.
+   */
+  confidence: z.coerce.number().int().min(0).max(100).optional(),
   readable: z.string().trim().max(500).default(""),
 });
 
