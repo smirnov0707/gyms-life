@@ -519,26 +519,29 @@ export function TwinSnapshotView({
               </ul>
             )}
           </div>
-        </div>
-      </section>
 
-      {/* The body map is never the only path to this data (accessibility). */}
-      <section>
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-sm font-semibold text-foreground">{copy.allRegions}</h2>
-          <p className="text-xs text-muted-foreground">
-            {copy.evidenceWindow(data.evidenceWindowDays)}
-          </p>
-        </div>
-        <div className="mt-3 grid gap-x-8 rounded-3xl border border-border bg-surface px-5 py-2 sm:grid-cols-2">
-          {data.regions.map((region) => (
-            <RegionRow
-              key={region.region}
-              region={region}
-              copy={copy}
-              label={label(region.region)}
-            />
-          ))}
+          {/* The body map is never the only path to this data (accessibility).
+              It lives beside the figure rather than below it: with only a
+              region or two ranked — which is where most people start — a
+              full-width section under the fold left the column half empty. */}
+          <div className="rounded-3xl border border-border bg-surface px-5 py-2">
+            <div className="flex items-baseline justify-between gap-3 border-b border-border pb-2 pt-3">
+              <h2 className="text-sm font-semibold text-foreground">{copy.allRegions}</h2>
+              <p className="text-xs text-muted-foreground">
+                {copy.evidenceWindow(data.evidenceWindowDays)}
+              </p>
+            </div>
+            <div className="grid gap-x-8 sm:grid-cols-2">
+              {data.regions.map((region) => (
+                <RegionRow
+                  key={region.region}
+                  region={region}
+                  copy={copy}
+                  label={label(region.region)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     </div>
