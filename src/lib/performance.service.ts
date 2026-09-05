@@ -165,31 +165,6 @@ export async function getPerformanceOverviewData(
   };
 }
 
-export async function getExerciseProgressData(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  exerciseSlug: string,
-) {
-  const { sessions, logs } = await loadCompletedPerformance(supabase, userId);
-  const performance = aggregateExercisePerformance(logs, exerciseSlug);
-  const sessionIds = new Set(sessions.map((session) => session.id));
-  const points = logs
-    .filter((log) => log.exerciseSlug === exerciseSlug && log.done && sessionIds.has(log.sessionId))
-    .map((log) => ({
-      date: log.createdAt,
-      weightKg: log.weightKg,
-      reps: log.reps,
-      rpe: log.rpe,
-      estimated1RMKg: calculateEstimated1RM(log.weightKg, log.reps),
-    }));
-
-  return {
-    status: performance ? "READY" : "NO_DATA",
-    performance,
-    points,
-  };
-}
-
 export async function getVolumeTrendData(supabase: SupabaseClient<Database>, userId: string) {
   const { sessions } = await loadCompletedPerformance(supabase, userId);
 
