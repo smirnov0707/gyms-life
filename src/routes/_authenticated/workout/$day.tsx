@@ -20,6 +20,7 @@ import type { SessionMuscleContribution } from "@/lib/session-muscle-breakdown";
 import {
   REPS_STEP,
   WEIGHT_STEP_KG,
+  nextSetNumber,
   plannedRepsPrefill,
   stepValue,
   suggestedWeightPrefill,
@@ -60,13 +61,6 @@ function formatDuration(seconds: number): string {
   const minutes = Math.floor(normalized / 60);
   const remainingSeconds = normalized % 60;
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
-}
-
-function firstUnloggedSetNumber(totalSets: number, completedSetNumbers: Set<number>): number {
-  for (let set = 1; set <= totalSets; set += 1) {
-    if (!completedSetNumbers.has(set)) return set;
-  }
-  return totalSets + 1;
 }
 
 function coachMessage(guidance: ExerciseTrainingGuidance): string {
@@ -159,6 +153,10 @@ function WorkoutPage() {
   const [workoutGuidance, setWorkoutGuidance] = useState<WorkoutTrainingGuidance | null>(null);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [setNumber, setSetNumber] = useState(1);
+  // The athlete has chosen to keep working past what the day prescribed. The
+  // plan is a recommendation; the extra set already happened, so it is written
+  // down rather than argued with.
+  const [loggingExtra, setLoggingExtra] = useState(false);
   const [reps, setReps] = useState("");
   const [weight, setWeight] = useState("");
   const [rpe, setRpe] = useState("");
@@ -225,7 +223,7 @@ function WorkoutPage() {
           .map((log) => log.set_number),
       );
       setExerciseIndex(Math.max(0, nextIndex));
-      setSetNumber(firstUnloggedSetNumber(exercise?.sets ?? 1, completedSetNumbers));
+      setSetNumber(nextSetNumber(exercise?.sets ?? 1, completedSetNumbers));
       if (result.resumed) toast.info("Tęsiame nebaigtą treniruotę.");
     },
     onError: (error) => toast.error(errorMessage(error, "Nepavyko pradėti treniruotės")),
@@ -283,6 +281,10 @@ function WorkoutPage() {
         )?.exercises[exerciseIndex]?.rest_seconds ?? 0,
       );
       setSetNumber((n) => n + 1);
+      // Back to the finished-exercise panel after each extra set, so moving
+      // on stays one tap away rather than leaving the form as the only
+      // thing on screen with no route to the next exercise.
+      setLoggingExtra(false);
       if (result.queued) {
         toast.info("Serija išsaugota šiame įrenginyje ir bus persiųsta atkūrus ryšį.");
       }
@@ -377,18 +379,22 @@ function WorkoutPage() {
   }, [exercise, suggestedWeight]);
 
   const adaptedDescription = workoutAdaptation ? adaptationMessage(workoutAdaptation) : null;
-  const currentSetComplete = setNumber > totalSets;
+  const plannedSetsDone = setNumber > totalSets;
+  const currentSetComplete = plannedSetsDone && !loggingExtra;
   const lastExercise = Boolean(workout && exerciseIndex === workout.exercises.length - 1);
   const progress = useMemo(
     () =>
       workout
         ? Math.round(
-            ((exerciseIndex + (currentSetComplete ? 1 : (setNumber - 1) / Math.max(1, totalSets))) /
+            ((exerciseIndex +
+              // Extra sets are real work but not extra progress through the
+              // plan; an exercise is at most one exercise done.
+              Math.min(1, plannedSetsDone ? 1 : (setNumber - 1) / Math.max(1, totalSets))) /
               workout.exercises.length) *
               100,
           )
         : 0,
-    [workout, exerciseIndex, currentSetComplete, setNumber, totalSets],
+    [workout, exerciseIndex, plannedSetsDone, setNumber, totalSets],
   );
 
   if (workoutQuery.isLoading)
@@ -568,8 +574,19 @@ function WorkoutPage() {
                     Plane: {exercise.sets} × {exercise.reps}
                   </p>
                 </div>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                  Setas {Math.min(setNumber, totalSets)} / {totalSets}
+                {/* Past the plan the counter reports the real set number
+                    rather than pinning to the planned total, which would have
+                    read "3 / 3" while the fourth set was being logged. */}
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    plannedSetsDone && loggingExtra
+                      ? "bg-amber-500/15 text-amber-500"
+                      : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {plannedSetsDone && loggingExtra
+                    ? `Setas ${setNumber} · virš plano`
+                    : `Setas ${Math.min(setNumber, totalSets)} / ${totalSets}`}
                 </span>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -590,6 +607,17 @@ function WorkoutPage() {
                     <Check className="size-8 text-primary" />
                     <p className="mt-2 font-semibold">Pratimas užbaigtas</p>
                   </div>
+                  {/* Doing more than the plan asked is normal. Without this the
+                      extra work simply could not be recorded, and the dvynys
+                      would model a body that trained less than it did. */}
+                  <Button
+                    variant="outline"
+                    className="mt-4 min-h-12 w-full rounded-xl font-semibold"
+                    onClick={() => setLoggingExtra(true)}
+                  >
+                    <Plus className="mr-2 size-4" />
+                    Registruoti papildomą setą
+                  </Button>
                   {lastExercise ? (
                     <>
                       <p className="mt-5 text-center text-sm text-muted-foreground">
@@ -621,6 +649,7 @@ function WorkoutPage() {
                       onClick={() => {
                         setExerciseIndex((i) => i + 1);
                         setSetNumber(1);
+                        setLoggingExtra(false);
                         setRest(0);
                       }}
                     >
@@ -630,6 +659,21 @@ function WorkoutPage() {
                 </div>
               ) : (
                 <>
+                  {plannedSetsDone && (
+                    <p className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm leading-5 text-muted-foreground">
+                      <span className="font-semibold text-foreground">
+                        Setas {setNumber} viršija šiandienos planą ({totalSets}).
+                      </span>{" "}
+                      Jis bus užrašytas kaip papildomas ir įskaičiuotas į tavo dvynio krūvį.{" "}
+                      <button
+                        type="button"
+                        className="font-semibold text-primary underline underline-offset-2"
+                        onClick={() => setLoggingExtra(false)}
+                      >
+                        Atšaukti
+                      </button>
+                    </p>
+                  )}
                   {exerciseGuidance && (
                     <div className="mt-6 rounded-xl border border-primary/25 bg-primary/5 p-4">
                       <p className="text-xs font-bold uppercase tracking-widest text-primary">
