@@ -29,7 +29,10 @@ export const getWorkoutHistory = createServerFn({ method: "GET" })
       .select(WORKOUT_SET_LOG_SELECT)
       .eq("user_id", userId)
       .in("session_id", ids)
-      .order("created_at", { ascending: true });
+      // Ordered by when each set was performed: a session that lost
+      // signal partway through syncs its offline sets last, so write order
+      // would interleave them after sets that came later in the gym.
+      .order("performed_at", { ascending: true });
 
     if (logsError) throw new Error(`Workout history set lookup failed: ${logsError.message}`);
 
