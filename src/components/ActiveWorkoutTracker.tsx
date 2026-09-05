@@ -96,18 +96,18 @@ export const ActiveWorkoutTracker: React.FC = () => {
 
       {/* Poilsio laikmatis */}
       {restSecondsLeft !== null && (
-        <div className="rounded-2xl bg-black/80 border border-white/10 p-4 flex items-center justify-between backdrop-blur-xl">
+        <div className="rounded-2xl bg-surface-2 border border-border p-4 flex items-center justify-between backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <div
-              className={`p-2.5 rounded-xl ${isResting ? "bg-emerald-500/20 text-emerald-400 animate-pulse" : "bg-white/5 text-neutral-400"}`}
+              className={`p-2.5 rounded-xl ${isResting ? "bg-emerald-500/20 text-emerald-400 light:text-emerald-700 animate-pulse" : "bg-foreground/[0.06] text-muted-foreground"}`}
             >
               <RotateCcw className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-mono uppercase text-neutral-400 block">
+              <span className="text-[10px] font-mono uppercase text-muted-foreground block">
                 {lang === "lt" ? "POILSIO LAIKMATIS" : "REST TIMER"}
               </span>
-              <span className="text-2xl font-mono font-black text-white">
+              <span className="text-2xl font-mono font-black text-foreground">
                 {Math.floor(restSecondsLeft / 60)}:
                 {(restSecondsLeft % 60).toString().padStart(2, "0")}
               </span>
@@ -119,7 +119,7 @@ export const ActiveWorkoutTracker: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setIsResting(!isResting)}
-              className="border-white/10 bg-white/5 text-white"
+              className="border-border bg-foreground/[0.06] text-foreground"
             >
               {isResting ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </Button>
@@ -130,7 +130,7 @@ export const ActiveWorkoutTracker: React.FC = () => {
                 setRestSecondsLeft(null);
                 setIsResting(false);
               }}
-              className="text-neutral-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               {lang === "lt" ? "Praleisti" : "Skip"}
             </Button>
@@ -139,19 +139,19 @@ export const ActiveWorkoutTracker: React.FC = () => {
       )}
 
       {/* Užregistruotų serijų sąrašas */}
-      <div className="rounded-2xl bg-neutral-900/80 border border-white/10 p-4 backdrop-blur-xl space-y-3">
+      <div className="rounded-2xl bg-surface-2 border border-border p-4 backdrop-blur-xl space-y-3">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-bold text-white flex items-center gap-2">
-            <Dumbbell className="w-4 h-4 text-emerald-400" />
+          <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Dumbbell className="w-4 h-4 text-emerald-400 light:text-emerald-700" />
             {lang === "lt" ? "Šios treniruotės serijos" : "Session Sets"}
           </h4>
-          <span className="text-xs font-mono text-neutral-400">
+          <span className="text-xs font-mono text-muted-foreground">
             {sets.length} {lang === "lt" ? "serijos" : "sets"}
           </span>
         </div>
 
         {sets.length === 0 ? (
-          <p className="text-xs text-neutral-500 italic py-2">
+          <p className="text-xs text-muted-foreground italic py-2">
             {lang === "lt"
               ? "Serijų dar nėra. Paspauskite mikrofono mygtuką ir ištarkite seriją."
               : "No sets recorded yet. Use voice button above."}
@@ -161,19 +161,21 @@ export const ActiveWorkoutTracker: React.FC = () => {
             {sets.map((s, idx) => (
               <div
                 key={s.id}
-                className="p-2.5 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between text-xs font-mono"
+                className="p-2.5 rounded-xl bg-surface border border-border flex items-center justify-between text-xs font-mono"
               >
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-[10px] text-neutral-400">
+                  <span className="w-5 h-5 rounded-full bg-foreground/[0.06] flex items-center justify-center text-[10px] text-muted-foreground">
                     #{sets.length - idx}
                   </span>
-                  <span className="font-bold text-white">{s.exercise}</span>
+                  <span className="font-bold text-foreground">{s.exercise}</span>
                 </div>
-                <div className="flex items-center gap-3 text-neutral-300">
+                <div className="flex items-center gap-3 text-foreground">
                   <span>{s.weightKg} kg</span>
                   <span>×</span>
-                  <span className="text-emerald-400 font-bold">{s.reps} reps</span>
-                  <span className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] text-amber-400 border border-amber-500/20">
+                  <span className="text-emerald-400 light:text-emerald-700 font-bold">
+                    {s.reps} reps
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-foreground/[0.06] text-[10px] text-amber-400 light:text-amber-700 border border-amber-500/20">
                     RPE {s.rpe}
                   </span>
                 </div>

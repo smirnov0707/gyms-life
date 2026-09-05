@@ -53,19 +53,19 @@ export const BiomechanicsScanner: React.FC = () => {
   };
 
   return (
-    <div className="rounded-2xl bg-neutral-900/80 border border-white/10 p-5 backdrop-blur-xl shadow-2xl space-y-4">
+    <div className="rounded-2xl bg-surface-2 border border-border p-5 backdrop-blur-xl shadow-2xl space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+          <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 light:text-cyan-700">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white">
+            <h3 className="text-base sm:text-lg font-bold text-foreground">
               {lang === "lt"
                 ? "AI Biomechanikos & Formos Skeneris"
                 : "AI Form & Biomechanics Scanner"}
             </h3>
-            <p className="text-xs font-mono text-neutral-400">
+            <p className="text-xs font-mono text-muted-foreground">
               {lang === "lt"
                 ? "Sąnarių kampų, stuburo ir saugumo įvertinimas"
                 : "Joint angle & spine safety check"}
@@ -73,7 +73,7 @@ export const BiomechanicsScanner: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-2 py-0.5 rounded-full bg-black/50 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 font-bold">
+        <div className="px-2 py-0.5 rounded-full bg-surface border border-cyan-500/30 text-[10px] font-mono text-cyan-300 light:text-cyan-700 font-bold">
           VISION KINEMATICS
         </div>
       </div>
@@ -90,15 +90,15 @@ export const BiomechanicsScanner: React.FC = () => {
       {!imagePreview ? (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="cursor-pointer border-2 border-dashed border-white/15 hover:border-cyan-500/40 p-8 rounded-xl text-center space-y-2 group transition-all"
+          className="cursor-pointer border-2 border-dashed border-border hover:border-cyan-500/40 p-8 rounded-xl text-center space-y-2 group transition-all"
         >
-          <Camera className="w-8 h-8 text-neutral-400 mx-auto group-hover:text-cyan-400 group-hover:scale-110 transition-transform" />
+          <Camera className="w-8 h-8 text-muted-foreground mx-auto group-hover:text-cyan-400 light:text-cyan-700 group-hover:scale-110 transition-transform" />
           <div className="text-sm font-semibold text-neutral-200">
             {lang === "lt"
               ? "Nufotografuokite pratimo atlikimo poziciją"
               : "Snap a photo of your exercise form"}
           </div>
-          <p className="text-xs font-mono text-neutral-500">
+          <p className="text-xs font-mono text-muted-foreground">
             {lang === "lt"
               ? "Pritūpimai, štangos spaudimas, trauka"
               : "Squats, bench press, deadlifts"}
@@ -119,17 +119,17 @@ export const BiomechanicsScanner: React.FC = () => {
           </div>
 
           {result && result.ok && (
-            <div className="p-4 rounded-xl bg-black/60 border border-white/10 space-y-3">
+            <div className="p-4 rounded-xl bg-surface border border-border space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase">
+                  <span className="text-[10px] font-mono text-cyan-400 light:text-cyan-700 uppercase">
                     {result.exerciseDetected}
                   </span>
-                  <h4 className="text-base font-bold text-white">
+                  <h4 className="text-base font-bold text-foreground">
                     {lang === "lt" ? "Technikos įvertinimas" : "Form Score"}
                   </h4>
                 </div>
-                <span className="text-lg font-mono font-black text-cyan-300 px-2.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
+                <span className="text-lg font-mono font-black text-cyan-300 light:text-cyan-700 px-2.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
                   {result.score}/100
                 </span>
               </div>
@@ -142,12 +142,12 @@ export const BiomechanicsScanner: React.FC = () => {
 
               {result.corrections && result.corrections.length > 0 && (
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono text-amber-400 uppercase">
+                  <span className="text-[10px] font-mono text-amber-400 light:text-amber-700 uppercase">
                     {lang === "lt" ? "Korektūros:" : "Corrections:"}
                   </span>
                   {result.corrections.map((c: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-neutral-300">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <div key={idx} className="flex items-center gap-2 text-xs text-foreground">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 light:text-amber-700 shrink-0" />
                       <span>{c}</span>
                     </div>
                   ))}
@@ -157,7 +157,7 @@ export const BiomechanicsScanner: React.FC = () => {
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
-                className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-neutral-200 gap-2 text-xs py-2"
+                className="w-full border-border bg-foreground/[0.06] hover:bg-foreground/10 text-neutral-200 gap-2 text-xs py-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 {lang === "lt" ? "Perfotografuoti kitą kadrą" : "Retake form frame"}
