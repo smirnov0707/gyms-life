@@ -710,6 +710,7 @@ const baseDict = {
   },
   "rem.sound": { lt: "Garsinis signalas", en: "Sound cue" },
   "rem.next": { lt: "Kitas priminimas", en: "Next reminder" },
+  "rem.removeMealTime": { lt: "Pašalinti valgio laiką", en: "Remove meal time" },
   "rem.none": { lt: "Nėra suplanuotų priminimų", en: "No reminders scheduled" },
   "rem.water": { lt: "Gėrimo priminimai", en: "Water reminders" },
   "rem.meal": { lt: "Mitybos dienos priminimai", en: "Meal day reminders" },
