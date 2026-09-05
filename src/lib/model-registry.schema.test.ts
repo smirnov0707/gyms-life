@@ -18,15 +18,17 @@ describe("IntelligenceModelDescriptorSchema", () => {
   });
 
   it("rejects unknown production states", () => {
-    expect(() => IntelligenceModelDescriptorSchema.parse({
-      modelId: "x",
-      version: "1",
-      type: "statistical",
-      status: "live",
-      targets: [],
-      inputContractVersion: "1",
-      outputContractVersion: "1",
-      description: "invalid status",
-    })).toThrow();
+    expect(() =>
+      IntelligenceModelDescriptorSchema.parse({
+        modelId: "x",
+        version: "1",
+        type: "statistical",
+        status: "live",
+        targets: [],
+        inputContractVersion: "1",
+        outputContractVersion: "1",
+        description: "invalid status",
+      }),
+    ).toThrow();
   });
 });

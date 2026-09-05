@@ -25,38 +25,62 @@ describe("AthletePredictionSchema", () => {
   it("preserves typed temporal provenance for supporting evidence", () => {
     const parsed = AthletePredictionSchema.parse({
       ...basePrediction,
-      evidence: [{
-        sourceType: "workout_session",
-        sourceId: "session-1",
-        provenance: "measured",
-        occurredAt: "2026-09-04T18:00:00+03:00",
-        recordedAt: "2026-09-04T18:02:00+03:00",
-        timezone: "Europe/Vilnius",
-        quality: "available",
-      }],
+      evidence: [
+        {
+          sourceType: "workout_session",
+          sourceId: "session-1",
+          provenance: "measured",
+          occurredAt: "2026-09-04T18:00:00+03:00",
+          recordedAt: "2026-09-04T18:02:00+03:00",
+          timezone: "Europe/Vilnius",
+          quality: "available",
+        },
+      ],
     });
     expect(parsed.evidence[0]?.provenance).toBe("measured");
   });
 
   it("rejects a horizon that is not in the future", () => {
-    expect(() => AthletePredictionSchema.parse({ ...basePrediction, horizonEndsAt: basePrediction.generatedAt })).toThrow();
+    expect(() =>
+      AthletePredictionSchema.parse({
+        ...basePrediction,
+        horizonEndsAt: basePrediction.generatedAt,
+      }),
+    ).toThrow();
   });
 
   it("rejects probability outside zero to one", () => {
-    expect(() => AthletePredictionSchema.parse({ ...basePrediction, predicted: { kind: "probability", value: 1.2 } })).toThrow();
+    expect(() =>
+      AthletePredictionSchema.parse({
+        ...basePrediction,
+        predicted: { kind: "probability", value: 1.2 },
+      }),
+    ).toThrow();
   });
 
   it("requires actual outcome and evaluation time together", () => {
-    expect(() => AthletePredictionSchema.parse({ ...basePrediction, evaluatedAt: "2026-09-05T22:01:00+03:00" })).toThrow();
-    expect(() => AthletePredictionSchema.parse({ ...basePrediction, actual: { kind: "boolean", value: true } })).toThrow();
+    expect(() =>
+      AthletePredictionSchema.parse({
+        ...basePrediction,
+        evaluatedAt: "2026-09-05T22:01:00+03:00",
+      }),
+    ).toThrow();
+    expect(() =>
+      AthletePredictionSchema.parse({
+        ...basePrediction,
+        actual: { kind: "boolean", value: true },
+      }),
+    ).toThrow();
   });
 
   it("requires workout completion actual outcomes to be boolean", () => {
-    expect(() => AthletePredictionSchema.parse({
-      ...basePrediction,
-      actual: { kind: "category", value: "completed" },
-      evaluatedAt: "2026-09-05T22:01:00+03:00",
-    })).toThrow();
+    expect(() =>
+      AthletePredictionSchema.parse({
+        ...basePrediction,
+        actual: { kind: "category", value: "completed" },
+        evaluatedAt: "2026-09-05T22:01:00+03:00",
+      }),
+    ).toThrow();
   });
 });
 
