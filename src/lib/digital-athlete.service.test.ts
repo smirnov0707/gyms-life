@@ -43,6 +43,8 @@ describe("buildDigitalAthleteState", () => {
           preferredWeekdays: [1, 3, 5],
           updatedAt: "2026-08-01T09:00:00.000Z",
         },
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -52,13 +54,15 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       now,
     );
 
     expect(state).toEqual({
-      schemaVersion: "1.6",
+      schemaVersion: "1.7",
+      muscleLoad: [],
       training: {
         sessionsLast7Days: 1,
         sessionsLast28Days: 3,
@@ -138,6 +142,8 @@ describe("buildDigitalAthleteState", () => {
         decisionFeedback: [],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: false,
           recovery: false,
@@ -147,6 +153,7 @@ describe("buildDigitalAthleteState", () => {
           context: false,
           trainingRhythm: false,
           trainingResponse: false,
+          muscleLoad: true,
         },
       },
       now,
@@ -181,6 +188,8 @@ describe("buildDigitalAthleteState", () => {
         decisionFeedback: [],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           trainingResponse: true,
@@ -190,6 +199,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          muscleLoad: true,
         },
       },
       now,
@@ -223,6 +233,8 @@ describe("buildDigitalAthleteState", () => {
         decisionFeedback: [],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           trainingResponse: true,
@@ -232,6 +244,7 @@ describe("buildDigitalAthleteState", () => {
           decisionFeedback: true,
           context: true,
           trainingRhythm: true,
+          muscleLoad: true,
         },
       },
       now,
@@ -255,6 +268,8 @@ describe("buildDigitalAthleteState", () => {
         decisionFeedback: [],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -264,6 +279,7 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       now,
@@ -300,6 +316,8 @@ describe("buildDigitalAthleteState", () => {
           },
         ],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -309,6 +327,7 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       now,
@@ -335,6 +354,8 @@ describe("buildDigitalAthleteState", () => {
         ],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -344,6 +365,7 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       now,
@@ -385,6 +407,8 @@ describe("buildDigitalAthleteState", () => {
         ],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -394,6 +418,7 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       new Date("2026-09-03T21:30:00.000Z"),
@@ -434,6 +459,8 @@ describe("buildDigitalAthleteState", () => {
         decisionFeedback: [],
         lifeContexts: [],
         trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -443,6 +470,7 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       new Date("2026-09-03T21:45:00.000Z"),
@@ -478,6 +506,8 @@ describe("buildDigitalAthleteState", () => {
           preferredWeekdays: [1, 3, 5],
           updatedAt: "2026-08-01T09:00:00.000Z",
         },
+        setLogs: [],
+        exerciseMuscleGroups: [],
         availability: {
           training: true,
           recovery: true,
@@ -487,6 +517,7 @@ describe("buildDigitalAthleteState", () => {
           context: true,
           trainingRhythm: true,
           trainingResponse: true,
+          muscleLoad: true,
         },
       },
       now,
@@ -501,5 +532,107 @@ describe("buildDigitalAthleteState", () => {
       completedFlexibleTrainingDaysLast28Days: 1,
       usualDayCompletionRateLast28Days: 0.17,
     });
+  });
+
+  it("derives muscle load from set logs when the source is available", () => {
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [],
+        workoutResponses: [],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        setLogs: [
+          {
+            exercise_slug: "bench-press",
+            reps: 5,
+            weight_kg: 100,
+            done: true,
+            created_at: "2026-09-02T10:00:00.000Z",
+          },
+        ],
+        exerciseMuscleGroups: [{ slug: "bench-press", muscle_group: "chest" }],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+          trainingResponse: true,
+          muscleLoad: true,
+        },
+      },
+      now,
+    );
+
+    expect(state.muscleLoad).toEqual([
+      { muscleGroup: "chest", volumeKg: 500, recoveryPct: 97, lastTrainedHoursAgo: 2 },
+    ]);
+    expect(state.dataGaps).not.toContain("muscle_load_data_unavailable");
+  });
+
+  it("reports a muscle-load gap only when the source itself is unavailable, not when it is merely empty", () => {
+    const emptyButAvailable = buildDigitalAthleteState(
+      {
+        workouts: [],
+        workoutResponses: [],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+          trainingResponse: true,
+          muscleLoad: true,
+        },
+      },
+      now,
+    );
+    expect(emptyButAvailable.muscleLoad).toEqual([]);
+    expect(emptyButAvailable.dataGaps).not.toContain("muscle_load_data_unavailable");
+
+    const unavailable = buildDigitalAthleteState(
+      {
+        workouts: [],
+        workoutResponses: [],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
+        availability: {
+          training: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          context: true,
+          trainingRhythm: true,
+          trainingResponse: true,
+          muscleLoad: false,
+        },
+      },
+      now,
+    );
+    expect(unavailable.muscleLoad).toEqual([]);
+    expect(unavailable.dataGaps).toContain("muscle_load_data_unavailable");
   });
 });

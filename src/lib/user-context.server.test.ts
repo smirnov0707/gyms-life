@@ -10,7 +10,8 @@ import {
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 
 const digitalAthlete: DigitalAthleteState = {
-  schemaVersion: "1.6" as const,
+  schemaVersion: "1.7" as const,
+  muscleLoad: [],
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,

@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { ActiveLifeContextSchema } from "./life-context.schema";
 import {
+  MuscleGroupLoadSchema,
+  MuscleLoadExerciseSourceSchema,
+  MuscleLoadSetSourceSchema,
+} from "./muscle-load.schema";
+import {
   TrainingRhythmSchema,
   TrainingWeekdayListSchema,
   TrainingWeekdaySchema,
@@ -112,12 +117,15 @@ export const DigitalAthleteSourcesSchema = z
     decisionFeedback: z.array(DecisionFeedbackSourceSchema),
     lifeContexts: z.array(ActiveLifeContextSchema),
     trainingRhythm: TrainingRhythmSchema.nullable(),
+    setLogs: z.array(MuscleLoadSetSourceSchema),
+    exerciseMuscleGroups: z.array(MuscleLoadExerciseSourceSchema),
     availability: BaseAvailabilitySchema.extend({
       nutrition: z.boolean(),
       decisionFeedback: z.boolean(),
       context: z.boolean(),
       trainingRhythm: z.boolean(),
       trainingResponse: z.boolean(),
+      muscleLoad: z.boolean(),
     }).strict(),
   })
   .strict();
@@ -133,6 +141,7 @@ export const DigitalAthleteDataGapSchema = z.enum([
   "no_body_measurements_30d",
   "nutrition_data_unavailable",
   "no_nutrition_logs_14d",
+  "muscle_load_data_unavailable",
   "current_context_unavailable",
   "training_rhythm_data_unavailable",
   "personalization_consent_required",
@@ -216,7 +225,7 @@ export type CurrentDayState = z.infer<typeof CurrentDayStateSchema>;
 
 export const DigitalAthleteStateSchema = z
   .object({
-    schemaVersion: z.literal("1.6"),
+    schemaVersion: z.literal("1.7"),
     training: z.object({
       sessionsLast7Days: z.number().int().nonnegative(),
       sessionsLast28Days: z.number().int().nonnegative(),
@@ -266,6 +275,13 @@ export const DigitalAthleteStateSchema = z
       availableDomains: z.array(z.enum(["training", "recovery", "body", "nutrition"])),
     }),
     dataGaps: z.array(DigitalAthleteDataGapSchema),
+    /**
+     * Deterministic recent training load and recovery per muscle group
+     * (Digital Twin V1 foundation). Not folded into `dataQuality`'s
+     * evidence/domain scoring: that signal is already tuned and this is
+     * additive, not a replacement for it.
+     */
+    muscleLoad: z.array(MuscleGroupLoadSchema),
   })
   .strict();
 

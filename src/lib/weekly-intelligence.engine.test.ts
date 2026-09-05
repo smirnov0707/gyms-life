@@ -4,7 +4,8 @@ import { UserMemoryTransparencyItemResultSchema } from "./user-memory.schema";
 import { buildWeeklyIntelligenceReview } from "./weekly-intelligence.engine";
 
 const informedState: DigitalAthleteState = {
-  schemaVersion: "1.6",
+  schemaVersion: "1.7",
+  muscleLoad: [],
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,

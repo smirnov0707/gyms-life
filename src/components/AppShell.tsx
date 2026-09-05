@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Activity, Apple, ArrowUpRight, Dumbbell, Menu, TrendingUp, UserRound } from "lucide-react";
+import {
+  Activity,
+  ArrowUpRight,
+  FlaskConical,
+  Menu,
+  MessageSquare,
+  PersonStanding,
+  UserRound,
+} from "lucide-react";
 import { useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { NAV_GROUPS, byRoute, type NavItem } from "@/lib/nav-map";
 import {
@@ -15,9 +23,9 @@ import {
 
 const primaryNavItems = [
   { to: "/app", icon: Activity, labelKey: "nav.today" },
-  { to: "/training", icon: Dumbbell, labelKey: "nav.training" },
-  { to: "/nutrition", icon: Apple, labelKey: "nav.nutrition" },
-  { to: "/progress", icon: TrendingUp, labelKey: "nav.progress" },
+  { to: "/twin", icon: PersonStanding, labelKey: "nav.twin" },
+  { to: "/lab", icon: FlaskConical, labelKey: "nav.lab" },
+  { to: "/coach", icon: MessageSquare, labelKey: "nav.coach" },
 ] as const;
 
 function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {

@@ -17,6 +17,8 @@ import {
 } from "./digital-athlete.schema";
 import { loadActiveLifeContexts } from "./life-context.server";
 import type { ActiveLifeContext } from "./life-context.schema";
+import { calculateMuscleGroupLoad } from "./muscle-load.engine";
+import { MuscleLoadExerciseSourceSchema, MuscleLoadSetSourceSchema } from "./muscle-load.schema";
 import {
   IanaTimeZoneSchema,
   dayInTimeZone,
@@ -29,6 +31,26 @@ import type { TrainingRhythm } from "./training-rhythm.schema";
 import { LOW_WORKOUT_FEELING_THRESHOLD } from "./training-response.schema";
 
 const DAY_MS = 86_400_000;
+
+/**
+ * Identifies the deterministic calculation logic that produced a Digital
+ * Athlete state, independent of `DigitalAthleteStateSchema.schemaVersion`
+ * (which versions the stored shape, not the derivation logic). Bump this
+ * when the calculation rules below change in a way that could explain a
+ * different state for the same underlying facts.
+ */
+export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v1" as const;
+
+/** The widest lookback any domain calculation below uses (body metrics, 30 days). */
+export const DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS = 30;
+
+/**
+ * How far back muscle-load set logs are fetched. Matches the engine's 40h
+ * fatigue-decay half-life: older sets barely register. Exported so any
+ * consumer of `muscleLoad` (e.g. the Digital Twin mapper) can state the
+ * evidence window truthfully instead of guessing or re-hardcoding it.
+ */
+export const MUSCLE_LOAD_LOOKBACK_DAYS = 7;
 
 function roundToOneDecimal(value: number): number {
   return Math.round(value * 10) / 10;
@@ -333,11 +355,19 @@ export function buildDigitalAthleteState(
   else if (bodyMetricsLast30Days.length === 0) dataGaps.push("no_body_measurements_30d");
   if (!sources.availability.nutrition) dataGaps.push("nutrition_data_unavailable");
   else if (nutritionLogsLast14Days.length === 0) dataGaps.push("no_nutrition_logs_14d");
+  // Unlike the domains above, an empty result here is not its own gap: it is
+  // the same underlying fact as no_completed_workouts_28d, not new evidence
+  // of a missing source.
+  if (!sources.availability.muscleLoad) dataGaps.push("muscle_load_data_unavailable");
   if (!sources.availability.context) dataGaps.push("current_context_unavailable");
   if (!sources.availability.trainingRhythm) dataGaps.push("training_rhythm_data_unavailable");
 
+  const muscleLoad = sources.availability.muscleLoad
+    ? calculateMuscleGroupLoad(sources.setLogs, sources.exerciseMuscleGroups, now)
+    : [];
+
   return DigitalAthleteStateSchema.parse({
-    schemaVersion: "1.6",
+    schemaVersion: "1.7",
     training: {
       sessionsLast7Days: workoutsLast7Days.length,
       sessionsLast28Days: workoutsLast28Days.length,
@@ -417,6 +447,7 @@ export function buildDigitalAthleteState(
       nutritionLogs: nutritionLogsLast14Days.length,
     }),
     dataGaps,
+    muscleLoad,
   });
 }
 
@@ -436,6 +467,9 @@ export async function loadDigitalAthleteState(
   const bodyMetricsSince = dayOffset(today, -30);
   const nutritionSince = dayOffset(today, -14);
   const decisionFeedbackSince = dayOffset(today, -28);
+  const muscleLoadSince = new Date(
+    now.getTime() - MUSCLE_LOAD_LOOKBACK_DAYS * DAY_MS,
+  ).toISOString();
   const [
     workoutsResult,
     workoutResponsesResult,
@@ -445,6 +479,8 @@ export async function loadDigitalAthleteState(
     decisionFeedbackResult,
     lifeContextResult,
     trainingRhythmResult,
+    setLogsResult,
+    exerciseMuscleGroupsResult,
   ] = await Promise.all([
     supabase
       .from("workout_sessions")
@@ -491,6 +527,16 @@ export async function loadDigitalAthleteState(
     loadTrainingRhythm(supabase, userId)
       .then((trainingRhythm) => ({ trainingRhythm, available: true }))
       .catch(() => ({ trainingRhythm: null, available: false })),
+    supabase
+      .from("set_logs")
+      .select("exercise_slug, reps, weight_kg, done, created_at")
+      .eq("user_id", userId)
+      .gte("created_at", muscleLoadSince)
+      .order("created_at", { ascending: false })
+      .limit(500),
+    // The exercise catalog is a small, shared reference table (not
+    // user-owned): every row is needed to classify any logged set correctly.
+    supabase.from("exercises").select("slug, muscle_group"),
   ]);
 
   const workouts = parseDigitalAthleteRows(CompletedWorkoutSourceSchema, workoutsResult.data);
@@ -502,6 +548,11 @@ export async function loadDigitalAthleteState(
   const bodyMetrics = parseDigitalAthleteRows(BodyMetricSourceSchema, bodyMetricsResult.data);
   const nutritionLogs = parseDigitalAthleteRows(NutritionLogSourceSchema, nutritionLogsResult.data);
   const decisionFeedback = parseDecisionFeedbackRows(decisionFeedbackResult.data);
+  const setLogs = parseDigitalAthleteRows(MuscleLoadSetSourceSchema, setLogsResult.data);
+  const exerciseMuscleGroups = parseDigitalAthleteRows(
+    MuscleLoadExerciseSourceSchema,
+    exerciseMuscleGroupsResult.data,
+  );
 
   return buildDigitalAthleteState(
     {
@@ -513,6 +564,8 @@ export async function loadDigitalAthleteState(
       decisionFeedback: decisionFeedback.rows,
       lifeContexts: lifeContextResult.contexts,
       trainingRhythm: trainingRhythmResult.trainingRhythm,
+      setLogs: setLogs.rows,
+      exerciseMuscleGroups: exerciseMuscleGroups.rows,
       availability: {
         training: workoutsResult.error === null && workouts.valid,
         // Training-response parsing is intentionally isolated from the
@@ -523,6 +576,11 @@ export async function loadDigitalAthleteState(
         body: bodyMetricsResult.error === null && bodyMetrics.valid,
         nutrition: nutritionLogsResult.error === null && nutritionLogs.valid,
         decisionFeedback: decisionFeedbackResult.error === null && decisionFeedback.valid,
+        muscleLoad:
+          setLogsResult.error === null &&
+          setLogs.valid &&
+          exerciseMuscleGroupsResult.error === null &&
+          exerciseMuscleGroups.valid,
         context: lifeContextResult.available,
         trainingRhythm: trainingRhythmResult.available,
       },

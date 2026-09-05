@@ -4,7 +4,11 @@ import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 import type { AthleteModelResponse } from "./athlete-model.contract";
 import { DigitalAthleteStateSchema, type DigitalAthleteState } from "./digital-athlete.schema";
-import { loadDigitalAthleteState } from "./digital-athlete.service";
+import {
+  DIGITAL_ATHLETE_CALCULATION_VERSION,
+  DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS,
+  loadDigitalAthleteState,
+} from "./digital-athlete.service";
 
 const AthleteStateSnapshotSchema = z
   .object({
@@ -15,6 +19,39 @@ const AthleteStateSnapshotSchema = z
     computed_at: z.string().min(1),
   })
   .strict();
+
+/**
+ * Compact, real metadata about how a snapshot was derived. `provenance`
+ * mirrors the domains the calculation actually had data for and the gaps it
+ * found; `uncertainty` mirrors the existing data-quality signal. Neither
+ * value is invented for display — both already drive the deterministic
+ * Today decision engine.
+ */
+function provenanceSummary(state: DigitalAthleteState): Record<string, unknown> {
+  return {
+    availableDomains: state.dataQuality.availableDomains,
+    dataGaps: state.dataGaps,
+  };
+}
+
+function uncertaintySummary(state: DigitalAthleteState): Record<string, unknown> {
+  return {
+    dataQualityLevel: state.dataQuality.level,
+    evidenceCount: state.dataQuality.evidenceCount,
+  };
+}
+
+/**
+ * The widest lookback window any domain calculation used to derive this
+ * state. This is a coarse outer bound for audit/replay, not a precise
+ * per-source-record range.
+ */
+function sourceWindow(now: Date): { start: string; end: string } {
+  return {
+    start: new Date(now.getTime() - DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS * 86_400_000).toISOString(),
+    end: now.toISOString(),
+  };
+}
 
 type AthleteStateSnapshot = z.infer<typeof AthleteStateSnapshotSchema>;
 
@@ -90,6 +127,7 @@ export async function refreshAthleteStateSnapshot(
   }
 
   const stateFingerprint = fingerprintDigitalAthleteState(state);
+  const window = sourceWindow(now);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error: writeError } = await supabaseAdmin.from("athlete_state_snapshots").upsert(
     {
@@ -97,6 +135,11 @@ export async function refreshAthleteStateSnapshot(
       schema_version: state.schemaVersion,
       state: toJson(state),
       state_fingerprint: stateFingerprint,
+      calculation_version: DIGITAL_ATHLETE_CALCULATION_VERSION,
+      source_window_start: window.start,
+      source_window_end: window.end,
+      provenance_summary: toJson(provenanceSummary(state)),
+      uncertainty_summary: toJson(uncertaintySummary(state)),
     },
     { onConflict: "user_id,state_fingerprint", ignoreDuplicates: true },
   );

@@ -8,7 +8,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
 import { QuickHydrationWidget } from "@/components/QuickHydrationWidget";
-import { MuscleHeatmap } from "@/components/MuscleHeatmap";
+import { TwinTodayCard } from "@/components/twin/TwinTodayCard";
 import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
 import { GoalExerciseSuggestions } from "@/components/GoalExerciseSuggestions";
 import { CoachDock } from "@/components/CoachDock";
@@ -600,7 +600,7 @@ export function Overview() {
 
         {/* Recovery + body metrics + next meal */}
         <div className={`md:col-span-6 ${anim("delay-500")}`}>
-          <MuscleHeatmap />
+          <TwinTodayCard />
         </div>
 
         <div className={`md:col-span-3 ${anim("delay-500")}`}>

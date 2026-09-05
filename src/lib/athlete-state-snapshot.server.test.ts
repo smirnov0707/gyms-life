@@ -6,7 +6,8 @@ import {
 } from "./athlete-state-snapshot.server";
 
 const informedState = DigitalAthleteStateSchema.parse({
-  schemaVersion: "1.6",
+  schemaVersion: "1.7",
+  muscleLoad: [],
   training: {
     sessionsLast7Days: 3,
     sessionsLast28Days: 10,

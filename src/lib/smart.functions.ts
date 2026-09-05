@@ -183,6 +183,18 @@ export const submitCheckin = createServerFn({ method: "POST" })
     const { completeCurrentReadinessDecision } = await import("./today-decision.server");
     await completeCurrentReadinessDecision(userId, checkinOn);
 
+    const { recordPersonalTimelineEvent } = await import("./personal-timeline.server");
+    await recordPersonalTimelineEvent(userId, {
+      eventType: "checkin_recorded",
+      occurredAt: new Date().toISOString(),
+      timeZone: data.timeZone,
+      provenance: "user_reported",
+      sourceSystem: "gymslife",
+      sourceTable: "daily_checkins",
+      sourceReference: checkinOn,
+      summary: { readinessScore: score, loadModifier: modifier },
+    });
+
     return { score, modifier, advice };
   });
 
@@ -207,5 +219,18 @@ export const saveReadinessAdjustment = createServerFn({ method: "POST" })
 
     const { completeCurrentReadinessDecision } = await import("./today-decision.server");
     await completeCurrentReadinessDecision(context.userId, checkinOn);
+
+    const { recordPersonalTimelineEvent } = await import("./personal-timeline.server");
+    await recordPersonalTimelineEvent(context.userId, {
+      eventType: "checkin_recorded",
+      occurredAt: new Date().toISOString(),
+      timeZone: data.timeZone,
+      provenance: "user_reported",
+      sourceSystem: "gymslife",
+      sourceTable: "daily_checkins",
+      sourceReference: checkinOn,
+      summary: { readinessScore: score, loadModifier: modifier },
+    });
+
     return { score, modifier };
   });

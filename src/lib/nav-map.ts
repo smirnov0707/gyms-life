@@ -15,8 +15,15 @@ import type { TKey } from "./i18n";
 
 export type NavItem = { to: string; key: TKey; icon: typeof Activity };
 
-export const nav: NavItem[] = [
+/**
+ * Backs `byRoute` only. The primary bottom-tab bar (Today/Twin/Lab/Coach)
+ * is defined once, in AppShell.tsx — this list is the secondary "More"
+ * surface and its icon/label metadata, not a second definition of the
+ * primary navigation.
+ */
+const nav: NavItem[] = [
   { to: "/app", key: "nav.dashboard", icon: Activity },
+  { to: "/training", key: "nav.training", icon: Dumbbell },
   { to: "/exercises", key: "nav.exercises", icon: Dumbbell },
   { to: "/ar", key: "nav.ar", icon: Box },
   { to: "/meal-plan", key: "nav.meal", icon: UtensilsCrossed },
@@ -33,7 +40,7 @@ export const byRoute = (to: string) => nav.find((n) => n.to === to);
 
 /** Logical clusters used by the "More" menu and the mobile drawer. */
 export const NAV_GROUPS: { key: TKey; routes: string[] }[] = [
-  { key: "nav.group.train", routes: ["/exercises", "/ar", "/readiness"] },
+  { key: "nav.group.train", routes: ["/training", "/exercises", "/ar", "/readiness"] },
   { key: "nav.group.nutrition", routes: ["/meal-plan", "/nutrition", "/supplements"] },
   { key: "nav.group.body", routes: ["/progress", "/achievements"] },
   { key: "nav.group.coach", routes: ["/coach", "/reminders"] },

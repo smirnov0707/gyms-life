@@ -292,6 +292,8 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
     decisionFeedback: [],
     lifeContexts: [],
     trainingRhythm: null,
+    setLogs: [],
+    exerciseMuscleGroups: [],
     availability: {
       training: true,
       recovery: true,
@@ -301,6 +303,7 @@ function emptyDigitalAthleteState(): DigitalAthleteState {
       context: true,
       trainingRhythm: true,
       trainingResponse: true,
+      muscleLoad: true,
     },
   });
 }
@@ -456,6 +459,12 @@ export function buildAiPersonalizationSummary(
       decisionFeedback: [],
       lifeContexts: [],
       trainingRhythm: null,
+      // This compatibility adapter has no set-log source either. Marked
+      // available like the other domains above: it isn't part of
+      // AiPersonalizationSummary's output, so it must not surface a gap for
+      // a domain this narrow summary was never going to report on.
+      setLogs: [],
+      exerciseMuscleGroups: [],
       availability: {
         ...sources.availability,
         nutrition: true,
@@ -463,6 +472,7 @@ export function buildAiPersonalizationSummary(
         context: true,
         trainingRhythm: true,
         trainingResponse: true,
+        muscleLoad: true,
       },
     },
     now,

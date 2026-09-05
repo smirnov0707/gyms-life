@@ -25,6 +25,7 @@ import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedCoachHistoryRouteImport } from './routes/_authenticated/coach-history'
 import { Route as AuthenticatedFormRouteImport } from './routes/_authenticated/form'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedLabRouteImport } from './routes/_authenticated/lab'
 import { Route as AuthenticatedMeRouteImport } from './routes/_authenticated/me'
 import { Route as AuthenticatedMealPlanRouteImport } from './routes/_authenticated/meal-plan'
 import { Route as AuthenticatedNutritionRouteImport } from './routes/_authenticated/nutrition'
@@ -34,6 +35,7 @@ import { Route as AuthenticatedReadinessRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRemindersRouteImport } from './routes/_authenticated/reminders'
 import { Route as AuthenticatedSupplementsRouteImport } from './routes/_authenticated/supplements'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
+import { Route as AuthenticatedTwinRouteImport } from './routes/_authenticated/twin'
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
 import { Route as ExercisesSlugRouteImport } from './routes/exercises.$slug'
 import { Route as AuthenticatedWorkoutDayRouteImport } from './routes/_authenticated/workout/$day'
@@ -121,6 +123,11 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLabRoute = AuthenticatedLabRouteImport.update({
+  id: '/lab',
+  path: '/lab',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMeRoute = AuthenticatedMeRouteImport.update({
   id: '/me',
   path: '/me',
@@ -167,6 +174,11 @@ const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
   path: '/training',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTwinRoute = AuthenticatedTwinRouteImport.update({
+  id: '/twin',
+  path: '/twin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ExercisesIndexRoute = ExercisesIndexRouteImport.update({
   id: '/exercises/',
   path: '/exercises/',
@@ -210,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/form': typeof AuthenticatedFormRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/lab': typeof AuthenticatedLabRoute
   '/me': typeof AuthenticatedMeRoute
   '/meal-plan': typeof AuthenticatedMealPlanRoute
   '/nutrition': typeof AuthenticatedNutritionRoute
@@ -219,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/reminders': typeof AuthenticatedRemindersRoute
   '/supplements': typeof AuthenticatedSupplementsRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/twin': typeof AuthenticatedTwinRoute
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/workout/$day': typeof AuthenticatedWorkoutDayRoute
@@ -241,6 +255,7 @@ export interface FileRoutesByTo {
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/form': typeof AuthenticatedFormRoute
   '/history': typeof AuthenticatedHistoryRoute
+  '/lab': typeof AuthenticatedLabRoute
   '/me': typeof AuthenticatedMeRoute
   '/meal-plan': typeof AuthenticatedMealPlanRoute
   '/nutrition': typeof AuthenticatedNutritionRoute
@@ -250,6 +265,7 @@ export interface FileRoutesByTo {
   '/reminders': typeof AuthenticatedRemindersRoute
   '/supplements': typeof AuthenticatedSupplementsRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/twin': typeof AuthenticatedTwinRoute
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises': typeof ExercisesIndexRoute
   '/workout/$day': typeof AuthenticatedWorkoutDayRoute
@@ -274,6 +290,7 @@ export interface FileRoutesById {
   '/_authenticated/coach-history': typeof AuthenticatedCoachHistoryRoute
   '/_authenticated/form': typeof AuthenticatedFormRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
+  '/_authenticated/lab': typeof AuthenticatedLabRoute
   '/_authenticated/me': typeof AuthenticatedMeRoute
   '/_authenticated/meal-plan': typeof AuthenticatedMealPlanRoute
   '/_authenticated/nutrition': typeof AuthenticatedNutritionRoute
@@ -283,6 +300,7 @@ export interface FileRoutesById {
   '/_authenticated/reminders': typeof AuthenticatedRemindersRoute
   '/_authenticated/supplements': typeof AuthenticatedSupplementsRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/_authenticated/twin': typeof AuthenticatedTwinRoute
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/_authenticated/workout/$day': typeof AuthenticatedWorkoutDayRoute
@@ -307,6 +325,7 @@ export interface FileRouteTypes {
     | '/coach-history'
     | '/form'
     | '/history'
+    | '/lab'
     | '/me'
     | '/meal-plan'
     | '/nutrition'
@@ -316,6 +335,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/supplements'
     | '/training'
+    | '/twin'
     | '/exercises/$slug'
     | '/exercises/'
     | '/workout/$day'
@@ -338,6 +358,7 @@ export interface FileRouteTypes {
     | '/coach-history'
     | '/form'
     | '/history'
+    | '/lab'
     | '/me'
     | '/meal-plan'
     | '/nutrition'
@@ -347,6 +368,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/supplements'
     | '/training'
+    | '/twin'
     | '/exercises/$slug'
     | '/exercises'
     | '/workout/$day'
@@ -370,6 +392,7 @@ export interface FileRouteTypes {
     | '/_authenticated/coach-history'
     | '/_authenticated/form'
     | '/_authenticated/history'
+    | '/_authenticated/lab'
     | '/_authenticated/me'
     | '/_authenticated/meal-plan'
     | '/_authenticated/nutrition'
@@ -379,6 +402,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reminders'
     | '/_authenticated/supplements'
     | '/_authenticated/training'
+    | '/_authenticated/twin'
     | '/exercises/$slug'
     | '/exercises/'
     | '/_authenticated/workout/$day'
@@ -516,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lab': {
+      id: '/_authenticated/lab'
+      path: '/lab'
+      fullPath: '/lab'
+      preLoaderRoute: typeof AuthenticatedLabRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/me': {
       id: '/_authenticated/me'
       path: '/me'
@@ -579,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/twin': {
+      id: '/_authenticated/twin'
+      path: '/twin'
+      fullPath: '/twin'
+      preLoaderRoute: typeof AuthenticatedTwinRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/exercises/': {
       id: '/exercises/'
       path: '/exercises'
@@ -625,6 +663,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCoachHistoryRoute: typeof AuthenticatedCoachHistoryRoute
   AuthenticatedFormRoute: typeof AuthenticatedFormRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
+  AuthenticatedLabRoute: typeof AuthenticatedLabRoute
   AuthenticatedMeRoute: typeof AuthenticatedMeRoute
   AuthenticatedMealPlanRoute: typeof AuthenticatedMealPlanRoute
   AuthenticatedNutritionRoute: typeof AuthenticatedNutritionRoute
@@ -634,6 +673,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRemindersRoute: typeof AuthenticatedRemindersRoute
   AuthenticatedSupplementsRoute: typeof AuthenticatedSupplementsRoute
   AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
+  AuthenticatedTwinRoute: typeof AuthenticatedTwinRoute
   AuthenticatedWorkoutDayRoute: typeof AuthenticatedWorkoutDayRoute
 }
 
@@ -645,6 +685,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCoachHistoryRoute: AuthenticatedCoachHistoryRoute,
   AuthenticatedFormRoute: AuthenticatedFormRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
+  AuthenticatedLabRoute: AuthenticatedLabRoute,
   AuthenticatedMeRoute: AuthenticatedMeRoute,
   AuthenticatedMealPlanRoute: AuthenticatedMealPlanRoute,
   AuthenticatedNutritionRoute: AuthenticatedNutritionRoute,
@@ -654,6 +695,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRemindersRoute: AuthenticatedRemindersRoute,
   AuthenticatedSupplementsRoute: AuthenticatedSupplementsRoute,
   AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
+  AuthenticatedTwinRoute: AuthenticatedTwinRoute,
   AuthenticatedWorkoutDayRoute: AuthenticatedWorkoutDayRoute,
 }
 
