@@ -106,8 +106,7 @@ function CoachPage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(65% 65% at 50% 0%, rgba(16,185,129,.08), transparent 70%)",
+            background: "radial-gradient(65% 65% at 50% 0%, rgba(16,185,129,.08), transparent 70%)",
           }}
         />
 
@@ -117,7 +116,9 @@ function CoachPage() {
               <span className="grid size-14 place-items-center rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-400">
                 <Sparkles className="size-5" />
               </span>
-              <p className="mt-5 max-w-md text-sm leading-relaxed text-neutral-500">{t("coach.sub")}</p>
+              <p className="mt-5 max-w-md text-sm leading-relaxed text-neutral-500">
+                {t("coach.sub")}
+              </p>
               <div className="mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
                 {QUICK.map((k) => (
                   <button
