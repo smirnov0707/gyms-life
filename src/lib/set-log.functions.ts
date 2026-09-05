@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getActivePlanData } from "./active-plan.service";
 import { validateWorkoutSetAgainstPlan } from "./workout-set.engine";
+import { resolvePerformedAt } from "./performed-at.engine";
 import { resolveWorkoutSessionDay } from "./workout-session-plan.engine";
 import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
 
@@ -15,10 +16,11 @@ const Input = z.object({
   weightKg: z.coerce.number().finite().nonnegative().max(1_000).nullable().optional(),
   rpe: z.coerce.number().finite().min(1).max(10).nullable().optional(),
   done: z.boolean().default(true),
+  performedAt: z.string().datetime().optional(),
 });
 
 const setLogSelect =
-  "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
+  "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at, performed_at";
 
 export const logWorkoutSet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -87,6 +89,9 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
         weight_kg: data.weightKg ?? null,
         rpe: data.rpe ?? null,
         done: data.done,
+        // The client is the only party that knows when the set actually
+        // happened; the engine bounds what it is allowed to claim.
+        performed_at: resolvePerformedAt(data.performedAt, new Date()).toISOString(),
       })
       .select(setLogSelect)
       .single();

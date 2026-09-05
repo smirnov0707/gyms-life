@@ -31,7 +31,8 @@ export const MuscleLoadSetSourceSchema = z
     reps: z.number().finite().nullable(),
     weight_kg: z.number().finite().nullable(),
     done: z.boolean().nullable(),
-    created_at: z.string().min(1),
+    /** When the set was performed, not when its row was written. */
+    performed_at: z.string().min(1),
   })
   .strict();
 

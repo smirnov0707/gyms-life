@@ -15,14 +15,14 @@ describe("calculateMuscleGroupLoad", () => {
         reps: 5,
         weight_kg: 100,
         done: true,
-        created_at: "2026-09-04T10:00:00.000Z",
+        performed_at: "2026-09-04T10:00:00.000Z",
       },
       {
         exercise_slug: "bench-press",
         reps: 5,
         weight_kg: 100,
         done: true,
-        created_at: "2026-09-04T10:05:00.000Z",
+        performed_at: "2026-09-04T10:05:00.000Z",
       },
     ];
 
@@ -43,7 +43,7 @@ describe("calculateMuscleGroupLoad", () => {
           reps: 5,
           weight_kg: 100,
           done: false,
-          created_at: "2026-09-04T10:00:00.000Z",
+          performed_at: "2026-09-04T10:00:00.000Z",
         },
       ],
       exercises,
@@ -61,7 +61,7 @@ describe("calculateMuscleGroupLoad", () => {
           reps: 5,
           weight_kg: 100,
           done: true,
-          created_at: "2026-09-04T10:00:00.000Z",
+          performed_at: "2026-09-04T10:00:00.000Z",
         },
       ],
       exercises,
@@ -78,14 +78,14 @@ describe("calculateMuscleGroupLoad", () => {
       reps: 5,
       weight_kg: 100,
       done: true,
-      created_at: "2026-08-01T12:00:00.000Z",
+      performed_at: "2026-08-01T12:00:00.000Z",
     };
     const freshSet = {
       exercise_slug: "bench-press",
       reps: 10,
       weight_kg: 150,
       done: true,
-      created_at: "2026-09-11T11:00:00.000Z",
+      performed_at: "2026-09-11T11:00:00.000Z",
     };
 
     const result = calculateMuscleGroupLoad([staleSet, freshSet], exercises, now);
@@ -105,7 +105,7 @@ describe("calculateMuscleGroupLoad", () => {
       reps: 10,
       weight_kg: 200,
       done: true,
-      created_at: "2026-09-04T12:00:00.000Z",
+      performed_at: "2026-09-04T12:00:00.000Z",
     }));
 
     const result = calculateMuscleGroupLoad(sets, exercises, now);
@@ -122,11 +122,37 @@ describe("calculateMuscleGroupLoad", () => {
             reps: "5",
             weight_kg: 100,
             done: true,
-            created_at: "2026-09-04T10:00:00.000Z",
+            performed_at: "2026-09-04T10:00:00.000Z",
           },
         ],
         exercises,
       ),
     ).toThrow();
+  });
+});
+
+describe("performance time versus write time", () => {
+  it("decays fatigue from when the set was performed, not when it synced", () => {
+    // The case this column exists for: a set done in a basement gym last
+    // night, synced when signal returned this morning. Dating it to the sync
+    // would report the muscle as far more fatigued than it is.
+    const now = new Date("2026-09-05T09:00:00.000Z");
+    const lastNight = [
+      {
+        exercise_slug: "squat",
+        reps: 10,
+        weight_kg: 100,
+        done: true,
+        performed_at: "2026-09-04T19:00:00.000Z",
+      },
+    ];
+    const asIfSyncedNow = [{ ...lastNight[0]!, performed_at: now.toISOString() }];
+
+    const real = calculateMuscleGroupLoad(lastNight, exercises, now);
+    const wrong = calculateMuscleGroupLoad(asIfSyncedNow, exercises, now);
+
+    expect(real[0]?.recoveryPct).toBeGreaterThan(wrong[0]?.recoveryPct ?? 0);
+    expect(real[0]?.lastTrainedHoursAgo).toBe(14);
+    expect(wrong[0]?.lastTrainedHoursAgo).toBe(0);
   });
 });

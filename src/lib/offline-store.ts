@@ -12,6 +12,16 @@ export const WorkoutSetSyncSchema = z.object({
   weightKg: z.number().nonnegative().nullable(),
   rpe: z.number().min(0).max(10).nullable(),
   done: z.boolean(),
+  /**
+   * When the set was performed. Carried in the payload rather than left to
+   * the server clock: a queued set may not reach the server for hours, and
+   * the Twin decays fatigue from this instant.
+   *
+   * Optional because a queue written by an earlier version of the app has no
+   * such field, and those are real sets someone performed. `syncPayload`
+   * recovers their instant from the payload's own `timestamp`.
+   */
+  performedAt: z.string().datetime().optional(),
 });
 
 export type WorkoutSetSync = z.infer<typeof WorkoutSetSyncSchema>;
@@ -48,15 +58,35 @@ function persistOfflineQueue(queue: OfflinePayload[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
 }
 
-/** Returns only validated records; malformed local storage never reaches the server. */
+/**
+ * The instant a queued set was performed.
+ *
+ * A payload written before `performedAt` existed still recorded the moment it
+ * was queued, which is the same instant. Recovering it there means upgrading
+ * the app never silently re-dates work someone already did.
+ */
+export function syncPayload(item: OfflinePayload): WorkoutSetSync {
+  if (item.data.performedAt !== undefined) return item.data;
+  return { ...item.data, performedAt: new Date(item.timestamp).toISOString() };
+}
+
+/**
+ * Returns only validated records; malformed local storage never reaches the
+ * server. Records are validated one at a time: a single unreadable entry used
+ * to discard the whole queue, which meant losing every other set in it.
+ */
 export function getOfflineQueue(): OfflinePayload[] {
   if (!isBrowser()) return [];
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = z.array(OfflinePayloadSchema).safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : [];
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows)) return [];
+    return rows.flatMap((row) => {
+      const parsed = OfflinePayloadSchema.safeParse(row);
+      return parsed.success ? [parsed.data] : [];
+    });
   } catch {
     return [];
   }
@@ -96,7 +126,7 @@ export async function synchronizeWorkoutSets(
 
   for (const item of queue) {
     try {
-      await sync(item.data);
+      await sync(syncPayload(item));
       synced += 1;
     } catch {
       remaining.push(item);
