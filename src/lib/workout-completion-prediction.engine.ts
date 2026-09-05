@@ -1,10 +1,18 @@
 import type { DigitalAthleteState } from "./digital-athlete.schema";
+import { IntelligenceModelDescriptorSchema } from "./model-registry.schema";
 import type { AthletePrediction } from "./prediction.schema";
 
-export const WORKOUT_COMPLETION_BASELINE_MODEL = {
+export const WORKOUT_COMPLETION_BASELINE_MODEL = IntelligenceModelDescriptorSchema.parse({
   modelId: "workout-completion-usual-day-baseline",
-  modelVersion: "0.1.0",
-} as const;
+  version: "0.1.0",
+  type: "statistical",
+  status: "shadow",
+  targets: ["workout_completion"],
+  inputContractVersion: "digital-athlete-1.7",
+  outputContractVersion: "prediction-1",
+  description:
+    "Transparent usual-training-day completion baseline used only to validate prediction plumbing and calibration.",
+});
 
 export const MIN_USUAL_DAYS_FOR_COMPLETION_PREDICTION = 4;
 
@@ -49,7 +57,7 @@ export function predictWorkoutCompletion(
     generatedAt: input.generatedAt,
     horizonEndsAt: input.horizonEndsAt,
     modelId: WORKOUT_COMPLETION_BASELINE_MODEL.modelId,
-    modelVersion: WORKOUT_COMPLETION_BASELINE_MODEL.modelVersion,
+    modelVersion: WORKOUT_COMPLETION_BASELINE_MODEL.version,
     maturity: "shadow",
     athleteStateSnapshotId: input.athleteStateSnapshotId,
     evidenceLevel,
