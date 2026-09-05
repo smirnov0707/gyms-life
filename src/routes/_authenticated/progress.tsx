@@ -163,12 +163,14 @@ function ProgressPage() {
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] p-4 sm:p-6">
+      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-4 sm:p-6">
         <div className="mb-5">
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 light:text-emerald-700">
             <Activity className="size-4" /> {copy.intelligence}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.intelligenceHint}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {copy.intelligenceHint}
+          </p>
         </div>
         <div className="space-y-4">
           <PerformanceProgressPanel />
@@ -178,17 +180,19 @@ function ProgressPage() {
         </div>
       </section>
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-white">{t("pr.volume")}</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.measuredHint}</p>
+              <p className="text-sm font-semibold text-foreground">{t("pr.volume")}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {copy.measuredHint}
+              </p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="border-t border-white/[0.06] p-5 sm:p-6">
+        <div className="border-t border-border p-5 sm:p-6">
           {volumeData.length ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -209,62 +213,68 @@ function ProgressPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-sm text-neutral-500">{t("pr.empty")}</p>
+            <p className="text-sm text-muted-foreground">{t("pr.empty")}</p>
           )}
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                <Trophy className="size-4 text-emerald-400" /> {t("pr.records")}
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Trophy className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
+                {t("pr.records")}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.recordsHint}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {copy.recordsHint}
+              </p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="border-t border-white/[0.06] px-5 py-2 sm:px-6">
+        <div className="border-t border-border px-5 py-2 sm:px-6">
           {records?.length ? (
             <div className="divide-y divide-white/[0.06]">
               {records.map((record) => (
                 <div key={record.name} className="flex items-center justify-between gap-4 py-4">
-                  <span className="text-sm font-medium text-neutral-300">{record.name}</span>
-                  <span className="font-mono text-sm text-white">
+                  <span className="text-sm font-medium text-foreground">{record.name}</span>
+                  <span className="font-mono text-sm text-foreground">
                     {record.weight} kg × {record.reps}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="py-4 text-sm text-neutral-500">{t("pr.empty")}</p>
+            <p className="py-4 text-sm text-muted-foreground">{t("pr.empty")}</p>
           )}
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                <History className="size-4 text-emerald-400" /> {t("pr.history")}
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <History className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
+                {t("pr.history")}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.historyHint}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {copy.historyHint}
+              </p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="border-t border-white/[0.06] px-5 py-2 sm:px-6">
+        <div className="border-t border-border px-5 py-2 sm:px-6">
           <div className="divide-y divide-white/[0.06]">
             {[...(sessions ?? [])].reverse().map((session) => (
               <div
                 key={session.id}
                 className="flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <span className="text-sm font-medium text-neutral-300">{session.title}</span>
-                <span className="font-mono text-[10px] text-neutral-600">
+                <span className="text-sm font-medium text-foreground">{session.title}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">
                   {new Date(session.started_at).toLocaleDateString(formatLocale(lang))} ·{" "}
                   {Math.round(Number(session.total_volume ?? 0))} kg ·{" "}
                   {Math.round((session.duration_seconds ?? 0) / 60)} min
@@ -272,23 +282,23 @@ function ProgressPage() {
               </div>
             ))}
             {!sessions?.length ? (
-              <p className="py-4 text-sm text-neutral-500">{t("pr.empty")}</p>
+              <p className="py-4 text-sm text-muted-foreground">{t("pr.empty")}</p>
             ) : null}
           </div>
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-white">{copy.tools}</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.toolsHint}</p>
+              <p className="text-sm font-semibold text-foreground">{copy.tools}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.toolsHint}</p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="space-y-5 border-t border-white/[0.06] p-5 sm:p-6">
+        <div className="space-y-5 border-t border-border p-5 sm:p-6">
           <BodyMetricsPanel />
           <BodyCompositionScanner />
           <WorkoutReportExporter />
