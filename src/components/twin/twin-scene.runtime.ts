@@ -124,7 +124,20 @@ export function mountTwinScene(
     let frames = 0;
 
     function visible() {
-      return inView && !document.hidden && !destroyed;
+      if (document.hidden || destroyed) return false;
+      if (inView) return true;
+      // IntersectionObserver is asynchronous. Disclosure/scroll transitions
+      // can leave its last report behind the layout when a user gives a
+      // camera command. Recheck only the negative cache before rejecting it.
+      const bounds = host.getBoundingClientRect();
+      return (
+        bounds.width > 0 &&
+        bounds.height > 0 &&
+        bounds.bottom > 0 &&
+        bounds.right > 0 &&
+        bounds.top < window.innerHeight &&
+        bounds.left < window.innerWidth
+      );
     }
     function requestRender() {
       if (!frameId && visible()) frameId = requestAnimationFrame(paint);
@@ -219,9 +232,13 @@ export function mountTwinScene(
       cleanups.push(() => window.removeEventListener("resize", resize));
     }
     if (typeof IntersectionObserver !== "undefined") {
-      const observer = new IntersectionObserver(([entry]) => {
-        inView = entry?.isIntersecting ?? false;
-        if (!inView) {
+      const observer = new IntersectionObserver((entries) => {
+        const entry = entries
+          .filter((candidate) => candidate.target === host)
+          .sort((left, right) => right.time - left.time)[0];
+        if (!entry) return;
+        inView = entry.isIntersecting;
+        if (!visible()) {
           cancelAnimationFrame(frameId);
           frameId = 0;
         } else requestRender();

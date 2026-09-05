@@ -35,6 +35,7 @@ function snapshot(empty: boolean): TwinSnapshot {
   };
 }
 export function Fixture() {
+  const language = new URLSearchParams(window.location.search).get("lang") === "lt" ? "lt" : "en";
   const [mounted, setMounted] = useState(true);
   const [empty, setEmpty] = useState(false);
   return (
@@ -49,8 +50,8 @@ export function Fixture() {
       {mounted && (
         <TwinSnapshotView
           data={snapshot(empty)}
-          copy={twinCopyFor("en")}
-          lang="en"
+          copy={twinCopyFor(language)}
+          lang={language}
           label={(region) => region.charAt(0).toUpperCase() + region.slice(1)}
         />
       )}
