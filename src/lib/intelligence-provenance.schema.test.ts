@@ -15,15 +15,16 @@ describe("TemporalEvidenceRefSchema", () => {
     expect(evidence.occurredAt).not.toBe(evidence.recordedAt);
   });
 
-  it("rejects an impossible record time before occurrence", () => {
-    expect(() => TemporalEvidenceRefSchema.parse({
-      sourceType: "sleep",
+  it("keeps source and record clocks as facts instead of inventing ordering", () => {
+    const evidence = TemporalEvidenceRefSchema.parse({
+      sourceType: "wearable_sample",
       sourceId: null,
       provenance: "device_reported",
       occurredAt: "2026-09-05T07:00:00+03:00",
       recordedAt: "2026-09-05T06:59:00+03:00",
       timezone: "Europe/Vilnius",
       quality: "available",
-    })).toThrow();
+    });
+    expect(evidence.quality).toBe("available");
   });
 });
