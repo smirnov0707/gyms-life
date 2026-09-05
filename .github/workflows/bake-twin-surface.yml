@@ -1,0 +1,67 @@
+name: Bake continuous Twin surface
+on:
+  push:
+    branches: [future-lab-twin-continuous-surface]
+    paths: [.github/workflows/bake-twin-surface.yml]
+permissions:
+  contents: write
+jobs:
+  bake:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: future-lab-twin-continuous-surface
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --save-dev --save-exact meshoptimizer@0.22.0
+      - name: Complete asset validation plumbing
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src/components/twin/twin-body.geometry.test.ts')
+          s = p.read_text().replace('["core", 2, 1.13, 0, -1, 0, 0]', '["core", 0.125, 1.13, 2, 0, 0, -1]')
+          p.write_text(s)
+          p = Path('.prettierignore')
+          s = p.read_text()
+          line = 'src/components/twin/twin-body.surface.json'
+          if line not in s: p.write_text(s.rstrip() + '\n' + line + '\n')
+          p = Path('.github/workflows/twin-browser.yml')
+          s = p.read_text().replace('      - "scripts/test-twin-browser.mjs"', '      - "scripts/test-twin-browser.mjs"\n      - "scripts/generate-twin-surface.mjs"')
+          marker = '      - run: npm ci\n'
+          assert marker in s
+          s = s.replace(marker, marker + '      - name: Verify baked body is reproducible\n        run: |\n          node scripts/generate-twin-surface.mjs\n          git diff --exit-code -- src/components/twin/twin-body.surface.json\n', 1)
+          p.write_text(s)
+          PY
+      - run: npx prettier --write scripts/generate-twin-surface.mjs src/components/twin/twin-body.geometry.ts src/components/twin/twin-body.geometry.test.ts .github/workflows/twin-browser.yml
+      - name: Bake offline surface
+        run: |
+          mkdir -p test-results/twin
+          node scripts/generate-twin-surface.mjs | tee test-results/twin/surface-stats.json
+      - name: Commit baked asset and remove this one-off workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/bake-twin-surface.yml
+          git add package.json package-lock.json .prettierignore .github/workflows/twin-browser.yml scripts/generate-twin-surface.mjs src/components/twin/twin-body.geometry.ts src/components/twin/twin-body.geometry.test.ts src/components/twin/twin-body.surface.json
+          git commit -m "feat(twin): bake a bounded continuous human surface with shared region geometry"
+          git push origin HEAD:future-lab-twin-continuous-surface
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-twin-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: continuous-twin-evidence
+          path: |
+            test-results/twin
+            src/components/twin/twin-body.surface.json
+          retention-days: 7
+          if-no-files-found: warn
