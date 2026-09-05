@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const WORKOUT_SET_LOG_SELECT =
-  "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
+  "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at, performed_at";
 
 export type WorkoutSetLogRow = Pick<
   Tables<"set_logs">,
@@ -16,6 +16,7 @@ export type WorkoutSetLogRow = Pick<
   | "rpe"
   | "done"
   | "created_at"
+  | "performed_at"
 >;
 
 export const WorkoutSetLogSchema = z.object({
@@ -29,6 +30,11 @@ export const WorkoutSetLogSchema = z.object({
   rpe: z.number().finite().min(1).max(10).nullable(),
   done: z.boolean(),
   createdAt: z.string().datetime({ offset: true }),
+  /**
+   * When the set was performed. Anything reasoning over time uses this;
+   * `createdAt` is the row's write time and moves with offline sync.
+   */
+  performedAt: z.string().datetime({ offset: true }),
 });
 
 export type WorkoutSetLog = z.infer<typeof WorkoutSetLogSchema>;
@@ -45,6 +51,7 @@ export function parseWorkoutSetLog(row: WorkoutSetLogRow): WorkoutSetLog {
     rpe: row.rpe,
     done: row.done,
     createdAt: row.created_at,
+    performedAt: row.performed_at,
   });
 }
 
@@ -62,6 +69,7 @@ export function parseWorkoutSetLogs(rows: WorkoutSetLogRow[]): WorkoutSetLog[] {
       rpe: row.rpe,
       done: row.done,
       createdAt: row.created_at,
+      performedAt: row.performed_at,
     });
     return parsed.success ? [parsed.data] : [];
   });

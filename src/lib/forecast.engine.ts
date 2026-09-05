@@ -101,7 +101,9 @@ function sessionPerformanceFor(
   const byExercise = new Map<string, Map<string, SessionPerformance>>();
 
   for (const row of rows) {
-    const timestamp = Date.parse(row.createdAt);
+    // Performance over time, so the instant the set happened — not the
+    // instant its row was written, which offline sync moves.
+    const timestamp = Date.parse(row.performedAt);
     if (!Number.isFinite(timestamp) || timestamp < cutoff || timestamp > now.getTime()) continue;
     // The Epley estimate becomes increasingly unreliable above this range.
     if (!row.done || row.reps === null || row.reps > 30) continue;
