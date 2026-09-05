@@ -1,0 +1,80 @@
+name: Integrate Twin theme coverage
+on:
+  push:
+    branches: [future-lab-twin-evidence-and-volume]
+    paths: [.github/workflows/integrate-twin-theme.yml]
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Reconcile only the inspected concurrent test changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --depth=100 origin 77cca61fde5dc07163b8d5313d980cf91c3e4810
+          set +e
+          git merge --no-ff --no-commit 77cca61fde5dc07163b8d5313d980cf91c3e4810
+          result=$?
+          set -e
+          test "$result" -le 1
+          python3 <<'PY'
+          from pathlib import Path
+          import subprocess
+          main = '77cca61fde5dc07163b8d5313d980cf91c3e4810'
+          conflicts = subprocess.check_output(['git', 'diff', '--name-only', '--diff-filter=U'], text=True).splitlines()
+          assert set(conflicts) <= {'.gitignore', 'tests/twin-browser/fixture.tsx'}, conflicts
+          if '.gitignore' in conflicts:
+              subprocess.run(['git', 'checkout', main, '--', '.gitignore'], check=True)
+          if 'tests/twin-browser/fixture.tsx' in conflicts:
+              path = 'tests/twin-browser/fixture.tsx'
+              ours = subprocess.check_output(['git', 'show', f'HEAD:{path}'], text=True)
+              theirs = subprocess.check_output(['git', 'show', f'{main}:{path}'], text=True)
+              theme_start = theirs.index('  // The app stamps')
+              theme_end = theirs.index('  return (', theme_start)
+              marker = '  const [unavailable, setUnavailable] = useState(false);\n'
+              assert ours.count(marker) == 1 and 'const [theme,' not in ours
+              ours = ours.replace(marker, marker + theirs[theme_start:theme_end], 1)
+              button_start = theirs.index('        <button onClick={() => applyTheme(')
+              button_end = theirs.index('        <button onClick={() => setMounted', button_start)
+              marker = '        <button onClick={() => setMounted'
+              assert ours.count(marker) == 1
+              ours = ours.replace(marker, theirs[button_start:button_end] + marker, 1)
+              Path(path).write_text(ours)
+              subprocess.run(['git', 'add', path], check=True)
+          script = Path('scripts/test-twin-browser.mjs').read_text()
+          assert 'evidence list stays legible in the light theme' in script
+          assert 'layer changes preserve camera and selection' in script
+          assert not subprocess.check_output(['git', 'diff', '--name-only', '--diff-filter=U'], text=True).strip()
+          PY
+          npx prettier --write tests/twin-browser/fixture.tsx scripts/test-twin-browser.mjs package.json
+          git add tests/twin-browser/fixture.tsx scripts/test-twin-browser.mjs package.json .gitignore
+          git diff --cached --check
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Publish validated merge only
+        run: |
+          git rm .github/workflows/integrate-twin-theme.yml
+          git commit -m 'merge(twin): preserve light-theme coverage alongside volume inspection'
+          git push origin HEAD:future-lab-twin-evidence-and-volume
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-volume-theme-evidence
+          path: test-results/twin
+          retention-days: 7
+          if-no-files-found: ignore
