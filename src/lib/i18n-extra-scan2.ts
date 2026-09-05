@@ -49,9 +49,4 @@ export const extra_scan2 = {
   "sc.micro.priority.high": { lt: "Aukštas", en: "High" },
   "sc.micro.priority.medium": { lt: "Vidutinis", en: "Medium" },
   "sc.micro.priority.low": { lt: "Žemas", en: "Low" },
-
-  "sc.dine.offline": {
-    lt: "Treneris laikinai nepasiekiamas — parodyti bendri saugūs pasirinkimai.",
-    en: "Coach is temporarily unavailable — showing safe general picks.",
-  },
 };

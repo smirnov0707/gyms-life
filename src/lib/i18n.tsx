@@ -80,15 +80,11 @@ const baseDict = {
     lt: "Skaidri tavo validuotų duomenų suvestinė",
     en: "A transparent summary of your validated data",
   },
-  "nav.plan": { lt: "Planas", en: "Plan" },
   "nav.exercises": { lt: "Pratimai", en: "Exercises" },
   "nav.progress": { lt: "Progresas", en: "Progress" },
   "nav.coach": { lt: "Treneris", en: "Coach" },
-  "nav.signout": { lt: "Atsijungti", en: "Sign out" },
 
   "landing.tag": { lt: "Asmeninė treniruočių sistema", en: "Your personal training system" },
-  "landing.title1": { lt: "Tavo kūnas.", en: "Your body." },
-  "landing.title2": { lt: "Tavo planas.", en: "Your plan." },
   "landing.sub": {
     lt: "Atsakyk į kelis klausimus apie savo tikslą — sistema sugeneruos individualų savaičių planą salei arba namams, su vaizdo įrašais, serijų sekimu ir automatiniu progresu.",
     en: "Answer a few questions about your goal — the system builds a personal multi-week plan for the gym or home, with exercise videos, set tracking and automatic progression.",
@@ -100,12 +96,6 @@ const baseDict = {
   "theme.dark": { lt: "Tamsi", en: "Dark" },
   "theme.system": { lt: "Kaip sistemoje", en: "Match system" },
 
-  "mot.title": { lt: "Šios dienos žinutė", en: "Today\u2019s message" },
-  "mot.load": { lt: "Šiandienos krūvis", en: "Today\u2019s load" },
-  "mot.focus": { lt: "Dienos fokusas", en: "Focus of the day" },
-  "mot.checkin": { lt: "Atlik paros patikrą", en: "Run today\u2019s check-in" },
-
-  "qo.mode": { lt: "Anketos režimas", en: "Intake mode" },
   "qo.quick": { lt: "Greitas · 2 min", en: "Quick · 2 min" },
   "qo.full": { lt: "Pilnas · 5 min", en: "Full · 5 min" },
   "qo.left": { lt: "liko", en: "left" },
@@ -114,32 +104,14 @@ const baseDict = {
   "qo.q3": { lt: "Kūnas ir apribojimai", en: "Body and limitations" },
   "qo.ready": { lt: "Tavo pradinis planas paruoštas", en: "Your starter plan is ready" },
   "qo.open": { lt: "Atidaryti planą", en: "Open plan" },
-  "qo.startNow": { lt: "Pradėti 1 dieną", en: "Start day 1" },
   "qo.again": { lt: "Generuoti iš naujo", en: "Generate again" },
-  "qo.perWeek": { lt: "k./sav.", en: "×/week" },
 
-  "ar.state": { lt: "Būsena", en: "Status" },
-  "ar.stIdle": { lt: "Kamera išjungta", en: "Camera off" },
-  "ar.stLoading": { lt: "Ruošiamas modelis", en: "Preparing model" },
-  "ar.stLive": { lt: "Sekimas aktyvus", en: "Tracking active" },
-  "ar.stError": { lt: "Klaida", en: "Error" },
-  "ar.stCalib": { lt: "Kalibruojama", en: "Calibrating" },
-  "ar.stepsDone": { lt: "atlikta žingsnių", en: "steps done" },
   "ar.formOk": { lt: "Technika gera", en: "Form looks good" },
-  "ar.formWarn": { lt: "Taisyk techniką", en: "Fix your form" },
   "ar.idleTitle": { lt: "Įjunk kamerą", en: "Start camera" },
-  "ar.idleHint": {
-    lt: "Pasiruošk erdvę — GYMS.LIFE seks tavo kūno poziciją realiu laiku.",
-    en: "Make some space — GYMS.LIFE will track your body position in real time.",
-  },
   "ar.noPose": {
     lt: "Nematau tavęs — atsitrauk nuo kameros",
     en: "I can\u2019t see you — step back from the camera",
   },
-  "ar.success": { lt: "Pavyko", en: "Success" },
-  "ar.fail": { lt: "Nepavyko", en: "Failed" },
-  "ar.retry": { lt: "Bandyti dar kartą", en: "Try again" },
-  "ar.progress": { lt: "Testo eiga", en: "Test progress" },
   "landing.h1a": { lt: "Tavo AI treneris.", en: "Your AI coach." },
   "landing.h1b": { lt: "Tavo planas.", en: "Your plan." },
   "landing.h1c": { lt: "Tavo progresas.", en: "Your progress." },
@@ -147,7 +119,6 @@ const baseDict = {
     lt: "GYMS.LIFE sukuria ir kiekvieną treniruotę pritaiko pagal tavo tikslą, kūną, laiką, patirtį ir turimą įrangą.",
     en: "GYMS.LIFE builds your plan and adapts every session to your goal, body, time, experience and available equipment.",
   },
-  "landing.live": { lt: "Duomenys realiu laiku", en: "Live data tracking" },
   "landing.ticker": {
     lt: "DISCIPLINA > MOTYVACIJA ·",
     en: "DISCIPLINE > MOTIVATION ·",
@@ -160,15 +131,6 @@ const baseDict = {
   "landing.s3l": { lt: "treneris tavo kišenėje", en: "coach in your pocket" },
   "landing.s4v": { lt: "12 sav.", en: "12 wks" },
   "landing.s4l": { lt: "progreso sistema", en: "progression system" },
-  "landing.quote": {
-    lt: "„Kūnas pasiduoda pirmas. Tu nustoji tada, kai nusprendi nustoti.“",
-    en: "\u201CThe body quits first. You stop only when you decide to stop.\u201D",
-  },
-  "landing.quoteBy": { lt: "GYMS.LIFE kodeksas", en: "The GYMS.LIFE code" },
-  "landing.bandTitle": {
-    lt: "Pradėk šiandien. Rytoj bus per vėlu.",
-    en: "Start today. Tomorrow is too late.",
-  },
   "landing.bandSub": {
     lt: "Pirmas planas sugeneruojamas per 60 sekundžių — tereikia atsakyti į kelis klausimus.",
     en: "Your first plan is generated in 60 seconds — just answer a few questions.",
@@ -187,18 +149,9 @@ const baseDict = {
   },
   "landing.goToPlan": { lt: "Eiti į mano planą", en: "Go to my plan" },
   "landing.newPlan": { lt: "Generuoti naują", en: "Generate new" },
-  "landing.cmd.title": { lt: "Valdymo centras", en: "Command Center" },
-  "landing.cmd.sub": {
-    lt: "Tavo dienos operacijų centras: treniruotė, mityba, atkūrimas ir papildai vienoje vietoje.",
-    en: "Your daily operations hub: workout, nutrition, recovery and supplements in one place.",
-  },
-  "landing.cmd.readiness": { lt: "Pasiruošimas", en: "Readiness" },
   "landing.cmd.todaySession": { lt: "Šiandienos treniruotė", en: "Today's session" },
-  "landing.cmd.noPlan": { lt: "Dar neturi plano", en: "No plan yet" },
   "landing.cmd.bodyMetrics": { lt: "Kūno rodikliai", en: "Body metrics" },
-  "landing.cmd.logMetric": { lt: "Įvesti rodiklius", en: "Log metrics" },
   "landing.cmd.nextMeal": { lt: "Kitas valgymas", en: "Next meal" },
-  "landing.cmd.viewFull": { lt: "Pilna apžvalga", en: "Full dashboard" },
 
   "bm.weight": { lt: "Svoris", en: "Weight" },
   "bm.bodyFat": { lt: "Kūno riebalai", en: "Body fat" },
@@ -225,7 +178,6 @@ const baseDict = {
   },
 
   "auth.title": { lt: "Sveikas sugrįžęs", en: "Welcome back" },
-  "auth.titleUp": { lt: "Sukurk paskyrą", en: "Create your account" },
   "auth.email": { lt: "El. paštas", en: "Email" },
   "auth.password": { lt: "Slaptažodis", en: "Password" },
   "auth.name": { lt: "Vardas", en: "Name" },
@@ -248,7 +200,6 @@ const baseDict = {
   "ob.generate": { lt: "Generuoti planą", en: "Generate plan" },
   "ob.generating": { lt: "Kuriamas tavo planas...", en: "Building your plan..." },
 
-  "ob.q.goal": { lt: "Koks tavo pagrindinis tikslas?", en: "What is your main goal?" },
   "ob.goal.lose": { lt: "Numesti riebalų", en: "Lose fat" },
   "ob.goal.muscle": { lt: "Auginti raumenis", en: "Build muscle" },
   "ob.goal.strength": { lt: "Didinti jėgą", en: "Get stronger" },
@@ -277,7 +228,6 @@ const baseDict = {
   "ob.q.days": { lt: "Kiek dienų per savaitę?", en: "How many days per week?" },
   "ob.q.minutes": { lt: "Kiek minučių viena treniruotė?", en: "How long is one session?" },
   "ob.q.body": { lt: "Šiek tiek apie tave", en: "A little about you" },
-  "ob.f.name": { lt: "Vardas", en: "Name" },
   "ob.f.age": { lt: "Amžius", en: "Age" },
   "ob.f.gender": { lt: "Lytis", en: "Gender" },
   "ob.g.male": { lt: "Vyras", en: "Male" },
@@ -292,71 +242,32 @@ const baseDict = {
     en: "E.g. lower back pain, knee surgery, none...",
   },
 
-  "dash.hello": { lt: "Sveikas", en: "Hey" },
   "dash.morning": { lt: "Labas rytas", en: "Good morning" },
   "dash.afternoon": { lt: "Laba diena", en: "Good afternoon" },
   "dash.evening": { lt: "Labas vakaras", en: "Good evening" },
   "dash.welcomeBack": { lt: "Malonu matyti", en: "Good to see you" },
 
-  "dash.today": { lt: "Šiandienos treniruotė", en: "Today's workout" },
-  "dash.start": { lt: "Pradėti treniruotę", en: "Start workout" },
   "dash.week": { lt: "Savaitės planas", en: "Weekly plan" },
-  "dash.rest": { lt: "Poilsis", en: "Rest day" },
   "dash.streak": { lt: "Serija", en: "Streak" },
-  "dash.sessions": { lt: "Treniruotės", en: "Workouts" },
-  "dash.volume": { lt: "Bendras tūris", en: "Total volume" },
-  "dash.days": { lt: "d.", en: "days" },
   "dash.noplan": { lt: "Dar neturi plano", en: "You don't have a plan yet" },
   "dash.noplanCta": { lt: "Užpildyti anketą", en: "Fill in the intake" },
   "dash.regenerate": { lt: "Generuoti naują planą", en: "Generate a new plan" },
-  "dash.completed": { lt: "Atlikta", en: "Done" },
 
-  "plan.focus": { lt: "Fokusas", en: "Focus" },
-  "plan.warmup": { lt: "Apšilimas", en: "Warm-up" },
-  "plan.cooldown": { lt: "Atvėsimas", en: "Cool-down" },
-  "plan.notes": { lt: "Trenerio pastabos", en: "Coach notes" },
   "plan.day": { lt: "Diena", en: "Day" },
   "plan.exercises": { lt: "pratimai", en: "exercises" },
-  "plan.sets": { lt: "serijos", en: "sets" },
-  "plan.reps": { lt: "kart.", en: "reps" },
-  "plan.rest": { lt: "poilsis", en: "rest" },
   "plan.min": { lt: "min", en: "min" },
 
-  "w.title": { lt: "Treniruotė", en: "Workout" },
-  "w.set": { lt: "Serija", en: "Set" },
-  "w.weight": { lt: "Svoris", en: "Weight" },
-  "w.reps": { lt: "Kart.", en: "Reps" },
-  "w.finish": { lt: "Baigti treniruotę", en: "Finish workout" },
-  "w.saved": { lt: "Treniruotė išsaugota!", en: "Workout saved!" },
-  "w.timer": { lt: "Poilsio laikmatis", en: "Rest timer" },
-  "w.skip": { lt: "Praleisti", en: "Skip" },
-  "w.volume": { lt: "Tūris", en: "Volume" },
   "w.watch": { lt: "Žiūrėti techniką", en: "Watch technique" },
-  "w.last": { lt: "Praeitą kartą", en: "Last time" },
-  "w.suggest": { lt: "Siūloma", en: "Suggested" },
-  "w.howFelt": { lt: "Kaip jauteisi?", en: "How did it feel?" },
 
   "ex.title": { lt: "Pratimų biblioteka", en: "Exercise library" },
-  "ex.search": { lt: "Ieškoti pratimo...", en: "Search exercises..." },
   "ex.all": { lt: "Visi", en: "All" },
-  "ex.filterLevel": { lt: "Sudėtingumas", en: "Difficulty" },
   "ex.level.beginner": { lt: "Pradedantiesiems", en: "Beginner" },
   "ex.level.intermediate": { lt: "Vidutinis", en: "Intermediate" },
   "ex.level.advanced": { lt: "Pažengusiems", en: "Advanced" },
   "ex.count": { lt: "pratimų", en: "exercises" },
-  "ex.none": {
-    lt: "Pagal šiuos filtrus pratimų nerasta.",
-    en: "No exercises match these filters.",
-  },
 
   "ex.technique": { lt: "Technika", en: "Technique" },
   "ex.mistakes": { lt: "Dažnos klaidos", en: "Common mistakes" },
-  "ex.novideo": {
-    lt: "Šio pratimo vaizdo demonstracija ruošiama.",
-    en: "A video demo for this exercise is coming soon.",
-  },
-  "ex.clip": { lt: "Animacija", en: "Clip" },
-  "ex.tutorial": { lt: "YouTube pamoka", en: "YouTube tutorial" },
   "ex.muscle": { lt: "Raumenų grupė", en: "Muscle group" },
   "ex.equipment": { lt: "Įranga", en: "Equipment" },
   "ex.level": { lt: "Lygis", en: "Level" },
@@ -374,7 +285,6 @@ const baseDict = {
 
   "pr.title": { lt: "Progresas", en: "Progress" },
   "pr.volume": { lt: "Savaitės tūris (kg)", en: "Weekly volume (kg)" },
-  "pr.weight": { lt: "Kūno svoris", en: "Body weight" },
   "pr.records": { lt: "Asmeniniai rekordai", en: "Personal records" },
   "pr.addWeight": { lt: "Įrašyti svorį", en: "Log weight" },
   "pr.save": { lt: "Išsaugoti", en: "Save" },
@@ -391,7 +301,6 @@ const baseDict = {
   },
   "coach.ph": { lt: "Parašyk klausimą...", en: "Ask a question..." },
   "coach.send": { lt: "Siųsti", en: "Send" },
-  "coach.live": { lt: "Gyvai", en: "Live" },
   "coach.open": { lt: "Atidaryti pokalbį", en: "Open chat" },
   "coach.notesTab": { lt: "Trenerio pastabos", en: "Coach notes" },
   "coach.chatTab": { lt: "Klausk trenerio", en: "Ask coach" },
@@ -411,9 +320,6 @@ const baseDict = {
   },
   "coach.clear": { lt: "Išvalyti istoriją", en: "Clear history" },
   "coach.cleared": { lt: "Istorija išvalyta", en: "History cleared" },
-  "coach.saved": { lt: "Išsaugota", en: "Saved" },
-
-  "nav.form": { lt: "Formos skeneris", en: "Form scanner" },
 
   "rd.title": { lt: "Paros pasiruošimas", en: "Daily readiness" },
   "rd.sub": {
@@ -430,10 +336,6 @@ const baseDict = {
   "rd.score": { lt: "Pasiruošimas", en: "Readiness" },
   "rd.load": { lt: "Šiandienos krūvis", en: "Today's load" },
   "rd.again": { lt: "Perskaičiuoti", en: "Recalculate" },
-  "rd.applied": {
-    lt: "Svoriai plane jau pritaikyti pagal pasiruošimą.",
-    en: "Weights in the plan are already scaled to your readiness.",
-  },
 
   "fc.title": { lt: "Technikos skeneris", en: "Technique scanner" },
   "fc.sub": {
@@ -443,23 +345,16 @@ const baseDict = {
   "fc.enable": { lt: "Įjungti kamerą", en: "Enable camera" },
   "fc.record": { lt: "Filmuoti pakartojimą (5 s)", en: "Record a rep (5 s)" },
   "fc.analyzing": { lt: "Analizuojama technika...", en: "Analysing technique..." },
-  "fc.exercise": { lt: "Pratimas", en: "Exercise" },
   "fc.score": { lt: "Technikos balas", en: "Technique score" },
   "fc.good": { lt: "Kas gerai", en: "What's good" },
   "fc.fixes": { lt: "Ką taisyti", en: "What to fix" },
   "fc.drills": { lt: "Pratybos technikai", en: "Technique drills" },
-  "fc.risk": { lt: "Traumos rizika", en: "Injury risk" },
   "fc.denied": { lt: "Kameros leidimas nesuteiktas.", en: "Camera permission denied." },
   "fc.history": { lt: "Ankstesnės analizės", en: "Previous scans" },
-
-  "w.voice": { lt: "Balso treneris", en: "Voice coach" },
-  "w.voiceOn": { lt: "Balsas įjungtas", en: "Voice on" },
-  "w.restOver": { lt: "Poilsis baigtas, pradėk seriją", en: "Rest is over, start your set" },
 
   "cmd.ph": { lt: "Ieškok arba šok į skiltį...", en: "Search or jump to..." },
   "cmd.empty": { lt: "Nieko nerasta.", en: "No results." },
   "cmd.nav": { lt: "Navigacija", en: "Navigation" },
-  "cmd.hint": { lt: "Greita paieška", en: "Quick search" },
 
   "nav.nutrition": { lt: "Mityba", en: "Nutrition" },
   "nut.title": { lt: "Mitybos dienoraštis", en: "Nutrition log" },
@@ -478,11 +373,8 @@ const baseDict = {
   "nut.protein": { lt: "Baltymai", en: "Protein" },
   "nut.carbs": { lt: "Angliavandeniai", en: "Carbs" },
   "nut.fat": { lt: "Riebalai", en: "Fat" },
-  "nut.target": { lt: "Dienos tikslas", en: "Daily target" },
-  "nut.left": { lt: "liko", en: "left" },
   "nut.empty": { lt: "Šiandien dar nieko neįrašyta.", en: "Nothing logged today yet." },
   "nut.delete": { lt: "Trinti", en: "Delete" },
-  "nut.week": { lt: "Savaitės kalorijos", en: "Weekly calories" },
 
   "ach.title": { lt: "Pasiekimai", en: "Achievements" },
   "ach.sub": {
@@ -573,50 +465,6 @@ const baseDict = {
   "mp.none": { lt: "Dar neturi mitybos plano.", en: "You don't have a meal plan yet." },
 
   /* ---------- health sync ---------- */
-  "nav.health": { lt: "Sveikatos duomenys", en: "Health sync" },
-  "hs.title": { lt: "Apple Health ir Google Fit", en: "Apple Health & Google Fit" },
-  "hs.sub": {
-    lt: "Įkelk širdies ritmą, miegą ir atsistatymą — sistema perskaičiuos šiandienos krūvio rekomendaciją automatiškai.",
-    en: "Bring in heart rate, sleep and recovery — the system recalculates today's load recommendation automatically.",
-  },
-  "hs.connect": { lt: "Automatinis sinchronizavimas", en: "Automatic sync" },
-  "hs.endpoint": { lt: "Tavo asmeninis adresas", en: "Your personal endpoint" },
-  "hs.token": { lt: "Raktas", en: "Key" },
-  "hs.rotate": { lt: "Sukurti naują raktą", en: "Rotate key" },
-  "hs.copy": { lt: "Kopijuoti", en: "Copy" },
-  "hs.copied": { lt: "Nukopijuota", en: "Copied" },
-  "hs.ios": { lt: "iPhone (Apple Health)", en: "iPhone (Apple Health)" },
-  "hs.iosSteps": {
-    lt: "Atidaryk „Shortcuts“ → Automation → Kasdien 8:00 → Health: gauk ramybės pulsą, HRV ir miegą → „Get contents of URL“ POST į adresą žemiau su JSON kūnu. Duomenys atkeliaus automatiškai kas rytą.",
-    en: "Open Shortcuts → Automation → Daily 8:00 → Health: read resting HR, HRV and sleep → 'Get contents of URL' POST to the endpoint below with the JSON body. Data arrives automatically each morning.",
-  },
-  "hs.android": {
-    lt: "Android (Google Fit / Health Connect)",
-    en: "Android (Google Fit / Health Connect)",
-  },
-  "hs.androidSteps": {
-    lt: "Naudok „HTTP Request Shortcuts“ arba „Tasker“ + Health Connect: kasdien nuskaityk pulsą, miegą ir žingsnius ir siųsk POST į tą patį adresą. Veikia ir su Garmin, Whoop, Oura per jų eksportą.",
-    en: "Use 'HTTP Request Shortcuts' or Tasker + Health Connect: read heart rate, sleep and steps daily and POST them to the same endpoint. Works with Garmin, Whoop and Oura exports too.",
-  },
-  "hs.manual": { lt: "Rankinis įrašas", en: "Manual entry" },
-  "hs.import": { lt: "Įkelti eksporto failą", en: "Import export file" },
-  "hs.importHint": {
-    lt: "Apple Health export.xml arba Google Fit / Garmin CSV — apdorojama tavo naršyklėje.",
-    en: "Apple Health export.xml or a Google Fit / Garmin CSV — parsed in your browser.",
-  },
-  "hs.restingHr": { lt: "Ramybės pulsas", en: "Resting HR" },
-  "hs.hrv": { lt: "HRV (ms)", en: "HRV (ms)" },
-  "hs.sleep": { lt: "Miegas (val.)", en: "Sleep (h)" },
-  "hs.sleepQ": { lt: "Miego kokybė (1-5)", en: "Sleep quality (1-5)" },
-  "hs.steps": { lt: "Žingsniai", en: "Steps" },
-  "hs.kcal": { lt: "Aktyvios kcal", en: "Active kcal" },
-  "hs.save": { lt: "Įrašyti ir perskaičiuoti", en: "Save & recalculate" },
-  "hs.saving": { lt: "Skaičiuojama...", en: "Calculating..." },
-  "hs.recovery": { lt: "Atsistatymas", en: "Recovery" },
-  "hs.load": { lt: "Šiandienos krūvis", en: "Today's load" },
-  "hs.trend": { lt: "Paskutinės 14 dienų", en: "Last 14 days" },
-  "hs.empty": { lt: "Dar nėra sveikatos duomenų.", en: "No health data yet." },
-  "hs.imported": { lt: "Duomenys įkelti", en: "Data imported" },
 
   /* ---------- AR mode ---------- */
   "nav.ar": { lt: "AR režimas", en: "AR mode" },
@@ -629,17 +477,7 @@ const baseDict = {
   "ar.loading": { lt: "Kraunamas modelis...", en: "Loading model..." },
   "ar.failed": { lt: "Nepavyko paleisti AR režimo.", en: "Could not start AR mode." },
   "ar.reps": { lt: "Pakartojimai", en: "Reps" },
-  "ar.reset": { lt: "Nulinti", en: "Reset" },
   "ar.voice": { lt: "Balso korekcijos", en: "Voice cues" },
-  "ar.voiceUnsupported": {
-    lt: "Ši naršyklė nepalaiko balso — pabandyk Chrome arba Safari.",
-    en: "This browser has no speech support — try Chrome or Safari.",
-  },
-  "ar.voiceReady": { lt: "Balsas įjungtas", en: "Voice is on" },
-  "ar.greet": {
-    lt: "Kamera veikia. Stovėk taip, kad matyčiau visą kūną, ir pradedam.",
-    en: "Camera is live. Stand so I can see your whole body, and let's begin.",
-  },
 
   "ar.targets": { lt: "Tiksliniai kampai", en: "Target angles" },
   "ar.range": { lt: "Norma", en: "Target" },
@@ -667,33 +505,11 @@ const baseDict = {
   "mp.adapted": { lt: "Planas priderintas", en: "Plan adapted" },
   "mp.adaptNote.title": { lt: "Kodėl pakeista", en: "Why it changed" },
 
-  "hs.insights": { lt: "Įžvalgos ir jų poveikis", en: "Insights and their impact" },
-  "hs.why": { lt: "Priežastis", en: "Cause" },
-  "hs.effect": { lt: "Poveikis krūviui", en: "Effect on load" },
-  "hs.impact": { lt: "Indėlis į balą", en: "Score contribution" },
-  "hs.noInsights": {
-    lt: "Įkelk pulsą, HRV ar miegą — tada pamatysi paaiškinimus.",
-    en: "Add HR, HRV or sleep data to see the explanations.",
-  },
-
-  "ar.calibration": { lt: "Greitas kalibravimas", en: "Quick calibration" },
   "ar.height": { lt: "Ūgis (cm)", en: "Height (cm)" },
-  "ar.stride": { lt: "Žingsnio ilgis (cm)", en: "Stride length (cm)" },
-  "ar.calibrate": { lt: "Kalibruoti", en: "Calibrate" },
-  "ar.calibrateHint": {
-    lt: "Atsistok visu ūgiu kadre ir paspausk „Kalibruoti“ — sistema susies pikselius su centimetrais.",
-    en: "Stand full-body in frame and press Calibrate — the system maps pixels to centimetres.",
-  },
-  "ar.calibrated": { lt: "Kalibruota", en: "Calibrated" },
-  "ar.calibrateFail": {
-    lt: "Nematau viso kūno — atsitrauk nuo kameros.",
-    en: "Can't see your whole body — step back from the camera.",
-  },
   "ar.depth": { lt: "Judesio gylis", en: "Movement depth" },
   "ar.voiceSelect": { lt: "Balsas", en: "Voice" },
   "ar.voiceDefault": { lt: "Sistemos balsas", en: "System voice" },
   "ar.rate": { lt: "Kalbos greitis", en: "Speech rate" },
-  "ar.test": { lt: "Išbandyti balsą", en: "Test voice" },
 
   "nav.reminders": { lt: "Priminimai", en: "Reminders" },
   "nav.more": { lt: "Daugiau", en: "More" },
@@ -718,8 +534,6 @@ const baseDict = {
   "rem.from": { lt: "Nuo", en: "From" },
   "rem.to": { lt: "Iki", en: "Until" },
   "rem.every": { lt: "Kas (min.)", en: "Every (min)" },
-  "rem.target": { lt: "Dienos tikslas (ml)", en: "Daily target (ml)" },
-  "rem.portion": { lt: "Porcija (ml)", en: "Portion (ml)" },
   "rem.addWater": { lt: "Išgėriau", en: "I drank" },
   "rem.resetWater": { lt: "Nulinti dieną", en: "Reset day" },
   "rem.todayWater": { lt: "Šiandien išgerta", en: "Today's intake" },
@@ -732,41 +546,7 @@ const baseDict = {
   "rem.schedule": { lt: "Šios dienos tvarkaraštis", en: "Today's schedule" },
   "rem.pushDenied": { lt: "Pranešimai neleisti naršyklėje", en: "Notifications were blocked" },
 
-  "hs.weekly": { lt: "Savaitės sveikatos santrauka", en: "Weekly health summary" },
-  "hs.weeklySub": {
-    lt: "Paskutinės 7 dienos prieš ankstesnes 7 — svarbiausi pokyčiai ir kaip jie pakeitė krūvį.",
-    en: "Last 7 days vs the previous 7 — the key changes and how they moved your load.",
-  },
-  "hs.thisWeek": { lt: "Ši savaitė", en: "This week" },
-  "hs.lastWeek": { lt: "Praėjusi", en: "Previous" },
-  "hs.actions": { lt: "Ką daryti toliau", en: "What to do next" },
-  "hs.noWeekly": {
-    lt: "Savaitės santraukai reikia bent 3 dienų duomenų.",
-    en: "The weekly summary needs at least 3 days of data.",
-  },
-
-  "ar.learn": { lt: "Mokymosi režimas: kalibravimo testas", en: "Learning mode: calibration test" },
-  "ar.learnSub": {
-    lt: "3 žingsnių testas patikrina, ar kamera tave mato pakankamai tiksliai, ir įvertina matavimo patikimumą prieš pradedant pratimus.",
-    en: "A 3-step test checks whether the camera tracks you accurately enough and rates measurement reliability before you start training.",
-  },
-  "ar.startTest": { lt: "Pradėti testą", en: "Start test" },
-  "ar.retest": { lt: "Kartoti testą", en: "Run test again" },
-  "ar.stepOf": { lt: "žingsnis iš", en: "step of" },
-  "ar.reliability": { lt: "Matavimo patikimumas", en: "Measurement reliability" },
-  "ar.tips": { lt: "Kaip pagerinti", en: "How to improve" },
-  "ar.applyCalib": { lt: "Naudoti šį kalibravimą", en: "Use this calibration" },
-  "ar.needLive": { lt: "Pirma įjunk kamerą", en: "Turn the camera on first" },
-  "ar.holding": { lt: "Fiksuojama...", en: "Capturing..." },
-  "ar.getReady": { lt: "Pasiruošk", en: "Get ready" },
-  "ar.testPassed": { lt: "Testas baigtas", en: "Test complete" },
-  "ar.lowWarn": {
-    lt: "Patikimumas žemas — rekomenduojame perkalibruoti prieš pratimus.",
-    en: "Reliability is low — recalibrate before training.",
-  },
-
   "common.error": { lt: "Įvyko klaida", en: "Something went wrong" },
-  "common.close": { lt: "Uždaryti", en: "Close" },
   "common.kg": { lt: "kg", en: "kg" },
 
   "nav.supplements": { lt: "Papildai", en: "Supplements" },
@@ -885,7 +665,6 @@ const baseDict = {
   "supp.active": { lt: "Aktyvus", en: "Active" },
   "supp.perDay": { lt: "per dieną", en: "per day" },
 
-  "footer.legal": { lt: "Teisinė informacija", en: "Legal" },
   "footer.privacy": { lt: "Privatumo politika", en: "Privacy Policy" },
   "footer.terms": { lt: "Naudojimo sąlygos", en: "Terms of Service" },
   "footer.refund": { lt: "Grąžinimo politika", en: "Refund Policy" },
@@ -911,7 +690,6 @@ const baseDict = {
   "auth.updatePassword": { lt: "Išsaugoti slaptažodį", en: "Save password" },
   "auth.updated": { lt: "Slaptažodis atnaujintas.", en: "Password updated." },
   "auth.mismatch": { lt: "Slaptažodžiai nesutampa.", en: "Passwords do not match." },
-  "auth.language": { lt: "Kalba", en: "Language" },
 } satisfies Dict;
 
 export const dict = {

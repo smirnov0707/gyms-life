@@ -40,16 +40,6 @@ export const extra_brief = {
     es: "La IA analiza tus datos...",
     fr: "L'IA analyse tes données...",
   },
-  "brief.error": {
-    lt: "Nepavyko paruošti dienos plano",
-    en: "Could not build today's brief",
-    ru: "Не удалось составить план дня",
-    uk: "Не вдалося скласти план дня",
-    pl: "Nie udało się przygotować planu dnia",
-    de: "Tagesbriefing konnte nicht erstellt werden",
-    es: "No se pudo crear el plan del día",
-    fr: "Impossible de créer le brief du jour",
-  },
   "brief.focus": {
     lt: "Šiandienos fokusas",
     en: "Today's focus",
