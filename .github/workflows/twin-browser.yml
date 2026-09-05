@@ -1,0 +1,48 @@
+name: Twin browser
+on:
+  pull_request:
+    paths:
+      - "src/components/twin/**"
+      - "src/components/TwinView.tsx"
+      - "src/lib/digital-twin*"
+      - "src/styles.css"
+      - "tests/twin-browser/**"
+      - "scripts/test-twin-browser.mjs"
+      - "package*.json"
+      - ".github/workflows/twin-browser.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/twin/**"
+      - "src/components/TwinView.tsx"
+      - "src/lib/digital-twin*"
+      - "src/styles.css"
+      - "tests/twin-browser/**"
+      - "scripts/test-twin-browser.mjs"
+      - "package*.json"
+      - ".github/workflows/twin-browser.yml"
+permissions:
+  contents: read
+concurrency:
+  group: twin-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-twin-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-browser-evidence
+          path: test-results/twin
+          retention-days: 7
+          if-no-files-found: ignore
