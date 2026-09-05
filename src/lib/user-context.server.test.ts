@@ -223,6 +223,13 @@ describe("contextForAi", () => {
           remainingCalories: 600,
           remainingProteinG: 20,
         },
+        hydration: {
+          available: true,
+          intakeMl: 1200,
+          targetMl: 3150,
+          targetBasis: "personal" as const,
+          remainingMl: 1950,
+        },
         recentSession: { totalSets: 18, averageRpe: 7.75, fatigueLevel: "medium" as const },
         dataGaps: [],
       },
@@ -293,6 +300,13 @@ describe("contextForAi", () => {
           remainingCalories: 600,
           remainingProteinG: 20,
         },
+        hydration: {
+          available: true,
+          intakeMl: 1200,
+          targetMl: 3150,
+          targetBasis: "personal" as const,
+          remainingMl: 1950,
+        },
         recentSession: { totalSets: 18, averageRpe: 7.75, fatigueLevel: "medium" as const },
         dataGaps: [],
       },
@@ -315,12 +329,116 @@ describe("contextForAi", () => {
     });
     for (const withheldField of [
       "nutritionToday",
+      "hydrationToday",
       "recentSession",
       "athleteModel",
       "1800",
       "7000",
+      // The hydration figures themselves, not just the block name.
+      "1200",
+      "3150",
     ]) {
       expect(payload).not.toContain(withheldField);
     }
+  });
+
+  it("sends hydration with the basis of its target once the user opts in", () => {
+    const context = {
+      profile: {
+        locale: "lt",
+        goal: "strength" as const,
+        experience: "intermediate" as const,
+        daysPerWeek: 4,
+        sessionMinutes: 60,
+        equipment: ["barbell"],
+      },
+      currentDay: {
+        nutrition: {
+          available: true,
+          calories: 1800,
+          proteinG: 150,
+          carbsG: 160,
+          fatG: 55,
+          targetCalories: 2400,
+          targetProteinG: 170,
+          remainingCalories: 600,
+          remainingProteinG: 20,
+        },
+        hydration: {
+          available: true,
+          intakeMl: 1200,
+          targetMl: 3150,
+          targetBasis: "generic" as const,
+          remainingMl: 1950,
+        },
+        recentSession: null,
+        dataGaps: [],
+      },
+      aiPersonalization: {
+        enabled: true,
+        policyVersion: "2026-09-03-memory-context-v1",
+        lastRecordedAt: "2026-09-01T00:00:00.000Z",
+      },
+      digitalAthlete,
+      activeMemory,
+      dataGaps: [],
+    } satisfies CentralUserContext;
+
+    // A generic target must not reach the coach looking like the athlete's
+    // own number, or it will be spoken about as though it were personal.
+    expect(JSON.parse(contextForAi(context))).toMatchObject({
+      hydrationToday: {
+        intakeMl: 1200,
+        targetMl: 3150,
+        remainingMl: 1950,
+        targetBasis: "generic",
+      },
+    });
+  });
+
+  it("omits hydration entirely when the day's reads failed", () => {
+    const context = {
+      profile: {
+        locale: "lt",
+        goal: "strength" as const,
+        experience: "intermediate" as const,
+        daysPerWeek: 4,
+        sessionMinutes: 60,
+        equipment: ["barbell"],
+      },
+      currentDay: {
+        nutrition: {
+          available: true,
+          calories: 1800,
+          proteinG: 150,
+          carbsG: 160,
+          fatG: 55,
+          targetCalories: 2400,
+          targetProteinG: 170,
+          remainingCalories: 600,
+          remainingProteinG: 20,
+        },
+        hydration: {
+          available: false,
+          intakeMl: null,
+          targetMl: null,
+          targetBasis: null,
+          remainingMl: null,
+        },
+        recentSession: null,
+        dataGaps: ["today_hydration_unavailable" as const],
+      },
+      aiPersonalization: {
+        enabled: true,
+        policyVersion: "2026-09-03-memory-context-v1",
+        lastRecordedAt: "2026-09-01T00:00:00.000Z",
+      },
+      digitalAthlete,
+      activeMemory,
+      dataGaps: [],
+    } satisfies CentralUserContext;
+
+    // Absent is absent: no nulls forwarded for the model to read as zero.
+    expect(contextForAi(context)).not.toContain("hydrationToday");
   });
 });

@@ -5,6 +5,7 @@ import { hasCurrentAiPersonalizationConsent } from "./ai-personalization-consent
 import { canonicalWorkoutEquipment } from "./workout-equipment.schema";
 import { buildDigitalAthleteState, loadDigitalAthleteState } from "./digital-athlete.service";
 import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
+import { loadHydrationIntake, loadHydrationTarget } from "./hydration.service";
 export { calculateConsecutiveCalendarDayStreak as calculateWorkoutStreak } from "./local-day";
 import type {
   AiPersonalizationSources,
@@ -116,6 +117,22 @@ const TodayNutritionSchema = z
   })
   .strict();
 
+/**
+ * Fluid intake against today's derived target. Facts only: how much was
+ * logged, what the target is and how it was arrived at. The coach is told
+ * when the target is a population default rather than the athlete's own, so
+ * it cannot present a generic number as personal.
+ */
+const TodayHydrationSchema = z
+  .object({
+    available: z.boolean(),
+    intakeMl: NonNegativeNumberSchema.nullable(),
+    targetMl: NonNegativeNumberSchema.nullable(),
+    targetBasis: z.enum(["personal", "generic"]).nullable(),
+    remainingMl: NonNegativeNumberSchema.nullable(),
+  })
+  .strict();
+
 const RecentSessionSchema = z
   .object({
     totalSets: z.number().int().nonnegative(),
@@ -127,6 +144,7 @@ const RecentSessionSchema = z
 export const CurrentDayContextSchema = z
   .object({
     nutrition: TodayNutritionSchema,
+    hydration: TodayHydrationSchema,
     recentSession: RecentSessionSchema.nullable(),
     dataGaps: z
       .array(
@@ -134,9 +152,10 @@ export const CurrentDayContextSchema = z
           "today_nutrition_unavailable",
           "nutrition_targets_unavailable",
           "recent_session_unavailable",
+          "today_hydration_unavailable",
         ]),
       )
-      .max(3),
+      .max(4),
   })
   .strict();
 
@@ -325,6 +344,13 @@ function emptyCurrentDayContext(dataGaps: CurrentDayContext["dataGaps"]): Curren
       remainingCalories: null,
       remainingProteinG: null,
     },
+    hydration: {
+      available: false,
+      intakeMl: null,
+      targetMl: null,
+      targetBasis: null,
+      remainingMl: null,
+    },
     recentSession: null,
     dataGaps,
   });
@@ -334,11 +360,13 @@ function currentDayGapList(
   nutritionAvailable: boolean,
   targetsAvailable: boolean,
   recentSessionAvailable: boolean,
+  hydrationAvailable = true,
 ): CurrentDayContext["dataGaps"] {
   return [
     ...(nutritionAvailable ? [] : (["today_nutrition_unavailable"] as const)),
     ...(targetsAvailable ? [] : (["nutrition_targets_unavailable"] as const)),
     ...(recentSessionAvailable ? [] : (["recent_session_unavailable"] as const)),
+    ...(hydrationAvailable ? [] : (["today_hydration_unavailable"] as const)),
   ];
 }
 
@@ -355,7 +383,7 @@ export async function loadCurrentDayContext(
 ): Promise<CurrentDayContext> {
   const zone = IanaTimeZoneSchema.parse(timeZone);
   const today = dayInTimeZone(now, zone);
-  const [nutritionResult, mealTargetResult, sessionResult] = await Promise.all([
+  const [nutritionResult, mealTargetResult, sessionResult, hydrationResult] = await Promise.all([
     supabase
       .from("nutrition_logs")
       .select("calories, protein, carbs, fat")
@@ -377,7 +405,37 @@ export async function loadCurrentDayContext(
       .order("finished_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Hydration is read through the same service the widget uses, so the
+    // coach cannot be told a different target than the athlete is shown.
+    // A failure here is a gap in the day's facts, never a reason to fail
+    // the whole context.
+    Promise.all([
+      loadHydrationTarget(supabase, userId, zone, now),
+      loadHydrationIntake(supabase, userId, zone, now),
+    ])
+      .then(([target, intake]) => ({ target, intake }))
+      .catch(() => null),
   ]);
+
+  const hydration =
+    hydrationResult === null
+      ? {
+          available: false,
+          intakeMl: null,
+          targetMl: null,
+          targetBasis: null,
+          remainingMl: null,
+        }
+      : {
+          available: true,
+          intakeMl: hydrationResult.intake.totalMl,
+          targetMl: hydrationResult.target.targetMl,
+          targetBasis: hydrationResult.target.basis,
+          remainingMl: Math.max(
+            0,
+            hydrationResult.target.targetMl - hydrationResult.intake.totalMl,
+          ),
+        };
 
   const nutritionParsed = z.array(NutritionLogSourceSchema).safeParse(nutritionResult.data ?? []);
   const nutritionAvailable = nutritionResult.error === null && nutritionParsed.success;
@@ -387,7 +445,9 @@ export async function loadCurrentDayContext(
   const sessionAvailable = sessionResult.error === null && sessionParsed.success;
 
   if (!nutritionAvailable) {
-    return emptyCurrentDayContext(currentDayGapList(false, targetsAvailable, sessionAvailable));
+    return emptyCurrentDayContext(
+      currentDayGapList(false, targetsAvailable, sessionAvailable, hydration.available),
+    );
   }
 
   const nutrition = nutritionParsed.data.reduce(
@@ -435,8 +495,14 @@ export async function loadCurrentDayContext(
       remainingProteinG:
         targetProteinG === null ? null : Math.max(0, targetProteinG - nutrition.proteinG),
     },
+    hydration,
     recentSession,
-    dataGaps: currentDayGapList(true, targetsAvailable, recentSessionAvailable),
+    dataGaps: currentDayGapList(
+      true,
+      targetsAvailable,
+      recentSessionAvailable,
+      hydration.available,
+    ),
   });
 }
 
@@ -610,6 +676,19 @@ export function contextForAi(context: CentralUserContext): string {
       }
     : null;
 
+  // Only reaches the model behind the same personalization consent as the
+  // rest of the day's facts. `targetBasis` travels with the number so the
+  // coach can tell a personal target from a population default.
+  const hydration = context.currentDay.hydration;
+  const hydrationToday = hydration.available
+    ? {
+        intakeMl: hydration.intakeMl,
+        targetMl: hydration.targetMl,
+        remainingMl: hydration.remainingMl,
+        targetBasis: hydration.targetBasis,
+      }
+    : null;
+
   const currentContext = {
     active: context.digitalAthlete.currentContext.active.map(({ context: item }) => {
       if (item.kind === "time_limited") return { kind: item.kind, minutes: item.minutes };
@@ -628,6 +707,7 @@ export function contextForAi(context: CentralUserContext): string {
     {
       ...baseContext,
       ...(nutritionToday === null ? {} : { nutritionToday }),
+      ...(hydrationToday === null ? {} : { hydrationToday }),
       ...(context.currentDay.recentSession === null
         ? {}
         : {
