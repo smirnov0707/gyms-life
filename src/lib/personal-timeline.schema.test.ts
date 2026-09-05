@@ -32,16 +32,31 @@ describe("PersonalTimelineEventInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an unrecognized provenance label", () => {
+  it.each(["known", "unknown", "confident"])("rejects %s as provenance", (provenance) => {
     const result = PersonalTimelineEventInputSchema.safeParse({
       eventType: "checkin_recorded",
       occurredAt: "2026-09-04T18:20:50.881Z",
       timeZone: null,
-      provenance: "confident",
+      provenance,
       sourceSystem: "gymslife",
       sourceTable: "daily_checkins",
       sourceReference: "2026-09-04",
       summary: { readinessScore: 72 },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("requires an offset-aware occurrence time", () => {
+    const result = PersonalTimelineEventInputSchema.safeParse({
+      eventType: "decision_recorded",
+      occurredAt: "2026-09-04 18:20:50",
+      timeZone: "Europe/Vilnius",
+      provenance: "calculated",
+      sourceSystem: "gymslife",
+      sourceTable: "decision_records",
+      sourceReference: "00000000-0000-4000-8000-000000000001",
+      summary: {},
     });
 
     expect(result.success).toBe(false);
