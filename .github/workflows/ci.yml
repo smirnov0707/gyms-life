@@ -5,16 +5,53 @@ on:
   push:
     branches:
       - main
+      - future-lab-phase-1-5-work
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  format-future-lab:
+    if: github.event_name == 'push' && github.ref_name == 'future-lab-phase-1-5-work'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: future-lab-phase-1-5-work
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Format Phase 1.5 files
+        run: npx prettier --write src/lib/intelligence-provenance.schema.ts src/lib/model-registry.schema.ts src/lib/model-registry.schema.test.ts src/lib/prediction.schema.ts src/lib/prediction.schema.test.ts src/lib/workout-completion-prediction.engine.ts src/lib/workout-completion-prediction.engine.test.ts src/lib/personal-timeline.schema.ts src/lib/personal-timeline.schema.test.ts
+
+      - name: Commit formatting if needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib
+          git commit -m "style: format Future Lab prediction foundation"
+          git push
+
   quality:
+    if: github.event_name == 'pull_request' || github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
