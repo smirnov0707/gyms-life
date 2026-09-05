@@ -156,3 +156,72 @@ describe("performance time versus write time", () => {
     expect(wrong[0]?.lastTrainedHoursAgo).toBe(0);
   });
 });
+
+describe("incomplete and unsupported set evidence", () => {
+  const now = new Date("2026-09-05T12:00:00.000Z");
+  const complete = {
+    exercise_slug: "bench-press",
+    reps: 8,
+    weight_kg: 60,
+    done: true,
+    performed_at: "2026-09-05T10:00:00.000Z",
+  };
+
+  it.each([
+    { reps: null },
+    { weight_kg: null },
+    { reps: 0 },
+    { reps: -1 },
+    { weight_kg: 0 },
+    { weight_kg: -20 },
+    { performed_at: "not-a-date" },
+  ])("abstains instead of reporting full recovery for %j", (partial) => {
+    expect(calculateMuscleGroupLoad([{ ...complete, ...partial }], exercises, now)).toEqual([]);
+  });
+
+  it("does not treat unknown completion as a completed set", () => {
+    expect(calculateMuscleGroupLoad([{ ...complete, done: null }], exercises, now)).toEqual([]);
+  });
+
+  it("withholds the whole affected group rather than presenting a partial sum as complete", () => {
+    const legs = { ...complete, exercise_slug: "squat" };
+    const unsupported = { ...complete, weight_kg: null };
+    const result = calculateMuscleGroupLoad([complete, unsupported, legs], exercises, now);
+    expect(result.map((entry) => entry.muscleGroup)).toEqual(["legs"]);
+    expect(result[0]?.volumeKg).toBe(480);
+    expect(calculateMuscleGroupLoad([unsupported, complete], exercises, now)).toEqual([]);
+  });
+
+  it("does not let an unfinished set erase confirmed evidence", () => {
+    const result = calculateMuscleGroupLoad(
+      [complete, { ...complete, weight_kg: null, done: false }],
+      exercises,
+      now,
+    );
+    expect(result[0]?.volumeKg).toBe(480);
+  });
+
+  it("does not treat future-dated activity as freshly performed", () => {
+    expect(
+      calculateMuscleGroupLoad(
+        [{ ...complete, performed_at: "2026-09-06T10:00:00.000Z" }],
+        exercises,
+        now,
+      ),
+    ).toEqual([]);
+  });
+
+  it("rejects an invalid evaluation clock", () => {
+    expect(() => calculateMuscleGroupLoad([], exercises, new Date("invalid"))).toThrow();
+  });
+
+  it("abstains on numeric overflow instead of clamping it into a plausible score", () => {
+    expect(
+      calculateMuscleGroupLoad(
+        [{ ...complete, reps: Number.MAX_VALUE, weight_kg: Number.MAX_VALUE }],
+        exercises,
+        now,
+      ),
+    ).toEqual([]);
+  });
+});

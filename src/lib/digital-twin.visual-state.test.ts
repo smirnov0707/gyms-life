@@ -39,6 +39,8 @@ describe("mapTwinSnapshotToVisualState", () => {
   it("keeps the scene still when source data is unavailable", () => {
     const visual = mapTwinSnapshotToVisualState({ ...baseSnapshot, dataAvailable: false });
     expect(visual.ambientMotion).toBe("still");
+    expect(visual.evidenceCoverage).toBe(0);
+    expect(visual.regions.every((region) => region.attention === "unknown")).toBe(true);
   });
 
   it("raises visual attention when a calculated region is substantially less recovered", () => {

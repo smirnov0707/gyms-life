@@ -39,14 +39,14 @@ const DAY_MS = 86_400_000;
  * when the calculation rules below change in a way that could explain a
  * different state for the same underlying facts.
  */
-export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v1" as const;
+export const DIGITAL_ATHLETE_CALCULATION_VERSION = "digital-athlete-v2" as const;
 
 /** The widest lookback any domain calculation below uses (body metrics, 30 days). */
 export const DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS = 30;
 
 /**
  * How far back muscle-load set logs are fetched. Matches the engine's 40h
- * fatigue-decay half-life: older sets barely register. Exported so any
+ * fatigue-decay time constant: older sets barely register. Exported so any
  * consumer of `muscleLoad` (e.g. the Digital Twin mapper) can state the
  * evidence window truthfully instead of guessing or re-hardcoding it.
  */
