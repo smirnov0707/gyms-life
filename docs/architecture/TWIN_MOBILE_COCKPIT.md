@@ -21,6 +21,10 @@ No geometry, camera math, physiological model, AI contract or Supabase schema ch
 - The independent pulsing rings have been removed from this surface: the existing
   motion toggle now controls the only animated presence (the model), and reduced
   motion still permits user-controlled 360-degree inspection.
+- Camera invalidation rechecks the current viewport before rejecting a frame
+  from a stale negative IntersectionObserver report. Batched reports use the
+  latest event. Hidden tabs and actually off-screen scenes still stop drawing;
+  controls disclosure must never freeze a visible on-demand renderer.
 - Changing user identity remounts the presentation to clear selection/disclosure
   state; the existing user-scoped query and server authorization remain intact.
 
