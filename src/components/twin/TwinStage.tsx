@@ -170,6 +170,9 @@ export function TwinStage(props: TwinStageProps) {
     onSelectRegion(region);
     if (!show3D && isTwinBodyRegion(region)) onViewChange(viewShowing(region, view));
   };
+  // The legacy unlayered global `* { min-width: 0 }` overrides utility-layer
+  // minimums. Keep explicit touch targets local instead of changing app CSS.
+  const controlStyle = { minWidth: 44, minHeight: 44, flexShrink: 0 };
   const controlClass =
     "min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300";
 
@@ -185,6 +188,7 @@ export function TwinStage(props: TwinStageProps) {
         >
           <button
             type="button"
+            style={controlStyle}
             className={`${controlClass} ${show3D ? "bg-white/10 text-white" : ""}`}
             aria-pressed={show3D}
             onClick={() => {
@@ -198,6 +202,7 @@ export function TwinStage(props: TwinStageProps) {
           </button>
           <button
             type="button"
+            style={controlStyle}
             className={`${controlClass} ${mode === "2d" ? "bg-white/10 text-white" : ""}`}
             aria-pressed={mode === "2d"}
             onClick={() => setMode("2d")}
@@ -249,6 +254,7 @@ export function TwinStage(props: TwinStageProps) {
           <p>{copy.fallback}</p>
           <button
             type="button"
+            style={controlStyle}
             className={`${controlClass} mt-1 block underline`}
             onClick={() => setAttempt((value) => value + 1)}
           >
@@ -288,6 +294,7 @@ export function TwinStage(props: TwinStageProps) {
           aria-expanded={controlsOpen}
           aria-controls={controlsId}
           onClick={() => setControlsOpen((value) => !value)}
+          style={controlStyle}
           className={`${controlClass} ${controlsOpen ? "bg-white/10" : ""}`}
         >
           <Settings2 aria-hidden="true" className="size-4" />
@@ -320,6 +327,7 @@ export function TwinStage(props: TwinStageProps) {
                 key={action}
                 type="button"
                 onClick={() => command(action)}
+                style={controlStyle}
                 className={controlClass}
                 aria-label={name}
                 title={name}
@@ -337,6 +345,7 @@ export function TwinStage(props: TwinStageProps) {
             <button
               key={action}
               type="button"
+              style={controlStyle}
               className={controlClass}
               onClick={() => {
                 if (show3D) command(action);
