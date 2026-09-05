@@ -19,13 +19,14 @@ export const getPortalUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from("subscriptions")
       .select("paddle_customer_id, paddle_subscription_id, environment")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (subError) throw new Error("Could not read your subscription. Please try again.");
     if (!sub) throw new Error("No subscription found");
     const paddle = getPaddleClient(sub.environment as PaddleEnv);
     const portal = await paddle.customerPortalSessions.create(sub.paddle_customer_id, [
@@ -39,13 +40,14 @@ export const cancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from("subscriptions")
       .select("id, paddle_subscription_id, environment, status")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (subError) throw new Error("Could not read your subscription. Please try again.");
     if (!sub || !["active", "trialing", "past_due"].includes(sub.status)) {
       throw new Error("No active subscription");
     }
@@ -65,13 +67,14 @@ export const resumeSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from("subscriptions")
       .select("id, paddle_subscription_id, environment")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (subError) throw new Error("Could not read your subscription. Please try again.");
     if (!sub) throw new Error("No subscription found");
     const paddle = getPaddleClient(sub.environment as PaddleEnv);
     await paddle.subscriptions.update(sub.paddle_subscription_id, {
@@ -91,13 +94,14 @@ export const changePlan = createServerFn({ method: "POST" })
   .validator((data: { priceId: string }) => data)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: sub } = await supabase
+    const { data: sub, error: subError } = await supabase
       .from("subscriptions")
       .select("paddle_subscription_id, environment, status")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (subError) throw new Error("Could not read your subscription. Please try again.");
     if (!sub || !["active", "trialing", "past_due"].includes(sub.status)) {
       throw new Error("No active subscription");
     }
