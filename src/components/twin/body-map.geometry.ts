@@ -165,6 +165,7 @@ const EAR: Shape = { from: [112, 45], curves: [c(116, 46, 116, 55, 112, 57)] };
 const HAIRLINE: Shape = { from: [100, 26], curves: [c(107, 25, 112, 28, 114, 34)] };
 const STERNOCLEIDOMASTOID: Shape = { from: [110, 64], curves: [c(108, 72, 105, 79, 101, 87)] };
 const CLAVICLE: Shape = { from: [101, 98], curves: [c(111, 95, 122, 99, 131, 107)] };
+const PECTORAL_HEADS: Shape = { from: [103, 121], curves: [c(113, 118, 124, 116, 133, 118)] };
 const DELTOID_HEADS: Shape = { from: [139, 107], curves: [c(141, 120, 143, 133, 144, 148)] };
 const BICEPS_GROOVE: Shape = { from: [148, 150], curves: [c(150, 164, 150, 180, 149, 196)] };
 const TRICEPS_HORSESHOE: Shape = { from: [143, 150], curves: [c(146, 167, 146, 186, 144, 200)] };
@@ -178,7 +179,6 @@ const SERRATUS = [
   { from: [122, 163], curves: [c(126, 166, 128, 170, 129, 174)] },
 ] satisfies Shape[];
 const INGUINAL_CREASE: Shape = { from: [129, 231], curves: [c(124, 240, 114, 248, 104, 252)] };
-const RECTUS_FEMORIS: Shape = { from: [110, 262], curves: [c(116, 281, 118, 306, 116, 331)] };
 const PATELLA: Shape = { from: [112, 352], curves: [c(116, 347, 123, 348, 127, 354)] };
 const TIBIA: Shape = { from: [110, 362], curves: [c(111, 382, 112, 402, 112, 422)] };
 const MALLEOLUS: Shape = { from: [120, 430], curves: [c(123, 433, 124, 437, 123, 441)] };
@@ -208,6 +208,7 @@ export const BODY_FRAME = {
       line(HAIRLINE),
       line(STERNOCLEIDOMASTOID),
       line(CLAVICLE),
+      line(PECTORAL_HEADS),
       line(DELTOID_HEADS),
       line(BICEPS_GROOVE),
       line(FOREARM_SPLIT),
@@ -215,7 +216,6 @@ export const BODY_FRAME = {
       line(KNUCKLES),
       ...SERRATUS.map(line),
       line(INGUINAL_CREASE),
-      line(RECTUS_FEMORIS),
       line(PATELLA),
       line(TIBIA),
       line(MALLEOLUS),
@@ -244,57 +244,149 @@ export const BODY_FRAME = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Shared between views: the limbs look the same from front and back, only
-// the muscle underneath is named differently.
+// The muscle map
+//
+// Every belly the eye expects to see is drawn, whether or not we have a
+// signal for it. A group's paths may overlap freely: each region renders as
+// one `<path>`, so a shared fill unions instead of stacking opacity, and the
+// stroke traces every internal seam as a muscle separation.
 // ---------------------------------------------------------------------------
+
+// --- shoulder ---------------------------------------------------------------
 
 /** Starts at the acromion, not the neck: the trapezius owns the slope. */
-const DELTOID: Shape = {
+const DELTOID_ANTERIOR: Shape = {
   from: [133, 100],
   curves: [
-    c(142, 96, 152, 105, 156, 120),
-    c(159, 132, 158, 144, 154, 154),
-    c(146, 151, 139, 142, 134, 130),
-    c(131, 120, 130, 108, 133, 100),
+    c(138, 97, 143, 98, 146, 101),
+    c(148, 113, 148, 128, 147, 145),
+    c(143, 142, 138, 134, 135, 124),
+    c(133, 115, 132, 105, 133, 100),
   ],
 };
 
-/** Biceps from the front, triceps from the back — one arm, one signal. */
-const UPPER_ARM: Shape = {
-  from: [138, 139],
+const DELTOID_LATERAL: Shape = {
+  from: [146, 101],
   curves: [
-    c(151, 141, 160, 155, 160, 172),
-    c(160, 188, 156, 199, 151, 206),
-    c(145, 204, 140, 195, 138, 182),
-    c(137, 166, 137, 150, 138, 139),
+    c(152, 105, 157, 113, 158, 125),
+    c(159, 136, 157, 147, 153, 155),
+    c(150, 153, 148, 150, 147, 145),
+    c(148, 128, 148, 113, 146, 101),
   ],
 };
 
-const FOREARM: Shape = {
-  from: [139, 209],
+const DELTOID_POSTERIOR: Shape = {
+  from: [133, 102],
   curves: [
-    c(151, 212, 159, 226, 160, 243),
-    c(161, 259, 156, 274, 151, 286),
-    c(146, 284, 143, 276, 142, 265),
-    c(141, 246, 139, 227, 139, 209),
+    c(139, 99, 144, 100, 147, 104),
+    c(148, 116, 148, 131, 147, 147),
+    c(142, 144, 137, 136, 134, 126),
+    c(132, 116, 131, 106, 133, 102),
   ],
 };
 
-const ARM_SEGMENTS: BodySegment[] = [...pair(UPPER_ARM), ...pair(FOREARM)];
-const SHOULDER_SEGMENTS: BodySegment[] = pair(DELTOID);
+// --- arm --------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Front
-// ---------------------------------------------------------------------------
+const BICEPS_LONG: Shape = {
+  from: [147, 142],
+  curves: [
+    c(154, 146, 158, 157, 158, 172),
+    c(158, 187, 155, 198, 150, 205),
+    c(148, 203, 147, 196, 147, 186),
+    c(147, 171, 147, 156, 147, 142),
+  ],
+};
 
-/** Starts off the centre line so the sternum stays a visible gap. */
+const BICEPS_SHORT: Shape = {
+  from: [147, 142],
+  curves: [
+    c(147, 156, 147, 171, 147, 186),
+    c(147, 196, 148, 203, 150, 205),
+    c(145, 204, 141, 196, 139, 183),
+    c(138, 167, 138, 152, 140, 141),
+    c(142, 140, 145, 141, 147, 142),
+  ],
+};
+
+const TRICEPS_LONG: Shape = {
+  from: [145, 141],
+  curves: [
+    c(145, 156, 145, 170, 145, 184),
+    c(145, 194, 146, 201, 148, 206),
+    c(144, 205, 140, 197, 139, 184),
+    c(138, 166, 138, 150, 141, 140),
+    c(142, 139, 144, 140, 145, 141),
+  ],
+};
+
+const TRICEPS_LATERAL: Shape = {
+  from: [145, 141],
+  curves: [
+    c(152, 145, 158, 157, 158, 173),
+    c(158, 188, 155, 199, 150, 206),
+    c(147, 203, 145, 195, 145, 184),
+    c(145, 170, 145, 156, 145, 141),
+  ],
+};
+
+/** Brachioradialis and the extensor mass, on the thumb side. */
+const FOREARM_LATERAL: Shape = {
+  from: [148, 206],
+  curves: [
+    c(155, 211, 160, 224, 161, 240),
+    c(161, 254, 158, 268, 153, 281),
+    c(150, 278, 149, 268, 149, 255),
+    c(148, 238, 148, 221, 148, 206),
+  ],
+};
+
+const FOREARM_MEDIAL: Shape = {
+  from: [148, 206],
+  curves: [
+    c(148, 221, 148, 238, 149, 255),
+    c(149, 268, 150, 278, 153, 281),
+    c(149, 285, 145, 283, 143, 275),
+    c(141, 258, 139, 232, 139, 209),
+    c(142, 206, 145, 205, 148, 206),
+  ],
+};
+
+const ARM_FRONT: BodySegment[] = [
+  BICEPS_LONG,
+  BICEPS_SHORT,
+  FOREARM_LATERAL,
+  FOREARM_MEDIAL,
+].flatMap(pair);
+const ARM_BACK: BodySegment[] = [
+  TRICEPS_LONG,
+  TRICEPS_LATERAL,
+  FOREARM_LATERAL,
+  FOREARM_MEDIAL,
+].flatMap(pair);
+
+// --- chest ------------------------------------------------------------------
+
+/** Lower at the sternum than laterally, as a real pectoral hangs. */
 const PECTORAL: Shape = {
-  from: [102, 109],
+  from: [102, 107],
   curves: [
-    c(113, 105, 126, 107, 133, 114),
-    c(139, 120, 139, 132, 133, 141),
-    c(125, 149, 113, 151, 102, 150),
-    c(102, 136, 102, 122, 102, 109),
+    c(113, 104, 126, 106, 133, 113),
+    c(138, 119, 138, 132, 132, 141),
+    c(124, 149, 112, 151, 102, 150),
+    c(102, 136, 102, 122, 102, 107),
+  ],
+};
+
+// --- trunk, front -----------------------------------------------------------
+
+/** The upper trapezius is visible from the front too, so it is drawn there. */
+const TRAPEZIUS_FRONT: Shape = {
+  from: [100, 84],
+  curves: [
+    c(112, 87, 124, 92, 133, 100),
+    c(137, 104, 134, 110, 129, 108),
+    c(118, 102, 109, 99, 100, 99),
+    c(98, 97, 98, 86, 100, 84),
   ],
 };
 
@@ -332,58 +424,44 @@ const ABS_SEGMENTS: BodySegment[] = [
   absSegment(221, 248, 113, 104),
 ].flatMap(pair);
 
-/** Vastus lateralis and rectus femoris: the outer two-thirds of the thigh. */
-const QUAD_LATERAL: Shape = {
-  from: [102, 257],
-  curves: [
-    c(119, 254, 131, 260, 135, 274),
-    c(139, 291, 134, 315, 128, 334),
-    c(125, 343, 122, 349, 118, 349),
-    c(116, 341, 116, 322, 114, 301),
-    c(111, 283, 106, 267, 102, 257),
-  ],
-};
+// --- trunk, back ------------------------------------------------------------
 
-/** Vastus medialis: shares the seam above exactly, so the two never overlap. */
-const QUAD_MEDIAL: Shape = {
-  from: [102, 257],
-  curves: [
-    c(106, 267, 111, 283, 114, 301),
-    c(116, 322, 116, 341, 118, 349),
-    c(113, 350, 109, 341, 107, 327),
-    c(103, 304, 101, 277, 102, 257),
-  ],
-};
-
-/** Tibialis anterior and the peroneal group, down to the ankle. */
-const SHIN: Shape = {
-  from: [108, 356],
-  curves: [
-    c(118, 353, 127, 358, 131, 368),
-    c(134, 381, 132, 400, 127, 417),
-    c(126, 424, 124, 430, 122, 432),
-    c(118, 433, 114, 428, 113, 419),
-    c(111, 399, 107, 372, 108, 356),
-  ],
-};
-
-const LEG_FRONT_SEGMENTS: BodySegment[] = [
-  ...pair(QUAD_LATERAL),
-  ...pair(QUAD_MEDIAL),
-  ...pair(SHIN),
-];
-
-// ---------------------------------------------------------------------------
-// Back
-// ---------------------------------------------------------------------------
-
-const TRAPEZIUS: Shape = {
+const TRAPEZIUS_UPPER: Shape = {
   from: [100, 86],
   curves: [
-    c(107, 87, 116, 92, 124, 99),
-    c(131, 106, 135, 117, 133, 130),
-    c(126, 142, 113, 151, 100, 157),
-    c(100, 133, 100, 110, 100, 86),
+    c(108, 88, 118, 94, 126, 102),
+    c(130, 107, 128, 113, 123, 112),
+    c(113, 108, 106, 105, 100, 104),
+    c(100, 98, 100, 92, 100, 86),
+  ],
+};
+
+/** The lower fibres, converging from the scapulae down to the mid-spine. */
+const TRAPEZIUS_LOWER: Shape = {
+  from: [100, 105],
+  curves: [
+    c(111, 109, 122, 117, 129, 127),
+    c(131, 131, 128, 136, 124, 134),
+    c(115, 142, 107, 150, 100, 158),
+    c(100, 140, 100, 122, 100, 105),
+  ],
+};
+
+const INFRASPINATUS: Shape = {
+  from: [110, 113],
+  curves: [
+    c(122, 114, 133, 121, 137, 131),
+    c(133, 137, 121, 134, 113, 128),
+    c(109, 124, 107, 114, 110, 113),
+  ],
+};
+
+const TERES_MAJOR: Shape = {
+  from: [116, 136],
+  curves: [
+    c(126, 138, 135, 143, 137, 150),
+    c(132, 154, 122, 150, 116, 145),
+    c(113, 142, 113, 135, 116, 136),
   ],
 };
 
@@ -400,36 +478,87 @@ const LATISSIMUS: Shape = {
 };
 
 const ERECTOR_SPINAE: Shape = {
-  from: [100, 204],
+  from: [100, 168],
   curves: [
-    c(106, 205, 111, 211, 113, 219),
-    c(115, 226, 113, 232, 110, 235),
+    c(105, 170, 109, 178, 111, 190),
+    c(113, 205, 113, 224, 110, 235),
     c(106, 237, 102, 236, 100, 234),
-    c(100, 224, 100, 214, 100, 204),
+    c(100, 212, 100, 190, 100, 168),
   ],
 };
 
-const BACK_SEGMENTS: BodySegment[] = [
-  ...pair(TRAPEZIUS),
-  ...pair(LATISSIMUS),
-  ...pair(ERECTOR_SPINAE),
-];
+// --- hip --------------------------------------------------------------------
 
-const GLUTE: Shape = {
+const GLUTEUS_MAXIMUS: Shape = {
   from: [100, 237],
   curves: [
     c(112, 232, 124, 236, 129, 248),
     c(134, 258, 133, 271, 126, 278),
     c(118, 284, 106, 282, 101, 272),
-    c(100, 262, 100, 249, 100, 237),
+    c(100, 261, 100, 249, 100, 237),
   ],
 };
 
-/** Biceps femoris, from the gluteal fold to the back of the knee. */
+/** The upper-outer wedge above the maximus, on the iliac crest. */
+const GLUTEUS_MEDIUS: Shape = {
+  from: [117, 228],
+  curves: [
+    c(126, 230, 133, 238, 133, 250),
+    c(130, 255, 122, 250, 116, 243),
+    c(112, 238, 113, 227, 117, 228),
+  ],
+};
+
+// --- thigh ------------------------------------------------------------------
+
+const VASTUS_LATERALIS: Shape = {
+  from: [113, 258],
+  curves: [
+    c(124, 257, 132, 264, 135, 276),
+    c(137, 291, 133, 313, 128, 332),
+    c(125, 341, 122, 348, 118, 349),
+    c(117, 340, 118, 320, 117, 300),
+    c(116, 282, 114, 268, 113, 258),
+  ],
+};
+
+const RECTUS_FEMORIS: Shape = {
+  from: [106, 258],
+  curves: [
+    c(107, 272, 108, 290, 109, 308),
+    c(110, 326, 112, 341, 114, 349),
+    c(116, 350, 117, 350, 118, 349),
+    c(117, 340, 118, 320, 117, 300),
+    c(116, 282, 114, 268, 113, 258),
+    c(111, 257, 108, 257, 106, 258),
+  ],
+};
+
+/** The teardrop above the inner knee. */
+const VASTUS_MEDIALIS: Shape = {
+  from: [105, 302],
+  curves: [
+    c(110, 304, 113, 314, 114, 328),
+    c(115, 340, 114, 348, 112, 350),
+    c(108, 349, 105, 340, 104, 328),
+    c(103, 316, 103, 306, 105, 302),
+  ],
+};
+
+const ADDUCTORS: Shape = {
+  from: [101, 258],
+  curves: [
+    c(104, 266, 106, 278, 107, 292),
+    c(108, 304, 108, 314, 106, 320),
+    c(103, 316, 101, 300, 100, 280),
+    c(100, 270, 100, 262, 101, 258),
+  ],
+};
+
 const HAMSTRING_LATERAL: Shape = {
   from: [116, 281],
   curves: [
-    c(127, 277, 134, 284, 135, 295),
+    c(127, 279, 134, 286, 135, 296),
     c(136, 312, 132, 329, 126, 341),
     c(123, 347, 120, 350, 117, 350),
     c(116, 335, 116, 306, 116, 281),
@@ -441,38 +570,120 @@ const HAMSTRING_MEDIAL: Shape = {
   curves: [
     c(116, 306, 116, 335, 117, 350),
     c(113, 351, 110, 344, 108, 331),
-    c(105, 310, 103, 289, 104, 278),
-    c(108, 276, 112, 277, 116, 279),
+    c(105, 310, 103, 290, 104, 280),
+    c(108, 278, 112, 279, 116, 281),
   ],
 };
 
-const CALF_LATERAL: Shape = {
+// --- lower leg --------------------------------------------------------------
+
+const TIBIALIS_ANTERIOR: Shape = {
+  from: [110, 356],
+  curves: [
+    c(116, 356, 119, 366, 119, 380),
+    c(119, 396, 117, 412, 115, 424),
+    c(113, 428, 111, 426, 110, 419),
+    c(108, 400, 107, 372, 110, 356),
+  ],
+};
+
+const PERONEAL: Shape = {
+  from: [119, 358],
+  curves: [
+    c(126, 360, 130, 370, 131, 382),
+    c(132, 396, 129, 410, 124, 421),
+    c(121, 419, 120, 408, 120, 394),
+    c(119, 380, 119, 368, 119, 358),
+  ],
+};
+
+const GASTROCNEMIUS_LATERAL: Shape = {
   from: [121, 357],
   curves: [
     c(129, 360, 133, 370, 133, 384),
-    c(133, 398, 130, 411, 126, 421),
-    c(123, 417, 121, 403, 121, 386),
+    c(133, 397, 130, 408, 126, 416),
+    c(123, 412, 121, 401, 121, 386),
     c(121, 376, 121, 366, 121, 357),
   ],
 };
 
 /** The medial head sits lower than the lateral one, as it does in life. */
-const CALF_MEDIAL: Shape = {
+const GASTROCNEMIUS_MEDIAL: Shape = {
   from: [121, 357],
   curves: [
     c(121, 366, 121, 376, 121, 386),
-    c(122, 404, 120, 418, 117, 426),
-    c(113, 422, 110, 409, 109, 393),
-    c(108, 378, 112, 361, 121, 357),
+    c(122, 402, 120, 414, 117, 421),
+    c(113, 417, 110, 405, 109, 390),
+    c(108, 376, 112, 361, 121, 357),
   ],
 };
 
-const LEG_BACK_SEGMENTS: BodySegment[] = [
-  ...pair(HAMSTRING_LATERAL),
-  ...pair(HAMSTRING_MEDIAL),
-  ...pair(CALF_LATERAL),
-  ...pair(CALF_MEDIAL),
-];
+const SOLEUS_LATERAL: Shape = {
+  from: [124, 396],
+  curves: [
+    c(128, 400, 129, 407, 127, 415),
+    c(125, 421, 122, 422, 121, 418),
+    c(120, 410, 121, 400, 124, 396),
+  ],
+};
+
+const SOLEUS_MEDIAL: Shape = {
+  from: [112, 398],
+  curves: [
+    c(115, 402, 116, 410, 115, 418),
+    c(113, 424, 111, 425, 110, 421),
+    c(109, 412, 110, 402, 112, 398),
+  ],
+};
+
+const LEG_FRONT: BodySegment[] = [
+  VASTUS_LATERALIS,
+  RECTUS_FEMORIS,
+  VASTUS_MEDIALIS,
+  ADDUCTORS,
+  TIBIALIS_ANTERIOR,
+  PERONEAL,
+].flatMap(pair);
+
+const LEG_BACK: BodySegment[] = [
+  HAMSTRING_LATERAL,
+  HAMSTRING_MEDIAL,
+  GASTROCNEMIUS_LATERAL,
+  GASTROCNEMIUS_MEDIAL,
+  SOLEUS_LATERAL,
+  SOLEUS_MEDIAL,
+].flatMap(pair);
+
+// --- structure with no training group ---------------------------------------
+
+const STERNOCLEIDOMASTOID_BELLY: Shape = {
+  from: [108, 63],
+  curves: [
+    c(107, 71, 105, 79, 103, 88),
+    c(102, 90, 101, 89, 101, 87),
+    c(102, 78, 103, 70, 105, 62),
+    c(106, 61, 107, 61, 108, 63),
+  ],
+};
+
+const PATELLA_BELLY: Shape = {
+  from: [111, 349],
+  curves: [
+    c(117, 347, 123, 349, 126, 353),
+    c(127, 359, 123, 364, 117, 364),
+    c(112, 364, 109, 359, 109, 354),
+    c(109, 351, 110, 349, 111, 349),
+  ],
+};
+
+/**
+ * Muscle and bone that belongs to no training group. Drawn in the neutral
+ * tone so the whole body reads as anatomy, never as a claim about load.
+ */
+export const BODY_ANATOMY: Record<BodyView, string[]> = {
+  front: [...pair(STERNOCLEIDOMASTOID_BELLY), ...pair(PATELLA_BELLY)].map((segment) => segment.d),
+  back: pair(PATELLA_BELLY).map((segment) => segment.d),
+};
 
 /**
  * Which muscle groups map to drawable body regions, per view. Groups that
@@ -480,14 +691,44 @@ const LEG_BACK_SEGMENTS: BodySegment[] = [
  * absent — see NON_ANATOMICAL_GROUPS.
  */
 export const BODY_REGION_SEGMENTS: Record<string, Partial<Record<BodyView, BodySegment[]>>> = {
-  shoulders: { front: SHOULDER_SEGMENTS, back: SHOULDER_SEGMENTS },
-  arms: { front: ARM_SEGMENTS, back: ARM_SEGMENTS },
-  legs: { front: LEG_FRONT_SEGMENTS, back: LEG_BACK_SEGMENTS },
+  shoulders: {
+    front: [...pair(DELTOID_ANTERIOR), ...pair(DELTOID_LATERAL)],
+    back: [...pair(DELTOID_POSTERIOR), ...pair(DELTOID_LATERAL)],
+  },
+  arms: { front: ARM_FRONT, back: ARM_BACK },
+  legs: { front: LEG_FRONT, back: LEG_BACK },
   chest: { front: pair(PECTORAL) },
   abs: { front: ABS_SEGMENTS },
   core: { front: pair(OBLIQUE) },
-  back: { back: BACK_SEGMENTS },
-  glutes: { back: pair(GLUTE) },
+  back: {
+    // The upper trapezius is genuinely visible from the front, so back work
+    // shows there too rather than the front view pretending it does not exist.
+    front: pair(TRAPEZIUS_FRONT),
+    back: [
+      ...pair(TRAPEZIUS_UPPER),
+      ...pair(TRAPEZIUS_LOWER),
+      ...pair(INFRASPINATUS),
+      ...pair(TERES_MAJOR),
+      ...pair(LATISSIMUS),
+      ...pair(ERECTOR_SPINAE),
+    ],
+  },
+  glutes: { back: [...pair(GLUTEUS_MAXIMUS), ...pair(GLUTEUS_MEDIUS)] },
+};
+
+/**
+ * Where a leader line meets each region, per view. Used to label the region
+ * the person has selected without covering the figure.
+ */
+export const REGION_ANCHOR: Record<string, Partial<Record<BodyView, { x: number; y: number }>>> = {
+  shoulders: { front: { x: 152, y: 126 }, back: { x: 152, y: 128 } },
+  arms: { front: { x: 152, y: 175 }, back: { x: 152, y: 176 } },
+  chest: { front: { x: 122, y: 132 } },
+  abs: { front: { x: 110, y: 190 } },
+  core: { front: { x: 126, y: 185 } },
+  back: { front: { x: 118, y: 96 }, back: { x: 124, y: 140 } },
+  glutes: { back: { x: 118, y: 258 } },
+  legs: { front: { x: 126, y: 300 }, back: { x: 126, y: 306 } },
 };
 
 /**

@@ -1,8 +1,10 @@
 import { useId } from "react";
 import type { TwinRegionRecoveryBand, TwinRegionState } from "@/lib/digital-twin.schema";
 import {
+  BODY_ANATOMY,
   BODY_FRAME,
   BODY_VIEW_BOX,
+  REGION_ANCHOR,
   isAnatomicalRegion,
   segmentsFor,
   type BodyView,
@@ -29,10 +31,10 @@ const BAND_STROKE: Record<TwinRegionRecoveryBand, string> = {
 
 /** Regions with no evidence stay deliberately quiet: present, not claiming. */
 const BAND_OPACITY: Record<TwinRegionRecoveryBand, number> = {
-  fresh: 0.85,
-  moderate: 0.85,
-  fatigued: 0.9,
-  unknown: 0.4,
+  fresh: 0.92,
+  moderate: 0.92,
+  fatigued: 0.94,
+  unknown: 0.3,
 };
 
 export type BodyMapProps = {
@@ -41,7 +43,7 @@ export type BodyMapProps = {
   selectedRegion: string | null;
   onSelectRegion: (region: string) => void;
   regionLabel: (region: string) => string;
-  /** The framing ticks and ground plane only earn their place at full size. */
+  /** The stage, framing ticks and leader line only earn their place at size. */
   showFraming?: boolean;
 };
 
@@ -56,15 +58,25 @@ export function BodyMap({
   // Two body maps can share a page (Today card and Twin page), so every
   // gradient and filter id has to be scoped to this instance.
   const uid = useId().replaceAll(":", "");
-  const drawable = regions.filter(
-    (region) => isAnatomicalRegion(region.region) && segmentsFor(region.region, view).length > 0,
-  );
+  const drawable = regions
+    .filter(
+      (region) => isAnatomicalRegion(region.region) && segmentsFor(region.region, view).length > 0,
+    )
+    // One `d` per region: overlapping bellies then union under a single fill
+    // instead of stacking opacity, and the stroke traces every seam.
+    .map((region) => ({
+      ...region,
+      d: segmentsFor(region.region, view)
+        .map((segment) => segment.d)
+        .join(" "),
+    }));
+
   const { minX, minY, width, height } = BODY_VIEW_BOX;
-  // Every muscle path drawn in this view, as one `d`. Shading each belly
-  // against its own edges is what stops them reading as flat pillows.
-  const muscleOutlines = drawable
-    .flatMap((region) => segmentsFor(region.region, view).map((segment) => segment.d))
-    .join(" ");
+  const muscleOutlines = [...drawable.map((region) => region.d), ...BODY_ANATOMY[view]].join(" ");
+  const anchor = selectedRegion ? REGION_ANCHOR[selectedRegion]?.[view] : undefined;
+  const selected = drawable.find((region) => region.region === selectedRegion);
+  const calloutX = minX + width - 4;
+  const calloutY = anchor ? anchor.y - 16 : 0;
 
   return (
     <svg
@@ -85,7 +97,12 @@ export function BodyMap({
           <stop offset="100%" stopColor="var(--color-foreground)" stopOpacity="0" />
         </radialGradient>
         <radialGradient id={`${uid}-ground`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.28" />
+          <stop offset="55%" stopColor="var(--color-primary)" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`${uid}-halo`} cx="50%" cy="42%" r="52%">
+          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.1" />
           <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
         </radialGradient>
         <clipPath id={`${uid}-clip`}>
@@ -100,14 +117,17 @@ export function BodyMap({
             <stop offset="100%" stopColor={BAND_GRADIENT[band].bottom} />
           </linearGradient>
         ))}
-        {/* Blurring a stroke of the silhouette and clipping it back to the
-            body gives an inner shadow along every edge: the cheapest honest
-            way to make a flat fill read as a rounded limb. */}
+        {/* Blurring a stroke of an outline and clipping it back inside gives
+            an inner shadow along every edge: the cheapest honest way to make
+            a flat fill read as a rounded belly. */}
         <filter id={`${uid}-soft`} x="-25%" y="-25%" width="150%" height="150%">
           <feGaussianBlur stdDeviation="3.4" />
         </filter>
+        <filter id={`${uid}-bloom`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4" />
+        </filter>
         <filter id={`${uid}-glow`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="2.4" result="blur" />
+          <feGaussianBlur stdDeviation="1.8" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -117,29 +137,44 @@ export function BodyMap({
 
       {showFraming ? (
         <g aria-hidden="true" className="pointer-events-none">
+          <ellipse cx={100} cy={200} rx={112} ry={200} fill={`url(#${uid}-halo)`} />
           {/* Measurement framing: a plumb line and three level marks. */}
           <line
             x1={100}
             y1={minY + 6}
             x2={100}
-            y2={minY + height - 6}
+            y2={BODY_FRAME.groundY}
             className="stroke-primary/10"
             strokeWidth={0.5}
             strokeDasharray="3 7"
           />
           {BODY_FRAME.levels.map((y) => (
             <g key={y} className="stroke-primary/20" strokeWidth={0.6}>
-              <line x1={minX + 6} y1={y} x2={minX + 22} y2={y} />
-              <line x1={minX + width - 22} y1={y} x2={minX + width - 6} y2={y} />
+              <line x1={minX + 4} y1={y} x2={minX + 20} y2={y} />
+              <line x1={minX + width - 20} y1={y} x2={minX + width - 4} y2={y} />
             </g>
           ))}
+          {/* The stage the figure stands on. */}
           <ellipse
             cx={100}
-            cy={BODY_FRAME.groundY + 6}
-            rx={70}
-            ry={11}
+            cy={BODY_FRAME.groundY + 4}
+            rx={76}
+            ry={13}
             fill={`url(#${uid}-ground)`}
           />
+          {[74, 56, 38].map((rx, index) => (
+            <ellipse
+              key={rx}
+              cx={100}
+              cy={BODY_FRAME.groundY + 4}
+              rx={rx}
+              ry={rx / 5.8}
+              fill="none"
+              className="stroke-primary"
+              strokeOpacity={0.14 + index * 0.07}
+              strokeWidth={0.7}
+            />
+          ))}
         </g>
       ) : null}
 
@@ -160,61 +195,86 @@ export function BodyMap({
         clipPath={`url(#${uid}-clip)`}
         aria-hidden="true"
       />
-      {drawable.map((region) => {
-        const isSelected = selectedRegion === region.region;
-        return (
-          <g
-            key={region.region}
-            role="button"
-            tabIndex={0}
-            aria-label={regionLabel(region.region)}
-            aria-pressed={isSelected}
-            className="cursor-pointer outline-none"
-            onClick={() => onSelectRegion(region.region)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelectRegion(region.region);
-              }
-            }}
-          >
-            {segmentsFor(region.region, view).map((segment, index) => (
+
+      {/* Nothing drawn on the body may leave it: a muscle that spilled past
+          the outline would be claiming load somewhere there is no body. */}
+      <g clipPath={`url(#${uid}-clip)`}>
+        {/* Structure that belongs to no training group: anatomy, not a signal. */}
+        {BODY_ANATOMY[view].map((d) => (
+          <path
+            key={d}
+            d={d}
+            className="fill-foreground/[0.07] stroke-foreground/15"
+            strokeWidth={0.6}
+            strokeLinejoin="round"
+            aria-hidden="true"
+          />
+        ))}
+
+        {drawable.map((region) => {
+          const isSelected = selectedRegion === region.region;
+          const hasEvidence = region.recoveryBand !== "unknown";
+          return (
+            <g
+              key={region.region}
+              role="button"
+              tabIndex={0}
+              aria-label={regionLabel(region.region)}
+              aria-pressed={isSelected}
+              className="cursor-pointer outline-none"
+              onClick={() => onSelectRegion(region.region)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectRegion(region.region);
+                }
+              }}
+            >
+              {/* A group carrying evidence blooms; structure never does. */}
+              {hasEvidence ? (
+                <path
+                  d={region.d}
+                  fill={BAND_GRADIENT[region.recoveryBand].top}
+                  fillOpacity={isSelected ? 0.26 : 0.12}
+                  filter={`url(#${uid}-bloom)`}
+                  aria-hidden="true"
+                />
+              ) : null}
               <path
-                key={`${region.region}-${index}`}
-                d={segment.d}
+                d={region.d}
                 fill={`url(#${uid}-${region.recoveryBand})`}
                 fillOpacity={isSelected ? 1 : BAND_OPACITY[region.recoveryBand]}
                 strokeWidth={isSelected ? 1.2 : 0.7}
                 strokeLinejoin="round"
                 filter={isSelected ? `url(#${uid}-glow)` : undefined}
                 className={`${
-                  isSelected ? "stroke-foreground/80" : BAND_STROKE[region.recoveryBand]
+                  isSelected ? "stroke-foreground/55" : BAND_STROKE[region.recoveryBand]
                 } transition-[fill-opacity,stroke-width] duration-300 motion-reduce:transition-none`}
               />
-            ))}
-          </g>
-        );
-      })}
+            </g>
+          );
+        })}
 
-      {/* Each muscle belly, rounded against its own outline. */}
-      <g clipPath={`url(#${uid}-muscles)`} aria-hidden="true" className="pointer-events-none">
-        <path
-          d={muscleOutlines}
-          fill="none"
-          stroke="#000"
-          strokeOpacity={0.42}
-          strokeWidth={4.5}
-          filter={`url(#${uid}-soft)`}
-        />
-        <path
-          d={muscleOutlines}
-          fill="none"
-          stroke="#fff"
-          strokeOpacity={0.28}
-          strokeWidth={2.4}
-          filter={`url(#${uid}-soft)`}
-          transform="translate(1.6 1.6)"
-        />
+        {/* Each muscle belly, rounded against its own outline. */}
+        <g clipPath={`url(#${uid}-muscles)`} aria-hidden="true" className="pointer-events-none">
+          <path
+            d={muscleOutlines}
+            fill="none"
+            stroke="#000"
+            strokeOpacity={0.38}
+            strokeWidth={4}
+            filter={`url(#${uid}-soft)`}
+          />
+          <path
+            d={muscleOutlines}
+            fill="none"
+            stroke="#fff"
+            strokeOpacity={0.15}
+            strokeWidth={1.7}
+            filter={`url(#${uid}-soft)`}
+            transform="translate(1.6 1.6)"
+          />
+        </g>
       </g>
 
       {/* Then the body as a whole, over everything it is made of. */}
@@ -232,8 +292,8 @@ export function BodyMap({
           d={BODY_FRAME.silhouette}
           fill="none"
           stroke="#fff"
-          strokeOpacity={0.22}
-          strokeWidth={3.5}
+          strokeOpacity={0.16}
+          strokeWidth={3.2}
           filter={`url(#${uid}-soft)`}
           transform="translate(2.6 2.6)"
         />
@@ -248,6 +308,50 @@ export function BodyMap({
         strokeLinecap="round"
         aria-hidden="true"
       />
+
+      {/* A callout naming the selection on the figure itself, so the picture
+          is readable without reading the panel beside it. */}
+      {showFraming && anchor && selected ? (
+        <g aria-hidden="true" className="pointer-events-none">
+          <circle cx={anchor.x} cy={anchor.y} r={2.2} className="fill-foreground/85" />
+          <circle
+            cx={anchor.x}
+            cy={anchor.y}
+            r={5.5}
+            fill="none"
+            className="stroke-foreground/40"
+            strokeWidth={0.7}
+          />
+          <path
+            d={`M${anchor.x + 5.5} ${anchor.y}L${calloutX - 44} ${calloutY + 3}H${calloutX}`}
+            fill="none"
+            className="stroke-foreground/40"
+            strokeWidth={0.7}
+          />
+          <text
+            x={calloutX}
+            y={calloutY}
+            textAnchor="end"
+            className="fill-foreground"
+            fontSize={7.5}
+            fontWeight={700}
+          >
+            {regionLabel(selected.region).toUpperCase()}
+          </text>
+          {selected.recoveryPct !== null ? (
+            <text
+              x={calloutX}
+              y={calloutY + 10.5}
+              textAnchor="end"
+              fill={BAND_GRADIENT[selected.recoveryBand].top}
+              fontSize={7}
+              fontWeight={700}
+            >
+              {`${selected.recoveryPct}%`}
+            </text>
+          ) : null}
+        </g>
+      ) : null}
     </svg>
   );
 }

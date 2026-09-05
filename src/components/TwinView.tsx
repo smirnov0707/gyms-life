@@ -270,10 +270,17 @@ function RegionRow({
   );
 }
 
-/** Keeps the selected region visible: switches side if it only exists there. */
+/**
+ * Shows the selected region on the side most of it is actually on. A region
+ * can appear on both — the upper trapezius is visible from the front — so
+ * "drawable here" is not enough to stay put, or picking Back would leave the
+ * figure on Front with only that one strip lit.
+ */
 function viewShowing(region: string, current: BodyView): BodyView {
-  if (segmentsFor(region, current).length > 0) return current;
-  return current === "front" ? "back" : "front";
+  const other: BodyView = current === "front" ? "back" : "front";
+  const here = segmentsFor(region, current).length;
+  if (here === 0) return other;
+  return segmentsFor(region, other).length > here ? other : current;
 }
 
 function formatUpdated(computedAt: string, lang: string): string {
