@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { recoveryScore, healthLoadModifier } from "@/lib/health-metrics";
 import { normalizeHealthPayload, normalizeDate } from "@/lib/health-normalize";
+import { dayInTimeZone } from "@/lib/local-day";
 
 const Envelope = z.object({
   token: z.string().uuid(),
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/api/public/health-ingest")({
 
         const { data: profile, error: profileError } = await supabaseAdmin
           .from("profiles")
-          .select("id")
+          .select("id, time_zone")
           .eq("health_token", p.token)
           .maybeSingle();
 
@@ -61,9 +62,17 @@ export const Route = createFileRoute("/api/public/health-ingest")({
         if (!profile) return json({ error: "Unauthorized" }, 401);
 
         const userId = profile.id;
+        // The athlete's calendar day, not UTC's. Every athlete east of
+        // Greenwich spends their small hours on the previous UTC date, and
+        // both uses below turn on which day this sample belongs to.
+        let athleteToday: string;
+        try {
+          athleteToday = dayInTimeZone(new Date(), profile.time_zone ?? "UTC");
+        } catch {
+          athleteToday = dayInTimeZone(new Date(), "UTC");
+        }
         const sampleOn =
-          normalizeDate(raw["date"] ?? raw["sample_on"] ?? raw["day"]) ??
-          new Date().toISOString().slice(0, 10);
+          normalizeDate(raw["date"] ?? raw["sample_on"] ?? raw["day"]) ?? athleteToday;
 
         const { data: history, error: historyError } = await supabaseAdmin
           .from("health_samples")
@@ -120,7 +129,10 @@ export const Route = createFileRoute("/api/public/health-ingest")({
           return json({ error: "Health sync is temporarily unavailable" }, 503);
         }
 
-        if (sampleOn === new Date().toISOString().slice(0, 10)) {
+        // A sample dated with the athlete's today used to be compared
+        // against UTC's, so for several hours a day the reading was stored
+        // but never became that day's check-in.
+        if (sampleOn === athleteToday) {
           const { error: checkinError } = await supabaseAdmin.from("daily_checkins").upsert(
             {
               user_id: userId,

@@ -63,7 +63,7 @@ Run `npm run typecheck`, `npm run test`, `npm run lint`, `npm run build` and
 not an authenticated user or a production bypass. It now tests layer agreement,
 units, camera/selection preservation, source failures, restoration, mobile
 volume views and missing inputs as well as the previous orbit/fallback checks.
-An optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE` selects an installed browser for
+An optional `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` selects an installed browser for
 local testing; CI uses the pinned Playwright Chromium by default.
 
 Physical iPhone/Android GPU, battery and authenticated production smoke tests
@@ -74,3 +74,11 @@ advisories or existing lint warnings. Browser artifact directories are ignored.
 
 Revert this release through a reviewed PR. No user-data rollback is needed.
 Do not blindly reuse previous derivation identifiers for different equations.
+
+## Concurrent mobile cockpit integration
+
+Preserves main through `b7680640`, including PR #32: compact viewport,
+progressive view controls/evidence details, 44px targets, Escape focus,
+Lithuanian/large-text checks, the on-demand visibility fix and updated
+athlete-timezone rules. The layer switch is compact; its vertical space is
+accounted for in the mobile viewport budget. No earlier dashboard UI is restored.

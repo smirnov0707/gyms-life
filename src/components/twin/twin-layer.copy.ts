@@ -2,6 +2,7 @@ import type { TwinDisplayTone, TwinLayer } from "./twin-scene.model";
 
 type LayerCopy = {
   selector: string;
+  details: string;
   label: Record<TwinLayer, string>;
   unit: Record<TwinLayer, string>;
   band: Record<TwinDisplayTone, string>;
@@ -14,6 +15,7 @@ type LayerCopy = {
 const COPY: Record<"lt" | "en", LayerCopy> = {
   en: {
     selector: "Twin layer",
+    details: "How is this calculated?",
     label: { recovery: "Recovery", logged_volume: "Logged volume" },
     unit: { recovery: "% · calculated", logged_volume: "kg × reps · logged" },
     band: {
@@ -35,6 +37,7 @@ const COPY: Record<"lt" | "en", LayerCopy> = {
   },
   lt: {
     selector: "Dvynio sluoksnis",
+    details: "Kaip apskaičiuota?",
     label: { recovery: "Atsistatymas", logged_volume: "Registruotas tūris" },
     unit: { recovery: "% · apskaičiuota", logged_volume: "kg × kart. · registruota" },
     band: {

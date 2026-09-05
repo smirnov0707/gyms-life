@@ -12,6 +12,24 @@ const results = [];
 let server;
 let browser;
 let page;
+const viewControls = async (target, open) => {
+  const toggle = target.getByRole("button", { name: "View controls", exact: true });
+  if ((await toggle.getAttribute("aria-expanded")) !== String(open)) await toggle.click();
+};
+const preset = async (target, name) => {
+  await viewControls(target, true);
+  await target.getByRole("button", { name, exact: true }).click();
+  await viewControls(target, false);
+  // Closing controls can scroll the on-demand scene out of view. Sample its
+  // camera only after it is visible and has painted the command.
+  await target.locator("canvas").scrollIntoViewIfNeeded();
+  await target.waitForTimeout(150);
+};
+const stopMotion = async (target) => {
+  await viewControls(target, true);
+  await target.getByLabel("Ambient motion", { exact: true }).uncheck();
+  await viewControls(target, false);
+};
 const loaded = async (target) => {
   await target.goto("http://127.0.0.1:4179");
   await expect(target.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
@@ -55,7 +73,9 @@ try {
   });
   await server.listen();
   browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : {}),
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
   const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
@@ -63,23 +83,25 @@ try {
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
   await loaded(page);
-  await page.getByRole("button", { name: "Front", exact: true }).click();
-  await page.getByLabel("Ambient motion", { exact: true }).uncheck();
+  await preset(page, "Front");
+  await stopMotion(page);
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(artifacts, "desktop-front.png"), fullPage: true });
   const canvas = page.locator("canvas");
   const visited = [];
   for (let step = 0; step < 16; step++) {
-    await page.getByRole("button", { name: "Rotate right", exact: true }).click();
+    await preset(page, "Rotate right");
     await page.waitForTimeout(60);
     visited.push(Number(await canvas.getAttribute("data-twin-yaw")));
   }
+  console.log("Orbit samples", JSON.stringify(visited));
+  await writeFile(path.join(artifacts, "orbit-samples.json"), JSON.stringify(visited));
   expect(visited.some((angle) => angle > 1)).toBe(true);
   expect(visited.some((angle) => angle < -1)).toBe(true);
   expect(Math.abs(Math.sin(visited.at(-1)))).toBeLessThan(0.05);
   record("full 360-degree horizontal orbit");
 
-  await page.getByRole("button", { name: "Reset view", exact: true }).click();
+  await preset(page, "Reset view");
   await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
   const x = box.x + box.width / 2 + 22;
@@ -97,7 +119,7 @@ try {
   record("mesh raycast selects chest; dragging does not select another region");
 
   const beforeZoom = Number(await canvas.getAttribute("data-twin-distance"));
-  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await preset(page, "Zoom in");
   await expect
     .poll(async () => Number(await canvas.getAttribute("data-twin-distance")))
     .toBeLessThan(beforeZoom);
@@ -106,6 +128,22 @@ try {
   await page.keyboard.press("ArrowRight");
   await expect.poll(async () => Number(await canvas.getAttribute("data-twin-yaw"))).not.toBe(0);
   record("zoom and keyboard camera controls");
+
+  const evidence = page.getByRole("button", { name: "Why this estimate?", exact: true });
+  await expect(evidence).toHaveAttribute("aria-expanded", "false");
+  await evidence.click();
+  await expect(page.getByText("3,000 kg × reps", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Wearable physiology is not included/)).toBeVisible();
+  await evidence.click();
+  await viewControls(page, true);
+  await page.getByRole("button", { name: "Front", exact: true }).focus();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "View controls", exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: "View controls", exact: true })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+  record("progressive evidence disclosure and Escape return focus without losing the scene");
 
   // Changing a presentation layer must not remount WebGL or reset the user's camera.
   const identity = await canvas.elementHandle();
@@ -119,10 +157,12 @@ try {
   await page.getByLabel("Inspect a region", { exact: true }).selectOption("chest");
   await expect(page.locator("[data-twin-reading-value]")).toContainText("3,000");
   await expect(page.locator("[data-twin-reading-value]")).toContainText("kg × reps");
+  await page.getByText("Model & evidence", { exact: true }).click();
   await expect(page.locator('[data-twin-legend="logged_volume"]')).toContainText(
     "Relative logged volume",
   );
-  await page.getByRole("button", { name: "Front", exact: true }).click();
+  await page.getByText("Model & evidence", { exact: true }).click();
+  await preset(page, "Front");
   await page.screenshot({ path: path.join(artifacts, "desktop-volume.png"), fullPage: true });
   await page.getByRole("button", { name: "2D", exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
@@ -130,7 +170,7 @@ try {
     "data-twin-layer",
     "logged_volume",
   );
-  await expect(page.locator("[data-twin-stage] svg")).toContainText("3,000 kg × reps");
+  await expect(page.locator("[data-twin-viewport] svg")).toContainText("3,000 kg × reps");
   await page.getByRole("button", { name: "3D", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-twin-layer", "logged_volume");
   record("layer changes preserve camera and selection; volume units agree in 3D and 2D");
@@ -190,8 +230,22 @@ try {
   });
   page = await mobile.newPage();
   await loaded(page);
-  await page.getByRole("button", { name: "Front", exact: true }).click();
-  await page.getByLabel("Ambient motion", { exact: true }).uncheck();
+  await preset(page, "Front");
+  await stopMotion(page);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const regionHeading = page.locator("[data-twin-inspector] h2");
+  const regionBox = await regionHeading.boundingBox();
+  expect(regionBox.y + regionBox.height).toBeLessThan(844 - 96);
+  const sceneBox = await page.locator("[data-twin-viewport]").boundingBox();
+  expect(sceneBox.height).toBeGreaterThanOrEqual(240);
+  const settingsBox = await page
+    .getByRole("button", { name: "View controls", exact: true })
+    .boundingBox();
+  expect(settingsBox.width).toBeGreaterThanOrEqual(44);
+  expect(settingsBox.height).toBeGreaterThanOrEqual(44);
+  record(
+    "mobile selected region is visible above a reserved 96px dock and controls have touch targets",
+  );
   const mobileCanvas = page.locator("canvas");
   await mobileCanvas.scrollIntoViewIfNeeded();
   const mobileBox = await mobileCanvas.boundingBox();
@@ -219,15 +273,15 @@ try {
   await expect
     .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-distance")))
     .toBeLessThan(distanceBeforePinch);
-  await page.getByRole("button", { name: "Reset view", exact: true }).click();
+  await preset(page, "Reset view");
   await page.screenshot({ path: path.join(artifacts, "mobile-front.png"), fullPage: true });
-  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await preset(page, "Back");
   await page.screenshot({ path: path.join(artifacts, "mobile-back.png"), fullPage: true });
-  await page.getByRole("button", { name: "Left side", exact: true }).click();
+  await preset(page, "Left side");
   await page.screenshot({ path: path.join(artifacts, "mobile-side.png"), fullPage: true });
   await page.getByRole("button", { name: "Logged volume", exact: true }).click();
   await page.getByLabel("Inspect a region", { exact: true }).selectOption("chest");
-  await page.getByRole("button", { name: "Front", exact: true }).click();
+  await preset(page, "Front");
   await page.screenshot({ path: path.join(artifacts, "mobile-volume.png"), fullPage: true });
   await page.getByRole("button", { name: "Clear evidence", exact: true }).click();
   await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
@@ -240,6 +294,28 @@ try {
     true,
   );
   record("mobile two-finger zoom, front/back/side views and 320px layout");
+  await page.goto("http://127.0.0.1:4179/?lang=lt");
+  await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Tavo skaitmeninis dvynys", exact: true }),
+  ).toBeVisible();
+  await page.getByText("Modelis ir duomenys", { exact: true }).click();
+  await expect(page.getByText("TEST-FIXTURE-NOT-USER-DATA", { exact: true })).toBeVisible();
+  await page.getByText("Modelis ir duomenys", { exact: true }).click();
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = "200%";
+  });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.getByRole("button", { name: "Vaizdo valdymas", exact: true }).click();
+  await expect(page.getByLabel("Subtilus judesys", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  record(
+    "Lithuanian 320px disclosure and doubled text remain accessible without horizontal overflow",
+  );
   await mobile.close();
 
   const reduced = await browser.newContext({
@@ -277,7 +353,11 @@ try {
     await page
       .screenshot({ path: path.join(artifacts, "failure.png"), fullPage: true })
       .catch(() => {});
-  results.push({ name: "browser failure", status: "failed", detail: String(error) });
+  results.push({
+    name: "browser failure",
+    status: "failed",
+    detail: error instanceof Error ? error.stack : String(error),
+  });
   throw error;
 } finally {
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));

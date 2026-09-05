@@ -6,6 +6,7 @@ import {
   parseBodyMetric,
   parseBodyMetrics,
 } from "./body-metric.schema";
+import { athleteDay } from "./athlete-day.server";
 
 export const getBodyMetrics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -27,7 +28,10 @@ export const recordManualBodyMetric = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => normalizeManualBodyMetric(input))
   .handler(async ({ data, context }) => {
-    const measuredOn = new Date().toISOString().slice(0, 10);
+    // The UTC date is yesterday for anyone east of Greenwich in their small
+    // hours, and this upserts on (user_id, measured_on): a 01:00 weigh-in in
+    // Vilnius did not add today's reading, it overwrote yesterday's.
+    const measuredOn = await athleteDay(context.supabase, context.userId);
     const { data: rawMetric, error } = await context.supabase
       .from("body_metrics")
       .upsert(

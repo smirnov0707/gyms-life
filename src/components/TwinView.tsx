@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader2, PersonStanding } from "lucide-react";
@@ -9,7 +9,6 @@ import {
 } from "@/components/twin/twin-scene.model";
 import { twinLayerCopy, formatTwinValue } from "@/components/twin/twin-layer.copy";
 import { TwinStage } from "@/components/twin/TwinStage";
-import { LivingTwinPresence } from "@/components/twin/LivingTwinPresence";
 import {
   isAnatomicalRegion,
   viewShowing,
@@ -62,6 +61,11 @@ type Copy = {
   rankingNote: string;
   rankingEmpty: string;
   legend: string;
+  evidence: string;
+  modelDetails: string;
+  estimateNote: string;
+  sourceNote: string;
+  visualNote: string;
 };
 
 function copyFor(lang: Lang): Copy {
@@ -94,11 +98,16 @@ function copyFor(lang: Lang): Copy {
       metaCoverage: "Evidence",
       coverage: (withEvidence, total) => `${withEvidence}/${total} regions`,
       windowDays: (days) => `${days}d`,
-      recovery: "Recovery",
+      recovery: "Recovery estimate",
       ranking: "Least recovered first",
       rankingNote: "Only regions with logged sets in the window are ranked.",
       rankingEmpty: "No region has logged sets in this window yet.",
       legend: "Recovery bands",
+      evidence: "Why this estimate?",
+      modelDetails: "Model & evidence",
+      estimateNote: "Training-based estimate, not a body measurement.",
+      sourceNote: "Calculated from the sets you logged. Wearable physiology is not included.",
+      visualNote: "Generic body · calculated state",
     };
   }
 
@@ -118,7 +127,7 @@ function copyFor(lang: Lang): Copy {
       fatigued: "Nuvargę",
       unknown: "Nėra duomenų",
     },
-    volume: "Naujausias tūris",
+    volume: "Registruotas krūvis",
     lastTrained: (hours) =>
       hours < 1 ? "Treniruota mažiau nei prieš valandą" : `Treniruota prieš ${hours} val.`,
     hoursAgo: (hours) => (hours < 1 ? "mažiau nei prieš 1 val." : `prieš ${hours} val.`),
@@ -136,11 +145,17 @@ function copyFor(lang: Lang): Copy {
     metaCoverage: "Įrodymai",
     coverage: (withEvidence, total) => `${withEvidence}/${total} regionų`,
     windowDays: (days) => `${days} d.`,
-    recovery: "Atsistatymas",
+    recovery: "Atsistatymo įvertis",
     ranking: "Mažiausiai atsistatę pirmi",
     rankingNote: "Rikiuojami tik regionai, turintys registruotų setų šiame lange.",
     rankingEmpty: "Šiame lange nė vienas regionas dar neturi registruotų setų.",
-    legend: "Atsistatymo juostos",
+    legend: "Atsistatymo kategorijos",
+    evidence: "Kodėl toks įvertis?",
+    modelDetails: "Modelis ir duomenys",
+    estimateNote: "Įvertis pagal treniruotes, ne kūno matavimas.",
+    sourceNote:
+      "Apskaičiuota iš tavo užregistruotų serijų. Laikrodžio fiziologiniai duomenys neįtraukti.",
+    visualNote: "Scheminis kūnas · apskaičiuota būsena",
   };
 }
 
@@ -160,8 +175,8 @@ function formatUpdated(computedAt: string, lang: Lang): string {
 function Instrument({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-600">{label}</p>
-      <p className="mt-1 truncate font-mono text-xs text-neutral-300">{value}</p>
+      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-400">{label}</p>
+      <p className="mt-1 break-words font-mono text-xs text-neutral-200">{value}</p>
     </div>
   );
 }
@@ -181,63 +196,83 @@ function RegionReadout({
   layer: TwinLayer;
   language: "lt" | "en";
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = useId();
   const layerCopy = twinLayerCopy(language);
   if (!region || !label) {
-    return (
-      <div className="rounded-[1.75rem] border border-white/[0.07] bg-black/30 p-5 backdrop-blur-xl">
-        <p className="text-sm leading-relaxed text-neutral-500">{copy.selectPrompt}</p>
-      </div>
-    );
+    return <p className="px-1 py-4 text-sm text-neutral-300">{copy.selectPrompt}</p>;
   }
   const reading = getTwinRegionDisplay(snapshot, region.region, layer);
   const known = reading.value !== null;
-  const tone =
-    layer === "recovery"
-      ? BAND_TONE[known ? region.recoveryBand : "unknown"]
+  const tone = !known
+    ? BAND_TONE.unknown
+    : layer === "recovery"
+      ? BAND_TONE[region.recoveryBand]
       : "border-sky-300/20 bg-sky-300/[0.04] text-sky-200";
   return (
-    <div
-      className={`rounded-[1.75rem] border p-5 backdrop-blur-xl ${tone}`}
-      data-twin-reading={layer}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className={`rounded-2xl border p-4 backdrop-blur-xl ${tone}`} data-twin-reading={layer}>
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="flex flex-wrap items-center justify-between gap-3"
+      >
         <div className="min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-400">
-            {layerCopy.label[layer]}
+          <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-400">
+            {layer === "recovery" ? copy.recovery : layerCopy.label[layer]}
           </p>
           <h2 className="mt-1 break-words text-xl font-semibold text-white">{label}</h2>
+          <p className="mt-1 flex items-center gap-2 text-xs">
+            <span
+              className="size-1.5 shrink-0 rounded-full"
+              style={{ backgroundColor: TWIN_DISPLAY_COLORS[reading.tone] }}
+            />
+            {layerCopy.band[reading.tone]}
+          </p>
         </div>
-        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em]">
-          <span
-            className="size-2 shrink-0 rounded-full"
-            style={{ backgroundColor: TWIN_DISPLAY_COLORS[reading.tone] }}
-          />
-          {layerCopy.band[reading.tone]}
-        </span>
-      </div>
-      {known ? (
-        <>
-          <div className="mt-5" data-twin-reading-value>
-            <span className="break-all font-mono text-5xl leading-none tracking-[-0.06em] text-white">
+        {known ? (
+          <div className="min-w-0 font-mono text-white" data-twin-reading-value>
+            <span className="break-all text-3xl tracking-tight">
               {new Intl.NumberFormat(language === "lt" ? "lt-LT" : "en-GB", {
                 maximumFractionDigits: 0,
               }).format(reading.value!)}
             </span>
-            <p className="mt-2 font-mono text-xs text-neutral-400">{layerCopy.unit[layer]}</p>
+            <p className="text-[10px] text-neutral-400">{layerCopy.unit[layer]}</p>
           </div>
-          <p className="mt-3 text-xs text-neutral-400">{layerCopy.source}</p>
-          <div className="mt-4 h-px bg-white/[0.08]" />
+        ) : (
+          <span className="font-mono text-3xl text-neutral-400">—</span>
+        )}
+      </div>
+      {!known && <p className="mt-2 text-xs leading-relaxed text-neutral-300">{copy.noEvidence}</p>}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        onClick={() => setExpanded((value) => !value)}
+        className="mt-1 flex min-h-11 w-full items-center justify-between gap-3 text-left text-xs font-medium text-neutral-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"
+      >
+        {layer === "recovery" ? copy.evidence : layerCopy.details}
+        <ChevronDown
+          aria-hidden="true"
+          className={`size-4 transition-transform motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div id={detailsId} hidden={!expanded} className="border-t border-white/10 pt-3">
+        <p className="text-xs leading-relaxed text-neutral-300">
+          {layer === "recovery" ? `${copy.estimateNote} ${copy.sourceNote}` : layerCopy.volumeNote}
+        </p>
+        {!isAnatomicalRegion(region.region) && (
+          <p className="mt-2 text-xs leading-relaxed text-neutral-300">{copy.otherTrainingNote}</p>
+        )}
+        {known && (
           <div className="mt-4 grid grid-cols-2 gap-4">
-            {layer === "recovery" && (
-              <Instrument
-                label={copy.volume}
-                value={formatTwinValue(
-                  getTwinRegionDisplay(snapshot, region.region, "logged_volume").value,
-                  "logged_volume",
-                  language,
-                )}
-              />
-            )}
+            <Instrument
+              label={copy.volume}
+              value={formatTwinValue(
+                getTwinRegionDisplay(snapshot, region.region, "logged_volume").value,
+                "logged_volume",
+                language,
+              )}
+            />
             <Instrument
               label={copy.metaLastTrained}
               value={
@@ -247,10 +282,8 @@ function RegionReadout({
               }
             />
           </div>
-        </>
-      ) : (
-        <p className="mt-4 text-sm text-neutral-400">{copy.noEvidence}</p>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -304,96 +337,27 @@ export function TwinSnapshotView({
         </p>
       ) : null}
 
-      <section className="relative min-h-[760px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] lg:min-h-[820px]">
-        <LivingTwinPresence snapshot={data} />
+      <section
+        data-twin-cockpit
+        className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-[#050706] text-white"
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(55% 60% at 50% 40%, rgba(16,185,129,.12), transparent 72%), radial-gradient(80% 80% at 50% 100%, rgba(16,185,129,.05), transparent 70%)",
+              "radial-gradient(ellipse at 38% 42%, rgba(81,138,123,.10), transparent 64%)",
           }}
         />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.16]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-
-        <header className="relative z-10 flex flex-col gap-5 p-5 sm:p-7 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-xl">
-            <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
-              <PersonStanding className="size-4" /> {copy.eyebrow}
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {copy.title}
-            </h1>
-            <p className="mt-2 max-w-lg text-sm leading-relaxed text-neutral-500">
-              {layer === "recovery" ? copy.description : layerCopy.volumeDescription}
-            </p>
-          </div>
-
-          <div className="hidden grid-cols-2 gap-x-6 gap-y-3 sm:grid border-t border-white/[0.06] pt-4 sm:grid-cols-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-            <Instrument label={copy.metaModel} value={data.calculationVersion} />
-            <Instrument label={copy.metaWindow} value={copy.windowDays(data.evidenceWindowDays)} />
-            <Instrument label={copy.metaUpdated} value={formatUpdated(data.computedAt, lang)} />
-            <Instrument
-              label={copy.metaCoverage}
-              value={copy.coverage(withEvidence.length, data.regions.length)}
-            />
-          </div>
+        <header className="relative px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
+          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300">
+            <PersonStanding aria-hidden="true" className="size-3.5" /> {copy.eyebrow}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{copy.title}</h1>
+          <p className="mt-1 text-xs text-neutral-400">{copy.visualNote}</p>
         </header>
-
-        <div className="relative z-10 grid min-h-[630px] grid-cols-1 lg:grid-cols-[minmax(180px,0.8fr)_minmax(280px,1.3fr)_minmax(160px,0.7fr)] lg:items-center">
-          <aside
-            aria-live="polite"
-            data-twin-inspector
-            className="order-2 px-5 pb-5 lg:order-1 lg:px-7 lg:pb-8"
-          >
-            <RegionReadout
-              region={selected}
-              snapshot={data}
-              layer={layer}
-              language={language}
-              copy={copy}
-              label={selected ? label(selected.region) : null}
-            />
-
-            <div className="mt-4 hidden lg:block">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-600">
-                {layer === "recovery" ? copy.ranking : layerCopy.ranking}
-              </p>
-              <div className="mt-2 space-y-1">
-                {ranked.slice(0, 4).map((region) => (
-                  <button
-                    key={region.region}
-                    type="button"
-                    onClick={() => selectRegion(region.region)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2 text-left text-xs text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-white"
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="size-1.5 shrink-0 rounded-full"
-                        style={{
-                          backgroundColor: TWIN_DISPLAY_COLORS[display(region.region).tone],
-                        }}
-                      />
-                      <span className="truncate">{label(region.region)}</span>
-                    </span>
-                    <span className="shrink-0 font-mono text-neutral-400">
-                      {formatTwinValue(display(region.region).value, layer, language)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          <div className="order-1 min-w-0 px-2 pb-4 lg:order-2">
+        <div className="relative grid min-w-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center lg:gap-4 lg:px-4 lg:pb-4">
+          <div className="min-w-0 px-2">
             <TwinStage
               snapshot={data}
               layer={layer}
@@ -406,41 +370,99 @@ export function TwinSnapshotView({
               language={baseLang(lang)}
             />
           </div>
-
-          <aside className="order-3 hidden px-7 pb-8 lg:block" data-twin-legend={layer}>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-400">
-              {layer === "recovery" ? copy.legend : layerCopy.volumeLegend}
-            </p>
-            <div className="mt-3 space-y-3">
-              {(layer === "recovery"
-                ? (["fresh", "moderate", "fatigued", "unknown"] as const)
-                : (["volume_low", "volume_medium", "volume_high", "unknown"] as const)
-              ).map((band) => (
-                <div key={band} className="flex items-center justify-between gap-3 text-xs">
-                  <span className="flex items-center gap-2 text-neutral-400">
+          <aside data-twin-inspector className="min-w-0 px-3 pb-3 lg:px-0 lg:pr-2">
+            <RegionReadout
+              key={selected?.region ?? "none"}
+              region={selected}
+              snapshot={data}
+              layer={layer}
+              language={language}
+              copy={copy}
+              label={selected ? label(selected.region) : null}
+            />
+            <div className="mt-4 hidden lg:block">
+              <p className="text-xs font-medium text-neutral-400">
+                {layer === "recovery" ? copy.ranking : layerCopy.ranking}
+              </p>
+              {ranked.slice(0, 4).map((region) => (
+                <button
+                  key={region.region}
+                  type="button"
+                  onClick={() => selectRegion(region.region)}
+                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-2 text-left text-xs text-neutral-300 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
                     <span
-                      className="size-2 rounded-full"
-                      style={{ backgroundColor: TWIN_DISPLAY_COLORS[band] }}
+                      className="size-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: TWIN_DISPLAY_COLORS[display(region.region).tone] }}
                     />
-                    {layerCopy.band[band]}
+                    {label(region.region)}
                   </span>
-                  <span className="font-mono text-neutral-500">
-                    {data.regions.filter((region) => display(region.region).tone === band).length}
+                  <span className="shrink-0 font-mono">
+                    {formatTwinValue(display(region.region).value, layer, language)}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
-            <p className="mt-6 text-xs leading-relaxed text-neutral-400">
-              {copy.evidenceWindow(data.evidenceWindowDays)}
-            </p>
-            {layer === "logged_volume" && (
-              <p className="mt-3 text-xs leading-relaxed text-neutral-400">
-                {layerCopy.volumeNote}
-              </p>
-            )}
           </aside>
         </div>
       </section>
+
+      <details
+        data-twin-legend={layer}
+        className="group rounded-2xl border border-border bg-surface-2"
+      >
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+          {copy.modelDetails}
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="space-y-4 border-t border-border p-4 text-sm text-muted-foreground">
+          <p>{layer === "recovery" ? copy.description : layerCopy.volumeDescription}</p>
+          <p>{copy.evidenceWindow(data.evidenceWindowDays)}</p>
+          <dl className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
+            <div>
+              <dt>{copy.metaModel}</dt>
+              <dd className="mt-1 break-words font-mono text-foreground">
+                {data.calculationVersion}
+              </dd>
+            </div>
+            <div>
+              <dt>{copy.metaWindow}</dt>
+              <dd className="mt-1 text-foreground">{copy.windowDays(data.evidenceWindowDays)}</dd>
+            </div>
+            <div>
+              <dt>{copy.metaUpdated}</dt>
+              <dd className="mt-1 text-foreground">{formatUpdated(data.computedAt, lang)}</dd>
+            </div>
+            <div>
+              <dt>{copy.metaCoverage}</dt>
+              <dd className="mt-1 text-foreground">
+                {copy.coverage(withEvidence.length, data.regions.length)}
+              </dd>
+            </div>
+          </dl>
+          <p className="text-xs font-medium">
+            {layer === "recovery" ? copy.legend : layerCopy.volumeLegend}
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+            {(layer === "recovery"
+              ? (["fresh", "moderate", "fatigued", "unknown"] as const)
+              : (["volume_low", "volume_medium", "volume_high", "unknown"] as const)
+            ).map((band) => (
+              <span key={band} className="flex items-center gap-2">
+                <span
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: TWIN_DISPLAY_COLORS[band] }}
+                />
+                {layerCopy.band[band]}
+              </span>
+            ))}
+          </div>
+        </div>
+      </details>
 
       <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
@@ -517,6 +539,7 @@ export function TwinView() {
 
   return (
     <TwinSnapshotView
+      key={user?.id}
       data={data}
       copy={copy}
       lang={lang}
