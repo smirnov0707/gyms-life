@@ -4,6 +4,12 @@ import { Award, Flame, Lock, Trophy, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
+import {
+  browserTimeZone,
+  calculateConsecutiveCalendarDayStreak,
+  dayInTimeZone,
+  dayOffset,
+} from "@/lib/local-day";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/achievements")({
@@ -54,16 +60,14 @@ function AchievementsPage() {
   const bestForm = Math.max(0, ...(data?.forms ?? []).map((f) => Number(f.score ?? 0)));
   const checkins = data?.checkins.length ?? 0;
 
-  const days = new Set(sessions.map((s) => new Date(s.started_at).toDateString()));
-  let streak = 0;
-  {
-    const cursor = new Date();
-    for (let i = 0; i < 400; i++) {
-      if (days.has(cursor.toDateString())) streak++;
-      else if (i > 0) break;
-      cursor.setDate(cursor.getDate() - 1);
-    }
-  }
+  // The shared streak rule, in the athlete's timezone. This screen used to
+  // walk days with `toDateString()`, which is the browser's local date: a
+  // session logged late in the evening could fall on the wrong day and break
+  // a streak that was never broken.
+  const streak = calculateConsecutiveCalendarDayStreak(
+    sessions.map((s) => s.started_at),
+    browserTimeZone(),
+  );
 
   const xp = Math.round(sessions.length * 120 + volume / 100 + bestForm * 2 + checkins * 30);
   const level = Math.max(1, Math.floor(Math.sqrt(xp / 250)) + 1);
@@ -81,10 +85,15 @@ function AchievementsPage() {
     { key: "ach.b8", desc: "ach.b8d", unlocked: checkins >= 7 },
   ];
 
+  // The same day key on both sides of the comparison, resolved in the
+  // athlete's timezone: the heatmap used an ISO (UTC) key for the cell and a
+  // browser-local key for the lookup, so cells could light up a day off.
+  const timeZone = browserTimeZone();
+  const trainedDays = new Set(sessions.map((s) => dayInTimeZone(new Date(s.started_at), timeZone)));
+  const todayDay = dayInTimeZone(new Date(), timeZone);
   const grid = Array.from({ length: 182 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (181 - i));
-    return { key: d.toISOString().slice(0, 10), active: days.has(d.toDateString()) };
+    const key = dayOffset(todayDay, -(181 - i));
+    return { key, active: trainedDays.has(key) };
   });
 
   return (
