@@ -73,3 +73,29 @@ describe("formatLocale", () => {
     expect(at.toLocaleDateString(formatLocale("lt"), opts)).toBe("2026-03-09");
   });
 });
+
+describe("copy fallback guard", () => {
+  // The flat half of the rule in AGENTS.md. `lang === "lt" ? … : …` is the
+  // safe shape — a locale with no copy branch of its own lands on English,
+  // which is where `translate()` sends it too. `lang === "en"` is the shape
+  // that sent German, Spanish, French, Polish, Russian and Ukrainian
+  // speakers to the Lithuanian branch across sixteen files.
+  it('tests the language with baseLang rather than lang === "en"', async () => {
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return walk(full);
+        return /\.tsx?$/.test(entry.name) ? [full] : [];
+      });
+
+    const offenders = [path.resolve("src/components"), path.resolve("src/routes")]
+      .flatMap(walk)
+      .filter((file) => /(?<!baseLang\()\blang === "en"/.test(readFileSync(file, "utf8")))
+      .map((file) => path.relative(process.cwd(), file));
+
+    expect(offenders).toEqual([]);
+  });
+});
