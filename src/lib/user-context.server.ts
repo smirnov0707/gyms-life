@@ -417,8 +417,11 @@ export async function loadCurrentDayContext(
       .catch(() => null),
   ]);
 
+  // A failed source read leaves the target generic, which would have the
+  // coach urging the athlete to enter a body weight they already have.
+  // Treat it as a gap instead of forwarding a number built on an outage.
   const hydration =
-    hydrationResult === null
+    hydrationResult === null || hydrationResult.target.readFailed
       ? {
           available: false,
           intakeMl: null,

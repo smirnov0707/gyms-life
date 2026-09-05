@@ -52,6 +52,13 @@ export async function loadHydrationTarget(
     supabase.from("supplements").select("category").eq("user_id", userId).eq("is_active", true),
   ]);
 
+  // A failed query and an empty one both arrive as no rows. Recording the
+  // difference keeps a temporary outage from being presented as "you have
+  // never entered a body weight".
+  const readFailed = [measured, profile, sessions, nutrition, supplements].some(
+    (result) => result.error !== null,
+  );
+
   const measurements = measured.data ?? [];
   const latestWeight = measurements.find((row) => row.weight_kg != null)?.weight_kg;
   const latestBodyFat = measurements.find((row) => row.body_fat != null)?.body_fat;
@@ -88,6 +95,7 @@ export async function loadHydrationTarget(
       trainingMinutesToday,
       proteinGramsToday,
       supplementCategories: (supplements.data ?? []).map((row) => String(row.category)),
+      readFailed,
     }),
   );
 }

@@ -149,5 +149,6 @@ export function calculateHydrationTarget(input: HydrationInput): HydrationTarget
     missingInputs,
     cappedFromMl: rounded > HYDRATION_MAX_ML ? rounded : null,
     electrolyteNote: targetMl >= HYDRATION_ELECTROLYTE_THRESHOLD_ML,
+    readFailed: parsed.readFailed ?? false,
   });
 }

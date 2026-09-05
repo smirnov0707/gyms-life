@@ -47,6 +47,16 @@ export const HydrationTargetSchema = z
     cappedFromMl: z.number().int().positive().nullable(),
     /** True when the target is high enough that electrolytes matter. */
     electrolyteNote: z.boolean(),
+    /**
+     * True when a source query failed rather than returning nothing.
+     *
+     * "No body weight recorded" and "the body weight read failed" produce
+     * the same absent value but are not the same fact: the first is a
+     * generic target the athlete can fix by entering a weight, the second
+     * is a number that will silently correct itself later. The UI has to be
+     * able to tell them apart.
+     */
+    readFailed: z.boolean(),
   })
   .strict();
 export type HydrationTarget = z.infer<typeof HydrationTargetSchema>;
@@ -64,6 +74,8 @@ export const HydrationInputSchema = z
     trainingMinutesToday: z.number().nonnegative(),
     proteinGramsToday: z.number().nonnegative().nullable(),
     supplementCategories: z.array(z.string()),
+    /** Set by the service when any source query errored. */
+    readFailed: z.boolean().optional(),
   })
   .strict();
 export type HydrationInput = z.infer<typeof HydrationInputSchema>;
