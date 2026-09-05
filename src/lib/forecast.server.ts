@@ -41,8 +41,8 @@ export async function loadDeterministicPerformanceForecast(
     .eq("user_id", userId)
     .in("session_id", sessionIds)
     .eq("done", true)
-    .gte("created_at", since)
-    .order("created_at", { ascending: true })
+    .gte("performed_at", since)
+    .order("performed_at", { ascending: true })
     .limit(2_000);
   if (logError) throw new Error("Could not load completed set logs for forecast.");
 

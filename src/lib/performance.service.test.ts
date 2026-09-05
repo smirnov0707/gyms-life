@@ -13,6 +13,7 @@ const logs: PerformanceSetLog[] = [
     rpe: 7,
     done: true,
     createdAt: "2026-08-01T10:00:00.000Z",
+    performedAt: "2026-08-01T10:00:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000002",
@@ -25,6 +26,7 @@ const logs: PerformanceSetLog[] = [
     rpe: 8,
     done: true,
     createdAt: "2026-08-01T10:05:00.000Z",
+    performedAt: "2026-08-01T10:05:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000003",
@@ -37,6 +39,7 @@ const logs: PerformanceSetLog[] = [
     rpe: 9,
     done: true,
     createdAt: "2026-08-08T10:00:00.000Z",
+    performedAt: "2026-08-08T10:00:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000004",
@@ -49,6 +52,7 @@ const logs: PerformanceSetLog[] = [
     rpe: 9,
     done: false,
     createdAt: "2026-08-08T10:05:00.000Z",
+    performedAt: "2026-08-08T10:05:00.000Z",
   },
 ];
 

@@ -22,11 +22,33 @@ function set(index: number, overrides: Partial<WorkoutSetLog> = {}): WorkoutSetL
     rpe: 8,
     done: true,
     createdAt: createdAt.toISOString(),
+    performedAt: createdAt.toISOString(),
     ...overrides,
   });
 }
 
 describe("deterministic performance forecast", () => {
+  it("reads the trend from when sets were performed, not when they synced", () => {
+    // A forecast is a line through time. `createdAt` moves when a session
+    // syncs late, so a set performed weeks ago can carry today's write time
+    // and drag the trend with it. Here every set keeps its real performance
+    // date while its row claims to have been written at one instant — the
+    // forecast must follow the former.
+    const performedOverWeeks = Array.from({ length: 12 }, (_, index) =>
+      set(index, { createdAt: NOW.toISOString() }),
+    );
+    const honest = buildDeterministicPerformanceForecast(performedOverWeeks, NOW);
+
+    // Same rows, but now the engine is told they all happened at once.
+    const bunched = performedOverWeeks.map((row) => ({
+      ...row,
+      performedAt: NOW.toISOString(),
+    }));
+    const collapsed = buildDeterministicPerformanceForecast(bunched, NOW);
+
+    expect(honest.status).not.toBe(collapsed.status);
+  });
+
   it("waits for enough distinct sessions and time before forecasting", () => {
     const result = buildDeterministicPerformanceForecast([set(0), set(1), set(2)], NOW);
 
@@ -86,6 +108,7 @@ describe("deterministic performance forecast", () => {
       exerciseName: "Barbell Bench Press",
       weightKg: 80,
       createdAt: "2026-02-14T10:00:00.000Z",
+      performedAt: "2026-02-14T10:00:00.000Z",
     });
     const result = buildDeterministicPerformanceForecast([...squat, singleBenchSet], NOW);
 

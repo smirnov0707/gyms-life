@@ -82,7 +82,7 @@ export async function loadCompletedPerformance(
     .eq("user_id", userId)
     .in("session_id", ids)
     .eq("done", true)
-    .order("created_at", { ascending: true });
+    .order("performed_at", { ascending: true });
 
   if (logError) {
     throw new Error("Performance set lookup failed: " + logError.message);

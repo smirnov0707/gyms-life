@@ -16,6 +16,7 @@ const row: WorkoutSetLogRow = {
   rpe: 8,
   done: true,
   created_at: "2026-09-03T04:00:00+00:00",
+  performed_at: "2026-09-03T04:00:00+00:00",
 };
 
 describe("workout set-log domain contract", () => {
