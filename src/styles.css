@@ -5,6 +5,16 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * The mirror of the line above. The token defaults in `:root` are the dark
+ * palette and `.light` overrides them, so an unprefixed utility class has
+ * to be the dark-mode one to survive the moment before the theme script
+ * stamps a class on <html>. Semantic colours that cannot serve both
+ * grounds — a risk chip, a threshold marker — set the dark value bare and
+ * the light one behind this variant.
+ */
+@custom-variant light (&:is(.light *));
+
+/*
  * GYMS.LIFE — Ultra-Premium Dark Athletic Performance & Cyber-Gym System.
  * Deep onyx background, electric volt-lime / cyber-cyan primary, amber glow,
  * sleek glass surfaces with micro-borders.
