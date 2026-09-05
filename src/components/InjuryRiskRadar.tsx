@@ -1,47 +1,100 @@
-import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ShieldAlert,
-  ShieldCheck,
-  ShieldQuestion,
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
-  ChevronRight,
-} from "lucide-react";
+import { ShieldAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
-import { buildRiskReport, type RiskLevel } from "@/lib/injury-risk";
+import { useI18n, type TKey } from "@/lib/i18n";
+import {
+  buildRiskReport,
+  RISK_HIGH_AT,
+  RISK_MODERATE_AT,
+  type RiskLevel,
+  type RiskReport,
+} from "@/lib/injury-risk";
 import { cn } from "@/lib/utils";
 
-const TONE: Record<RiskLevel, { text: string; border: string; bg: string; fill: string }> = {
+/**
+ * Risk tones. Each sets the dark value bare and the light one behind the
+ * `light:` variant, because a single tint cannot carry legible contrast on
+ * both an onyx and a near-white ground.
+ */
+const TONE: Record<RiskLevel, { chip: string; bar: string; text: string }> = {
   low: {
-    text: "text-emerald-400",
-    border: "border-emerald-500/30",
-    bg: "bg-emerald-500/10",
-    fill: "#10b981",
+    chip: "bg-emerald-400/12 text-emerald-300 light:bg-emerald-600/10 light:text-emerald-700",
+    bar: "bg-emerald-400/30 light:bg-emerald-600/25",
+    text: "text-emerald-300 light:text-emerald-700",
   },
   moderate: {
-    text: "text-amber-400",
-    border: "border-amber-500/30",
-    bg: "bg-amber-500/10",
-    fill: "#f59e0b",
+    chip: "bg-amber-400/12 text-amber-300 light:bg-amber-600/10 light:text-amber-700",
+    bar: "bg-amber-400/30 light:bg-amber-600/25",
+    text: "text-amber-300 light:text-amber-700",
   },
   high: {
-    text: "text-rose-400",
-    border: "border-rose-500/30",
-    bg: "bg-rose-500/10",
-    fill: "#f43f5e",
+    chip: "bg-rose-400/12 text-rose-300 light:bg-rose-600/10 light:text-rose-700",
+    bar: "bg-rose-400/30 light:bg-rose-600/25",
+    text: "text-rose-300 light:text-rose-700",
   },
 };
 
-export function InjuryRiskRadar() {
-  const { t, lang } = useI18n();
-  const { user } = useAuth();
-  const [selectedZone, setSelectedZone] = useState<string | null>(null);
+const LEVEL_KEY = {
+  low: "nx.risk.low",
+  moderate: "nx.risk.moderate",
+  high: "nx.risk.high",
+} as const;
 
-  const { data } = useQuery({
+/**
+ * The score on its own scale, with the boundaries the report actually uses
+ * marked where they fall. The figure is decorative: the score, the level
+ * and both thresholds are all written out beside it.
+ */
+function RiskScale({ score, level }: { score: number; level: RiskLevel }) {
+  const zones: { level: RiskLevel; width: number }[] = [
+    { level: "low", width: RISK_MODERATE_AT },
+    { level: "moderate", width: RISK_HIGH_AT - RISK_MODERATE_AT },
+    { level: "high", width: 100 - RISK_HIGH_AT },
+  ];
+
+  return (
+    <div aria-hidden="true" className="mt-3">
+      <div className="relative flex h-2.5 overflow-hidden rounded-full">
+        {zones.map((zone) => (
+          <span
+            key={zone.level}
+            className={cn("h-full", TONE[zone.level].bar)}
+            style={{ width: `${zone.width}%` }}
+          />
+        ))}
+        <span
+          className="absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground"
+          style={{ left: `${score}%` }}
+        />
+      </div>
+      <div className="relative mt-1 h-4 font-mono text-[10px] text-muted-foreground">
+        <span className="absolute left-0">0</span>
+        <span className="absolute -translate-x-1/2" style={{ left: `${RISK_MODERATE_AT}%` }}>
+          {RISK_MODERATE_AT}
+        </span>
+        <span className="absolute -translate-x-1/2" style={{ left: `${RISK_HIGH_AT}%` }}>
+          {RISK_HIGH_AT}
+        </span>
+        <span className="absolute right-0">100</span>
+      </div>
+      <span className="sr-only">{level}</span>
+    </div>
+  );
+}
+
+/**
+ * Part XI injury risk. Everything here comes from `buildRiskReport`, a
+ * deterministic model over the athlete's own last thirty days of sets,
+ * sessions and check-ins. It reports what it measured, names the terms it
+ * could not measure, and claims nothing beyond that: no exercise in this
+ * app is substituted on the strength of this score.
+ */
+export function InjuryRiskRadar() {
+  const { t } = useI18n();
+  const { user } = useAuth();
+
+  const { data, isPending, isError } = useQuery({
     queryKey: ["injury-risk", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -65,290 +118,153 @@ export function InjuryRiskRadar() {
           .order("checkin_on", { ascending: false })
           .limit(14),
       ]);
+      // A failed read used to arrive here as an empty array, which the
+      // model reads as "this athlete has never trained" — the same screen
+      // a beginner sees, shown to someone with months of history. Fail
+      // loudly instead.
+      const failure = sets.error ?? sessions.error ?? checkins.error;
+      if (failure) throw new Error(failure.message);
       return buildRiskReport(sets.data ?? [], sessions.data ?? [], checkins.data ?? []);
     },
   });
 
+  return (
+    <InjuryRiskView
+      state={
+        isPending
+          ? { status: "loading" }
+          : isError || data === undefined
+            ? { status: "failed" }
+            : { status: "report", report: data }
+      }
+      t={t}
+    />
+  );
+}
+
+/**
+ * What the panel looks like for a given report. Separated from the read so
+ * every state — loading, failed, no history, a full report — can be looked
+ * at directly.
+ */
+export type InjuryRiskViewState =
+  { status: "loading" } | { status: "failed" } | { status: "report"; report: RiskReport };
+
+export function InjuryRiskView({
+  state,
+  t,
+}: {
+  state: InjuryRiskViewState;
+  t: (key: TKey) => string;
+}) {
+  const data = state.status === "report" ? state.report : undefined;
   const level = data?.level ?? "low";
   const tone = TONE[level];
-  const Icon = !data?.hasData ? ShieldQuestion : level === "low" ? ShieldCheck : ShieldAlert;
-
-  // Kūno zonų būsenos nustatymas pagal rizikos faktorius
-  const pushFactor = data?.factors.find((f) => f.key.includes("balance"));
-  const jumpFactor = data?.factors.find((f) => f.key.includes("jump"));
-  const acwrFactor = data?.factors.find((f) => f.key.includes("acwr"));
-
-  const shouldersRisk: RiskLevel =
-    jumpFactor?.level === "high" || pushFactor?.level === "high"
-      ? "high"
-      : pushFactor?.level === "moderate"
-        ? "moderate"
-        : "low";
-  const kneesRisk: RiskLevel =
-    acwrFactor?.level === "high" ? "high" : acwrFactor?.level === "moderate" ? "moderate" : "low";
-  const spineRisk: RiskLevel = data?.score && data.score > 40 ? "moderate" : "low";
+  const showsReport = data !== undefined && data.hasData;
+  const Icon = !showsReport ? ShieldQuestion : level === "low" ? ShieldCheck : ShieldAlert;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-neutral-900/80 border border-white/10 p-5 sm:p-6 backdrop-blur-xl shadow-2xl space-y-6">
-      {/* Viršutinė antraštė & Bendras rizikos indeksas */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={cn("rounded-xl border p-2.5", tone.border, tone.bg, tone.text)}>
-            <Icon className="w-6 h-6" />
-          </div>
+    <section className="rounded-2xl border border-border bg-surface-2 p-5 text-left sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              "rounded-xl border border-border p-2.5",
+              showsReport ? tone.chip : "text-muted-foreground",
+            )}
+          >
+            <Icon className="size-6" />
+          </span>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
-                {lang === "lt" ? "Biomechaninis Traumų Radaras" : "Injury Risk Radar"}
-              </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-black/60 border border-white/10 text-neutral-400">
-                AI ORCHESTRATOR
-              </span>
-            </div>
-            <p className="text-xs font-mono text-neutral-400">
-              {lang === "lt"
-                ? "Realaus laiko sąnarių ir apkrovos telemetrija"
-                : "Real-time joint load telemetry"}
+            <h2 className="text-lg font-bold sm:text-xl">{t("nx.risk.title")}</h2>
+            <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
+              {t("nx.risk.subtitle")}
             </p>
           </div>
         </div>
 
-        {data?.hasData && (
-          <div className="text-right flex items-center gap-3 bg-black/40 px-3.5 py-2 rounded-xl border border-white/5">
-            <div>
-              <span className="block text-[9px] font-mono uppercase text-neutral-400">
-                {lang === "lt" ? "Rizikos Lygis" : "Risk Index"}
+        {showsReport && (
+          <div className="min-w-[13rem] flex-1 sm:max-w-xs">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {t("nx.risk.score")}
+            </p>
+            <p className="mt-1 flex items-baseline gap-2">
+              <span className={cn("font-mono text-2xl font-bold", tone.text)}>{data.score}</span>
+              <span className="font-mono text-xs text-muted-foreground">/ 100</span>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider",
+                  tone.chip,
+                )}
+              >
+                {t(LEVEL_KEY[level])}
               </span>
-              <span className={cn("text-xl font-bold font-mono", tone.text)}>
-                {data.score}/100 · {level.toUpperCase()}
-              </span>
-            </div>
+            </p>
+            <RiskScale score={data.score} level={level} />
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              {t("nx.risk.scale")}
+            </p>
           </div>
         )}
       </div>
 
-      {/* Pagrindinis tinklelis: Kūno žemėlapis + Telemetrijos faktoriai */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-        {/* Biomechaninis Kūno Žemėlapis (SVG HUD) */}
-        <div className="md:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl bg-black/50 border border-white/5 relative">
-          <div className="text-[10px] font-mono text-neutral-400 mb-2 uppercase tracking-wider">
-            {lang === "lt" ? "SĄNARIŲ APKROVOS ŽEMĖLAPIS" : "JOINT LOAD HEATMAP"}
-          </div>
-
-          {/* Decorative: every risk it encodes is also listed as text beside
-              it, so a screen reader should skip the figure rather than read
-              out dozens of unlabelled shapes. */}
-          <svg
-            viewBox="0 0 200 280"
-            aria-hidden="true"
-            focusable="false"
-            className="w-44 h-60 drop-shadow-[0_0_15px_rgba(0,0,0,0.8)]"
-          >
-            {/* Galva / Kaklas */}
-            <circle cx="100" cy="35" r="18" fill="#262626" stroke="#404040" strokeWidth="2" />
-
-            {/* Pečiai / Krūtinė */}
-            <path
-              d="M 60 70 L 140 70 L 130 120 L 70 120 Z"
-              fill={
-                shouldersRisk === "high"
-                  ? "#f43f5e"
-                  : shouldersRisk === "moderate"
-                    ? "#f59e0b"
-                    : "#10b981"
-              }
-              fillOpacity="0.25"
-              stroke={
-                shouldersRisk === "high"
-                  ? "#f43f5e"
-                  : shouldersRisk === "moderate"
-                    ? "#f59e0b"
-                    : "#10b981"
-              }
-              strokeWidth="2"
-              className="transition-colors duration-500 cursor-pointer hover:opacity-80"
-              onClick={() =>
-                setSelectedZone(lang === "lt" ? "Pečių juosta ir krūtinė" : "Shoulders & Chest")
-              }
-            />
-
-            {/* Stuburas / Liemuo */}
-            <line
-              x1="100"
-              y1="70"
-              x2="100"
-              y2="150"
-              stroke={spineRisk === "moderate" ? "#f59e0b" : "#10b981"}
-              strokeWidth="4"
-              strokeDasharray="2,2"
-            />
-
-            {/* Rankos */}
-            <line
-              x1="60"
-              y1="70"
-              x2="40"
-              y2="130"
-              stroke="#525252"
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
-            <line
-              x1="140"
-              y1="70"
-              x2="160"
-              y2="130"
-              stroke="#525252"
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
-
-            {/* Dubuo */}
-            <path
-              d="M 70 120 L 130 120 L 120 150 L 80 150 Z"
-              fill="#262626"
-              stroke="#404040"
-              strokeWidth="2"
-            />
-
-            {/* Kojos / Keliai */}
-            <line
-              x1="85"
-              y1="150"
-              x2="80"
-              y2="210"
-              stroke={
-                kneesRisk === "high" ? "#f43f5e" : kneesRisk === "moderate" ? "#f59e0b" : "#10b981"
-              }
-              strokeWidth="7"
-              strokeLinecap="round"
-              className="cursor-pointer"
-              onClick={() =>
-                setSelectedZone(
-                  lang === "lt" ? "Kelių sąnariai ir keturgalviai" : "Knees & Quadriceps",
-                )
-              }
-            />
-            <line
-              x1="115"
-              y1="150"
-              x2="120"
-              y2="210"
-              stroke={
-                kneesRisk === "high" ? "#f43f5e" : kneesRisk === "moderate" ? "#f59e0b" : "#10b981"
-              }
-              strokeWidth="7"
-              strokeLinecap="round"
-              className="cursor-pointer"
-              onClick={() =>
-                setSelectedZone(
-                  lang === "lt" ? "Kelių sąnariai ir keturgalviai" : "Knees & Quadriceps",
-                )
-              }
-            />
-
-            {/* Blauzdos */}
-            <line
-              x1="80"
-              y1="210"
-              x2="78"
-              y2="265"
-              stroke="#404040"
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-            <line
-              x1="120"
-              y1="210"
-              x2="122"
-              y2="265"
-              stroke="#404040"
-              strokeWidth="5"
-              strokeLinecap="round"
-            />
-
-            {/* Kelių sąnarių telemetrijos taškai */}
-            <circle
-              cx="80"
-              cy="210"
-              r="4"
-              fill={kneesRisk === "high" ? "#f43f5e" : "#10b981"}
-              className="animate-ping"
-            />
-            <circle
-              cx="120"
-              cy="210"
-              r="4"
-              fill={kneesRisk === "high" ? "#f43f5e" : "#10b981"}
-              className="animate-ping"
-            />
-          </svg>
-
-          <div className="flex items-center gap-3 mt-3 text-[10px] font-mono">
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" /> Saugus
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-400" /> Įspėjimas
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-rose-400" /> Pavojus
-            </div>
-          </div>
-        </div>
-
-        {/* Telemetrijos Faktoriai ir AI Rekomendacijos */}
-        <div className="md:col-span-7 space-y-3">
-          {!data?.hasData || !data.factors.length ? (
-            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-center text-xs text-neutral-400">
-              {t("nx.risk.empty")}
-            </div>
-          ) : (
-            data.factors.map((f) => (
-              <div
-                key={f.key}
-                className="p-3.5 rounded-xl border border-white/5 bg-black/40 hover:bg-black/60 transition-colors space-y-1.5"
-              >
-                <div className="flex items-center justify-between font-semibold text-xs">
-                  <span className="text-white">{t(f.key)}</span>
-                  <span
-                    className={cn(
-                      "font-mono font-bold px-2 py-0.5 rounded",
-                      TONE[f.level].bg,
-                      TONE[f.level].text,
-                    )}
-                  >
-                    {f.value}
-                  </span>
-                </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">{t(f.adviceKey)}</p>
-              </div>
-            ))
-          )}
-
-          {/* AI Coach Adaptive Action Banner */}
-          <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              <div className="text-xs">
-                <span className="font-bold text-white block">
-                  {lang === "lt" ? "AI Orkestratorius aktyvus" : "AI Orchestrator Active"}
-                </span>
-                <span className="text-neutral-400 text-[11px]">
-                  {level === "low"
-                    ? lang === "lt"
-                      ? "Treniruočių planas optimizuotas pilnam pajėgumui."
-                      : "Training plan operating at full capacity."
-                    : lang === "lt"
-                      ? "Pavojingi pratimai automatiškai pakeisti saugiomis alternatyvomis."
-                      : "High-risk lifts automatically substituted with joint-safe variations."}
+      <div className="mt-5 space-y-2.5">
+        {state.status === "loading" ? (
+          <p className="rounded-xl border border-border bg-surface p-4 text-center text-xs text-muted-foreground">
+            {t("nx.risk.loading")}
+          </p>
+        ) : state.status === "failed" ? (
+          <p className="rounded-xl border border-border bg-surface p-4 text-center text-xs text-muted-foreground">
+            {t("nx.risk.failed")}
+          </p>
+        ) : !showsReport || data.factors.length === 0 ? (
+          <p className="rounded-xl border border-border bg-surface p-4 text-center text-xs text-muted-foreground">
+            {t("nx.risk.empty")}
+          </p>
+        ) : (
+          data.factors.map((factor) => (
+            <div
+              key={factor.key}
+              className="space-y-1.5 rounded-xl border border-border bg-surface p-3.5"
+            >
+              <div className="flex items-center justify-between gap-3 text-xs font-semibold">
+                <span className="text-foreground">{t(factor.key)}</span>
+                <span
+                  className={cn(
+                    "shrink-0 rounded px-2 py-0.5 font-mono font-bold",
+                    TONE[factor.level].chip,
+                  )}
+                >
+                  {factor.value}
                 </span>
               </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {t(factor.adviceKey)}
+              </p>
             </div>
-          </div>
-        </div>
+          ))
+        )}
       </div>
-    </div>
+
+      {/* An additive score is flattered by the terms it could not compute.
+          Naming them is the difference between a low score and a low score
+          the athlete can trust. An athlete with no history at all is told
+          that once, by the empty state — listing all five underneath it
+          would only say the same thing a second time. */}
+      {showsReport && data.unassessed.length > 0 && (
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            {t("nx.risk.unassessed")}
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            {data.unassessed.map((key) => t(key)).join(" · ")}
+          </p>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            {t("nx.risk.unassessed.note")}
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 

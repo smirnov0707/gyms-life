@@ -45,10 +45,27 @@ export interface RiskReport {
   score: number; // 0 = safest, 100 = highest risk
   level: RiskLevel;
   factors: RiskFactor[];
+  /**
+   * Factors this history could not support, by the same key the assessed
+   * ones use. The score is additive over the five factors below, so an
+   * athlete with no check-ins scores lower than one who logs them — not
+   * because they are safer, but because a whole term is missing. Naming
+   * the gap is the difference between a low score and a low score we can
+   * stand behind.
+   */
+  unassessed: RiskTranslationKey[];
   hasData: boolean;
 }
 
 const DAY = 86_400_000;
+
+/**
+ * Where the score stops being called low, and where it starts being called
+ * high. Exported so the panel can mark the same boundaries on its scale
+ * instead of hardcoding a second copy of them.
+ */
+export const RISK_MODERATE_AT = 30;
+export const RISK_HIGH_AT = 55;
 
 const PUSH = /bench|press|push|dip|fly|tricep|chest|shoulder|overhead|krut|spaud/i;
 const PULL = /row|pull|chin|lat|curl|face|shrug|back|deadlift|trauk|nugar/i;
@@ -78,6 +95,7 @@ export function buildRiskReport(
   now = Date.now(),
 ): RiskReport {
   const factors: RiskFactor[] = [];
+  const unassessed: RiskTranslationKey[] = [];
   let risk = 0;
 
   const hasData = sets.length > 0 || sessions.length > 0;
@@ -104,6 +122,8 @@ export function buildRiskReport(
               ? "nx.risk.acwr.low"
               : "nx.risk.acwr.ok",
     });
+  } else {
+    unassessed.push("nx.risk.acwr");
   }
 
   /* 2. Push / pull balance ------------------------------------------ */
@@ -126,6 +146,8 @@ export function buildRiskReport(
             ? "nx.risk.balance.push"
             : "nx.risk.balance.pull",
     });
+  } else {
+    unassessed.push("nx.risk.balance");
   }
 
   /* 3. Recovery days -------------------------------------------------- */
@@ -153,6 +175,8 @@ export function buildRiskReport(
             ? "nx.risk.recovery.warn"
             : "nx.risk.recovery.ok",
     });
+  } else {
+    unassessed.push("nx.risk.recovery");
   }
 
   /* 4. Soreness & readiness ------------------------------------------ */
@@ -181,6 +205,8 @@ export function buildRiskReport(
             ? "nx.risk.readiness.warn"
             : "nx.risk.readiness.ok",
     });
+  } else {
+    unassessed.push("nx.risk.readiness");
   }
 
   /* 5. Fast load jumps on a single lift ------------------------------- */
@@ -219,13 +245,16 @@ export function buildRiskReport(
             ? "nx.risk.jump.warn"
             : "nx.risk.jump.ok",
     });
+  } else {
+    unassessed.push("nx.risk.jump");
   }
 
   const score = Math.max(0, Math.min(100, Math.round(risk)));
   return {
     score,
-    level: score >= 55 ? "high" : score >= 30 ? "moderate" : "low",
+    level: score >= RISK_HIGH_AT ? "high" : score >= RISK_MODERATE_AT ? "moderate" : "low",
     factors,
+    unassessed,
     hasData,
   };
 }

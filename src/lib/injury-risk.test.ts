@@ -74,3 +74,38 @@ describe("buildRiskReport", () => {
     expect(factor?.level).toBe("high");
   });
 });
+
+describe("unassessed signals", () => {
+  it("names every factor this history cannot support", () => {
+    const report = buildRiskReport([], [], [], NOW);
+
+    // Nothing logged at all: none of the five terms has an input, so the
+    // score of 0 is an absence of evidence rather than an absence of risk.
+    expect(report.score).toBe(0);
+    expect(report.unassessed).toEqual([
+      "nx.risk.acwr",
+      "nx.risk.balance",
+      "nx.risk.recovery",
+      "nx.risk.readiness",
+      "nx.risk.jump",
+    ]);
+  });
+
+  it("keeps the readiness term open when an athlete trains but never checks in", () => {
+    // A month of steady squatting and not one check-in. The readiness term
+    // contributes nothing, which flatters the score; the panel needs to be
+    // able to say so.
+    const sets: RiskSetRow[] = [];
+    for (let day = 27; day >= 0; day -= 1) {
+      if (day % 7 < 3) sets.push(set(NOW - day * DAY));
+    }
+    const report = buildRiskReport(sets, [], [], NOW);
+
+    expect(report.factors.some((factor) => factor.key === "nx.risk.acwr")).toBe(true);
+    expect(report.unassessed).toContain("nx.risk.readiness");
+    // A factor is never both assessed and unassessed.
+    for (const factor of report.factors) {
+      expect(report.unassessed).not.toContain(factor.key);
+    }
+  });
+});
