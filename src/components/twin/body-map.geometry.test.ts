@@ -8,6 +8,7 @@ import {
   REGION_ANCHOR,
   NON_ANATOMICAL_GROUPS,
   isAnatomicalRegion,
+  openingView,
   segmentsFor,
   viewShowing,
   type BodyView,
@@ -89,6 +90,27 @@ describe("body map geometry", () => {
   it("returns nothing for a region it has never heard of", () => {
     expect(isAnatomicalRegion("forearms")).toBe(false);
     expect(segmentsFor("forearms", "front")).toEqual([]);
+  });
+
+  describe("openingView", () => {
+    it("opens on the front for a front region", () => {
+      expect(openingView(["chest", "glutes"])).toBe("front");
+    });
+
+    it("opens on the back when the most important region is only there", () => {
+      // Otherwise the figure renders entirely grey and reads as "no data"
+      // while the data sits on the side nobody is looking at.
+      expect(openingView(["glutes", "chest"])).toBe("back");
+    });
+
+    it("skips regions that are not on the body at all", () => {
+      expect(openingView(["cardio", "glutes"])).toBe("back");
+    });
+
+    it("falls back to the front when nothing is drawable", () => {
+      expect(openingView([])).toBe("front");
+      expect(openingView(["cardio", "mobility"])).toBe("front");
+    });
   });
 
   describe("viewShowing", () => {

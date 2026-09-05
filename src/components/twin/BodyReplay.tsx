@@ -3,6 +3,7 @@ import { BodyMap } from "@/components/twin/BodyMap";
 import type { BodyMapRegion, BodyMapTone } from "@/components/twin/BodyMap";
 import {
   isAnatomicalRegion,
+  openingView,
   viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
@@ -96,11 +97,9 @@ export function BodyReplay({ contributions }: { contributions: SessionMuscleCont
   const untouched = KNOWN_MUSCLE_GROUPS.filter((group) => !worked.has(group));
 
   const heaviest = contributions.find((entry) => isAnatomicalRegion(entry.muscleGroup));
-  // Open on the side that shows most of the heaviest group, by the same rule
-  // the Twin turns by — a hardcoded list of "back regions" drifts the moment
-  // the geometry changes.
+  // Open on the side showing the heaviest group, by the one shared rule.
   const [view, setView] = useState<BodyView>(() =>
-    heaviest ? viewShowing(heaviest.muscleGroup, "front") : "front",
+    openingView(contributions.map((entry) => entry.muscleGroup)),
   );
   const [selected, setSelected] = useState<string | null>(heaviest?.muscleGroup ?? null);
 
