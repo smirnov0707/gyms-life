@@ -176,7 +176,6 @@ export const extra_legal = {
     en: 'You may cancel your subscription at any time in account settings ("Manage subscription"). After cancellation, access remains until the end of the paid period; no further payments are taken. The',
   },
   "lg.refund.p3link": { lt: "Paddle grąžinimo politika", en: "Paddle refund policy" },
-  "lg.refund.p3b": { lt: "", en: "also applies." },
 
   // Pricing
   "lg.pricing.myApp": { lt: "Mano programa", en: "My app" },
@@ -195,7 +194,6 @@ export const extra_legal = {
     lt: "Išbandyk GYMS.LIFE nemokamai 7 dienas. Po to rinkis tau patogiausią ritmą. Atšaukti gali bet kada.",
     en: "Try GYMS.LIFE free for 7 days. Then pick the rhythm that suits you. Cancel anytime.",
   },
-  "lg.pricing.bestValue": { lt: "Geriausias", en: "Best value" },
   "lg.pricing.startFree": { lt: "Pradėti nemokamai", en: "Start free" },
   "lg.pricing.payNote": {
     lt: "Mokama saugiai: kortele, Apple Pay ar Google Pay. PVM tvarkomas automatiškai. 30 dienų pinigų grąžinimo garantija.",
@@ -251,10 +249,6 @@ export const extra_legal = {
   "lg.pricing.feature.supplements": {
     lt: "Papildų sekiklis — primena, ką ir kada pasirinkai vartoti",
     en: "Supplement tracker — reminds you what you chose to take, and when",
-  },
-  "lg.pricing.feature.health": {
-    lt: "Sveikatos įžvalgos ir savaitės suvestinė",
-    en: "Health insights and weekly summaries",
   },
   "lg.pricing.feature.coach": {
     lt: "Asmeninis treneris pokalbyje 24/7",

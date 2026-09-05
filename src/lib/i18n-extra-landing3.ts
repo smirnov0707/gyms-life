@@ -72,14 +72,6 @@ export const extra_landing3 = {
   },
 
   // Showcase highlight
-  "l3.show.hl.t": {
-    lt: "Viskas, ko reikia treniruotei — viename ekrane",
-    en: "Everything a session needs — on one screen",
-  },
-  "l3.show.hl.d": {
-    lt: "Šiandienos treniruotė · progresas · trenerio rekomendacija",
-    en: "Today's session · progress · coach recommendation",
-  },
 
   // Fifth audience
   "l3.who5.t": { lt: "Esi užstrigęs", en: "You're stuck" },
