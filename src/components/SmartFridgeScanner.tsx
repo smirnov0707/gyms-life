@@ -15,7 +15,13 @@ import { resolveNutritionTargets } from "@/lib/nutrition-targets.engine";
 export const SmartFridgeScanner: React.FC = () => {
   const { t, lang } = useI18n();
   const { user } = useAuth();
-  const [ingredients, setIngredients] = useState<string[]>(["Kiaušiniai", "Varškė", "Avižos"]);
+  // Example ingredients so the panel opens with something to act on. They go
+  // to the recipe model as written, so an English user starting from
+  // Lithuanian words would get a recipe built around words they did not
+  // choose.
+  const [ingredients, setIngredients] = useState<string[]>(
+    lang === "en" ? ["Eggs", "Cottage cheese", "Oats"] : ["Kiaušiniai", "Varškė", "Avižos"],
+  );
   const [inputVal, setInputVal] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [variant, setVariant] = useState(0);
