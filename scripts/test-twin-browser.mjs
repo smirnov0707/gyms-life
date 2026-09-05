@@ -9,36 +9,8 @@ const root = process.cwd();
 const artifacts = path.join(root, "test-results/twin");
 await mkdir(artifacts, { recursive: true });
 const results = [];
-const server = await createServer({
-  configFile: false,
-  root: path.join(root, "tests/twin-browser"),
-  publicDir: path.join(root, "public"),
-  plugins: [
-    {
-      name: "test-only-no-backend",
-      resolveId(id) {
-        if (
-          id === "@/lib/digital-twin.functions" ||
-          id.endsWith("/src/lib/digital-twin.functions") ||
-          id.endsWith("/src/lib/digital-twin.functions.ts")
-        )
-          return "\0twin-test-service";
-      },
-      load(id) {
-        if (id === "\0twin-test-service")
-          return 'export function getTwinSnapshot() { throw new Error("Test fixture cannot access backend") }';
-      },
-    },
-    react(),
-    tailwindcss(),
-  ],
-  resolve: { alias: { "@": path.join(root, "src") } },
-  server: { host: "127.0.0.1", port: 4179, strictPort: true, fs: { allow: [root] } },
-});
-await server.listen();
-const browser = await chromium.launch({
-  args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
-});
+let server;
+let browser;
 let page;
 const loaded = async (target) => {
   await target.goto("http://127.0.0.1:4179");
@@ -52,6 +24,39 @@ const record = (name) => {
   console.log(`PASS ${name}`);
 };
 try {
+  server = await createServer({
+    configFile: false,
+    root: path.join(root, "tests/twin-browser"),
+    publicDir: path.join(root, "public"),
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: [
+        {
+          find: "@/lib/digital-twin.functions",
+          replacement: path.join(root, "tests/twin-browser/service-stub.ts"),
+        },
+        { find: "@", replacement: path.join(root, "src") },
+      ],
+    },
+    optimizeDeps: {
+      noDiscovery: true,
+      include: [
+        "react",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "@tanstack/react-query",
+        "zod",
+        "lucide-react",
+        "three",
+        "three/addons/controls/OrbitControls.js",
+      ],
+    },
+    server: { host: "127.0.0.1", port: 4179, strictPort: true, fs: { allow: [root] } },
+  });
+  await server.listen();
+  browser = await chromium.launch({
+    args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+  });
   const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   page = await context.newPage();
   const errors = [];
@@ -65,7 +70,7 @@ try {
   const visited = [];
   for (let step = 0; step < 16; step++) {
     await page.getByRole("button", { name: "Rotate right", exact: true }).click();
-    await page.waitForTimeout(40);
+    await page.waitForTimeout(60);
     visited.push(Number(await canvas.getAttribute("data-twin-yaw")));
   }
   expect(visited.some((angle) => angle > 1)).toBe(true);
@@ -98,7 +103,9 @@ try {
   await canvas.focus();
   await page.keyboard.press("Home");
   await page.keyboard.press("ArrowRight");
-  await expect.poll(async () => Number(await canvas.getAttribute("data-twin-yaw"))).not.toBe(0);
+  await expect
+    .poll(async () => Number(await canvas.getAttribute("data-twin-yaw")))
+    .not.toBe(0);
   record("zoom and keyboard camera controls");
 
   await page.getByLabel("Inspect a region", { exact: true }).selectOption("glutes");
@@ -116,9 +123,10 @@ try {
   );
   await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible();
   await expect(
-    page.getByText("3D is unavailable on this device. Your evidence is still available in 2D.", {
-      exact: true,
-    }),
+    page.getByText(
+      "3D is unavailable on this device. Your evidence is still available in 2D.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await page.getByRole("button", { name: "Try 3D again", exact: true }).click();
   await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
@@ -148,7 +156,10 @@ try {
   const mobileCanvas = page.locator("canvas");
   await mobileCanvas.scrollIntoViewIfNeeded();
   const mobileBox = await mobileCanvas.boundingBox();
-  const center = { x: mobileBox.x + mobileBox.width / 2, y: mobileBox.y + mobileBox.height / 2 };
+  const center = {
+    x: mobileBox.x + mobileBox.width / 2,
+    y: mobileBox.y + mobileBox.height / 2,
+  };
   const client = await mobile.newCDPSession(page);
   const distanceBeforePinch = Number(await mobileCanvas.getAttribute("data-twin-distance"));
   await client.send("Input.dispatchTouchEvent", {
@@ -176,9 +187,9 @@ try {
   await page.getByRole("button", { name: "Left side", exact: true }).click();
   await page.screenshot({ path: path.join(artifacts, "mobile-side.png"), fullPage: true });
   await page.setViewportSize({ width: 320, height: 740 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+  ).toBe(true);
   record("mobile two-finger zoom, front/back/side views and 320px layout");
   await mobile.close();
 
@@ -205,9 +216,10 @@ try {
   page = await unsupported.newPage();
   await page.goto("http://127.0.0.1:4179");
   await expect(
-    page.getByText("3D is unavailable on this device. Your evidence is still available in 2D.", {
-      exact: true,
-    }),
+    page.getByText(
+      "3D is unavailable on this device. Your evidence is still available in 2D.",
+      { exact: true },
+    ),
   ).toBeVisible({ timeout: 30000 });
   await expect(page.getByLabel("Inspect a region", { exact: true })).toBeVisible();
   record("WebGL unavailable preserves an accessible 2D evidence surface");
@@ -221,6 +233,6 @@ try {
   throw error;
 } finally {
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
-  await browser.close();
-  await server.close();
+  await browser?.close();
+  await server?.close();
 }
