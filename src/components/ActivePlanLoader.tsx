@@ -94,8 +94,8 @@ export function ActivePlanLoader() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-64 animate-pulse rounded-[2rem] border border-white/[0.06] bg-white/[0.025]" />
-        <div className="h-16 animate-pulse rounded-[1.5rem] border border-white/[0.05] bg-white/[0.015]" />
+        <div className="h-64 animate-pulse rounded-[2rem] border border-border bg-foreground/[0.02]" />
+        <div className="h-16 animate-pulse rounded-[1.5rem] border border-border bg-foreground/[0.02]" />
       </div>
     );
   }
@@ -111,9 +111,11 @@ export function ActivePlanLoader() {
 
   if (!data || data.status === "NO_ACTIVE_PLAN") {
     return (
-      <section className="rounded-[2rem] border border-white/[0.07] bg-white/[0.02] p-6 sm:p-8">
-        <p className="text-lg font-semibold text-white">{copy.noPlan}</p>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">{copy.noPlanHint}</p>
+      <section className="rounded-[2rem] border border-border bg-foreground/[0.02] p-6 sm:p-8">
+        <p className="text-lg font-semibold text-foreground">{copy.noPlan}</p>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          {copy.noPlanHint}
+        </p>
         <Button asChild className="mt-5 rounded-full">
           <Link to="/onboarding">{copy.generate}</Link>
         </Button>
@@ -124,8 +126,10 @@ export function ActivePlanLoader() {
   if (data.status === "INVALID_PLAN") {
     return (
       <section className="rounded-[2rem] border border-amber-400/20 bg-amber-400/[0.04] p-6 sm:p-8">
-        <p className="text-lg font-semibold text-white">{copy.staleTitle}</p>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">{copy.staleHint}</p>
+        <p className="text-lg font-semibold text-foreground">{copy.staleTitle}</p>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          {copy.staleHint}
+        </p>
         <Button asChild className="mt-5 rounded-full">
           <Link to="/onboarding">{copy.regenerate}</Link>
         </Button>
@@ -202,22 +206,22 @@ export function ActivePlanLoader() {
         </div>
       </section>
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-white">{copy.inspectPlan}</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+              <p className="text-sm font-semibold text-foreground">{copy.inspectPlan}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {copy.inspectPlanHint}
               </p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
 
-        <div className="border-t border-white/[0.06] p-4 sm:p-6">
+        <div className="border-t border-border p-4 sm:p-6">
           {plan.data.summary ? (
-            <p className="mb-6 max-w-3xl text-sm leading-relaxed text-neutral-500">
+            <p className="mb-6 max-w-3xl text-sm leading-relaxed text-muted-foreground">
               {plan.data.summary}
             </p>
           ) : null}
@@ -227,13 +231,13 @@ export function ActivePlanLoader() {
               <article key={day.day} className="py-5 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-400">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-400 light:text-emerald-700">
                       {copy.day} {day.day}
                     </p>
-                    <h2 className="mt-1 text-lg font-medium text-white">{day.title}</h2>
-                    <p className="mt-1 text-sm text-neutral-500">{day.focus}</p>
+                    <h2 className="mt-1 text-lg font-medium text-foreground">{day.title}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{day.focus}</p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-neutral-600">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock3 className="size-3.5" /> ~{day.estimated_minutes} {copy.minutes}
                   </div>
                 </div>
@@ -242,12 +246,12 @@ export function ActivePlanLoader() {
                   {day.exercises.map((exercise) => (
                     <div
                       key={`${day.day}-${exercise.slug}`}
-                      className="rounded-xl border border-white/[0.05] bg-black/20 px-3 py-3"
+                      className="rounded-xl border border-border bg-black/20 px-3 py-3"
                     >
-                      <p className="truncate text-sm font-medium text-neutral-300">
+                      <p className="truncate text-sm font-medium text-foreground">
                         {exercise.name}
                       </p>
-                      <p className="mt-1 font-mono text-xs text-neutral-600">
+                      <p className="mt-1 font-mono text-xs text-muted-foreground">
                         {exercise.sets} × {exercise.reps}
                       </p>
                     </div>
@@ -257,7 +261,7 @@ export function ActivePlanLoader() {
             ))}
           </div>
 
-          <div className="mt-6 flex items-center gap-2 border-t border-white/[0.06] pt-4 text-[10px] uppercase tracking-[0.14em] text-neutral-600">
+          <div className="mt-6 flex items-center gap-2 border-t border-border pt-4 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             <CalendarDays className="size-3.5" />
             {plan.daysPerWeek} {copy.daysPerWeek}
           </div>

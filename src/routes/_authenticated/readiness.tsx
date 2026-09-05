@@ -207,25 +207,27 @@ function ReadinessPage() {
 
       <details
         open={!today}
-        className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02]"
+        className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]"
       >
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-white">{copy.checkin}</p>
-              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-neutral-600">
+              <p className="text-sm font-semibold text-foreground">{copy.checkin}</p>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                 {copy.checkinHint}
               </p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
 
-        <div className="grid gap-6 border-t border-white/[0.06] p-5 sm:p-6">
+        <div className="grid gap-6 border-t border-border p-5 sm:p-6">
           <div>
-            <div className="flex justify-between gap-4 text-sm font-medium text-neutral-300">
+            <div className="flex justify-between gap-4 text-sm font-medium text-foreground">
               <span>{t("rd.sleepHours")}</span>
-              <span className="font-mono text-emerald-400">{form.sleepHours} h</span>
+              <span className="font-mono text-emerald-400 light:text-emerald-700">
+                {form.sleepHours} h
+              </span>
             </div>
             <Slider
               className="mt-3"
@@ -241,9 +243,11 @@ function ReadinessPage() {
 
           {fields.map((field) => (
             <div key={field.key}>
-              <div className="flex justify-between gap-4 text-sm font-medium text-neutral-300">
+              <div className="flex justify-between gap-4 text-sm font-medium text-foreground">
                 <span>{t(field.label as TKey)}</span>
-                <span className="font-mono text-emerald-400">{form[field.key]}/5</span>
+                <span className="font-mono text-emerald-400 light:text-emerald-700">
+                  {form[field.key]}/5
+                </span>
               </div>
               <Slider
                 className="mt-3"
@@ -258,14 +262,18 @@ function ReadinessPage() {
             </div>
           ))}
 
-          <div className="flex flex-col gap-4 border-t border-white/[0.06] pt-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 border-t border-border pt-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.16em] text-neutral-600">
-                <Activity className="size-3.5 text-emerald-400" /> {copy.preview}
+              <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                <Activity className="size-3.5 text-emerald-400 light:text-emerald-700" />{" "}
+                {copy.preview}
               </p>
-              <p className="mt-2 text-sm text-neutral-400">
-                {t("rd.score")}: <span className="font-mono text-white">{preview}</span> ·{" "}
-                {t("rd.load")}: <span className="font-mono text-emerald-400">{previewLoad}%</span>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("rd.score")}: <span className="font-mono text-foreground">{preview}</span> ·{" "}
+                {t("rd.load")}:{" "}
+                <span className="font-mono text-emerald-400 light:text-emerald-700">
+                  {previewLoad}%
+                </span>
               </p>
             </div>
             <Button onClick={submit} disabled={busy} className="rounded-full px-6 font-bold">

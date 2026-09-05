@@ -275,10 +275,10 @@ function NutritionPage() {
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] p-5 sm:p-6">
+      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
         <div className="flex items-center gap-2">
-          <Utensils className="size-4 text-emerald-400" />
-          <h2 className="text-sm font-semibold text-white">{copy.logAction}</h2>
+          <Utensils className="size-4 text-emerald-400 light:text-emerald-700" />
+          <h2 className="text-sm font-semibold text-foreground">{copy.logAction}</h2>
         </div>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <Input
@@ -288,7 +288,7 @@ function NutritionPage() {
             onKeyDown={(event) => {
               if (event.key === "Enter" && text.trim().length > 1) add.mutate();
             }}
-            className="h-12 flex-1 border-white/[0.08] bg-white/[0.025]"
+            className="h-12 flex-1 border-border bg-foreground/[0.02]"
           />
           <Button
             size="lg"
@@ -308,33 +308,37 @@ function NutritionPage() {
 
       <QuickHydrationWidget />
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-white">{copy.history}</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.historyHint}</p>
+              <p className="text-sm font-semibold text-foreground">{copy.history}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {copy.historyHint}
+              </p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="border-t border-white/[0.06] px-5 py-2 sm:px-6">
+        <div className="border-t border-border px-5 py-2 sm:px-6">
           {todays.length === 0 ? (
-            <p className="py-4 text-sm text-neutral-500">{t("nut.empty")}</p>
+            <p className="py-4 text-sm text-muted-foreground">{t("nut.empty")}</p>
           ) : (
             <ul className="divide-y divide-white/[0.06]">
               {todays.map((log) => (
                 <li key={log.id} className="flex items-start gap-3 py-4">
-                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg border border-white/[0.06] text-emerald-400">
+                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg border border-border text-emerald-400 light:text-emerald-700">
                     <Flame className="size-3.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-neutral-200">{log.food_name}</p>
-                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-neutral-600">
+                    <p className="text-sm font-medium text-foreground">{log.food_name}</p>
+                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-muted-foreground">
                       {log.calories} kcal · {log.protein}g P · {log.carbs}g C · {log.fat}g F
                     </p>
                     {log.note ? (
-                      <p className="mt-1 text-xs leading-relaxed text-neutral-500">{log.note}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {log.note}
+                      </p>
                     ) : null}
                   </div>
                   <Button
@@ -342,7 +346,7 @@ function NutritionPage() {
                     size="icon"
                     onClick={() => remove.mutate(log.id)}
                     title={t("nut.delete")}
-                    className="text-neutral-600 hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="size-4" />
                   </Button>
@@ -353,19 +357,19 @@ function NutritionPage() {
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                <ScanLine className="size-4 text-emerald-400" /> {copy.tools}
+              <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <ScanLine className="size-4 text-emerald-400 light:text-emerald-700" /> {copy.tools}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.toolsHint}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.toolsHint}</p>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="space-y-6 border-t border-white/[0.06] p-5 sm:p-6">
+        <div className="space-y-6 border-t border-border p-5 sm:p-6">
           <SmartFridgeScanner />
           <VisionMealScanner />
           <DineOutMenuScanner />

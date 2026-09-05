@@ -319,9 +319,11 @@ function memorySourceLabel(source: UserMemorySource, lang: Lang): string {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-end justify-between gap-4 border-b border-white/[0.05] py-2.5 last:border-b-0">
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-600">{label}</p>
-      <p className="shrink-0 font-mono text-sm text-neutral-300">{value}</p>
+    <div className="flex items-end justify-between gap-4 border-b border-border py-2.5 last:border-b-0">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="shrink-0 font-mono text-sm text-foreground">{value}</p>
     </div>
   );
 }
@@ -527,21 +529,22 @@ function AthleteModelPage() {
         ) : null}
       </section>
 
-      <section className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] p-5 sm:p-6">
+      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
         <div>
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 light:text-emerald-700">
             <Brain className="size-4" /> {copy.memory.eyebrow}
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">{ui.knows}</h2>
-          <p className="mt-1 text-sm leading-relaxed text-neutral-500">{ui.knowsSub}</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{ui.knows}</h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{ui.knowsSub}</p>
         </div>
 
         {memoryLoading ? (
-          <div className="mt-6 flex items-center gap-2 text-sm text-neutral-500">
-            <Loader2 className="size-4 animate-spin text-emerald-400" /> {copy.memory.loading}
+          <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin text-emerald-400 light:text-emerald-700" />{" "}
+            {copy.memory.loading}
           </div>
         ) : memories.length === 0 ? (
-          <p className="mt-6 text-sm leading-relaxed text-neutral-500">{copy.memory.empty}</p>
+          <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{copy.memory.empty}</p>
         ) : (
           <div className="mt-5 divide-y divide-white/[0.06]">
             {memories.map((memory) => {
@@ -560,58 +563,58 @@ function AthleteModelPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400">
+                          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400 light:text-emerald-700">
                             {memoryTypeLabel(memory.type, lang)}
                           </span>
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-neutral-600">
+                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                             {copy.memory.evidenceStateLabel[memory.evidenceState]}
                           </span>
                         </div>
-                        <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-200">
+                        <p className="mt-2 text-sm font-medium leading-relaxed text-foreground">
                           {displayedContent}
                         </p>
                       </div>
-                      <span className="mt-1 shrink-0 text-[10px] uppercase tracking-[0.14em] text-neutral-600 group-open:text-neutral-400">
+                      <span className="mt-1 shrink-0 text-[10px] uppercase tracking-[0.14em] text-muted-foreground group-open:text-muted-foreground">
                         {ui.controls}
                       </span>
                     </div>
                   </summary>
 
-                  <div className="mt-4 rounded-2xl border border-white/[0.06] bg-black/20 p-4">
-                    <p className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
+                  <div className="mt-4 rounded-2xl border border-border bg-black/20 p-4">
+                    <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                       <Info className="mt-0.5 size-3.5 shrink-0" />
                       {evidenceSummary ?? copy.memory.evidence(memory.evidenceCount)}
                     </p>
                     <dl className="mt-4 grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2">
                       <div>
-                        <dt className="text-neutral-600">{copy.memory.source}</dt>
-                        <dd className="mt-0.5 text-neutral-300">
+                        <dt className="text-muted-foreground">{copy.memory.source}</dt>
+                        <dd className="mt-0.5 text-foreground">
                           {memorySourceLabel(memory.source, lang)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-neutral-600">{copy.memory.evidenceState}</dt>
-                        <dd className="mt-0.5 text-neutral-300">
+                        <dt className="text-muted-foreground">{copy.memory.evidenceState}</dt>
+                        <dd className="mt-0.5 text-foreground">
                           {copy.memory.evidenceStateLabel[memory.evidenceState]}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-neutral-600">{copy.memory.lastConfirmed}</dt>
-                        <dd className="mt-0.5 text-neutral-300">
+                        <dt className="text-muted-foreground">{copy.memory.lastConfirmed}</dt>
+                        <dd className="mt-0.5 text-foreground">
                           {new Date(memory.lastConfirmedAt).toLocaleDateString(locale)}
                         </dd>
                       </div>
                       {memory.expiresAt ? (
                         <div>
-                          <dt className="text-neutral-600">{copy.memory.expires}</dt>
-                          <dd className="mt-0.5 text-neutral-300">
+                          <dt className="text-muted-foreground">{copy.memory.expires}</dt>
+                          <dd className="mt-0.5 text-foreground">
                             {new Date(memory.expiresAt).toLocaleString(locale)}
                           </dd>
                         </div>
                       ) : null}
                     </dl>
 
-                    <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.05] pt-4">
+                    <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
                       {memory.type === "current_context" ? (
                         <Button asChild size="sm" variant="outline" className="rounded-full">
                           <Link to="/">{copy.memory.updateContext}</Link>
@@ -652,7 +655,7 @@ function AthleteModelPage() {
                         type="button"
                         size="sm"
                         variant="ghost"
-                        className="rounded-full text-neutral-500 hover:text-destructive"
+                        className="rounded-full text-muted-foreground hover:text-destructive"
                         disabled={pendingMemoryAction !== null}
                         onClick={() => void changeMemory(memory.id, "forget")}
                       >
@@ -662,21 +665,21 @@ function AthleteModelPage() {
                     </div>
 
                     {isEditing ? (
-                      <div className="mt-4 border-t border-white/[0.05] pt-4">
+                      <div className="mt-4 border-t border-border pt-4">
                         <label
-                          className="text-sm font-semibold text-neutral-200"
+                          className="text-sm font-semibold text-foreground"
                           htmlFor={`memory-correction-${memory.id}`}
                         >
                           {copy.memory.correctionLabel}
                         </label>
-                        <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                           {copy.memory.correctionHint}
                         </p>
                         <Input
                           id={`memory-correction-${memory.id}`}
                           value={correctedContent}
                           maxLength={400}
-                          className="mt-3 border-white/[0.08] bg-white/[0.025]"
+                          className="mt-3 border-border bg-foreground/[0.02]"
                           onChange={(event) => setCorrectedContent(event.target.value)}
                         />
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -715,8 +718,8 @@ function AthleteModelPage() {
       </section>
 
       {state ? (
-        <section className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] p-5 sm:p-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600">
+        <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             {ui.needs}
           </p>
           {state.dataGaps.length ? (
@@ -731,21 +734,22 @@ function AthleteModelPage() {
               })}
             </div>
           ) : (
-            <p className="mt-2 text-sm text-neutral-500">{copy.noGaps}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{copy.noGaps}</p>
           )}
         </section>
       ) : null}
 
       {state ? (
-        <details className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
+        <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
           <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
-            <p className="text-sm font-semibold text-white">{ui.inspect}</p>
-            <p className="mt-1 text-xs leading-relaxed text-neutral-600">{ui.inspectSub}</p>
+            <p className="text-sm font-semibold text-foreground">{ui.inspect}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.inspectSub}</p>
           </summary>
-          <div className="grid border-t border-white/[0.06] md:grid-cols-2">
-            <div className="p-5 sm:p-6 md:border-r md:border-white/[0.06]">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                <Dumbbell className="size-4 text-emerald-400" /> {copy.training}
+          <div className="grid border-t border-border md:grid-cols-2">
+            <div className="p-5 sm:p-6 md:border-r md:border-border">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Dumbbell className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
+                {copy.training}
               </h3>
               <div className="mt-3">
                 <Metric label={copy.sessions7d} value={String(state.training.sessionsLast7Days)} />
@@ -792,8 +796,9 @@ function AthleteModelPage() {
             </div>
             <div className="grid sm:grid-cols-3 md:grid-cols-1">
               <div className="p-5 sm:p-6">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                  <HeartPulse className="size-4 text-emerald-400" /> {copy.recovery}
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <HeartPulse className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
+                  {copy.recovery}
                 </h3>
                 <div className="mt-3">
                   <Metric
@@ -806,9 +811,9 @@ function AthleteModelPage() {
                   />
                 </div>
               </div>
-              <div className="border-t border-white/[0.05] p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                  <Scale className="size-4 text-emerald-400" /> {copy.body}
+              <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Scale className="size-4 text-emerald-400 light:text-emerald-700" /> {copy.body}
                 </h3>
                 <div className="mt-3">
                   <Metric
@@ -821,9 +826,10 @@ function AthleteModelPage() {
                   />
                 </div>
               </div>
-              <div className="border-t border-white/[0.05] p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-neutral-300">
-                  <Apple className="size-4 text-emerald-400" /> {copy.nutrition}
+              <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Apple className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
+                  {copy.nutrition}
                 </h3>
                 <div className="mt-3">
                   <Metric
@@ -845,11 +851,11 @@ function AthleteModelPage() {
         </details>
       ) : null}
 
-      <details className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.015]">
-        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-white sm:px-6">
+      <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-foreground sm:px-6">
           {ui.rhythm}
         </summary>
-        <div className="border-t border-white/[0.06] p-4 sm:p-5">
+        <div className="border-t border-border p-4 sm:p-5">
           <TrainingRhythmCard />
         </div>
       </details>
