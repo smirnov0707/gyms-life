@@ -1,0 +1,69 @@
+name: Integrate mobile Twin and evidence layers
+on:
+  push:
+    branches: [future-lab-twin-evidence-and-volume]
+    paths: [.github/workflows/merge-twin-cockpit.yml]
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Merge the verified main version and apply reviewed resolutions only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --depth=50 origin b7680640ade7f2a6e1be9b551b528b9467956746
+          set +e
+          git merge --no-ff --no-commit b7680640ade7f2a6e1be9b551b528b9467956746
+          result=$?
+          set -e
+          test "$result" -eq 1
+          python3 <<'PY'
+          import subprocess
+          expected = ['scripts/test-twin-browser.mjs', 'src/components/TwinView.tsx', 'src/components/twin/TwinStage.tsx', 'tests/twin-browser/fixture.tsx']
+          actual = subprocess.check_output(['git','diff','--name-only','--diff-filter=U'], text=True).splitlines()
+          assert actual == expected, actual
+          PY
+          git checkout b7680640ade7f2a6e1be9b551b528b9467956746 -- scripts/test-twin-browser.mjs src/components/TwinView.tsx src/components/twin/TwinStage.tsx tests/twin-browser/fixture.tsx
+          git apply --check --unidiff-zero .github/twin-cockpit-resolution.patch
+          git apply --unidiff-zero .github/twin-cockpit-resolution.patch
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('scripts/test-twin-browser.mjs')
+          s = p.read_text()
+          assert s.count('[data-twin-stage] svg') == 1
+          p.write_text(s.replace('[data-twin-stage] svg', '[data-twin-viewport] svg'))
+          PY
+          npx prettier --write scripts/test-twin-browser.mjs src/components/TwinView.tsx src/components/twin/TwinStage.tsx tests/twin-browser/fixture.tsx src/components/twin/twin-layer.copy.ts docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+          git add scripts/test-twin-browser.mjs src/components/TwinView.tsx src/components/twin/TwinStage.tsx tests/twin-browser/fixture.tsx src/components/twin/twin-layer.copy.ts docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+          actual=$(git diff b7680640ade7f2a6e1be9b551b528b9467956746 --name-only -z -- . ':!.github/**' | xargs -0 sha256sum | sha256sum | cut -d ' ' -f1)
+          test "$actual" = 'e293f186670520d607ed76eb4dfed89786f449b419374b45a687b164376e1a7f'
+          git diff --cached --check
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-twin-browser.mjs
+      - name: Publish the validated integration without rewriting either history
+        run: |
+          git rm .github/twin-cockpit-resolution.patch .github/workflows/twin-sync-context.yml .github/workflows/merge-twin-cockpit.yml
+          git commit -m 'merge(twin): preserve mobile cockpit with truthful evidence layers'
+          git push origin HEAD:future-lab-twin-evidence-and-volume
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-cockpit-volume-evidence
+          path: test-results/twin
+          retention-days: 7
+          if-no-files-found: ignore
