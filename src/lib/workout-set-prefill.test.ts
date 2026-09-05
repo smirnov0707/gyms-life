@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   REPS_STEP,
   WEIGHT_STEP_KG,
+  nextSetNumber,
   plannedRepsPrefill,
   stepValue,
   suggestedWeightPrefill,
@@ -46,6 +47,27 @@ describe("suggestedWeightPrefill", () => {
     expect(suggestedWeightPrefill(undefined)).toBe("");
     expect(suggestedWeightPrefill(Number.NaN)).toBe("");
     expect(suggestedWeightPrefill(-10)).toBe("");
+  });
+});
+
+describe("nextSetNumber", () => {
+  it("starts at the first set of an untouched exercise", () => {
+    expect(nextSetNumber(3, new Set())).toBe(1);
+  });
+
+  it("fills a gap inside the plan before moving on", () => {
+    expect(nextSetNumber(3, new Set([1, 3]))).toBe(2);
+  });
+
+  it("continues past the plan when every planned set is logged", () => {
+    expect(nextSetNumber(3, new Set([1, 2, 3]))).toBe(4);
+  });
+
+  it("never collides with an extra set already recorded", () => {
+    // Resuming a session that already holds sets 4 and 5 must not hand back
+    // set 4 again — that set would be treated as a duplicate and the work
+    // the person just did would vanish.
+    expect(nextSetNumber(3, new Set([1, 2, 3, 4, 5]))).toBe(6);
   });
 });
 

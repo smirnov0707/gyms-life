@@ -58,7 +58,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found for this session.");
     }
-    validateWorkoutSetAgainstPlan(plannedDay, data);
+    const { beyondPlan } = validateWorkoutSetAgainstPlan(plannedDay, data);
 
     const { data: duplicate, error: duplicateError } = await supabase
       .from("set_logs")
@@ -72,7 +72,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Set lookup failed: " + duplicateError.message);
     }
     if (duplicate) {
-      return { ok: true, setLog: duplicate, alreadyLogged: true };
+      return { ok: true, setLog: duplicate, alreadyLogged: true, beyondPlan };
     }
 
     const { data: setLog, error } = await supabase
@@ -92,7 +92,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       .single();
 
     if (!error && setLog) {
-      return { ok: true, setLog, alreadyLogged: false };
+      return { ok: true, setLog, alreadyLogged: false, beyondPlan };
     }
 
     if (error?.code === "23505") {
@@ -108,7 +108,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
         throw new Error("Set retry lookup failed: " + existingError.message);
       }
       if (existing) {
-        return { ok: true, setLog: existing, alreadyLogged: true };
+        return { ok: true, setLog: existing, alreadyLogged: true, beyondPlan };
       }
     }
 

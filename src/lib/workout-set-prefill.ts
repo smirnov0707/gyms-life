@@ -35,6 +35,23 @@ export function suggestedWeightPrefill(suggestedWeightKg: number | null | undefi
   return String(suggestedWeightKg);
 }
 
+/**
+ * The set number a resumed exercise should continue from.
+ *
+ * Gaps inside the plan are filled first, so abandoning set 2 and coming back
+ * lands on set 2 rather than skipping it. Once the planned sets are all
+ * logged, the next set continues past the highest one recorded — a session
+ * may already hold sets beyond the plan, and restarting at `planned + 1`
+ * would collide with one of them and silently overwrite real work.
+ */
+export function nextSetNumber(totalSets: number, completedSetNumbers: Set<number>): number {
+  for (let set = 1; set <= totalSets; set += 1) {
+    if (!completedSetNumbers.has(set)) return set;
+  }
+  const highest = completedSetNumbers.size === 0 ? 0 : Math.max(...completedSetNumbers);
+  return Math.max(totalSets, highest) + 1;
+}
+
 /** Reps move one at a time; load moves in the smallest plate jump. */
 export const REPS_STEP = 1;
 export const WEIGHT_STEP_KG = 2.5;

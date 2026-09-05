@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TrainingPlanDay } from "./training-plan.schema";
-import { validateWorkoutSetAgainstPlan } from "./workout-set.engine";
+import { MAX_SETS_PER_EXERCISE, validateWorkoutSetAgainstPlan } from "./workout-set.engine";
 
 const day: TrainingPlanDay = {
   day: 1,
@@ -20,7 +20,7 @@ describe("workout set engine", () => {
         exerciseName: "Squat",
         setNumber: 2,
       }),
-    ).toEqual(day.exercises[0]);
+    ).toEqual({ exercise: day.exercises[0], beyondPlan: false });
   });
 
   it("rejects an exercise that is not prescribed for the current day", () => {
@@ -33,7 +33,7 @@ describe("workout set engine", () => {
     ).toThrow("does not belong");
   });
 
-  it("rejects mismatched exercise labels and set numbers beyond the adjusted plan", () => {
+  it("rejects a mismatched exercise label", () => {
     expect(() =>
       validateWorkoutSetAgainstPlan(day, {
         exerciseSlug: "squat",
@@ -41,12 +41,34 @@ describe("workout set engine", () => {
         setNumber: 1,
       }),
     ).toThrow("name does not match");
-    expect(() =>
+  });
+
+  it("records a set past the plan instead of refusing it", () => {
+    // Refusing this set does not un-train the muscle. It only hides real work
+    // from the Twin, which would then model a body that did less than it did.
+    expect(
       validateWorkoutSetAgainstPlan(day, {
         exerciseSlug: "squat",
         exerciseName: "Squat",
         setNumber: 3,
       }),
-    ).toThrow("exceeds the planned 2 sets");
+    ).toEqual({ exercise: day.exercises[0], beyondPlan: true });
+  });
+
+  it("still bounds how many sets one exercise can hold", () => {
+    expect(
+      validateWorkoutSetAgainstPlan(day, {
+        exerciseSlug: "squat",
+        exerciseName: "Squat",
+        setNumber: MAX_SETS_PER_EXERCISE,
+      }).beyondPlan,
+    ).toBe(true);
+    expect(() =>
+      validateWorkoutSetAgainstPlan(day, {
+        exerciseSlug: "squat",
+        exerciseName: "Squat",
+        setNumber: MAX_SETS_PER_EXERCISE + 1,
+      }),
+    ).toThrow("50 sets");
   });
 });
