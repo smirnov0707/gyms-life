@@ -20,17 +20,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Export tracked source and dependency workspace without credentials
+      - name: Export tracked source and dependencies without credentials or duplicate media
         run: |
           set -eu
-          mkdir -p /tmp/twin-review/export /tmp/twin-review/workspace
+          mkdir -p /tmp/twin-review/{export,workspace,main,base}
           git archive HEAD | tar -x -C /tmp/twin-review/workspace
           cp -a node_modules /tmp/twin-review/workspace/node_modules
           git rev-parse HEAD > /tmp/twin-review/workspace/REVIEW_HEAD.txt
           tar -czf /tmp/twin-review/export/workspace.tar.gz -C /tmp/twin-review/workspace .
-          git archive --format=tar b7680640ade7f2a6e1be9b551b528b9467956746 | gzip > /tmp/twin-review/export/main.tar.gz
+          git archive b7680640ade7f2a6e1be9b551b528b9467956746 | tar -x --exclude=public -C /tmp/twin-review/main
+          tar -czf /tmp/twin-review/export/main.tar.gz -C /tmp/twin-review/main .
           BASE=$(git merge-base HEAD b7680640ade7f2a6e1be9b551b528b9467956746)
-          git archive --format=tar "$BASE" | gzip > /tmp/twin-review/export/base.tar.gz
+          git archive "$BASE" | tar -x --exclude=public -C /tmp/twin-review/base
+          tar -czf /tmp/twin-review/export/base.tar.gz -C /tmp/twin-review/base .
           printf 'head=%s\nmain=%s\nbase=%s\n' "$(git rev-parse HEAD)" b7680640ade7f2a6e1be9b551b528b9467956746 "$BASE" > /tmp/twin-review/export/refs.txt
       - uses: actions/upload-artifact@v4
         with:
