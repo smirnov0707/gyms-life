@@ -106,7 +106,7 @@ export function mountTwinScene(
       [[0, 2.8, -3], 0xc4f0dd, 3.6],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
-      light.position.set(...position);
+      light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
     const model = createTwinBody();
