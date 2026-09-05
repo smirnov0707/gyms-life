@@ -9,6 +9,7 @@ import type { HydrationInput } from "./hydration.schema";
 
 const base: HydrationInput = {
   bodyWeightKg: 80,
+  bodyFatPct: null,
   trainingMinutesToday: 0,
   proteinGramsToday: null,
   supplementCategories: [],
@@ -23,6 +24,32 @@ describe("calculateHydrationTarget", () => {
     expect(result.basis).toBe("personal");
     expect(ml(result, "baseline")).toBe(2640); // 80 × 33
     expect(result.targetMl).toBe(2650); // rounded to the nearest 50 ml
+  });
+
+  it("uses lean mass for the baseline when body fat is known", () => {
+    // Water is held in lean tissue. 80 kg at 20% fat is 64 kg lean.
+    const result = calculateHydrationTarget({ ...base, bodyFatPct: 20 });
+    expect(ml(result, "baseline")).toBe(2624); // 64 × 41
+    expect(result.components[0]?.inputs["leanKg"]).toBe(64);
+    expect(result.components[0]?.inputs["bodyFatPct"]).toBe(20);
+  });
+
+  it("stays within a rounding step of the total-mass rule at average composition", () => {
+    // The two rules must not disagree meaningfully for the person in the
+    // middle, or knowing your body fat would appear to change your needs.
+    const byWeight = calculateHydrationTarget(base);
+    const byLean = calculateHydrationTarget({ ...base, bodyFatPct: 20 });
+    expect(Math.abs(byLean.targetMl - byWeight.targetMl)).toBeLessThanOrEqual(50);
+  });
+
+  it("separates a lean body from a heavy one at the same weight", () => {
+    const lean = calculateHydrationTarget({ ...base, bodyFatPct: 8 });
+    const heavy = calculateHydrationTarget({ ...base, bodyFatPct: 40 });
+    // Same 80 kg, very different lean mass, so a different requirement —
+    // which the total-mass rule could not express at all.
+    expect(lean.targetMl).toBeGreaterThan(heavy.targetMl);
+    expect(ml(lean, "baseline")).toBe(3018); // 73.6 × 41
+    expect(ml(heavy, "baseline")).toBe(1968); // 48 × 41
   });
 
   it("adds sweat replacement for the training actually logged today", () => {
@@ -72,6 +99,7 @@ describe("calculateHydrationTarget", () => {
   it("names every input it did not have", () => {
     const result = calculateHydrationTarget({
       bodyWeightKg: null,
+      bodyFatPct: null,
       trainingMinutesToday: 0,
       proteinGramsToday: null,
       supplementCategories: [],
@@ -82,6 +110,7 @@ describe("calculateHydrationTarget", () => {
   it("reports nothing missing once every input is present", () => {
     const result = calculateHydrationTarget({
       bodyWeightKg: 80,
+      bodyFatPct: null,
       trainingMinutesToday: 60,
       proteinGramsToday: 150,
       supplementCategories: ["creatine"],
@@ -94,6 +123,7 @@ describe("calculateHydrationTarget", () => {
     // feature and the UI has to be able to explain the number it shows.
     const huge = calculateHydrationTarget({
       bodyWeightKg: 150,
+      bodyFatPct: null,
       trainingMinutesToday: 240,
       proteinGramsToday: 400,
       supplementCategories: ["creatine", "preworkout"],
@@ -111,6 +141,7 @@ describe("calculateHydrationTarget", () => {
     expect(
       calculateHydrationTarget({
         bodyWeightKg: 95,
+        bodyFatPct: null,
         trainingMinutesToday: 120,
         proteinGramsToday: null,
         supplementCategories: ["creatine"],
@@ -121,6 +152,7 @@ describe("calculateHydrationTarget", () => {
   it("keeps the total equal to the components it reported", () => {
     const result = calculateHydrationTarget({
       bodyWeightKg: 82,
+      bodyFatPct: null,
       trainingMinutesToday: 75,
       proteinGramsToday: 190,
       supplementCategories: ["creatine", "preworkout"],

@@ -30,6 +30,7 @@ type Copy = {
   breakdown: string;
   componentLabel: Record<HydrationComponentKey, string>;
   baselineFrom: (weightKg: number, mlPerKg: number) => string;
+  leanFrom: (leanKg: number, mlPerKg: number, bodyFatPct: number) => string;
   trainingFrom: (minutes: number) => string;
   proteinFrom: (grams: number, perKg: number) => string;
   genericBaseline: string;
@@ -56,6 +57,8 @@ function copyFor(lang: string): Copy {
         protein: "High protein day",
       },
       baselineFrom: (weightKg, mlPerKg) => `${weightKg} kg × ${mlPerKg} ml`,
+      leanFrom: (leanKg, mlPerKg, bodyFatPct) =>
+        `${leanKg} kg lean (${bodyFatPct}% fat) × ${mlPerKg} ml`,
       trainingFrom: (minutes) => `${minutes} min logged`,
       proteinFrom: (grams, perKg) => `${grams} g · ${perKg} g/kg`,
       genericBaseline: "General adult default",
@@ -86,6 +89,8 @@ function copyFor(lang: string): Copy {
       protein: "Daug baltymų diena",
     },
     baselineFrom: (weightKg, mlPerKg) => `${weightKg} kg × ${mlPerKg} ml`,
+    leanFrom: (leanKg, mlPerKg, bodyFatPct) =>
+      `${leanKg} kg liesos masės (${bodyFatPct}% riebalų) × ${mlPerKg} ml`,
     trainingFrom: (minutes) => `${minutes} min. užregistruota`,
     proteinFrom: (grams, perKg) => `${grams} g · ${perKg} g/kg`,
     genericBaseline: "Bendras suaugusiojo vidurkis",
@@ -112,8 +117,11 @@ function componentBasis(
   component: HydrationTarget["components"][number],
   copy: Copy,
 ): string | null {
-  const { weightKg, mlPerKg, minutes, proteinG, perKg } = component.inputs;
+  const { weightKg, mlPerKg, minutes, proteinG, perKg, leanKg, bodyFatPct } = component.inputs;
   if (component.key === "baseline") {
+    if (leanKg !== undefined && mlPerKg !== undefined && bodyFatPct !== undefined) {
+      return copy.leanFrom(leanKg, mlPerKg, bodyFatPct);
+    }
     return weightKg !== undefined && mlPerKg !== undefined
       ? copy.baselineFrom(weightKg, mlPerKg)
       : copy.genericBaseline;

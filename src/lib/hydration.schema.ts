@@ -55,6 +55,12 @@ export type HydrationTarget = z.infer<typeof HydrationTargetSchema>;
 export const HydrationInputSchema = z
   .object({
     bodyWeightKg: z.number().positive().nullable(),
+    /**
+     * Body fat percentage from the most recent measurement that has one.
+     * Water is held in lean tissue, not fat, so this sharpens the baseline
+     * whenever it is known.
+     */
+    bodyFatPct: z.number().min(1).max(75).nullable(),
     trainingMinutesToday: z.number().nonnegative(),
     proteinGramsToday: z.number().nonnegative().nullable(),
     supplementCategories: z.array(z.string()),
