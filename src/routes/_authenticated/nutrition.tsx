@@ -11,6 +11,7 @@ import { useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 import { logMeal } from "@/lib/nutrition.functions";
+import { resolveNutritionTargets, type NutritionTargets } from "@/lib/nutrition-targets.engine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QuickHydrationWidget } from "@/components/QuickHydrationWidget";
@@ -45,11 +46,13 @@ function Ring({
   unit,
 }: {
   value: number;
-  target: number;
+  /** Null when we have nothing to set a target from; the ring then shows the
+   *  amount eaten with no goal ring rather than a goal we invented. */
+  target: number | null;
   label: string;
   unit: string;
 }) {
-  const pct = Math.min(100, Math.round((value / Math.max(1, target)) * 100));
+  const pct = target === null ? 0 : Math.min(100, Math.round((value / Math.max(1, target)) * 100));
   return (
     <div className="panel flex flex-col items-center gap-2 p-5">
       <div
@@ -67,11 +70,26 @@ function Ring({
       </div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="text-xs text-primary">
-        {pct}% / {Math.round(target)}
-        {unit}
+        {target === null ? "—" : `${pct}% / ${Math.round(target)}${unit}`}
       </div>
     </div>
   );
+}
+
+/** Says where the targets came from, so an estimate never reads as a plan. */
+function targetsNote(targets: NutritionTargets, lang: string): string {
+  const en = lang === "en";
+  if (targets.basis === "meal_plan") {
+    return en ? "Targets from your active meal plan." : "Tikslai iš tavo aktyvaus mitybos plano.";
+  }
+  if (targets.basis === "estimated") {
+    return en
+      ? "Estimated from your body weight and goal. Generate a meal plan for targets built around your food."
+      : "Įvertinta pagal tavo svorį ir tikslą. Susikurk mitybos planą, kad tikslai būtų pritaikyti tavo maistui.";
+  }
+  return en
+    ? "No targets yet — add your body weight or generate a meal plan."
+    : "Tikslų kol kas nėra — įvesk savo svorį arba susikurk mitybos planą.";
 }
 
 function NutritionPage() {
@@ -92,6 +110,24 @@ function NutritionPage() {
           "id, display_name, locale, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, location, days_per_week, session_minutes, equipment, limitations, onboarded, created_at, updated_at, diet, allergies, dislikes, meals_per_day",
         )
         .eq("id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // The active plan's own targets: the same numbers the coach reads, so the
+  // screen cannot show one figure while the coach discusses another.
+  const { data: activePlan } = useQuery({
+    queryKey: ["meal-plan-targets", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("meal_plans")
+        .select("kcal_target, protein_target, fat_target, carbs_target")
+        .eq("user_id", user!.id)
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       return data;
     },
@@ -134,12 +170,14 @@ function NutritionPage() {
   const todays = (logs ?? []).filter((l) => l.logged_on === today);
   const sum = (k: keyof Row) => todays.reduce((s, l) => s + Number(l[k] ?? 0), 0);
 
-  const weight = Number(profile?.weight_kg ?? 75);
-  const goal = String(profile?.goal ?? "muscle");
-  const kcalTarget = Math.round(weight * (goal === "lose" ? 28 : goal === "muscle" ? 38 : 34));
-  const proteinTarget = Math.round(weight * 2);
-  const fatTarget = Math.round(weight * 0.9);
-  const carbTarget = Math.max(50, Math.round((kcalTarget - proteinTarget * 4 - fatTarget * 9) / 4));
+  const targets = resolveNutritionTargets({
+    planKcal: activePlan?.kcal_target ?? null,
+    planProteinG: activePlan?.protein_target ?? null,
+    planFatG: activePlan?.fat_target ?? null,
+    planCarbsG: activePlan?.carbs_target ?? null,
+    bodyWeightKg: profile?.weight_kg == null ? null : Number(profile.weight_kg),
+    goal: profile?.goal ?? null,
+  });
 
   return (
     <div className="grid gap-8">
@@ -180,11 +218,19 @@ function NutritionPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Ring value={sum("calories")} target={kcalTarget} label={t("nut.kcal")} unit="" />
-        <Ring value={sum("protein")} target={proteinTarget} label={t("nut.protein")} unit="g" />
-        <Ring value={sum("carbs")} target={carbTarget} label={t("nut.carbs")} unit="g" />
-        <Ring value={sum("fat")} target={fatTarget} label={t("nut.fat")} unit="g" />
+      <div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Ring value={sum("calories")} target={targets.kcal} label={t("nut.kcal")} unit="" />
+          <Ring
+            value={sum("protein")}
+            target={targets.proteinG}
+            label={t("nut.protein")}
+            unit="g"
+          />
+          <Ring value={sum("carbs")} target={targets.carbsG} label={t("nut.carbs")} unit="g" />
+          <Ring value={sum("fat")} target={targets.fatG} label={t("nut.fat")} unit="g" />
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">{targetsNote(targets, lang)}</p>
       </div>
 
       {/* Fluids are intake like the rest of this page, so they are logged
