@@ -1,0 +1,42 @@
+[
+  {
+    "name": "full 360-degree horizontal orbit",
+    "status": "passed"
+  },
+  {
+    "name": "mesh raycast selects chest; dragging does not select another region",
+    "status": "passed"
+  },
+  {
+    "name": "zoom and keyboard camera controls",
+    "status": "passed"
+  },
+  {
+    "name": "unknown evidence stays unknown after selection and source updates",
+    "status": "passed"
+  },
+  {
+    "name": "real WebGL context loss, retry and manual 2D fallback",
+    "status": "passed"
+  },
+  {
+    "name": "strict-mode mount/unmount cleanup without uncaught browser errors",
+    "status": "passed"
+  },
+  {
+    "name": "mobile two-finger zoom, front/back/side views and 320px layout",
+    "status": "passed"
+  },
+  {
+    "name": "reduced motion keeps 3D interactive without continuous rendering",
+    "status": "passed"
+  },
+  {
+    "name": "WebGL unavailable preserves an accessible 2D evidence surface",
+    "status": "passed"
+  },
+  {
+    "name": "evidence list stays legible in the light theme (contrast 16.3:1)",
+    "status": "passed"
+  }
+]
