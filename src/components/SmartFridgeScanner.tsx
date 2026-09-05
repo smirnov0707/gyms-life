@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { generateFridgeRecipe, type FridgeRecipe } from "@/lib/fridge.functions";
 import { errorMessage } from "@/lib/error-message";
+import { resolveNutritionTargets } from "@/lib/nutrition-targets.engine";
 
 export const SmartFridgeScanner: React.FC = () => {
   const { t, lang } = useI18n();
@@ -42,8 +43,35 @@ export const SmartFridgeScanner: React.FC = () => {
     enabled: !!user,
   });
 
-  const weight = Number(profile?.weight_kg ?? 75);
-  const goal = String(profile?.goal ?? "muscle");
+  // The active plan's targets when there is one, otherwise an estimate from
+  // a real body weight — and nothing at all when we have neither. The
+  // recipe prompt treats these as optional, so an absent target simply is
+  // not mentioned rather than being invented from a 75 kg body nobody has.
+  const { data: activePlan } = useQuery({
+    queryKey: ["meal-plan-targets", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("meal_plans")
+        .select("kcal_target, protein_target, fat_target, carbs_target")
+        .eq("user_id", user!.id)
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const goal = profile?.goal ?? null;
+  const targets = resolveNutritionTargets({
+    planKcal: activePlan?.kcal_target ?? null,
+    planProteinG: activePlan?.protein_target ?? null,
+    planFatG: activePlan?.fat_target ?? null,
+    planCarbsG: activePlan?.carbs_target ?? null,
+    bodyWeightKg: profile?.weight_kg == null ? null : Number(profile.weight_kg),
+    goal,
+  });
 
   const addIngredient = () => {
     const v = inputVal.trim();
@@ -66,9 +94,9 @@ export const SmartFridgeScanner: React.FC = () => {
         data: {
           ingredients,
           lang,
-          goal,
-          kcalLeft: Math.round(weight * (goal === "lose" ? 28 : goal === "muscle" ? 38 : 34)),
-          proteinLeft: Math.round(weight * 2),
+          goal: goal ?? "",
+          ...(targets.kcal === null ? {} : { kcalLeft: targets.kcal }),
+          ...(targets.proteinG === null ? {} : { proteinLeft: targets.proteinG }),
           variant: seed,
         },
       });

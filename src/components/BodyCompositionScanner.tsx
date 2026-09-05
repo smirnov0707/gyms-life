@@ -21,7 +21,8 @@ import { analyzeBodyScan } from "@/lib/body-scan.functions";
 import { errorMessage } from "@/lib/error-message";
 
 type Result = {
-  confidence: number;
+  /** Null when nothing supported a confidence figure; shown as unknown. */
+  confidence: number | null;
   saved: boolean;
   bodyFat: number | null;
   methods: { navy: number | null; bmi: number | null; visual: number | null };
@@ -72,6 +73,7 @@ const COPY = {
 
     rejected: "Nuotrauka atmesta",
     confidence: "Patikimumas",
+    confidenceUnknown: "nežinomas",
     bodyFat: "Riebalai",
     waist: "Liemuo",
     neck: "Kaklas",
@@ -121,6 +123,7 @@ const COPY = {
 
     rejected: "Photo rejected",
     confidence: "Confidence",
+    confidenceUnknown: "unknown",
     bodyFat: "Body fat",
     waist: "Waist",
     neck: "Neck",
@@ -758,7 +761,9 @@ export const BodyCompositionScanner: React.FC<{
 
           {result.summary && <p className="text-xs text-muted-foreground">{result.summary}</p>}
           <p className="text-[11px] font-mono text-primary">
-            {c.confidence}: {result.confidence}% · {result.saved ? c.saved : c.notSaved}
+            {c.confidence}:{" "}
+            {result.confidence === null ? c.confidenceUnknown : `${result.confidence}%`} ·{" "}
+            {result.saved ? c.saved : c.notSaved}
           </p>
         </div>
       )}

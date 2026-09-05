@@ -195,18 +195,24 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
     // agreement between independent methods = objective accuracy signal
     const values = parts.map((p) => p.value);
     const spread = values.length > 1 ? Math.max(...values) - Math.min(...values) : null;
-    const aiConfidence = result.confidence ?? 60;
-    const confidence = Math.max(
-      20,
-      Math.min(
-        99,
-        Math.round(
-          spread == null
-            ? aiConfidence * 0.8
-            : aiConfidence * 0.6 + Math.max(0, 100 - spread * 8) * 0.4,
-        ),
-      ),
-    );
+    // Confidence is only ever reported when something actually supports it.
+    // The model's own estimate is optional in the response, and defaulting a
+    // missing one to 60 put a middling, reassuring number in front of the
+    // athlete that nothing had assessed.
+    const aiConfidence = result.confidence ?? null;
+    // Agreement between independent methods: an objective signal we compute
+    // ourselves, and the better of the two when both exist.
+    const agreement = spread === null ? null : Math.max(0, 100 - spread * 8);
+    const clamp = (value: number) => Math.min(99, Math.max(0, Math.round(value)));
+
+    const confidence =
+      agreement !== null && aiConfidence !== null
+        ? clamp(aiConfidence * 0.6 + agreement * 0.4)
+        : agreement !== null
+          ? clamp(agreement)
+          : aiConfidence !== null
+            ? clamp(aiConfidence * 0.8)
+            : null;
 
     const weightKg = data.weightKg ?? result.estimatedWeightKg ?? null;
     const leanMassKg = weightKg && bodyFat != null ? round1(weightKg * (1 - bodyFat / 100)) : null;
