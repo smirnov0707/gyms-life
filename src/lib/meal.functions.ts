@@ -60,13 +60,19 @@ export const generateMealPlan = createServerFn({ method: "POST" })
         metadata: { generation_parts: 2 },
       },
       async () => {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileReadError } = await supabase
           .from("profiles")
           .select(
             "display_name, birth_year, gender, height_cm, weight_kg, target_weight_kg, goal, days_per_week, experience, limitations",
           )
           .eq("id", userId)
           .maybeSingle();
+        // Every field below is passed as null when it is genuinely unknown,
+        // which the model handles. A failed read is not the same thing: it
+        // would spend an LLM call building a generic plan and hand it to the
+        // athlete as theirs.
+        if (profileReadError)
+          throw new Error(`Could not read your profile: ${profileReadError.message}`);
 
         const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
@@ -134,7 +140,7 @@ ${
           weight_kg: profile?.weight_kg ?? null,
           target_weight_kg: profile?.target_weight_kg ?? null,
           goal: profile?.goal ?? null,
-          training_days_per_week: profile?.days_per_week ?? 3,
+          training_days_per_week: profile?.days_per_week ?? null,
         })}
 Preferences: ${JSON.stringify({
           diet: data.diet,

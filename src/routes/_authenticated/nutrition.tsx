@@ -158,13 +158,14 @@ function NutritionPage() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select(
           "id, display_name, locale, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, location, days_per_week, session_minutes, equipment, limitations, onboarded, created_at, updated_at, diet, allergies, dislikes, meals_per_day",
         )
         .eq("id", user!.id)
         .maybeSingle();
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,

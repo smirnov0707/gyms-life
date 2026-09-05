@@ -167,12 +167,15 @@ export const askCoach = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: history } = await supabase
+    const { data: history, error: historyError } = await supabase
       .from("coach_messages")
       .select("role, content")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10);
+    // Losing the history silently makes the coach answer as if the
+    // conversation had never happened.
+    if (historyError) throw new Error(historyError.message);
     const priorTurns = (history ?? [])
       .slice()
       .reverse()

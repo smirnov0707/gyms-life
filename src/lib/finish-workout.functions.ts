@@ -63,6 +63,11 @@ export const finishWorkout = createServerFn({ method: "POST" })
     // Part IX body replay: what this session actually worked. Measured from
     // the sets just logged, not modelled — recovery decay is a separate
     // question answered by muscle-load.engine over a window.
+    // Deliberately not fatal. `finished_at` is written below, so throwing
+    // here would refuse to finish a session the athlete has already done,
+    // over a read that only feeds the replay. A missing catalogue maps every
+    // set to no muscle group, the breakdown comes back empty, and the screen
+    // hides the replay rather than showing a false one.
     const { data: catalogue } = await supabase.from("exercises").select("slug, muscle_group");
     const { buildSessionMuscleBreakdown } = await import("./session-muscle-breakdown");
     const muscleBreakdown = buildSessionMuscleBreakdown(

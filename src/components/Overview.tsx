@@ -71,20 +71,28 @@ export function Overview() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("id, display_name")
         .eq("id", user!.id)
         .maybeSingle();
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,
   });
 
-  const { data: plan, isLoading } = useQuery({
+  const {
+    data: plan,
+    isLoading,
+    isError: planReadFailed,
+  } = useQuery({
     queryKey: ["active-plan", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      // A failed read used to arrive as `null`, which this screen renders
+      // as "you have no programme yet" — and offers to generate one — to an
+      // athlete whose programme is sitting right there in the database.
+      const { data, error } = await supabase
         .from("plans")
         .select("id, data, lang")
         .eq("user_id", user!.id)
@@ -92,6 +100,7 @@ export function Overview() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,
@@ -104,15 +113,19 @@ export function Overview() {
     staleTime: 60_000,
   });
 
-  const { data: checkin } = useQuery({
+  const { data: checkin, isError: readinessReadFailed } = useQuery({
     queryKey: ["today-checkin", user?.id, localDay],
     queryFn: async () => {
-      const { data } = await supabase
+      // Same shape: a failure here silently removed the whole readiness
+      // card, which reads as "you have not checked in" rather than "we
+      // could not look".
+      const { data, error } = await supabase
         .from("daily_checkins")
         .select("readiness_score")
         .eq("user_id", user!.id)
         .eq("checkin_on", localDay)
         .maybeSingle();
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,
@@ -177,7 +190,9 @@ export function Overview() {
               {planData.title}
             </p>
           ) : (
-            <p className="mt-1.5 text-sm text-muted-foreground">{t("ob.sub")}</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              {planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+            </p>
           )}
         </div>
 
@@ -199,7 +214,7 @@ export function Overview() {
 
       <section
         aria-label={t("nav.today")}
-        className={`grid gap-4 ${readinessScore != null ? "lg:grid-cols-2" : ""} ${anim("delay-100")}`}
+        className={`grid gap-4 ${readinessScore != null || readinessReadFailed ? "lg:grid-cols-2" : ""} ${anim("delay-100")}`}
       >
         {readinessScore != null ? (
           <ReadinessCard
@@ -207,6 +222,10 @@ export function Overview() {
             state={recoveryState}
             ring={<ReadinessRing score={readinessScore} />}
           />
+        ) : readinessReadFailed ? (
+          <p className="rounded-2xl border border-border bg-surface-2 p-4 text-sm text-muted-foreground">
+            {t("ov.readinessReadFailed")}
+          </p>
         ) : null}
         <TodayLifeContext />
       </section>
