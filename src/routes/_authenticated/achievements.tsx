@@ -34,7 +34,7 @@ function AchievementsPage() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
 
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: ["achievements", user?.id],
     queryFn: async () => {
       const [sessions, forms, checkins] = await Promise.all([
@@ -46,6 +46,12 @@ function AchievementsPage() {
         supabase.from("form_analyses").select("score").eq("user_id", user!.id),
         supabase.from("daily_checkins").select("checkin_on").eq("user_id", user!.id),
       ]);
+      // Carried over from the server function this screen replaced, which
+      // checked its reads and this one did not: a failure arrived as an empty
+      // array, so every badge locked and the streak reset to zero for someone
+      // who had earned them.
+      const failure = sessions.error ?? forms.error ?? checkins.error;
+      if (failure) throw new Error(failure.message);
       return {
         sessions: sessions.data ?? [],
         forms: forms.data ?? [],
@@ -103,6 +109,12 @@ function AchievementsPage() {
         <h1 className="mt-1 text-5xl">{t("ach.title")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("ach.sub")}</p>
       </header>
+
+      {isError ? (
+        <p className="rounded-2xl border border-border bg-surface-2 p-4 text-sm text-muted-foreground">
+          {t("ach.readFailed")}
+        </p>
+      ) : null}
 
       <div className="panel relative overflow-hidden p-6 md:p-8">
         <div className="grain-hero pointer-events-none absolute inset-0 opacity-40" />

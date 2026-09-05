@@ -10,6 +10,16 @@ export const extra_overview = {
     es: "No se pudo leer tu programa. No se ha perdido: recarga la página.",
     fr: "Votre programme n'a pas pu être lu. Il n'est pas perdu — rechargez la page.",
   },
+  "ach.readFailed": {
+    lt: "Nepavyko perskaityti tavo istorijos, todėl ženkleliai ir serija žemiau nėra tikri.",
+    en: "Your history could not be read, so the badges and streak below are not real.",
+    ru: "Не удалось прочитать вашу историю, поэтому значки и серия ниже недостоверны.",
+    uk: "Не вдалося прочитати вашу історію, тому значки та серія нижче недостовірні.",
+    pl: "Nie udało się odczytać twojej historii, więc odznaki i seria poniżej nie są prawdziwe.",
+    de: "Dein Verlauf konnte nicht gelesen werden, daher sind Abzeichen und Serie unten nicht echt.",
+    es: "No se pudo leer tu historial, así que las insignias y la racha de abajo no son reales.",
+    fr: "Votre historique n'a pas pu être lu : les badges et la série ci-dessous ne sont pas réels.",
+  },
   "ov.readinessReadFailed": {
     lt: "Nepavyko perskaityti šiandienos pasiruošimo. Tai skaitymo klaida, ne tavo būklė.",
     en: "Today's readiness could not be read. That is a read failure, not your state.",

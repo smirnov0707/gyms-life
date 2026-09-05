@@ -27,11 +27,6 @@ const AI_TASK_POLICIES = {
     contextScope: "none",
   },
   "coach.ask": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
-  "coach.session-debrief": {
-    model: "groq/openai/gpt-oss-120b",
-    contextScope: "personalized",
-  },
-  "coach.set-advice": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
   "coach.warmup": { model: "google/gemini-2.5-flash", contextScope: "personalized" },
   "daily-brief": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
   "daily-readiness": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
@@ -61,7 +56,6 @@ const AI_TASK_POLICIES = {
     contextScope: "none",
   },
   fridge: { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
-  "ghost-coach": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
   "meal-adaptation": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
   "meal-plan": {
     model: "google/gemini-3.1-flash-lite",
