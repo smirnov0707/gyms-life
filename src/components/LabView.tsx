@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Brain, FlaskConical, Loader2 } from "lucide-react";
-import { GlowCard } from "@/components/GlowCard";
+import { Brain, ChevronDown, FlaskConical, Loader2 } from "lucide-react";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getLabOverview } from "@/lib/lab.functions";
@@ -39,15 +39,19 @@ type Copy = {
   accuracyPending: (needed: number) => string;
   fitRate: string;
   answeredOf: (answered: number, proposed: number) => string;
+  currentInvestigation: string;
+  evidenceProgress: string;
+  otherInvestigations: string;
+  decisionHistory: string;
 };
 
 function copyFor(lang: Lang): Copy {
   if (baseLang(lang) === "en") {
     return {
       eyebrow: "LAB",
-      title: "What GYMS.LIFE is investigating",
+      title: "What your system is learning",
       description:
-        "Real hypotheses and recent decisions, with their evidence — never a generated story.",
+        "Patterns are treated as hypotheses until your own evidence supports or contradicts them.",
       loading: "Loading your Lab data…",
       unavailable: "Lab is temporarily unavailable.",
       hypothesesTitle: "Hypotheses",
@@ -97,21 +101,25 @@ function copyFor(lang: Lang): Copy {
       },
       noOutcome: "No response yet",
       evidenceCount: (count) => `${count} evidence point${count === 1 ? "" : "s"}`,
-      accuracyTitle: "How our proposals landed",
+      accuracyTitle: "Decision fit",
       accuracyNote:
-        "How often a proposed action was taken up, grouped by what the decision was based on. This is not a measure of whether the training advice was right — only whether it fitted your day.",
+        "How often a proposed action was taken up. This measures fit with your day, not whether advice was medically or scientifically correct.",
       accuracyPending: (needed) =>
         `At least ${needed} answered decisions are needed before a rate is shown.`,
       fitRate: "Taken up",
       answeredOf: (answered, proposed) => `${answered} answered of ${proposed} proposed`,
+      currentInvestigation: "Current investigation",
+      evidenceProgress: "Evidence progress",
+      otherInvestigations: "Other investigations",
+      decisionHistory: "Decision history & fit",
     };
   }
 
   return {
     eyebrow: "LABORATORIJA",
-    title: "Ką GYMS.LIFE tiria",
+    title: "Ką tavo sistema mokosi suprasti",
     description:
-      "Realios hipotezės ir naujausi sprendimai su jų įrodymais — ne sugeneruota istorija.",
+      "Dėsningumai laikomi hipotezėmis tol, kol tavo paties duomenys juos patvirtina arba paneigia.",
     loading: "Kraunami laboratorijos duomenys…",
     unavailable: "Laboratorija šiuo metu nepasiekiama.",
     hypothesesTitle: "Hipotezės",
@@ -161,171 +169,253 @@ function copyFor(lang: Lang): Copy {
     },
     noOutcome: "Dar be atsakymo",
     evidenceCount: (count) => `${count} įrodymo taškas(-ai)`,
-    accuracyTitle: "Kaip pavyko mūsų pasiūlymai",
+    accuracyTitle: "Sprendimų atitikimas",
     accuracyNote:
-      "Kaip dažnai pasiūlytas veiksmas buvo priimtas, pagal sprendimo pagrindą. Tai nematuoja, ar treniruočių patarimas buvo teisingas — tik ar jis tiko tavo dienai.",
+      "Kaip dažnai pasiūlytas veiksmas buvo priimtas. Tai matuoja atitikimą tavo dienai, o ne medicininį ar mokslinį patarimo teisingumą.",
     accuracyPending: (needed) =>
       `Reikia bent ${needed} atsakytų sprendimų, kad būtų rodomas santykis.`,
     fitRate: "Priimta",
     answeredOf: (answered, proposed) => `atsakyta ${answered} iš ${proposed} pasiūlytų`,
+    currentInvestigation: "Dabartinis tyrimas",
+    evidenceProgress: "Įrodymų progresas",
+    otherInvestigations: "Kiti tyrimai",
+    decisionHistory: "Sprendimų istorija ir atitikimas",
   };
 }
 
 function statusTone(status: HypothesisStatus): string {
-  if (status === "supported") return "text-primary";
+  if (status === "supported") return "text-emerald-400";
   if (status === "contradicted") return "text-rose-400";
-  if (status === "monitoring") return "text-accent";
-  return "text-muted-foreground";
+  if (status === "monitoring") return "text-amber-300";
+  return "text-neutral-500";
 }
 
-function HypothesisCard({ hypothesis, copy }: { hypothesis: AthleteHypothesis; copy: Copy }) {
+function progressFor(hypothesis: AthleteHypothesis): number {
+  if (hypothesis.minimumEvidenceCount <= 0) return 100;
+  return Math.min(
+    100,
+    Math.round((hypothesis.evidenceCount / hypothesis.minimumEvidenceCount) * 100),
+  );
+}
+
+function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; copy: Copy }) {
   return (
-    <article className="rounded-2xl border border-border bg-surface-2 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          {copy.domainLabel[hypothesis.domain]}
-        </span>
+    <article className="border-b border-white/[0.06] py-4 last:border-b-0">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+            {copy.domainLabel[hypothesis.domain]}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-neutral-300">
+            {copy.statementLabel[hypothesis.statementKey] ?? copy.statementFallback}
+          </p>
+        </div>
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider ${statusTone(hypothesis.status)}`}
+          className={`shrink-0 text-[9px] font-bold uppercase tracking-[0.14em] ${statusTone(hypothesis.status)}`}
         >
           {copy.statusLabel[hypothesis.status]}
         </span>
       </div>
-      <p className="mt-2 text-sm font-medium leading-relaxed text-foreground">
-        {copy.statementLabel[hypothesis.statementKey] ?? copy.statementFallback}
-      </p>
-      <p className="mt-2 text-xs text-muted-foreground">
-        {copy.evidenceCount(hypothesis.evidenceCount)}
-        {/* Only show the target when evidence is genuinely short of it.
-            A hypothesis can hold enough evidence and still be "monitoring"
-            for other reasons; "12 / 8" would misread as insufficient. */}
-        {hypothesis.evidenceCount < hypothesis.minimumEvidenceCount
-          ? ` / ${hypothesis.minimumEvidenceCount}`
-          : ""}
-      </p>
+      <div className="mt-3 flex items-center gap-3">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
+          <div
+            className="h-full rounded-full bg-emerald-400/70"
+            style={{ width: `${progressFor(hypothesis)}%` }}
+          />
+        </div>
+        <span className="shrink-0 font-mono text-[10px] text-neutral-600">
+          {hypothesis.evidenceCount}/{hypothesis.minimumEvidenceCount}
+        </span>
+      </div>
     </article>
   );
 }
 
 function DecisionRow({ decision, copy }: { decision: LabDecision; copy: Copy }) {
   return (
-    <article className="rounded-2xl border border-border bg-surface-2 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-mono text-muted-foreground">{decision.decisionOn}</span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          {decision.outcome ? copy.outcomeLabel[decision.outcome] : copy.noOutcome}
-        </span>
+    <article className="flex items-start justify-between gap-4 border-b border-white/[0.06] py-3 last:border-b-0">
+      <div className="min-w-0">
+        <p className="text-sm text-neutral-300">{copy.actionLabel[decision.action]}</p>
+        <p className="mt-1 text-[11px] text-neutral-600">
+          {decision.decisionOn} · {copy.basisLabel[decision.basis]}
+        </p>
       </div>
-      <p className="mt-2 text-sm font-medium text-foreground">
-        {copy.actionLabel[decision.action]}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{copy.basisLabel[decision.basis]}</p>
-      {decision.evidence.length > 0 ? (
-        <ul className="mt-3 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
-          {decision.evidence.map((item) => (
-            <li key={item.key}>
-              {item.key.replaceAll("_", " ")}: {item.value}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+        {decision.outcome ? copy.outcomeLabel[decision.outcome] : copy.noOutcome}
+      </span>
     </article>
   );
 }
 
-/**
- * Presentational half of the Lab page, kept free of data fetching so the
- * layout can be rendered and reviewed from a known overview.
- */
 export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const primary = data.hypotheses[0] ?? null;
+  const secondary = data.hypotheses.slice(1);
+
   return (
-    <div className="space-y-6">
-      <GlowCard className="panel relative overflow-hidden p-6 md:p-7">
-        <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-          <FlaskConical className="size-4" /> {copy.eyebrow}
-        </p>
-        <h1 className="mt-2 text-2xl sm:text-3xl">{copy.title}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          {copy.description}
-        </p>
-      </GlowCard>
+    <div className="space-y-4">
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(60% 120% at 0% 0%, rgba(16,185,129,.10), transparent 64%), radial-gradient(55% 90% at 100% 100%, rgba(245,158,11,.05), transparent 68%)",
+          }}
+        />
 
-      <section>
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Brain className="size-4 text-primary" /> {copy.hypothesesTitle}
-        </h2>
-        {data.hypotheses.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-surface-2 p-4 text-sm text-muted-foreground">
-            {copy.hypothesesEmpty}
+        <div className="relative">
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
+            <FlaskConical className="size-4" /> {copy.eyebrow}
           </p>
-        ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.hypotheses.map((hypothesis) => (
-              <HypothesisCard key={hypothesis.id} hypothesis={hypothesis} copy={copy} />
-            ))}
-          </div>
-        )}
-      </section>
+          <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            {copy.title}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
+            {copy.description}
+          </p>
 
-      <section>
-        <h2 className="text-sm font-semibold text-foreground">{copy.decisionsTitle}</h2>
-        {data.decisions.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-surface-2 p-4 text-sm text-muted-foreground">
-            {copy.decisionsEmpty}
-          </p>
-        ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.decisions.map((decision) => (
-              <DecisionRow key={decision.id} decision={decision} copy={copy} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h2 className="text-sm font-semibold text-foreground">{copy.accuracyTitle}</h2>
-        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-          {copy.accuracyNote}
-        </p>
-        {data.decisionAccuracy.byBasis.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-surface-2 p-4 text-sm text-muted-foreground">
-            {copy.decisionsEmpty}
-          </p>
-        ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {data.decisionAccuracy.byBasis.map((entry) => (
-              <article
-                key={entry.basis}
-                className="rounded-2xl border border-border bg-surface-2 p-4"
-              >
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {copy.basisLabel[entry.basis]}
+          {primary ? (
+            <div className="mt-8 grid gap-7 border-t border-white/[0.06] pt-7 lg:grid-cols-[1fr_260px] lg:items-end">
+              <div>
+                <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-neutral-600">
+                  <Brain className="size-3.5 text-emerald-400" /> {copy.currentInvestigation}
                 </p>
-                {entry.fitRate === null ? (
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    {copy.accuracyPending(data.decisionAccuracy.minimumAnswered)}
-                  </p>
+                <p className="mt-3 max-w-2xl text-xl leading-relaxed text-white sm:text-2xl">
+                  {copy.statementLabel[primary.statementKey] ?? copy.statementFallback}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-[0.14em]">
+                  <span className="text-neutral-500">{copy.domainLabel[primary.domain]}</span>
+                  <span className={statusTone(primary.status)}>
+                    {copy.statusLabel[primary.status]}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-white/[0.07] bg-black/30 p-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+                      {copy.evidenceProgress}
+                    </p>
+                    <p className="mt-2 font-mono text-4xl tracking-[-0.06em] text-white">
+                      {primary.evidenceCount}
+                      <span className="ml-1 text-lg text-neutral-600">
+                        / {primary.minimumEvidenceCount}
+                      </span>
+                    </p>
+                  </div>
+                  <span className="font-mono text-xs text-neutral-600">
+                    {progressFor(primary)}%
+                  </span>
+                </div>
+                <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+                  <div
+                    className="h-full rounded-full bg-emerald-400"
+                    style={{ width: `${progressFor(primary)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-8 border-t border-white/[0.06] pt-7 text-sm text-neutral-500">
+              {copy.hypothesesEmpty}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {secondary.length > 0 ? (
+        <section className="rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02] px-5 py-2 sm:px-6">
+          <p className="pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-600">
+            {copy.otherInvestigations}
+          </p>
+          <div className="mt-1">
+            {secondary.map((hypothesis) => (
+              <HypothesisRow key={hypothesis.id} hypothesis={hypothesis} copy={copy} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-white/[0.02]">
+        <button
+          type="button"
+          onClick={() => setHistoryOpen((open) => !open)}
+          aria-expanded={historyOpen}
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
+        >
+          <div>
+            <p className="text-sm font-semibold text-white">{copy.decisionHistory}</p>
+            <p className="mt-1 text-xs text-neutral-600">{copy.accuracyNote}</p>
+          </div>
+          <ChevronDown
+            className={`size-4 shrink-0 text-neutral-500 transition-transform ${historyOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {historyOpen ? (
+          <div className="grid gap-0 border-t border-white/[0.06] lg:grid-cols-2">
+            <div className="px-5 py-4 sm:px-6 lg:border-r lg:border-white/[0.06]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+                {copy.decisionsTitle}
+              </p>
+              {data.decisions.length === 0 ? (
+                <p className="mt-3 text-sm text-neutral-500">{copy.decisionsEmpty}</p>
+              ) : (
+                <div className="mt-1">
+                  {data.decisions.map((decision) => (
+                    <DecisionRow key={decision.id} decision={decision} copy={copy} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 py-4 sm:px-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+                {copy.accuracyTitle}
+              </p>
+              <div className="mt-2 space-y-3">
+                {data.decisionAccuracy.byBasis.length === 0 ? (
+                  <p className="text-sm text-neutral-500">{copy.decisionsEmpty}</p>
                 ) : (
-                  <p className="mt-2 text-display text-2xl text-foreground">
-                    {Math.round(entry.fitRate * 100)}%
-                    <span className="ml-1 text-xs font-normal text-muted-foreground">
-                      {copy.fitRate}
-                    </span>
-                  </p>
+                  data.decisionAccuracy.byBasis.map((entry) => (
+                    <div
+                      key={entry.basis}
+                      className="flex items-center justify-between gap-4 border-b border-white/[0.06] py-3 last:border-b-0"
+                    >
+                      <div>
+                        <p className="text-xs text-neutral-400">{copy.basisLabel[entry.basis]}</p>
+                        <p className="mt-1 text-[10px] text-neutral-600">
+                          {copy.answeredOf(entry.answered, entry.proposed)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {entry.fitRate === null ? (
+                          <p className="max-w-36 text-[10px] leading-relaxed text-neutral-600">
+                            {copy.accuracyPending(data.decisionAccuracy.minimumAnswered)}
+                          </p>
+                        ) : (
+                          <p className="font-mono text-2xl text-white">
+                            {Math.round(entry.fitRate * 100)}%
+                            <span className="ml-1 text-[9px] uppercase tracking-[0.12em] text-neutral-600">
+                              {copy.fitRate}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
                 )}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {copy.answeredOf(entry.answered, entry.proposed)}
-                </p>
-              </article>
-            ))}
+              </div>
+            </div>
           </div>
-        )}
+        ) : null}
       </section>
     </div>
   );
 }
 
-/** Container: loads the overview and hands it to the presentational view. */
 export function LabView() {
   const { lang } = useI18n();
   const timeZone = browserTimeZone();
@@ -338,8 +428,8 @@ export function LabView() {
 
   if (isLoading) {
     return (
-      <section className="panel p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <section className="rounded-3xl border border-white/[0.07] bg-white/[0.02] p-6">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
           <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
         </div>
       </section>
@@ -347,7 +437,7 @@ export function LabView() {
   }
 
   if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
+    return <p className="text-sm text-neutral-500">{copy.unavailable}</p>;
   }
 
   return <LabOverviewView data={data} copy={copy} />;
