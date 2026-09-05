@@ -27,14 +27,15 @@ export async function loadHydrationTarget(
   const { start: dayStart, end: dayEnd } = dayBoundsInTimeZone(localDay, timeZone);
 
   const [measured, profile, sessions, nutrition, supplements] = await Promise.all([
+    // Weight and body fat are not always recorded together — a scale entry
+    // has one, a full scan has both — so take the most recent measurement
+    // that carries each rather than insisting they share a row.
     supabase
       .from("body_metrics")
-      .select("weight_kg, measured_on")
+      .select("weight_kg, body_fat, measured_on")
       .eq("user_id", userId)
-      .not("weight_kg", "is", null)
       .order("measured_on", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(30),
     supabase.from("profiles").select("weight_kg").eq("id", userId).maybeSingle(),
     supabase
       .from("workout_sessions")
@@ -51,12 +52,21 @@ export async function loadHydrationTarget(
     supabase.from("supplements").select("category").eq("user_id", userId).eq("is_active", true),
   ]);
 
+  const measurements = measured.data ?? [];
+  const latestWeight = measurements.find((row) => row.weight_kg != null)?.weight_kg;
+  const latestBodyFat = measurements.find((row) => row.body_fat != null)?.body_fat;
+
   const bodyWeightKg =
-    measured.data?.weight_kg != null
-      ? Number(measured.data.weight_kg)
+    latestWeight != null
+      ? Number(latestWeight)
       : profile.data?.weight_kg != null
         ? Number(profile.data.weight_kg)
         : null;
+
+  // Bounded to what the schema accepts; a stored oddity must not silently
+  // become a lean-mass figure the athlete would never recognise.
+  const rawBodyFat = latestBodyFat != null ? Number(latestBodyFat) : null;
+  const bodyFatPct = rawBodyFat !== null && rawBodyFat >= 1 && rawBodyFat <= 75 ? rawBodyFat : null;
 
   const trainingMinutesToday = (sessions.data ?? []).reduce(
     (sum, session) => sum + Math.max(0, Number(session.duration_seconds ?? 0)) / 60,
@@ -74,6 +84,7 @@ export async function loadHydrationTarget(
   return HydrationTargetSchema.parse(
     calculateHydrationTarget({
       bodyWeightKg: bodyWeightKg !== null && bodyWeightKg > 0 ? bodyWeightKg : null,
+      bodyFatPct,
       trainingMinutesToday,
       proteinGramsToday,
       supplementCategories: (supplements.data ?? []).map((row) => String(row.category)),

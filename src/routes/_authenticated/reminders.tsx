@@ -3,6 +3,10 @@ import { useMemo, useState } from "react";
 import { Bell, BellRing, Droplets, Dumbbell, Plus, Trash2, UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+import { getHydrationTarget } from "@/lib/hydration.functions";
+import { browserTimeZone } from "@/lib/local-day";
 import { Button } from "@/components/ui/button";
 import {
   daySchedule,
@@ -76,6 +80,7 @@ function Toggle({
 
 function RemindersPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const { settings, save, waterMl, addWater, resetWater, requestPush, fire } = useReminders();
   const [now] = useState(() => new Date());
 
@@ -84,12 +89,20 @@ function RemindersPage() {
     toast.success(t("rem.saved"));
   };
 
+  // One target for the whole app: the derived one. A hand-set number here
+  // would disagree with the widget and the coach, and nothing would say
+  // which of the two was right.
+  const { data: hydrationTarget } = useQuery({
+    queryKey: ["hydration-target", user?.id],
+    queryFn: () => getHydrationTarget({ data: browserTimeZone() }),
+    enabled: !!user,
+    staleTime: 5 * 60_000,
+  });
+  const targetMl = hydrationTarget?.targetMl ?? settings.water.targetMl;
+
   const upcoming = useMemo(() => nextReminder(settings), [settings]);
   const today = useMemo(() => daySchedule(settings, now.getDay()), [settings, now]);
-  const waterPct = Math.min(
-    100,
-    Math.round((waterMl / Math.max(1, settings.water.targetMl)) * 100),
-  );
+  const waterPct = Math.min(100, Math.round((waterMl / Math.max(1, targetMl)) * 100));
 
   const togglePush = async (v: boolean) => {
     if (!v) return patch({ push: false });
@@ -174,7 +187,6 @@ function RemindersPage() {
                 ["rem.from", "from", "time"],
                 ["rem.to", "to", "time"],
                 ["rem.every", "everyMin", "number"],
-                ["rem.target", "targetMl", "number"],
               ] as const
             ).map(([key, field, type]) => (
               <label key={field} className="grid gap-1.5 text-sm">
@@ -204,7 +216,7 @@ function RemindersPage() {
                 {t("rem.todayWater")}
               </span>
               <span className="text-display text-2xl text-primary">
-                {waterMl} / {settings.water.targetMl} ml
+                {waterMl} / {targetMl} ml
               </span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-border">

@@ -18,8 +18,19 @@ import {
  * Change any of these deliberately: they are user-visible.
  */
 
-/** Baseline maintenance per kilogram of body mass. */
+/** Baseline maintenance per kilogram of total body mass. */
 export const HYDRATION_ML_PER_KG = 33;
+
+/**
+ * Baseline per kilogram of lean mass, used when body fat is known.
+ *
+ * Body water lives in lean tissue, so lean mass is the better predictor.
+ * At an average composition (about 20% fat) this lands within one rounding
+ * step of the total-mass rule, so the typical case barely moves. It changes
+ * the answer for very lean and very heavy bodies — which is exactly where a
+ * rule based on total mass is worst.
+ */
+export const HYDRATION_ML_PER_KG_LEAN = 41;
 
 /** Sweat replacement per hour of logged training. */
 export const HYDRATION_ML_PER_TRAINING_HOUR = 500;
@@ -66,11 +77,21 @@ export function calculateHydrationTarget(input: HydrationInput): HydrationTarget
   // the result says "generic" rather than dressing a default up as theirs.
   const personal = parsed.bodyWeightKg !== null;
   if (personal) {
-    components.push({
-      key: "baseline",
-      ml: Math.round(parsed.bodyWeightKg! * HYDRATION_ML_PER_KG),
-      inputs: { weightKg: parsed.bodyWeightKg!, mlPerKg: HYDRATION_ML_PER_KG },
-    });
+    const weightKg = parsed.bodyWeightKg!;
+    if (parsed.bodyFatPct !== null) {
+      const leanKg = Math.round(weightKg * (1 - parsed.bodyFatPct / 100) * 10) / 10;
+      components.push({
+        key: "baseline",
+        ml: Math.round(leanKg * HYDRATION_ML_PER_KG_LEAN),
+        inputs: { leanKg, mlPerKg: HYDRATION_ML_PER_KG_LEAN, bodyFatPct: parsed.bodyFatPct },
+      });
+    } else {
+      components.push({
+        key: "baseline",
+        ml: Math.round(weightKg * HYDRATION_ML_PER_KG),
+        inputs: { weightKg, mlPerKg: HYDRATION_ML_PER_KG },
+      });
+    }
   } else {
     missingInputs.push("body_weight");
     components.push({
