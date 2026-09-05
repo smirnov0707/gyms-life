@@ -22,6 +22,22 @@ describe("AthletePredictionSchema", () => {
     expect(AthletePredictionSchema.parse(basePrediction).target).toBe("workout_completion");
   });
 
+  it("preserves typed temporal provenance for supporting evidence", () => {
+    const parsed = AthletePredictionSchema.parse({
+      ...basePrediction,
+      evidence: [{
+        sourceType: "workout_session",
+        sourceId: "session-1",
+        provenance: "measured",
+        occurredAt: "2026-09-04T18:00:00+03:00",
+        recordedAt: "2026-09-04T18:02:00+03:00",
+        timezone: "Europe/Vilnius",
+        quality: "available",
+      }],
+    });
+    expect(parsed.evidence[0]?.provenance).toBe("measured");
+  });
+
   it("rejects a horizon that is not in the future", () => {
     expect(() => AthletePredictionSchema.parse({ ...basePrediction, horizonEndsAt: basePrediction.generatedAt })).toThrow();
   });
