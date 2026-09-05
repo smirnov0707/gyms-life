@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TemporalEvidenceRefSchema } from "./intelligence-provenance.schema";
 
 /**
  * Durable prediction contracts for Future Lab.
@@ -14,18 +15,8 @@ export const PredictionTargetSchema = z.enum([
   "short_term_fatigue",
 ]);
 
-export const PredictionMaturitySchema = z.enum([
-  "shadow",
-  "canary",
-  "production",
-]);
-
-export const PredictionEvidenceLevelSchema = z.enum([
-  "insufficient",
-  "early",
-  "moderate",
-  "strong",
-]);
+export const PredictionMaturitySchema = z.enum(["shadow", "canary", "production"]);
+export const PredictionEvidenceLevelSchema = z.enum(["insufficient", "early", "moderate", "strong"]);
 
 export const PredictionValueSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("probability"), value: z.number().min(0).max(1) }).strict(),
@@ -35,12 +26,6 @@ export const PredictionValueSchema = z.discriminatedUnion("kind", [
   }),
   z.object({ kind: z.literal("category"), value: z.string().trim().min(1).max(80) }).strict(),
 ]);
-
-export const PredictionEvidenceRefSchema = z.object({
-  sourceType: z.string().trim().min(1).max(80),
-  sourceId: z.string().trim().min(1).max(160).nullable(),
-  occurredAt: z.string().datetime({ offset: true }).nullable(),
-}).strict();
 
 export const AthletePredictionSchema = z.object({
   id: z.string().uuid(),
@@ -52,7 +37,7 @@ export const AthletePredictionSchema = z.object({
   maturity: PredictionMaturitySchema,
   athleteStateSnapshotId: z.string().uuid().nullable(),
   evidenceLevel: PredictionEvidenceLevelSchema,
-  evidence: z.array(PredictionEvidenceRefSchema).max(64),
+  evidence: z.array(TemporalEvidenceRefSchema).max(64),
   predicted: PredictionValueSchema,
   actual: PredictionValueSchema.nullable(),
   evaluatedAt: z.string().datetime({ offset: true }).nullable(),
