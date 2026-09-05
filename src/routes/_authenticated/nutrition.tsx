@@ -13,6 +13,7 @@ import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 import { logMeal } from "@/lib/nutrition.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { QuickHydrationWidget } from "@/components/QuickHydrationWidget";
 import { SmartFridgeScanner } from "@/components/SmartFridgeScanner";
 import { VisionMealScanner } from "@/components/VisionMealScanner";
 import { DineOutMenuScanner } from "@/components/DineOutMenuScanner";
@@ -185,6 +186,16 @@ function NutritionPage() {
         <Ring value={sum("carbs")} target={carbTarget} label={t("nut.carbs")} unit="g" />
         <Ring value={sum("fat")} target={fatTarget} label={t("nut.fat")} unit="g" />
       </div>
+
+      {/* Fluids are intake like the rest of this page, so they are logged
+          here. A target is only derived when a real body weight exists —
+          otherwise the widget uses its own stated default rather than a
+          number computed from a weight we do not have. */}
+      <QuickHydrationWidget
+        {...(profile?.weight_kg
+          ? { targetMl: Math.max(1500, Math.round((Number(profile.weight_kg) * 35) / 100) * 100) }
+          : {})}
+      />
 
       <section>
         <h2 className="flex items-center gap-2 text-3xl">

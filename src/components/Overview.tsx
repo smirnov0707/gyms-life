@@ -1,15 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Apple, Clock, Dumbbell, Flame, HeartPulse, Plus, Quote, Utensils } from "lucide-react";
+import { Apple, Clock, Dumbbell, Plus, Utensils } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
-import { QuickHydrationWidget } from "@/components/QuickHydrationWidget";
 import { TwinTodayCard } from "@/components/twin/TwinTodayCard";
-import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
 import { GoalExerciseSuggestions } from "@/components/GoalExerciseSuggestions";
 import { CoachDock } from "@/components/CoachDock";
 import { SmartBrief } from "@/components/SmartBrief";
@@ -18,18 +16,11 @@ import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 
-import { useCountUp } from "@/hooks/use-count-up";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
 import { useLocalizedPlan } from "@/lib/use-localized-plan";
 import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
 import { parseStoredMealPlan } from "@/lib/meal-plan.schema";
-import { dailyMotivation } from "@/lib/motivation";
-import {
-  browserTimeZone,
-  calculateConsecutiveCalendarDayStreak,
-  calendarDayDifference,
-  dayInTimeZone,
-} from "@/lib/local-day";
+import { browserTimeZone, calendarDayDifference, dayInTimeZone } from "@/lib/local-day";
 
 function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
@@ -64,36 +55,17 @@ function ReadinessRing({ score }: { score: number }) {
   );
 }
 
-function StatBox({
-  label,
-  value,
-  Icon,
-  raw,
-  suffix = "",
-}: {
-  label: string;
-  value: string;
-  Icon: typeof Flame;
-  raw?: number | undefined;
-  suffix?: string;
-}) {
-  const animated = useCountUp(raw ?? 0, 1200);
-  return (
-    <GlowCard className="panel lift flex min-h-24 items-center gap-3 p-4">
-      <span className="grid size-11 place-items-center rounded-xl bg-primary/12 text-primary">
-        <Icon className="size-5" />
-      </span>
-      <div>
-        <div className="text-display text-3xl leading-none">
-          {raw !== undefined ? `${animated.toLocaleString("lt-LT")}${suffix}` : value}
-        </div>
-        <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>
-      </div>
-    </GlowCard>
-  );
-}
-
-/** The single authenticated overview — shared by "/" and "/app" so both look identical. */
+/**
+ * The single authenticated overview — shared by "/" and "/app" so both look
+ * identical.
+ *
+ * The screen follows one spine: greet, show the body, state where it is,
+ * name the one change that matters, then the single action to take. Counters
+ * and side panels that competed with that spine live on the pages they belong
+ * to — streak on /achievements, sessions on /progress, calories and fluids on
+ * /nutrition, body metrics on /progress — so Today stays a decision, not a
+ * dashboard.
+ */
 export function Overview() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
@@ -105,7 +77,7 @@ export function Overview() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, weight_kg, goal")
+        .select("id, display_name")
         .eq("id", user!.id)
         .maybeSingle();
       return data;
@@ -134,35 +106,6 @@ export function Overview() {
     queryFn: () => getTodaysWorkout({ data: { timeZone } }),
     enabled: !!user,
     staleTime: 60_000,
-  });
-
-  const { data: sessions } = useQuery({
-    queryKey: ["completed-session-dates", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("workout_sessions")
-        .select("started_at")
-        .eq("user_id", user!.id)
-        .not("finished_at", "is", null)
-        .order("started_at", { ascending: false })
-        .limit(366);
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const { data: completedSessionCount } = useQuery({
-    queryKey: ["completed-session-count", user?.id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("workout_sessions")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id)
-        .not("finished_at", "is", null);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!user,
   });
 
   const { data: checkin } = useQuery({
@@ -209,24 +152,6 @@ export function Overview() {
     enabled: !!user,
   });
 
-  const { data: nutritionToday } = useQuery({
-    queryKey: ["nutrition-today", user?.id, localDay],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("nutrition_logs")
-        .select("calories")
-        .eq("user_id", user!.id)
-        .eq("logged_on", localDay);
-      return data ?? [];
-    },
-    enabled: !!user,
-  });
-
-  const kcalToday =
-    nutritionToday === undefined
-      ? null
-      : Math.round(nutritionToday.reduce((s, r) => s + Number(r.calories ?? 0), 0));
-
   const savedPlan = savedMeal ? parseStoredMealPlan(savedMeal.data) : null;
   const { plan: localizedSaved } = useLocalizedMealPlan(
     savedMeal?.id,
@@ -247,18 +172,6 @@ export function Overview() {
     setMounted(true);
   }, []);
 
-  const motivation = dailyMotivation(
-    profile?.goal as string | undefined,
-    checkin?.load_modifier as number | undefined,
-    lang,
-  );
-  const bucketColor =
-    motivation.bucket === "high"
-      ? "text-primary"
-      : motivation.bucket === "low"
-        ? "text-destructive"
-        : "text-accent";
-
   const firstName = useMemo(() => {
     const metadata = user?.user_metadata ?? {};
     const fullName = metadata["full_name"];
@@ -275,16 +188,6 @@ export function Overview() {
 
   const hour = new Date().getHours();
   const greeting = t(hour < 12 ? "dash.morning" : hour < 18 ? "dash.afternoon" : "dash.evening");
-
-  const totalSessions = completedSessionCount ?? null;
-
-  const streak = useMemo(() => {
-    if (sessions === undefined) return null;
-    return calculateConsecutiveCalendarDayStreak(
-      sessions.map((session) => session.started_at),
-      timeZone,
-    );
-  }, [sessions, timeZone]);
 
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
 
@@ -346,11 +249,7 @@ export function Overview() {
 
   return (
     <div className="grid gap-6">
-      <TodayDecision workoutDay={today?.day ?? null} />
-
-      <TodayLifeContext />
-
-      {/* Greeting + readiness ring */}
+      {/* 1 — Greeting. Who this is and what plan they are on. */}
       <section
         className={`flex flex-col justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-end ${anim("")}`}
       >
@@ -374,101 +273,57 @@ export function Overview() {
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-3">
-          {readinessScore != null && (
-            <ReadinessCard
-              score={readinessScore}
-              state={recoveryState}
-              ring={<ReadinessRing score={readinessScore} />}
-            />
-          )}
-
-          {planData && (
-            <Button
-              asChild
-              variant="outline"
-              size="default"
-              className="whitespace-nowrap rounded-full px-5"
-            >
-              <Link to="/onboarding">{t("dash.regenerate")}</Link>
-            </Button>
-          )}
-        </div>
+        {planData && (
+          <Button
+            asChild
+            variant="outline"
+            size="default"
+            className="shrink-0 whitespace-nowrap rounded-full px-5"
+          >
+            <Link to="/onboarding">{t("dash.regenerate")}</Link>
+          </Button>
+        )}
       </section>
 
-      {/* The brief interprets data, while the decision above remains the one CTA. */}
+      {/* 2 — The Twin. The body itself, read before any number about it. */}
       <div className={anim("delay-100")}>
+        <TwinTodayCard />
+      </div>
+
+      {/* 3 — Current state: how ready the athlete is, and what is true today. */}
+      <div
+        className={`grid gap-6 ${readinessScore != null ? "lg:grid-cols-2" : ""} ${anim("delay-150")}`}
+      >
+        {readinessScore != null && (
+          <ReadinessCard
+            score={readinessScore}
+            state={recoveryState}
+            ring={<ReadinessRing score={readinessScore} />}
+          />
+        )}
+        <TodayLifeContext />
+      </div>
+
+      {/* 4 — The one change worth knowing about, interpreted from the data. */}
+      <div className={anim("delay-200")}>
         <SmartBrief />
       </div>
 
-      {/* Compact state, not a second dashboard. */}
-      <div className={`grid grid-cols-2 gap-3 sm:grid-cols-4 ${anim("delay-150")}`}>
-        <StatBox
-          label={t("dash.streak")}
-          value={streak === null ? "—" : `${streak} ${t("dash.days")}`}
-          Icon={Flame}
-        />
-        <StatBox
-          label={t("dash.sessions")}
-          value={totalSessions === null ? "—" : String(totalSessions)}
-          Icon={Dumbbell}
-          raw={totalSessions ?? undefined}
-        />
-        <StatBox
-          label={`${t("nut.today")} · ${t("nut.kcal")}`}
-          value={kcalToday === null ? "—" : String(kcalToday)}
-          Icon={Apple}
-          raw={kcalToday ?? undefined}
-        />
-        <StatBox
-          label={t("landing.cmd.readiness")}
-          value={readinessScore != null ? `${readinessScore}/100` : "—"}
-          Icon={HeartPulse}
-        />
+      {/* 5 — The best next action, why it was chosen, and the button that
+          starts it. Training entry stays here so an AI-written brief above can
+          never skip the deterministic safety check behind this card. */}
+      <div className={anim("delay-300")}>
+        <TodayDecision workoutDay={today?.day ?? null} />
       </div>
 
-      {/* Compact motivation strip */}
-      <GlowCard className={`panel relative overflow-hidden p-5 ${anim("delay-200")}`}>
-        <div className="hairline absolute inset-x-0 top-0" />
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0 max-w-2xl">
-            <p className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-primary">
-              <Quote className="size-3.5" /> {t("mot.title")}
-            </p>
-            <h2 className="mt-1 text-2xl leading-snug md:text-3xl">{motivation.headline}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{motivation.body}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-widest text-muted-foreground">
-              {t("mot.focus")}: <span className="text-foreground">{motivation.focus}</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className={`text-display text-4xl leading-none ${bucketColor}`}>
-                {motivation.loadPct}%
-              </div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                {t("mot.load")}
-              </div>
-            </div>
-            {!checkin && (
-              <Button asChild variant="outline" size="sm" className="rounded-full">
-                <Link to="/readiness">
-                  <HeartPulse className="mr-1 size-3.5" /> {t("mot.checkin")}
-                </Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </GlowCard>
-
-      {/* Interactive coach dock */}
-      <div className={anim("delay-300")}>
+      {/* Everything below supports the decision above rather than competing
+          with it. */}
+      <div className={anim("delay-500")}>
         <CoachDock progression={planData?.progression} nutrition={planData?.nutrition} />
       </div>
 
-      {/* Today + hydration/supplements */}
       <div className="grid gap-6 md:grid-cols-12">
-        <div className={`md:col-span-8 ${anim("delay-200")}`}>
+        <div className={`md:col-span-8 ${anim("delay-500")}`}>
           <GlowCard className="panel relative h-full overflow-hidden p-6 md:p-8">
             <div className="grain-hero pointer-events-none absolute inset-0 opacity-40" />
             <div className="relative z-10">
@@ -556,14 +411,7 @@ export function Overview() {
           </GlowCard>
         </div>
 
-        <div className={`flex flex-col gap-6 md:col-span-4 ${anim("delay-300")}`}>
-          <QuickHydrationWidget
-            targetMl={
-              profile?.weight_kg
-                ? Math.max(1500, Math.round((Number(profile.weight_kg) * 35) / 100) * 100)
-                : 3000
-            }
-          />
+        <div className={`flex flex-col gap-6 md:col-span-4 ${anim("delay-500")}`}>
           <GlowCard className="panel flex-1 p-6">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
@@ -596,19 +444,8 @@ export function Overview() {
               </ul>
             )}
           </GlowCard>
-        </div>
 
-        {/* Recovery + body metrics + next meal */}
-        <div className={`md:col-span-6 ${anim("delay-500")}`}>
-          <TwinTodayCard />
-        </div>
-
-        <div className={`md:col-span-3 ${anim("delay-500")}`}>
-          <BodyMetricsPanel compact />
-        </div>
-
-        <div className={`md:col-span-3 ${anim("delay-700")}`}>
-          <GlowCard className="panel h-full p-6">
+          <GlowCard className="panel p-6">
             <div className="flex items-center gap-2">
               <Apple className="size-5 text-accent" />
               <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
@@ -645,10 +482,8 @@ export function Overview() {
         </div>
       </div>
 
-      {/* Goal-based exercise suggestions */}
       <GoalExerciseSuggestions />
 
-      {/* Week plan */}
       {planData && (
         <div className={anim("delay-700")}>
           <h2 className="text-3xl">{t("dash.week")}</h2>
