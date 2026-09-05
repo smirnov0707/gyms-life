@@ -2,6 +2,25 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { dayInTimeZone } from "./local-day";
+import { loadPersistedProfileTimeZone } from "./user-context.server";
+
+/**
+ * Today in the athlete's stored timezone, falling back to UTC.
+ *
+ * A missing or unreadable timezone must not cost the measurement itself, so
+ * this never throws: an approximate date is worth more than a lost scan.
+ */
+async function athleteDay(
+  supabase: Parameters<typeof loadPersistedProfileTimeZone>[0],
+  userId: string,
+): Promise<string> {
+  try {
+    return dayInTimeZone(new Date(), await loadPersistedProfileTimeZone(supabase, userId));
+  } catch {
+    return dayInTimeZone(new Date(), "UTC");
+  }
+}
 
 const BodyScanInput = z.object({
   images: z.array(z.string().startsWith("data:image/")).min(1).max(3),
@@ -207,7 +226,11 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
       weight_kg: weightKg,
     };
 
-    const measuredOn = new Date().toISOString().slice(0, 10);
+    // The athlete's own calendar day. A UTC date puts a 01:00 scan in
+    // Vilnius on the previous day — and since the upsert keys on
+    // (user_id, measured_on), it would overwrite that day's real
+    // measurement instead of recording a new one.
+    const measuredOn = await athleteDay(supabase, userId);
     let saved = true;
     try {
       const { error } = await supabase

@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
+import { dayInTimeZone } from "./local-day";
+import { loadPersistedProfileTimeZone } from "./user-context.server";
 
 const Input = z.object({ lang: SupportedLanguageSchema.default("lt") });
 
@@ -65,7 +67,14 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
     const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const language = LANGUAGE_NAMES[data.lang];
 
-    const today = new Date().toISOString().slice(0, 10);
+    // The date the model is told is the athlete's, not the server's.
+    const today = await (async () => {
+      try {
+        return dayInTimeZone(new Date(), await loadPersistedProfileTimeZone(supabase, userId));
+      } catch {
+        return dayInTimeZone(new Date(), "UTC");
+      }
+    })();
 
     const advice = await generateOrchestratedJson({
       task: "supplement-cycle",
