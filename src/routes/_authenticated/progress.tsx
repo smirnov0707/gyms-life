@@ -57,7 +57,8 @@ function copyFor(lang: Lang): Copy {
       intelligence: "What the system sees changing",
       intelligenceHint: "Performance, weekly patterns, forecast and current risk observations.",
       measured: "Inspect measured training history",
-      measuredHint: "Completed-session volume over time. This is recorded history, not a prediction.",
+      measuredHint:
+        "Completed-session volume over time. This is recorded history, not a prediction.",
       records: "Personal records",
       recordsHint: "Highest recorded working weights by exercise.",
       history: "Workout timeline",
@@ -73,7 +74,8 @@ function copyFor(lang: Lang): Copy {
     subtitle:
       "GYMS.LIFE atskiria interpretaciją nuo žalios istorijos, kad pirmiausia matytum, kas pasikeitė, o tik tada visus matavimus.",
     intelligence: "Ką sistema mato besikeičiant",
-    intelligenceHint: "Performance, savaitiniai dėsningumai, prognozė ir dabartiniai rizikos stebėjimai.",
+    intelligenceHint:
+      "Performance, savaitiniai dėsningumai, prognozė ir dabartiniai rizikos stebėjimai.",
     measured: "Peržiūrėti išmatuotą treniruočių istoriją",
     measuredHint: "Užbaigtų treniruočių tūris laike. Tai užregistruota istorija, ne prognozė.",
     records: "Asmeniniai rekordai",
@@ -147,8 +149,7 @@ function ProgressPage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            background:
-              "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
+            background: "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
           }}
         />
         <div className="relative">
@@ -156,11 +157,9 @@ function ProgressPage() {
             {copy.eyebrow}
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {copy.title}
+            {t("pr.title")}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
-            {copy.subtitle}
-          </p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">{copy.subtitle}</p>
         </div>
       </section>
 
@@ -183,7 +182,7 @@ function ProgressPage() {
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-semibold text-white">{copy.measured}</p>
+              <p className="text-sm font-semibold text-white">{t("pr.volume")}</p>
               <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.measuredHint}</p>
             </div>
             <ChevronDown className="size-4 shrink-0 text-neutral-600 transition-transform group-open:rotate-180" />
@@ -220,7 +219,7 @@ function ProgressPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                <Trophy className="size-4 text-emerald-400" /> {copy.records}
+                <Trophy className="size-4 text-emerald-400" /> {t("pr.records")}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.recordsHint}</p>
             </div>
@@ -250,7 +249,7 @@ function ProgressPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                <History className="size-4 text-emerald-400" /> {copy.history}
+                <History className="size-4 text-emerald-400" /> {t("pr.history")}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-neutral-600">{copy.historyHint}</p>
             </div>
