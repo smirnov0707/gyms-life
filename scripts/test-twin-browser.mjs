@@ -20,6 +20,10 @@ const preset = async (target, name) => {
   await viewControls(target, true);
   await target.getByRole("button", { name, exact: true }).click();
   await viewControls(target, false);
+  // Closing controls can scroll the on-demand scene out of view. Sample its
+  // camera only after it is visible and has painted the command.
+  await target.locator("canvas").scrollIntoViewIfNeeded();
+  await target.waitForTimeout(150);
 };
 const stopMotion = async (target) => {
   await viewControls(target, true);
@@ -90,6 +94,8 @@ try {
     await page.waitForTimeout(60);
     visited.push(Number(await canvas.getAttribute("data-twin-yaw")));
   }
+  console.log("Orbit samples", JSON.stringify(visited));
+  await writeFile(path.join(artifacts, "orbit-samples.json"), JSON.stringify(visited));
   expect(visited.some((angle) => angle > 1)).toBe(true);
   expect(visited.some((angle) => angle < -1)).toBe(true);
   expect(Math.abs(Math.sin(visited.at(-1)))).toBeLessThan(0.05);
@@ -294,7 +300,11 @@ try {
     await page
       .screenshot({ path: path.join(artifacts, "failure.png"), fullPage: true })
       .catch(() => {});
-  results.push({ name: "browser failure", status: "failed", detail: String(error) });
+  results.push({
+    name: "browser failure",
+    status: "failed",
+    detail: error instanceof Error ? error.stack : String(error),
+  });
   throw error;
 } finally {
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
