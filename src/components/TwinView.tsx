@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Loader2, PersonStanding } from "lucide-react";
-import { BodyMap, toneForRecoveryBand } from "@/components/twin/BodyMap";
+import { TwinStage } from "@/components/twin/TwinStage";
+import { LivingTwinPresence } from "@/components/twin/LivingTwinPresence";
 import {
   isAnatomicalRegion,
   viewShowing,
@@ -208,7 +210,7 @@ function RegionReadout({
           <div className="mt-4 grid grid-cols-2 gap-4">
             <Instrument
               label={copy.volume}
-              value={region.volumeKg ? `${region.volumeKg} kg` : "—"}
+              value={region.volumeKg !== null ? `${region.volumeKg} kg` : "—"}
             />
             <Instrument
               label={copy.metaLastTrained}
@@ -253,7 +255,6 @@ export function TwinSnapshotView({
   );
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const anatomical = data.regions.filter((region) => isAnatomicalRegion(region.region));
   const selected = selectedRegion
     ? (data.regions.find((region) => region.region === selectedRegion) ?? null)
     : null;
@@ -272,6 +273,7 @@ export function TwinSnapshotView({
       ) : null}
 
       <section className="relative min-h-[760px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] lg:min-h-[820px]">
+        <LivingTwinPresence snapshot={data} />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -303,7 +305,7 @@ export function TwinSnapshotView({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/[0.06] pt-4 sm:grid-cols-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <div className="hidden grid-cols-2 gap-x-6 gap-y-3 sm:grid border-t border-white/[0.06] pt-4 sm:grid-cols-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
             <Instrument label={copy.metaModel} value={data.calculationVersion} />
             <Instrument label={copy.metaWindow} value={copy.windowDays(data.evidenceWindowDays)} />
             <Instrument label={copy.metaUpdated} value={formatUpdated(data.computedAt, lang)} />
@@ -314,8 +316,12 @@ export function TwinSnapshotView({
           </div>
         </header>
 
-        <div className="relative z-10 grid min-h-[630px] grid-cols-1 lg:grid-cols-[300px_minmax(360px,1fr)_300px] lg:items-center">
-          <aside className="order-2 px-5 pb-5 lg:order-1 lg:px-7 lg:pb-8">
+        <div className="relative z-10 grid min-h-[630px] grid-cols-1 lg:grid-cols-[minmax(180px,0.8fr)_minmax(280px,1.3fr)_minmax(160px,0.7fr)] lg:items-center">
+          <aside
+            aria-live="polite"
+            data-twin-inspector
+            className="order-2 px-5 pb-5 lg:order-1 lg:px-7 lg:pb-8"
+          >
             <RegionReadout
               region={selected}
               copy={copy}
@@ -347,39 +353,16 @@ export function TwinSnapshotView({
             </div>
           </aside>
 
-          <div className="order-1 flex min-h-[500px] flex-col items-center justify-center px-2 sm:min-h-[560px] lg:order-2 lg:min-h-[640px]">
-            <div className="mb-2 flex w-[190px] rounded-full border border-white/[0.08] bg-black/45 p-1 backdrop-blur-xl">
-              {(["front", "back"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setView(option)}
-                  aria-pressed={view === option}
-                  className={`min-h-8 flex-1 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] transition-colors ${
-                    view === option
-                      ? "bg-emerald-400 text-black"
-                      : "text-neutral-500 hover:text-neutral-300"
-                  }`}
-                >
-                  {copy.viewLabel[option]}
-                </button>
-              ))}
-            </div>
-
-            <div className="h-[470px] w-full max-w-[390px] sm:h-[540px] lg:h-[610px]">
-              <BodyMap
-                regions={anatomical.map((region) => ({
-                  region: region.region,
-                  tone: toneForRecoveryBand(region.recoveryBand),
-                  value: region.recoveryPct === null ? null : `${region.recoveryPct}%`,
-                }))}
-                view={view}
-                selectedRegion={selectedRegion}
-                onSelectRegion={selectRegion}
-                regionLabel={label}
-                showFraming
-              />
-            </div>
+          <div className="order-1 min-w-0 px-2 pb-4 lg:order-2">
+            <TwinStage
+              snapshot={data}
+              selectedRegion={selectedRegion}
+              onSelectRegion={selectRegion}
+              view={view}
+              onViewChange={setView}
+              regionLabel={label}
+              language={baseLang(lang)}
+            />
           </div>
 
           <aside className="order-3 hidden px-7 pb-8 lg:block">
@@ -454,17 +437,19 @@ export function TwinSnapshotView({
 }
 
 export function TwinView() {
+  const { user, loading: authLoading } = useAuth();
   const { lang, t } = useI18n();
   const timeZone = browserTimeZone();
   const copy = copyFor(lang);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["twin-snapshot", timeZone],
+    queryKey: ["twin-snapshot", user?.id, timeZone],
+    enabled: Boolean(user),
     queryFn: () => getTwinSnapshot({ data: timeZone }),
     staleTime: 60_000,
   });
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <section className="rounded-3xl border border-border bg-surface-2 p-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
