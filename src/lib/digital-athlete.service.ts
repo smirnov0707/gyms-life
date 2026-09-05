@@ -529,10 +529,10 @@ export async function loadDigitalAthleteState(
       .catch(() => ({ trainingRhythm: null, available: false })),
     supabase
       .from("set_logs")
-      .select("exercise_slug, reps, weight_kg, done, created_at")
+      .select("exercise_slug, reps, weight_kg, done, performed_at")
       .eq("user_id", userId)
-      .gte("created_at", muscleLoadSince)
-      .order("created_at", { ascending: false })
+      .gte("performed_at", muscleLoadSince)
+      .order("performed_at", { ascending: false })
       .limit(500),
     // The exercise catalog is a small, shared reference table (not
     // user-owned): every row is needed to classify any logged set correctly.

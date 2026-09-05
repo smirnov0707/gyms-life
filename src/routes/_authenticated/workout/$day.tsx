@@ -245,6 +245,9 @@ function WorkoutPage() {
       weightKg: parseOptionalWorkoutNumber(weight, "Svoris"),
       rpe: parseOptionalWorkoutNumber(rpe, "RPE"),
       done: true,
+      // Stamped here, not on the server: offline this payload may not be
+      // delivered for hours, and the dvynys decays fatigue from this instant.
+      performedAt: new Date().toISOString(),
     };
   };
 

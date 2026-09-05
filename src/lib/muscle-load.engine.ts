@@ -43,7 +43,7 @@ export function calculateMuscleGroupLoad(
     const reps = set.reps ?? 0;
     const weight = set.weight_kg ?? 0;
     const volume = reps * weight;
-    const hoursAgo = Math.max(0, (nowMs - new Date(set.created_at).getTime()) / 3_600_000);
+    const hoursAgo = Math.max(0, (nowMs - new Date(set.performed_at).getTime()) / 3_600_000);
 
     const entry = byGroup.get(group) ?? { volume: 0, fatigue: 0, lastHours: null };
     entry.volume += volume;

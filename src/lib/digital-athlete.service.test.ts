@@ -551,7 +551,7 @@ describe("buildDigitalAthleteState", () => {
             reps: 5,
             weight_kg: 100,
             done: true,
-            created_at: "2026-09-02T10:00:00.000Z",
+            performed_at: "2026-09-02T10:00:00.000Z",
           },
         ],
         exerciseMuscleGroups: [{ slug: "bench-press", muscle_group: "chest" }],

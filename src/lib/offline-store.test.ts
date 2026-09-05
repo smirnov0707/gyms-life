@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   isNetworkUnavailable,
   retainUnacknowledgedWorkoutSets,
+  syncPayload,
   synchronizeWorkoutSets,
   type OfflinePayload,
   type WorkoutSetSync,
@@ -16,6 +17,7 @@ const firstSet: WorkoutSetSync = {
   weightKg: 100,
   rpe: 8,
   done: true,
+  performedAt: "2026-09-04T19:00:00.000Z",
 };
 
 describe("synchronizeWorkoutSets", () => {
@@ -73,5 +75,31 @@ describe("isNetworkUnavailable", () => {
   it("queues failed writes only for transient connectivity failures", () => {
     expect(isNetworkUnavailable(new TypeError("Failed to fetch"))).toBe(true);
     expect(isNetworkUnavailable(new Error("Workout session is already finished."))).toBe(false);
+  });
+});
+
+describe("syncPayload", () => {
+  it("sends the instant the set was performed", () => {
+    const item: OfflinePayload = {
+      id: "one",
+      type: "workout_set",
+      data: firstSet,
+      timestamp: Date.parse("2026-09-05T08:00:00.000Z"),
+    };
+    expect(syncPayload(item).performedAt).toBe("2026-09-04T19:00:00.000Z");
+  });
+
+  it("recovers the instant from a queue written before the field existed", () => {
+    // Upgrading the app must never silently re-date work already done. An
+    // older payload has no performedAt, but its own queue timestamp is that
+    // same moment.
+    const { performedAt: _dropped, ...legacy } = firstSet;
+    const item = {
+      id: "one",
+      type: "workout_set" as const,
+      data: legacy,
+      timestamp: Date.parse("2026-09-04T19:00:00.000Z"),
+    };
+    expect(syncPayload(item).performedAt).toBe("2026-09-04T19:00:00.000Z");
   });
 });
