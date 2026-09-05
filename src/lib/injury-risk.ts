@@ -4,7 +4,13 @@
 import type { TKey } from "./i18n";
 
 export interface RiskSetRow {
-  created_at: string;
+  /**
+   * When the set was performed, not when its row was written. The acute
+   * window below is a workload spike detector: dating offline-synced sets
+   * to their arrival bunches them onto one day and manufactures a spike
+   * that never happened.
+   */
+  performed_at: string;
   exercise_slug: string;
   exercise_name: string;
   weight_kg: number | null;
@@ -54,7 +60,7 @@ function volume(rows: RiskSetRow[]): number {
 
 function within(rows: RiskSetRow[], from: number, to: number): RiskSetRow[] {
   return rows.filter((r) => {
-    const t = new Date(r.created_at).getTime();
+    const t = new Date(r.performed_at).getTime();
     return t >= from && t < to;
   });
 }
@@ -188,7 +194,7 @@ export function buildRiskReport(
   let worstName = "";
   for (const [, rows] of bySlug) {
     const sorted = [...rows].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      (a, b) => new Date(a.performed_at).getTime() - new Date(b.performed_at).getTime(),
     );
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
