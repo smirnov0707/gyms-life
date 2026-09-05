@@ -1,5 +1,11 @@
 import {
-  Group, LatheGeometry, Mesh, MeshStandardMaterial, SphereGeometry, Vector2, Vector3,
+  Group,
+  LatheGeometry,
+  Mesh,
+  MeshStandardMaterial,
+  SphereGeometry,
+  Vector2,
+  Vector3,
 } from "three";
 import type { TwinBodyRegion } from "./twin-scene.model";
 
@@ -31,8 +37,10 @@ export function createTwinBody() {
     return mesh;
   }
   function oval(
-    position: [number, number, number], scale: [number, number, number],
-    region?: TwinBodyRegion, roll = 0,
+    position: [number, number, number],
+    scale: [number, number, number],
+    region?: TwinBodyRegion,
+    roll = 0,
   ) {
     const mesh = new Mesh(new SphereGeometry(1, 24, 16), material());
     mesh.position.set(...position);
@@ -41,14 +49,28 @@ export function createTwinBody() {
     return register(mesh, region);
   }
   function limb(
-    from: [number, number, number], to: [number, number, number],
-    radius: number, region?: TwinBodyRegion,
+    from: [number, number, number],
+    to: [number, number, number],
+    radius: number,
+    region?: TwinBodyRegion,
   ) {
     const a = new Vector3(...from);
     const b = new Vector3(...to);
     const length = a.distanceTo(b);
-    const profile = [[0, 0], [0.025, 0.62], [0.15, 0.88], [0.34, 1], [0.57, 0.93], [0.81, 0.70], [0.98, 0.53], [1, 0]];
-    const geometry = new LatheGeometry(profile.map(([h, r]) => new Vector2((r ?? 0) * radius, (h ?? 0) * length)), 24);
+    const profile = [
+      [0, 0],
+      [0.025, 0.62],
+      [0.15, 0.88],
+      [0.34, 1],
+      [0.57, 0.93],
+      [0.81, 0.7],
+      [0.98, 0.53],
+      [1, 0],
+    ];
+    const geometry = new LatheGeometry(
+      profile.map(([h, r]) => new Vector2((r ?? 0) * radius, (h ?? 0) * length)),
+      24,
+    );
     const mesh = new Mesh(geometry, material());
     mesh.position.copy(a);
     mesh.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), b.sub(a).normalize());
@@ -56,12 +78,21 @@ export function createTwinBody() {
   }
 
   // Closed, elliptical trunk: shoulder girdle, ribcage, waist, pelvis.
-  const trunk = new LatheGeometry([
-    new Vector2(0, 0.84), new Vector2(0.125, 0.86), new Vector2(0.166, 0.96),
-    new Vector2(0.137, 1.08), new Vector2(0.165, 1.22), new Vector2(0.205, 1.37),
-    new Vector2(0.22, 1.44), new Vector2(0.18, 1.49), new Vector2(0.058, 1.53),
-    new Vector2(0, 1.54),
-  ], 40);
+  const trunk = new LatheGeometry(
+    [
+      new Vector2(0, 0.84),
+      new Vector2(0.125, 0.86),
+      new Vector2(0.166, 0.96),
+      new Vector2(0.137, 1.08),
+      new Vector2(0.165, 1.22),
+      new Vector2(0.205, 1.37),
+      new Vector2(0.22, 1.44),
+      new Vector2(0.18, 1.49),
+      new Vector2(0.058, 1.53),
+      new Vector2(0, 1.54),
+    ],
+    40,
+  );
   const torso = new Mesh(trunk, material());
   torso.scale.z = 0.59;
   register(torso);
@@ -83,7 +114,12 @@ export function createTwinBody() {
     oval([side * 0.405, 0.804, 0.029], [0.032, 0.061, 0.021], "arms", side * 0.08);
     for (let finger = 0; finger < 4; finger++) {
       const x = side * (0.387 + finger * 0.012);
-      limb([x, 0.778, 0.031], [x + side * 0.008, 0.725 + Math.abs(finger - 1.3) * 0.01, 0.033], 0.006, "arms");
+      limb(
+        [x, 0.778, 0.031],
+        [x + side * 0.008, 0.725 + Math.abs(finger - 1.3) * 0.01, 0.033],
+        0.006,
+        "arms",
+      );
     }
     limb([side * 0.38, 0.825, 0.025], [side * 0.357, 0.777, 0.037], 0.01, "arms");
     limb([side * 0.087, 0.938, 0], [side * 0.11, 0.529, 0.009], 0.093, "legs");
@@ -97,7 +133,10 @@ export function createTwinBody() {
   }
 
   return {
-    body, meshes, regionMeshes, regionOf,
+    body,
+    meshes,
+    regionMeshes,
+    regionOf,
     dispose() {
       meshes.forEach((mesh) => mesh.geometry.dispose());
       materials.forEach((entry) => entry.dispose());
