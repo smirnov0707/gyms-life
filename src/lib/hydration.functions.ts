@@ -9,7 +9,7 @@ import {
   type HydrationIntake,
   type HydrationTarget,
 } from "./hydration.schema";
-import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
+import { IanaTimeZoneSchema, dayBoundsInTimeZone, dayInTimeZone } from "./local-day";
 
 /**
  * Reads today's real evidence and hands it to the pure engine.
@@ -25,7 +25,10 @@ export const getHydrationTarget = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const timeZone = data ?? "UTC";
     const localDay = dayInTimeZone(new Date(), timeZone);
-    const dayStart = new Date(`${localDay}T00:00:00.000Z`).toISOString();
+    // The athlete's day, not a UTC one. Treating the local date as a UTC
+    // midnight would drop a session trained after midnight local time and
+    // pull in a late one from the following day.
+    const { start: dayStart, end: dayEnd } = dayBoundsInTimeZone(localDay, timeZone);
 
     const [measured, profile, sessions, nutrition, supplements] = await Promise.all([
       supabase
@@ -42,7 +45,8 @@ export const getHydrationTarget = createServerFn({ method: "GET" })
         .select("duration_seconds")
         .eq("user_id", userId)
         .not("finished_at", "is", null)
-        .gte("started_at", dayStart),
+        .gte("started_at", dayStart)
+        .lt("started_at", dayEnd),
       supabase
         .from("nutrition_logs")
         .select("protein")
