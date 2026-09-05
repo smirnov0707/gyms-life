@@ -545,6 +545,33 @@ export type Database = {
         }
         Relationships: []
       }
+      hydration_logs: {
+        Row: {
+          amount_ml: number
+          consumed_at: string
+          created_at: string
+          id: string
+          logged_on: string
+          user_id: string
+        }
+        Insert: {
+          amount_ml: number
+          consumed_at?: string
+          created_at?: string
+          id?: string
+          logged_on: string
+          user_id: string
+        }
+        Update: {
+          amount_ml?: number
+          consumed_at?: string
+          created_at?: string
+          id?: string
+          logged_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meal_plans: {
         Row: {
           allergies: string | null

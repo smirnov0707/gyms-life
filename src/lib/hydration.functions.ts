@@ -1,7 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { calculateHydrationTarget } from "./hydration.engine";
-import { HydrationTargetSchema, type HydrationTarget } from "./hydration.schema";
+import {
+  HYDRATION_MAX_ENTRY_ML,
+  HydrationIntakeSchema,
+  HydrationTargetSchema,
+  type HydrationIntake,
+  type HydrationTarget,
+} from "./hydration.schema";
 import { IanaTimeZoneSchema, dayInTimeZone } from "./local-day";
 
 /**
@@ -72,4 +79,77 @@ export const getHydrationTarget = createServerFn({ method: "GET" })
         supplementCategories: (supplements.data ?? []).map((row) => String(row.category)),
       }),
     );
+  });
+
+/** Today's intake so far, from the athlete's own rows. */
+export const getHydrationIntake = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => IanaTimeZoneSchema.optional().parse(input ?? undefined))
+  .handler(async ({ data, context }): Promise<HydrationIntake> => {
+    const { supabase, userId } = context;
+    const localDay = dayInTimeZone(new Date(), data ?? "UTC");
+
+    const { data: rows, error } = await supabase
+      .from("hydration_logs")
+      .select("id, amount_ml, consumed_at")
+      .eq("user_id", userId)
+      .eq("logged_on", localDay)
+      .order("consumed_at", { ascending: true });
+
+    if (error) throw new Error("Hydration lookup failed: " + error.message);
+
+    const entries = (rows ?? []).map((row) => ({
+      id: row.id,
+      amountMl: Number(row.amount_ml),
+      consumedAt: row.consumed_at,
+    }));
+
+    return HydrationIntakeSchema.parse({
+      loggedOn: localDay,
+      totalMl: entries.reduce((sum, entry) => sum + entry.amountMl, 0),
+      entries,
+    });
+  });
+
+const LogHydrationInput = z
+  .object({
+    amountMl: z.number().int().positive().max(HYDRATION_MAX_ENTRY_ML),
+    timeZone: IanaTimeZoneSchema.optional(),
+  })
+  .strict();
+
+/** Records one drink. Returns the day's new total so the UI never guesses. */
+export const logHydration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => LogHydrationInput.parse(input))
+  .handler(async ({ data, context }): Promise<HydrationIntake> => {
+    const { supabase, userId } = context;
+    const localDay = dayInTimeZone(new Date(), data.timeZone ?? "UTC");
+
+    const { error } = await supabase.from("hydration_logs").insert({
+      user_id: userId,
+      logged_on: localDay,
+      amount_ml: data.amountMl,
+    });
+    if (error) throw new Error("Could not save hydration: " + error.message);
+
+    return getHydrationIntake({ data: data.timeZone });
+  });
+
+/** Clears today's entries — the reset the widget has always offered. */
+export const clearHydrationToday = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => IanaTimeZoneSchema.optional().parse(input ?? undefined))
+  .handler(async ({ data, context }): Promise<HydrationIntake> => {
+    const { supabase, userId } = context;
+    const localDay = dayInTimeZone(new Date(), data ?? "UTC");
+
+    const { error } = await supabase
+      .from("hydration_logs")
+      .delete()
+      .eq("user_id", userId)
+      .eq("logged_on", localDay);
+    if (error) throw new Error("Could not clear hydration: " + error.message);
+
+    return getHydrationIntake({ data });
   });

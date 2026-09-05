@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Droplets, Plus, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { errorMessage } from "@/lib/error-message";
+import { toast } from "sonner";
 import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
-import { getHydrationTarget } from "@/lib/hydration.functions";
+import {
+  clearHydrationToday,
+  getHydrationIntake,
+  getHydrationTarget,
+  logHydration,
+} from "@/lib/hydration.functions";
 import { HYDRATION_GENERIC_BASELINE_ML } from "@/lib/hydration.engine";
 import type {
   HydrationComponentKey,
@@ -15,7 +22,9 @@ import type {
 } from "@/lib/hydration.schema";
 
 const todayKey = () => dayInTimeZone(new Date(), browserTimeZone());
-const storageKey = (userId: string) => `gymslife:hydration:${userId}:${todayKey()}`;
+
+/** The amounts one tap can log. */
+const QUICK_ADD_ML = [250, 500, 750] as const;
 
 type Copy = {
   breakdown: string;
@@ -31,6 +40,8 @@ type Copy = {
   electrolyteNote: string;
   cappedNote: (fromMl: number) => string;
   estimateNote: string;
+  saveFailed: string;
+  resetToday: string;
 };
 
 function copyFor(lang: string): Copy {
@@ -61,6 +72,8 @@ function copyFor(lang: string): Copy {
         `The components add up to ${fromMl} ml. Held at the daily ceiling, since drinking well past need carries its own risk.`,
       estimateNote:
         "A calculated estimate from your logged data, not a measurement or medical advice.",
+      saveFailed: "Could not save that",
+      resetToday: "Clear today's intake",
     };
   }
   return {
@@ -89,6 +102,8 @@ function copyFor(lang: string): Copy {
       `Dedamosios sudaro ${fromMl} ml. Paliktas dienos maksimumas, nes gerti gerokai daugiau nei reikia taip pat rizikinga.`,
     estimateNote:
       "Apskaičiuotas įvertis pagal tavo registruotus duomenis — ne matavimas ir ne medicininis patarimas.",
+    saveFailed: "Nepavyko išsaugoti",
+    resetToday: "Išvalyti šios dienos suvartojimą",
   };
 }
 
@@ -124,43 +139,40 @@ export const QuickHydrationWidget: React.FC = () => {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const copy = copyFor(lang);
-  const [currentMl, setCurrentMl] = useState<number>(0);
-  const [ready, setReady] = useState(false);
+  const queryClient = useQueryClient();
+  const timeZone = browserTimeZone();
+  const intakeKey = ["hydration-intake", user?.id, todayKey()];
 
   const { data: target } = useQuery({
     queryKey: ["hydration-target", user?.id, todayKey()],
-    queryFn: () => getHydrationTarget({ data: browserTimeZone() }),
+    queryFn: () => getHydrationTarget({ data: timeZone }),
     enabled: !!user,
     staleTime: 5 * 60_000,
   });
 
+  // Intake is the athlete's own rows, so it survives a cleared browser and
+  // follows them to a second device.
+  const { data: intake, isPending: intakePending } = useQuery({
+    queryKey: intakeKey,
+    queryFn: () => getHydrationIntake({ data: timeZone }),
+    enabled: !!user,
+  });
+
+  const add = useMutation({
+    mutationFn: (amountMl: number) => logHydration({ data: { amountMl, timeZone } }),
+    onSuccess: (result) => queryClient.setQueryData(intakeKey, result),
+    onError: (error) => toast.error(errorMessage(error, copy.saveFailed)),
+  });
+
+  const clear = useMutation({
+    mutationFn: () => clearHydrationToday({ data: timeZone }),
+    onSuccess: (result) => queryClient.setQueryData(intakeKey, result),
+    onError: (error) => toast.error(errorMessage(error, copy.saveFailed)),
+  });
+
   const targetMl = target?.targetMl ?? HYDRATION_GENERIC_BASELINE_ML;
-
-  // Load today's real intake (starts at 0 for a fresh day / fresh login).
-  useEffect(() => {
-    if (!user) return;
-    try {
-      const raw = window.localStorage.getItem(storageKey(user.id));
-      const parsed = raw ? Number(raw) : 0;
-      setCurrentMl(Number.isFinite(parsed) && parsed > 0 ? parsed : 0);
-    } catch {
-      setCurrentMl(0);
-    }
-    setReady(true);
-  }, [user]);
-
-  const persist = (value: number) => {
-    setCurrentMl(value);
-    if (!user) return;
-    try {
-      window.localStorage.setItem(storageKey(user.id), String(value));
-    } catch {
-      /* storage unavailable — keep in-memory only */
-    }
-  };
-
-  const addWater = (amount: number) => persist(Math.min(targetMl + 1000, currentMl + amount));
-  const resetWater = () => persist(0);
+  const currentMl = intake?.totalMl ?? 0;
+  const ready = !intakePending;
 
   const percentage = Math.min(100, Math.round((currentMl / targetMl) * 100));
 
@@ -184,7 +196,9 @@ export const QuickHydrationWidget: React.FC = () => {
           </div>
         </div>
         <Button
-          onClick={resetWater}
+          onClick={() => clear.mutate()}
+          disabled={clear.isPending || currentMl === 0}
+          aria-label={copy.resetToday}
           variant="ghost"
           size="icon"
           className="size-8 text-muted-foreground hover:text-foreground"
@@ -201,10 +215,11 @@ export const QuickHydrationWidget: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        {[250, 500, 750].map((amount) => (
+        {QUICK_ADD_ML.map((amount) => (
           <Button
             key={amount}
-            onClick={() => addWater(amount)}
+            onClick={() => add.mutate(amount)}
+            disabled={add.isPending}
             variant="outline"
             size="sm"
             className="min-h-11 border-border bg-surface text-xs text-foreground hover:border-cyan-500/40 hover:bg-cyan-950/40"
