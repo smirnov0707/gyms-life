@@ -1,0 +1,52 @@
+name: Apply and validate Twin evidence
+on:
+  push:
+    branches: [future-lab-twin-evidence-and-volume]
+    paths: [.github/workflows/apply-twin-evidence.yml]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply the locally reviewed source changes
+        run: |
+          git apply --check --unidiff-zero .github/twin-evidence-01.patch .github/twin-evidence-02a.patch .github/twin-evidence-02b.patch .github/twin-evidence-03.patch
+          git apply --unidiff-zero .github/twin-evidence-01.patch .github/twin-evidence-02a.patch .github/twin-evidence-02b.patch .github/twin-evidence-03.patch
+          git add .gitignore src/lib src/components tests/twin-browser scripts/test-twin-browser.mjs docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+          git diff --cached --name-only -z -- '*.ts' '*.tsx' '*.mjs' '*.md' | xargs -0 npx prettier --write
+          git add .gitignore src/lib src/components tests/twin-browser scripts/test-twin-browser.mjs docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+          actual=$(git diff --cached --name-only -z | xargs -0 sha256sum | sha256sum | cut -d ' ' -f1)
+          test "$actual" = '750f30cec878fdd9d9696904332a08d4cd2a34500a8ed5413f5a0104d96dd90c'
+          git diff --cached --check
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-twin-browser.mjs
+      - name: Commit coherent changes and remove temporary transport
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git reset
+          git add src/lib
+          git commit -m 'fix(twin): preserve unknown training evidence and version snapshots'
+          git add .gitignore src/components tests/twin-browser scripts/test-twin-browser.mjs docs/architecture/TWIN_EVIDENCE_AND_VOLUME.md
+          git rm .github/twin-evidence-01.patch .github/twin-evidence-02a.patch .github/twin-evidence-02b.patch .github/twin-evidence-03.patch .github/workflows/twin-evidence-working-copy.yml .github/workflows/apply-twin-evidence.yml
+          git commit -m 'feat(twin): add a truthful logged-volume layer to the 360 scene'
+          git push origin HEAD:future-lab-twin-evidence-and-volume
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-evidence-volume-browser
+          path: test-results/twin
+          retention-days: 7
+          if-no-files-found: ignore
