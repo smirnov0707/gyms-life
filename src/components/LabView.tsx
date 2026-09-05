@@ -192,7 +192,10 @@ function statusTone(status: HypothesisStatus): string {
 
 function progressFor(hypothesis: AthleteHypothesis): number {
   if (hypothesis.minimumEvidenceCount <= 0) return 100;
-  return Math.min(100, Math.round((hypothesis.evidenceCount / hypothesis.minimumEvidenceCount) * 100));
+  return Math.min(
+    100,
+    Math.round((hypothesis.evidenceCount / hypothesis.minimumEvidenceCount) * 100),
+  );
 }
 
 function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; copy: Copy }) {
@@ -283,7 +286,9 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
                 </p>
                 <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-[0.14em]">
                   <span className="text-neutral-500">{copy.domainLabel[primary.domain]}</span>
-                  <span className={statusTone(primary.status)}>{copy.statusLabel[primary.status]}</span>
+                  <span className={statusTone(primary.status)}>
+                    {copy.statusLabel[primary.status]}
+                  </span>
                 </div>
               </div>
 
@@ -300,7 +305,9 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
                       </span>
                     </p>
                   </div>
-                  <span className="font-mono text-xs text-neutral-600">{progressFor(primary)}%</span>
+                  <span className="font-mono text-xs text-neutral-600">
+                    {progressFor(primary)}%
+                  </span>
                 </div>
                 <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/[0.05]">
                   <div
