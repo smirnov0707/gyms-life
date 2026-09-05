@@ -49,10 +49,10 @@ export function InjuryRiskRadar() {
       const [sets, sessions, checkins] = await Promise.all([
         supabase
           .from("set_logs")
-          .select("created_at, exercise_slug, exercise_name, weight_kg, reps")
+          .select("performed_at, exercise_slug, exercise_name, weight_kg, reps")
           .eq("user_id", user!.id)
-          .gte("created_at", since)
-          .order("created_at", { ascending: true }),
+          .gte("performed_at", since)
+          .order("performed_at", { ascending: true }),
         supabase
           .from("workout_sessions")
           .select("started_at, total_volume")
