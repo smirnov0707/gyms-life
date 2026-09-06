@@ -49,11 +49,23 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
 
   const data = query.data;
   const gaps = new Set<Gap>(data?.dataGaps ?? []);
-  const trainingMissing = hasAny(gaps, ["training_data_unavailable", "no_completed_workouts_28d"]);
-  const recoveryMissing = hasAny(gaps, ["recovery_data_unavailable", "no_recovery_checkins_7d"]);
-  const nutritionMissing = hasAny(gaps, ["nutrition_data_unavailable", "no_nutrition_logs_14d"]);
+  const trainingMissing = hasAny(gaps, [
+    "training_data_unavailable",
+    "no_completed_workouts_28d",
+  ]);
+  const recoveryMissing = hasAny(gaps, [
+    "recovery_data_unavailable",
+    "no_recovery_checkins_7d",
+  ]);
+  const nutritionMissing = hasAny(gaps, [
+    "nutrition_data_unavailable",
+    "no_nutrition_logs_14d",
+  ]);
   const biomechanicsMissing = gaps.has("muscle_load_data_unavailable");
-  const behaviorMissing = hasAny(gaps, ["current_context_unavailable", "training_rhythm_data_unavailable"]);
+  const behaviorMissing = hasAny(gaps, [
+    "current_context_unavailable",
+    "training_rhythm_data_unavailable",
+  ]);
   const hasHypotheses = (data?.hypotheses.length ?? 0) > 0;
   const hasResolvedHypothesis =
     data?.hypotheses.some(
@@ -70,12 +82,42 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
   };
 
   const rows: Scientist[] = [
-    { label: "Training Scientist", icon: Activity, state: state(trainingMissing), detail: detail(state(trainingMissing)) },
-    { label: "Recovery Scientist", icon: Sparkles, state: state(recoveryMissing), detail: detail(state(recoveryMissing)) },
-    { label: "Sleep Scientist", icon: Moon, state: state(recoveryMissing), detail: detail(state(recoveryMissing)) },
-    { label: "Nutrition Scientist", icon: Apple, state: state(nutritionMissing), detail: detail(state(nutritionMissing)) },
-    { label: "Biomechanics Lab", icon: PersonStanding, state: state(biomechanicsMissing), detail: detail(state(biomechanicsMissing)) },
-    { label: "Behavior Scientist", icon: UserRoundCheck, state: state(behaviorMissing), detail: detail(state(behaviorMissing)) },
+    {
+      label: "Training Scientist",
+      icon: Activity,
+      state: state(trainingMissing),
+      detail: detail(state(trainingMissing)),
+    },
+    {
+      label: "Recovery Scientist",
+      icon: Sparkles,
+      state: state(recoveryMissing),
+      detail: detail(state(recoveryMissing)),
+    },
+    {
+      label: "Sleep Scientist",
+      icon: Moon,
+      state: state(recoveryMissing),
+      detail: detail(state(recoveryMissing)),
+    },
+    {
+      label: "Nutrition Scientist",
+      icon: Apple,
+      state: state(nutritionMissing),
+      detail: detail(state(nutritionMissing)),
+    },
+    {
+      label: "Biomechanics Lab",
+      icon: PersonStanding,
+      state: state(biomechanicsMissing),
+      detail: detail(state(biomechanicsMissing)),
+    },
+    {
+      label: "Behavior Scientist",
+      icon: UserRoundCheck,
+      state: state(behaviorMissing),
+      detail: detail(state(behaviorMissing)),
+    },
     {
       label: "Statistician",
       icon: Sigma,
@@ -122,7 +164,9 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
       <header className="border-b border-[#16243c] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">LAB STATUS</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
+              LAB STATUS
+            </p>
             <p className="mt-1 text-[10px] text-slate-500">
               {isEnglish ? "Evidence state by specialist" : "Įrodymų būsena pagal specialistą"}
             </p>
@@ -161,7 +205,9 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
                   <Icon className="size-3.5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[10px] font-medium text-slate-200">{row.label}</span>
+                  <span className="block truncate text-[10px] font-medium text-slate-200">
+                    {row.label}
+                  </span>
                   <span className="mt-0.5 block truncate text-[8px] uppercase tracking-[0.1em] text-slate-600">
                     {row.detail}
                   </span>
@@ -178,10 +224,15 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
               >
                 <div className="flex items-center justify-between gap-2">
                   <Icon className="size-4 text-violet-300" />
-                  <span aria-label={row.detail} className={`size-1.5 rounded-full ${TONE[row.state]}`} />
+                  <span
+                    aria-label={row.detail}
+                    className={`size-1.5 rounded-full ${TONE[row.state]}`}
+                  />
                 </div>
                 <p className="mt-3 truncate text-xs font-semibold text-white">{row.label}</p>
-                <p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-slate-600">{row.detail}</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.1em] text-slate-600">
+                  {row.detail}
+                </p>
               </article>
             );
           })}
