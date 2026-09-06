@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TwinView } from "@/components/TwinView";
+import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTimeline } from "@/components/twin/TwinTimeline";
 
 export const Route = createFileRoute("/_authenticated/twin")({
@@ -24,6 +25,7 @@ function TwinPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <TwinView />
+      <TwinRewind />
       <TwinTimeline />
     </div>
   );
