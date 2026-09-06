@@ -1,0 +1,51 @@
+name: Human asset inventory
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-asset-inventory.yml]
+permissions:
+  contents: read
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Clone headless MakeHuman build tooling
+        run: git clone --depth 1 https://github.com/vidya-hub/makehuman-core.git "$RUNNER_TEMP/makehuman-core"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build tooling
+        run: python -m pip install -e "$RUNNER_TEMP/makehuman-core"
+      - name: Inventory available core human assets
+        env:
+          MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import mhcore
+
+          out = {}
+          h = mhcore.new_human()
+          for kind in ["skins", "clothes", "hair", "eyes", "eyebrows", "eyelashes", "teeth"]:
+              try:
+                  values = [str(Path(p)) for p in h.list_available(kind)]
+              except Exception as exc:
+                  values = [f"ERROR: {type(exc).__name__}: {exc}"]
+              out[kind] = values
+          out["data_path"] = str(mhcore.data_path("."))
+          out["modifiers_sample"] = h.list_modifiers()[:80]
+          Path("$RUNNER_TEMP").joinpath("makehuman-inventory.json").write_text(json.dumps(out, indent=2))
+          print(json.dumps({k: len(v) if isinstance(v, list) else v for k,v in out.items()}, indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: makehuman-cc0-inventory
+          path: ${{ runner.temp }}/makehuman-inventory.json
+          retention-days: 1
+          if-no-files-found: error
