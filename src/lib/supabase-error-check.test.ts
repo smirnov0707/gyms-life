@@ -27,10 +27,6 @@ const SRC = path.resolve("src");
  * its call site.
  */
 const ALLOWED = new Set([
-  // `finished_at` is written after this read, so throwing would refuse to
-  // finish a session the athlete has already done. An empty catalogue maps
-  // every set to no muscle group and the screen hides the replay.
-  "lib/finish-workout.functions.ts",
   // Optional targets by design: absent targets are simply not mentioned to
   // the recipe model rather than invented.
   "components/SmartFridgeScanner.tsx",
