@@ -45,6 +45,7 @@ import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
 import type { WorkoutExecutionAdaptation } from "@/lib/workout-execution.schema";
 import { errorMessage } from "@/lib/error-message";
 import { browserTimeZone } from "@/lib/local-day";
+import { notifyAdaptationChanged } from "@/lib/readiness-adapt";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
@@ -571,7 +572,7 @@ function WorkoutPage() {
         qc.invalidateQueries({ queryKey: ["strength-trend"] }),
         qc.invalidateQueries({ queryKey: ["injury-risk"] }),
       ]);
-      window.dispatchEvent(new Event("gymslife:adaptation"));
+      notifyAdaptationChanged();
       toast.success(copy.finished);
     },
     onError: (error) => toast.error(errorMessage(error, copy.finishFailed)),
@@ -587,7 +588,7 @@ function WorkoutPage() {
       // Today recomputes its canonical athlete snapshot from this new,
       // user-reported signal. The decision engine still applies its own
       // evidence and safety thresholds before adapting a future workout.
-      window.dispatchEvent(new Event("gymslife:adaptation"));
+      notifyAdaptationChanged();
       toast.success(copy.reflectionSaved);
     },
     onError: (error) => toast.error(errorMessage(error, copy.reflectionFailed)),

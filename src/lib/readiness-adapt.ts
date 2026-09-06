@@ -1,30 +1,38 @@
-/** Client-side persistence for a readiness adjustment; calculation stays shared with the server. */
+/** Readiness adjustment: the calculation is shared with the server, which owns the value. */
 export { adaptSets, loadModifierFor } from "./readiness.engine";
-import { browserTimeZone, dayInTimeZone } from "./local-day";
 
-function todayKey(): string {
-  return `gymslife_adapt_${dayInTimeZone(new Date(), browserTimeZone())}`;
-}
-
-/** Returns the load modifier the user applied today, or null. */
-export function getAppliedAdaptation(): number | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(todayKey());
-  if (!raw) return null;
-  const value = Number(raw);
-  return Number.isFinite(value) && value > 0 && value <= 1.2 ? value : null;
-}
-
-export function applyAdaptation(modifier: number): void {
+/**
+ * Tells the open screens that today's readiness has changed, so anything
+ * showing a decision derived from it re-reads the server.
+ *
+ * This used to also write the modifier to `gymslife_adapt_<day>` in local
+ * storage. Nothing ever read it back — `getAppliedAdaptation` and
+ * `clearAdaptation` had no callers — while the value it duplicated,
+ * `daily_checkins.load_modifier`, is written by the same request that
+ * produced it and is what every consumer actually reads. A per-day key that
+ * was written on every check-in, read by nothing and never removed is not a
+ * cache; it is a second copy of a fact with no way to notice it drifting.
+ */
+export function notifyAdaptationChanged(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(todayKey(), String(modifier));
   window.dispatchEvent(new CustomEvent("gymslife:adaptation"));
 }
 
-export function clearAdaptation(): void {
+/**
+ * Removes the per-day keys the old client-side copy left behind. Date-suffixed
+ * and never cleaned up, they accumulate one per check-in for as long as a
+ * device is used.
+ */
+export function purgeLegacyAdaptationKeys(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(todayKey());
-  window.dispatchEvent(new CustomEvent("gymslife:adaptation"));
+  try {
+    const stale = Object.keys(window.localStorage).filter((key) =>
+      key.startsWith("gymslife_adapt_"),
+    );
+    for (const key of stale) window.localStorage.removeItem(key);
+  } catch {
+    /* storage unavailable; nothing to clean */
+  }
 }
 
 /** Suggested load adjusted for fatigue, rounded to 0.5 kg. */

@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { clearHydrationToday, getHydrationIntake, logHydration } from "./hydration.functions";
 import { browserTimeZone, dayInTimeZone } from "./local-day";
+import { purgeLegacyAdaptationKeys } from "./readiness-adapt";
 
 export type ReminderKind = "water" | "meal" | "workout";
 
@@ -170,10 +171,12 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setSettings(loadReminders());
-    // The old per-device water counter. Its rows now live in the database,
-    // so the key is cleared rather than read: leaving it would keep a
-    // second, silently diverging total on the device.
+    // Legacy per-device keys, cleared rather than read. Each was a second
+    // copy of a fact the server already owns: the water counter's rows now
+    // live in the database, and the readiness modifier is on the check-in
+    // that produced it. Leaving them would keep totals that silently diverge.
     window.localStorage.removeItem("forma_water");
+    purgeLegacyAdaptationKeys();
   }, []);
 
   const save = useCallback((next: ReminderSettings) => {
