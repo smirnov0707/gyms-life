@@ -21,9 +21,7 @@ export const AthleteHypothesisLedgerSummarySchema = z
   })
   .strict();
 
-export type AthleteHypothesisLedgerSummary = z.infer<
-  typeof AthleteHypothesisLedgerSummarySchema
->;
+export type AthleteHypothesisLedgerSummary = z.infer<typeof AthleteHypothesisLedgerSummarySchema>;
 
 /**
  * Returns the latest known ledger state for each hypothesis. Callers must
