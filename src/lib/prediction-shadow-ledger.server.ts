@@ -147,7 +147,8 @@ export async function reconcileWorkoutCompletionShadowPredictions(
     .lte("finished_at", evaluatedAt)
     .order("finished_at", { ascending: true })
     .limit(COMPLETED_SESSION_LIMIT);
-  if (sessionsError) throw new Error("Could not read completed workouts for prediction evaluation.");
+  if (sessionsError)
+    throw new Error("Could not read completed workouts for prediction evaluation.");
 
   const completedAt = (sessions ?? []).flatMap((session) =>
     session.finished_at ? [session.finished_at] : [],
@@ -155,7 +156,10 @@ export async function reconcileWorkoutCompletionShadowPredictions(
 
   let reconciled = 0;
   for (const candidate of pending) {
-    const observedCompletionAt = completionInsidePredictionWindow(candidate.prediction, completedAt);
+    const observedCompletionAt = completionInsidePredictionWindow(
+      candidate.prediction,
+      completedAt,
+    );
     const evaluated = evaluateWorkoutCompletionShadowPrediction({
       prediction: candidate.prediction,
       actual: observedCompletionAt !== null,
