@@ -63,9 +63,7 @@ describe("hypothesis ledger transitions", () => {
 
   it("does not create timeline noise when evidence changes without a status change", () => {
     const current = { ...hypothesis, evidenceCount: 5 } satisfies AthleteHypothesis;
-    expect(buildHypothesisLedgerTransitions([current], [ledgerEntry("monitoring", 4)])).toEqual(
-      [],
-    );
+    expect(buildHypothesisLedgerTransitions([current], [ledgerEntry("monitoring", 4)])).toEqual([]);
   });
 
   it("records a real status transition with the prior state", () => {
