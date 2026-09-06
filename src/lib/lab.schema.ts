@@ -3,6 +3,7 @@ import { AthleteHypothesisLedgerSummarySchema } from "./athlete-hypothesis-ledge
 import { AthleteHypothesisSchema } from "./athlete-hypothesis.schema";
 import { DecisionAccuracySchema } from "./decision-accuracy.schema";
 import { DigitalAthleteDataGapSchema } from "./digital-athlete.schema";
+import { PredictionCalibrationSchema } from "./prediction-calibration.schema";
 import {
   TodayDecisionActionSchema,
   TodayDecisionBasisSchema,
@@ -44,8 +45,9 @@ export type LabHypothesisTransition = z.infer<typeof LabHypothesisTransitionSche
 
 /**
  * Lab overview exposes current deterministic hypotheses, their bounded
- * longitudinal transition history, recent decisions, decision fit and data gaps.
- * Internal hypothesis history is an audit view only and is never Twin evidence.
+ * longitudinal transition history, recent decisions, decision fit, shadow
+ * prediction calibration and data gaps. Calibration is retrospective evidence
+ * only and is never an input to Today.
  */
 export const LabOverviewSchema = z
   .object({
@@ -53,6 +55,7 @@ export const LabOverviewSchema = z
     hypothesisHistory: z.array(LabHypothesisTransitionSchema),
     decisions: z.array(LabDecisionSchema),
     decisionAccuracy: DecisionAccuracySchema,
+    predictionCalibration: PredictionCalibrationSchema,
     dataGaps: z.array(DigitalAthleteDataGapSchema),
   })
   .strict();
