@@ -10,6 +10,7 @@ export const PersonalTimelineEventTypeSchema = z.enum([
   "workout_completed",
   "checkin_recorded",
   "decision_recorded",
+  "hypothesis_transition",
 ]);
 
 /**
