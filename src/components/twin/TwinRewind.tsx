@@ -26,7 +26,8 @@ const COPY = {
     empty: "Dar nėra suderinamų išsaugotų Twin būsenų.",
     open: "Atverti būseną",
     selected: "Peržiūrima istorinė būsena",
-    incompatible: "Ši būsena sukurta kita modelio arba schemos versija, todėl ji neperinterpretuojama dabartiniu Twin.",
+    incompatible:
+      "Ši būsena sukurta kita modelio arba schemos versija, todėl ji neperinterpretuojama dabartiniu Twin.",
     omitted: "Dalies snapshot'ų nepavyko patikrinti ir jie nerodomi:",
     older: "Yra ir senesnių snapshot'ų už šio riboto sąrašo.",
     quality: "Duomenų būsena",
@@ -55,7 +56,8 @@ const COPY = {
     empty: "There are no compatible stored Twin states yet.",
     open: "Open state",
     selected: "Viewing historical state",
-    incompatible: "This state was created by another model or schema version, so the current Twin does not reinterpret it.",
+    incompatible:
+      "This state was created by another model or schema version, so the current Twin does not reinterpret it.",
     omitted: "Some snapshots could not be validated and are not shown:",
     older: "Older snapshots also exist outside this bounded list.",
     quality: "Data state",
@@ -260,7 +262,10 @@ export function TwinRewind() {
         <p className="text-xs leading-relaxed text-muted-foreground">{copy.note}</p>
         {query.isPending && (
           <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+            <Loader2
+              aria-hidden="true"
+              className="size-4 animate-spin motion-reduce:animate-none"
+            />
             {copy.loading}
           </p>
         )}
@@ -309,7 +314,10 @@ export function TwinRewind() {
             <div className="flex flex-wrap items-center gap-2">
               <History aria-hidden="true" className="size-4 text-primary" />
               <p className="text-sm font-semibold text-foreground">{copy.selected}</p>
-              <time className="font-mono text-xs text-muted-foreground" dateTime={selected.computedAt}>
+              <time
+                className="font-mono text-xs text-muted-foreground"
+                dateTime={selected.computedAt}
+              >
                 {formatTime(selected.computedAt, locale)}
               </time>
             </div>
