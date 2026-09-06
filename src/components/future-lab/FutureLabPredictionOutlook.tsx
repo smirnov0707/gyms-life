@@ -8,7 +8,9 @@ import { buildTwinMetricTrend, type TwinTrendSeries } from "@/lib/twin-trend";
 
 function Sparkline({ series }: { series: TwinTrendSeries | null }) {
   if (!series || series.samples.length < 2) {
-    return <div className="h-12 rounded-lg border border-dashed border-white/[0.06] bg-white/[0.015]" />;
+    return (
+      <div className="h-12 rounded-lg border border-dashed border-white/[0.06] bg-white/[0.015]" />
+    );
   }
   const values = series.samples.map((sample) => sample.value);
   const min = Math.min(...values);
@@ -22,14 +24,18 @@ function Sparkline({ series }: { series: TwinTrendSeries | null }) {
     })
     .join(" ");
   return (
-    <svg viewBox="0 0 100 42" className="h-12 w-full overflow-visible" preserveAspectRatio="none" aria-hidden="true">
+    <svg
+      viewBox="0 0 100 42"
+      className="h-12 w-full overflow-visible"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       <polyline
         points={points}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
-        className="text-cyan-400"
       />
     </svg>
   );
@@ -52,7 +58,9 @@ export function FutureLabPredictionOutlook() {
 
   const calibration = labQuery.data?.predictionCalibration;
   const readiness = trendQuery.data ? buildTwinMetricTrend(trendQuery.data, "readiness") : null;
-  const load = trendQuery.data ? buildTwinMetricTrend(trendQuery.data, "totalVolumeLast28Days") : null;
+  const load = trendQuery.data
+    ? buildTwinMetricTrend(trendQuery.data, "totalVolumeLast28Days")
+    : null;
   const evidenceProgress = calibration
     ? Math.min(100, Math.round((calibration.totalEvaluated / calibration.minimumEvaluated) * 100))
     : 0;
@@ -127,7 +135,9 @@ export function FutureLabPredictionOutlook() {
               {isEnglish ? "NEXT 7 DAYS OUTLOOK" : "KITŲ 7 DIENŲ OUTLOOK"}
             </p>
             <p className="mt-1 text-[10px] text-slate-500">
-              {isEnglish ? "Not activated until a validated horizon model exists" : "Neaktyvuota, kol nėra validuoto horizonto modelio"}
+              {isEnglish
+                ? "Not activated until a validated horizon model exists"
+                : "Neaktyvuota, kol nėra validuoto horizonto modelio"}
             </p>
           </div>
           <LockKeyhole className="size-4 text-slate-600" />
@@ -136,25 +146,33 @@ export function FutureLabPredictionOutlook() {
         <div className="mt-4 rounded-xl border border-white/[0.05] bg-black/15 p-3">
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-[10px] text-slate-400">
-              <Activity className="size-3.5 text-cyan-300" /> {isEnglish ? "Observed readiness" : "Stebėtas readiness"}
+              <Activity className="size-3.5 text-cyan-300" />{" "}
+              {isEnglish ? "Observed readiness" : "Stebėtas readiness"}
             </span>
             <span className="font-mono text-[10px] text-slate-500">
               {readiness?.latestValue == null ? "—" : Math.round(readiness.latestValue)}
             </span>
           </div>
-          <div className="mt-2 text-cyan-400"><Sparkline series={readiness} /></div>
+          <div className="mt-2 text-cyan-400">
+            <Sparkline series={readiness} />
+          </div>
         </div>
 
         <div className="mt-2 rounded-xl border border-white/[0.05] bg-black/15 p-3">
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-[10px] text-slate-400">
-              <Dumbbell className="size-3.5 text-violet-300" /> {isEnglish ? "Observed 28d load" : "Stebėtas 28 d. krūvis"}
+              <Dumbbell className="size-3.5 text-violet-300" />{" "}
+              {isEnglish ? "Observed 28d load" : "Stebėtas 28 d. krūvis"}
             </span>
             <span className="font-mono text-[10px] text-slate-500">
-              {load?.latestValue == null ? "—" : `${Math.round(load.latestValue).toLocaleString()} kg`}
+              {load?.latestValue == null
+                ? "—"
+                : `${Math.round(load.latestValue).toLocaleString()} kg`}
             </span>
           </div>
-          <div className="mt-2 text-violet-400"><Sparkline series={load} /></div>
+          <div className="mt-2 text-violet-400">
+            <Sparkline series={load} />
+          </div>
         </div>
 
         <p className="mt-3 flex items-start gap-2 text-[9px] leading-relaxed text-slate-600">
