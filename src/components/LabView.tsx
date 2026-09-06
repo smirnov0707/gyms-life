@@ -342,7 +342,10 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
         </section>
       ) : null}
 
-      <PredictionCalibrationPanel data={data.predictionCalibration} />
+      <PredictionCalibrationPanel
+        data={data.predictionCalibration}
+        promotionGate={data.predictionPromotionGate}
+      />
 
       <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
