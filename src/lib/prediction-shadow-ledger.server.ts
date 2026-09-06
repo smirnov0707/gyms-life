@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Json } from "@/integrations/supabase/types";
 import type { DigitalAthleteState } from "./digital-athlete.schema";
 import { dayBoundsInTimeZone, IsoDaySchema, IanaTimeZoneSchema } from "./local-day";
+import { AthletePredictionSchema, type AthletePrediction } from "./prediction.schema";
 import {
   evaluateWorkoutCompletionShadowPrediction,
   isWorkoutCompletionShadowEligibleAction,
@@ -10,7 +11,7 @@ import type { TodayDecisionAction } from "./today-decision.schema";
 import { predictWorkoutCompletion } from "./workout-completion-prediction.engine";
 
 const RECONCILIATION_LIMIT = 64;
-const TRAINING_ACTIONS = ["train_adapted", "train_as_planned"] as const;
+const COMPLETED_SESSION_LIMIT = 512;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -29,6 +30,28 @@ function toJson(value: unknown): Json {
     return output;
   }
   throw new Error("Prediction contains a non-JSON value.");
+}
+
+function pendingWorkoutPrediction(value: unknown): AthletePrediction | null {
+  const parsed = AthletePredictionSchema.safeParse(value);
+  if (!parsed.success) return null;
+  if (parsed.data.target !== "workout_completion" || parsed.data.maturity !== "shadow") return null;
+  if (parsed.data.actual !== null || parsed.data.evaluatedAt !== null) return null;
+  return parsed.data;
+}
+
+function completionInsidePredictionWindow(
+  prediction: AthletePrediction,
+  completedAt: readonly string[],
+): string | null {
+  const generatedAtMs = Date.parse(prediction.generatedAt);
+  const horizonEndsAtMs = Date.parse(prediction.horizonEndsAt);
+  return (
+    completedAt.find((timestamp) => {
+      const timestampMs = Date.parse(timestamp);
+      return timestampMs >= generatedAtMs && timestampMs <= horizonEndsAtMs;
+    }) ?? null
+  );
 }
 
 /**
@@ -77,10 +100,13 @@ export async function captureWorkoutCompletionShadowPrediction(input: {
 }
 
 /**
- * Reconciles bounded historical shadow forecasts against the canonical Today
- * decision outcome. Completion is immediately observable; non-completion is
- * observable only after the stored horizon. Already-observed payloads are
- * never rewritten.
+ * Reconciles a bounded set of pending forecasts against canonical completed
+ * workout sessions. Decision status is intentionally not used as the actual:
+ * multiple Today records may exist for one day as the athlete snapshot evolves.
+ *
+ * A session finished inside [generatedAt, horizonEndsAt] is positive evidence.
+ * If no such session exists, non-completion becomes observable only after the
+ * horizon. Already-observed prediction JSON is protected by a DB contains guard.
  */
 export async function reconcileWorkoutCompletionShadowPredictions(
   userId: string,
@@ -90,29 +116,57 @@ export async function reconcileWorkoutCompletionShadowPredictions(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: records, error } = await supabaseAdmin
     .from("decision_records")
-    .select("id, status, prediction")
+    .select("id, prediction")
     .eq("user_id", userId)
     .not("prediction", "is", null)
     .order("decision_on", { ascending: false })
     .limit(RECONCILIATION_LIMIT);
   if (error) throw new Error("Could not read shadow predictions for reconciliation.");
 
+  const pending = (records ?? []).flatMap((record) => {
+    const prediction = pendingWorkoutPrediction(record.prediction);
+    return prediction ? [{ id: record.id, prediction }] : [];
+  });
+  if (pending.length === 0) return 0;
+
+  const earliestGeneratedAt = pending.reduce(
+    (earliest, candidate) =>
+      Date.parse(candidate.prediction.generatedAt) < Date.parse(earliest)
+        ? candidate.prediction.generatedAt
+        : earliest,
+    pending[0].prediction.generatedAt,
+  );
+
+  const { data: sessions, error: sessionsError } = await supabaseAdmin
+    .from("workout_sessions")
+    .select("finished_at")
+    .eq("user_id", userId)
+    .not("finished_at", "is", null)
+    .gte("finished_at", earliestGeneratedAt)
+    .lte("finished_at", evaluatedAt)
+    .order("finished_at", { ascending: true })
+    .limit(COMPLETED_SESSION_LIMIT);
+  if (sessionsError) throw new Error("Could not read completed workouts for prediction evaluation.");
+
+  const completedAt = (sessions ?? []).flatMap((session) =>
+    session.finished_at ? [session.finished_at] : [],
+  );
+
   let reconciled = 0;
-  for (const record of records ?? []) {
-    const actual = record.status === "completed";
+  for (const candidate of pending) {
+    const observedCompletionAt = completionInsidePredictionWindow(candidate.prediction, completedAt);
     const evaluated = evaluateWorkoutCompletionShadowPrediction({
-      prediction: record.prediction,
-      actual,
-      evaluatedAt,
+      prediction: candidate.prediction,
+      actual: observedCompletionAt !== null,
+      evaluatedAt: observedCompletionAt ?? evaluatedAt,
     });
     if (!evaluated) continue;
 
     const { data: updated, error: updateError } = await supabaseAdmin
       .from("decision_records")
       .update({ prediction: toJson(evaluated) })
-      .eq("id", record.id)
+      .eq("id", candidate.id)
       .eq("user_id", userId)
-      .eq("status", record.status)
       .contains("prediction", { actual: null, evaluatedAt: null })
       .select("id");
     if (updateError) throw new Error("Could not reconcile a shadow prediction.");
@@ -120,50 +174,4 @@ export async function reconcileWorkoutCompletionShadowPredictions(
   }
 
   return reconciled;
-}
-
-/**
- * Records a just-completed training decision as a positive actual outcome.
- * The compare guard on the JSON payload prevents an observed prediction from
- * being overwritten by repeated workout-save requests.
- */
-export async function observeCompletedWorkoutPrediction(
-  userId: string,
-  decisionOn: string,
-  now = new Date(),
-): Promise<boolean> {
-  const canonicalDay = IsoDaySchema.parse(decisionOn);
-  const evaluatedAt = now.toISOString();
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: record, error } = await supabaseAdmin
-    .from("decision_records")
-    .select("id, prediction")
-    .eq("user_id", userId)
-    .eq("decision_on", canonicalDay)
-    .in("action", [...TRAINING_ACTIONS])
-    .eq("status", "completed")
-    .not("prediction", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error("Could not read the completed training prediction.");
-  if (!record?.prediction) return false;
-
-  const evaluated = evaluateWorkoutCompletionShadowPrediction({
-    prediction: record.prediction,
-    actual: true,
-    evaluatedAt,
-  });
-  if (!evaluated) return false;
-
-  const { data: updated, error: updateError } = await supabaseAdmin
-    .from("decision_records")
-    .update({ prediction: toJson(evaluated) })
-    .eq("id", record.id)
-    .eq("user_id", userId)
-    .eq("status", "completed")
-    .contains("prediction", { actual: null, evaluatedAt: null })
-    .select("id");
-  if (updateError) throw new Error("Could not observe the completed workout prediction.");
-  return (updated?.length ?? 0) > 0;
 }
