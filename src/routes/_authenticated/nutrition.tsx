@@ -2,7 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { ChevronDown, Flame, Loader2, ScanLine, Sparkles, Trash2, Utensils } from "lucide-react";
+import {
+  Camera,
+  ChevronDown,
+  Flame,
+  Loader2,
+  PenLine,
+  ScanLine,
+  Sparkles,
+  Trash2,
+  Utensils,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DineOutMenuScanner } from "@/components/DineOutMenuScanner";
@@ -336,6 +346,21 @@ function NutritionPage() {
                     <p className="mt-1 font-mono text-[10px] leading-relaxed text-muted-foreground">
                       {log.calories} kcal · {log.protein}g P · {log.carbs}g C · {log.fat}g F
                     </p>
+                    {/* Every figure above is a model's estimate. Which evidence
+                        it read — a photograph of the plate or a sentence the
+                        athlete typed — is written out, never left to an icon
+                        alone. Rows logged before the app recorded this say
+                        nothing rather than guess. */}
+                    {log.source === "photo_estimate" || log.source === "text_estimate" ? (
+                      <p className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+                        {log.source === "photo_estimate" ? (
+                          <Camera className="size-3 shrink-0" aria-hidden="true" />
+                        ) : (
+                          <PenLine className="size-3 shrink-0" aria-hidden="true" />
+                        )}
+                        {t(log.source === "photo_estimate" ? "nut.src.photo" : "nut.src.text")}
+                      </p>
+                    ) : null}
                     {log.note ? (
                       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                         {log.note}

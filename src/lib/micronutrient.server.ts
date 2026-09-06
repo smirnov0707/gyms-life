@@ -8,6 +8,12 @@ export type MicroSnapshot = {
     day: string;
     food: string;
     description: string;
+    /**
+     * How the entry was captured. Both paths are model estimates; a photo
+     * saw the plate, a typed description only saw the athlete's words.
+     * `null` for rows written before the app recorded this.
+     */
+    source: "photo" | "text" | null;
     kcal: number;
     protein: number;
     carbs: number;
@@ -38,7 +44,7 @@ export async function loadMicroSnapshot(
   const [foods, sups, prof, sessions, checkins, weights] = await Promise.all([
     supabase
       .from("nutrition_logs")
-      .select("logged_on, food_name, description, calories, protein, carbs, fat")
+      .select("logged_on, food_name, description, calories, protein, carbs, fat, source")
       .eq("user_id", userId)
       .gte("logged_on", since)
       .order("logged_on", { ascending: false })
@@ -92,6 +98,8 @@ export async function loadMicroSnapshot(
       day: r.logged_on,
       food: r.food_name,
       description: (r.description ?? "").slice(0, 120),
+      source:
+        r.source === "photo_estimate" ? "photo" : r.source === "text_estimate" ? "text" : null,
       kcal: Math.round(Number(r.calories ?? 0)),
       protein: Math.round(Number(r.protein ?? 0)),
       carbs: Math.round(Number(r.carbs ?? 0)),

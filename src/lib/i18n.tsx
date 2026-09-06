@@ -368,6 +368,10 @@ const baseDict = {
   "nut.fat": { lt: "Riebalai", en: "Fat" },
   "nut.empty": { lt: "Šiandien dar nieko neįrašyta.", en: "Nothing logged today yet." },
   "nut.delete": { lt: "Trinti", en: "Delete" },
+  // Both paths are model estimates; the chip says which evidence the
+  // estimate was made from, so the athlete can weigh it.
+  "nut.src.photo": { lt: "Vertinta iš nuotraukos", en: "Estimated from a photo" },
+  "nut.src.text": { lt: "Vertinta iš aprašymo", en: "Estimated from your description" },
 
   "ach.title": { lt: "Pasiekimai", en: "Achievements" },
   "ach.sub": {
