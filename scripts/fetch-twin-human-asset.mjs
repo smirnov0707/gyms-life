@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
-const SOURCE_COMMIT = "3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91";
-const SOURCE_PATH = "packages/assets/library/man.glb";
-const EXPECTED_GIT_BLOB_SHA1 = "bec48c7ad6be753520f7291510c1d63440df87b9";
-const EXPECTED_SIZE = 2_889_028;
-const SOURCE_URL = `https://raw.githubusercontent.com/kunalkushwaha/vsim/${SOURCE_COMMIT}/${SOURCE_PATH}`;
+const SOURCE_COMMIT = "f641c2d612554d3f8f3b7ee162d4561e75976afa";
+const SOURCE_PATH = "public/avatars/parametric-base.glb";
+const EXPECTED_GIT_BLOB_SHA1 = "652ee3882097d41e7920c7de0454e1c73a94a507";
+const EXPECTED_SIZE = 6_806_984;
+const SOURCE_URL = `https://raw.githubusercontent.com/nirholas/three.ws/${SOURCE_COMMIT}/${SOURCE_PATH}`;
 const DESTINATION = resolve("public/models/twin-human.glb");
 
 function gitBlobSha1(bytes) {
@@ -36,7 +36,7 @@ async function main() {
   try {
     const response = await fetch(SOURCE_URL, {
       headers: { "user-agent": "gyms-life-build" },
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(45_000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
