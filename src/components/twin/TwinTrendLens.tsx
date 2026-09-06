@@ -135,9 +135,7 @@ function Sparkline({ series, label }: { series: TwinTrendSeries; label: string }
   const points = series.samples.map((sample) => {
     const x = pad + ((Date.parse(sample.computedAt) - start) / timeSpan) * (width - pad * 2);
     const y =
-      max === min
-        ? height / 2
-        : pad + ((max - sample.value) / valueSpan) * (height - pad * 2);
+      max === min ? height / 2 : pad + ((max - sample.value) / valueSpan) * (height - pad * 2);
     return { x, y, sample };
   });
 
@@ -199,7 +197,8 @@ function SeriesCard({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground">{label}</h3>
         <span className="font-mono text-[10px] text-muted-foreground">
-          {copy.observations}: {series.pointCount} · {copy.span}: {formatValue(spanDays, locale)} {copy.days}
+          {copy.observations}: {series.pointCount} · {copy.span}: {formatValue(spanDays, locale)}{" "}
+          {copy.days}
         </span>
       </div>
       {series.samples.length > 0 ? <Sparkline series={series} label={label} /> : null}
@@ -232,7 +231,8 @@ function SeriesCard({
         <div>
           <dt className="text-muted-foreground">{copy.range}</dt>
           <dd className="mt-1 font-mono text-foreground">
-            {formatValue(series.minValue, locale, unit)}–{formatValue(series.maxValue, locale, unit)}
+            {formatValue(series.minValue, locale, unit)}–
+            {formatValue(series.maxValue, locale, unit)}
           </dd>
         </div>
       </dl>
@@ -262,11 +262,16 @@ export function TwinTrendLens() {
   const regions = useMemo(
     () =>
       query.data
-        ? [...new Set(query.data.points.flatMap((point) => point.regions.map((region) => region.region)))].sort()
+        ? [
+            ...new Set(
+              query.data.points.flatMap((point) => point.regions.map((region) => region.region)),
+            ),
+          ].sort()
         : [],
     [query.data],
   );
-  const activeRegion = selectedRegion && regions.includes(selectedRegion) ? selectedRegion : regions[0] ?? null;
+  const activeRegion =
+    selectedRegion && regions.includes(selectedRegion) ? selectedRegion : (regions[0] ?? null);
 
   if (!user || authLoading) return null;
 
@@ -360,7 +365,9 @@ export function TwinTrendLens() {
 
                 {activeRegion ? (
                   <div className="border-t border-border pt-5">
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">{copy.regional}</p>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      {copy.regional}
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {regions.map((region) => (
                         <button
