@@ -69,9 +69,7 @@ const baseState: DigitalAthleteState = {
     availableDomains: ["training", "recovery", "body", "nutrition"],
   },
   dataGaps: [],
-  muscleLoad: [
-    { muscleGroup: "chest", volumeKg: 520, recoveryPct: 64, lastTrainedHoursAgo: 18 },
-  ],
+  muscleLoad: [{ muscleGroup: "chest", volumeKg: 520, recoveryPct: 64, lastTrainedHoursAgo: 18 }],
 };
 
 function row(overrides: Record<string, unknown> = {}) {
