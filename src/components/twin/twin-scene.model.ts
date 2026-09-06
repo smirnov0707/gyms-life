@@ -97,7 +97,7 @@ export type TwinSceneRegion = {
   display: TwinRegionDisplay;
 };
 export type TwinSceneState = {
-  layer: TwinLayer;
+  layer: TwinLayer | "session_sets" | "session_volume";
   dataAvailable: boolean;
   regions: TwinSceneRegion[];
 };
