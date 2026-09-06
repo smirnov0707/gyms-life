@@ -253,7 +253,8 @@ export function buildTwinRegionTrend(
 ): TwinTrendSeries {
   return summarize(
     history.points.flatMap((point) => {
-      const value = point.regions.find((candidate) => candidate.region === region)?.[metric] ?? null;
+      const value =
+        point.regions.find((candidate) => candidate.region === region)?.[metric] ?? null;
       return value === null || !Number.isFinite(value)
         ? []
         : [{ snapshotId: point.id, computedAt: point.computedAt, value }];
