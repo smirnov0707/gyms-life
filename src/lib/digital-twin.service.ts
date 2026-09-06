@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
-import { mapDigitalAthleteStateToTwinSnapshot } from "./digital-twin.mapper";
+import { mapDigitalAthleteStateToTwinSnapshot, twinBodyVariantFor } from "./digital-twin.mapper";
 import type { TwinSnapshot } from "./digital-twin.schema";
 
 /**
@@ -15,6 +15,16 @@ export async function loadTwinSnapshot(
   timeZone = "UTC",
   now = new Date(),
 ): Promise<TwinSnapshot> {
-  const athlete = await refreshAthleteStateSnapshot(supabase, userId, timeZone, now);
-  return mapDigitalAthleteStateToTwinSnapshot(athlete.state, now);
+  const [athlete, profile] = await Promise.all([
+    refreshAthleteStateSnapshot(supabase, userId, timeZone, now),
+    // Which figure to draw, and nothing else. A failed or empty read is not a
+    // reason to withhold the Twin — it falls back to the default body, which
+    // the stage already labels as generic rather than as the athlete's own.
+    supabase.from("profiles").select("gender").eq("id", userId).maybeSingle(),
+  ]);
+  return mapDigitalAthleteStateToTwinSnapshot(
+    athlete.state,
+    now,
+    twinBodyVariantFor(profile.error ? null : profile.data?.gender),
+  );
 }

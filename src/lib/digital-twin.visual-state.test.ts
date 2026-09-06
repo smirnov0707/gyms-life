@@ -4,6 +4,7 @@ import type { TwinSnapshot } from "./digital-twin.schema";
 
 const baseSnapshot: TwinSnapshot = {
   calculationVersion: "muscle-load-v1",
+  bodyVariant: "male" as const,
   computedAt: "2026-09-05T19:30:00+03:00",
   evidenceWindowDays: 14,
   dataAvailable: true,

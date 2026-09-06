@@ -29,6 +29,7 @@ const chest: TwinRegionState = {
 };
 const fixture = (regions: TwinRegionState[] = []): TwinSnapshot => ({
   calculationVersion: "test-only",
+  bodyVariant: "male" as const,
   computedAt: "2026-09-05T12:00:00Z",
   evidenceWindowDays: 14,
   dataAvailable: true,

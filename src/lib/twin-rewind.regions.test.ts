@@ -9,6 +9,7 @@ function snapshot(
 ): TwinSnapshot {
   return {
     calculationVersion: "digital-athlete-v2",
+    bodyVariant: "male" as const,
     computedAt: "2026-09-06T10:00:00.000Z",
     evidenceWindowDays: 7,
     dataAvailable,

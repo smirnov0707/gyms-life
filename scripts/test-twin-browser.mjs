@@ -126,6 +126,31 @@ try {
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   record("mesh raycast selects chest; dragging does not select another region");
 
+  // The app ships two figures and picks one from the athlete's profile. Nothing
+  // else in this suite ever fetches the second file, so a female athlete would
+  // be the first to find out it was broken.
+  await page.getByRole("button", { name: "Female body", exact: true }).click();
+  await expect
+    .poll(async () => await canvas.getAttribute("data-twin-body"), { timeout: 20000 })
+    .toBe("human");
+  await stopMotion(page);
+  await preset(page, "Reset view");
+  await canvas.scrollIntoViewIfNeeded();
+  const female = await canvas.boundingBox();
+  await page.mouse.click(
+    female.x + female.width / 2 + 22,
+    female.y + female.height / 2 - female.height * 0.12,
+  );
+  await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
+  await page.screenshot({ path: path.join(artifacts, "desktop-female.png"), fullPage: true });
+  await page.getByRole("button", { name: "Male body", exact: true }).click();
+  await expect
+    .poll(async () => await canvas.getAttribute("data-twin-body"), { timeout: 20000 })
+    .toBe("human");
+  await stopMotion(page);
+  await preset(page, "Reset view");
+  record("the female figure loads, stands where the camera looks and picks its regions");
+
   const beforeZoom = Number(await canvas.getAttribute("data-twin-distance"));
   await preset(page, "Zoom in");
   await expect
