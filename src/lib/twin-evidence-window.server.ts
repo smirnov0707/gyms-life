@@ -11,6 +11,8 @@ import {
 /**
  * Reads only the authenticated user's compact Timeline index. The browser can
  * choose an interval but never an identity; RLS remains authoritative.
+ * Server-owned hypothesis transitions are deliberately excluded: they are
+ * derived audit state and must never be presented as evidence for Twin change.
  */
 export async function loadTwinEvidenceWindow(
   supabase: SupabaseClient<Database>,
@@ -26,6 +28,7 @@ export async function loadTwinEvidenceWindow(
       "id,event_type,occurred_at,created_at,timezone,provenance,quality,source_system,source_table,source_reference,schema_version",
     )
     .eq("user_id", userId)
+    .neq("event_type", "hypothesis_transition")
     .gt("occurred_at", interval.olderAt)
     .lte("occurred_at", interval.newerAt)
     .order("occurred_at", { ascending: false })
