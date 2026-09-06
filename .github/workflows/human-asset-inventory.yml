@@ -40,7 +40,8 @@ jobs:
               out[kind] = values
           out["data_path"] = str(mhcore.data_path("."))
           out["modifiers_sample"] = h.list_modifiers()[:80]
-          Path("$RUNNER_TEMP").joinpath("makehuman-inventory.json").write_text(json.dumps(out, indent=2))
+          target = Path(os.environ["RUNNER_TEMP"]) / "makehuman-inventory.json"
+          target.write_text(json.dumps(out, indent=2), encoding="utf-8")
           print(json.dumps({k: len(v) if isinstance(v, list) else v for k,v in out.items()}, indent=2))
           PY
       - uses: actions/upload-artifact@v4
