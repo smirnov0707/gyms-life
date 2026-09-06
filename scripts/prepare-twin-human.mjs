@@ -42,6 +42,11 @@ const FIGURES = {
   female: "Female_Basemesh_Rig_868",
 };
 
+/** Bones the training shorts cover: hips and the upper thigh. */
+const SHORTS_BONES = /^DEF-(pelvis|thigh)$/;
+/** How far the garment stands off the skin, in metres. */
+const SHORTS_OFFSET_M = 0.008;
+
 const OUT_DIR = resolve("public/models");
 const VERSION = "v1";
 
@@ -107,6 +112,7 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   // Split and check before writing. Doing it after produced a file that had
   // none of the region materials in it while every check still passed, because
   // the checks were reading the document in memory rather than the artifact.
+  addShorts(document);
   const coverage = splitBodyByRegion(document);
   verify(document, variant);
   verifyRegions(coverage, variant);
@@ -343,4 +349,171 @@ function triangleCount(mesh) {
       (indices ? indices.getCount() : (primitive.getAttribute("POSITION")?.getCount() ?? 0)) / 3;
   }
   return total;
+}
+
+/**
+ * Neutral training shorts, built from the figure's own surface.
+ *
+ * The base mesh is nude. Rather than fit a separate garment — which needs an
+ * artist and interpenetrates the moment the body moves — the shorts are the
+ * body's own triangles over the hips and upper thighs, pushed out along their
+ * normals by a few millimetres. They cannot clip through the leg because they
+ * are the leg, and they follow the skeleton for free.
+ *
+ * Only the lower body is covered. The torso stays bare on purpose: chest,
+ * back, abs and core are regions the athlete selects and reads data from, and
+ * a shirt would hide exactly the surface this screen exists to show.
+ */
+function addShorts(document) {
+  const root = document.getRoot();
+  const body = root.listMeshes().reduce((a, b) => (triangleCount(a) > triangleCount(b) ? a : b));
+  const primitive = body.listPrimitives()[0];
+  const position = primitive.getAttribute("POSITION");
+  const normal = primitive.getAttribute("NORMAL");
+  const joints = primitive.getAttribute("JOINTS_0");
+  const weights = primitive.getAttribute("WEIGHTS_0");
+  const uv = primitive.getAttribute("TEXCOORD_0");
+  const indices = primitive.getIndices();
+  if (!position || !normal || !joints || !weights || !uv || !indices) return;
+
+  const skin = root.listSkins()[0];
+  const boneNames = skin.listJoints().map((joint) => joint.getName());
+  const dominant = (vertex) => {
+    const j = joints.getElement(vertex, [0, 0, 0, 0]);
+    const w = weights.getElement(vertex, [0, 0, 0, 0]);
+    let best = 0;
+    for (let k = 1; k < 4; k++) if (w[k] > w[best]) best = k;
+    return normaliseBone(boneNames[j[best]] ?? "");
+  };
+
+  // Waistband and hem are taken from where the covered bones actually reach,
+  // so the garment sits on this figure rather than on assumed proportions.
+  let low = Infinity;
+  let high = -Infinity;
+  for (let v = 0; v < position.getCount(); v++) {
+    if (!SHORTS_BONES.test(dominant(v))) continue;
+    const y = position.getElement(v, [0, 0, 0])[1];
+    low = Math.min(low, y);
+    high = Math.max(high, y);
+  }
+  if (!Number.isFinite(low)) return;
+  const hem = low + (high - low) * 0.34;
+  const waist = high - (high - low) * 0.12;
+
+  // Vertex records the clipper can interpolate. Joints and weights are taken
+  // from the nearer end of a cut edge rather than blended: a skinning weight
+  // is an index into a skeleton, and averaging two of them is meaningless.
+  const vertexAt = (v) => ({
+    p: position.getElement(v, [0, 0, 0]),
+    n: normal.getElement(v, [0, 0, 0]),
+    t: uv.getElement(v, [0, 0]),
+    j: joints.getElement(v, [0, 0, 0, 0]),
+    w: weights.getElement(v, [0, 0, 0, 0]),
+  });
+  const lerp = (a, b, s) => ({
+    p: a.p.map((value, i) => value + (b.p[i] - value) * s),
+    n: a.n.map((value, i) => value + (b.n[i] - value) * s),
+    t: a.t.map((value, i) => value + (b.t[i] - value) * s),
+    j: s < 0.5 ? a.j : b.j,
+    w: s < 0.5 ? a.w : b.w,
+  });
+
+  /** Sutherland-Hodgman against a horizontal half-space, so hems come out straight. */
+  const clip = (polygon, limit, keepAbove) => {
+    const inside = (vertex) => (keepAbove ? vertex.p[1] >= limit : vertex.p[1] <= limit);
+    const out = [];
+    for (let i = 0; i < polygon.length; i++) {
+      const current = polygon[i];
+      const previous = polygon[(i + polygon.length - 1) % polygon.length];
+      const currentIn = inside(current);
+      const previousIn = inside(previous);
+      if (currentIn !== previousIn) {
+        const span = current.p[1] - previous.p[1];
+        out.push(lerp(previous, current, span === 0 ? 0 : (limit - previous.p[1]) / span));
+      }
+      if (currentIn) out.push(current);
+    }
+    return out;
+  };
+
+  const pos = [];
+  const nrm = [];
+  const jnt = [];
+  const wgt = [];
+  const tex = [];
+  const idx = [];
+  let pieces = 0;
+  const triangles = indices.getCount() / 3;
+  for (let t = 0; t < triangles; t++) {
+    const tri = [
+      indices.getScalar(t * 3),
+      indices.getScalar(t * 3 + 1),
+      indices.getScalar(t * 3 + 2),
+    ];
+    if (!tri.some((v) => SHORTS_BONES.test(dominant(v)))) continue;
+    let polygon = tri.map(vertexAt);
+    polygon = clip(polygon, hem, true);
+    if (polygon.length < 3) continue;
+    polygon = clip(polygon, waist, false);
+    if (polygon.length < 3) continue;
+    pieces++;
+    // Fan-triangulate the clipped polygon, offsetting each vertex outward.
+    const base = pos.length / 3;
+    for (const vertex of polygon) {
+      pos.push(
+        vertex.p[0] + vertex.n[0] * SHORTS_OFFSET_M,
+        vertex.p[1] + vertex.n[1] * SHORTS_OFFSET_M,
+        vertex.p[2] + vertex.n[2] * SHORTS_OFFSET_M,
+      );
+      nrm.push(vertex.n[0], vertex.n[1], vertex.n[2]);
+      tex.push(vertex.t[0], vertex.t[1]);
+      jnt.push(vertex.j[0], vertex.j[1], vertex.j[2], vertex.j[3]);
+      wgt.push(vertex.w[0], vertex.w[1], vertex.w[2], vertex.w[3]);
+    }
+    for (let k = 1; k + 1 < polygon.length; k++) idx.push(base, base + k, base + k + 1);
+  }
+  if (!pieces) return;
+
+  const fabric = document
+    .createMaterial("twin-shorts")
+    .setBaseColorFactor([0.13, 0.15, 0.18, 1])
+    .setRoughnessFactor(0.92)
+    .setMetallicFactor(0);
+  const shorts = document
+    .createPrimitive()
+    .setMaterial(fabric)
+    .setAttribute(
+      "POSITION",
+      document.createAccessor("shorts-pos").setType("VEC3").setArray(new Float32Array(pos)),
+    )
+    .setAttribute(
+      "NORMAL",
+      document.createAccessor("shorts-nrm").setType("VEC3").setArray(new Float32Array(nrm)),
+    )
+    .setAttribute(
+      "JOINTS_0",
+      document.createAccessor("shorts-jnt").setType("VEC4").setArray(new Uint16Array(jnt)),
+    )
+    .setAttribute(
+      "WEIGHTS_0",
+      document.createAccessor("shorts-wgt").setType("VEC4").setArray(new Float32Array(wgt)),
+    )
+    .setAttribute(
+      "TEXCOORD_0",
+      document.createAccessor("shorts-uv").setType("VEC2").setArray(new Float32Array(tex)),
+    )
+    .setIndices(
+      document.createAccessor("shorts-idx").setType("SCALAR").setArray(new Uint32Array(idx)),
+    );
+
+  const garment = document.createMesh("twin-shorts");
+  garment.addPrimitive(shorts);
+  // Same node as the body so it inherits the skeleton and moves with it.
+  const bodyNode = root.listNodes().find((node) => node.getMesh() === body);
+  const node = document
+    .createNode("twin-shorts")
+    .setMesh(garment)
+    .setSkin(bodyNode?.getSkin() ?? null);
+  bodyNode?.getParentNode()?.addChild(node) ?? document.getRoot().listScenes()[0].addChild(node);
+  return pieces;
 }
