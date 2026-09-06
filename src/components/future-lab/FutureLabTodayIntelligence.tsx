@@ -175,7 +175,9 @@ export function FutureLabTodayIntelligence() {
                   style={{
                     width: `${Math.min(
                       100,
-                      Math.round((monitoring.evidenceCount / monitoring.minimumEvidenceCount) * 100),
+                      Math.round(
+                        (monitoring.evidenceCount / monitoring.minimumEvidenceCount) * 100,
+                      ),
                     )}%`,
                   }}
                 />
@@ -244,7 +246,7 @@ export function FutureLabTodayIntelligence() {
             to="/history"
             className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-violet-300 hover:text-violet-200"
           >
-            {isEnglish ? "OPEN JOURNAL" : "ATIDARYTI JOURNAL"}{" "}
+            {isEnglish ? "OPEN JOURNAL" : "ATIDARYTI JOURNAL"}
             <ArrowUpRight className="size-3" />
           </Link>
         </FutureLabPanel>
