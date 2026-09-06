@@ -6,6 +6,9 @@ import {
   type AthleteHypothesisLedgerSummary,
 } from "./athlete-hypothesis-ledger";
 
+const SNAPSHOT_A = "00000000-0000-4000-8000-000000000010";
+const SNAPSHOT_B = "00000000-0000-4000-8000-000000000011";
+
 const hypothesis: AthleteHypothesis = {
   id: "training-response-repeated-low-feeling",
   domain: "training_response",
@@ -28,9 +31,11 @@ function ledgerEntry(
   status: AthleteHypothesisLedgerSummary["status"],
   evidenceCount: number,
   previousStatus: AthleteHypothesisLedgerSummary["previousStatus"] = null,
+  athleteStateSnapshotId = SNAPSHOT_A,
 ): AthleteHypothesisLedgerSummary {
   return {
     hypothesisId: hypothesis.id,
+    athleteStateSnapshotId,
     domain: hypothesis.domain,
     previousStatus,
     status,
@@ -44,10 +49,11 @@ function ledgerEntry(
 }
 
 describe("hypothesis ledger transitions", () => {
-  it("records the first observed state", () => {
-    expect(buildHypothesisLedgerTransitions([hypothesis], [])).toEqual([
+  it("records the first observed state against the producing snapshot", () => {
+    expect(buildHypothesisLedgerTransitions([hypothesis], [], SNAPSHOT_B)).toEqual([
       {
         hypothesisId: hypothesis.id,
+        athleteStateSnapshotId: SNAPSHOT_B,
         domain: "training_response",
         previousStatus: null,
         status: "monitoring",
@@ -63,10 +69,12 @@ describe("hypothesis ledger transitions", () => {
 
   it("does not create timeline noise when evidence changes without a status change", () => {
     const current = { ...hypothesis, evidenceCount: 5 } satisfies AthleteHypothesis;
-    expect(buildHypothesisLedgerTransitions([current], [ledgerEntry("monitoring", 4)])).toEqual([]);
+    expect(
+      buildHypothesisLedgerTransitions([current], [ledgerEntry("monitoring", 4)], SNAPSHOT_B),
+    ).toEqual([]);
   });
 
-  it("records a real status transition with the prior state", () => {
+  it("records a real status transition with the prior state and new snapshot", () => {
     const current = {
       ...hypothesis,
       status: "supported",
@@ -74,9 +82,12 @@ describe("hypothesis ledger transitions", () => {
       canInfluenceDecision: true,
     } satisfies AthleteHypothesis;
 
-    expect(buildHypothesisLedgerTransitions([current], [ledgerEntry("monitoring", 5)])).toEqual([
+    expect(
+      buildHypothesisLedgerTransitions([current], [ledgerEntry("monitoring", 5)], SNAPSHOT_B),
+    ).toEqual([
       expect.objectContaining({
         hypothesisId: hypothesis.id,
+        athleteStateSnapshotId: SNAPSHOT_B,
         previousStatus: "monitoring",
         status: "supported",
         evidenceCount: 6,
@@ -86,8 +97,12 @@ describe("hypothesis ledger transitions", () => {
   });
 
   it("uses the first newest-first entry as the latest state", () => {
-    const newest = ledgerEntry("supported", 6, "monitoring");
-    const older = ledgerEntry("monitoring", 5, null);
+    const newest = ledgerEntry("supported", 6, "monitoring", SNAPSHOT_B);
+    const older = ledgerEntry("monitoring", 5, null, SNAPSHOT_A);
     expect(latestHypothesisLedgerState([newest, older]).get(hypothesis.id)).toEqual(newest);
+  });
+
+  it("rejects a transition that is not anchored to a valid snapshot id", () => {
+    expect(() => buildHypothesisLedgerTransitions([hypothesis], [], "not-a-uuid")).toThrow();
   });
 });
