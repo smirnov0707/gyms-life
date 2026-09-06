@@ -52,7 +52,10 @@ export type PersonalTimelinePage = {
  * a malformed response is a failure, never an apparently empty history.
  */
 export function buildPersonalTimelinePage(value: unknown): PersonalTimelinePage {
-  const rows = z.array(z.unknown()).max(PERSONAL_TIMELINE_LIMIT + 1).parse(value);
+  const rows = z
+    .array(z.unknown())
+    .max(PERSONAL_TIMELINE_LIMIT + 1)
+    .parse(value);
   let omittedCount = 0;
   const events: PersonalTimelineEntry[] = [];
 

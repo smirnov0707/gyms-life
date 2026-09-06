@@ -10,8 +10,7 @@ const COPY = {
   lt: {
     title: "Dvynio įvykių istorija",
     description: "Treniruočių, savijautos įrašų ir sprendimų laiko juosta.",
-    note:
-      "Tai įvykių indeksas, ne ankstesnės kūno būsenos atkūrimas. Įvykio laikas nebūtinai sutampa su pratimo atlikimo ar matavimo laiku.",
+    note: "Tai įvykių indeksas, ne ankstesnės kūno būsenos atkūrimas. Įvykio laikas nebūtinai sutampa su pratimo atlikimo ar matavimo laiku.",
     loading: "Įkeliama istorija…",
     error: "Nepavyko įkelti istorijos. Tai nereiškia, kad įrašų nėra.",
     empty:
@@ -52,8 +51,7 @@ const COPY = {
   en: {
     title: "Twin event history",
     description: "A timeline of training, check-in and decision records.",
-    note:
-      "This is an event index, not a reconstruction of a past body state. Event time is not necessarily when an exercise was performed or a measurement taken.",
+    note: "This is an event index, not a reconstruction of a past body state. Event time is not necessarily when an exercise was performed or a measurement taken.",
     loading: "Loading history…",
     error: "History could not be loaded. This does not mean there are no records.",
     empty: "There are no indexed events yet. Earlier activity may not be present in this index.",
@@ -126,7 +124,7 @@ function TimelineEntry({
         {event.eventType === null ? copy.unknown : copy.events[event.eventType]}
       </h3>
       <p className="mt-2 text-xs text-muted-foreground">
-        {copy.occurred}: {" "}
+        {copy.occurred}:{" "}
         <time dateTime={event.occurredAt}>{formatter.format(new Date(event.occurredAt))}</time>
       </p>
       <details className="mt-2 text-xs">
@@ -137,7 +135,9 @@ function TimelineEntry({
           <div>
             <dt className="text-muted-foreground">{copy.recorded}</dt>
             <dd className="mt-1 text-foreground">
-              <time dateTime={event.recordedAt}>{formatter.format(new Date(event.recordedAt))}</time>
+              <time dateTime={event.recordedAt}>
+                {formatter.format(new Date(event.recordedAt))}
+              </time>
             </dd>
           </div>
           <div>

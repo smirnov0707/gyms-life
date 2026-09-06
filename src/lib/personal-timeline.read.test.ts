@@ -102,7 +102,9 @@ describe("personal timeline read model", () => {
       "predicted",
       "simulated",
     ]) {
-      expect(buildPersonalTimelinePage([row({ provenance })]).events[0]?.provenance).toBe(provenance);
+      expect(buildPersonalTimelinePage([row({ provenance })]).events[0]?.provenance).toBe(
+        provenance,
+      );
     }
   });
 

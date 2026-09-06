@@ -5,11 +5,12 @@ import { loadPersonalTimeline } from "./personal-timeline.read.server";
 import { PERSONAL_TIMELINE_LIMIT } from "./personal-timeline.read";
 
 function clientFor(body: unknown, status = 200) {
-  const request = vi.fn<typeof fetch>().mockImplementation(async () =>
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    }),
+  const request = vi.fn<typeof fetch>().mockImplementation(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      }),
   );
   const client = createClient<Database>("https://example.supabase.co", "test-publishable-key", {
     global: { fetch: request },
