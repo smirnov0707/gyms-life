@@ -2,7 +2,7 @@ import { z } from "zod";
 import { DigitalAthleteStateSchema, type DigitalAthleteState } from "./digital-athlete.schema";
 import { DIGITAL_ATHLETE_CALCULATION_VERSION } from "./digital-athlete.service";
 import { mapDigitalAthleteStateToTwinSnapshot } from "./digital-twin.mapper";
-import type { TwinSnapshot } from "./digital-twin.schema";
+import type { TwinRegionState, TwinSnapshot } from "./digital-twin.schema";
 
 export const TWIN_REWIND_LIMIT = 12;
 
@@ -59,6 +59,16 @@ export type TwinRewindDelta = {
   calories: number | null;
   proteinG: number | null;
   evidenceCount: number | null;
+};
+
+export type TwinRegionDelta = {
+  region: string;
+  recoveryPctDelta: number | null;
+  volumeKgDelta: number | null;
+  olderRecoveryPct: number | null;
+  newerRecoveryPct: number | null;
+  olderVolumeKg: number | null;
+  newerVolumeKg: number | null;
 };
 
 function round(value: number, digits = 1): number {
@@ -186,4 +196,58 @@ export function compareTwinRewindPoints(
     proteinG: delta(older.metrics.proteinG, newer.metrics.proteinG),
     evidenceCount: delta(older.metrics.evidenceCount, newer.metrics.evidenceCount, 0),
   };
+}
+
+function trustedRegionValue(
+  region: TwinRegionState | undefined,
+  key: "recoveryPct" | "volumeKg",
+): number | null {
+  if (!region || region.provenance !== "calculated") return null;
+  const value = region[key];
+  return value !== null && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Region-by-region arithmetic over two already-stored, compatible Twin states.
+ * The result describes a numeric state difference only. It is not a trend,
+ * adaptation score, training effect or causal attribution.
+ */
+export function compareTwinRewindRegions(
+  older: TwinRewindPoint | null | undefined,
+  newer: TwinRewindPoint | null | undefined,
+): TwinRegionDelta[] | null {
+  if (!older?.compatible || !newer?.compatible || !older.twin || !newer.twin) return null;
+  if (!older.twin.dataAvailable || !newer.twin.dataAvailable) return null;
+  if (
+    older.calculationVersion !== newer.calculationVersion ||
+    older.schemaVersion !== newer.schemaVersion
+  ) {
+    return null;
+  }
+
+  const regions = [
+    ...new Set([
+      ...newer.twin.regions.map((region) => region.region),
+      ...older.twin.regions.map((region) => region.region),
+    ]),
+  ];
+
+  return regions.map((region) => {
+    const olderRegion = older.twin?.regions.find((candidate) => candidate.region === region);
+    const newerRegion = newer.twin?.regions.find((candidate) => candidate.region === region);
+    const olderRecoveryPct = trustedRegionValue(olderRegion, "recoveryPct");
+    const newerRecoveryPct = trustedRegionValue(newerRegion, "recoveryPct");
+    const olderVolumeKg = trustedRegionValue(olderRegion, "volumeKg");
+    const newerVolumeKg = trustedRegionValue(newerRegion, "volumeKg");
+
+    return {
+      region,
+      recoveryPctDelta: delta(olderRecoveryPct, newerRecoveryPct),
+      volumeKgDelta: delta(olderVolumeKg, newerVolumeKg),
+      olderRecoveryPct,
+      newerRecoveryPct,
+      olderVolumeKg,
+      newerVolumeKg,
+    };
+  });
 }

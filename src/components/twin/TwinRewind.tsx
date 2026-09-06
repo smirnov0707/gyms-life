@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, History, Loader2, RotateCcw } from "lucide-react";
 import { TwinSnapshotView, twinCopyFor } from "@/components/TwinView";
+import { TwinChangeMap } from "@/components/twin/TwinChangeMap";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
@@ -230,6 +231,7 @@ export function TwinRewind() {
       : null;
   const comparison = compareTwinRewindPoints(older, selected);
   const compatibleCount = query.data?.points.filter((point) => point.compatible).length ?? 0;
+  const label = (region: string) => regionLabelFor(region, t);
 
   return (
     <section
@@ -330,13 +332,16 @@ export function TwinRewind() {
                 <p className="mt-1 text-xs text-muted-foreground">{copy.comparisonUnavailable}</p>
               )}
             </div>
+            {older ? (
+              <TwinChangeMap older={older} newer={selected} lang={lang} regionLabel={label} />
+            ) : null}
             <div className="mt-6">
               <TwinSnapshotView
                 key={selected.id}
                 data={selected.twin}
                 copy={twinCopyFor(lang)}
                 lang={lang}
-                label={(region) => regionLabelFor(region, t)}
+                label={label}
               />
             </div>
           </div>
