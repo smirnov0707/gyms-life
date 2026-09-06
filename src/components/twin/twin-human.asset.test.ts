@@ -173,6 +173,15 @@ describe("twin human asset", () => {
         expect(stats.joints).toBeGreaterThan(0);
       });
 
+      it("stands with its arms down, not held out to be measured", async () => {
+        // The source figures pose with the arms out at about 40 degrees below
+        // horizontal so a rigger can reach the armpit. Nobody stands like that,
+        // and arms flat against the body would cover its sides from a click.
+        const drop = await armDropDegrees(buffer);
+        expect(drop).toBeGreaterThan(60);
+        expect(drop).toBeLessThan(85);
+      });
+
       it("stands on the ground, centred on the origin the camera orbits", async () => {
         // Measured through the skin, because that is the only measurement a
         // renderer agrees with. The node hierarchy once reported this figure
@@ -188,21 +197,48 @@ describe("twin human asset", () => {
   }
 });
 
+/** Loads the shipped file the way the browser does, with its pose applied. */
+async function loadScene(file: Buffer) {
+  const bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+  const gltf = await new Promise<{ scene: import("three").Object3D }>((done, failed) => {
+    new GLTFLoader().parse(bytes as ArrayBuffer, "", done, failed);
+  });
+  gltf.scene.updateMatrixWorld(true);
+  return gltf.scene;
+}
+
+/**
+ * How far the left arm hangs below horizontal, shoulder to hand, on the posed
+ * skeleton. three sanitises bone names on load, so the rig's dots are gone.
+ */
+async function armDropDegrees(file: Buffer) {
+  const scene = await loadScene(file);
+  const bone = (pattern: RegExp) => {
+    let found: import("three").Object3D | null = null;
+    scene.traverse((object) => {
+      if (!found && (object as import("three").Bone).isBone && pattern.test(object.name)) {
+        found = object;
+      }
+    });
+    if (!found) throw new Error(`no bone matching ${String(pattern)}`);
+    return found as import("three").Object3D;
+  };
+  const from = bone(/^DEF-upper_armL/).getWorldPosition(new Vector3());
+  const to = bone(/^DEF-handL/).getWorldPosition(new Vector3());
+  return (Math.atan2(from.y - to.y, Math.hypot(to.x - from.x, to.z - from.z)) * 180) / Math.PI;
+}
+
 /**
  * The figure's bounding box with every vertex pushed through its joint
  * matrices in the rest pose — what the browser draws, rather than what the
  * node transforms claim.
  */
 async function restPoseBounds(file: Buffer) {
-  const bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
-  const gltf = await new Promise<{ scene: import("three").Object3D }>((done, failed) => {
-    new GLTFLoader().parse(bytes as ArrayBuffer, "", done, failed);
-  });
-  gltf.scene.updateMatrixWorld(true);
+  const scene = await loadScene(file);
 
   const box = new Box3();
   const point = new Vector3();
-  gltf.scene.traverse((object) => {
+  scene.traverse((object) => {
     const skinned = object as import("three").SkinnedMesh;
     if (!skinned.isSkinnedMesh) return;
     const position = skinned.geometry.getAttribute("position");
