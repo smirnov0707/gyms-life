@@ -9,6 +9,7 @@ import {
 export const AthleteHypothesisLedgerSummarySchema = z
   .object({
     hypothesisId: z.string().trim().min(1).max(120),
+    athleteStateSnapshotId: z.string().uuid(),
     domain: AthleteLearningDomainSchema,
     previousStatus: AthleteHypothesisStatusSchema.nullable(),
     status: AthleteHypothesisStatusSchema,
@@ -41,11 +42,14 @@ export function latestHypothesisLedgerState(
  * Creates ledger rows only when a hypothesis is first observed or its status
  * changes. Evidence changes that do not alter status stay in the current
  * canonical athlete state and do not turn the timeline into a noisy snapshot log.
+ * Every transition is anchored to the immutable athlete snapshot that produced it.
  */
 export function buildHypothesisLedgerTransitions(
   hypotheses: AthleteHypothesis[],
   previousEntries: AthleteHypothesisLedgerSummary[],
+  athleteStateSnapshotId: string,
 ): AthleteHypothesisLedgerSummary[] {
+  const snapshotId = z.string().uuid().parse(athleteStateSnapshotId);
   const previousById = latestHypothesisLedgerState(previousEntries);
 
   return hypotheses.flatMap((hypothesis) => {
@@ -55,6 +59,7 @@ export function buildHypothesisLedgerTransitions(
     return [
       AthleteHypothesisLedgerSummarySchema.parse({
         hypothesisId: hypothesis.id,
+        athleteStateSnapshotId: snapshotId,
         domain: hypothesis.domain,
         previousStatus: previous?.status ?? null,
         status: hypothesis.status,
