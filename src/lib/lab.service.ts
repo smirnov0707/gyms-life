@@ -155,14 +155,7 @@ export async function loadLabOverview(
   const athlete = await refreshAthleteStateSnapshot(supabase, userId, zone, now);
   const hypotheses = buildAthleteHypotheses(athlete.state);
   const ledgerReconciliation = athlete.snapshot
-    ? reconcileAthleteHypothesisLedger(
-        supabase,
-        userId,
-        hypotheses,
-        athlete.snapshot.id,
-        zone,
-        now,
-      )
+    ? reconcileAthleteHypothesisLedger(supabase, userId, hypotheses, athlete.snapshot.id, zone, now)
     : Promise.resolve();
   const [, decisions] = await Promise.all([
     ledgerReconciliation,
