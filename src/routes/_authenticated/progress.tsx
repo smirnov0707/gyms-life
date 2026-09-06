@@ -188,10 +188,7 @@ function ProgressPage() {
           {records?.length ? (
             <div className="divide-y divide-white/[0.06]">
               {records.map((record) => (
-                <div
-                  key={record.name}
-                  className="flex items-center justify-between gap-4 py-4"
-                >
+                <div key={record.name} className="flex items-center justify-between gap-4 py-4">
                   <span className="text-sm font-medium">{record.name}</span>
                   <span className="font-mono text-sm">
                     {record.weight} kg × {record.reps}
