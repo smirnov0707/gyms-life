@@ -51,7 +51,6 @@ jobs:
           import numpy as np
           import mhcore
           root=Path(os.environ['RUNNER_TEMP'])/('face-'+os.environ['KEY']);root.mkdir(parents=True,exist_ok=True);data=Path(os.environ['MHCORE_DATA'])
-          # Naturalize shared brown eye texture.
           for path in data.rglob('brown_eye.png'):
               img=Image.open(path).convert('RGBA');a=np.asarray(img).copy();h,w=a.shape[:2];yy,xx=np.ogrid[:h,:w];mask=np.zeros((h,w),bool)
               for cx,cy,r in [(0.31,0.69,.145),(0.71,0.31,.145)]:mask|=(xx-w*cx)**2+(yy-h*cy)**2<=(w*r)**2
@@ -64,10 +63,15 @@ jobs:
               try:h.apply_modifier(name,value)
               except Exception:pass
           def pick(kind,token):
-              m=[p for p in h.list_available(kind) if token.lower() in str(p).lower()]
-              if not m:raise RuntimeError(f'missing {kind} {token}')
-              return m[0]
-          h.set_skin(pick('skins',os.environ['SKIN']));h.equip_eyes(pick('eyes','high-poly'))
+              available=list(h.list_available(kind))
+              if kind=='skins':
+                  exact=[p for p in available if Path(p).parent.name.lower()==token.lower()]
+                  if exact:return exact[0]
+              exact=[p for p in available if Path(p).stem.lower()==token.lower()]
+              if exact:return exact[0]
+              raise RuntimeError(f'missing exact {kind} {token}: {[str(p) for p in available]}')
+          skin=pick('skins',os.environ['SKIN']);print('selected skin',skin)
+          h.set_skin(skin);h.equip_eyes(pick('eyes','high-poly'))
           obj=Path(h.export(str(root/'human.obj')));mtl=obj.with_suffix('.mtl')
           def locate(raw):
               p=Path(raw)
@@ -111,7 +115,7 @@ jobs:
           npx vite --config face-vite.config.mjs > "$RUNNER_TEMP/vite-${KEY}.log" 2>&1 &
           for i in {1..40};do curl -fsS http://127.0.0.1:4181/face-ab.html >/dev/null&&break;sleep 1;done
           node --input-type=module <<'JS'
-          import{chromium}from'@playwright/test';import fs from'node:fs';const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:900,height:1200}});await p.goto('http://127.0.0.1:4181/face-ab.html');await p.waitForFunction(()=>window.ready===true,{timeout:30000});await p.waitForTimeout(300);await p.screenshot({path:process.env.RUNNER_TEMP+'/face-'+process.env.KEY+'.png'});await b.close();
+          import{chromium}from'@playwright/test';const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:900,height:1200}});await p.goto('http://127.0.0.1:4181/face-ab.html');await p.waitForFunction(()=>window.ready===true,{timeout:30000});await p.waitForTimeout(300);await p.screenshot({path:process.env.RUNNER_TEMP+'/face-'+process.env.KEY+'.png'});await b.close();
           JS
       - uses: actions/upload-artifact@v4
         with:
