@@ -46,5 +46,8 @@ supabase/migrations_backup_v6/
 # Local Netlify folder
 .netlify
 
+# Build-fetched CC0 Digital Twin visual asset (verified by scripts/fetch-twin-human-asset.mjs)
+public/models/twin-human.glb
+
 # Playwright browser-test evidence
 test-results/
