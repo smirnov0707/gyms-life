@@ -11,6 +11,7 @@ import {
   Loader2,
   Pencil,
   RefreshCw,
+  Ruler,
   Scale,
   ShieldCheck,
   Sparkles,
@@ -18,6 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TrainingRhythmCard } from "@/components/TrainingRhythmCard";
@@ -34,6 +36,7 @@ import {
 import type { MemoryEvidenceState } from "@/lib/memory-evidence.schema";
 import type { UserMemorySource, UserMemoryTransparencyItem } from "@/lib/user-memory.schema";
 import { displayedMemoryContent, memoryEvidenceSummary } from "@/lib/user-memory.presentation";
+import { getProfileBody, ProfileBodySchema, saveProfileBody } from "@/lib/profile-body.functions";
 
 export const Route = createFileRoute("/_authenticated/me")({
   head: () => ({
@@ -104,6 +107,21 @@ type Copy = {
     incorrectSaved: string;
     forgotten: string;
     error: string;
+  };
+  bodyFacts: {
+    eyebrow: string;
+    title: string;
+    sub: string;
+    height: string;
+    birthYear: string;
+    gender: string;
+    targetWeight: string;
+    unset: string;
+    missing: (fields: string) => string;
+    weightNote: string;
+    save: string;
+    saved: string;
+    invalid: string;
   };
 };
 
@@ -181,6 +199,24 @@ function copyFor(lang: Lang): Copy {
         forgotten: "This memory was permanently removed.",
         error: "Could not update this memory. Please try again.",
       },
+      bodyFacts: {
+        eyebrow: "YOUR BODY",
+        title: "What the model measures against",
+        sub: "Height, year of birth and sex are what the meal plan, the micronutrient scan and the body scan's age term reason from. Left blank, each of those says so rather than assuming a body.",
+        height: "Height (cm)",
+        birthYear: "Year of birth",
+        gender: "Sex",
+        targetWeight: "Target weight (kg)",
+        unset: "Not set",
+        missing: (fields) =>
+          `Still unknown: ${fields}. Anything that needs one of these will say so instead of estimating.`,
+        weightNote:
+          "Body weight is not here on purpose: it is a measurement with a date, recorded on the progress page, and the latest one is what every calculation uses.",
+        save: "Save",
+        saved: "Saved.",
+        invalid:
+          "Check the values: height 120-230 cm, year of birth within the last century, target weight 30-300 kg.",
+      },
     };
   }
   return {
@@ -254,6 +290,24 @@ function copyFor(lang: Lang): Copy {
       incorrectSaved: "Šis įrašas daugiau nebus naudojamas.",
       forgotten: "Šis įrašas pašalintas visam laikui.",
       error: "Nepavyko atnaujinti šio atminties įrašo. Bandyk dar kartą.",
+    },
+    bodyFacts: {
+      eyebrow: "TAVO KŪNAS",
+      title: "Į ką modelis atsiremia",
+      sub: "Ūgis, gimimo metai ir lytis yra tai, iš ko samprotauja mitybos planas, mikroelementų skenavimas ir kūno skenavimo amžiaus narys. Palikti tuščius, jie tai pasako, o ne prisigalvoja kūną.",
+      height: "Ūgis (cm)",
+      birthYear: "Gimimo metai",
+      gender: "Lytis",
+      targetWeight: "Tikslinis svoris (kg)",
+      unset: "Nenurodyta",
+      missing: (fields) =>
+        `Vis dar nežinoma: ${fields}. Kas remiasi šiais dydžiais, tai pasakys, o ne spės.`,
+      weightNote:
+        "Kūno svorio čia nėra sąmoningai: tai matavimas su data, įrašomas progreso puslapyje, ir kiekvienas skaičiavimas naudoja naujausią.",
+      save: "Išsaugoti",
+      saved: "Išsaugota.",
+      invalid:
+        "Patikrink reikšmes: ūgis 120-230 cm, gimimo metai per pastarąjį šimtmetį, tikslinis svoris 30-300 kg.",
     },
   };
 }
@@ -329,7 +383,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 function AthleteModelPage() {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const timeZone = browserTimeZone();
   const copy = copyFor(lang);
   const loadModel = useServerFn(getAthleteModel);
@@ -344,6 +398,72 @@ function AthleteModelPage() {
   const [pendingMemoryAction, setPendingMemoryAction] = useState<string | null>(null);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [correctedContent, setCorrectedContent] = useState("");
+  const loadBody = useServerFn(getProfileBody);
+  const persistBody = useServerFn(saveProfileBody);
+  const [bodyLoading, setBodyLoading] = useState(true);
+  const [savingBody, setSavingBody] = useState(false);
+  const [bodyForm, setBodyForm] = useState({
+    heightCm: "",
+    birthYear: "",
+    gender: "",
+    targetWeightKg: "",
+  });
+
+  useEffect(() => {
+    let active = true;
+    setBodyLoading(true);
+    void loadBody()
+      .then((stored) => {
+        if (!active) return;
+        setBodyForm({
+          heightCm: stored.heightCm === null ? "" : String(stored.heightCm),
+          birthYear: stored.birthYear === null ? "" : String(stored.birthYear),
+          gender: stored.gender ?? "",
+          targetWeightKg: stored.targetWeightKg === null ? "" : String(stored.targetWeightKg),
+        });
+      })
+      .catch(() => {
+        // Leaves the fields blank; the athlete can still fill and save them.
+      })
+      .finally(() => {
+        if (active) setBodyLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [loadBody]);
+
+  // A blank field means "not recorded", which is a value the model handles.
+  const blankToNull = (value: string): number | null =>
+    value.trim() === "" ? null : Number(value);
+
+  const missingBodyFacts = [
+    bodyForm.heightCm.trim() === "" ? copy.bodyFacts.height : null,
+    bodyForm.birthYear.trim() === "" ? copy.bodyFacts.birthYear : null,
+    bodyForm.gender === "" ? copy.bodyFacts.gender : null,
+  ].filter((label): label is string => label !== null);
+
+  const saveBody = async () => {
+    setSavingBody(true);
+    try {
+      const parsed = ProfileBodySchema.safeParse({
+        heightCm: blankToNull(bodyForm.heightCm),
+        birthYear: blankToNull(bodyForm.birthYear),
+        gender: bodyForm.gender === "" ? null : bodyForm.gender,
+        targetWeightKg: blankToNull(bodyForm.targetWeightKg),
+      });
+      if (!parsed.success) {
+        toast.error(copy.bodyFacts.invalid);
+        return;
+      }
+      await persistBody({ data: parsed.data });
+      toast.success(copy.bodyFacts.saved);
+    } catch (error) {
+      toast.error(errorMessage(error, copy.bodyFacts.invalid));
+    } finally {
+      setSavingBody(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -527,6 +647,119 @@ function AthleteModelPage() {
             </div>
           </div>
         ) : null}
+      </section>
+
+      {/* The stable body facts. Until now their only entry point was the
+          onboarding form, so an athlete who signed up before it started saving
+          them had no way to tell the app how tall they are. */}
+      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
+        <div>
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 light:text-emerald-700">
+            <Ruler className="size-4" /> {copy.bodyFacts.eyebrow}
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+            {copy.bodyFacts.title}
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            {copy.bodyFacts.sub}
+          </p>
+        </div>
+
+        {bodyLoading ? (
+          <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin text-emerald-400 light:text-emerald-700" />{" "}
+            {copy.memory.loading}
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-1.5">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {copy.bodyFacts.height}
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={bodyForm.heightCm}
+                  onChange={(event) =>
+                    setBodyForm((current) => ({ ...current, heightCm: event.target.value }))
+                  }
+                  className="h-11 rounded-xl border border-border bg-surface-2 px-3 text-foreground"
+                />
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {copy.bodyFacts.birthYear}
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={bodyForm.birthYear}
+                  onChange={(event) =>
+                    setBodyForm((current) => ({ ...current, birthYear: event.target.value }))
+                  }
+                  className="h-11 rounded-xl border border-border bg-surface-2 px-3 text-foreground"
+                />
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {copy.bodyFacts.gender}
+                </span>
+                <select
+                  value={bodyForm.gender}
+                  onChange={(event) =>
+                    setBodyForm((current) => ({ ...current, gender: event.target.value }))
+                  }
+                  className="h-11 rounded-xl border border-border bg-surface-2 px-3 text-foreground"
+                >
+                  <option value="">{copy.bodyFacts.unset}</option>
+                  <option value="male">{t("ob.g.male")}</option>
+                  <option value="female">{t("ob.g.female")}</option>
+                  <option value="other">{t("ob.g.other")}</option>
+                </select>
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {copy.bodyFacts.targetWeight}
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={bodyForm.targetWeightKg}
+                  onChange={(event) =>
+                    setBodyForm((current) => ({ ...current, targetWeightKg: event.target.value }))
+                  }
+                  className="h-11 rounded-xl border border-border bg-surface-2 px-3 text-foreground"
+                />
+              </label>
+            </div>
+
+            {/* Says plainly what stays unknown, rather than letting a blank
+                field quietly become an assumed body downstream. */}
+            {missingBodyFacts.length > 0 ? (
+              <p className="mt-4 text-xs leading-relaxed text-amber-400 light:text-amber-700">
+                {copy.bodyFacts.missing(missingBodyFacts.join(" · "))}
+              </p>
+            ) : null}
+
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              {copy.bodyFacts.weightNote}
+            </p>
+
+            <Button
+              type="button"
+              onClick={saveBody}
+              disabled={savingBody}
+              className="mt-4 rounded-full"
+            >
+              {savingBody ? <Loader2 className="size-4 animate-spin" /> : null}
+              {copy.bodyFacts.save}
+            </Button>
+          </>
+        )}
       </section>
 
       <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
