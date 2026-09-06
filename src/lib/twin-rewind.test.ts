@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DigitalAthleteState } from "./digital-athlete.schema";
-import {
-  buildTwinRewindHistory,
-  compareTwinRewindPoints,
-  TWIN_REWIND_LIMIT,
-} from "./twin-rewind";
+import { buildTwinRewindHistory, compareTwinRewindPoints, TWIN_REWIND_LIMIT } from "./twin-rewind";
 
 const baseState: DigitalAthleteState = {
   schemaVersion: "1.7",
@@ -115,9 +111,7 @@ describe("Twin Rewind history projection", () => {
   });
 
   it("does not reinterpret a state produced by another calculation version", () => {
-    const history = buildTwinRewindHistory([
-      row({ calculation_version: "digital-athlete-v1" }),
-    ]);
+    const history = buildTwinRewindHistory([row({ calculation_version: "digital-athlete-v1" })]);
     expect(history.incompatibleCount).toBe(1);
     expect(history.points[0]).toMatchObject({ compatible: false, metrics: null, twin: null });
   });
