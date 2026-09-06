@@ -12,9 +12,10 @@ export function isWorkoutCompletionShadowEligibleAction(action: TodayDecisionAct
 /**
  * Turns one pending shadow forecast into an immutable observed result.
  *
- * A successful workout may be observed before the prediction horizon ends.
- * A negative result is observable only once the horizon has elapsed; before
- * then, absence of completion is not evidence of non-completion.
+ * A successful workout is positive evidence only when it is observed inside
+ * the forecast window. A negative result is observable only once the horizon
+ * has elapsed; before then, absence of completion is not evidence of
+ * non-completion.
  *
  * Returning null means "do not mutate stored history". This includes invalid,
  * non-shadow, non-workout and already-evaluated prediction payloads.
@@ -32,8 +33,11 @@ export function evaluateWorkoutCompletionShadowPrediction(input: {
   if (prediction.actual !== null || prediction.evaluatedAt !== null) return null;
 
   const evaluatedAtMs = Date.parse(input.evaluatedAt);
-  if (Number.isNaN(evaluatedAtMs) || evaluatedAtMs < Date.parse(prediction.generatedAt)) return null;
-  if (!input.actual && evaluatedAtMs < Date.parse(prediction.horizonEndsAt)) return null;
+  const generatedAtMs = Date.parse(prediction.generatedAt);
+  const horizonEndsAtMs = Date.parse(prediction.horizonEndsAt);
+  if (Number.isNaN(evaluatedAtMs) || evaluatedAtMs < generatedAtMs) return null;
+  if (input.actual && evaluatedAtMs > horizonEndsAtMs) return null;
+  if (!input.actual && evaluatedAtMs < horizonEndsAtMs) return null;
 
   return AthletePredictionSchema.parse({
     ...prediction,
