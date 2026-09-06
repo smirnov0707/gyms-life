@@ -38,7 +38,7 @@ function hasAny(gaps: Set<Gap>, candidates: Gap[]): boolean {
 }
 
 export function FutureLabScientistStatus({ compact = false }: { compact?: boolean }) {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const isEnglish = baseLang(lang) === "en";
   const timeZone = browserTimeZone();
   const query = useQuery({
@@ -115,7 +115,10 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
   ];
 
   return (
-    <section className="overflow-hidden rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88">
+    <section
+      aria-label={t("nav.lab")}
+      className="overflow-hidden rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88"
+    >
       <header className="border-b border-[#16243c] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
