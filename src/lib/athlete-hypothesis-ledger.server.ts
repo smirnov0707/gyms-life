@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
@@ -19,20 +18,7 @@ const HypothesisTimelineRowSchema = z
   .strict();
 
 function transitionReference(transition: AthleteHypothesisLedgerSummary): string {
-  const fingerprint = createHash("sha256")
-    .update(
-      JSON.stringify({
-        hypothesisId: transition.hypothesisId,
-        previousStatus: transition.previousStatus,
-        status: transition.status,
-        evidenceCount: transition.evidenceCount,
-        minimumEvidenceCount: transition.minimumEvidenceCount,
-      }),
-    )
-    .digest("hex")
-    .slice(0, 24);
-
-  return `athlete-hypothesis:${transition.hypothesisId}:${fingerprint}`;
+  return `athlete-hypothesis:${transition.hypothesisId}:${transition.athleteStateSnapshotId}`;
 }
 
 /**
@@ -40,16 +26,22 @@ function transitionReference(transition: AthleteHypothesisLedgerSummary): string
  * Personal Timeline ledger. This is deliberately fail-open: the current Lab
  * state remains authoritative even if its secondary audit trail cannot be
  * read or written during this request.
+ *
+ * The caller must supply the immutable athlete-state snapshot that produced
+ * these hypotheses. This prevents transient/degraded reads from becoming
+ * permanent hypothesis history and makes repeated status cycles auditable.
  */
 export async function reconcileAthleteHypothesisLedger(
   supabase: SupabaseClient<Database>,
   userId: string,
   hypotheses: AthleteHypothesis[],
+  athleteStateSnapshotId: string,
   timeZone: string,
   now = new Date(),
 ): Promise<void> {
   try {
     const current = z.array(AthleteHypothesisSchema).parse(hypotheses);
+    const snapshotId = z.string().uuid().parse(athleteStateSnapshotId);
     const { data, error } = await supabase
       .from("personal_timeline_events")
       .select("summary")
@@ -71,7 +63,7 @@ export async function reconcileAthleteHypothesisLedger(
         return parsed.success ? [parsed.data] : [];
       });
 
-    const transitions = buildHypothesisLedgerTransitions(current, previousEntries);
+    const transitions = buildHypothesisLedgerTransitions(current, previousEntries, snapshotId);
     const occurredAt = now.toISOString();
 
     for (const transition of transitions) {
@@ -93,7 +85,10 @@ export async function reconcileAthleteHypothesisLedger(
       outcome: "failure",
       userId,
       errorCode: "ATHLETE_HYPOTHESIS_LEDGER_RECONCILE_FAILED",
-      metadata: { hypothesis_count: hypotheses.length },
+      metadata: {
+        hypothesis_count: hypotheses.length,
+        athlete_state_snapshot_id: athleteStateSnapshotId,
+      },
     });
     void cause;
   }
