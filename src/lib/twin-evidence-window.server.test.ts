@@ -26,13 +26,14 @@ const input = {
 };
 
 describe("authenticated Twin evidence reader", () => {
-  it("uses ownership, bounded projection and both occurrence-time boundaries", async () => {
+  it("uses ownership, bounded projection, both occurrence-time boundaries, and excludes derived hypothesis audit rows", async () => {
     const { client, request } = clientFor([]);
     expect((await loadTwinEvidenceWindow(client, USER_ID, input)).events).toEqual([]);
     expect(request).toHaveBeenCalledOnce();
     const url = new URL(String(request.mock.calls[0]?.[0]));
     expect(url.pathname).toBe("/rest/v1/personal_timeline_events");
     expect(url.searchParams.get("user_id")).toBe(`eq.${USER_ID}`);
+    expect(url.searchParams.get("event_type")).toBe("neq.hypothesis_transition");
     expect(url.searchParams.getAll("occurred_at")).toEqual([
       "gt.2026-09-06T09:00:00.000Z",
       "lte.2026-09-06T10:00:00.000Z",
