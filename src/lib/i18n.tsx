@@ -499,6 +499,10 @@ const baseDict = {
   "mp.adaptNote.title": { lt: "Kodėl pakeista", en: "Why it changed" },
 
   "ar.height": { lt: "Ūgis (cm)", en: "Height (cm)" },
+  "ar.heightNeeded": {
+    lt: "Įrašyk ūgį — pagal jį kamera verčia pikselius į centimetrus. Be jo matmenys rodomi pikseliais.",
+    en: "Enter your height — the camera converts pixels to centimetres by it. Without it, measurements stay in pixels.",
+  },
   "ar.depth": { lt: "Judesio gylis", en: "Movement depth" },
   "ar.voiceSelect": { lt: "Balsas", en: "Voice" },
   "ar.voiceDefault": { lt: "Sistemos balsas", en: "System voice" },
