@@ -1,0 +1,38 @@
+name: Human appearance preview
+on:
+  pull_request:
+    paths:
+      - 'src/components/twin/**'
+      - 'src/components/TwinView.tsx'
+      - 'public/assets/humans/**'
+      - 'tests/human-browser/**'
+      - 'tests/twin-browser/**'
+      - 'scripts/test-human-browser.mjs'
+      - '.github/workflows/human-preview-browser.yml'
+permissions:
+  contents: read
+concurrency:
+  group: human-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-human-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: human-preview-evidence
+          path: test-results/human
+          retention-days: 7
+          if-no-files-found: error
