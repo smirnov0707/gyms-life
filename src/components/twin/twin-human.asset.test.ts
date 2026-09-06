@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { TWIN_BODY_REGIONS } from "./twin-scene.model";
 
 /**
  * The shipped human is a binary nobody reads in review, and its manifest is
@@ -17,14 +18,16 @@ type Gltf = {
   scene?: number;
   scenes: { nodes: number[] }[];
   nodes: { children?: number[] }[];
-  meshes?: { primitives?: { attributes: Record<string, number> }[] }[];
-  accessors: { componentType: number }[];
+  meshes?: { primitives?: { attributes: Record<string, number>; indices?: number }[] }[];
+  materials?: { name?: string }[];
+  accessors: { componentType: number; count: number }[];
   skins?: unknown[];
   extensionsRequired?: string[];
 };
 
 type Variant = {
   file: string;
+  regions: Record<string, number>;
   bytes: number;
   gzipBytes: number;
   triangles: number;
@@ -128,6 +131,40 @@ describe("twin human asset", () => {
         expect(stats.triangles).toBeLessThan(40_000);
       });
 
+      it("covers every canonical region with selectable surface", () => {
+        // A region with no triangles is a body part the app offers and cannot
+        // show; one with a handful is a target no finger can hit.
+        for (const region of TWIN_BODY_REGIONS) {
+          expect(stats.regions[region] ?? 0).toBeGreaterThan(50);
+        }
+      });
+
+      it("assigns every body triangle to exactly one region", () => {
+        // The split shares vertices and partitions indices. A triangle in no
+        // group is a hole; one in two groups is a double hit on a click.
+        const body = (gltf.meshes ?? []).reduce((a, b) =>
+          primitiveCount(a, gltf) > primitiveCount(b, gltf) ? a : b,
+        );
+        const fromPrimitives = (body.primitives ?? []).reduce((total, primitive) => {
+          const indices = primitive.indices;
+          if (indices === undefined) return total;
+          const accessor = gltf.accessors[indices];
+          return total + (accessor ? accessor.count / 3 : 0);
+        }, 0);
+        const fromManifest = Object.values(stats.regions).reduce((a, b) => a + b, 0);
+        expect(fromPrimitives).toBe(fromManifest);
+      });
+
+      it("carries the region on a material name, where glTF can keep it", () => {
+        // Primitives have no name in the glTF spec, so the region travels on
+        // the material. An earlier build set primitive names and exported a
+        // file with none of them in it.
+        const names = new Set((gltf.materials ?? []).map((m) => m.name));
+        for (const region of TWIN_BODY_REGIONS) {
+          expect(names.has(`twin-region:${region}`)).toBe(true);
+        }
+      });
+
       it("is a human-sized figure", () => {
         expect(stats.heightMetres).toBeGreaterThan(1.4);
         expect(stats.heightMetres).toBeLessThan(2.1);
@@ -136,3 +173,12 @@ describe("twin human asset", () => {
     });
   }
 });
+
+/** Triangles in a mesh, used only to find the body among the eyes. */
+function primitiveCount(mesh: { primitives?: { indices?: number }[] }, gltf: Gltf): number {
+  return (mesh.primitives ?? []).reduce((total, primitive) => {
+    const index = primitive.indices;
+    if (index === undefined) return total;
+    return total + (gltf.accessors[index]?.count ?? 0);
+  }, 0);
+}

@@ -13,21 +13,43 @@
   "variants": {
     "male": {
       "file": "models/twin-human-male-v1.glb",
-      "bytes": 874312,
-      "gzipBytes": 569011,
+      "bytes": 980316,
+      "gzipBytes": 660463,
       "triangles": 19004,
       "heightMetres": 1.696,
       "joints": 701,
-      "textures": 0
+      "textures": 0,
+      "regions": {
+        "abs": 106,
+        "arms": 5506,
+        "back": 914,
+        "chest": 278,
+        "core": 390,
+        "glutes": 858,
+        "legs": 3938,
+        "neutral": 4468,
+        "shoulders": 626
+      }
     },
     "female": {
       "file": "models/twin-human-female-v1.glb",
-      "bytes": 844552,
-      "gzipBytes": 547572,
+      "bytes": 946492,
+      "gzipBytes": 634488,
       "triangles": 18320,
       "heightMetres": 1.719,
       "joints": 707,
-      "textures": 0
+      "textures": 0,
+      "regions": {
+        "abs": 152,
+        "arms": 5172,
+        "back": 694,
+        "chest": 618,
+        "core": 354,
+        "glutes": 916,
+        "legs": 3858,
+        "neutral": 3840,
+        "shoulders": 796
+      }
     }
   }
 }

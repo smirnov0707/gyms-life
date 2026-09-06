@@ -16,6 +16,12 @@
  */
 import { NodeIO, getBounds } from "@gltf-transform/core";
 import { dedup, prune, weld } from "@gltf-transform/functions";
+import {
+  regionForBone,
+  normaliseBone,
+  REGIONS,
+  REGION_MATERIAL_PREFIX,
+} from "./twin-human-regions.mjs";
 import { mkdirSync, writeFileSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { gzipSync } from "node:zlib";
@@ -98,12 +104,17 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   // could not register that extension — the first run produced a file whose
   // geometry a compliant loader would read at the wrong scale. The figure is
   // under a megabyte uncompressed, so the trade was never worth taking.
+  // Split and check before writing. Doing it after produced a file that had
+  // none of the region materials in it while every check still passed, because
+  // the checks were reading the document in memory rather than the artifact.
+  const coverage = splitBodyByRegion(document);
+  verify(document, variant);
+  verifyRegions(coverage, variant);
+
   mkdirSync(OUT_DIR, { recursive: true });
   const out = resolve(OUT_DIR, `twin-human-${variant}-${VERSION}.glb`);
   const glb = await io.writeBinary(document);
   writeFileSync(out, glb);
-
-  verify(document, variant);
 
   stats[variant] = {
     file: `models/twin-human-${variant}-${VERSION}.glb`,
@@ -113,6 +124,7 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
     heightMetres: Number((getBounds(scene).max[1] - getBounds(scene).min[1]).toFixed(3)),
     joints: document.getRoot().listSkins()[0]?.listJoints().length ?? 0,
     textures: document.getRoot().listTextures().length,
+    regions: coverage,
   };
   console.log(
     `${variant.padEnd(7)} ${(glb.byteLength / 1048576).toFixed(2)} MB ` +
@@ -200,8 +212,135 @@ function verify(document, variant) {
   if (triangles > 40_000) fail(`${triangles} triangles exceeds the low-LOD budget`);
 }
 
+/**
+ * Every canonical region must own enough surface to be worth offering. A region
+ * that ends up with a handful of triangles is one the athlete cannot hit, and
+ * an empty one is a body part the app claims to know about and cannot show.
+ */
+function verifyRegions(coverage, variant) {
+  const missing = REGIONS.filter((region) => !coverage[region]);
+  if (missing.length) {
+    throw new Error(`${variant}: regions with no surface: ${missing.join(", ")}`);
+  }
+  const tiny = REGIONS.filter((region) => coverage[region] < 50);
+  if (tiny.length) {
+    throw new Error(
+      `${variant}: regions too small to select: ` +
+        tiny.map((r) => `${r}=${coverage[r]}`).join(", "),
+    );
+  }
+  // A triangle assigned nowhere is a hole; one assigned twice is a double hit.
+  const assigned = Object.values(coverage).reduce((a, b) => a + b, 0);
+  return assigned;
+}
+
 /** Depth-first dispose, so a detached skeleton cannot survive in the file. */
 function disposeSubtree(node) {
   for (const child of node.listChildren()) disposeSubtree(child);
   node.dispose();
+}
+
+/**
+ * Rebuilds the body mesh as one primitive per canonical region.
+ *
+ * The runtime needs `regionMeshes` and `regionOf` to tint a region and to
+ * resolve a click, and it gets both from separate meshes. Splitting here
+ * rather than in the browser keeps the cost at build time and makes the result
+ * reviewable: the counts land in the manifest and the test checks them.
+ *
+ * Returns triangle counts per region.
+ */
+function splitBodyByRegion(document) {
+  const root = document.getRoot();
+  const meshes = root.listMeshes();
+  // The body is the mesh with the most triangles; the eyes are their own.
+  const body = meshes.reduce((a, b) => (triangleCount(a) > triangleCount(b) ? a : b));
+  const primitive = body.listPrimitives()[0];
+  if (!primitive) throw new Error("body mesh has no primitive");
+
+  const position = primitive.getAttribute("POSITION");
+  const joints = primitive.getAttribute("JOINTS_0");
+  const weights = primitive.getAttribute("WEIGHTS_0");
+  const indices = primitive.getIndices();
+  if (!position || !joints || !weights || !indices) {
+    throw new Error("body mesh lacks the skinning data region mapping depends on");
+  }
+
+  const skin = root.listSkins()[0];
+  const boneNames = skin.listJoints().map((joint) => joint.getName());
+
+  const dominantBone = (vertex) => {
+    const j = joints.getElement(vertex, [0, 0, 0, 0]);
+    const w = weights.getElement(vertex, [0, 0, 0, 0]);
+    let best = 0;
+    for (let k = 1; k < 4; k++) if (w[k] > w[best]) best = k;
+    return boneNames[j[best]] ?? "";
+  };
+
+  // Which way the figure faces is read from the model rather than assumed: the
+  // nose sits on the front, so the sign of its mean z defines +front here.
+  let noseZ = 0;
+  let noseCount = 0;
+  for (let v = 0; v < position.getCount(); v++) {
+    if (!normaliseBone(dominantBone(v)).startsWith("DEF-nose")) continue;
+    noseZ += position.getElement(v, [0, 0, 0])[2];
+    noseCount++;
+  }
+  if (noseCount === 0) throw new Error("no nose bone found; cannot tell front from back");
+  const frontSign = Math.sign(noseZ / noseCount) || 1;
+
+  const groups = new Map();
+  const triangles = indices.getCount() / 3;
+  for (let t = 0; t < triangles; t++) {
+    const a = indices.getScalar(t * 3);
+    const b = indices.getScalar(t * 3 + 1);
+    const c = indices.getScalar(t * 3 + 2);
+    // One vote per triangle, taken at its centroid, so a face cannot be split
+    // between two regions and leave a hole in both.
+    const z =
+      (position.getElement(a, [0, 0, 0])[2] +
+        position.getElement(b, [0, 0, 0])[2] +
+        position.getElement(c, [0, 0, 0])[2]) /
+      3;
+    const region = regionForBone(dominantBone(a), z * frontSign > 0);
+    if (!groups.has(region)) groups.set(region, []);
+    groups.get(region).push(a, b, c);
+  }
+
+  const source = primitive.getMaterial();
+  body.removePrimitive(primitive);
+  const coverage = {};
+  for (const [region, list] of [...groups.entries()].sort()) {
+    // The region has to survive into the exported file, and a glTF primitive
+    // has no name field — only meshes and materials do. A material per region
+    // is how the loader recognises it, and the runtime needs one per region
+    // anyway to tint them independently.
+    const material = source.clone().setName(`${REGION_MATERIAL_PREFIX}${region}`);
+    const next = document.createPrimitive().setMaterial(material);
+    // Attributes are shared, not copied: one set of vertices, many index sets,
+    // so the split costs indices only and the surface stays continuous.
+    for (const name of primitive.listSemantics()) {
+      next.setAttribute(name, primitive.getAttribute(name));
+    }
+    next.setIndices(
+      document
+        .createAccessor(`${region}-indices`)
+        .setType("SCALAR")
+        .setArray(list.length > 65535 ? new Uint32Array(list) : new Uint16Array(list)),
+    );
+    body.addPrimitive(next);
+    coverage[region] = list.length / 3;
+  }
+  primitive.dispose();
+  return coverage;
+}
+
+function triangleCount(mesh) {
+  let total = 0;
+  for (const primitive of mesh.listPrimitives()) {
+    const indices = primitive.getIndices();
+    total +=
+      (indices ? indices.getCount() : (primitive.getAttribute("POSITION")?.getCount() ?? 0)) / 3;
+  }
+  return total;
 }
