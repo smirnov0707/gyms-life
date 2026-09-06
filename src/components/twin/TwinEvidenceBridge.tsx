@@ -11,12 +11,15 @@ import type { TwinRewindPoint } from "@/lib/twin-rewind";
 const COPY = {
   lt: {
     title: "Įrodymai tarp būsenų",
-    description: "Timeline įrašai, kurių indeksuotas įvykio laikas patenka tarp šių Twin snapshot'ų.",
-    note: "Tai laiko sutapimas, o ne priežastinis paaiškinimas. Timeline occurred_at nebūtinai yra tikslus pratimo atlikimo, matavimo ar fiziologinio pokyčio momentas.",
+    description:
+      "Timeline įrašai, kurių indeksuotas įvykio laikas patenka tarp šių Twin snapshot'ų.",
+    note:
+      "Tai laiko sutapimas, o ne priežastinis paaiškinimas. Timeline occurred_at nebūtinai yra tikslus pratimo atlikimo, matavimo ar fiziologinio pokyčio momentas.",
     loading: "Įkeliami intervalo įrodymai…",
     error: "Nepavyko įkelti intervalo įrodymų. Tai nereiškia, kad įvykių nebuvo.",
     retry: "Bandyti dar kartą",
-    empty: "Šiame intervale nėra indeksuotų Timeline įvykių. Tai nereiškia, kad nieko neįvyko arba kad nėra neindeksuotų duomenų.",
+    empty:
+      "Šiame intervale nėra indeksuotų Timeline įvykių. Tai nereiškia, kad nieko neįvyko arba kad nėra neindeksuotų duomenų.",
     more: "Yra daugiau indeksuotų įvykių, nei rodoma šiame ribotame lange.",
     omitted: "Dalies įrašų nepavyko patikrinti ir jie nerodomi:",
     indexedAt: "Indeksuotas įvykio laikas",
@@ -48,12 +51,15 @@ const COPY = {
   },
   en: {
     title: "Evidence between states",
-    description: "Timeline records whose indexed event time falls between these two Twin snapshots.",
-    note: "This is temporal overlap, not a causal explanation. Timeline occurred_at is not necessarily the exact time an exercise, measurement or physiological change happened.",
+    description:
+      "Timeline records whose indexed event time falls between these two Twin snapshots.",
+    note:
+      "This is temporal overlap, not a causal explanation. Timeline occurred_at is not necessarily the exact time an exercise, measurement or physiological change happened.",
     loading: "Loading interval evidence…",
     error: "Interval evidence could not be loaded. This does not mean no events occurred.",
     retry: "Try again",
-    empty: "There are no indexed Timeline events in this interval. This does not mean nothing happened or that no unindexed source data exists.",
+    empty:
+      "There are no indexed Timeline events in this interval. This does not mean nothing happened or that no unindexed source data exists.",
     more: "More indexed events exist than are shown in this bounded window.",
     omitted: "Some records could not be validated and are not shown:",
     indexedAt: "Indexed event time",
@@ -103,13 +109,19 @@ function formatEventTime(event: PersonalTimelineEntry, locale: string, value: st
       timeZone: event.timeZone ?? "UTC",
     }).format(new Date(value));
   } catch {
-    return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(
-      new Date(value),
-    );
+    return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(new Date(value));
   }
 }
 
-function EventCard({ event, copy, locale }: { event: PersonalTimelineEntry; copy: Copy; locale: string }) {
+function EventCard({
+  event,
+  copy,
+  locale,
+}: {
+  event: PersonalTimelineEntry;
+  copy: Copy;
+  locale: string;
+}) {
   return (
     <li className="rounded-xl border border-border bg-surface-2 p-3">
       <p className="text-sm font-medium text-foreground">
