@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PersonalTimelineEventInputSchema } from "./personal-timeline.schema";
+import {
+  PersonalTimelineEventInputSchema,
+  PersonalTimelineEventTypeSchema,
+} from "./personal-timeline.schema";
 
 describe("PersonalTimelineEventInputSchema", () => {
   it("accepts a real workout-completed event", () => {
@@ -15,6 +18,22 @@ describe("PersonalTimelineEventInputSchema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("accepts hypothesis transitions for the server-owned audit index only", () => {
+    const input = PersonalTimelineEventInputSchema.safeParse({
+      eventType: "hypothesis_transition",
+      occurredAt: "2026-09-04T18:20:50.881Z",
+      timeZone: "Europe/Vilnius",
+      provenance: "calculated",
+      sourceSystem: "gymslife",
+      sourceTable: "athlete_hypothesis",
+      sourceReference: "athlete-hypothesis:test:123",
+      summary: { hypothesisId: "test", status: "monitoring" },
+    });
+
+    expect(input.success).toBe(true);
+    expect(PersonalTimelineEventTypeSchema.safeParse("hypothesis_transition").success).toBe(false);
   });
 
   it("rejects an event type outside the canonical, session/day-level set", () => {
