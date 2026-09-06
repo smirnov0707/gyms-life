@@ -4,13 +4,14 @@ import {
   Activity,
   ArrowUpRight,
   FlaskConical,
+  History,
   Menu,
-  MessageSquare,
   PersonStanding,
+  Rocket,
   UserRound,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useI18n, type Lang, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { NAV_GROUPS, byRoute, type NavItem } from "@/lib/nav-map";
 import {
   Drawer,
@@ -22,15 +23,13 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-const primaryNavItems = [
-  { to: "/app", icon: Activity, labelKey: "nav.today" },
-  { to: "/twin", icon: PersonStanding, labelKey: "nav.twin" },
-  { to: "/lab", icon: FlaskConical, labelKey: "nav.lab" },
-  { to: "/coach", icon: MessageSquare, labelKey: "nav.coach" },
+const futureNavItems = [
+  { to: "/app", icon: Activity, lt: "TODAY", en: "TODAY" },
+  { to: "/twin", icon: PersonStanding, lt: "MY TWIN", en: "MY TWIN" },
+  { to: "/lab", icon: FlaskConical, lt: "LAB", en: "LAB" },
+  { to: "/progress", icon: Rocket, lt: "FUTURE ME", en: "FUTURE ME" },
+  { to: "/history", icon: History, lt: "JOURNAL", en: "JOURNAL" },
 ] as const;
-
-const mobileSideItems = [primaryNavItems[0], primaryNavItems[2], primaryNavItems[3]] as const;
-const twinNavItem = primaryNavItems[1];
 
 function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
   return NAV_GROUPS.map((group) => ({
@@ -42,15 +41,7 @@ function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
   }));
 }
 
-function MoreNavigation({
-  className = "",
-  compact = false,
-  dock = false,
-}: {
-  className?: string;
-  compact?: boolean;
-  dock?: boolean;
-}) {
+function MoreNavigation({ className = "", dock = false }: { className?: string; dock?: boolean }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const groups = groupedToolNavigation();
@@ -61,59 +52,35 @@ function MoreNavigation({
         <button
           type="button"
           aria-label={t("nav.more")}
-          className={
-            dock
-              ? `flex min-h-12 min-w-12 flex-col items-center justify-center rounded-2xl px-1.5 py-2 text-muted-foreground transition-colors hover:text-foreground ${className}`
-              : compact
-                ? `grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-foreground/[0.04] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground ${className}`
-                : `inline-flex min-h-11 items-center rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground transition-all hover:bg-foreground/[0.04] hover:text-foreground ${className}`
-          }
+          className={dock
+            ? `grid min-h-11 min-w-11 place-items-center rounded-xl border border-[#1a2941] bg-[#091321] text-slate-400 ${className}`
+            : `inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#1a2941] bg-[#091321] px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 transition-colors hover:border-violet-400/40 hover:text-white ${className}`}
         >
-          {dock ? (
-            <>
-              <Menu className="size-[18px]" />
-              <span className="mt-1 text-[8px] font-bold uppercase tracking-[0.08em]">
-                {t("nav.more")}
-              </span>
-            </>
-          ) : (
-            <span className={compact ? "" : "flex items-center gap-2"}>
-              <Menu className="size-4" />
-              {compact ? null : t("nav.more")}
-            </span>
-          )}
+          <Menu className="size-4" />
+          {dock ? null : t("nav.more")}
         </button>
       </DrawerTrigger>
-
       <DrawerContent className="max-h-[85vh] overflow-y-auto rounded-t-[1.75rem] border-border bg-surface px-4 pb-[max(1.5rem,var(--sab))] text-foreground sm:mx-auto sm:max-w-2xl">
         <DrawerHeader className="px-1 pb-4 pt-5 text-left">
-          <DrawerTitle className="text-display text-2xl text-foreground">
-            {t("nav.more")}
-          </DrawerTitle>
+          <DrawerTitle className="text-display text-2xl text-foreground">{t("nav.more")}</DrawerTitle>
           <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
             {t("nav.moreDescription")}
           </DrawerDescription>
         </DrawerHeader>
-
         <div className="grid gap-5">
           {groups.map((group) => (
             <section key={group.key}>
-              <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {t(group.key)}
-              </h2>
+              <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{t(group.key)}</h2>
               <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   return (
                     <DrawerClose key={item.to} asChild>
-                      <Link
-                        to={item.to}
-                        className="group flex min-h-20 flex-col justify-between rounded-2xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
-                      >
+                      <Link to={item.to} className="group flex min-h-20 flex-col justify-between rounded-2xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]">
                         <Icon className="size-4 text-primary" />
                         <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
                           <span className="leading-tight">{t(item.key)}</span>
-                          <ArrowUpRight className="size-3 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:text-primary" />
+                          <ArrowUpRight className="size-3 shrink-0 text-muted-foreground group-hover:text-primary" />
                         </span>
                       </Link>
                     </DrawerClose>
@@ -122,32 +89,15 @@ function MoreNavigation({
               </div>
             </section>
           ))}
-
           <DrawerClose asChild>
-            <Link
-              to="/me"
-              className="group flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3.5 transition-colors hover:border-primary/50 hover:bg-primary/[0.12]"
-            >
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
-                <UserRound className="size-4" />
-              </span>
-              <span className="flex-1">
-                <span className="block text-sm font-bold text-foreground">{t("nav.athlete")}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {t("nav.athleteDescription")}
-                </span>
-              </span>
-              <ArrowUpRight className="size-4 text-primary transition-transform group-hover:-translate-y-0.5" />
+            <Link to="/me" className="group flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3.5">
+              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary"><UserRound className="size-4" /></span>
+              <span className="flex-1"><span className="block text-sm font-bold text-foreground">{t("nav.athlete")}</span><span className="mt-0.5 block text-xs text-muted-foreground">{t("nav.athleteDescription")}</span></span>
+              <ArrowUpRight className="size-4 text-primary" />
             </Link>
           </DrawerClose>
-
-          {/* The theme control lived only on the marketing page, so an
-              athlete who switched to light before signing in had no way
-              back once inside the app. This is the way back. */}
           <section className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {t("theme.label")}
-            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("theme.label")}</span>
             <ThemeToggle />
           </section>
         </div>
@@ -160,21 +110,15 @@ export function headerName(name?: string | null): string {
   return name || "GYMS.LIFE";
 }
 
-export const Logo: React.FC<{ className?: string; href?: string }> = ({
-  className = "",
-  href = "/app",
-}) => (
+export const Logo: React.FC<{ className?: string; href?: string }> = ({ className = "", href = "/app" }) => (
   <Link to={href} className={`group flex items-center gap-2.5 ${className}`}>
-    <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-sm font-black tracking-tighter text-black shadow-lg shadow-emerald-950/40 transition-transform group-hover:scale-105 motion-reduce:transition-none">
-      G
+    <div className="relative grid size-9 place-items-center rounded-xl border border-violet-400/35 bg-gradient-to-br from-violet-600/35 to-cyan-500/15 shadow-[0_0_25px_rgba(124,58,237,.24)]">
+      <span className="font-mono text-sm font-black text-violet-200">G</span>
+      <span aria-hidden="true" className="absolute inset-1 rounded-lg border border-cyan-300/10" />
     </div>
     <div className="flex flex-col text-left">
-      <span className="font-mono text-base font-black uppercase leading-none tracking-wider text-foreground">
-        GYMS<span className="text-emerald-400 light:text-emerald-600">.LIFE</span>
-      </span>
-      <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
-        FUTURE LAB
-      </span>
+      <span className="font-mono text-base font-black uppercase leading-none tracking-[0.08em] text-white">GYMS.LIFE</span>
+      <span className="mt-1 font-mono text-[8px] uppercase tracking-[0.2em] text-violet-300">FUTURE LAB</span>
     </div>
   </Link>
 );
@@ -185,145 +129,66 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
     { code: "lt", label: "LT" },
     { code: "en", label: "EN" },
   ] satisfies ReadonlyArray<{ code: Lang; label: string }>;
-
   return (
-    <div
-      className={`flex min-h-11 items-center gap-1 rounded-xl border border-border bg-foreground/[0.04] p-1 ${className}`}
-    >
-      {languages.map((l) => (
-        <button
-          key={l.code}
-          type="button"
-          onClick={() => setLang(l.code)}
-          className={`min-h-9 min-w-9 rounded-lg px-2 py-0.5 font-mono text-[10px] font-bold transition-all ${
-            lang === l.code
-              ? "bg-emerald-500 font-black text-black shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {l.label}
+    <div className={`flex min-h-10 items-center gap-1 rounded-xl border border-[#1a2941] bg-[#091321] p-1 ${className}`}>
+      {languages.map((item) => (
+        <button key={item.code} type="button" onClick={() => setLang(item.code)} className={`min-h-8 min-w-8 rounded-lg px-2 font-mono text-[9px] font-bold ${lang === item.code ? "bg-violet-500/25 text-violet-100" : "text-slate-500 hover:text-white"}`}>
+          {item.label}
         </button>
       ))}
     </div>
   );
 };
 
-function MobileDockLink({
-  item,
-  active,
-}: {
-  item: (typeof primaryNavItems)[number];
-  active: boolean;
-}) {
-  const { t } = useI18n();
-  const Icon = item.icon;
-
-  return (
-    <Link
-      to={item.to}
-      aria-current={active ? "page" : undefined}
-      className={`flex min-h-12 min-w-12 flex-col items-center justify-center rounded-2xl px-1.5 py-2 transition-colors motion-reduce:transition-none ${
-        active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      <Icon className={`size-[18px] ${active ? "text-primary" : ""}`} />
-      <span className="mt-1 text-[8px] font-bold uppercase tracking-[0.08em]">
-        {t(item.labelKey)}
-      </span>
-    </Link>
-  );
-}
-
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { t } = useI18n();
+  const { lang } = useI18n();
+  const locale = baseLang(lang);
   const location = useLocation();
-  const isActive = (to: string) =>
-    location.pathname === to || location.pathname.startsWith(`${to}/`);
+  const isActive = (to: string) => location.pathname === to || location.pathname.startsWith(`${to}/`);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/82 pt-[var(--sat)] backdrop-blur-2xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Logo />
-
-          <nav className="hidden items-center gap-1 md:flex">
-            {primaryNavItems.map((item) => {
+    <div className="min-h-screen bg-[#02060c] text-foreground selection:bg-violet-500/35 selection:text-white">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(40,82,160,.12),transparent_35%),radial-gradient(circle_at_10%_40%,rgba(109,40,217,.06),transparent_28%)]" />
+      <header className="sticky top-0 z-40 border-b border-[#142239] bg-[#02060c]/92 pt-[var(--sat)] backdrop-blur-2xl">
+        <div className="mx-auto flex h-[68px] max-w-[1680px] items-center gap-4 px-4 sm:px-6 xl:px-8">
+          <Logo className="shrink-0" />
+          <nav className="mx-auto hidden h-full items-center gap-1 lg:flex" aria-label="Future Lab">
+            {futureNavItems.map((item) => {
               const active = isActive(item.to);
-              const Icon = item.icon;
-              const isTwin = item.to === "/twin";
               return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                    active
-                      ? isTwin
-                        ? "border border-primary/25 bg-primary/[0.09] text-foreground"
-                        : "border border-border bg-foreground/[0.07] text-foreground"
-                      : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground"
-                  }`}
-                >
-                  <Icon
-                    className={`size-3.5 ${active || isTwin ? "text-emerald-400 light:text-emerald-600" : "text-muted-foreground"}`}
-                  />
-                  {t(item.labelKey)}
+                <Link key={item.to} to={item.to} aria-current={active ? "page" : undefined} className={`relative flex min-h-10 items-center rounded-xl px-4 text-[10px] font-bold uppercase tracking-[0.13em] transition-all ${active ? "border border-violet-400/30 bg-violet-500/12 text-white shadow-[0_0_25px_rgba(124,58,237,.08)]" : "border border-transparent text-slate-400 hover:bg-white/[0.03] hover:text-white"}`}>
+                  {item[locale]}
+                  {active ? <span aria-hidden="true" className="absolute inset-x-3 -bottom-[15px] h-px bg-gradient-to-r from-transparent via-violet-400 to-transparent" /> : null}
                 </Link>
               );
             })}
-            <MoreNavigation />
           </nav>
-
-          <div className="flex items-center gap-2.5">
-            <LangSwitch />
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden min-h-10 items-center gap-2 rounded-xl border border-[#1a2941] bg-[#07111d] px-3 xl:flex">
+              <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,.8)]" />
+              <div><p className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-200">FUTURE LAB</p><p className="text-[7px] uppercase tracking-[0.12em] text-slate-600">{locale === "en" ? "REAL DATA" : "REALŪS DUOMENYS"}</p></div>
+            </div>
+            <LangSwitch className="hidden sm:flex" />
+            <MoreNavigation />
+            <Link to="/me" aria-label="Profile" className="grid size-10 place-items-center rounded-xl border border-[#1a2941] bg-[#091321] text-slate-400 transition-colors hover:border-violet-400/40 hover:text-white"><UserRound className="size-4" /></Link>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 pb-[calc(8.25rem+var(--sab))] sm:px-6 md:py-6 md:pb-12">
-        {children}
-      </main>
+      <main className="relative mx-auto w-full max-w-[1680px] px-3 py-4 pb-[calc(7.5rem+var(--sab))] sm:px-5 md:py-5 lg:px-6 lg:pb-10 xl:px-8">{children}</main>
 
-      <nav
-        aria-label="Primary"
-        className="fixed bottom-[max(.75rem,var(--sab))] left-[max(.75rem,var(--sal))] right-[max(.75rem,var(--sar))] z-50 md:hidden"
-      >
-        <div className="relative mx-auto grid max-w-md grid-cols-5 items-end rounded-[1.65rem] border border-border bg-background/88 px-1.5 pb-1.5 pt-2 shadow-[0_20px_80px_rgba(0,0,0,.65)] backdrop-blur-2xl">
-          <MobileDockLink item={mobileSideItems[0]} active={isActive(mobileSideItems[0].to)} />
-          <MobileDockLink item={mobileSideItems[1]} active={isActive(mobileSideItems[1].to)} />
-
-          <Link
-            to={twinNavItem.to}
-            aria-current={isActive(twinNavItem.to) ? "page" : undefined}
-            aria-label={t(twinNavItem.labelKey)}
-            className="relative -mt-7 flex min-h-[68px] flex-col items-center justify-end"
-          >
-            <span
-              className={`relative grid size-[58px] place-items-center rounded-full border shadow-[0_10px_35px_rgba(0,0,0,.6)] transition-transform motion-reduce:transition-none ${
-                isActive(twinNavItem.to)
-                  ? "border-primary/60 bg-primary text-primary-foreground"
-                  : "border-border bg-surface text-primary hover:scale-[1.04] hover:border-primary/40"
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className={`absolute inset-1 rounded-full border ${
-                  isActive(twinNavItem.to) ? "border-black/15" : "border-primary/15"
-                }`}
-              />
-              <PersonStanding className="relative z-10 size-6" />
-            </span>
-            <span
-              className={`mt-1 text-[8px] font-black uppercase tracking-[0.14em] ${
-                isActive(twinNavItem.to) ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {t(twinNavItem.labelKey)}
-            </span>
-          </Link>
-
-          <MobileDockLink item={mobileSideItems[2]} active={isActive(mobileSideItems[2].to)} />
-          <MoreNavigation dock />
+      <nav aria-label="Future Lab" className="fixed bottom-[max(.65rem,var(--sab))] left-[max(.6rem,var(--sal))] right-[max(.6rem,var(--sar))] z-50 lg:hidden">
+        <div className="mx-auto grid max-w-xl grid-cols-5 rounded-[1.4rem] border border-[#1a2941] bg-[#030914]/94 px-1 py-1.5 shadow-[0_18px_60px_rgba(0,0,0,.7)] backdrop-blur-2xl">
+          {futureNavItems.map((item) => {
+            const active = isActive(item.to);
+            const Icon = item.icon;
+            return (
+              <Link key={item.to} to={item.to} aria-current={active ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-1 text-center transition-colors ${active ? "bg-violet-500/12 text-violet-200" : "text-slate-500 hover:text-slate-200"}`}>
+                <Icon className="size-[17px]" />
+                <span className="mt-1 text-[7px] font-bold uppercase tracking-[0.08em]">{item[locale]}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>
