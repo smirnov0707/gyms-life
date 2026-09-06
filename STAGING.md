@@ -55,6 +55,13 @@ rules that are the entire point of having a staging environment:
 loads but every server path that uses `supabaseAdmin` — Paddle webhooks, AI
 quota enforcement — fails.
 
+Override **every** `VITE_` variable, including `VITE_SUPABASE_PROJECT_ID`. No
+application code reads it, but Vite bakes every `VITE_` variable into the
+client bundle, so a missed override leaves production's project id sitting in
+a staging build. Nothing breaks — it just makes the bundle look like it
+targets production when it does not, which is a bad thing to discover while
+debugging something else.
+
 ## The database
 
 The staging Supabase project is `yywnpovsqifwujuxdxog` (eu-west-2, free tier).
@@ -123,6 +130,34 @@ Supabase's security advisors report the same two findings on staging as on
 production, both expected: `app_observability_events` and
 `paddle_webhook_events` have RLS enabled with no policies, which is how they
 are meant to be — deny-all to every client role, server-side only.
+
+### The app against it
+
+Verified, not assumed. Built with the staging variables and run under
+`wrangler dev`:
+
+- the client bundle carries the staging project and no trace of production's
+- the page issues exactly the expected catalogue read —
+  `/rest/v1/exercises?select=*&order=muscle_group.asc,name_en.asc`
+- the staging REST API answers that read with all 175 rows for the
+  publishable key, under the `exercises readable` policy
+
+RLS was probed directly at the same time, and staging enforces what
+production is designed to enforce:
+
+| Request as the anon key | Result |
+| ----------------------- | ------ |
+| read `exercises` | 200, 175 rows |
+| read `profiles` | 200, empty — RLS filters every row |
+| read `user_insights`, `decision_records` | 401, no grant |
+| read `app_observability_events`, `paddle_webhook_events` | 401, no grant |
+| insert into `exercises` | 401 |
+
+One thing could not be checked here: the headless browser in this environment
+cannot reach the internet, so the catalogue request failed at the network
+layer rather than returning rows. Google Fonts failed identically. The request
+itself was correct and the API answers it, so the gap is the sandbox, not the
+app — but the full page has not been seen rendering real staging data.
 
 ### Keeping it true
 
