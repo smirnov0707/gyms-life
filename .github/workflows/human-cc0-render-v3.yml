@@ -31,12 +31,12 @@ jobs:
           mkdir -p public/__human_review
           gh run download "$SOURCE_RUN" --repo "${{ github.repository }}" --name gyms-digital-human-v3-review --dir "$RUNNER_TEMP/human"
           cp "$RUNNER_TEMP/human/gyms-digital-human-v3.glb" public/__human_review/human.glb
-      - name: Create temporary Three.js review surface
+      - name: Create isolated Three.js review surface
         run: |
           cat > human-review.html <<'HTML'
-          <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,#app{margin:0;width:100%;height:100%;overflow:hidden;background:#0b0e10}canvas{display:block}</style></head><body><div id="app"></div><script type="module" src="/__human_review/review.js"></script></body></html>
+          <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,#app{margin:0;width:100%;height:100%;overflow:hidden;background:#0b0e10}canvas{display:block}</style></head><body><div id="app"></div><script type="module" src="/human-review.js"></script></body></html>
           HTML
-          cat > public/__human_review/review.js <<'JS'
+          cat > human-review.js <<'JS'
           import * as THREE from 'three';
           import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
           const params=new URLSearchParams(location.search);
@@ -56,30 +56,35 @@ jobs:
           const t0=performance.now();
           new GLTFLoader().load('/__human_review/human.glb',g=>{
             const model=g.scene; scene.add(model);
-            model.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; const m=o.material; if(m){m.metalness=Math.min(m.metalness??0,.03); m.roughness=Math.max(m.roughness??.5,.46); m.needsUpdate=true;} } });
+            let meshCount=0, triangles=0, drawCalls=0;
+            model.traverse(o=>{ if(o.isMesh){ meshCount++; const geom=o.geometry; const idx=geom.index?.count ?? geom.attributes.position?.count ?? 0; triangles+=Math.floor(idx/3); drawCalls++; const m=o.material; if(m){m.metalness=Math.min(m.metalness??0,.03); m.roughness=Math.max(m.roughness??.5,.46); m.needsUpdate=true;} } });
             const box=new THREE.Box3().setFromObject(model); const size=box.getSize(new THREE.Vector3()); const center=box.getCenter(new THREE.Vector3());
             model.position.sub(center); model.position.y += size.y/2; floor.position.y=0;
-            const H=size.y; const target=new THREE.Vector3(0,H*.52,0);
-            const dist=H*1.55;
+            const H=size.y; const target=new THREE.Vector3(0,H*.52,0); const dist=H*1.55;
             const pos={front:[0,H*.55,dist],back:[0,H*.55,-dist],left:[-dist,H*.55,0],right:[dist,H*.55,0],threeq:[dist*.72,H*.58,dist*.72]};
             let p=pos[view]||pos.front;
             if(close==='face'){p=[0,H*.86,H*.52]; target.set(0,H*.87,0); camera.fov=25; camera.updateProjectionMatrix();}
             if(close==='hands'){p=[H*.53,H*.55,H*.65]; target.set(H*.32,H*.55,0); camera.fov=28; camera.updateProjectionMatrix();}
             camera.position.set(...p); camera.lookAt(target);
-            const render=()=>renderer.render(scene,camera); render(); requestAnimationFrame(()=>{render(); window.__HUMAN_REVIEW__={ready:true,loadMs:Math.round(performance.now()-t0),triangles:model.children.length,box:[size.x,size.y,size.z]};});
+            const render=()=>renderer.render(scene,camera); render(); requestAnimationFrame(()=>{render(); window.__HUMAN_REVIEW__={ready:true,loadMs:Math.round(performance.now()-t0),meshCount,triangles,drawCalls,box:[size.x,size.y,size.z]};});
           },undefined,e=>{window.__HUMAN_REVIEW__={ready:false,error:String(e)}});
           addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.render(scene,camera)});
           JS
-      - name: Start Vite and capture actual renders
+          cat > "$RUNNER_TEMP/review-vite.config.mjs" <<'JS'
+          import { defineConfig } from 'vite';
+          export default defineConfig({root:process.cwd(),publicDir:'public',plugins:[],server:{host:'127.0.0.1',port:4178,strictPort:true}});
+          JS
+      - name: Start isolated Vite and capture actual renders
         run: |
-          npx vite --host 127.0.0.1 --port 4178 > "$RUNNER_TEMP/vite.log" 2>&1 & echo $! > "$RUNNER_TEMP/vite.pid"
-          for i in {1..60}; do curl -fsS http://127.0.0.1:4178/human-review.html >/dev/null && break; sleep 1; done
+          npx vite --config "$RUNNER_TEMP/review-vite.config.mjs" > "$RUNNER_TEMP/vite.log" 2>&1 & echo $! > "$RUNNER_TEMP/vite.pid"
+          ready=0; for i in {1..45}; do if curl -fsS http://127.0.0.1:4178/human-review.html >/dev/null; then ready=1; break; fi; sleep 1; done
+          if [ "$ready" != 1 ]; then cat "$RUNNER_TEMP/vite.log"; exit 1; fi
           node --input-type=module <<'JS'
           import { chromium } from '@playwright/test'; import fs from 'node:fs';
           const browser=await chromium.launch({headless:true}); const out=process.env.RUNNER_TEMP+'/human-renders'; fs.mkdirSync(out,{recursive:true});
           const views=[['front',''],['back',''],['left',''],['right',''],['threeq',''],['front','face'],['right','hands']]; const metrics=[];
           for(const [view,close] of views){const page=await browser.newPage({viewport:{width:900,height:1200},deviceScaleFactor:1}); const url=`http://127.0.0.1:4178/human-review.html?view=${view}&close=${close}`; await page.goto(url); await page.waitForFunction(()=>window.__HUMAN_REVIEW__?.ready===true,{timeout:30000}); await page.waitForTimeout(250); const m=await page.evaluate(()=>window.__HUMAN_REVIEW__); metrics.push({view,close,...m}); await page.screenshot({path:`${out}/${view}${close?'-'+close:''}.png`}); await page.close();}
-          const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await mobile.goto('http://127.0.0.1:4178/human-review.html?view=threeq'); await mobile.waitForFunction(()=>window.__HUMAN_REVIEW__?.ready===true,{timeout:30000}); await mobile.screenshot({path:`${out}/mobile-390.png`}); metrics.push({mobile390:await mobile.evaluate(()=>window.__HUMAN_REVIEW__)}); await browser.close(); fs.writeFileSync(`${out}/metrics.json`,JSON.stringify(metrics,null,2)); console.log(JSON.stringify(metrics,null,2));
+          const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1}); await mobile.goto('http://127.0.0.1:4178/human-review.html?view=threeq'); await mobile.waitForFunction(()=>window.__HUMAN_REVIEW__?.ready===true,{timeout:30000}); await mobile.waitForTimeout(200); await mobile.screenshot({path:`${out}/mobile-390.png`}); metrics.push({mobile390:await mobile.evaluate(()=>window.__HUMAN_REVIEW__)}); await browser.close(); fs.writeFileSync(`${out}/metrics.json`,JSON.stringify(metrics,null,2)); console.log(JSON.stringify(metrics,null,2));
           JS
       - uses: actions/upload-artifact@v4
         with:
