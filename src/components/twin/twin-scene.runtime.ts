@@ -2,6 +2,7 @@ import {
   ACESFilmicToneMapping,
   Color,
   DirectionalLight,
+  Group,
   HemisphereLight,
   Mesh,
   MeshStandardMaterial,
@@ -17,6 +18,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
+import { loadTwinHumanSurface, type TwinHumanSurface } from "./twin-human.runtime";
 import {
   TWIN_CAMERA,
   TWIN_DISPLAY_COLORS,
@@ -70,6 +72,7 @@ export function mountTwinScene(
     });
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
     renderer.setClearColor(0x050706, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     const canvas = renderer.domElement;
@@ -79,6 +82,7 @@ export function mountTwinScene(
     canvas.setAttribute("role", "img");
     canvas.setAttribute("aria-label", options.label);
     canvas.dataset["twinRenderer"] = "three";
+    canvas.dataset["twinVisual"] = "schematic";
     host.append(canvas);
 
     const scene = new Scene();
@@ -99,22 +103,32 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 1.6));
+    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 1.35));
     for (const [position, color, intensity] of [
-      [[2, 3, 4], 0xfff1db, 2.2],
-      [[-3, 1.7, 1], 0x9ccbe7, 0.9],
-      [[0, 2.8, -3], 0xc4f0dd, 2.0],
+      [[2, 3, 4], 0xffead6, 2.4],
+      [[-3, 1.7, 1], 0x9ccbe7, 1.05],
+      [[0, 2.8, -3], 0xc4f0dd, 2.1],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
+
     const model = createTwinBody();
+    const twinBodyRoot = new Group();
+    twinBodyRoot.name = "twin-body-root";
+    twinBodyRoot.add(model.body);
+    scene.add(twinBodyRoot);
+    let humanSurface: TwinHumanSurface | null = null;
+
     cleanups.push(() => {
+      humanSurface?.dispose();
+      humanSurface = null;
       model.dispose();
+      twinBodyRoot.clear();
       scene.clear();
     });
-    scene.add(model.body);
+
     let state = options.state;
     let selectedRegion = options.selectedRegion;
     let motionEnabled = true;
@@ -126,9 +140,6 @@ export function mountTwinScene(
     function visible() {
       if (document.hidden || destroyed) return false;
       if (inView) return true;
-      // IntersectionObserver is asynchronous. Disclosure/scroll transitions
-      // can leave its last report behind the layout when a user gives a
-      // camera command. Recheck only the negative cache before rejecting it.
       const bounds = host.getBoundingClientRect();
       return (
         bounds.width > 0 &&
@@ -154,8 +165,8 @@ export function mountTwinScene(
         return;
       }
       lastPaint = time;
-      // Decorative micro-sway only. Never synced to heart rate or breathing.
-      model.body.rotation.z = moving ? Math.sin(time / 2700) * 0.003 : 0;
+      // Visual-only micro-sway. The human surface and analytical hit-map move together.
+      twinBodyRoot.rotation.z = moving ? Math.sin(time / 2700) * 0.003 : 0;
       controls.update();
       try {
         renderer.render(scene, camera);
@@ -171,6 +182,17 @@ export function mountTwinScene(
     }
     controls.addEventListener("change", requestRender);
     cleanups.push(() => controls.removeEventListener("change", requestRender));
+
+    function setAnalyticalSurfaceHidden(hidden: boolean) {
+      for (const mesh of model.meshes) {
+        const material = mesh.material as MeshStandardMaterial;
+        material.colorWrite = !hidden;
+        material.depthWrite = !hidden;
+        material.transparent = hidden;
+        material.opacity = hidden ? 0 : 1;
+        material.needsUpdate = true;
+      }
+    }
 
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
@@ -191,8 +213,19 @@ export function mountTwinScene(
       }
       requestRender();
     }
+
+    // Photoreal is enhancement-only. Until the asset exists and loads cleanly,
+    // the current schematic body remains visible and fully interactive.
+    void loadTwinHumanSurface().then((surface) => {
+      if (destroyed || !surface) return;
+      humanSurface = surface;
+      twinBodyRoot.add(surface.root);
+      setAnalyticalSurfaceHidden(true);
+      canvas.dataset["twinVisual"] = "photoreal";
+      requestRender();
+    });
+
     const command = (action: TwinCameraCommand) => {
-      // Clear residual damping so a preset never keeps drifting afterwards.
       controls.enableDamping = false;
       controls.update();
       const next = moveTwinCamera(
@@ -300,8 +333,8 @@ export function mountTwinScene(
         ),
         camera,
       );
-      model.body.updateMatrixWorld(true);
-      // Test the nearest surface, including neutral geometry. Never select through the body.
+      twinBodyRoot.updateMatrixWorld(true);
+      // Picking always uses the stable analytical surface, even when invisible.
       const first = raycaster.intersectObjects(model.meshes, false)[0];
       const region = first?.object instanceof Mesh ? model.regionOf.get(first.object) : undefined;
       if (region) options.onSelect(region);
