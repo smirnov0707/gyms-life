@@ -206,7 +206,10 @@ export function statsToPrompt(s: ReportStats): string {
     `TRAINING: sessions=${s.sessions}, ${s.sessionsPerWeek}/week, total volume=${s.totalVolumeKg}kg, total time=${s.trainingMinutes}min, avg session=${s.avgSessionMinutes}min`,
     `TOP LIFTS: ${s.topLifts.length ? s.topLifts.map((l) => `${l.exercise} ${l.bestWeight}kg×${l.reps}`).join("; ") : "no logged sets"}`,
     `RECOVERY: check-ins=${s.checkins}, avg readiness=${s.avgReadiness ?? "—"}, avg sleep=${s.avgSleepHours ?? "—"}h, soreness=${s.avgSoreness ?? "—"}, stress=${s.avgStress ?? "—"}, energy=${s.avgEnergy ?? "—"}`,
-    `NUTRITION: days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
+    // Every nutrition row in this app is a model's estimate — from a typed
+    // description or a photograph — and there is no manual-entry path. A
+    // report a physician reads must not present estimated intake as weighed.
+    `NUTRITION (all figures are model estimates from meal descriptions or photos, never weighed): days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
     `BODY: weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
     `SUPPLEMENTS: ${s.supplements.length ? s.supplements.map((x) => `${x.name} ${x.dose ?? ""} ×${x.timesPerDay ?? 1}`).join("; ") : "none"}`,
   ].join("\n");

@@ -64,7 +64,15 @@ note = max 1 short sentence with a practical tip for an athlete.`,
 
     const { data: inserted, error } = await supabase
       .from("nutrition_logs")
-      .insert({ user_id: userId, logged_on: dayInTimeZone(new Date(), data.timeZone), ...row })
+      // A model estimated these macros from the athlete's own description of
+      // the meal. Recording that lets the micronutrient scan, the nutrition
+      // targets and the medical report treat estimated intake as estimated.
+      .insert({
+        user_id: userId,
+        logged_on: dayInTimeZone(new Date(), data.timeZone),
+        source: "text_estimate",
+        ...row,
+      })
       .select("*")
       .single();
     if (error || !inserted) {

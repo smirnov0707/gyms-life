@@ -242,7 +242,13 @@ export const VisionMealScanner: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border text-center">
+                  {/* These four numbers are a vision model's reading of a
+                      photograph, and they are what gets logged. Saying so is
+                      the difference between an estimate and a measurement. */}
+                  <p className="pt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    {t("sc.meal.estimated")}
+                  </p>
+                  <div className="grid grid-cols-4 gap-2 border-t border-border pt-2 text-center">
                     <div className="p-2 rounded-lg bg-surface-2 border border-border">
                       <span className="block text-[10px] font-mono text-muted-foreground">
                         KCAL
