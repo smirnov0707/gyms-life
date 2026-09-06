@@ -107,7 +107,11 @@ export function FutureLabTodayPlan({ state }: { state: TodaysWorkoutState | unde
           </div>
         ) : (
           <Link
-            to={state.status === "NO_ACTIVE_PLAN" || state.status === "INVALID_PLAN" ? "/onboarding" : "/training"}
+            to={
+              state.status === "NO_ACTIVE_PLAN" || state.status === "INVALID_PLAN"
+                ? "/onboarding"
+                : "/training"
+            }
             className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#21324f] bg-[#091321] px-4 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-300 transition-colors hover:border-violet-400/35 hover:text-white"
           >
             {state.status === "NO_ACTIVE_PLAN" || state.status === "INVALID_PLAN"
