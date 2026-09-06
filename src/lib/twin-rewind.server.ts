@@ -1,10 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  buildTwinRewindHistory,
-  TWIN_REWIND_LIMIT,
-  type TwinRewindHistory,
-} from "./twin-rewind";
+import { buildTwinRewindHistory, TWIN_REWIND_LIMIT, type TwinRewindHistory } from "./twin-rewind";
 
 /**
  * Reads immutable history through the authenticated request client so RLS is
