@@ -131,11 +131,8 @@ export function Overview() {
     return cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "";
   }, [profile, user]);
   const hour = new Date().getHours();
-  const greeting = t(
-    hour < 12 ? "dash.morning" : hour < 18 ? "dash.afternoon" : "dash.evening",
-  );
-  const readinessScore =
-    checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;
+  const greeting = t(hour < 12 ? "dash.morning" : hour < 18 ? "dash.afternoon" : "dash.evening");
+  const readinessScore = checkin?.readiness_score != null ? Number(checkin.readiness_score) : null;
   const recoveryState = useMemo(
     () =>
       readinessScore == null
