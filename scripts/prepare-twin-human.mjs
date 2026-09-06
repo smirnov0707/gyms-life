@@ -28,7 +28,7 @@ import { gzipSync } from "node:zlib";
 // The renderer is the only authority on where a skinned figure ends up, so the
 // build measures the finished bytes with the same loader the browser uses.
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Box3, Vector3 } from "three";
+import { Box3, Quaternion, Vector3 } from "three";
 
 const SOURCE = {
   title: "Human Male/Female Basemesh Rigged",
@@ -68,6 +68,19 @@ const GARMENTS = {
 
 /** Female figures also get a training top. A bare chest is not sportswear. */
 const KIT = { male: ["shorts"], female: ["shorts", "top"] };
+
+/**
+ * The source figures stand with their arms out at about 40 degrees below
+ * horizontal — a modelling pose, made so a rigger can reach the armpit, not a
+ * pose anyone stands in. Both arms are swung down by this much so the figure
+ * reads as a person standing rather than one being measured.
+ */
+const ARM_DROP_DEG = 35;
+/** Which way each upper arm swings around the world Z axis to come down. */
+const ARM_BONES = [
+  [/^DEF-upper_arm\.L(_\d+)?$/, -1],
+  [/^DEF-upper_arm\.R(_\d+)?$/, 1],
+];
 
 const OUT_DIR = resolve("public/models");
 const VERSION = "v1";
@@ -110,6 +123,8 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   // The default prune reads "unused attribute" and deletes them, which throws
   // away the unwrap the whole asset was chosen for.
   await document.transform(dedup(), prune({ keepAttributes: true }), weld());
+
+  lowerArms(document);
 
   // Where a skinned figure appears has nothing to do with the translation on
   // the node that carries it: glTF says a skinned mesh's own node transform is
@@ -227,6 +242,56 @@ function verify(document, variant) {
 }
 
 /**
+ * Swings both upper arms down into a standing pose.
+ *
+ * This changes the skeleton, not the mesh: the bind pose and the inverse bind
+ * matrices are untouched, so the arms deform exactly as the rig intends. The
+ * swing is expressed in world space and converted into each bone's own frame —
+ * `conj(P) · R · P · q` for a parent world rotation `P` — because the rig
+ * arrives rotated out of Blender's Z-up and a rotation written in bone-local
+ * axes would send the arms somewhere unrelated.
+ */
+function lowerArms(document) {
+  const nodes = document.getRoot().listNodes();
+  const parentOf = new Map();
+  for (const node of nodes) {
+    for (const child of node.listChildren()) parentOf.set(child, node);
+  }
+
+  const worldRotation = (node) => {
+    const chain = [];
+    for (let parent = parentOf.get(node); parent; parent = parentOf.get(parent)) {
+      chain.unshift(parent);
+    }
+    const rotation = new Quaternion();
+    for (const parent of chain) rotation.multiply(new Quaternion().fromArray(parent.getRotation()));
+    return rotation;
+  };
+
+  let posed = 0;
+  for (const node of nodes) {
+    const match = ARM_BONES.find(([pattern]) => pattern.test(node.getName()));
+    if (!match) continue;
+    const parent = worldRotation(node);
+    const swing = new Quaternion().setFromAxisAngle(
+      new Vector3(0, 0, 1),
+      match[1] * ARM_DROP_DEG * (Math.PI / 180),
+    );
+    node.setRotation(
+      parent
+        .clone()
+        .invert()
+        .multiply(swing)
+        .multiply(parent)
+        .multiply(new Quaternion().fromArray(node.getRotation()))
+        .toArray(),
+    );
+    posed++;
+  }
+  if (posed !== 2) throw new Error(`expected two upper arms to pose, found ${posed}`);
+}
+
+/**
  * Measures the figure as a renderer draws it and moves its skeleton so it
  * stands on the ground, centred on the origin the camera orbits.
  *
@@ -297,11 +362,36 @@ async function restPoseBounds(glb) {
     }
   });
   if (box.isEmpty()) throw new Error("no skinned geometry to measure");
-  return { min: box.min.toArray(), max: box.max.toArray() };
+  return { min: box.min.toArray(), max: box.max.toArray(), armDrop: armDropDegrees(gltf.scene) };
 }
 
-/** Height, footing and centring, checked against the rendered rest pose. */
-function verifyPlacement({ min, max }, variant) {
+/**
+ * How far the left arm hangs below horizontal, measured shoulder to hand on
+ * the posed skeleton. Reading the pose back from the file is the only way to
+ * know the swing above did what it meant to: a rotation applied in the wrong
+ * frame still writes a valid quaternion.
+ *
+ * three sanitises bone names on load, so the dots the rig uses are gone.
+ */
+function armDropDegrees(scene) {
+  const bone = (pattern) => {
+    let found = null;
+    scene.traverse((object) => {
+      if (!found && object.isBone && pattern.test(object.name)) found = object;
+    });
+    return found;
+  };
+  const shoulder = bone(/^DEF-upper_armL/);
+  const hand = bone(/^DEF-handL/);
+  if (!shoulder || !hand) throw new Error("no left arm chain to measure");
+  const from = shoulder.getWorldPosition(new Vector3());
+  const to = hand.getWorldPosition(new Vector3());
+  const reach = Math.hypot(to.x - from.x, to.z - from.z);
+  return (Math.atan2(from.y - to.y, reach) * 180) / Math.PI;
+}
+
+/** Height, footing, centring and pose, checked against the rendered rest pose. */
+function verifyPlacement({ min, max, armDrop }, variant) {
   const fail = (message) => {
     throw new Error(`${variant}: ${message}`);
   };
@@ -315,6 +405,11 @@ function verifyPlacement({ min, max }, variant) {
   ]) {
     const centre = (min[i] + max[i]) / 2;
     if (Math.abs(centre) > 0.005) fail(`figure not centred (${axis} ${centre.toFixed(3)})`);
+  }
+  // Below 60 degrees the figure is still being measured rather than standing;
+  // past 85 the arms are flat against the body and its sides cannot be clicked.
+  if (armDrop < 60 || armDrop > 85) {
+    fail(`arms hang ${armDrop.toFixed(1)}° below horizontal, outside a standing pose`);
   }
   return height;
 }
