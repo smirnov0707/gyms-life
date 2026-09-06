@@ -19,6 +19,7 @@ export async function loadPersonalTimeline(
       "id,event_type,occurred_at,created_at,timezone,provenance,quality,source_system,source_table,source_reference,schema_version",
     )
     .eq("user_id", userId)
+    .neq("event_type", "hypothesis_transition")
     .order("occurred_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(PERSONAL_TIMELINE_LIMIT + 1);

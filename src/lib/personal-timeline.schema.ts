@@ -2,14 +2,24 @@ import { z } from "zod";
 import { IntelligenceProvenanceSchema } from "./intelligence-provenance.schema";
 
 /**
- * Canonical Future Lab timeline event types. Kept intentionally small and
- * session/day-level (never per-set) so the timeline stays a compact index
- * rather than a firehose of every micro-action.
+ * User-visible canonical Future Lab timeline event types. Kept intentionally
+ * small and session/day-level (never per-set) so the timeline stays a compact
+ * index rather than a firehose of every micro-action.
  */
 export const PersonalTimelineEventTypeSchema = z.enum([
   "workout_completed",
   "checkin_recorded",
   "decision_recorded",
+]);
+
+/**
+ * The underlying timeline index may also carry server-owned audit records that
+ * are intentionally excluded from the generic user-event timeline. Hypothesis
+ * transitions are consumed by the Lab ledger, not presented as source evidence.
+ */
+export const PersonalTimelineStoredEventTypeSchema = z.union([
+  PersonalTimelineEventTypeSchema,
+  z.literal("hypothesis_transition"),
 ]);
 
 /**
@@ -27,7 +37,7 @@ export const PersonalTimelineQualitySchema = z.enum(["unknown", "low", "moderate
 
 export const PersonalTimelineEventInputSchema = z
   .object({
-    eventType: PersonalTimelineEventTypeSchema,
+    eventType: PersonalTimelineStoredEventTypeSchema,
     occurredAt: z.string().datetime({ offset: true }),
     timeZone: z.string().trim().min(1).max(64).nullable(),
     provenance: PersonalTimelineProvenanceSchema,
