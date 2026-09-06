@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { reconcileAthleteHypothesisLedger } from "./athlete-hypothesis-ledger.server";
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
 import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
@@ -137,9 +138,9 @@ async function loadRecentDecisions(
 
 /**
  * Loads the Lab v1 overview: real evidence-backed hypotheses from the
- * refreshed athlete state, and recent decision-ledger history. No
- * experiments, predictions, or discoveries are included — those engines
- * don't exist yet, and this must not imply they do.
+ * refreshed athlete state, their durable status-transition audit trail,
+ * and recent decision-ledger history. The hypothesis ledger is secondary
+ * and fail-open: it may never block the current Lab state.
  */
 export async function loadLabOverview(
   supabase: SupabaseClient<Database>,
@@ -153,7 +154,10 @@ export async function loadLabOverview(
 
   const athlete = await refreshAthleteStateSnapshot(supabase, userId, zone, now);
   const hypotheses = buildAthleteHypotheses(athlete.state);
-  const decisions = await loadRecentDecisions(supabase, userId, since);
+  const [, decisions] = await Promise.all([
+    reconcileAthleteHypothesisLedger(supabase, userId, hypotheses, zone, now),
+    loadRecentDecisions(supabase, userId, since),
+  ]);
 
   return LabOverviewSchema.parse({
     hypotheses,
