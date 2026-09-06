@@ -3,9 +3,9 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 const SOURCE_COMMIT = "3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91";
-const SOURCE_PATH = "packages/assets/library/human.glb";
-const EXPECTED_GIT_BLOB_SHA1 = "2569fa67af8c0acd786d79bcdac9cce6684e0085";
-const EXPECTED_SIZE = 2_767_576;
+const SOURCE_PATH = "packages/assets/library/man.glb";
+const EXPECTED_GIT_BLOB_SHA1 = "bec48c7ad6be753520f7291510c1d63440df87b9";
+const EXPECTED_SIZE = 2_889_028;
 const SOURCE_URL = `https://raw.githubusercontent.com/kunalkushwaha/vsim/${SOURCE_COMMIT}/${SOURCE_PATH}`;
 const DESTINATION = resolve("public/models/twin-human.glb");
 
