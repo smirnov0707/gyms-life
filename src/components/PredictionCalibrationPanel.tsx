@@ -1,5 +1,5 @@
 import { Gauge } from "lucide-react";
-import { baseLang, useI18n } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import type { PredictionCalibration } from "@/lib/prediction-calibration.schema";
 
 type Copy = {
@@ -18,7 +18,7 @@ type Copy = {
   brierHelp: string;
 };
 
-function copyFor(lang: string): Copy {
+function copyFor(lang: Lang): Copy {
   if (baseLang(lang) === "en") {
     return {
       eyebrow: "PREDICTION CALIBRATION",
