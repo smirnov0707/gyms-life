@@ -13,8 +13,8 @@
   "variants": {
     "male": {
       "file": "models/twin-human-male-v1.glb",
-      "bytes": 1187660,
-      "gzipBytes": 732650,
+      "bytes": 1187704,
+      "gzipBytes": 732675,
       "triangles": 20198,
       "heightMetres": 1.696,
       "joints": 701,
@@ -33,8 +33,8 @@
     },
     "female": {
       "file": "models/twin-human-female-v1.glb",
-      "bytes": 1147540,
-      "gzipBytes": 704479,
+      "bytes": 1147584,
+      "gzipBytes": 704514,
       "triangles": 19484,
       "heightMetres": 1.719,
       "joints": 707,

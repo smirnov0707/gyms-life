@@ -14,7 +14,7 @@
  * are written by this script from SOURCE below, so the credit CC-BY requires
  * cannot drift away from the file it describes.
  */
-import { NodeIO, getBounds } from "@gltf-transform/core";
+import { NodeIO } from "@gltf-transform/core";
 import { dedup, prune, weld } from "@gltf-transform/functions";
 import {
   regionForBone,
@@ -25,6 +25,10 @@ import {
 import { mkdirSync, writeFileSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { gzipSync } from "node:zlib";
+// The renderer is the only authority on where a skinned figure ends up, so the
+// build measures the finished bytes with the same loader the browser uses.
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { Box3, Vector3 } from "three";
 
 const SOURCE = {
   title: "Human Male/Female Basemesh Rigged",
@@ -89,20 +93,13 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   // away the unwrap the whole asset was chosen for.
   await document.transform(dedup(), prune({ keepAttributes: true }), weld());
 
-  // Stand the figure on the ground and centre it left-to-right, so the scene
-  // does not have to know where in the source it happened to be posed.
-  //
-  // getBounds walks the node hierarchy. Reading accessor min/max instead
-  // measures the mesh in its own local space while the correction is applied
-  // to the node's translation — two different spaces, and the figure ends up
-  // hovering. The verification below caught exactly that.
-  const bounds = getBounds(scene);
-  const translation = wanted.getTranslation();
-  wanted.setTranslation([
-    translation[0] - (bounds.min[0] + bounds.max[0]) / 2,
-    translation[1] - bounds.min[1],
-    translation[2] - (bounds.min[2] + bounds.max[2]) / 2,
-  ]);
+  // Where a skinned figure appears has nothing to do with the translation on
+  // the node that carries it: glTF says a skinned mesh's own node transform is
+  // not applied, and every joint here hangs off the skeleton root, so the
+  // source's side-by-side offset lives in the bones. Zero the node transform
+  // and place the figure through its skeleton once the rest pose has been
+  // measured — see standOnOrigin below.
+  wanted.setTranslation([0, 0, 0]);
 
   // Deliberately not quantized. quantize() writes int16 positions that only
   // decode correctly when KHR_mesh_quantization is declared, and this pipeline
@@ -116,6 +113,7 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   const coverage = splitBodyByRegion(document);
   verify(document, variant);
   verifyRegions(coverage, variant);
+  const height = verifyPlacement(await standOnOrigin(document, io), variant);
 
   mkdirSync(OUT_DIR, { recursive: true });
   const out = resolve(OUT_DIR, `twin-human-${variant}-${VERSION}.glb`);
@@ -127,7 +125,7 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
     bytes: glb.byteLength,
     gzipBytes: gzipSync(Buffer.from(glb)).byteLength,
     triangles: countTriangles(document),
-    heightMetres: Number((getBounds(scene).max[1] - getBounds(scene).min[1]).toFixed(3)),
+    heightMetres: Number(height.toFixed(3)),
     joints: document.getRoot().listSkins()[0]?.listJoints().length ?? 0,
     textures: document.getRoot().listTextures().length,
     regions: coverage,
@@ -206,16 +204,101 @@ function verify(document, variant) {
     }
   }
 
-  const { min, max } = getBounds(document.getRoot().listScenes()[0]);
-  const height = max[1] - min[1];
-  if (height < 1.4 || height > 2.1) fail(`implausible height ${height.toFixed(2)} m`);
-  if (Math.abs(min[1]) > 0.01)
-    fail(`figure not standing on the ground (min y ${min[1].toFixed(3)})`);
-  const centreX = (min[0] + max[0]) / 2;
-  if (Math.abs(centreX) > 0.05) fail(`figure not centred (x ${centreX.toFixed(3)})`);
-
   const triangles = countTriangles(document);
   if (triangles > 40_000) fail(`${triangles} triangles exceeds the low-LOD budget`);
+}
+
+/**
+ * Measures the figure as a renderer draws it and moves its skeleton so it
+ * stands on the ground, centred on the origin the camera orbits.
+ *
+ * The offset goes above the skeleton root rather than on the figure's node,
+ * because a skinned mesh takes its position from the joint matrices and
+ * nothing else. The earlier version corrected the node translation and passed
+ * a bounds check computed from the same node hierarchy — while three.js drew
+ * the figure 0.64 m to the side, out of reach of every click.
+ *
+ * Returns the rest-pose bounds of the placed figure.
+ */
+async function standOnOrigin(document, io) {
+  const skin = document.getRoot().listSkins()[0];
+  const skeleton = skin?.getSkeleton();
+  if (!skeleton) throw new Error("no skeleton root; the figure cannot be placed");
+
+  // Moving the skeleton root only moves the whole figure if every joint hangs
+  // below it. A joint parented elsewhere would be left behind, tearing the
+  // mesh apart in a way no bounding box would reveal.
+  const below = new Set();
+  const visit = (node) => {
+    if (below.has(node)) return;
+    below.add(node);
+    node.listChildren().forEach(visit);
+  };
+  visit(skeleton);
+  const stray = skin.listJoints().filter((joint) => !below.has(joint));
+  if (stray.length) throw new Error(`${stray.length} joints sit outside the skeleton root`);
+
+  const before = await restPoseBounds(await io.writeBinary(document));
+  const origin = document
+    .createNode("twin-origin")
+    .setTranslation([
+      -(before.min[0] + before.max[0]) / 2,
+      -before.min[1],
+      -(before.min[2] + before.max[2]) / 2,
+    ]);
+  const parent = skeleton.getParentNode() ?? document.getRoot().listScenes()[0];
+  parent.removeChild(skeleton);
+  parent.addChild(origin);
+  origin.addChild(skeleton);
+
+  return await restPoseBounds(await io.writeBinary(document));
+}
+
+/**
+ * The bounding box of the figure with every vertex pushed through its joint
+ * matrices in the rest pose — what the athlete actually sees. It needs a real
+ * glTF loader, so it runs on the bytes about to be written rather than on the
+ * document in memory, which is how the last placement bug hid.
+ */
+async function restPoseBounds(glb) {
+  const bytes = glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength);
+  const gltf = await new Promise((done, failed) => {
+    new GLTFLoader().parse(bytes, "", done, failed);
+  });
+  gltf.scene.updateMatrixWorld(true);
+
+  const box = new Box3();
+  const point = new Vector3();
+  gltf.scene.traverse((object) => {
+    if (!object.isSkinnedMesh) return;
+    const position = object.geometry.getAttribute("position");
+    for (let v = 0; v < position.count; v++) {
+      point.fromBufferAttribute(position, v);
+      object.applyBoneTransform(v, point);
+      box.expandByPoint(object.localToWorld(point));
+    }
+  });
+  if (box.isEmpty()) throw new Error("no skinned geometry to measure");
+  return { min: box.min.toArray(), max: box.max.toArray() };
+}
+
+/** Height, footing and centring, checked against the rendered rest pose. */
+function verifyPlacement({ min, max }, variant) {
+  const fail = (message) => {
+    throw new Error(`${variant}: ${message}`);
+  };
+  const height = max[1] - min[1];
+  if (height < 1.4 || height > 2.1) fail(`implausible height ${height.toFixed(2)} m`);
+  if (Math.abs(min[1]) > 0.005)
+    fail(`figure not standing on the ground (min y ${min[1].toFixed(3)})`);
+  for (const [axis, i] of [
+    ["x", 0],
+    ["z", 2],
+  ]) {
+    const centre = (min[i] + max[i]) / 2;
+    if (Math.abs(centre) > 0.005) fail(`figure not centred (${axis} ${centre.toFixed(3)})`);
+  }
+  return height;
 }
 
 /**

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { Box3, Vector3 } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { TWIN_BODY_REGIONS } from "./twin-scene.model";
 
 /**
@@ -170,9 +172,49 @@ describe("twin human asset", () => {
         expect(stats.heightMetres).toBeLessThan(2.1);
         expect(stats.joints).toBeGreaterThan(0);
       });
+
+      it("stands on the ground, centred on the origin the camera orbits", async () => {
+        // Measured through the skin, because that is the only measurement a
+        // renderer agrees with. The node hierarchy once reported this figure
+        // centred while three.js drew it 0.64 m to the side, where no click
+        // could reach it and the camera framed empty space.
+        const { min, max } = await restPoseBounds(buffer);
+        expect(Math.abs(min.y)).toBeLessThan(0.005);
+        expect(Math.abs((min.x + max.x) / 2)).toBeLessThan(0.005);
+        expect(Math.abs((min.z + max.z) / 2)).toBeLessThan(0.005);
+        expect(max.y - min.y).toBeCloseTo(stats.heightMetres, 2);
+      });
     });
   }
 });
+
+/**
+ * The figure's bounding box with every vertex pushed through its joint
+ * matrices in the rest pose — what the browser draws, rather than what the
+ * node transforms claim.
+ */
+async function restPoseBounds(file: Buffer) {
+  const bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+  const gltf = await new Promise<{ scene: import("three").Object3D }>((done, failed) => {
+    new GLTFLoader().parse(bytes as ArrayBuffer, "", done, failed);
+  });
+  gltf.scene.updateMatrixWorld(true);
+
+  const box = new Box3();
+  const point = new Vector3();
+  gltf.scene.traverse((object) => {
+    const skinned = object as import("three").SkinnedMesh;
+    if (!skinned.isSkinnedMesh) return;
+    const position = skinned.geometry.getAttribute("position");
+    for (let v = 0; v < position.count; v++) {
+      point.fromBufferAttribute(position, v);
+      skinned.applyBoneTransform(v, point);
+      box.expandByPoint(skinned.localToWorld(point));
+    }
+  });
+  if (box.isEmpty()) throw new Error("no skinned geometry to measure");
+  return box;
+}
 
 /** Triangles in a mesh, used only to find the body among the eyes. */
 function primitiveCount(mesh: { primitives?: { indices?: number }[] }, gltf: Gltf): number {

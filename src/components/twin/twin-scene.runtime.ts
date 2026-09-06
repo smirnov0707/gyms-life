@@ -18,6 +18,12 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import {
+  loadTwinHuman,
+  twinHumanUrl,
+  type TwinBodyModel,
+  type TwinHumanVariant,
+} from "./twin-human.loader";
+import {
   TWIN_CAMERA,
   TWIN_DISPLAY_COLORS,
   fittedTwinDistance,
@@ -46,6 +52,9 @@ export function mountTwinScene(
     label: string;
     onSelect: (region: TwinBodyRegion) => void;
     onFailure: () => void;
+    /** Off switches the anatomical figure back to the generated surface. */
+    human?: boolean;
+    humanVariant?: TwinHumanVariant;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -109,12 +118,38 @@ export function mountTwinScene(
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
-    const model = createTwinBody();
+    // The generated surface paints immediately, with no network involved, so
+    // the scene is never blank. The anatomical human replaces it once it has
+    // loaded; if that fetch fails, is aborted, or the file is unusable, the
+    // surface simply stays. A missing asset must not cost the athlete a Twin.
+    let model: TwinBodyModel | ReturnType<typeof createTwinBody> = createTwinBody();
+    scene.add(model.body);
+    const humanLoad = new AbortController();
     cleanups.push(() => {
+      humanLoad.abort();
       model.dispose();
       scene.clear();
     });
-    scene.add(model.body);
+
+    if (options.human !== false) {
+      void loadTwinHuman(twinHumanUrl(options.humanVariant ?? "male"), humanLoad.signal)
+        .then((human) => {
+          if (destroyed || humanLoad.signal.aborted) {
+            human.dispose();
+            return;
+          }
+          scene.remove(model.body);
+          model.dispose();
+          model = human;
+          scene.add(model.body);
+          canvas.dataset["twinBody"] = "human";
+          applyState();
+        })
+        .catch(() => {
+          // Deliberately quiet: the surface is already on screen and correct.
+          canvas.dataset["twinBody"] = "surface";
+        });
+    }
     let state = options.state;
     let selectedRegion = options.selectedRegion;
     let motionEnabled = true;
@@ -174,19 +209,23 @@ export function mountTwinScene(
 
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
+      // A human is tinted, not repainted. Replacing skin with a solid data
+      // colour turns the figure back into coloured body parts, so the data
+      // colour is mixed lightly into the surface it belongs to and the rest
+      // of the reading is carried by selection emphasis and the region panel.
+      const base = "baseColorOf" in model ? model.baseColorOf : null;
+      const mix = base ? 0.3 : 0.55;
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
-        const color = new Color("#48565d").lerp(
-          new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]),
-          0.55,
-        );
+        const tone = new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]);
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
-          material.color.copy(color);
+          const skin = base?.get(mesh);
+          material.color.copy(new Color(skin ?? "#48565d").lerp(tone, mix));
           const selected = selectedRegion === id;
           material.emissive.set(selected ? "#bcefe3" : "#000000");
           material.emissiveIntensity = selected ? 0.22 : 0;
-          material.roughness = selected ? 0.36 : 0.48;
+          material.roughness = selected ? 0.36 : base ? 0.62 : 0.48;
         }
       }
       requestRender();
