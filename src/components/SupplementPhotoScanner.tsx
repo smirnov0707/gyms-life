@@ -10,6 +10,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tactileClick } from "@/lib/tactile";
+import { cn } from "@/lib/utils";
 import { aiErrorMessage } from "@/lib/ai-error";
 import { errorMessage } from "@/lib/error-message";
 
@@ -37,8 +38,7 @@ type Draft = {
   withFood: boolean;
   preferredTime: string;
   notes: string;
-  /** Absent when the model did not state one. */
-  confidence?: number | undefined;
+  /** The label text the model read, empty when it could not read one. */
   readable: string;
 };
 
@@ -111,7 +111,6 @@ export function SupplementPhotoScanner() {
           withFood: p.withFood,
           preferredTime: p.preferredTime,
           notes: p.notes,
-          confidence: p.confidence,
           readable: p.readable,
         })),
       );
@@ -276,12 +275,20 @@ export function SupplementPhotoScanner() {
                 </button>
               </div>
 
+              {/* What the photograph supports, not what the model felt. A read
+                  label is checkable against the text shown beside it; a
+                  recognition made from packaging alone says so plainly, so the
+                  athlete knows to verify the dose themselves. */}
               <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                  {t("supp.scan.confidence")}{" "}
-                  {d.confidence === undefined ? "—" : `${d.confidence}%`}
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5",
+                    d.readable ? "bg-primary/10 text-primary" : "bg-foreground/[0.06]",
+                  )}
+                >
+                  {t(d.readable ? "supp.scan.fromLabel" : "supp.scan.fromPackaging")}
                 </span>
-                {d.readable ? <span className="truncate">{d.readable}</span> : null}
+                {d.readable ? <span className="truncate normal-case">{d.readable}</span> : null}
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">

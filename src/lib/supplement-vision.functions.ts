@@ -19,11 +19,15 @@ const SupplementProductSchema = z.object({
   preferredTime: SupplementPreferredTimeSchema.default("any"),
   notes: z.string().trim().max(500).default(""),
   /**
-   * Optional, and left absent when the model does not state it. Defaulting a
-   * missing confidence to 0 showed "0%" — which reads as "certainly wrong"
-   * rather than "not assessed", and the two are not the same claim.
+   * The label text the model actually read, empty when it could not read one.
+   *
+   * This replaced a `confidence` percentage the model was asked to invent.
+   * Nothing defined what that number meant — the prompt's own example showed
+   * 92 — and an uncalibrated self-assessment displayed as "92%" beside a
+   * supplement name reads as a measured reliability. Whether the label was
+   * legible is a fact about the photograph, and the athlete can check it
+   * against what is written here.
    */
-  confidence: z.coerce.number().int().min(0).max(100).optional(),
   readable: z.string().trim().max(500).default(""),
 });
 
@@ -62,8 +66,7 @@ Jei papildas atpažintas:
     "withFood": false,
     "preferredTime": "any | morning | pre_workout | post_workout | evening | bedtime",
     "notes": "Trumpas saugus vartojimo kontekstas ${langName} kalba",
-    "confidence": 92,
-    "readable": "Etiketės tekstas arba tuščia eilutė"
+    "readable": "Tekstas, kurį TIKRAI perskaitei etiketėje, arba tuščia eilutė, jei etiketės teksto perskaityti nepavyko ir papildą atpažinai tik iš pakuotės išvaizdos"
   }]
 }
       Atsakyk TIK TIKSLIU JSON be jokio markdown.`;

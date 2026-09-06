@@ -80,15 +80,27 @@ export const extra_supp_scan = {
     es: "Leyendo la etiqueta...",
     fr: "Lecture de l'étiquette...",
   },
-  "supp.scan.confidence": {
-    lt: "Tikslumas",
-    en: "Confidence",
-    ru: "Точность",
-    uk: "Точність",
-    pl: "Pewność",
-    de: "Sicherheit",
-    es: "Precisión",
-    fr: "Confiance",
+  // Replaced a percentage the model invented. What the photograph supports is
+  // whether the label was legible, and that the athlete can check.
+  "supp.scan.fromLabel": {
+    lt: "Perskaityta nuo etiketės",
+    en: "Read from the label",
+    ru: "Прочитано с этикетки",
+    uk: "Прочитано з етикетки",
+    pl: "Odczytano z etykiety",
+    de: "Vom Etikett gelesen",
+    es: "Leído de la etiqueta",
+    fr: "Lu sur l'étiquette",
+  },
+  "supp.scan.fromPackaging": {
+    lt: "Atpažinta iš pakuotės — etiketės teksto perskaityti nepavyko",
+    en: "Recognised from the packaging — the label text could not be read",
+    ru: "Распознано по упаковке — текст этикетки не прочитан",
+    uk: "Розпізнано за упаковкою — текст етикетки не прочитано",
+    pl: "Rozpoznano po opakowaniu — nie odczytano tekstu etykiety",
+    de: "Anhand der Verpackung erkannt — Etikettentext nicht lesbar",
+    es: "Reconocido por el envase — no se pudo leer la etiqueta",
+    fr: "Reconnu d'après l'emballage — texte de l'étiquette illisible",
   },
   "supp.scan.edit": {
     lt: "Patikrink ir pakoreguok prieš išsaugant",
