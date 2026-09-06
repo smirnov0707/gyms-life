@@ -11,7 +11,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { getMedicalReport, type MedicalReport } from "@/lib/medical-report.functions";
 
@@ -96,16 +96,36 @@ export const WorkoutReportExporter: React.FC = () => {
             <div>
               <div className="flex items-center justify-between text-[11px] font-mono uppercase text-muted-foreground">
                 <span>{t("sc.report.adherence")}</span>
-                <span className="text-foreground font-bold">
-                  {report.adherence.score}/100 · {report.adherence.label}
+                <span className="font-bold text-foreground">
+                  {report.adherence.score === null || report.adherence.band === null
+                    ? t("sc.report.adh.none")
+                    : `${report.adherence.score}/100 · ${t(`sc.report.adh.${report.adherence.band}` as TKey)}`}
                 </span>
               </div>
-              <div className="mt-1.5 h-1.5 rounded-full bg-border overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${report.adherence.score}%` }}
-                />
-              </div>
+              {report.adherence.score === null ? null : (
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-border">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${report.adherence.score}%` }}
+                  />
+                </div>
+              )}
+              {/* The arithmetic travels with the number: a physician can see
+                  what the score is a share of, not just the score. */}
+              {report.adherence.measured.length > 0 ? (
+                <p className="mt-1.5 text-[10px] leading-relaxed text-muted-foreground">
+                  {t("sc.report.adh.basis").replace(
+                    "{n}",
+                    report.adherence.measured
+                      .map((component) =>
+                        t(`sc.report.adh.${component.key}` as TKey)
+                          .replace("{a}", String(component.actual))
+                          .replace("{b}", String(component.possible)),
+                      )
+                      .join(" · "),
+                  )}
+                </p>
+              ) : null}
             </div>
           </div>
 

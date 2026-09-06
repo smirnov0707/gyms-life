@@ -20,6 +20,7 @@ type ReportProfile = Pick<
   | "limitations"
   | "diet"
   | "allergies"
+  | "days_per_week"
 >;
 
 export type ReportStats = {
@@ -113,7 +114,7 @@ export async function buildReportStats(
       supabase
         .from("profiles")
         .select(
-          "display_name, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, limitations, diet, allergies",
+          "display_name, birth_year, gender, height_cm, weight_kg, target_weight_kg, experience, goal, limitations, diet, allergies, days_per_week",
         )
         .eq("id", userId)
         .maybeSingle(),
