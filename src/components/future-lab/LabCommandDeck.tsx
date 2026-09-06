@@ -149,7 +149,14 @@ function CalibrationRing({ percent }: { percent: number }) {
   return (
     <div className="relative grid size-24 place-items-center">
       <svg className="absolute inset-0 size-24 -rotate-90" aria-hidden="true">
-        <circle cx="48" cy="48" r={radius} fill="transparent" stroke="rgba(148,163,184,.14)" strokeWidth="7" />
+        <circle
+          cx="48"
+          cy="48"
+          r={radius}
+          fill="transparent"
+          stroke="rgba(148,163,184,.14)"
+          strokeWidth="7"
+        />
         <circle
           cx="48"
           cy="48"
@@ -189,7 +196,9 @@ export function LabCommandDeck() {
   const calibrationEvidence = Math.min(100, Math.round((evaluated / minimum) * 100));
   const statement = primary
     ? (STATEMENTS[locale][primary.statementKey as keyof (typeof STATEMENTS)[typeof locale]] ??
-      (isEnglish ? "A personal pattern is under investigation." : "Tiriamas asmeninis dėsningumas."))
+      (isEnglish
+        ? "A personal pattern is under investigation."
+        : "Tiriamas asmeninis dėsningumas."))
     : null;
   const evidenceProgress = primary
     ? Math.min(100, Math.round((primary.evidenceCount / primary.minimumEvidenceCount) * 100))
@@ -204,7 +213,9 @@ export function LabCommandDeck() {
       <div className="relative">
         <header className="flex flex-col gap-3 border-b border-[#17243b] pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-violet-300">LAB COMMAND DECK</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-violet-300">
+              LAB COMMAND DECK
+            </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               {isEnglish ? "Your performance laboratory" : "Tavo performance laboratorija"}
             </h1>
@@ -215,7 +226,9 @@ export function LabCommandDeck() {
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-[#1a2941] bg-[#07111d] px-3 py-2">
-            <span className={`size-2 rounded-full ${query.isError ? "bg-rose-400" : query.isLoading ? "bg-amber-300" : "bg-emerald-400"}`} />
+            <span
+              className={`size-2 rounded-full ${query.isError ? "bg-rose-400" : query.isLoading ? "bg-amber-300" : "bg-emerald-400"}`}
+            />
             <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-300">
               {query.isError
                 ? isEnglish
@@ -234,7 +247,9 @@ export function LabCommandDeck() {
 
         <div className="mt-4 grid gap-3 xl:grid-cols-[.9fr_1.15fr_.75fr]">
           <section className="rounded-[1.4rem] border border-[#17243b] bg-[#07111d]/78 p-4">
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">LAB STATUS</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              LAB STATUS
+            </p>
             <div className="mt-3 divide-y divide-white/[0.05]">
               {MODULES.map((module) => {
                 const Icon = module.icon;
@@ -281,11 +296,15 @@ export function LabCommandDeck() {
               </p>
               {query.isError ? (
                 <p className="mt-6 text-sm text-slate-500">
-                  {isEnglish ? "Investigation data is unavailable." : "Tyrimo duomenys nepasiekiami."}
+                  {isEnglish
+                    ? "Investigation data is unavailable."
+                    : "Tyrimo duomenys nepasiekiami."}
                 </p>
               ) : primary ? (
                 <>
-                  <p className="mt-5 max-w-xl text-xl leading-relaxed text-white sm:text-2xl">{statement}</p>
+                  <p className="mt-5 max-w-xl text-xl leading-relaxed text-white sm:text-2xl">
+                    {statement}
+                  </p>
                   <div className="mt-6 grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-white/[0.05] bg-black/20 p-3">
                       <p className="text-[8px] font-bold uppercase tracking-wider text-slate-600">
@@ -335,7 +354,8 @@ export function LabCommandDeck() {
                   {isEnglish ? "Shadow model maturity" : "Shadow modelio branda"}
                 </p>
                 <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-                  {evaluated}/{minimum} {isEnglish ? "evaluated outcomes required" : "reikalingų įvertintų rezultatų"}
+                  {evaluated}/{minimum}{" "}
+                  {isEnglish ? "evaluated outcomes required" : "reikalingų įvertintų rezultatų"}
                 </p>
               </div>
             </div>
