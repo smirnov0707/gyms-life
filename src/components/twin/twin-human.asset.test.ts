@@ -129,7 +129,12 @@ describe("twin human asset", () => {
       });
 
       it("stays inside the mobile budget", () => {
-        expect(stats.bytes).toBeLessThan(8 * 1024 * 1024);
+        // Both figures ship at about 1.2 MB, roughly 0.7 MB over the wire. The
+        // cap is deliberately close to that rather than a comfortable round
+        // number: the last candidate for this slot was 6.8 MB, and a limit
+        // nothing is near does not stop the next one.
+        expect(stats.bytes).toBeLessThan(2 * 1024 * 1024);
+        expect(stats.gzipBytes).toBeLessThan(1024 * 1024);
         expect(stats.triangles).toBeLessThan(40_000);
       });
 

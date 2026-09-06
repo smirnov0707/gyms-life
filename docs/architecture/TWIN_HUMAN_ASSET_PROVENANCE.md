@@ -59,6 +59,28 @@ of every click.
 The script is build-time only and is not run by `npm run build`; regenerate the
 assets deliberately and commit the result.
 
+## Measured cost
+
+Taken in the Twin browser harness on a software rasteriser (`--use-angle=swiftshader`),
+which is slower than any phone GPU, so these are upper bounds rather than typical:
+
+|                    | desktop 1280×1000                     | mobile 390×844 |
+| ------------------ | ------------------------------------- | -------------- |
+| human on screen    | same frame as the stage's first paint | same frame     |
+| ambient rendering  | 17 fps                                | 22 fps         |
+| JS heap after load | 75 MB                                 | 73 MB          |
+
+The figure is fetched in parallel with the scene's own modules and arrives
+before the first painted frame, so the fallback surface is never seen swapping
+out. Ambient rendering is capped at 30 fps, runs only while the stage is on
+screen with motion enabled, and stops entirely under `prefers-reduced-motion` —
+the scene then paints on demand.
+
+Transfer is 1.13 MB (0.70 MB gzip) for the male figure and 1.21 MB (0.70 MB)
+for the female. The asset test caps both at 2 MB raw and 1 MB gzip: the cap
+sits close to what ships on purpose, because the previous candidate for this
+slot was 6.8 MB and a limit nothing is near stops nothing.
+
 ## Rejected candidates
 
 Recorded so the same ground is not covered twice.
