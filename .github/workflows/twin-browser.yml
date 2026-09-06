@@ -2,6 +2,7 @@ name: Twin browser
 on:
   pull_request:
     paths:
+      - "src/components/AppShell.tsx"
       - "src/components/twin/**"
       - "src/components/TwinView.tsx"
       - "src/lib/digital-twin*"
@@ -13,6 +14,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "src/components/AppShell.tsx"
       - "src/components/twin/**"
       - "src/components/TwinView.tsx"
       - "src/lib/digital-twin*"
