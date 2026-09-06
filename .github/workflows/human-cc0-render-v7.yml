@@ -1,0 +1,58 @@
+name: Render CC0 GYMS.LIFE digital human v7
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-render-v7.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_RUN: '34026788453'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Download exact audited human v7
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p public/__human_review
+          gh run download "$SOURCE_RUN" --repo "${{ github.repository }}" --name gyms-digital-human-v7-review --dir "$RUNNER_TEMP/human"
+          cp "$RUNNER_TEMP/human/gyms-digital-human-v7.glb" public/__human_review/human.glb
+      - name: Create isolated studio review surface
+        run: |
+          cat > human-review.html <<'HTML'
+          <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,#app{margin:0;width:100%;height:100%;overflow:hidden;background:#080c0f}canvas{display:block}</style></head><body><div id="app"></div><script type="module" src="/human-review.js"></script></body></html>
+          HTML
+          cat > human-review.js <<'JS'
+          import * as THREE from 'three'; import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'; import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+          const q=new URLSearchParams(location.search),view=q.get('view')||'front',close=q.get('close')||'';const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.90;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.querySelector('#app').append(renderer.domElement);const scene=new THREE.Scene();scene.background=new THREE.Color('#080c0f');const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.035).texture;const camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,.01,50);scene.add(new THREE.HemisphereLight(0xfff3e7,0x182832,.82));const key=new THREE.DirectionalLight(0xffe5d2,2.35);key.position.set(3.2,4.7,4.2);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);const fill=new THREE.DirectionalLight(0xc8e2ff,.62);fill.position.set(-3.8,2.6,3.4);scene.add(fill);const rim=new THREE.DirectionalLight(0xd3fff0,1.0);rim.position.set(1.4,3.2,-4.2);scene.add(rim);const floor=new THREE.Mesh(new THREE.CircleGeometry(2.3,80),new THREE.MeshStandardMaterial({color:0x0e161a,roughness:.94,metalness:0}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);const t0=performance.now();new GLTFLoader().load('/__human_review/human.glb',g=>{const model=g.scene;scene.add(model);let meshCount=0,triangles=0,drawCalls=0;const materials=[];model.traverse(o=>{if(!o.isMesh)return;meshCount++;const idx=o.geometry.index?.count??o.geometry.attributes.position?.count??0;triangles+=Math.floor(idx/3);drawCalls++;o.castShadow=true;const m=o.material;if(!m)return;materials.push(m.name||'');m.metalness=0;const n=(m.name||'').toLowerCase();if(n.includes('eye')){m.roughness=.12;m.envMapIntensity=1.55}else{m.roughness=.54;m.envMapIntensity=.50;if(m.normalMap)m.normalScale?.set(.24,.24)}m.needsUpdate=true});const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());model.position.sub(center);model.position.y+=size.y/2;const H=size.y,target=new THREE.Vector3(0,H*.52,0),dist=H*1.55;const pos={front:[0,H*.55,dist],back:[0,H*.55,-dist],left:[-dist,H*.55,0],right:[dist,H*.55,0],threeq:[dist*.72,H*.58,dist*.72]};let p=pos[view]||pos.front;if(close==='face'){p=[0,H*.86,H*.50];target.set(0,H*.87,0);camera.fov=25;camera.updateProjectionMatrix()}if(close==='hands'){p=[H*.53,H*.55,H*.65];target.set(H*.32,H*.55,0);camera.fov=28;camera.updateProjectionMatrix()}camera.position.set(...p);camera.lookAt(target);const render=()=>renderer.render(scene,camera);render();requestAnimationFrame(()=>{render();window.__HUMAN_REVIEW__={ready:true,loadMs:Math.round(performance.now()-t0),meshCount,triangles,drawCalls,materials,box:[size.x,size.y,size.z]}})},undefined,e=>window.__HUMAN_REVIEW__={ready:false,error:String(e)});
+          JS
+          cat > review-vite.config.mjs <<'JS'
+          import { defineConfig } from 'vite';export default defineConfig({root:process.cwd(),publicDir:'public',plugins:[],server:{host:'127.0.0.1',port:4178,strictPort:true}});
+          JS
+      - name: Capture exact v7 renders
+        run: |
+          npx vite --config review-vite.config.mjs > "$RUNNER_TEMP/vite.log" 2>&1 &
+          ready=0;for i in {1..45};do if curl -fsS http://127.0.0.1:4178/human-review.html >/dev/null;then ready=1;break;fi;sleep 1;done;if [ "$ready" != 1 ];then cat "$RUNNER_TEMP/vite.log";exit 1;fi
+          node --input-type=module <<'JS'
+          import { chromium } from '@playwright/test';import fs from 'node:fs';const browser=await chromium.launch({headless:true}),out=process.env.RUNNER_TEMP+'/human-renders-v7';fs.mkdirSync(out,{recursive:true});const views=[['front',''],['back',''],['left',''],['right',''],['threeq',''],['front','face'],['right','hands']],metrics=[];for(const [view,close] of views){const page=await browser.newPage({viewport:{width:900,height:1200},deviceScaleFactor:1});await page.goto(`http://127.0.0.1:4178/human-review.html?view=${view}&close=${close}`);await page.waitForFunction(()=>window.__HUMAN_REVIEW__?.ready===true,{timeout:30000});await page.waitForTimeout(350);metrics.push({view,close,...await page.evaluate(()=>window.__HUMAN_REVIEW__)});await page.screenshot({path:`${out}/${view}${close?'-'+close:''}.png`});await page.close()}const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});await mobile.goto('http://127.0.0.1:4178/human-review.html?view=threeq');await mobile.waitForFunction(()=>window.__HUMAN_REVIEW__?.ready===true,{timeout:30000});await mobile.waitForTimeout(250);await mobile.screenshot({path:`${out}/mobile-390.png`});metrics.push({mobile390:await mobile.evaluate(()=>window.__HUMAN_REVIEW__)});await browser.close();fs.writeFileSync(`${out}/metrics.json`,JSON.stringify(metrics,null,2));console.log(JSON.stringify(metrics,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v7-renders
+          path: ${{ runner.temp }}/human-renders-v7
+          retention-days: 3
+          if-no-files-found: error
