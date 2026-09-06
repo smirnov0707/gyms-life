@@ -13,8 +13,59 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useI18n } from "@/lib/i18n";
+import { calculateDishFit, type DishFitBand } from "@/lib/dish-fit.engine";
 import { searchRestaurantDishes, type RestaurantSearchResult } from "@/lib/dineout.functions";
 import { errorMessage } from "@/lib/error-message";
+
+/**
+ * How the dish sits against the goal, and what that was decided from.
+ *
+ * There is no percentage here on purpose. The macros are a model's estimate
+ * of a menu item, and a two-significant-figure score on top of an estimate
+ * claims a precision nothing has. A band plus the figure it came from lets
+ * the athlete check the reasoning instead of trusting a number.
+ */
+const BAND_TONE: Record<DishFitBand, string> = {
+  strong:
+    "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 light:text-emerald-700 light:bg-emerald-600/10",
+  workable:
+    "bg-amber-500/15 text-amber-300 border-amber-500/30 light:text-amber-700 light:bg-amber-600/10",
+  poor: "bg-foreground/[0.06] text-muted-foreground border-border",
+};
+
+const BAND_LABEL: Record<DishFitBand, { lt: string; en: string }> = {
+  strong: { lt: "TINKA", en: "STRONG FIT" },
+  workable: { lt: "TIKS", en: "WORKABLE" },
+  poor: { lt: "PRASTAI TINKA", en: "POOR FIT" },
+};
+
+function DishFitBadge({
+  dish,
+  goal,
+  lang,
+}: {
+  dish: { calories: number; protein: number; fat: number };
+  goal: "muscle_gain" | "fat_loss" | "healthy";
+  lang: string;
+}) {
+  const fit = calculateDishFit(dish, goal);
+  if (fit.band === null) return null;
+
+  const label = BAND_LABEL[fit.band];
+  return (
+    <span className="shrink-0 text-right">
+      <span
+        className={`block rounded border px-2 py-0.5 text-xs font-mono font-bold ${BAND_TONE[fit.band]}`}
+      >
+        {lang === "lt" ? label.lt : label.en}
+      </span>
+      <span className="mt-0.5 block font-mono text-[9px] text-muted-foreground">
+        {fit.proteinPer100Kcal}
+        {lang === "lt" ? " g baltymų / 100 kcal" : " g protein / 100 kcal"}
+      </span>
+    </span>
+  );
+}
 
 export const DineOutMenuScanner: React.FC = () => {
   const { lang } = useI18n();
@@ -241,9 +292,7 @@ export const DineOutMenuScanner: React.FC = () => {
                           {dish.recommendationReason}
                         </p>
                       </div>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 light:text-orange-700 border border-orange-500/30 shrink-0">
-                        {dish.fitScore}% FIT
-                      </span>
+                      <DishFitBadge dish={dish} goal={goal} lang={lang} />
                     </div>
 
                     <div className="grid grid-cols-4 gap-1.5 text-center pt-1.5 border-t border-border text-xs font-mono">
@@ -278,6 +327,15 @@ export const DineOutMenuScanner: React.FC = () => {
                     </div>
                   </div>
                 ))}
+
+                {/* These are not looked-up nutrition tables. The model is
+                    recalling a menu, and a monospace grid of round numbers
+                    reads as measurement unless it is told otherwise. */}
+                <p className="pt-1 text-[10px] leading-relaxed text-muted-foreground">
+                  {lang === "lt"
+                    ? "Maistinė vertė — modelio įvertis pagal tai, ką jis žino apie šį meniu, o ne restorano duomenys. Tikslių skaičių ieškok restorano informacijoje."
+                    : "The nutrition figures are the model's estimate from what it knows of this menu, not the restaurant's own data. Check the restaurant's information for exact numbers."}
+                </p>
               </div>
             </>
           ) : (

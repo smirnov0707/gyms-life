@@ -11,11 +11,17 @@ const RestaurantSearchInput = z.object({
   lang: SupportedLanguageSchema.default("lt"),
 });
 
+/**
+ * `fitScore` used to live here: a 0-100 number the prompt never defined,
+ * shown to the athlete as "95% FIT". It is now computed from these macros by
+ * `calculateDishFit`, which can be read and tested. The macros themselves
+ * stay what they always were — the model's recollection of a menu — and the
+ * screen says so.
+ */
 const RestaurantDishSchema = NutritionMacrosSchema.extend({
   name: z.string().trim().min(1).max(200),
   calories: z.coerce.number().finite().positive().max(10_000),
   recommendationReason: z.string().trim().min(1).max(500),
-  fitScore: z.coerce.number().finite().min(0).max(100),
 });
 
 const RestaurantSearchSuccessSchema = z.object({
@@ -55,6 +61,7 @@ export const searchRestaurantDishes = createServerFn({ method: "POST" })
 UŽDUOTIS:
 1. Pirmiausia atpažink ir ištaisyk bet kokią rašybos klaidą (pvz. "mcdonals" -> "McDonald's", "hesburer" -> "Hesburger", "subvay" -> "Subway", "cili pica" -> "Čili Pizza", "kfc" -> "KFC", "sushi" -> "Sushi Bar").
 2. Parink 4 geriausius patiekalus iš to tinklo/tipo meniu, tinkančius ${goalText}.
+3. Maistinę vertę nurodyk kaip savo geriausią įvertinimą iš to, ką žinai apie tą meniu. Neišgalvok tikslumo, kurio neturi.
 
 Atsakyk TIK TIKSLIU JSON formatu be markdown:
 {
@@ -68,8 +75,7 @@ Atsakyk TIK TIKSLIU JSON formatu be markdown:
       "protein": 38,
       "carbs": 42,
       "fat": 14,
-      "recommendationReason": "Priežastis, kodėl tinka sportininkui",
-      "fitScore": 95
+      "recommendationReason": "Priežastis, kodėl tinka sportininkui"
     }
   ],
   "coachTip": "Trenerio patarimas užsakymui"
