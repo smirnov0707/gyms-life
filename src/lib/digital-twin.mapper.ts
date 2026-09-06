@@ -6,6 +6,7 @@ import {
 import {
   TwinRegionStateSchema,
   TwinSnapshotSchema,
+  type TwinBodyVariant,
   type TwinRegionRecoveryBand,
   type TwinRegionState,
   type TwinSnapshot,
@@ -59,6 +60,7 @@ function unknownRegion(region: string): TwinRegionState {
 export function mapDigitalAthleteStateToTwinSnapshot(
   state: DigitalAthleteState,
   computedAt: Date,
+  bodyVariant: TwinBodyVariant = "male",
 ): TwinSnapshot {
   const dataAvailable = !state.dataGaps.includes("muscle_load_data_unavailable");
   const calculatedRegions = state.muscleLoad.map((load) =>
@@ -71,9 +73,22 @@ export function mapDigitalAthleteStateToTwinSnapshot(
 
   return TwinSnapshotSchema.parse({
     calculationVersion: DIGITAL_ATHLETE_CALCULATION_VERSION,
+    bodyVariant,
     computedAt: computedAt.toISOString(),
     evidenceWindowDays: MUSCLE_LOAD_LOOKBACK_DAYS,
     dataAvailable,
     regions: [...calculatedRegions, ...placeholderRegions],
   });
+}
+
+/**
+ * Picks the base mesh from what the athlete recorded about themselves.
+ *
+ * Only "female" moves off the default, because only two figures ship. An
+ * athlete who chose "other", or who never answered, gets the default one —
+ * not because that is who they are, but because the app has nothing better to
+ * draw and says so on the stage: a generic body, not a scan.
+ */
+export function twinBodyVariantFor(gender: string | null | undefined): TwinBodyVariant {
+  return gender?.trim().toLowerCase() === "female" ? "female" : "male";
 }

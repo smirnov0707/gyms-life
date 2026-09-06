@@ -11,6 +11,7 @@ import {
   type TwinCameraCommand,
 } from "./twin-scene.model";
 import type { TwinSceneHandle } from "./twin-scene.runtime";
+import type { TwinBodyVariant } from "@/lib/digital-twin.schema";
 
 export type BodySceneStageProps = {
   state: TwinSceneState;
@@ -20,6 +21,8 @@ export type BodySceneStageProps = {
   onViewChange: (view: BodyView) => void;
   regionLabel: (region: string) => string;
   language: "lt" | "en";
+  /** Which shipped base mesh to draw. Omitted where no profile is in scope. */
+  bodyVariant?: TwinBodyVariant;
   layerControls: ReactNode;
   unitLabel: string;
   formatValue: (value: number | null) => string;
@@ -29,7 +32,7 @@ export type BodySceneStageProps = {
 const COPY = {
   en: {
     scene:
-      "Interactive schematic body. Drag to rotate; pinch to zoom. Keyboard: left/right arrows rotate, plus/minus zoom, Home resets.",
+      "Interactive human body. Drag to rotate; pinch to zoom. Keyboard: left/right arrows rotate, plus/minus zoom, Home resets.",
     hint: "Drag to rotate 360° · Pinch or scroll to zoom",
     loading: "Preparing 3D… 2D remains available.",
     fallback: "3D is unavailable on this device. Your evidence is still available in 2D.",
@@ -52,7 +55,7 @@ const COPY = {
   },
   lt: {
     scene:
-      "Interaktyvus scheminis kūnas. Tempk, kad pasuktum; suglausk pirštus, kad keistum mastelį. Klaviatūra: rodyklės suka, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
+      "Interaktyvus žmogaus kūnas. Tempk, kad pasuktum; suglausk pirštus, kad keistum mastelį. Klaviatūra: rodyklės suka, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
     hint: "Tempk ir suk 360° · Mastelį keisk dviem pirštais",
     loading: "Ruošiamas 3D… 2D vaizdas lieka pasiekiamas.",
     fallback: "3D šiame įrenginyje nepasiekiamas. Tavo duomenys lieka pasiekiami 2D vaizde.",
@@ -69,7 +72,7 @@ const COPY = {
     region: "Apžiūrėti regioną",
     choose: "Pasirink regioną",
     motion: "Subtilus judesys",
-    note: "Scheminis kūnas, ne asmeninis skenavimas. Judesys dekoratyvus, ne biometrinis signalas.",
+    note: "Bendrinis kūnas, ne tavo skenavimas. Judesys dekoratyvus, ne biometrinis signalas.",
     controls: "Vaizdo valdymas",
     renderer: "Dvynio vaizdas",
   },
@@ -90,6 +93,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
     formatValue,
     formatRegion,
     extraNote,
+    bodyVariant,
   } = props;
   const copy = COPY[language];
   const controlsId = useId();
@@ -133,6 +137,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           label: COPY[current.language].scene,
           onSelect: (region) => latest.current.onSelectRegion(region),
           onFailure: fail,
+          ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
         });
         window.clearTimeout(timeout);
         if (cancelled || invalidated) {
@@ -155,7 +160,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       owned?.dispose();
       if (scene.current === owned) scene.current = null;
     };
-  }, [mode, attempt]);
+  }, [mode, attempt, bodyVariant]);
   useEffect(() => {
     scene.current?.setState(state);
   }, [state, ready]);

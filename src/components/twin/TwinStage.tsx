@@ -20,6 +20,7 @@ export function TwinStage({ snapshot, layer, onLayerChange, ...props }: TwinStag
   return (
     <BodySceneStage
       {...props}
+      bodyVariant={snapshot.bodyVariant}
       state={mapTwinScene(snapshot, layer)}
       unitLabel={copy.unit[layer]}
       formatValue={(value) => formatTwinValue(value, layer, props.language)}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DigitalAthleteState } from "./digital-athlete.schema";
-import { mapDigitalAthleteStateToTwinSnapshot } from "./digital-twin.mapper";
+import { mapDigitalAthleteStateToTwinSnapshot, twinBodyVariantFor } from "./digital-twin.mapper";
 import { calculateMuscleGroupLoad } from "./muscle-load.engine";
 import { KNOWN_MUSCLE_GROUPS } from "./muscle-load.schema";
 
@@ -200,5 +200,33 @@ describe("Twin evidence regressions", () => {
     );
     expect(twin.dataAvailable).toBe(false);
     expect(twin.regions.every((region) => region.provenance === "unknown")).toBe(true);
+  });
+});
+
+describe("body variant", () => {
+  const now = new Date("2026-09-06T12:00:00.000Z");
+
+  it("follows what the athlete recorded, in whatever case they recorded it", () => {
+    expect(twinBodyVariantFor("female")).toBe("female");
+    expect(twinBodyVariantFor("Female")).toBe("female");
+    expect(twinBodyVariantFor("  FEMALE ")).toBe("female");
+    expect(twinBodyVariantFor("male")).toBe("male");
+  });
+
+  it("draws the default body rather than guessing at an answer nobody gave", () => {
+    // Two figures ship. "other" and an unanswered profile are not female and
+    // are not male either — they get the default one because the app has
+    // nothing better to draw, and the stage says the body is generic.
+    expect(twinBodyVariantFor("other")).toBe("male");
+    expect(twinBodyVariantFor(null)).toBe("male");
+    expect(twinBodyVariantFor(undefined)).toBe("male");
+    expect(twinBodyVariantFor("")).toBe("male");
+  });
+
+  it("carries the choice into the snapshot the renderer reads", () => {
+    expect(mapDigitalAthleteStateToTwinSnapshot(baseState, now, "female").bodyVariant).toBe(
+      "female",
+    );
+    expect(mapDigitalAthleteStateToTwinSnapshot(baseState, now).bodyVariant).toBe("male");
   });
 });

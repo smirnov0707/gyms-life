@@ -155,7 +155,7 @@ function copyFor(lang: Lang): Copy {
     estimateNote: "Įvertis pagal treniruotes, ne kūno matavimas.",
     sourceNote:
       "Apskaičiuota iš tavo užregistruotų serijų. Laikrodžio fiziologiniai duomenys neįtraukti.",
-    visualNote: "Scheminis kūnas · apskaičiuota būsena",
+    visualNote: "Bendrinis kūnas · apskaičiuota būsena",
   };
 }
 

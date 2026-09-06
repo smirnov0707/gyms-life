@@ -13,6 +13,8 @@ import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 
 /** Region names ride on material names, since glTF primitives have none. */
 const REGION_MATERIAL_PREFIX = "twin-region:";
+/** Kit cut from the body's own surface at build time: shorts, and a top. */
+const GARMENT_MATERIAL_PREFIX = "twin-";
 
 /** Deliberately not a data colour. Skin is a dielectric, so metalness is 0. */
 const SKIN = { color: 0xb08872, roughness: 0.64, metalness: 0 };
@@ -87,7 +89,10 @@ function build(scene: Object3D): TwinBodyModel {
 
     // The file's own materials are replaced so the scene owns every surface it
     // later tints and disposes, rather than mutating the loader's cache.
-    const preset = sourceName === "twin-shorts" ? FABRIC : sourceName === "Eyes" ? EYE : SKIN;
+    const garment =
+      sourceName.startsWith(GARMENT_MATERIAL_PREFIX) &&
+      !sourceName.startsWith(REGION_MATERIAL_PREFIX);
+    const preset = garment ? FABRIC : sourceName === "Eyes" ? EYE : SKIN;
     disposeMaterial(object);
     object.material = new MeshStandardMaterial(preset);
     baseColorOf.set(object, preset.color);

@@ -46,10 +46,28 @@ const FIGURES = {
   female: "Female_Basemesh_Rig_868",
 };
 
-/** Bones the training shorts cover: hips and the upper thigh. */
-const SHORTS_BONES = /^DEF-(pelvis|thigh)$/;
-/** How far the garment stands off the skin, in metres. */
-const SHORTS_OFFSET_M = 0.008;
+/** How far a garment stands off the skin, in metres. */
+const GARMENT_OFFSET_M = 0.008;
+
+/**
+ * The kit each figure is dressed in, cut from its own surface.
+ *
+ * `bones` chooses the band of the body a garment is taken from, and `hem` and
+ * `waist` are fractions of that band's height — measured on the figure rather
+ * than assumed, so the same numbers fit a taller or shorter mesh.
+ */
+const GARMENTS = {
+  shorts: { name: "twin-shorts", bones: /^DEF-(pelvis|thigh)$/, hem: 0.34, waist: 0.88 },
+  top: {
+    name: "twin-top",
+    bones: /^DEF-(breast|spine\.00[23])$/,
+    hem: 0.34,
+    waist: 0.86,
+  },
+};
+
+/** Female figures also get a training top. A bare chest is not sportswear. */
+const KIT = { male: ["shorts"], female: ["shorts", "top"] };
 
 const OUT_DIR = resolve("public/models");
 const VERSION = "v1";
@@ -109,7 +127,7 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   // Split and check before writing. Doing it after produced a file that had
   // none of the region materials in it while every check still passed, because
   // the checks were reading the document in memory rather than the artifact.
-  addShorts(document);
+  for (const piece of KIT[variant]) addGarment(document, GARMENTS[piece]);
   const coverage = splitBodyByRegion(document);
   verify(document, variant);
   verifyRegions(coverage, variant);
@@ -447,7 +465,7 @@ function triangleCount(mesh) {
  * back, abs and core are regions the athlete selects and reads data from, and
  * a shirt would hide exactly the surface this screen exists to show.
  */
-function addShorts(document) {
+function addGarment(document, spec) {
   const root = document.getRoot();
   const body = root.listMeshes().reduce((a, b) => (triangleCount(a) > triangleCount(b) ? a : b));
   const primitive = body.listPrimitives()[0];
@@ -474,14 +492,14 @@ function addShorts(document) {
   let low = Infinity;
   let high = -Infinity;
   for (let v = 0; v < position.getCount(); v++) {
-    if (!SHORTS_BONES.test(dominant(v))) continue;
+    if (!spec.bones.test(dominant(v))) continue;
     const y = position.getElement(v, [0, 0, 0])[1];
     low = Math.min(low, y);
     high = Math.max(high, y);
   }
   if (!Number.isFinite(low)) return;
-  const hem = low + (high - low) * 0.34;
-  const waist = high - (high - low) * 0.12;
+  const hem = low + (high - low) * spec.hem;
+  const waist = low + (high - low) * spec.waist;
 
   // Vertex records the clipper can interpolate. Joints and weights are taken
   // from the nearer end of a cut edge rather than blended: a skinning weight
@@ -533,7 +551,7 @@ function addShorts(document) {
       indices.getScalar(t * 3 + 1),
       indices.getScalar(t * 3 + 2),
     ];
-    if (!tri.some((v) => SHORTS_BONES.test(dominant(v)))) continue;
+    if (!tri.some((v) => spec.bones.test(dominant(v)))) continue;
     let polygon = tri.map(vertexAt);
     polygon = clip(polygon, hem, true);
     if (polygon.length < 3) continue;
@@ -544,9 +562,9 @@ function addShorts(document) {
     const base = pos.length / 3;
     for (const vertex of polygon) {
       pos.push(
-        vertex.p[0] + vertex.n[0] * SHORTS_OFFSET_M,
-        vertex.p[1] + vertex.n[1] * SHORTS_OFFSET_M,
-        vertex.p[2] + vertex.n[2] * SHORTS_OFFSET_M,
+        vertex.p[0] + vertex.n[0] * GARMENT_OFFSET_M,
+        vertex.p[1] + vertex.n[1] * GARMENT_OFFSET_M,
+        vertex.p[2] + vertex.n[2] * GARMENT_OFFSET_M,
       );
       nrm.push(vertex.n[0], vertex.n[1], vertex.n[2]);
       tex.push(vertex.t[0], vertex.t[1]);
@@ -558,43 +576,43 @@ function addShorts(document) {
   if (!pieces) return;
 
   const fabric = document
-    .createMaterial("twin-shorts")
+    .createMaterial(spec.name)
     .setBaseColorFactor([0.13, 0.15, 0.18, 1])
     .setRoughnessFactor(0.92)
     .setMetallicFactor(0);
-  const shorts = document
+  const piece = document
     .createPrimitive()
     .setMaterial(fabric)
     .setAttribute(
       "POSITION",
-      document.createAccessor("shorts-pos").setType("VEC3").setArray(new Float32Array(pos)),
+      document.createAccessor(`${spec.name}-pos`).setType("VEC3").setArray(new Float32Array(pos)),
     )
     .setAttribute(
       "NORMAL",
-      document.createAccessor("shorts-nrm").setType("VEC3").setArray(new Float32Array(nrm)),
+      document.createAccessor(`${spec.name}-nrm`).setType("VEC3").setArray(new Float32Array(nrm)),
     )
     .setAttribute(
       "JOINTS_0",
-      document.createAccessor("shorts-jnt").setType("VEC4").setArray(new Uint16Array(jnt)),
+      document.createAccessor(`${spec.name}-jnt`).setType("VEC4").setArray(new Uint16Array(jnt)),
     )
     .setAttribute(
       "WEIGHTS_0",
-      document.createAccessor("shorts-wgt").setType("VEC4").setArray(new Float32Array(wgt)),
+      document.createAccessor(`${spec.name}-wgt`).setType("VEC4").setArray(new Float32Array(wgt)),
     )
     .setAttribute(
       "TEXCOORD_0",
-      document.createAccessor("shorts-uv").setType("VEC2").setArray(new Float32Array(tex)),
+      document.createAccessor(`${spec.name}-uv`).setType("VEC2").setArray(new Float32Array(tex)),
     )
     .setIndices(
-      document.createAccessor("shorts-idx").setType("SCALAR").setArray(new Uint32Array(idx)),
+      document.createAccessor(`${spec.name}-idx`).setType("SCALAR").setArray(new Uint32Array(idx)),
     );
 
-  const garment = document.createMesh("twin-shorts");
-  garment.addPrimitive(shorts);
+  const garment = document.createMesh(spec.name);
+  garment.addPrimitive(piece);
   // Same node as the body so it inherits the skeleton and moves with it.
   const bodyNode = root.listNodes().find((node) => node.getMesh() === body);
   const node = document
-    .createNode("twin-shorts")
+    .createNode(spec.name)
     .setMesh(garment)
     .setSkin(bodyNode?.getSkin() ?? null);
   bodyNode?.getParentNode()?.addChild(node) ?? document.getRoot().listScenes()[0].addChild(node);

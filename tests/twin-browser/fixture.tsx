@@ -16,9 +16,14 @@ const known: Record<
   legs: { recoveryPct: 83, recoveryBand: "fresh" },
 };
 const volumes: Record<string, number> = { chest: 3000, back: 1500, arms: 250, legs: 2000 };
-function snapshot(empty: boolean, unavailable: boolean): TwinSnapshot {
+function snapshot(
+  empty: boolean,
+  unavailable: boolean,
+  bodyVariant: "male" | "female",
+): TwinSnapshot {
   return {
     calculationVersion: "TEST-FIXTURE-NOT-USER-DATA",
+    bodyVariant,
     computedAt: "2026-09-05T12:00:00Z",
     evidenceWindowDays: 14,
     dataAvailable: !unavailable,
@@ -45,6 +50,9 @@ export function Fixture() {
   // dark in both; the evidence list beside it has to follow the theme, and
   // once shipped white-on-white because nothing checked.
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  // The app ships two figures and a profile decides which one loads. Without a
+  // switch here the female asset is never fetched by any check we run.
+  const [bodyVariant, setBodyVariant] = useState<"male" | "female">("male");
   const applyTheme = (next: "dark" | "light") => {
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(next);
@@ -65,10 +73,13 @@ export function Fixture() {
         <button onClick={() => setUnavailable((value) => !value)}>
           {unavailable ? "Restore source" : "Fail source"}
         </button>
+        <button onClick={() => setBodyVariant(bodyVariant === "male" ? "female" : "male")}>
+          {bodyVariant === "male" ? "Female body" : "Male body"}
+        </button>
       </div>
       {mounted && (
         <TwinSnapshotView
-          data={snapshot(empty, unavailable)}
+          data={snapshot(empty, unavailable, bodyVariant)}
           copy={twinCopyFor(language)}
           lang={language}
           label={(region) => region.charAt(0).toUpperCase() + region.slice(1)}
