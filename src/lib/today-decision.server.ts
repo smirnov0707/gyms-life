@@ -6,7 +6,6 @@ import { getActivePlanWorkoutProgress } from "./active-plan.service";
 import { IsoDaySchema, IanaTimeZoneSchema } from "./local-day";
 import {
   captureWorkoutCompletionShadowPrediction,
-  observeCompletedWorkoutPrediction,
   reconcileWorkoutCompletionShadowPredictions,
 } from "./prediction-shadow-ledger.server";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
@@ -236,9 +235,9 @@ export async function completeCurrentTrainingDecision(
   ]);
   if (!completed) return false;
 
-  // The canonical workout save already succeeded. Prediction evaluation is a
-  // shadow audit write and therefore cannot turn that success into a failure.
-  await observeCompletedWorkoutPrediction(userId, decisionOn).catch(() => undefined);
+  // Reconcile from the canonical workout_sessions fact, not from the decision
+  // status. This also marks any earlier same-day shadow forecasts truthfully.
+  await reconcileWorkoutCompletionShadowPredictions(userId).catch(() => undefined);
   return true;
 }
 
