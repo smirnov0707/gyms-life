@@ -127,14 +127,15 @@ export async function reconcileWorkoutCompletionShadowPredictions(
     const prediction = pendingWorkoutPrediction(record.prediction);
     return prediction ? [{ id: record.id, prediction }] : [];
   });
-  if (pending.length === 0) return 0;
+  const [firstPending] = pending;
+  if (!firstPending) return 0;
 
   const earliestGeneratedAt = pending.reduce(
     (earliest, candidate) =>
       Date.parse(candidate.prediction.generatedAt) < Date.parse(earliest)
         ? candidate.prediction.generatedAt
         : earliest,
-    pending[0].prediction.generatedAt,
+    firstPending.prediction.generatedAt,
   );
 
   const { data: sessions, error: sessionsError } = await supabaseAdmin
