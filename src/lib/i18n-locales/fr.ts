@@ -904,7 +904,6 @@ export const locale: Record<string, string> = {
   "supp.cycle.rerun": "Recalculer",
   "supp.cycle.empty":
     "Ajoutez au moins un complément actif pour que l'Coach puisse planifier des cycles.",
-  "supp.cycle.adherence": "Assiduité",
   "supp.cycle.progress": "Suivi des progrès",
   "supp.cycle.daysOn": "Pris pendant {n} j.",
   "supp.cycle.breakIn": "Pause dans {n} j.",
