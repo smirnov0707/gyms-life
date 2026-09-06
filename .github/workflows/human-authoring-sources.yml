@@ -1,0 +1,38 @@
+name: Human authoring source bundle
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-authoring-sources.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Retrieve pinned MakeHuman core graphics and their license
+        env:
+          SOURCE_REF: a8bc2d54ff0ac92e78ff71431b1023eda42bf482
+        run: |
+          mkdir -p "$RUNNER_TEMP/human-source"
+          curl --fail --location --retry 2 --max-time 180 "https://codeload.github.com/makehumancommunity/makehuman/tar.gz/$SOURCE_REF" -o "$RUNNER_TEMP/makehuman.tar.gz"
+          tar -xzf "$RUNNER_TEMP/makehuman.tar.gz" -C "$RUNNER_TEMP/human-source" --strip-components=1 "makehuman-$SOURCE_REF/makehuman/data" "makehuman-$SOURCE_REF/LICENSE.md" "makehuman-$SOURCE_REF/LICENSE.ASSETS.md"
+          printf '%s\n' "$SOURCE_REF" > "$RUNNER_TEMP/human-source/UPSTREAM_COMMIT"
+          find "$RUNNER_TEMP/human-source/makehuman/data" -type f | sort > "$RUNNER_TEMP/human-source/FILE_LIST.txt"
+          tar -czf "$RUNNER_TEMP/human-core-assets.tar.gz" -C "$RUNNER_TEMP/human-source" .
+      - name: Archive current tracked application source, not credentials
+        run: |
+          mapfile -d '' -t files < <(git ls-files -z src scripts tests docs AGENTS.md package.json package-lock.json tsconfig.json '*.config.*' .prettierrc .prettierignore netlify.toml .gitignore .github)
+          git archive --format=tar.gz --output="$RUNNER_TEMP/current-human-workspace.tar.gz" HEAD "${files[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: human-cc0-authoring-source
+          path: |
+            ${{ runner.temp }}/human-core-assets.tar.gz
+            ${{ runner.temp }}/current-human-workspace.tar.gz
+          if-no-files-found: error
+          retention-days: 1
