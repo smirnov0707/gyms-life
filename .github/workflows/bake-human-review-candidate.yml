@@ -1,0 +1,48 @@
+name: Bake licensed human review candidate
+on:
+  push:
+    branches: [future-lab-human-realism-preview]
+    paths: [.github/workflows/bake-human-review-candidate.yml]
+permissions:
+  contents: write
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: python3 -m pip install Pillow==12.3.0
+      - name: Build only the pinned licensed generic candidate
+        run: |
+          python3 scripts/human-asset/download-source.py "$RUNNER_TEMP/human-source"
+          node scripts/human-asset/build-rocketbox-candidate.mjs "$RUNNER_TEMP/human-source"
+          npx prettier --write scripts/human-asset/build-rocketbox-candidate.mjs src/components/twin/human-asset.candidate.json public/assets/humans/rocketbox-adult-01-v1/source-manifest.json
+          test "$(stat -c %s public/assets/humans/rocketbox-adult-01-v1/human.glb)" -le 8388608
+          grep -q 'Copyright (c) 2020 Microsoft' public/assets/humans/rocketbox-adult-01-v1/LICENSE.txt
+      - name: Commit the generic asset to the review branch only
+        run: |
+          test "$GITHUB_REF" = refs/heads/future-lab-human-realism-preview
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/assets/humans/rocketbox-adult-01-v1/human.glb public/assets/humans/rocketbox-adult-01-v1/LICENSE.txt public/assets/humans/rocketbox-adult-01-v1/source-manifest.json src/components/twin/human-asset.candidate.json scripts/human-asset/build-rocketbox-candidate.mjs
+          git rm .github/workflows/human-realism-workspace.yml .github/workflows/human-asset-candidate-review.yml .github/workflows/bake-human-review-candidate.yml
+          git diff --cached --check
+          git commit -m 'feat(twin): bake a licensed textured human review candidate with provenance'
+          git push origin HEAD:future-lab-human-realism-preview
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: baked-human-review-candidate
+          path: |
+            public/assets/humans/rocketbox-adult-01-v1
+            src/components/twin/human-asset.candidate.json
+          retention-days: 7
+          if-no-files-found: error
