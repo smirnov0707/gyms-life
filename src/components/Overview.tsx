@@ -11,7 +11,10 @@ import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { LiveSignals } from "@/components/LiveSignals";
+import { FutureLabPredictionOutlook } from "@/components/future-lab/FutureLabPredictionOutlook";
+import { FutureLabScientistStatus } from "@/components/future-lab/FutureLabScientistStatus";
 import { FutureLabTodayIntelligence } from "@/components/future-lab/FutureLabTodayIntelligence";
+import { FutureLabTodayPlan } from "@/components/future-lab/FutureLabTodayPlan";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
 import { useLocalizedPlan } from "@/lib/use-localized-plan";
@@ -25,14 +28,7 @@ function ReadinessRing({ score }: { score: number }) {
   return (
     <div className="relative grid size-14 place-items-center">
       <svg className="absolute inset-0 size-14 -rotate-90" aria-hidden="true">
-        <circle
-          cx="28"
-          cy="28"
-          r={radius}
-          className="stroke-border"
-          strokeWidth="4"
-          fill="transparent"
-        />
+        <circle cx="28" cy="28" r={radius} className="stroke-border" strokeWidth="4" fill="transparent" />
         <circle
           cx="28"
           cy="28"
@@ -186,6 +182,7 @@ export function Overview() {
 
         <aside className={`grid content-start gap-3 lg:col-span-3 ${anim("delay-75")}`}>
           <LiveSignals />
+          <FutureLabTodayPlan state={nextWorkoutData} />
           {readinessScore != null ? (
             <ReadinessCard
               score={readinessScore}
@@ -211,23 +208,9 @@ export function Overview() {
         </div>
 
         <aside className={`grid content-start gap-3 lg:col-span-3 ${anim("delay-150")}`}>
+          <FutureLabScientistStatus compact />
+          <FutureLabPredictionOutlook />
           <SmartBrief />
-          <div className="rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4">
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
-              LAB STATUS
-            </p>
-            <p className="mt-2 text-sm font-semibold text-white">{t("nav.lab")}</p>
-            <p className="mt-2 text-xs leading-relaxed text-slate-400">
-              GYMS.LIFE separates measurements, hypotheses and predictions. Open Lab to inspect
-              evidence and model maturity.
-            </p>
-            <Link
-              to="/lab"
-              className="mt-4 inline-flex min-h-10 items-center rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 text-[10px] font-bold uppercase tracking-wider text-violet-200"
-            >
-              OPEN LAB
-            </Link>
-          </div>
         </aside>
 
         <div className={`lg:col-span-12 ${anim("delay-200")}`}>
