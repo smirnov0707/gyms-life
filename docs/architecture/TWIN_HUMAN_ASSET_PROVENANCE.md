@@ -8,30 +8,43 @@ The asset is **visual representation only**. It must never be interpreted as a b
 
 ## Pinned source
 
-- Upstream repository: `kunalkushwaha/vsim`
-- Upstream commit: `3f97faf85e46d2f9a122b0a8b8d3ccc0af598f91`
-- Upstream path: `packages/assets/library/man.glb`
-- Git blob SHA-1: `bec48c7ad6be753520f7291510c1d63440df87b9`
-- Expected size: `2,889,028` bytes
+- Upstream repository: `nirholas/three.ws`
+- Upstream commit: `f641c2d612554d3f8f3b7ee162d4561e75976afa`
+- Upstream path: `public/avatars/parametric-base.glb`
+- Git blob SHA-1: `652ee3882097d41e7920c7de0454e1c73a94a507`
+- Expected size: `6,806,984` bytes
 - GYMS.LIFE runtime path: `/models/twin-human.glb`
-
-The first evaluated `human.glb` asset was rejected during visual browser QA because its silhouette/clothing/pose was not suitable as the neutral GYMS.LIFE Digital Human baseline. The pinned baseline was therefore changed to the upstream `man.glb` variant before the photoreal browser-proof change is allowed to merge.
 
 The GYMS.LIFE build does not trust an unpinned moving URL. `scripts/fetch-twin-human-asset.mjs` downloads the asset from the pinned commit and verifies the Git blob SHA-1 and byte length before writing it into `public/models/`.
 
 If download or integrity validation fails, the build remains healthy and the Digital Twin renderer falls back to the canonical schematic analytical body.
 
+## Why this baseline
+
+Two earlier MakeHuman-derived visual candidates (`human.glb` and `man.glb` from the `vsim` asset library) successfully passed technical browser loading but were rejected by GYMS.LIFE visual QA because their clothing/silhouette did not fit a neutral human-performance Digital Twin.
+
+The selected `parametric-base.glb` is purpose-built from CC0 MakeHuman / MPFB2 source data as a parametric avatar base. Its upstream documentation records:
+
+- CC0 1.0 Universal source body data;
+- a 52-joint Mixamo-named skeleton;
+- Y-up metre scale and feet on the floor;
+- body / eyes / teeth / tongue submeshes;
+- baked morph targets for body and facial shape, including macro body parameters.
+
+This gives GYMS.LIFE a neutral anatomical baseline now and a path to later body-shape personalization without replacing the Twin analytical contracts.
+
 ## License / provenance chain
 
-The upstream `vsim` asset library documents its MakeHuman / MPFB 2 human assets as MakeHuman output under CC0 (public domain). It also documents that the skin textures are sourced from MakeHuman's `makehuman_system_assets` CC0 pack.
+The upstream `three.ws` `avatar-sources/anny` documentation states that the source data used to bake `parametric-base.glb` is MakeHuman / MPFB2 core data released under CC0 1.0 Universal. The repository also keeps the source provenance and build script that generates the shipped GLB.
 
-Upstream provenance reference:
+Upstream provenance references:
 
-- `packages/assets/library/CREDITS.md`
-- `docs/asset-packs.md`
-- `docs/guides/blender-characters.md`
+- `avatar-sources/anny/README.md`
+- `avatar-sources/anny/LICENSE.md`
+- `scripts/build-parametric-base.mjs`
+- `specs/PARAMETRIC_AVATAR.md`
 
-The asset is used here under its documented CC0/public-domain terms.
+The asset is used here under its documented CC0/public-domain asset terms.
 
 ## GYMS.LIFE architectural boundary
 
@@ -46,8 +59,8 @@ The existing GYMS.LIFE analytical Twin mesh remains the stable hidden hit-map fo
 
 Both meshes share the same `twin-body-root`, keeping visual motion and analytical picking aligned.
 
-## Future replacement
+## Personalization path
 
-This asset is an initial neutral visual-human baseline, not the final personalized Twin.
+The selected GLB already carries a parametric morph-target foundation. GYMS.LIFE may progressively map explicitly available user parameters (for example height and voluntary visual-body settings) into these morph targets while keeping all such changes labelled as a visual approximation.
 
-Future versions may replace it with a client-side generated OxiHuman / equivalent CC0 parametric body while preserving the same analytical Twin contracts. Any replacement must receive its own versioned provenance entry and integrity checks.
+A future OxiHuman integration may replace or augment the baked morph layer with its client-side WASM engine and measurement-fit workflow. That future integration must preserve the same privacy, provenance and analytical-boundary invariants.
