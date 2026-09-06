@@ -28,7 +28,14 @@ function ReadinessRing({ score }: { score: number }) {
   return (
     <div className="relative grid size-14 place-items-center">
       <svg className="absolute inset-0 size-14 -rotate-90" aria-hidden="true">
-        <circle cx="28" cy="28" r={radius} className="stroke-border" strokeWidth="4" fill="transparent" />
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          className="stroke-border"
+          strokeWidth="4"
+          fill="transparent"
+        />
         <circle
           cx="28"
           cy="28"
