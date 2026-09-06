@@ -9,6 +9,7 @@ import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { LabOverviewSchema, type LabDecision, type LabOverview } from "./lab.schema";
 import { dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
 import { loadPredictionCalibration } from "./prediction-calibration.server";
+import { buildPredictionPromotionGate } from "./prediction-promotion-gate.engine";
 import { reconcileWorkoutCompletionShadowPredictions } from "./prediction-shadow-ledger.server";
 import {
   TodayDecisionActionSchema,
@@ -142,7 +143,8 @@ async function loadRecentDecisions(
 /**
  * Loads the Lab overview from current canonical athlete state plus bounded,
  * auditable learning history. Hypothesis and prediction audit plumbing remains
- * secondary and fail-open; neither retrospective can become a Today input.
+ * secondary and fail-open; neither retrospective nor promotion governance can
+ * become a Today input.
  */
 export async function loadLabOverview(
   supabase: SupabaseClient<Database>,
@@ -176,6 +178,7 @@ export async function loadLabOverview(
     loadRecentDecisions(supabase, userId, since),
     loadPredictionCalibration(supabase, userId),
   ]);
+  const predictionPromotionGate = buildPredictionPromotionGate(predictionCalibration);
 
   return LabOverviewSchema.parse({
     hypotheses,
@@ -183,6 +186,7 @@ export async function loadLabOverview(
     decisions,
     decisionAccuracy: buildDecisionAccuracy(decisions),
     predictionCalibration,
+    predictionPromotionGate,
     dataGaps: athlete.state.dataGaps,
   });
 }
