@@ -28,7 +28,7 @@ import { gzipSync } from "node:zlib";
 // The renderer is the only authority on where a skinned figure ends up, so the
 // build measures the finished bytes with the same loader the browser uses.
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { Box3, Quaternion, Vector3 } from "three";
+import { Box3, Matrix4, Quaternion, Vector3 } from "three";
 
 const SOURCE = {
   title: "Human Male/Female Basemesh Rigged",
@@ -76,6 +76,19 @@ const KIT = { male: ["shorts"], female: ["shorts", "top"] };
  * reads as a person standing rather than one being measured.
  */
 const ARM_DROP_DEG = 35;
+/**
+ * How much thinner the female figure's arms are drawn, as a fraction of their
+ * distance from the bone running through them.
+ *
+ * The source is one basemesh with two heads of steam behind it: the male and
+ * female bodies differ at the torso and hips and share the same limbs, which
+ * leaves the female figure with a man's arms. This is a shape correction on a
+ * generic body, not a measurement of anybody — nothing downstream reads it.
+ */
+const FEMALE_ARM_TAPER = 0.12;
+/** The chain the taper follows. Hands are left alone; the wrist blends. */
+const TAPERED_ARM_BONES = /^DEF-(upper_arm|forearm)\.[LR](\.\d+)?(_\d+)?$/;
+
 /** Which way each upper arm swings around the world Z axis to come down. */
 const ARM_BONES = [
   [/^DEF-upper_arm\.L(_\d+)?$/, -1],
@@ -124,6 +137,7 @@ for (const [variant, nodeName] of Object.entries(FIGURES)) {
   // away the unwrap the whole asset was chosen for.
   await document.transform(dedup(), prune({ keepAttributes: true }), weld());
 
+  if (variant === "female") taperArms(document, FEMALE_ARM_TAPER);
   lowerArms(document);
 
   // Where a skinned figure appears has nothing to do with the translation on
@@ -239,6 +253,100 @@ function verify(document, variant) {
 
   const triangles = countTriangles(document);
   if (triangles > 40_000) fail(`${triangles} triangles exceeds the low-LOD budget`);
+}
+
+/**
+ * Draws the arms in closer to the bone running through them.
+ *
+ * The move is radial: each vertex keeps its position along its bone and loses
+ * a share of its distance from it, so the arm thins without shortening or
+ * bending. How much is scaled by how strongly the vertex is skinned to an arm
+ * bone, which makes the deltoid fade back into the shoulder on its own — a
+ * flat cut-off at the joint leaves a visible step where the shrink stops.
+ *
+ * This edits the bind pose, not the skeleton: the inverse bind matrices are
+ * untouched, so the rig still deforms the thinner arm correctly.
+ */
+function taperArms(document, amount) {
+  const root = document.getRoot();
+  const skin = root.listSkins()[0];
+  if (!skin) throw new Error("no skin: arm bones cannot be located");
+  const inverseBind = skin.getInverseBindMatrices();
+  if (!inverseBind) throw new Error("no inverse bind matrices: no bind pose to measure against");
+
+  // Where each arm bone sits and which way it points, in the mesh's own space.
+  // Rigify bones run along their local +Y, which is the second basis column.
+  const bones = new Map();
+  skin.listJoints().forEach((joint, index) => {
+    if (!TAPERED_ARM_BONES.test(joint.getName())) return;
+    const bind = new Matrix4().fromArray(inverseBind.getElement(index, new Array(16))).invert();
+    const basis = bind.elements;
+    bones.set(index, {
+      head: new Vector3(basis[12], basis[13], basis[14]),
+      axis: new Vector3(basis[4], basis[5], basis[6]).normalize(),
+    });
+  });
+  if (bones.size === 0) throw new Error("no arm bones matched; the taper would do nothing");
+
+  let moved = 0;
+  for (const mesh of root.listMeshes()) {
+    const done = new Set();
+    for (const primitive of mesh.listPrimitives()) {
+      const position = primitive.getAttribute("POSITION");
+      const normal = primitive.getAttribute("NORMAL");
+      const joints = primitive.getAttribute("JOINTS_0");
+      const weights = primitive.getAttribute("WEIGHTS_0");
+      if (!position || !joints || !weights || done.has(position)) continue;
+      done.add(position);
+
+      const point = new Vector3();
+      const facing = new Vector3();
+      const along = new Vector3();
+      for (let v = 0; v < position.getCount(); v++) {
+        const j = joints.getElement(v, [0, 0, 0, 0]);
+        const w = weights.getElement(v, [0, 0, 0, 0]);
+        let share = 0;
+        let strongest = null;
+        let best = 0;
+        for (let k = 0; k < 4; k++) {
+          const bone = bones.get(j[k]);
+          if (!bone || w[k] <= 0) continue;
+          share += w[k];
+          if (w[k] > best) {
+            best = w[k];
+            strongest = bone;
+          }
+        }
+        if (!strongest || share <= 0) continue;
+
+        const scale = 1 - amount * Math.min(1, share);
+        point.fromArray(position.getElement(v, [0, 0, 0]));
+        along
+          .copy(strongest.axis)
+          .multiplyScalar(point.clone().sub(strongest.head).dot(strongest.axis));
+        const offset = point.clone().sub(strongest.head).sub(along);
+        position.setElement(
+          v,
+          point.copy(strongest.head).add(along).addScaledVector(offset, scale).toArray(),
+        );
+
+        // Scaling a surface across an axis tilts its normals by the inverse of
+        // the same factor. Skipping this leaves the shading describing the arm
+        // the figure used to have.
+        if (normal) {
+          facing.fromArray(normal.getElement(v, [0, 0, 0]));
+          const axial = strongest.axis.clone().multiplyScalar(facing.dot(strongest.axis));
+          normal.setElement(
+            v,
+            facing.sub(axial).divideScalar(scale).add(axial).normalize().toArray(),
+          );
+        }
+        moved++;
+      }
+    }
+  }
+  if (moved === 0) throw new Error("the taper reached no vertices");
+  return moved;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { Box3, Vector3 } from "three";
+import { Box3, Matrix4, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { TWIN_BODY_REGIONS } from "./twin-scene.model";
 
@@ -66,6 +66,21 @@ function readGlb(file: string) {
 }
 
 describe("twin human asset", () => {
+  it("gives the female figure its own arms, not the male figure's", async () => {
+    // The source is one basemesh: the two bodies differ at the torso and hips
+    // and share their limbs, which left the female figure with a man's arms.
+    // The build draws them in, and this is the only place that would notice if
+    // a rebuild quietly stopped doing it.
+    const male = await upperArmRadius(readGlb(path.join("public", "models", MALE)).buffer);
+    const female = await upperArmRadius(readGlb(path.join("public", "models", FEMALE)).buffer);
+    // The basemesh alone puts the female arm at about 0.88 of the male's,
+    // which a loose threshold would accept with the taper switched off. The
+    // bound sits below that on purpose: it fails if the build stops tapering.
+    expect(female).toBeLessThan(male * 0.82);
+    // And not so thin it stops reading as an arm.
+    expect(female).toBeGreaterThan(male * 0.65);
+  });
+
   it("credits the author the licence requires", () => {
     // CC BY is not satisfied by a file sitting in the repository; the credit
     // has to travel with it.
@@ -201,6 +216,61 @@ describe("twin human asset", () => {
     });
   }
 });
+
+const MALE = "twin-human-male-v1.glb";
+const FEMALE = "twin-human-female-v1.glb";
+
+/**
+ * Mean distance from the upper-arm bone to the skin around it, in the bind
+ * pose — the arm's radius, in metres, independent of how the arm is posed.
+ */
+async function upperArmRadius(file: Buffer) {
+  const scene = await loadScene(file);
+  let total = 0;
+  let count = 0;
+  const point = new Vector3();
+  scene.traverse((object) => {
+    const skinned = object as import("three").SkinnedMesh;
+    if (!skinned.isSkinnedMesh || count > 0) return;
+    const { bones, boneInverses } = skinned.skeleton;
+    const arms = new Map<number, { head: Vector3; axis: Vector3 }>();
+    bones.forEach((bone, index) => {
+      // three sanitises bone names on load: the rig's "DEF-upper_arm.L" and
+      // its numeric export suffix arrive as "DEF-upper_armL_1730".
+      if (!/^DEF-upper_arm[LR](_\d+)?$/.test(bone.name)) return;
+      const bind = boneInverses[index]!.clone().invert().elements;
+      arms.set(index, {
+        head: new Vector3(bind[12], bind[13], bind[14]),
+        axis: new Vector3(bind[4], bind[5], bind[6]).normalize(),
+      });
+    });
+    if (arms.size === 0) return;
+
+    const position = skinned.geometry.getAttribute("position");
+    const index = skinned.geometry.getAttribute("skinIndex");
+    const weight = skinned.geometry.getAttribute("skinWeight");
+    for (let v = 0; v < position.count; v++) {
+      let arm: { head: Vector3; axis: Vector3 } | undefined;
+      let best = 0;
+      for (const slot of ["x", "y", "z", "w"] as const) {
+        const w = weight[`get${slot.toUpperCase() as "X" | "Y" | "Z" | "W"}`](v);
+        const candidate = arms.get(index[`get${slot.toUpperCase() as "X" | "Y" | "Z" | "W"}`](v));
+        if (candidate && w > best) {
+          best = w;
+          arm = candidate;
+        }
+      }
+      // Only vertices the bone owns outright, so the shoulder blend does not
+      // drag the average toward the torso.
+      if (!arm || best < 0.85) continue;
+      point.fromBufferAttribute(position, v).sub(arm.head);
+      total += point.sub(arm.axis.clone().multiplyScalar(point.dot(arm.axis))).length();
+      count++;
+    }
+  });
+  if (count === 0) throw new Error("no upper-arm skin found to measure");
+  return total / count;
+}
 
 /** Loads the shipped file the way the browser does, with its pose applied. */
 async function loadScene(file: Buffer) {

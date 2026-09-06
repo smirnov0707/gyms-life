@@ -34,7 +34,7 @@
     "female": {
       "file": "models/twin-human-female-v1.glb",
       "bytes": 1267736,
-      "gzipBytes": 735576,
+      "gzipBytes": 735689,
       "triangles": 20176,
       "heightMetres": 1.719,
       "joints": 707,
