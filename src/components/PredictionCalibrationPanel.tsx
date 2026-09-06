@@ -75,9 +75,7 @@ export function PredictionCalibrationPanel({ data }: { data: PredictionCalibrati
               <Gauge className="size-3.5" /> {copy.eyebrow}
             </p>
             <h2 className="mt-2 text-lg font-semibold text-foreground">{copy.title}</h2>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {copy.description}
-            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.description}</p>
           </div>
           <span className="rounded-full border border-border px-3 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
             {copy.shadowLabel}
