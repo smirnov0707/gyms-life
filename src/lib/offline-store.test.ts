@@ -103,3 +103,75 @@ describe("syncPayload", () => {
     expect(syncPayload(item).performedAt).toBe("2026-09-04T19:00:00.000Z");
   });
 });
+
+describe("flushOfflineWorkoutSets", () => {
+  /** A minimal localStorage, since these paths are browser-only. */
+  function stubBrowser(seed: OfflinePayload[]) {
+    const store = new Map<string, string>([["gyms_life_offline_queue_v2", JSON.stringify(seed)]]);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => store.set(key, value),
+      },
+    });
+    vi.stubGlobal(
+      "localStorage",
+      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
+    );
+    vi.stubGlobal("navigator", { onLine: true });
+    return store;
+  }
+
+  it("delivers each queued set once when two screens flush at the same time", async () => {
+    // The workout screen has always flushed on `online`. `OfflineQueueSync`
+    // now does too, from the authenticated layout, so sets logged in a
+    // basement gym still arrive if the athlete never reopens that screen.
+    // Two callers must not mean two deliveries.
+    const store = stubBrowser([
+      { id: "a", type: "workout_set", data: firstSet, timestamp: 1_764_000_000_000 },
+      {
+        id: "b",
+        type: "workout_set",
+        data: { ...firstSet, setNumber: 2 },
+        timestamp: 1_764_000_060_000,
+      },
+    ]);
+
+    const delivered: string[] = [];
+    const sync = vi.fn(async (input: WorkoutSetSync) => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      delivered.push(`${input.exerciseSlug}#${input.setNumber}`);
+    });
+
+    const { flushOfflineWorkoutSets } = await import("./offline-store");
+    const [first, second] = await Promise.all([
+      flushOfflineWorkoutSets(sync),
+      flushOfflineWorkoutSets(sync),
+    ]);
+
+    expect(sync).toHaveBeenCalledTimes(2);
+    expect(delivered).toHaveLength(2);
+    // Both callers observe the same finished flush.
+    expect(first).toEqual(second);
+    expect(first.remaining).toBe(0);
+    expect(JSON.parse(store.get("gyms_life_offline_queue_v2") ?? "[]")).toEqual([]);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps a set queued when delivery fails, so a reconnect retries it", async () => {
+    const store = stubBrowser([
+      { id: "a", type: "workout_set", data: firstSet, timestamp: 1_764_000_000_000 },
+    ]);
+    const { flushOfflineWorkoutSets } = await import("./offline-store");
+
+    const result = await flushOfflineWorkoutSets(async () => {
+      throw new Error("Failed to fetch");
+    });
+
+    expect(result).toEqual({ synced: 0, remaining: 1 });
+    expect(JSON.parse(store.get("gyms_life_offline_queue_v2") ?? "[]")).toHaveLength(1);
+
+    vi.unstubAllGlobals();
+  });
+});
