@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { AccessGate } from "@/components/AccessGate";
 import { RelatedLinks } from "@/components/RelatedLinks";
+import { OfflineQueueSync } from "@/components/OfflineQueueSync";
 import { ProfileTimeZoneSync } from "@/components/ProfileTimeZoneSync";
 import { RELATED } from "@/lib/nav-map";
 import { useAuth } from "@/lib/auth";
@@ -43,6 +44,7 @@ function AuthenticatedLayout() {
   return (
     <>
       <ProfileTimeZoneSync userId={user.id} />
+      <OfflineQueueSync />
       <AppShell>
         <AccessGate>
           <Outlet />
