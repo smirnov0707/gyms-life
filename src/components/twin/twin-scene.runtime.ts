@@ -17,6 +17,10 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
+import { HUMAN_ASSET_CANDIDATE } from "./human-asset.config";
+import type { HumanBodyHandle } from "./human-body.loader";
+
+export type HumanAppearanceStatus = "schematic" | "loading" | "ready" | "failed";
 import {
   TWIN_CAMERA,
   TWIN_DISPLAY_COLORS,
@@ -34,6 +38,8 @@ export type TwinSceneHandle = {
   select: (region: string | null) => void;
   command: (command: TwinCameraCommand) => void;
   setMotion: (enabled: boolean) => void;
+  setAppearance: (human: boolean) => void;
+  setNatural: (natural: boolean) => void;
   dispose: () => void;
 };
 
@@ -46,6 +52,7 @@ export function mountTwinScene(
     label: string;
     onSelect: (region: TwinBodyRegion) => void;
     onFailure: () => void;
+    onAppearanceStatus?: (status: HumanAppearanceStatus) => void;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -99,7 +106,9 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 1.6));
+    const ambient = new HemisphereLight(0xf1f7ff, 0x14201c, 1.6);
+    scene.add(ambient);
+    const studioLights: DirectionalLight[] = [];
     for (const [position, color, intensity] of [
       [[2, 3, 4], 0xfff1db, 2.2],
       [[-3, 1.7, 1], 0x9ccbe7, 0.9],
@@ -108,8 +117,17 @@ export function mountTwinScene(
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
+      studioLights.push(light);
     }
-    const model = createTwinBody();
+    let model: ReturnType<typeof createTwinBody> | HumanBodyHandle = createTwinBody();
+    let humanModel: HumanBodyHandle | null = null;
+    let humanRequest: AbortController | null = null;
+    let humanTimer: number | null = null;
+    let natural = true;
+    cleanups.push(() => {
+      humanRequest?.abort();
+      if (humanTimer !== null) window.clearTimeout(humanTimer);
+    });
     cleanups.push(() => {
       model.dispose();
       scene.clear();
@@ -118,6 +136,7 @@ export function mountTwinScene(
     let state = options.state;
     let selectedRegion = options.selectedRegion;
     let motionEnabled = true;
+    let inspecting = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let inView = true;
     let lastPaint = 0;
@@ -147,8 +166,9 @@ export function mountTwinScene(
       if (!visible()) return;
       const moving =
         shouldAnimateTwin(true, reducedMotion.matches, motionEnabled) &&
-        state.dataAvailable &&
-        state.regions.some((region) => region.display.value !== null);
+        (humanModel
+          ? !inspecting && selectedRegion === null
+          : state.dataAvailable && state.regions.some((region) => region.display.value !== null));
       if (moving && time - lastPaint < 1000 / 30) {
         requestRender();
         return;
@@ -164,16 +184,50 @@ export function mountTwinScene(
         dispose();
         return;
       }
+      canvas.dataset["twinDrawCalls"] = String(renderer.info.render.calls);
+      canvas.dataset["twinTriangles"] = String(renderer.info.render.triangles);
       canvas.dataset["twinYaw"] = controls.getAzimuthalAngle().toFixed(3);
       canvas.dataset["twinDistance"] = controls.getDistance().toFixed(3);
       canvas.dataset["twinFrames"] = String(++frames);
       if (moving) requestRender();
     }
+    const inspectStart = () => {
+      inspecting = true;
+      requestRender();
+    };
+    const inspectEnd = () => {
+      inspecting = false;
+      requestRender();
+    };
+    controls.addEventListener("start", inspectStart);
+    controls.addEventListener("end", inspectEnd);
+    cleanups.push(() => {
+      controls.removeEventListener("start", inspectStart);
+      controls.removeEventListener("end", inspectEnd);
+    });
     controls.addEventListener("change", requestRender);
     cleanups.push(() => controls.removeEventListener("change", requestRender));
 
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
+      ambient.color.set(humanModel ? 0xf3f4f7 : 0xf1f7ff);
+      ambient.groundColor.set(humanModel ? 0x625950 : 0x14201c);
+      ambient.intensity = humanModel ? 1.15 : 1.6;
+      studioLights.forEach((light, index) => {
+        light.color.set(
+          humanModel
+            ? [0xfff6ed, 0xe8f1ff, 0xf2f5ff][index]!
+            : [0xfff1db, 0x9ccbe7, 0xc4f0dd][index]!,
+        );
+        light.intensity = humanModel ? [1.8, 1.05, 1.6][index]! : [2.2, 0.9, 2.0][index]!;
+      });
+      canvas.dataset["twinAppearance"] = humanModel ? "human" : "schematic";
+      canvas.dataset["twinNatural"] = String(Boolean(humanModel && natural));
+      if (humanModel) {
+        humanModel.applyDisplay(state, selectedRegion, natural);
+        requestRender();
+        return;
+      }
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
         const color = new Color("#48565d").lerp(
@@ -191,6 +245,67 @@ export function mountTwinScene(
       }
       requestRender();
     }
+    const setAppearance = (human: boolean) => {
+      humanRequest?.abort();
+      if (humanTimer !== null) window.clearTimeout(humanTimer);
+      humanTimer = null;
+      humanRequest = null;
+      if (destroyed) return;
+      if (!human) {
+        if (humanModel) {
+          scene.remove(model.body);
+          model.dispose();
+          model = createTwinBody();
+          humanModel = null;
+          scene.add(model.body);
+        }
+        options.onAppearanceStatus?.("schematic");
+        applyState();
+        return;
+      }
+      if (humanModel) {
+        options.onAppearanceStatus?.("ready");
+        return;
+      }
+      const request = new AbortController();
+      humanRequest = request;
+      options.onAppearanceStatus?.("loading");
+      const timer = window.setTimeout(() => {
+        if (humanRequest !== request || destroyed) return;
+        request.abort();
+        humanRequest = null;
+        options.onAppearanceStatus?.("failed");
+      }, 15000);
+      humanTimer = timer;
+      void import("./human-body.loader")
+        .then(({ loadHumanBody }) => loadHumanBody(HUMAN_ASSET_CANDIDATE, request.signal))
+        .then((loaded) => {
+          if (destroyed || request.signal.aborted || humanRequest !== request) {
+            loaded.dispose();
+            return;
+          }
+          scene.remove(model.body);
+          model.dispose();
+          model = loaded;
+          humanModel = loaded;
+          humanRequest = null;
+          scene.add(loaded.body);
+          canvas.dataset["humanTriangles"] = String(loaded.metrics.triangles);
+          canvas.dataset["humanBytes"] = String(loaded.metrics.bytes);
+          options.onAppearanceStatus?.("ready");
+          applyState();
+        })
+        .catch(() => {
+          if (!destroyed && !request.signal.aborted && humanRequest === request) {
+            humanRequest = null;
+            options.onAppearanceStatus?.("failed");
+          }
+        })
+        .finally(() => {
+          window.clearTimeout(timer);
+          if (humanTimer === timer) humanTimer = null;
+        });
+    };
     const command = (action: TwinCameraCommand) => {
       // Clear residual damping so a preset never keeps drifting afterwards.
       controls.enableDamping = false;
@@ -361,6 +476,11 @@ export function mountTwinScene(
       setMotion(enabled) {
         motionEnabled = enabled;
         requestRender();
+      },
+      setAppearance,
+      setNatural(value) {
+        natural = value;
+        applyState();
       },
       dispose,
     };

@@ -16,10 +16,19 @@ export async function inspectHumanCandidate(descriptor: HumanAssetDescriptor) {
       groups: [...model.regionMeshes.keys()],
       metrics: model.metrics,
       rays: samples.map(({ name, y, z, dz }) => {
-        const first = new Raycaster(new Vector3(0, y, z), new Vector3(0, 0, dz))
-          .intersectObjects(model.meshes, false)[0];
-        return { name, region: first ? model.regionOf.get(first.object as typeof model.meshes[number]) ?? "neutral" : "none" };
+        const first = new Raycaster(new Vector3(0, y, z), new Vector3(0, 0, dz)).intersectObjects(
+          model.meshes,
+          false,
+        )[0];
+        return {
+          name,
+          region: first
+            ? (model.regionOf.get(first.object as (typeof model.meshes)[number]) ?? "neutral")
+            : "none",
+        };
       }),
     };
-  } finally { model.dispose(); }
+  } finally {
+    model.dispose();
+  }
 }

@@ -13,7 +13,9 @@ import {
   type TwinCameraCommand,
 } from "./twin-scene.model";
 import { twinLayerCopy, formatTwinValue } from "./twin-layer.copy";
-import type { TwinSceneHandle } from "./twin-scene.runtime";
+import type { TwinSceneHandle, HumanAppearanceStatus } from "./twin-scene.runtime";
+import { HUMAN_REALISM_PREVIEW_ENABLED } from "./human-asset.config";
+import { HUMAN_COPY } from "./human-asset.copy";
 
 export type TwinStageProps = {
   snapshot: TwinSnapshot;
@@ -99,6 +101,11 @@ export function TwinStage(props: TwinStageProps) {
     onLayerChange,
   } = props;
   const copy = COPY[language];
+  const humanCopy = HUMAN_COPY[language];
+  const [humanAppearance, setHumanAppearance] = useState(HUMAN_REALISM_PREVIEW_ENABLED);
+  const [humanStatus, setHumanStatus] = useState<HumanAppearanceStatus>("schematic");
+  const [humanAttempt, setHumanAttempt] = useState(0);
+  const [natural, setNatural] = useState(true);
   const layerCopy = twinLayerCopy(language);
   const controlsId = useId();
   const controlToggle = useRef<HTMLButtonElement>(null);
@@ -144,6 +151,9 @@ export function TwinStage(props: TwinStageProps) {
           label: COPY[current.language].scene,
           onSelect: (region) => latest.current.onSelectRegion(region),
           onFailure: fail,
+          onAppearanceStatus: (status) => {
+            if (!cancelled && !timedOut) setHumanStatus(status);
+          },
         });
         if (cancelled) {
           handle.dispose();
@@ -177,10 +187,19 @@ export function TwinStage(props: TwinStageProps) {
     scene.current?.setMotion(motion);
   }, [motion, ready]);
   useEffect(() => {
-    host.current?.querySelector("canvas")?.setAttribute("aria-label", copy.scene);
-  }, [copy.scene, ready]);
+    scene.current?.setAppearance(HUMAN_REALISM_PREVIEW_ENABLED && humanAppearance);
+  }, [humanAppearance, humanAttempt, ready]);
+  useEffect(() => {
+    scene.current?.setNatural(natural);
+  }, [natural, ready]);
+  useEffect(() => {
+    host.current
+      ?.querySelector("canvas")
+      ?.setAttribute("aria-label", humanStatus === "ready" ? humanCopy.scene : copy.scene);
+  }, [copy.scene, humanCopy.scene, humanStatus, ready]);
 
   const show3D = mode === "3d" && ready && !failed;
+  const showHuman = show3D && humanStatus === "ready";
   const command = (action: TwinCameraCommand) => scene.current?.command(action);
   const selectRegion = (region: string) => {
     onSelectRegion(region);
@@ -194,6 +213,74 @@ export function TwinStage(props: TwinStageProps) {
 
   return (
     <div className="w-full min-w-0" data-twin-stage={show3D ? "3d" : "2d"} data-twin-layer={layer}>
+      {HUMAN_REALISM_PREVIEW_ENABLED && (
+        <div className="mx-3 mb-3 space-y-2" data-human-preview>
+          <div
+            className="flex flex-wrap gap-1 rounded-2xl border border-white/10 bg-black/20 p-1"
+            role="group"
+            aria-label={humanCopy.appearance}
+          >
+            <button
+              type="button"
+              style={controlStyle}
+              className={`${controlClass} ${humanAppearance ? "bg-white/10" : ""}`}
+              aria-pressed={humanAppearance}
+              onClick={() => setHumanAppearance(true)}
+            >
+              {humanCopy.human}
+            </button>
+            <button
+              type="button"
+              style={controlStyle}
+              className={`${controlClass} ${!humanAppearance ? "bg-white/10" : ""}`}
+              aria-pressed={!humanAppearance}
+              onClick={() => setHumanAppearance(false)}
+            >
+              {humanCopy.schematic}
+            </button>
+          </div>
+          {show3D && humanStatus === "loading" && (
+            <p role="status" className="text-xs text-neutral-300">
+              {humanCopy.loading}
+            </p>
+          )}
+          {show3D && humanStatus === "failed" && (
+            <div role="status" className="text-xs text-neutral-300">
+              <p>{humanCopy.failed}</p>
+              <button
+                type="button"
+                style={controlStyle}
+                className={controlClass}
+                onClick={() => setHumanAttempt((value) => value + 1)}
+              >
+                {humanCopy.retry}
+              </button>
+            </div>
+          )}
+          {showHuman && (
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                style={controlStyle}
+                className={`${controlClass} ${natural ? "bg-white/10" : ""}`}
+                aria-pressed={natural}
+                onClick={() => setNatural(true)}
+              >
+                {humanCopy.natural}
+              </button>
+              <button
+                type="button"
+                style={controlStyle}
+                className={`${controlClass} ${!natural ? "bg-white/10" : ""}`}
+                aria-pressed={!natural}
+                onClick={() => setNatural(false)}
+              >
+                {humanCopy.analysis}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       <div
         role="group"
         aria-label={layerCopy.selector}
@@ -205,7 +292,10 @@ export function TwinStage(props: TwinStageProps) {
             type="button"
             style={controlStyle}
             aria-pressed={layer === option}
-            onClick={() => onLayerChange(option)}
+            onClick={() => {
+              onLayerChange(option);
+              if (showHuman) setNatural(false);
+            }}
             className={`${controlClass} ${layer === option ? "bg-white/10 text-white" : ""}`}
           >
             {layerCopy.label[option]}
@@ -247,7 +337,7 @@ export function TwinStage(props: TwinStageProps) {
       </div>
       <div
         data-twin-viewport
-        className="relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
+        className={`relative w-full ${HUMAN_REALISM_PREVIEW_ENABLED ? "h-[clamp(340px,calc(100svh_-_450px),680px)] lg:h-[680px]" : "h-[clamp(240px,calc(100svh_-_580px),540px)] lg:h-[540px]"}`}
       >
         {mode === "3d" && (
           <div
@@ -280,6 +370,11 @@ export function TwinStage(props: TwinStageProps) {
           </p>
         )}
       </div>
+      {showHuman && (
+        <p className="mx-4 mb-3 text-[11px] leading-relaxed text-neutral-400">
+          {humanCopy.note} {natural ? humanCopy.naturalNote : ""}
+        </p>
+      )}
       {failed && mode === "3d" && (
         <div
           role="status"
@@ -409,7 +504,22 @@ export function TwinStage(props: TwinStageProps) {
             {copy.motion}
           </label>
         )}
-        <p className="mt-2 text-xs leading-relaxed text-neutral-300">{copy.note}</p>
+        <p className="mt-2 text-xs leading-relaxed text-neutral-300">
+          {showHuman ? humanCopy.note : copy.note}
+        </p>
+        {showHuman && (
+          <div className="px-4 pb-3 text-[11px] leading-relaxed text-neutral-400">
+            <p>{natural ? humanCopy.naturalNote : ""}</p>
+            <a
+              className="underline underline-offset-2"
+              href="/assets/humans/rocketbox-adult-01-v1/LICENSE.txt"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {humanCopy.attribution}
+            </a>
+          </div>
+        )}
         {layer === "logged_volume" && (
           <p className="mt-2 text-xs leading-relaxed text-neutral-300">{layerCopy.volumeNote}</p>
         )}

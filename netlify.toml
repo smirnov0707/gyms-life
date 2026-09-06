@@ -30,3 +30,7 @@
   for = "/media/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Human asset is a review candidate, not approved for production.
+[context.deploy-preview.environment]
+  VITE_TWIN_HUMAN_PREVIEW = "true"
