@@ -50,10 +50,7 @@ export function normalizeTwinEvidenceWindowInput(value: unknown): TwinEvidenceWi
  * interval filtering keeps an unexpected transport row from being presented
  * as evidence for a state transition.
  */
-export function buildTwinEvidenceWindow(
-  input: unknown,
-  value: unknown,
-): TwinEvidenceWindow {
+export function buildTwinEvidenceWindow(input: unknown, value: unknown): TwinEvidenceWindow {
   const interval = normalizeTwinEvidenceWindowInput(input);
   const page: PersonalTimelinePage = buildPersonalTimelinePage(value);
   const olderMs = Date.parse(interval.olderAt);
