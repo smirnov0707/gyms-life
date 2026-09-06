@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
-import { applyAdaptation } from "@/lib/readiness-adapt";
+import { notifyAdaptationChanged } from "@/lib/readiness-adapt";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
@@ -129,7 +129,7 @@ function ReadinessPage() {
     setBusy(true);
     try {
       const result = await run({ data: { ...form, lang, timeZone } });
-      applyAdaptation(result.modifier);
+      notifyAdaptationChanged();
       await refetch();
       toast.success(t("rd.title"));
     } catch (error) {

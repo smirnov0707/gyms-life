@@ -7,7 +7,7 @@ import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth";
-import { applyAdaptation, loadModifierFor } from "@/lib/readiness-adapt";
+import { loadModifierFor, notifyAdaptationChanged } from "@/lib/readiness-adapt";
 import { saveReadinessAdjustment } from "@/lib/smart.functions";
 import { browserTimeZone } from "@/lib/local-day";
 
@@ -76,7 +76,7 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
     try {
       const saved = await saveAdjustment({ data: { score: value, timeZone: browserTimeZone() } });
 
-      applyAdaptation(saved.modifier);
+      notifyAdaptationChanged();
       await qc.invalidateQueries({ queryKey: ["today-checkin", user.id] });
       toast.success(`${c.saved} · ${Math.round(saved.modifier * 100)}%`);
       setOpen(false);
