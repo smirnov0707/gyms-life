@@ -10,6 +10,7 @@ import { SmartBrief } from "@/components/SmartBrief";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
+import { LiveSignals } from "@/components/LiveSignals";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
 import { useLocalizedPlan } from "@/lib/use-localized-plan";
@@ -173,9 +174,9 @@ export function Overview() {
   }
 
   return (
-    <div className="grid gap-5 md:gap-6">
+    <div className="grid gap-4 lg:grid-cols-12 lg:gap-5">
       <section
-        className={`flex items-end justify-between gap-4 border-b border-border/70 pb-4 md:pb-5 ${anim("")}`}
+        className={`border-b border-border/70 pb-4 lg:col-span-12 md:pb-5 ${anim("")} flex items-end justify-between gap-4`}
       >
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-primary">
@@ -208,14 +209,11 @@ export function Overview() {
         ) : null}
       </section>
 
-      <div className={anim("delay-75")}>
-        <TwinTodayCard />
-      </div>
-
-      <section
-        aria-label={t("nav.today")}
-        className={`grid gap-4 ${readinessScore != null || readinessReadFailed ? "lg:grid-cols-2" : ""} ${anim("delay-100")}`}
-      >
+      {/* Left rail: what is measured about the athlete right now, and what is
+          not. It sits beside the decision rather than under it, because the
+          evidence and the call it produced should be readable together. */}
+      <aside className={`grid content-start gap-4 lg:col-span-4 xl:col-span-3 ${anim("delay-75")}`}>
+        <LiveSignals />
         {readinessScore != null ? (
           <ReadinessCard
             score={readinessScore}
@@ -227,15 +225,18 @@ export function Overview() {
             {t("ov.readinessReadFailed")}
           </p>
         ) : null}
-        <TodayLifeContext />
-      </section>
+      </aside>
 
-      <div className={anim("delay-150")}>
+      <div
+        className={`grid content-start gap-4 lg:col-span-8 xl:col-span-9 ${anim("delay-100")}`}
+        aria-label={t("nav.today")}
+      >
+        <TwinTodayCard />
         <SmartBrief />
-      </div>
-
-      <div className={anim("delay-200")}>
-        <TodayDecision workoutDay={today?.day ?? null} />
+        <div className="grid gap-4 xl:grid-cols-2">
+          <TodayDecision workoutDay={today?.day ?? null} />
+          <TodayLifeContext />
+        </div>
       </div>
     </div>
   );
