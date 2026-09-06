@@ -70,13 +70,13 @@ jobs:
           },undefined,e=>{window.__HUMAN_REVIEW__={ready:false,error:String(e)}});
           addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.render(scene,camera)});
           JS
-          cat > "$RUNNER_TEMP/review-vite.config.mjs" <<'JS'
+          cat > review-vite.config.mjs <<'JS'
           import { defineConfig } from 'vite';
           export default defineConfig({root:process.cwd(),publicDir:'public',plugins:[],server:{host:'127.0.0.1',port:4178,strictPort:true}});
           JS
       - name: Start isolated Vite and capture actual renders
         run: |
-          npx vite --config "$RUNNER_TEMP/review-vite.config.mjs" > "$RUNNER_TEMP/vite.log" 2>&1 & echo $! > "$RUNNER_TEMP/vite.pid"
+          npx vite --config review-vite.config.mjs > "$RUNNER_TEMP/vite.log" 2>&1 & echo $! > "$RUNNER_TEMP/vite.pid"
           ready=0; for i in {1..45}; do if curl -fsS http://127.0.0.1:4178/human-review.html >/dev/null; then ready=1; break; fi; sleep 1; done
           if [ "$ready" != 1 ]; then cat "$RUNNER_TEMP/vite.log"; exit 1; fi
           node --input-type=module <<'JS'
