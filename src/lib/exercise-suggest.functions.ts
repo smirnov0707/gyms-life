@@ -197,13 +197,17 @@ export const addExerciseToActivePlan = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: plan } = await supabase
+    // A failed read used to arrive as `null` and was reported to the athlete
+    // as "you have no active programme" — while their programme sat in the
+    // database. Let the failure be a failure.
+    const { data: plan, error: planError } = await supabase
       .from("plans")
       .select("id, data")
       .eq("user_id", userId)
       .eq("is_active", true)
       .limit(1)
       .maybeSingle();
+    if (planError) throw new Error(planError.message);
 
     if (!plan) return { ok: false as const, reason: "no_plan" };
 

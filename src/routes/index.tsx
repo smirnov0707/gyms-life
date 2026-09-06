@@ -41,7 +41,9 @@ import { Logo, LangSwitch, headerName } from "@/components/AppShell";
 import { GlowCard } from "@/components/GlowCard";
 import { Reveal } from "@/components/Reveal";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { errorMessage } from "@/lib/error-message";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { tactileClick } from "@/lib/tactile";
@@ -208,17 +210,22 @@ function Landing() {
     }
     setCheckingPlan(true);
     try {
-      const { data } = await supabase
+      // A failed read used to arrive as `null`, and `null` sends the athlete
+      // to onboarding — that is, to regenerating a programme they already
+      // have — because the read could not be made. Only an answered "no"
+      // may route someone into building a new plan.
+      const { data, error } = await supabase
         .from("plans")
         .select("id")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .limit(1)
         .maybeSingle();
+      if (error) throw new Error(error.message);
       if (data) setPlanDialog(true);
       else navigate({ to: "/onboarding" });
-    } catch {
-      navigate({ to: "/onboarding" });
+    } catch (error) {
+      toast.error(errorMessage(error, t("common.error")));
     } finally {
       setCheckingPlan(false);
     }

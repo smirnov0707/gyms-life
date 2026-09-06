@@ -181,10 +181,14 @@ function NutritionPage() {
     enabled: !!user,
   });
 
-  const { data: activePlan } = useQuery({
+  // A failed read used to arrive as `null`, and `null` sends the resolver
+  // down its estimate path — so the screen would state, with the plan's own
+  // targets sitting unread in the database, that these figures came from the
+  // athlete's body weight.
+  const { data: activePlan, isError: planTargetsReadFailed } = useQuery({
     queryKey: ["meal-plan-targets", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("meal_plans")
         .select("kcal_target, protein_target, fat_target, carbs_target")
         .eq("user_id", user!.id)
@@ -192,6 +196,7 @@ function NutritionPage() {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      if (error) throw new Error(error.message);
       return data;
     },
     enabled: !!user,
@@ -281,7 +286,7 @@ function NutritionPage() {
           </div>
 
           <p className="mt-5 border-t border-white/[0.06] pt-4 text-xs leading-relaxed text-neutral-600">
-            {targetsNote(targets, lang)}
+            {planTargetsReadFailed ? t("nut.planTargetsReadFailed") : targetsNote(targets, lang)}
           </p>
         </div>
       </section>

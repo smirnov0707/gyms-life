@@ -31,10 +31,18 @@ function ExerciseDetail() {
   const { slug } = Route.useParams();
   const { t, lang } = useI18n();
 
+  // A failed read used to arrive as `null`, which this page renders exactly
+  // like an exercise that does not exist. "We could not load it" and "there
+  // is no such exercise" are different answers.
   const { data: ex, isLoading } = useQuery({
     queryKey: ["exercise", slug],
     queryFn: async () => {
-      const { data } = await supabase.from("exercises").select("*").eq("slug", slug).maybeSingle();
+      const { data, error } = await supabase
+        .from("exercises")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
       return data;
     },
   });
