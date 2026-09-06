@@ -1,0 +1,43 @@
+name: Body replay browser
+on:
+  pull_request:
+    paths:
+      - 'src/components/twin/**'
+      - 'src/lib/session-muscle-breakdown*'
+      - 'src/lib/finish-workout*'
+      - 'src/lib/session-replay*'
+      - 'src/routes/_authenticated/workout/**'
+      - 'src/styles.css'
+      - 'tests/body-replay-browser/**'
+      - 'scripts/test-body-replay-browser.mjs'
+      - '.github/workflows/body-replay-browser.yml'
+      - 'package*.json'
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: body-replay-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-body-replay-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: body-replay-browser-evidence
+          path: test-results/body-replay
+          retention-days: 7
+          if-no-files-found: ignore

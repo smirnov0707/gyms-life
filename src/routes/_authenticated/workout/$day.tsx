@@ -418,6 +418,8 @@ function WorkoutPage() {
   const [finished, setFinished] = useState(false);
   const [summary, setSummary] = useState<{ duration: number; volume: number } | null>(null);
   const [replay, setReplay] = useState<SessionMuscleContribution[]>([]);
+  // Mutation.data clears on a retry; retain the last confirmed source status.
+  const [replayStatus, setReplayStatus] = useState<"available" | "unavailable">("available");
   const [workoutFeeling, setWorkoutFeeling] = useState<number | null>(null);
 
   const syncQueuedSets = useCallback(async () => {
@@ -563,6 +565,7 @@ function WorkoutPage() {
         volume: result.session.totalVolume,
       });
       setReplay(result.muscleBreakdown);
+      setReplayStatus(result.replayStatus);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["workout"] }),
         qc.invalidateQueries({ queryKey: ["sessions"] }),
@@ -706,7 +709,12 @@ function WorkoutPage() {
               </div>
             </div>
           </div>
-          {replay.length > 0 && <BodyReplay contributions={replay} />}
+          <BodyReplay
+            contributions={replay}
+            unavailable={replayStatus === "unavailable"}
+            onRetry={() => finishMutation.mutate()}
+            retrying={finishMutation.isPending}
+          />
           <section
             className="mt-6 rounded-2xl border border-border bg-surface-2 p-5 text-left"
             aria-labelledby="workout-reflection-title"
