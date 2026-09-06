@@ -21,18 +21,19 @@ jobs:
           test "$GITHUB_REF" = refs/heads/future-lab-human-realism-preview
           git apply --check .human-preview-integration.patch
           git apply .human-preview-integration.patch
-          npx prettier --write src/components/twin/human-*.ts src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts scripts/test-human-browser.mjs tests/human-browser/probe.ts .github/workflows/human-preview-browser.yml
+          npx prettier --write src/components/twin/human-*.ts src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts scripts/test-human-browser.mjs tests/human-browser/probe.ts
           git diff --check
       - run: npm run typecheck
       - run: npm run test
       - run: npm run lint
       - run: npm run build
-      - name: Publish reviewed presentation, never main
+      - name: Publish only validated source to the review branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add netlify.toml src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts src/components/twin/human-*.ts scripts/test-human-browser.mjs tests/human-browser/probe.ts .github/workflows/human-preview-browser.yml
-          git rm .human-preview-integration.patch .github/workflows/integrate-human-preview.yml
+          git add netlify.toml src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts src/components/twin/human-*.ts scripts/test-human-browser.mjs tests/human-browser/probe.ts
+          git rm .human-preview-integration.patch
+          test -z "$(git diff --cached --name-only -- .github/workflows)"
           git commit -m 'feat(twin): integrate textured-human preview with truthful overlays and fallback'
           git push origin HEAD:future-lab-human-realism-preview
       - run: npx playwright install --with-deps chromium
