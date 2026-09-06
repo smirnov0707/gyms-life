@@ -1,5 +1,5 @@
 import type { MedicalReport } from "./medical-report.functions";
-import { formatLocale, tr, type Lang } from "./i18n";
+import { formatLocale, tr, type Lang, type TKey } from "./i18n";
 import { browserTimeZone, dayInTimeZone } from "./local-day";
 
 /**
@@ -152,21 +152,39 @@ export async function downloadMedicalReportPdf(
     c.fillText(report.headline.toUpperCase().slice(0, 58), MARGIN + 12, y);
     c.font = "400 9.5px Helvetica, Arial, sans-serif";
     c.fillStyle = "#3c4034";
-    const scoreTxt = `${txt.adherence}: ${report.adherence.score}/100 · ${report.adherence.label}`;
+    const { score, band } = report.adherence;
+    const scoreTxt =
+      score === null || band === null
+        ? `${txt.adherence}: ${tr(lang, "sc.report.adh.none")}`
+        : `${txt.adherence}: ${score}/100 · ${tr(lang, `sc.report.adh.${band}` as TKey)}`;
     c.fillText(scoreTxt, MARGIN + 12, y + 16);
-    // score bar
-    const barX = MARGIN + 12;
-    const barW = PAGE_W - MARGIN * 2 - 24;
-    c.fillStyle = "#dde1d3";
-    c.fillRect(barX, y + 24, barW, 5);
-    c.fillStyle =
-      report.adherence.score >= 70
-        ? "#4a9d3f"
-        : report.adherence.score >= 40
-          ? "#c99a1e"
-          : "#c0392b";
-    c.fillRect(barX, y + 24, (barW * report.adherence.score) / 100, 5);
-    y += 52;
+
+    // What the score is a share of, printed beside it. The doctor reading
+    // this can check the arithmetic instead of taking the badge on faith.
+    if (report.adherence.measured.length > 0) {
+      const basis = report.adherence.measured
+        .map((component) =>
+          tr(lang, `sc.report.adh.${component.key}` as TKey)
+            .replace("{a}", String(component.actual))
+            .replace("{b}", String(component.possible)),
+        )
+        .join(" · ");
+      c.font = "400 8px Helvetica, Arial, sans-serif";
+      c.fillStyle = "#5d6153";
+      c.fillText(tr(lang, "sc.report.adh.basis").replace("{n}", basis), MARGIN + 12, y + 44);
+      c.font = "400 9.5px Helvetica, Arial, sans-serif";
+      c.fillStyle = "#3c4034";
+    }
+
+    if (score !== null) {
+      const barX = MARGIN + 12;
+      const barW = PAGE_W - MARGIN * 2 - 24;
+      c.fillStyle = "#dde1d3";
+      c.fillRect(barX, y + 24, barW, 5);
+      c.fillStyle = score >= 70 ? "#4a9d3f" : score >= 40 ? "#c99a1e" : "#c0392b";
+      c.fillRect(barX, y + 24, (barW * score) / 100, 5);
+    }
+    y += 60;
   }
 
   para(report.summary);
