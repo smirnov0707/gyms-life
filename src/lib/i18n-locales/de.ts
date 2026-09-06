@@ -902,7 +902,6 @@ export const locale: Record<string, string> = {
   "supp.cycle.rerun": "Neu berechnen",
   "supp.cycle.empty":
     "Füge mindestens ein aktives Supplement hinzu, damit die Coach Zyklen planen kann.",
-  "supp.cycle.adherence": "Einhaltung",
   "supp.cycle.progress": "Fortschrittsverfolgung",
   "supp.cycle.daysOn": "Eingenommen seit {n} T.",
   "supp.cycle.breakIn": "Pause in {n} T.",

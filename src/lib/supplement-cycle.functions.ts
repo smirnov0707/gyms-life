@@ -2,20 +2,33 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
-import { dayInTimeZone } from "./local-day";
+import { calendarDayDifference, dayInTimeZone } from "./local-day";
 import { loadPersistedProfileTimeZone } from "./user-context.server";
 
 const Input = z.object({ lang: SupportedLanguageSchema.default("lt") });
 
+/**
+ * What the model is actually asked for: a judgement about each substance.
+ *
+ * `daysOn` used to be in here, with the prompt telling the model to work it
+ * out from `created_at` versus today — arithmetic the server has both
+ * operands for, delegated to a language model and then `.catch(0)`-ed into
+ * "0 days" whenever the answer came back unparseable. It is computed below.
+ *
+ * `adherence` used to be here too: a 0-100 percentage, rendered with a
+ * progress bar under the label "Adherence". Nothing in this app records
+ * whether the athlete took a dose — the `supplements` table holds the stack,
+ * not an intake log — so the prompt asked the model to estimate it from
+ * training sessions and check-ins, which say nothing about swallowing a
+ * capsule. It is gone rather than reworded.
+ */
 const AdviceSchema = z.object({
   summary: z.string(),
-  adherence: z.number(),
   items: z
     .array(
       z.object({
         name: z.string(),
         status: z.enum(["continue", "cycle_soon", "break_now", "reduce"]).catch("continue"),
-        daysOn: z.number().catch(0),
         breakInDays: z.number().catch(0),
         breakLengthDays: z.number().catch(0),
         reason: z.string(),
@@ -25,7 +38,15 @@ const AdviceSchema = z.object({
   progress: z.array(z.string()).default([]),
 });
 
-export type CycleAdvice = z.infer<typeof AdviceSchema>;
+/** The advice as the screen receives it: the model's judgement plus measured days. */
+export type CycleAdviceItem = z.infer<typeof AdviceSchema>["items"][number] & {
+  /** Null when the model named something that is not in the athlete's stack. */
+  daysOn: number | null;
+};
+
+export type CycleAdvice = Omit<z.infer<typeof AdviceSchema>, "items"> & {
+  items: CycleAdviceItem[];
+};
 
 export const analyzeSupplementCycles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -67,14 +88,16 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
     const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const language = LANGUAGE_NAMES[data.lang];
 
-    // The date the model is told is the athlete's, not the server's.
-    const today = await (async () => {
+    // The date the model is told is the athlete's, not the server's — and the
+    // same zone dates the measured `daysOn` below.
+    const timeZone = await (async () => {
       try {
-        return dayInTimeZone(new Date(), await loadPersistedProfileTimeZone(supabase, userId));
+        return await loadPersistedProfileTimeZone(supabase, userId);
       } catch {
-        return dayInTimeZone(new Date(), "UTC");
+        return "UTC";
       }
     })();
+    const today = dayInTimeZone(new Date(), timeZone);
 
     const advice = await generateOrchestratedJson({
       task: "supplement-cycle",
@@ -87,11 +110,9 @@ For EVERY active supplement decide, from evidence-based practice, whether it nee
 - "cycle_soon" = it will need a washout period soon,
 - "break_now" = it has been taken long enough and a break is due,
 - "reduce" = dose or frequency is too high.
-daysOn = how many days the athlete has been taking it (use created_at vs today).
 breakInDays = days from today until the break should start (0 if it should start now, 0 for "continue").
 breakLengthDays = how long the break should last in days (0 for "continue").
 reason = max 2 short sentences, specific to that substance (tolerance, receptor downregulation, absorption, liver/kidney load, blood test recommendation).
-adherence = 0-100 estimate of how consistent the athlete looks based on their training and check-in history.
 progress = 2-4 short bullet observations tying training volume, readiness and the supplement stack together.
 summary = 2 sentences of overall guidance.`,
       prompt: `Active supplements: ${JSON.stringify(active)}
@@ -101,5 +122,29 @@ Recent daily check-ins: ${JSON.stringify(checkins ?? [])}`,
       maxOutputTokens: 4000,
     });
 
-    return { empty: false as const, advice };
+    // How long each supplement has been in the stack is a measurement, not a
+    // judgement: the row's own `created_at` against the athlete's today. An
+    // item the model named that matches no stored supplement gets null, and
+    // the screen leaves the line out rather than showing a made-up count.
+    const startedOn = new Map(
+      active.map((supplement) => [
+        supplement.name.trim().toLowerCase(),
+        dayInTimeZone(new Date(supplement.created_at), timeZone),
+      ]),
+    );
+
+    return {
+      empty: false as const,
+      advice: {
+        ...advice,
+        items: advice.items.map((item) => {
+          const started = startedOn.get(item.name.trim().toLowerCase());
+          return {
+            ...item,
+            daysOn:
+              started === undefined ? null : Math.max(0, calendarDayDifference(started, today)),
+          };
+        }),
+      },
+    };
   });

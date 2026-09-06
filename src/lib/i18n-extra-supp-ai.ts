@@ -80,16 +80,6 @@ export const extra_supp_ai = {
     es: "Añade al menos un suplemento activo para que la IA planifique ciclos.",
     fr: "Ajoutez au moins un complément actif pour que l'IA planifie les cycles.",
   },
-  "supp.cycle.adherence": {
-    lt: "Nuoseklumas",
-    en: "Adherence",
-    ru: "Регулярность",
-    uk: "Регулярність",
-    pl: "Regularność",
-    de: "Konsistenz",
-    es: "Constancia",
-    fr: "Régularité",
-  },
   "supp.cycle.progress": {
     lt: "Progreso stebėsena",
     en: "Progress tracking",

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
-import { Activity, CalendarClock, Loader2, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
+import { CalendarClock, Loader2, RefreshCw, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { useI18n, type TKey } from "@/lib/i18n";
@@ -54,24 +54,6 @@ export const SupplementCycleAdvisor: React.FC = () => {
         <div className="grid gap-3">
           <p className="text-sm text-foreground">{advice.summary}</p>
 
-          <div className="grid gap-1.5">
-            <div className="flex items-center justify-between text-xs uppercase tracking-widest text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <Activity className="size-3.5 text-primary" />
-                {t("supp.cycle.adherence")}
-              </span>
-              <span className="font-mono font-bold text-foreground">
-                {Math.max(0, Math.min(100, Math.round(advice.adherence)))}%
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${Math.max(0, Math.min(100, Math.round(advice.adherence)))}%` }}
-              />
-            </div>
-          </div>
-
           <ul className="grid gap-2">
             {advice.items.map((item, i) => (
               <li
@@ -92,12 +74,11 @@ export const SupplementCycleAdvisor: React.FC = () => {
                   {item.reason}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2 font-mono text-[10px] text-muted-foreground">
-                  <span>
-                    {t("supp.cycle.daysOn").replace(
-                      "{n}",
-                      String(Math.max(0, Math.round(item.daysOn))),
-                    )}
-                  </span>
+                  {/* Measured from the supplement's own row. Absent when the
+                      model named something that is not in the stack. */}
+                  {item.daysOn === null ? null : (
+                    <span>{t("supp.cycle.daysOn").replace("{n}", String(item.daysOn))}</span>
+                  )}
                   {item.status !== "continue" && item.breakLengthDays > 0 && (
                     <>
                       <span>

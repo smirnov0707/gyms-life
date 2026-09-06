@@ -896,7 +896,6 @@ export const locale: Record<string, string> = {
   "supp.cycle.rerun": "Recalcular",
   "supp.cycle.empty":
     "Añade al menos un suplemento activo para que la Entrenador pueda planificar los ciclos.",
-  "supp.cycle.adherence": "Adherencia",
   "supp.cycle.progress": "Seguimiento del progreso",
   "supp.cycle.daysOn": "Tomado durante {n} d.",
   "supp.cycle.breakIn": "Descanso en {n} d.",

@@ -889,7 +889,6 @@ export const locale: Record<string, string> = {
   "supp.cycle.running": "Тренер анализирует историю приема...",
   "supp.cycle.rerun": "Пересчитать",
   "supp.cycle.empty": "Добавьте хотя бы одну активную добавку, чтобы Тренер мог рассчитать курсы.",
-  "supp.cycle.adherence": "Соблюдение приема",
   "supp.cycle.progress": "Отслеживание прогресса",
   "supp.cycle.daysOn": "Прием: {n} дн.",
   "supp.cycle.breakIn": "Перерыв через {n} дн.",
