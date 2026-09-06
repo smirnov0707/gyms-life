@@ -138,10 +138,7 @@ export const Logo: React.FC<{ className?: string; href?: string }> = ({
   <Link to={href} className={`group flex items-center gap-2.5 ${className}`}>
     <div className="relative grid size-9 place-items-center rounded-xl border border-violet-400/35 bg-gradient-to-br from-violet-600/35 to-cyan-500/15 shadow-[0_0_25px_rgba(124,58,237,.24)]">
       <span className="font-mono text-sm font-black text-violet-200">G</span>
-      <span
-        aria-hidden="true"
-        className="absolute inset-1 rounded-lg border border-cyan-300/10"
-      />
+      <span aria-hidden="true" className="absolute inset-1 rounded-lg border border-cyan-300/10" />
     </div>
     <div className="flex flex-col text-left">
       <span className="font-mono text-base font-black uppercase leading-none tracking-[0.08em] text-white">
@@ -200,10 +197,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <header className="sticky top-0 z-40 border-b border-[#142239] bg-[#02060c]/92 pt-[var(--sat)] backdrop-blur-2xl">
         <div className="mx-auto flex h-[68px] max-w-[1680px] items-center gap-4 px-4 sm:px-6 xl:px-8">
           <Logo className="shrink-0" />
-          <nav
-            className="mx-auto hidden h-full items-center gap-1 lg:flex"
-            aria-label="Future Lab"
-          >
+          <nav className="mx-auto hidden h-full items-center gap-1 lg:flex" aria-label="Future Lab">
             {futureNavItems.map((item) => {
               const active = isActive(item.to);
               return (
