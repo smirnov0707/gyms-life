@@ -4,6 +4,7 @@ import {
   CircleGeometry,
   Color,
   DirectionalLight,
+  Group,
   HemisphereLight,
   Mesh,
   MeshBasicMaterial,
@@ -100,6 +101,7 @@ export function mountTwinScene(
     });
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
     renderer.setClearColor(0x050706, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     const canvas = renderer.domElement;
@@ -167,16 +169,23 @@ export function mountTwinScene(
       (contact.material as MeshBasicMaterial).dispose();
       shadowTexture?.dispose();
     });
+    // One root the camera sway and the raycast both address, so swapping the
+    // body underneath cannot leave either of them holding the old object.
+    const twinBodyRoot = new Group();
+    twinBodyRoot.name = "twin-body-root";
+    scene.add(twinBodyRoot);
+
     // The generated surface paints immediately, with no network involved, so
     // the scene is never blank. The anatomical human replaces it once it has
     // loaded; if that fetch fails, is aborted, or the file is unusable, the
     // surface simply stays. A missing asset must not cost the athlete a Twin.
     let model: TwinBodyModel | ReturnType<typeof createTwinBody> = createTwinBody();
-    scene.add(model.body);
+    twinBodyRoot.add(model.body);
     const humanLoad = new AbortController();
     cleanups.push(() => {
       humanLoad.abort();
       model.dispose();
+      twinBodyRoot.clear();
       scene.clear();
     });
 
@@ -187,10 +196,10 @@ export function mountTwinScene(
             human.dispose();
             return;
           }
-          scene.remove(model.body);
+          twinBodyRoot.remove(model.body);
           model.dispose();
           model = human;
-          scene.add(model.body);
+          twinBodyRoot.add(model.body);
           canvas.dataset["twinBody"] = "human";
           applyState();
         })
@@ -210,9 +219,6 @@ export function mountTwinScene(
     function visible() {
       if (document.hidden || destroyed) return false;
       if (inView) return true;
-      // IntersectionObserver is asynchronous. Disclosure/scroll transitions
-      // can leave its last report behind the layout when a user gives a
-      // camera command. Recheck only the negative cache before rejecting it.
       const bounds = host.getBoundingClientRect();
       return (
         bounds.width > 0 &&
@@ -238,8 +244,8 @@ export function mountTwinScene(
         return;
       }
       lastPaint = time;
-      // Decorative micro-sway only. Never synced to heart rate or breathing.
-      model.body.rotation.z = moving ? Math.sin(time / 2700) * 0.003 : 0;
+      // Visual-only micro-sway. The human surface and analytical hit-map move together.
+      twinBodyRoot.rotation.z = moving ? Math.sin(time / 2700) * 0.003 : 0;
       controls.update();
       try {
         renderer.render(scene, camera);
@@ -304,8 +310,8 @@ export function mountTwinScene(
       }
       requestRender();
     }
+
     const command = (action: TwinCameraCommand) => {
-      // Clear residual damping so a preset never keeps drifting afterwards.
       controls.enableDamping = false;
       controls.update();
       const next = moveTwinCamera(
@@ -413,8 +419,8 @@ export function mountTwinScene(
         ),
         camera,
       );
-      model.body.updateMatrixWorld(true);
-      // Test the nearest surface, including neutral geometry. Never select through the body.
+      twinBodyRoot.updateMatrixWorld(true);
+      // Picking always uses the stable analytical surface, even when invisible.
       const first = raycaster.intersectObjects(model.meshes, false)[0];
       const region = first?.object instanceof Mesh ? model.regionOf.get(first.object) : undefined;
       if (region) options.onSelect(region);

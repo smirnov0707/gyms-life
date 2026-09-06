@@ -1,11 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { reconcileAthleteHypothesisLedger } from "./athlete-hypothesis-ledger.server";
+import { loadHypothesisRetrospective } from "./athlete-hypothesis-retrospective.server";
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
 import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { LabOverviewSchema, type LabDecision, type LabOverview } from "./lab.schema";
 import { dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
+import { loadPredictionCalibration } from "./prediction-calibration.server";
+import { reconcileWorkoutCompletionShadowPredictions } from "./prediction-shadow-ledger.server";
 import {
   TodayDecisionActionSchema,
   TodayDecisionBasisSchema,
@@ -136,10 +140,9 @@ async function loadRecentDecisions(
 }
 
 /**
- * Loads the Lab v1 overview: real evidence-backed hypotheses from the
- * refreshed athlete state, and recent decision-ledger history. No
- * experiments, predictions, or discoveries are included — those engines
- * don't exist yet, and this must not imply they do.
+ * Loads the Lab overview from current canonical athlete state plus bounded,
+ * auditable learning history. Hypothesis and prediction audit plumbing remains
+ * secondary and fail-open; neither retrospective can become a Today input.
  */
 export async function loadLabOverview(
   supabase: SupabaseClient<Database>,
@@ -153,12 +156,33 @@ export async function loadLabOverview(
 
   const athlete = await refreshAthleteStateSnapshot(supabase, userId, zone, now);
   const hypotheses = buildAthleteHypotheses(athlete.state);
-  const decisions = await loadRecentDecisions(supabase, userId, since);
+
+  // Reconcile first so transitions and prediction outcomes created from facts
+  // already present in this request are visible in the same Lab response.
+  if (athlete.snapshot) {
+    await reconcileAthleteHypothesisLedger(
+      supabase,
+      userId,
+      hypotheses,
+      athlete.snapshot.id,
+      zone,
+      now,
+    );
+  }
+  await reconcileWorkoutCompletionShadowPredictions(userId, now).catch(() => undefined);
+
+  const [hypothesisHistory, decisions, predictionCalibration] = await Promise.all([
+    loadHypothesisRetrospective(supabase, userId),
+    loadRecentDecisions(supabase, userId, since),
+    loadPredictionCalibration(supabase, userId),
+  ]);
 
   return LabOverviewSchema.parse({
     hypotheses,
+    hypothesisHistory,
     decisions,
     decisionAccuracy: buildDecisionAccuracy(decisions),
+    predictionCalibration,
     dataGaps: athlete.state.dataGaps,
   });
 }
