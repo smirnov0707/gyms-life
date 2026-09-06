@@ -1,9 +1,12 @@
 import {
   ACESFilmicToneMapping,
+  CanvasTexture,
+  CircleGeometry,
   Color,
   DirectionalLight,
   HemisphereLight,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   Raycaster,
@@ -26,6 +29,8 @@ import {
 import {
   TWIN_CAMERA,
   TWIN_DISPLAY_COLORS,
+  TWIN_SELECTION_GLOW,
+  TWIN_TONE_GLOW,
   fittedTwinDistance,
   isTwinTap,
   moveTwinCamera,
@@ -42,6 +47,22 @@ export type TwinSceneHandle = {
   setMotion: (enabled: boolean) => void;
   dispose: () => void;
 };
+
+/** A radial fade, black at the centre, used as the figure's contact shade. */
+function contactShadow(): CanvasTexture | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gradient.addColorStop(0, "rgba(0,0,0,0.85)");
+  gradient.addColorStop(0.45, "rgba(0,0,0,0.35)");
+  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 128, 128);
+  return new CanvasTexture(canvas);
+}
 
 /** Browser-only module, loaded on demand. Owns no user data or business rules. */
 export function mountTwinScene(
@@ -108,16 +129,44 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 1.6));
+    // Lit for skin rather than for a matte solid: one warm key that models the
+    // form, a dim cool fill so the shadow side is readable without flattening
+    // it, and a mint rim behind that separates the silhouette from the dark
+    // stage. The earlier setup was three near-equal lights, which washed the
+    // body out until it read as plastic.
+    scene.add(new HemisphereLight(0xe4eef8, 0x1b1512, 0.55));
     for (const [position, color, intensity] of [
-      [[2, 3, 4], 0xfff1db, 2.2],
-      [[-3, 1.7, 1], 0x9ccbe7, 0.9],
-      [[0, 2.8, -3], 0xc4f0dd, 2.0],
+      [[2.2, 3.2, 3.0], 0xffe9d2, 2.05],
+      [[-3.0, 1.2, 1.6], 0x8fb4dc, 0.6],
+      [[-0.6, 2.4, -3.2], 0xa8f0e0, 1.45],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
+
+    // A body with nothing under it floats. There is no floor in this scene, so
+    // the contact is a painted ellipse of shade rather than a shadow map the
+    // low-power path cannot afford.
+    const shadowTexture = contactShadow();
+    const contact = new Mesh(
+      new CircleGeometry(0.4, 48),
+      new MeshBasicMaterial({
+        map: shadowTexture,
+        transparent: true,
+        opacity: 0.6,
+        depthWrite: false,
+      }),
+    );
+    contact.rotation.x = -Math.PI / 2;
+    contact.position.y = 0.002;
+    contact.scale.set(1, 0.62, 1);
+    scene.add(contact);
+    cleanups.push(() => {
+      contact.geometry.dispose();
+      (contact.material as MeshBasicMaterial).dispose();
+      shadowTexture?.dispose();
+    });
     // The generated surface paints immediately, with no network involved, so
     // the scene is never blank. The anatomical human replaces it once it has
     // loaded; if that fetch fails, is aborted, or the file is unusable, the
@@ -214,18 +263,43 @@ export function mountTwinScene(
       // colour is mixed lightly into the surface it belongs to and the rest
       // of the reading is carried by selection emphasis and the region panel.
       const base = "baseColorOf" in model ? model.baseColorOf : null;
-      const mix = base ? 0.3 : 0.55;
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
         const tone = new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]);
+        const selected = selectedRegion === id;
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
           const skin = base?.get(mesh);
-          material.color.copy(new Color(skin ?? "#48565d").lerp(tone, mix));
-          const selected = selectedRegion === id;
-          material.emissive.set(selected ? "#bcefe3" : "#000000");
-          material.emissiveIntensity = selected ? 0.22 : 0;
-          material.roughness = selected ? 0.36 : base ? 0.62 : 0.48;
+          if (skin !== undefined) {
+            // Skin keeps its own colour; the state is light cast over it, and
+            // brighter the more it wants attention. Mixing the data colour into
+            // the albedo instead painted a hard-edged amber block across the
+            // torso — the coloured-body-parts look this figure exists to end.
+            // Divided by the tone's own brightness so how much a region lights
+            // up is set by what it means, not by how pale its colour happens to
+            // be. Without it the near-white volume tone burned the pectoral
+            // plate to a flat white shape that read as a garment.
+            const glow =
+              TWIN_TONE_GLOW[value?.display.tone ?? "unknown"] +
+              (selected ? TWIN_SELECTION_GLOW : 0);
+            // The palette is drawn for small marks on a dark page, so its
+            // lighter tones are close to white. Laid on skin as light, white is
+            // not a colour — it just bleaches the region into a flat panel — so
+            // the body uses the same hue at full saturation instead, and the
+            // amount of light is set by the glow alone.
+            const hsl = { h: 0, s: 0, l: 0 };
+            tone.getHSL(hsl);
+            const lit = new Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.6), 0.5);
+            material.color.set(skin);
+            material.emissive.copy(lit);
+            material.emissiveIntensity = glow / Math.max(lit.r, lit.g, lit.b, 0.2);
+            material.roughness = selected ? 0.56 : 0.64;
+          } else {
+            material.color.copy(new Color("#48565d").lerp(tone, 0.55));
+            material.emissive.set(selected ? "#bcefe3" : "#000000");
+            material.emissiveIntensity = selected ? 0.22 : 0;
+            material.roughness = selected ? 0.36 : 0.48;
+          }
         }
       }
       requestRender();

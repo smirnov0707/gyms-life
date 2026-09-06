@@ -15,7 +15,7 @@ import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 const REGION_MATERIAL_PREFIX = "twin-region:";
 
 /** Deliberately not a data colour. Skin is a dielectric, so metalness is 0. */
-const SKIN = { color: 0xc4a68f, roughness: 0.62, metalness: 0 };
+const SKIN = { color: 0xb08872, roughness: 0.64, metalness: 0 };
 const FABRIC = { color: 0x232830, roughness: 0.94, metalness: 0 };
 /** A blank white sphere reads as a mannequin; without a texture, a dark iris
  *  is the closest honest approximation of an eye. */

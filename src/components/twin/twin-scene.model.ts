@@ -31,6 +31,32 @@ export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
   volume_high: "#9bd4ee",
 };
 
+/**
+ * How strongly each state lights the skin of the region it belongs to, as the
+ * light it adds rather than a material setting: the renderer divides by the
+ * tone's own brightness, so a pale colour and a dark one at the same number
+ * lift the skin by the same amount.
+ *
+ * Most states are zero on purpose. A region here is a flat plate of triangles
+ * with a hard edge, so any colour laid over the whole of it reads as clothing
+ * rather than as a body — the pectorals came out looking like a vest. What the
+ * athlete needs from the figure is where to look; the exact number for every
+ * region is already beside it, ranked, and in the 2D map. So only the states
+ * that ask for attention light up, and the rest of the body stays skin.
+ */
+export const TWIN_TONE_GLOW: Record<TwinDisplayTone, number> = {
+  fresh: 0,
+  moderate: 0,
+  fatigued: 0.012,
+  unknown: 0,
+  volume_low: 0,
+  volume_medium: 0,
+  volume_high: 0.012,
+};
+
+/** Added on top for the region the athlete has selected, whatever its state. */
+export const TWIN_SELECTION_GLOW = 0.01;
+
 /** Existing 2D renderer tones, sharing the same semantic layer vocabulary. */
 export function twinDisplayToneFor2D(tone: TwinDisplayTone) {
   if (tone === "fresh") return "cool";
