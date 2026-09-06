@@ -156,7 +156,11 @@ function inspect(bytes, rights) {
   }
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   check("transfer_budget", bytes.length <= MOBILE_TRANSFER_TARGET, "Mobile target: at most 8 MiB");
-  check("geometry", primitiveCount > 0 && unsupportedModes === 0, "Triangle-list geometry required");
+  check(
+    "geometry",
+    primitiveCount > 0 && unsupportedModes === 0,
+    "Triangle-list geometry required",
+  );
   check("geometry_budget", triangles <= 100_000, "At most 100,000 stored primitive triangles");
   check("uv", uvPrimitives === primitiveCount && primitiveCount > 0, "Every primitive needs UV0");
   check("albedo", texturedPrimitives > 0, "At least one referenced base-color texture required");
