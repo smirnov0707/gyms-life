@@ -20,7 +20,9 @@ function roundMetric(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
-function eligiblePrediction(candidate: StoredPredictionCalibrationCandidate): EligiblePrediction | null {
+function eligiblePrediction(
+  candidate: StoredPredictionCalibrationCandidate,
+): EligiblePrediction | null {
   const parsed = AthletePredictionSchema.safeParse(candidate.prediction);
   if (!parsed.success) return null;
   if (parsed.data.target !== "workout_completion" || parsed.data.maturity !== "shadow") return null;
@@ -46,7 +48,10 @@ function uniquePredictionDays(
     const prediction = eligible.prediction;
     const key = `${prediction.modelId}\u0000${prediction.modelVersion}\u0000${eligible.decisionOn}`;
     const previous = unique.get(key);
-    if (!previous || Date.parse(prediction.generatedAt) < Date.parse(previous.prediction.generatedAt)) {
+    if (
+      !previous ||
+      Date.parse(prediction.generatedAt) < Date.parse(previous.prediction.generatedAt)
+    ) {
       unique.set(key, eligible);
     }
   }
@@ -60,7 +65,11 @@ function buildModelCalibration(predictions: AthletePrediction[]): PredictionCali
 
   const evaluated = predictions.flatMap((prediction) => {
     if (!prediction.actual || !prediction.evaluatedAt) return [];
-    if (prediction.actual.kind !== "boolean" || prediction.predicted.kind !== "probability") return [];
+    if (
+      prediction.actual.kind !== "boolean" ||
+      prediction.predicted.kind !== "probability"
+    )
+      return [];
     return [
       {
         predicted: prediction.predicted.value,
