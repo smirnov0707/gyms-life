@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { resolveBodyWeight } from "./body-weight.engine";
 
 export type MicroSnapshot = {
   days: number;
@@ -34,7 +35,7 @@ export async function loadMicroSnapshot(
 ): Promise<MicroSnapshot> {
   const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
 
-  const [foods, sups, prof, sessions, checkins] = await Promise.all([
+  const [foods, sups, prof, sessions, checkins, weights] = await Promise.all([
     supabase
       .from("nutrition_logs")
       .select("logged_on, food_name, description, calories, protein, carbs, fat")
@@ -62,6 +63,15 @@ export async function loadMicroSnapshot(
       .select("sleep_hours, readiness_score")
       .eq("user_id", userId)
       .gte("checkin_on", since),
+    // What the athlete has actually weighed since. The profile carries what
+    // they stated at onboarding, which stops being true the moment the scan
+    // is any use — and this analysis reasons from body mass.
+    supabase
+      .from("body_metrics")
+      .select("weight_kg")
+      .eq("user_id", userId)
+      .order("measured_on", { ascending: false })
+      .limit(30),
   ]);
 
   const rows = foods.data ?? [];
@@ -100,7 +110,7 @@ export async function loadMicroSnapshot(
       // this task tells the model to use only the data below — handing it a
       // 178 cm athlete chasing muscle gain, when we know neither, made that
       // instruction false before the model ever saw it.
-      weight: profile?.weight_kg == null ? null : Number(profile.weight_kg),
+      weight: resolveBodyWeight(weights.data ?? [], profile?.weight_kg ?? null).weightKg,
       height: profile?.height_cm == null ? null : Number(profile.height_cm),
       gender: profile?.gender ?? "unknown",
       goal: profile?.goal ?? null,
