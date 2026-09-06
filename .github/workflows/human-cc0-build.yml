@@ -25,46 +25,44 @@ jobs:
         run: |
           python -m pip install -e "$RUNNER_TEMP/makehuman-core"
           python -m pip install pillow
-      - name: Author CC0 human and export OBJ
+      - name: Author and optimize CC0 Digital Human v2
         env:
           MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
         run: |
           python - <<'PY'
-          import json, os, re, shutil
+          import json, os, shutil
           from pathlib import Path
           import numpy as np
           from PIL import Image, ImageFilter, ImageOps
           import mhcore
 
-          root = Path(os.environ['RUNNER_TEMP']) / 'gyms-human-v1'
+          root = Path(os.environ['RUNNER_TEMP']) / 'gyms-human-v2'
           root.mkdir(parents=True, exist_ok=True)
           data = Path(os.environ['MHCORE_DATA'])
 
-          def recolor(path: Path, black, white, mix=0.82):
+          def recolor_first_diffuse(folder: Path, black: str, white: str, mix=0.88):
+              candidates = [p for p in folder.glob('*') if p.suffix.lower() in {'.png','.jpg','.jpeg'} and ('diffuse' in p.name.lower() or 'texture' in p.name.lower())]
+              if not candidates:
+                  candidates = [p for p in folder.glob('*.png')]
+              if not candidates: return
+              path = candidates[0]
               img = Image.open(path).convert('RGBA')
               alpha = img.getchannel('A')
               rgb = img.convert('RGB')
-              grey = ImageOps.grayscale(rgb)
-              toned = ImageOps.colorize(grey, black=black, white=white)
+              toned = ImageOps.colorize(ImageOps.grayscale(rgb), black=black, white=white)
               out = Image.blend(rgb, toned, mix)
               out.putalpha(alpha)
-              out.save(path)
+              out.save(path, optimize=True)
 
-          # GYMS.LIFE-authored neutral graphite palette over CC0 clothes.
-          recolor(data/'clothes/male_casualsuit01/male_casualsuit01_diffuse.png', '#0d1114', '#6b797b', 0.88)
-          for shoe in ['shoes01_diffuse.png', 'shoes01.png']:
-              p = data/'clothes/shoes01'/shoe
-              if p.exists(): recolor(p, '#090b0d', '#535b60', 0.9)
+          recolor_first_diffuse(data/'clothes/male_casualsuit06', '#101419', '#66747b', 0.9)
+          recolor_first_diffuse(data/'clothes/shoes01', '#090c10', '#4b565d', 0.92)
 
           h = mhcore.new_human()
-          h.set_gender(1.0).set_age(0.48).set_weight(0.52).set_muscle(0.67).set_height(0.62)
-          # Gentle face/proportion adjustments only — no identity claim.
+          h.set_gender(1.0).set_age(0.47).set_weight(0.51).set_muscle(0.66).set_height(0.62)
           for name, value in [
-              ('head/head-oval', 0.18),
-              ('nose/nose-scale-vert-decr|incr', 0.08),
-              ('chin/chin-height-decr|incr', 0.06),
-              ('armslegs/l-hand-fingers-length-decr|incr', 0.02),
-              ('armslegs/r-hand-fingers-length-decr|incr', 0.02),
+              ('head/head-oval', 0.16),
+              ('nose/nose-scale-vert-decr|incr', 0.06),
+              ('chin/chin-height-decr|incr', 0.05),
           ]:
               try: h.apply_modifier(name, value)
               except Exception: pass
@@ -80,129 +78,119 @@ jobs:
           h.equip_eyebrows(pick('eyebrows', 'eyebrow006'))
           h.equip_eyelashes(pick('eyelashes', 'eyelashes01'))
           h.equip_teeth(pick('teeth', 'teeth_base'))
-          h.equip_clothes(pick('clothes', 'male_casualsuit01'))
+          h.equip_clothes(pick('clothes', 'male_casualsuit06'))
           h.equip_clothes(pick('clothes', 'shoes01'))
 
-          mhm = h.save_mhm(str(root/'gyms-digital-human-v1.mhm'))
-          obj = Path(h.export(str(root/'gyms-digital-human-v1.obj')))
+          h.save_mhm(str(root/'gyms-digital-human-v2.mhm'))
+          obj = Path(h.export(str(root/'gyms-digital-human-v2.obj')))
           mtl = obj.with_suffix('.mtl')
-          if not obj.exists() or not mtl.exists():
-              raise RuntimeError('MakeHuman OBJ/MTL export missing')
+          if not obj.exists() or not mtl.exists(): raise RuntimeError('MakeHuman export missing')
 
-          # Make all referenced textures self-contained next to the OBJ.
+          # Copy referenced maps locally, then convert opaque maps to JPEG and bound all maps.
+          def locate(raw: str):
+              src = Path(raw)
+              if not src.is_absolute(): src = (mtl.parent/src).resolve()
+              if src.exists(): return src
+              matches = list(data.rglob(Path(raw).name))
+              return matches[0] if matches else None
+
+          def optimize(src: Path, semantic: str):
+              img = Image.open(src).convert('RGBA')
+              limit = 2048 if ('skin' in src.name.lower() or 'young_light' in src.name.lower()) else 1024
+              if max(img.size) > limit:
+                  scale = limit / max(img.size)
+                  img = img.resize((max(1,round(img.width*scale)), max(1,round(img.height*scale))), Image.Resampling.LANCZOS)
+              alpha = img.getchannel('A')
+              has_alpha = alpha.getextrema()[0] < 250
+              stem = src.stem.replace(' ', '_')
+              if has_alpha:
+                  dst = root/f'{stem}.png'
+                  img.save(dst, optimize=True, compress_level=9)
+              else:
+                  dst = root/f'{stem}.jpg'
+                  quality = 91 if limit == 2048 else 88
+                  img.convert('RGB').save(dst, quality=quality, optimize=True, progressive=True, subsampling=0)
+              return dst
+
           lines = mtl.read_text(errors='replace').splitlines()
-          rewritten = []
-          skin_diffuse = None
-          current_skin = False
+          rewritten=[]; skin_albedo=None
           for line in lines:
-              stripped = line.strip()
-              if stripped.startswith('newmtl '):
-                  current_skin = False
-              if stripped.startswith('map_Kd '):
-                  raw = stripped.split(maxsplit=1)[1]
-                  src = Path(raw)
-                  if not src.is_absolute(): src = (mtl.parent/src).resolve()
-                  if not src.exists():
-                      # MakeHuman can point directly into the data tree.
-                      candidates = list(data.rglob(Path(raw).name))
-                      if candidates: src = candidates[0]
-                  if src.exists():
-                      dst = root/src.name
-                      shutil.copy2(src, dst)
-                      line = f'map_Kd {dst.name}'
-                      if 'young_lightskinned_male_diffuse2' in dst.name:
-                          skin_diffuse = dst
-                          current_skin = True
-              elif stripped.startswith(('map_Bump ', 'bump ', 'map_Ks ', 'map_d ')):
-                  parts = stripped.split()
-                  raw = parts[-1]
-                  src = Path(raw)
-                  if not src.is_absolute(): src = (mtl.parent/src).resolve()
-                  if not src.exists():
-                      candidates = list(data.rglob(Path(raw).name))
-                      if candidates: src = candidates[0]
-                  if src.exists():
-                      dst = root/src.name
-                      shutil.copy2(src, dst)
-                      line = ' '.join(parts[:-1] + [dst.name])
+              stripped=line.strip()
+              prefixes=('map_Kd ','map_Bump ','bump ','map_Ks ','map_d ')
+              if stripped.startswith(prefixes):
+                  parts=stripped.split(); raw=parts[-1]; src=locate(raw)
+                  if src:
+                      semantic=parts[0]
+                      dst=optimize(src, semantic)
+                      line=' '.join(parts[:-1]+[dst.name])
+                      if parts[0]=='map_Kd' and ('young_light' in src.name.lower() or 'skin' in src.name.lower()): skin_albedo=dst
               rewritten.append(line)
           mtl.write_text('\n'.join(rewritten)+'\n')
 
-          # Author a subtle normal map from CC0 skin detail, then attach to the skin MTL block.
-          if skin_diffuse and skin_diffuse.exists():
-              img = Image.open(skin_diffuse).convert('RGB').resize((2048, 2048), Image.Resampling.LANCZOS)
-              grey = np.asarray(ImageOps.grayscale(img), dtype=np.float32) / 255.0
-              low = np.asarray(ImageOps.grayscale(img).filter(ImageFilter.GaussianBlur(3.0)), dtype=np.float32) / 255.0
-              detail = grey - low
-              gy, gx = np.gradient(detail)
-              strength = 3.5
-              nx, ny, nz = -gx*strength, gy*strength, np.ones_like(gx)
-              norm = np.sqrt(nx*nx + ny*ny + nz*nz)
-              arr = np.stack([(nx/norm*0.5+0.5), (ny/norm*0.5+0.5), (nz/norm*0.5+0.5)], axis=-1)
-              normal = root/'skin_detail_normal.png'
-              Image.fromarray(np.clip(arr*255,0,255).astype(np.uint8), 'RGB').save(normal, optimize=True)
-              lines = mtl.read_text().splitlines()
-              out=[]; in_skin=False; inserted=False
-              for line in lines:
-                  if line.startswith('newmtl '):
-                      in_skin=False
-                  if line.startswith('map_Kd ') and 'young_lightskinned_male_diffuse2' in line:
-                      in_skin=True
-                      out.append(line)
-                      out.append(f'map_Bump {normal.name}')
-                      inserted=True
-                      continue
+          # Subtle 1K authored skin normal; compression-friendly, no invented physiology.
+          if skin_albedo and skin_albedo.exists():
+              img=Image.open(skin_albedo).convert('RGB').resize((1024,1024),Image.Resampling.LANCZOS)
+              grey=np.asarray(ImageOps.grayscale(img),dtype=np.float32)/255.0
+              low=np.asarray(ImageOps.grayscale(img).filter(ImageFilter.GaussianBlur(2.5)),dtype=np.float32)/255.0
+              gy,gx=np.gradient(grey-low); strength=2.8
+              nx,ny,nz=-gx*strength,gy*strength,np.ones_like(gx)
+              norm=np.sqrt(nx*nx+ny*ny+nz*nz)
+              arr=np.stack([nx/norm*.5+.5,ny/norm*.5+.5,nz/norm*.5+.5],axis=-1)
+              normal=root/'skin_detail_normal.jpg'
+              Image.fromarray(np.clip(arr*255,0,255).astype(np.uint8),'RGB').save(normal,quality=90,optimize=True,progressive=True,subsampling=0)
+              old=mtl.read_text().splitlines(); out=[]; inserted=False
+              for line in old:
                   out.append(line)
-              if not inserted: print('warning: skin normal not attached')
+                  if line.startswith('map_Kd ') and skin_albedo.name in line:
+                      out.append(f'map_Bump {normal.name}'); inserted=True
               mtl.write_text('\n'.join(out)+'\n')
 
-          manifest = {
-              'name': 'GYMS.LIFE Digital Human v1 candidate',
-              'authorship': 'GYMS.LIFE-authored character parameters and graphite material derivative',
-              'base': 'MakeHuman system/core assets',
-              'license': 'CC0-1.0 for selected MakeHuman graphical assets; build tooling is not redistributed',
-              'sources': [
-                  'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html',
-                  'https://static.makehumancommunity.org/makehuman/faq/can_i_sell_models_created_with_makehuman.html'
-              ],
-              'body_parameters': {'gender':1.0,'age':0.48,'weight':0.52,'muscle':0.67,'height':0.62},
-              'assets': ['young_caucasian_male2','short02','high-poly eyes','eyebrow006','eyelashes01','teeth_base','male_casualsuit01','shoes01'],
-              'personal_scan': False,
-              'identity_claim': False,
+          manifest={
+            'name':'GYMS.LIFE Digital Human v2 candidate',
+            'authorship':'GYMS.LIFE-authored character parameters, graphite materials and derived skin-detail normal',
+            'base':'MakeHuman core/system graphical assets',
+            'license':'CC0-1.0 graphical asset derivative; external build tooling not redistributed',
+            'sources':['https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','https://static.makehumancommunity.org/makehuman/faq/can_i_sell_models_created_with_makehuman.html'],
+            'body_parameters':{'gender':1.0,'age':0.47,'weight':0.51,'muscle':0.66,'height':0.62},
+            'assets':['young_caucasian_male2','short02','high-poly eyes','eyebrow006','eyelashes01','teeth_base','male_casualsuit06','shoes01'],
+            'personal_scan':False,'identity_claim':False,'visual_acceptance':False
           }
-          (root/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest, indent=2))
-          print('OBJ bytes', obj.stat().st_size)
-          print('MTL bytes', mtl.stat().st_size)
+          (root/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest,indent=2))
+          print('OBJ',obj.stat().st_size,'bytes')
+          print('textures',sum(p.stat().st_size for p in root.iterdir() if p.suffix.lower() in {'.png','.jpg','.jpeg'}),'bytes')
           PY
       - name: Convert to self-contained GLB
         run: |
-          cd "$RUNNER_TEMP/gyms-human-v1"
-          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v1.obj -o gyms-digital-human-v1.glb -b --secure --checkTransparency
-      - name: Record integrity and GLB intake report
+          cd "$RUNNER_TEMP/gyms-human-v2"
+          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v2.obj -o gyms-digital-human-v2.glb -b --secure --checkTransparency
+      - name: Record integrity and audit without suppressing artifact
+        id: audit
+        continue-on-error: true
         run: |
           python - <<'PY'
-          import hashlib, json, os
+          import hashlib,json,os
           from pathlib import Path
-          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v1'
-          glb=root/'gyms-digital-human-v1.glb'
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v2'; glb=root/'gyms-digital-human-v2.glb'
           sha=hashlib.sha256(glb.read_bytes()).hexdigest()
-          rights={
-            'assetSha256': sha,
-            'creator': 'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets',
-            'sourceUrl': 'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html',
-            'licenseName': 'CC0-1.0-derived',
-            'evidenceReference': 'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ',
-            'permissions': {'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}
-          }
-          (root/'rights.json').write_text(json.dumps(rights,indent=2))
-          print('GLB', glb.stat().st_size, 'bytes SHA256', sha)
+          rights={'assetSha256':sha,'creator':'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets','sourceUrl':'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','licenseName':'CC0-1.0-derived','evidenceReference':'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ','permissions':{'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}}
+          (root/'rights.json').write_text(json.dumps(rights,indent=2)); print('GLB',glb.stat().st_size,'SHA256',sha)
           PY
-          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/gyms-human-v1/gyms-digital-human-v1.glb" "$RUNNER_TEMP/gyms-human-v1/rights.json" "$RUNNER_TEMP/gyms-human-v1/intake-report.json" || status=$?
-          test "${status:-0}" -eq 0 || { cat "$RUNNER_TEMP/gyms-human-v1/intake-report.json"; exit "${status:-1}"; }
-          cat "$RUNNER_TEMP/gyms-human-v1/intake-report.json"
+          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/gyms-human-v2/gyms-digital-human-v2.glb" "$RUNNER_TEMP/gyms-human-v2/rights.json" "$RUNNER_TEMP/gyms-human-v2/intake-report.json"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: gyms-digital-human-v1-candidate
-          path: ${{ runner.temp }}/gyms-human-v1
+          name: gyms-digital-human-v2-candidate
+          path: ${{ runner.temp }}/gyms-human-v2
           retention-days: 2
           if-no-files-found: error
+      - name: Enforce intake gate after preserving review artifact
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,os,sys
+          from pathlib import Path
+          p=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v2'/'intake-report.json'
+          report=json.loads(p.read_text())
+          print(json.dumps(report,indent=2))
+          if not report.get('technicalPreflightPassed'): sys.exit(2)
+          PY
