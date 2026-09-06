@@ -41,7 +41,7 @@ const baseState: DigitalAthleteState = {
   },
   currentDay: {
     day: "2026-09-06",
-    weekday: 7,
+    weekday: 0,
     hasCompletedReadiness: true,
     hasCompletedWorkout: false,
     hasLoggedNutrition: true,
