@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AthleteHypothesisLedgerSummarySchema } from "./athlete-hypothesis-ledger";
 import { AthleteHypothesisSchema } from "./athlete-hypothesis.schema";
 import { DecisionAccuracySchema } from "./decision-accuracy.schema";
 import { DigitalAthleteDataGapSchema } from "./digital-athlete.schema";
@@ -31,12 +32,25 @@ export const LabDecisionSchema = z
 export type LabDecision = z.infer<typeof LabDecisionSchema>;
 
 /**
- * Lab v1: only what is real today. No experiments, predictions, or
- * discoveries engine exists yet — do not fabricate sections for them.
+ * One auditable hypothesis lifecycle point. The ledger summary is anchored to
+ * the immutable athlete-state snapshot that produced the transition; occurredAt
+ * records when GYMS.LIFE observed and persisted that epistemic state change.
+ */
+export const LabHypothesisTransitionSchema = AthleteHypothesisLedgerSummarySchema.extend({
+  occurredAt: z.string().datetime({ offset: true }),
+}).strict();
+
+export type LabHypothesisTransition = z.infer<typeof LabHypothesisTransitionSchema>;
+
+/**
+ * Lab overview exposes current deterministic hypotheses, their bounded
+ * longitudinal transition history, recent decisions, decision fit and data gaps.
+ * Internal hypothesis history is an audit view only and is never Twin evidence.
  */
 export const LabOverviewSchema = z
   .object({
     hypotheses: z.array(AthleteHypothesisSchema),
+    hypothesisHistory: z.array(LabHypothesisTransitionSchema),
     decisions: z.array(LabDecisionSchema),
     decisionAccuracy: DecisionAccuracySchema,
     dataGaps: z.array(DigitalAthleteDataGapSchema),
