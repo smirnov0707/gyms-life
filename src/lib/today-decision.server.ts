@@ -4,6 +4,10 @@ import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { getActivePlanWorkoutProgress } from "./active-plan.service";
 import { IsoDaySchema, IanaTimeZoneSchema } from "./local-day";
+import {
+  captureWorkoutCompletionShadowPrediction,
+  reconcileWorkoutCompletionShadowPredictions,
+} from "./prediction-shadow-ledger.server";
 import { buildTodayDecision, fingerprintTodayDecision } from "./today-decision.engine";
 import {
   StoredTodayDecisionEvidenceSchema,
@@ -36,6 +40,11 @@ export async function getOrCreateTodayDecision(
 ): Promise<TodayDecision> {
   const zone = IanaTimeZoneSchema.parse(timeZone);
 
+  // Shadow-ledger reconciliation is audit plumbing, never a prerequisite for
+  // today's action. A ledger failure must not degrade the deterministic Today
+  // experience or silently turn prediction into decision logic.
+  await reconcileWorkoutCompletionShadowPredictions(userId, now).catch(() => undefined);
+
   const [athlete, activePlanProgress] = await Promise.all([
     refreshAthleteStateSnapshot(supabase, userId, zone, now),
     getActivePlanWorkoutProgress(supabase, userId, zone, now),
@@ -56,8 +65,8 @@ export async function getOrCreateTodayDecision(
   });
   const decisionFingerprint = fingerprintTodayDecision(proposal, athlete.snapshot.id);
 
-  // Real, already-computed facts only. No probabilistic prediction exists yet,
-  // so `prediction`/`uncertainty` are deliberately left unset.
+  // Decision metadata remains deterministic. Any probabilistic forecast is
+  // attached only after this row exists and is never fed back into the action.
   const modelVersions = TodayDecisionModelVersionsSchema.parse({
     decisionEngine: proposal.engineVersion,
   });
@@ -102,6 +111,19 @@ export async function getOrCreateTodayDecision(
 
   const parsedRecord = StoredTodayDecisionSchema.safeParse(record);
   if (!parsedRecord.success) throw new Error("Stored today decision is invalid.");
+
+  // Capture once, null-only and fail-open. The public Today contract below is
+  // intentionally unchanged and does not expose or consume this prediction.
+  await captureWorkoutCompletionShadowPrediction({
+    userId,
+    decisionId: parsedRecord.data.id,
+    decisionOn: parsedRecord.data.decision_on,
+    action: parsedRecord.data.action,
+    timeZone: zone,
+    athleteStateSnapshotId: parsedRecord.data.athlete_state_snapshot_id,
+    state: athlete.state,
+    now,
+  }).catch(() => undefined);
 
   const { error: evidenceError } = await supabaseAdmin.from("decision_evidence").upsert(
     proposal.evidence.map((item) => ({
@@ -207,7 +229,16 @@ export async function completeCurrentTrainingDecision(
   userId: string,
   decisionOn: string,
 ): Promise<boolean> {
-  return completeCurrentDecision(userId, decisionOn, ["train_adapted", "train_as_planned"]);
+  const completed = await completeCurrentDecision(userId, decisionOn, [
+    "train_adapted",
+    "train_as_planned",
+  ]);
+  if (!completed) return false;
+
+  // Reconcile from the canonical workout_sessions fact, not from the decision
+  // status. This also marks any earlier same-day shadow forecasts truthfully.
+  await reconcileWorkoutCompletionShadowPredictions(userId).catch(() => undefined);
+  return true;
 }
 
 /** Marks a completed readiness check-in as the result of today's readiness action. */
