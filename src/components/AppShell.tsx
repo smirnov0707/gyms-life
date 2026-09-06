@@ -179,11 +179,17 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
 };
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const locale = baseLang(lang);
   const location = useLocation();
   const isActive = (to: string) =>
     location.pathname === to || location.pathname.startsWith(`${to}/`);
+  const navTitle = (to: string): string | undefined => {
+    if (to === "/app") return t("dash.welcomeBack");
+    if (to === "/twin") return t("nav.twin");
+    if (to === "/progress") return t("pr.title");
+    return undefined;
+  };
 
   return (
     <div className="min-h-screen bg-[#02060c] text-foreground selection:bg-violet-500/35 selection:text-white">
@@ -204,6 +210,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 <Link
                   key={item.to}
                   to={item.to}
+                  title={navTitle(item.to)}
                   aria-current={active ? "page" : undefined}
                   className={`relative flex min-h-10 items-center rounded-xl px-4 text-[10px] font-bold uppercase tracking-[0.13em] transition-all ${active ? "border border-violet-400/30 bg-violet-500/12 text-white shadow-[0_0_25px_rgba(124,58,237,.08)]" : "border border-transparent text-slate-400 hover:bg-white/[0.03] hover:text-white"}`}
                 >
@@ -259,6 +266,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               <Link
                 key={item.to}
                 to={item.to}
+                title={navTitle(item.to)}
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-1 text-center transition-colors ${active ? "bg-violet-500/12 text-violet-200" : "text-slate-500 hover:text-slate-200"}`}
               >
