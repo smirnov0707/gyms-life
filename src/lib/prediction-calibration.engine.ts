@@ -65,10 +65,7 @@ function buildModelCalibration(predictions: AthletePrediction[]): PredictionCali
 
   const evaluated = predictions.flatMap((prediction) => {
     if (!prediction.actual || !prediction.evaluatedAt) return [];
-    if (
-      prediction.actual.kind !== "boolean" ||
-      prediction.predicted.kind !== "probability"
-    )
+    if (prediction.actual.kind !== "boolean" || prediction.predicted.kind !== "probability")
       return [];
     return [
       {
