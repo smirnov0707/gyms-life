@@ -4,16 +4,17 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "prepare:twin-human": "node scripts/fetch-twin-human-asset.mjs",
+    "dev": "npm run prepare:twin-human && vite dev",
+    "build": "npm run prepare:twin-human && vite build",
+    "build:dev": "npm run prepare:twin-human && vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test:browser": "node scripts/test-twin-browser.mjs",
-    "build:staging": "DEPLOY_TARGET=cloudflare vite build"
+    "build:staging": "npm run prepare:twin-human && DEPLOY_TARGET=cloudflare vite build"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -95,7 +96,7 @@
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
-    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "meshoptimizer": "0.22.0",
