@@ -8,6 +8,7 @@ import { validateGeneratedMealPlan } from "./meal-plan-generation.validation";
 import { GeneratedMealPlanSchema } from "./meal-plan.schema";
 import { observeServerAction } from "./observability.server";
 import { withCompleteShoppingList } from "./shopping-build";
+import { resolveBodyWeight } from "./body-weight.engine";
 
 const MealPlanInput = z.object({
   diet: z
@@ -74,6 +75,19 @@ export const generateMealPlan = createServerFn({ method: "POST" })
         if (profileReadError)
           throw new Error(`Could not read your profile: ${profileReadError.message}`);
 
+        // The profile's weight is what the athlete stated at onboarding. A
+        // plan sized to that keeps feeding the body they had on the day they
+        // signed up, however long they have been weighing themselves since.
+        const { data: weights, error: weightsError } = await supabase
+          .from("body_metrics")
+          .select("weight_kg")
+          .eq("user_id", userId)
+          .order("measured_on", { ascending: false })
+          .limit(30);
+        if (weightsError)
+          throw new Error(`Could not read your measurements: ${weightsError.message}`);
+        const bodyWeight = resolveBodyWeight(weights ?? [], profile?.weight_kg ?? null);
+
         const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
 
         const MealSchema = z.object({
@@ -137,7 +151,8 @@ ${
           age,
           gender: profile?.gender ?? null,
           height_cm: profile?.height_cm ?? null,
-          weight_kg: profile?.weight_kg ?? null,
+          weight_kg: bodyWeight.weightKg,
+          weight_source: bodyWeight.source,
           target_weight_kg: profile?.target_weight_kg ?? null,
           goal: profile?.goal ?? null,
           training_days_per_week: profile?.days_per_week ?? null,

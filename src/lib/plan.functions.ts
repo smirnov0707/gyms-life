@@ -147,6 +147,23 @@ export const generatePlan = createServerFn({ method: "POST" })
             session_minutes: data.sessionMinutes,
             locale: data.lang,
             onboarded: true,
+            // Onboarding asks for these and this update used to drop every one
+            // of them, so `profiles.height_cm`, `weight_kg`, `birth_year`,
+            // `gender` and `target_weight_kg` stayed null for the life of the
+            // account — while the meal plan, the micronutrient scan, the
+            // fridge scanner, hydration and the nutrition targets all read
+            // exactly those columns. The athlete typed their body in, and the
+            // only thing that ever saw it was this one plan generation.
+            //
+            // Each is written only when it was actually given: a field left
+            // blank must not overwrite something recorded later by a scan or
+            // on the profile screen.
+            ...(data.heightCm != null ? { height_cm: data.heightCm } : {}),
+            ...(data.weightKg != null ? { weight_kg: data.weightKg } : {}),
+            ...(data.targetWeightKg != null ? { target_weight_kg: data.targetWeightKg } : {}),
+            ...(data.gender != null ? { gender: data.gender } : {}),
+            ...(data.age != null ? { birth_year: new Date().getUTCFullYear() - data.age } : {}),
+            ...(data.limitations != null ? { limitations: data.limitations } : {}),
           })
           .eq("id", userId);
         if (profileError) throw new Error(`Profile save error: ${profileError.message}`);
