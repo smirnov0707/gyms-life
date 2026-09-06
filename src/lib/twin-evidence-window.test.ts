@@ -22,8 +22,8 @@ function row(overrides: Record<string, unknown> = {}) {
 }
 
 const interval = {
-  olderAt: "2026-09-06T09:00:00Z",
-  newerAt: "2026-09-06T10:00:00Z",
+  olderAt: "2026-09-06T09:00:00.000Z",
+  newerAt: "2026-09-06T10:00:00.000Z",
 };
 
 describe("Twin evidence interval", () => {
