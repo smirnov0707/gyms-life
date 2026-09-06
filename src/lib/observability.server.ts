@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const ObservabilityEventNameSchema = z.enum([
   "ai.request",
   "ai.voice_transcription",
+  "athlete_hypothesis_ledger.reconcile",
   "meal_plan.activation",
   "meal_plan.generation",
   "life_context.dismiss",
