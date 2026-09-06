@@ -286,6 +286,13 @@ const baseDict = {
     en: "No data yet — complete your first workout.",
   },
   "pr.history": { lt: "Treniruočių istorija", en: "Workout history" },
+  // "We could not look" is not "you have no history". A progress screen that
+  // cannot tell them apart tells an athlete with months of work that they
+  // have never trained.
+  "pr.readFailed": {
+    lt: "Nepavyko nuskaityti istorijos. Tai nereiškia, kad jos nėra — pabandyk atnaujinti puslapį.",
+    en: "Could not read your history. That does not mean there is none — try reloading.",
+  },
 
   "coach.title": { lt: "Tavo treneris", en: "Your coach" },
   "coach.sub": {
@@ -344,6 +351,10 @@ const baseDict = {
   "fc.drills": { lt: "Pratybos technikai", en: "Technique drills" },
   "fc.denied": { lt: "Kameros leidimas nesuteiktas.", en: "Camera permission denied." },
   "fc.history": { lt: "Ankstesnės analizės", en: "Previous scans" },
+  "fc.historyReadFailed": {
+    lt: "Nepavyko nuskaityti ankstesnių analizių.",
+    en: "Could not read your previous scans.",
+  },
 
   "cmd.ph": { lt: "Ieškok arba šok į skiltį...", en: "Search or jump to..." },
   "cmd.empty": { lt: "Nieko nerasta.", en: "No results." },
@@ -370,6 +381,10 @@ const baseDict = {
   "nut.delete": { lt: "Trinti", en: "Delete" },
   // Both paths are model estimates; the chip says which evidence the
   // estimate was made from, so the athlete can weigh it.
+  "nut.planTargetsReadFailed": {
+    lt: "Nepavyko nuskaityti mitybos plano normų, todėl šie skaičiai nerodo tavo plano tikslų.",
+    en: "Could not read your meal plan's targets, so these figures are not your plan's goals.",
+  },
   "nut.src.photo": { lt: "Vertinta iš nuotraukos", en: "Estimated from a photo" },
   "nut.src.text": { lt: "Vertinta iš aprašymo", en: "Estimated from your description" },
 

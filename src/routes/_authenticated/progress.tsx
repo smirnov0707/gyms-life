@@ -92,30 +92,36 @@ function ProgressPage() {
   const copy = copyFor(lang);
   const { user } = useAuth();
 
-  const { data: sessions } = useQuery({
+  // A failed read used to arrive as an empty array, and this screen says the
+  // same thing about an empty array as it does about an athlete who has never
+  // trained: "no history". Telling someone with months of sessions that their
+  // history is empty is the worst thing a progress screen can do.
+  const { data: sessions, isError: sessionsReadFailed } = useQuery({
     queryKey: ["sessions-all", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("workout_sessions")
         .select("id, title, started_at, total_volume, duration_seconds")
         .eq("user_id", user!.id)
         .not("finished_at", "is", null)
         .order("started_at", { ascending: true });
+      if (error) throw new Error(error.message);
       return data ?? [];
     },
     enabled: !!user,
   });
 
-  const { data: records } = useQuery({
+  const { data: records, isError: recordsReadFailed } = useQuery({
     queryKey: ["records", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("set_logs")
         .select("exercise_name, exercise_slug, weight_kg, reps")
         .eq("user_id", user!.id)
         .not("weight_kg", "is", null)
         .order("weight_kg", { ascending: false })
         .limit(200);
+      if (error) throw new Error(error.message);
       const best: Record<string, { name: string; weight: number; reps: number }> = {};
       for (const row of data ?? []) {
         const weight = Number(row.weight_kg);
@@ -213,7 +219,9 @@ function ProgressPage() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("pr.empty")}</p>
+            <p className="text-sm text-muted-foreground">
+              {sessionsReadFailed ? t("pr.readFailed") : t("pr.empty")}
+            </p>
           )}
         </div>
       </details>
@@ -246,7 +254,9 @@ function ProgressPage() {
               ))}
             </div>
           ) : (
-            <p className="py-4 text-sm text-muted-foreground">{t("pr.empty")}</p>
+            <p className="py-4 text-sm text-muted-foreground">
+              {recordsReadFailed ? t("pr.readFailed") : t("pr.empty")}
+            </p>
           )}
         </div>
       </details>
@@ -282,7 +292,9 @@ function ProgressPage() {
               </div>
             ))}
             {!sessions?.length ? (
-              <p className="py-4 text-sm text-muted-foreground">{t("pr.empty")}</p>
+              <p className="py-4 text-sm text-muted-foreground">
+                {sessionsReadFailed ? t("pr.readFailed") : t("pr.empty")}
+              </p>
             ) : null}
           </div>
         </div>

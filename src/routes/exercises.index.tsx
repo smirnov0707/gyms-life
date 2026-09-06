@@ -286,13 +286,16 @@ function ExercisesPage() {
     }
   };
 
+  // An empty catalogue means "this app has no exercises", which is never
+  // true. A read that fails must not be able to say it.
   const fetchPage = async (from: number, to: number) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("exercises")
       .select("*")
       .order("muscle_group")
       .order("name_en")
       .range(from, to);
+    if (error) throw new Error(error.message);
     return data ?? [];
   };
 

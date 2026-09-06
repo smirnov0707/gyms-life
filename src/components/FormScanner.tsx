@@ -68,20 +68,27 @@ export function FormScanner() {
   const { data: exercises } = useQuery({
     queryKey: ["exercises"],
     queryFn: async () => {
-      const { data } = await supabase.from("exercises").select("slug, name_lt, name_en");
+      const { data, error } = await supabase.from("exercises").select("slug, name_lt, name_en");
+      if (error) throw new Error(error.message);
       return data ?? [];
     },
   });
 
-  const { data: history, refetch } = useQuery({
+  // An empty list here reads as "you have never had your form analysed".
+  const {
+    data: history,
+    refetch,
+    isError: historyReadFailed,
+  } = useQuery({
     queryKey: ["form-analyses", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("form_analyses")
         .select("id, exercise_name, score, verdict, created_at")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(6);
+      if (error) throw new Error(error.message);
       return data ?? [];
     },
     enabled: !!user,
@@ -286,6 +293,15 @@ export function FormScanner() {
           )}
         </div>
       </div>
+
+      {historyReadFailed ? (
+        <div className="panel p-6">
+          <h2 className="text-2xl">{t("fc.history")}</h2>
+          {/* Hiding the section on failure says "you have no past analyses".
+              Say instead that we could not look. */}
+          <p className="mt-3 text-sm text-muted-foreground">{t("fc.historyReadFailed")}</p>
+        </div>
+      ) : null}
 
       {!!history?.length && (
         <div className="panel p-6">
