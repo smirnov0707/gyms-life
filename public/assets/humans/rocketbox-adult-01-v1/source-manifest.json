@@ -1,0 +1,91 @@
+{
+  "license": "MIT",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "upstreamRef": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "files": [
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+      "gitBlobSha": "9bcfb3ece5301a55d3a41bbd00a029ab27d61d13",
+      "sha256": "17474e386e0b9e1a700cc3d06b2b0882a2c376d9c6b49c7f8274409b8f8d2352",
+      "bytes": 1066
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Export/Male_Adult_01.fbx",
+      "gitBlobSha": "fdaf4aa7d15054f1601740ea1a09cf111938d210",
+      "sha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
+      "bytes": 521472
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Male_Adult_01.png",
+      "gitBlobSha": "104f167bd2d1102cd4eee063c7570dd5820abc62",
+      "sha256": "54c9b5a695881c3d8aea99fb23d234282a5642c3e96f966b441ab7893461d535",
+      "bytes": 450889
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_body_color.tga",
+      "gitBlobSha": "818ec72b6c69655c5853ab0eb1efdd6ab40b2bf0",
+      "sha256": "6a048a6b2140a1f5293798ca286be64fd0de6d79572e1273ff5765bd578f463f",
+      "bytes": 12582956
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_body_normal.tga",
+      "gitBlobSha": "31168ae5dca1085bb433988ff18f37fefe7dba0a",
+      "sha256": "c9892e80c56890f6f5365627835286c2d4d2cc34cc473f6788fe3d560a52fb69",
+      "bytes": 12582956
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_body_specular.tga",
+      "gitBlobSha": "525c3d89d06bc75b5fd1de4b310f17ee03aff148",
+      "sha256": "c071a46bf86f2cc0062ccddae770a9bc21ebae325634439ac3cc1ed4d92fd684",
+      "bytes": 12582956
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_head_color.tga",
+      "gitBlobSha": "0becf592ac705b4a2be8a63aa164266ac2a09d9c",
+      "sha256": "f5b64e4894930d438f7c419c3c9d0bba1f95fa4de9af078b762ea55bfca1ab85",
+      "bytes": 12582956
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_head_normal.tga",
+      "gitBlobSha": "9d2385bd43ec4e2bbc1712168d5317d06f9941e7",
+      "sha256": "5ef5ae404c9276f17641e392d0d4bdbe5fb23e94f28238b23a381e6a357c42ea",
+      "bytes": 12582956
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_head_specular.tga",
+      "gitBlobSha": "52b700ec4766105fad73bfc8415036d5db26d2a4",
+      "sha256": "c051336b12d443cbd0e04dc3f1ce4109d420f426198aa02a1a1451b87e9a7831",
+      "bytes": 12582956
+    },
+    {
+      "source": "https://raw.githubusercontent.com/microsoft/Microsoft-Rocketbox/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01/Textures/m002_opacity_color.tga",
+      "gitBlobSha": "a4088df07a8896761bd209d304b12310f90e5003",
+      "sha256": "53818d3f45519451edd2bc60d6e59cd4057ecd381827463c5503da0439d0a5cf",
+      "bytes": 16777260
+    }
+  ],
+  "adaptation": "Posed supplied rig; coarse authored surface regions; embedded 2K colour/1K normals/alpha; constant roughness; no measured physiology or personalization.",
+  "output": {
+    "sha256": "78fcc785417b7de1c1637d8860d7e6a5395e3edd3edebebe12705b72b1274309",
+    "bytes": 5944144,
+    "sourceTriangles": 7440,
+    "triangles": 7440,
+    "vertices": 22320,
+    "meshCount": 11,
+    "regions": {
+      "legs": 1114,
+      "glutes": 78,
+      "core": 294,
+      "back": 289,
+      "abs": 34,
+      "chest": 164,
+      "neutral": 3573,
+      "shoulders": 76,
+      "arms": 1818
+    },
+    "bounds": {
+      "min": [-0.4227078372357328, -1.6371452804531117e-17, -0.173275499478255],
+      "max": [0.4227078372357329, 1.8600000000000005, 0.17327549987460716]
+    }
+  }
+}
