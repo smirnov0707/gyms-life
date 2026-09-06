@@ -67,7 +67,7 @@ strengths = 2-3 things already good. warnings = interaction/overdose/medical cau
 ATHLETE: ${snap.profile.gender}, ${age ?? "?"} y, ${snap.profile.weight === null ? "weight not recorded" : `${snap.profile.weight} kg`}, ${snap.profile.height === null ? "height not recorded" : `${snap.profile.height} cm`}, goal ${snap.profile.goal ?? "not recorded"}, diet ${snap.profile.diet}.
 TRAINING: ${snap.training.sessions14d} sessions in 14 days, avg sleep ${snap.training.avgSleep} h, avg readiness ${snap.training.avgReadiness}.
 NUTRITION: ${snap.days} logged days, avg ${snap.avgKcal} kcal/day, avg ${snap.avgProtein} g protein/day.
-FOOD LOG: ${snap.foodEntries.map((f) => `${f.day} ${f.food} (${f.kcal}kcal P${f.protein}/C${f.carbs}/F${f.fat})`).join("; ") || "empty"}.
+FOOD LOG (every entry is an estimate, never weighed; [photo] = a model read a photograph of the plate, [described] = a model read the athlete's own text, [source unknown] = logged before the app recorded which): ${snap.foodEntries.map((f) => `${f.day} ${f.food} (${f.kcal}kcal P${f.protein}/C${f.carbs}/F${f.fat}) ${f.source === "photo" ? "[photo]" : f.source === "text" ? "[described]" : "[source unknown]"}`).join("; ") || "empty"}.
 CURRENT SUPPLEMENTS: ${snap.supplements.map((s) => `${s.name} ${s.dose} x${s.times_per_day}`).join("; ") || "none"}.
 
 Return exactly: {"summary":"","dataQuality":"","findings":[{"name":"","current":"","target":"","gapPercent":0,"priority":"high","reason":"","evidence":"","foodFix":"","supplement":{"name":"","dose":"","category":"vitamin","times_per_day":1,"with_food":true,"preferred_time":"morning"}}],"strengths":[""],"warnings":[""]}`;

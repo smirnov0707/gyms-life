@@ -38,6 +38,13 @@ export type ReportStats = {
   avgStress: number | null;
   avgEnergy: number | null;
   nutritionDaysLogged: number;
+  /**
+   * Where the logged meals came from, counted per entry. Every path in this
+   * app produces an estimate, but "a model read a photograph" and "a model
+   * read a sentence the athlete typed" are not the same evidence, and rows
+   * written before provenance was recorded are neither.
+   */
+  nutritionSources: { photo: number; text: number; unrecorded: number };
   avgKcal: number | null;
   avgProtein: number | null;
   avgCarbs: number | null;
@@ -88,7 +95,7 @@ export async function buildReportStats(
         .gte("checkin_on", fromDay),
       supabase
         .from("nutrition_logs")
-        .select("logged_on, calories, protein, carbs, fat")
+        .select("logged_on, calories, protein, carbs, fat, source")
         .eq("user_id", userId)
         .gte("logged_on", fromDay),
       supabase
@@ -128,8 +135,12 @@ export async function buildReportStats(
   const checkins = checkinsRes.data ?? [];
   const nutri = nutriRes.data ?? [];
 
+  const nutritionSources = { photo: 0, text: 0, unrecorded: 0 };
   const perDay = new Map<string, { kcal: number; p: number; c: number; f: number }>();
   for (const row of nutri) {
+    if (row.source === "photo_estimate") nutritionSources.photo += 1;
+    else if (row.source === "text_estimate") nutritionSources.text += 1;
+    else nutritionSources.unrecorded += 1;
     const key = row.logged_on;
     const acc = perDay.get(key) ?? { kcal: 0, p: 0, c: 0, f: 0 };
     acc.kcal += num(row.calories) ?? 0;
@@ -175,6 +186,7 @@ export async function buildReportStats(
     avgStress: avg(checkins.map((c) => num(c.stress))),
     avgEnergy: avg(checkins.map((c) => num(c.energy))),
     nutritionDaysLogged: perDay.size,
+    nutritionSources,
     avgKcal: avg(days.map((d) => Math.round(d.kcal))),
     avgProtein: avg(days.map((d) => Math.round(d.p))),
     avgCarbs: avg(days.map((d) => Math.round(d.c))),
@@ -197,6 +209,26 @@ export async function buildReportStats(
   };
 }
 
+/**
+ * How the month's meals were captured, in words a physician can weigh.
+ *
+ * Every nutrition row in this app is a model's estimate — there is no
+ * weighed-entry path — so the estimate caveat is unconditional. What varies
+ * is the evidence behind it, and that is counted rather than asserted:
+ * photographs, typed descriptions, and rows logged before the app recorded
+ * which of the two it was.
+ */
+export function nutritionProvenanceNote(sources: ReportStats["nutritionSources"]): string {
+  const { photo, text, unrecorded } = sources;
+  const total = photo + text + unrecorded;
+  if (total === 0) return "no meals logged";
+  const parts: string[] = [];
+  if (photo > 0) parts.push(`${photo} from photographs`);
+  if (text > 0) parts.push(`${text} from typed descriptions`);
+  if (unrecorded > 0) parts.push(`${unrecorded} with the capture method not recorded`);
+  return `${total} entries, every one a model estimate and none weighed: ${parts.join(", ")}`;
+}
+
 export function statsToPrompt(s: ReportStats): string {
   const profile = s.profile;
   const age = profile?.birth_year ? new Date().getFullYear() - profile.birth_year : null;
@@ -206,10 +238,10 @@ export function statsToPrompt(s: ReportStats): string {
     `TRAINING: sessions=${s.sessions}, ${s.sessionsPerWeek}/week, total volume=${s.totalVolumeKg}kg, total time=${s.trainingMinutes}min, avg session=${s.avgSessionMinutes}min`,
     `TOP LIFTS: ${s.topLifts.length ? s.topLifts.map((l) => `${l.exercise} ${l.bestWeight}kg×${l.reps}`).join("; ") : "no logged sets"}`,
     `RECOVERY: check-ins=${s.checkins}, avg readiness=${s.avgReadiness ?? "—"}, avg sleep=${s.avgSleepHours ?? "—"}h, soreness=${s.avgSoreness ?? "—"}, stress=${s.avgStress ?? "—"}, energy=${s.avgEnergy ?? "—"}`,
-    // Every nutrition row in this app is a model's estimate — from a typed
-    // description or a photograph — and there is no manual-entry path. A
-    // report a physician reads must not present estimated intake as weighed.
-    `NUTRITION (all figures are model estimates from meal descriptions or photos, never weighed): days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
+    // A report a physician reads must not present estimated intake as
+    // weighed, and must not guess at the mix either: the counts come from
+    // the rows themselves.
+    `NUTRITION (${nutritionProvenanceNote(s.nutritionSources)}): days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
     `BODY: weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
     `SUPPLEMENTS: ${s.supplements.length ? s.supplements.map((x) => `${x.name} ${x.dose ?? ""} ×${x.timesPerDay ?? 1}`).join("; ") : "none"}`,
   ].join("\n");
