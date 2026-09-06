@@ -8,6 +8,8 @@ import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { LabOverviewSchema, type LabDecision, type LabOverview } from "./lab.schema";
 import { dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
+import { loadPredictionCalibration } from "./prediction-calibration.server";
+import { reconcileWorkoutCompletionShadowPredictions } from "./prediction-shadow-ledger.server";
 import {
   TodayDecisionActionSchema,
   TodayDecisionBasisSchema,
@@ -139,8 +141,8 @@ async function loadRecentDecisions(
 
 /**
  * Loads the Lab overview from current canonical athlete state plus bounded,
- * auditable learning history. Hypothesis persistence remains secondary and
- * fail-open; Today never consumes the retrospective.
+ * auditable learning history. Hypothesis and prediction audit plumbing remains
+ * secondary and fail-open; neither retrospective can become a Today input.
  */
 export async function loadLabOverview(
   supabase: SupabaseClient<Database>,
@@ -155,8 +157,8 @@ export async function loadLabOverview(
   const athlete = await refreshAthleteStateSnapshot(supabase, userId, zone, now);
   const hypotheses = buildAthleteHypotheses(athlete.state);
 
-  // Reconcile first so a transition created from this canonical snapshot is
-  // visible in the retrospective returned by the same Lab request.
+  // Reconcile first so transitions and prediction outcomes created from facts
+  // already present in this request are visible in the same Lab response.
   if (athlete.snapshot) {
     await reconcileAthleteHypothesisLedger(
       supabase,
@@ -167,10 +169,12 @@ export async function loadLabOverview(
       now,
     );
   }
+  await reconcileWorkoutCompletionShadowPredictions(userId, now).catch(() => undefined);
 
-  const [hypothesisHistory, decisions] = await Promise.all([
+  const [hypothesisHistory, decisions, predictionCalibration] = await Promise.all([
     loadHypothesisRetrospective(supabase, userId),
     loadRecentDecisions(supabase, userId, since),
+    loadPredictionCalibration(supabase, userId),
   ]);
 
   return LabOverviewSchema.parse({
@@ -178,6 +182,7 @@ export async function loadLabOverview(
     hypothesisHistory,
     decisions,
     decisionAccuracy: buildDecisionAccuracy(decisions),
+    predictionCalibration,
     dataGaps: athlete.state.dataGaps,
   });
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Brain, ChevronDown, FlaskConical, Loader2 } from "lucide-react";
+import { PredictionCalibrationPanel } from "@/components/PredictionCalibrationPanel";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getLabOverview } from "@/lib/lab.functions";
@@ -340,6 +341,8 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           </div>
         </section>
       ) : null}
+
+      <PredictionCalibrationPanel data={data.predictionCalibration} />
 
       <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
