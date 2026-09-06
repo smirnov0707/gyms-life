@@ -49,18 +49,9 @@ export function FutureLabScientistStatus({ compact = false }: { compact?: boolea
 
   const data = query.data;
   const gaps = new Set<Gap>(data?.dataGaps ?? []);
-  const trainingMissing = hasAny(gaps, [
-    "training_data_unavailable",
-    "no_completed_workouts_28d",
-  ]);
-  const recoveryMissing = hasAny(gaps, [
-    "recovery_data_unavailable",
-    "no_recovery_checkins_7d",
-  ]);
-  const nutritionMissing = hasAny(gaps, [
-    "nutrition_data_unavailable",
-    "no_nutrition_logs_14d",
-  ]);
+  const trainingMissing = hasAny(gaps, ["training_data_unavailable", "no_completed_workouts_28d"]);
+  const recoveryMissing = hasAny(gaps, ["recovery_data_unavailable", "no_recovery_checkins_7d"]);
+  const nutritionMissing = hasAny(gaps, ["nutrition_data_unavailable", "no_nutrition_logs_14d"]);
   const biomechanicsMissing = gaps.has("muscle_load_data_unavailable");
   const behaviorMissing = hasAny(gaps, [
     "current_context_unavailable",
