@@ -42,6 +42,16 @@ describe("prediction shadow ledger", () => {
     expect(evaluated?.evaluatedAt).toBe("2026-09-05T18:00:00+03:00");
   });
 
+  it("does not count a completion observed after the forecast horizon", () => {
+    expect(
+      evaluateWorkoutCompletionShadowPrediction({
+        prediction: pendingPrediction(),
+        actual: true,
+        evaluatedAt: "2026-09-06T00:00:01+03:00",
+      }),
+    ).toBeNull();
+  });
+
   it("does not infer non-completion before the horizon", () => {
     expect(
       evaluateWorkoutCompletionShadowPrediction({
