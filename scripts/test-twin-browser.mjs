@@ -109,8 +109,11 @@ try {
   await preset(page, "Reset view");
   await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
+  // A point on the pectoral, right of the sternum: the chest band of the human
+  // figure runs from roughly 8% to 19% of the canvas height above centre, so
+  // this sits in the middle of it rather than on its edge.
   const x = box.x + box.width / 2 + 22;
-  const y = box.y + box.height / 2 - box.height * 0.19;
+  const y = box.y + box.height / 2 - box.height * 0.12;
   await page.mouse.click(x, y);
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   const beforeDrag = Number(await canvas.getAttribute("data-twin-yaw"));

@@ -4,17 +4,16 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "prepare:twin-human": "node scripts/fetch-twin-human-asset.mjs",
-    "dev": "npm run prepare:twin-human && vite dev",
-    "build": "npm run prepare:twin-human && vite build",
-    "build:dev": "npm run prepare:twin-human && vite build --mode development",
+    "dev": "vite dev",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test:browser": "node scripts/test-twin-browser.mjs",
-    "build:staging": "npm run prepare:twin-human && DEPLOY_TARGET=cloudflare vite build"
+    "build:staging": "DEPLOY_TARGET=cloudflare vite build"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -85,6 +84,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
     "@netlify/vite-plugin-tanstack-start": "^1.3.19",
     "@playwright/test": "1.57.0",
     "@types/node": "^22.16.5",

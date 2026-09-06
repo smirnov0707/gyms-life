@@ -13,6 +13,10 @@ import {
   mapTwinScene,
   moveTwinCamera,
   shouldAnimateTwin,
+  TWIN_DISPLAY_COLORS,
+  TWIN_SELECTION_GLOW,
+  TWIN_TONE_GLOW,
+  type TwinDisplayTone,
 } from "./twin-scene.model";
 
 const chest: TwinRegionState = {
@@ -213,5 +217,37 @@ describe("truthful layer projections", () => {
   it("refuses an unsupported layer at runtime", () => {
     // @ts-expect-error test a malformed external selection
     expect(getTwinRegionDisplay(fixture([chest]), "chest", "future").value).toBeNull();
+  });
+});
+
+describe("region glow", () => {
+  it("gives every tone the display can produce a usable intensity", () => {
+    // A tone with no entry renders at undefined intensity, which three reads
+    // as NaN and paints black — a region that silently goes dead.
+    for (const tone of Object.keys(TWIN_DISPLAY_COLORS) as TwinDisplayTone[]) {
+      expect(Number.isFinite(TWIN_TONE_GLOW[tone])).toBe(true);
+      expect(TWIN_TONE_GLOW[tone]).toBeGreaterThanOrEqual(0);
+      expect(TWIN_TONE_GLOW[tone]).toBeLessThan(0.2);
+    }
+  });
+
+  it("lights only the states that ask for attention", () => {
+    // Lighting the calm states too paints every region a different colour,
+    // and a body in coloured panels reads as clothing rather than as skin.
+    expect(TWIN_TONE_GLOW.fatigued).toBeGreaterThan(0);
+    expect(TWIN_TONE_GLOW.volume_high).toBeGreaterThan(0);
+    expect(TWIN_TONE_GLOW.fresh).toBe(0);
+    expect(TWIN_TONE_GLOW.moderate).toBe(0);
+    expect(TWIN_TONE_GLOW.volume_low).toBe(0);
+    expect(TWIN_TONE_GLOW.volume_medium).toBe(0);
+    // Nothing the app does not know should draw the eye at all.
+    expect(TWIN_TONE_GLOW.unknown).toBe(0);
+  });
+
+  it("still shows the athlete which region they picked", () => {
+    // Selection has to be visible on a fresh region, which has no glow of its
+    // own, or picking a recovered muscle looks like the click did nothing.
+    expect(TWIN_SELECTION_GLOW).toBeGreaterThan(0);
+    expect(TWIN_SELECTION_GLOW + TWIN_TONE_GLOW.fresh).toBeGreaterThan(0);
   });
 });

@@ -1,10 +1,13 @@
 import {
   ACESFilmicToneMapping,
+  CanvasTexture,
+  CircleGeometry,
   Color,
   DirectionalLight,
   Group,
   HemisphereLight,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   Raycaster,
@@ -18,10 +21,17 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
-import { loadTwinHumanSurface, type TwinHumanSurface } from "./twin-human.runtime";
+import {
+  loadTwinHuman,
+  twinHumanUrl,
+  type TwinBodyModel,
+  type TwinHumanVariant,
+} from "./twin-human.loader";
 import {
   TWIN_CAMERA,
   TWIN_DISPLAY_COLORS,
+  TWIN_SELECTION_GLOW,
+  TWIN_TONE_GLOW,
   fittedTwinDistance,
   isTwinTap,
   moveTwinCamera,
@@ -39,6 +49,22 @@ export type TwinSceneHandle = {
   dispose: () => void;
 };
 
+/** A radial fade, black at the centre, used as the figure's contact shade. */
+function contactShadow(): CanvasTexture | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gradient.addColorStop(0, "rgba(0,0,0,0.85)");
+  gradient.addColorStop(0.45, "rgba(0,0,0,0.35)");
+  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 128, 128);
+  return new CanvasTexture(canvas);
+}
+
 /** Browser-only module, loaded on demand. Owns no user data or business rules. */
 export function mountTwinScene(
   host: HTMLElement,
@@ -48,6 +74,9 @@ export function mountTwinScene(
     label: string;
     onSelect: (region: TwinBodyRegion) => void;
     onFailure: () => void;
+    /** Off switches the anatomical figure back to the generated surface. */
+    human?: boolean;
+    humanVariant?: TwinHumanVariant;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -82,7 +111,6 @@ export function mountTwinScene(
     canvas.setAttribute("role", "img");
     canvas.setAttribute("aria-label", options.label);
     canvas.dataset["twinRenderer"] = "three";
-    canvas.dataset["twinVisual"] = "schematic";
     host.append(canvas);
 
     const scene = new Scene();
@@ -103,32 +131,83 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    scene.add(new HemisphereLight(0xf1f7ff, 0x14201c, 1.35));
+    // Lit for skin rather than for a matte solid: one warm key that models the
+    // form, a dim cool fill so the shadow side is readable without flattening
+    // it, and a mint rim behind that separates the silhouette from the dark
+    // stage. The earlier setup was three near-equal lights, which washed the
+    // body out until it read as plastic.
+    scene.add(new HemisphereLight(0xe4eef8, 0x1b1512, 0.55));
     for (const [position, color, intensity] of [
-      [[2, 3, 4], 0xffead6, 2.4],
-      [[-3, 1.7, 1], 0x9ccbe7, 1.05],
-      [[0, 2.8, -3], 0xc4f0dd, 2.1],
+      [[2.2, 3.2, 3.0], 0xffe9d2, 2.05],
+      [[-3.0, 1.2, 1.6], 0x8fb4dc, 0.6],
+      [[-0.6, 2.4, -3.2], 0xa8f0e0, 1.45],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
 
-    const model = createTwinBody();
+    // A body with nothing under it floats. There is no floor in this scene, so
+    // the contact is a painted ellipse of shade rather than a shadow map the
+    // low-power path cannot afford.
+    const shadowTexture = contactShadow();
+    const contact = new Mesh(
+      new CircleGeometry(0.4, 48),
+      new MeshBasicMaterial({
+        map: shadowTexture,
+        transparent: true,
+        opacity: 0.6,
+        depthWrite: false,
+      }),
+    );
+    contact.rotation.x = -Math.PI / 2;
+    contact.position.y = 0.002;
+    contact.scale.set(1, 0.62, 1);
+    scene.add(contact);
+    cleanups.push(() => {
+      contact.geometry.dispose();
+      (contact.material as MeshBasicMaterial).dispose();
+      shadowTexture?.dispose();
+    });
+    // One root the camera sway and the raycast both address, so swapping the
+    // body underneath cannot leave either of them holding the old object.
     const twinBodyRoot = new Group();
     twinBodyRoot.name = "twin-body-root";
-    twinBodyRoot.add(model.body);
     scene.add(twinBodyRoot);
-    let humanSurface: TwinHumanSurface | null = null;
 
+    // The generated surface paints immediately, with no network involved, so
+    // the scene is never blank. The anatomical human replaces it once it has
+    // loaded; if that fetch fails, is aborted, or the file is unusable, the
+    // surface simply stays. A missing asset must not cost the athlete a Twin.
+    let model: TwinBodyModel | ReturnType<typeof createTwinBody> = createTwinBody();
+    twinBodyRoot.add(model.body);
+    const humanLoad = new AbortController();
     cleanups.push(() => {
-      humanSurface?.dispose();
-      humanSurface = null;
+      humanLoad.abort();
       model.dispose();
       twinBodyRoot.clear();
       scene.clear();
     });
 
+    if (options.human !== false) {
+      void loadTwinHuman(twinHumanUrl(options.humanVariant ?? "male"), humanLoad.signal)
+        .then((human) => {
+          if (destroyed || humanLoad.signal.aborted) {
+            human.dispose();
+            return;
+          }
+          twinBodyRoot.remove(model.body);
+          model.dispose();
+          model = human;
+          twinBodyRoot.add(model.body);
+          canvas.dataset["twinBody"] = "human";
+          applyState();
+        })
+        .catch(() => {
+          // Deliberately quiet: the surface is already on screen and correct.
+          canvas.dataset["twinBody"] = "surface";
+        });
+    }
     let state = options.state;
     let selectedRegion = options.selectedRegion;
     let motionEnabled = true;
@@ -183,47 +262,54 @@ export function mountTwinScene(
     controls.addEventListener("change", requestRender);
     cleanups.push(() => controls.removeEventListener("change", requestRender));
 
-    function setAnalyticalSurfaceHidden(hidden: boolean) {
-      for (const mesh of model.meshes) {
-        const material = mesh.material as MeshStandardMaterial;
-        material.colorWrite = !hidden;
-        material.depthWrite = !hidden;
-        material.transparent = hidden;
-        material.opacity = hidden ? 0 : 1;
-        material.needsUpdate = true;
-      }
-    }
-
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
+      // A human is tinted, not repainted. Replacing skin with a solid data
+      // colour turns the figure back into coloured body parts, so the data
+      // colour is mixed lightly into the surface it belongs to and the rest
+      // of the reading is carried by selection emphasis and the region panel.
+      const base = "baseColorOf" in model ? model.baseColorOf : null;
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
-        const color = new Color("#48565d").lerp(
-          new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]),
-          0.55,
-        );
+        const tone = new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]);
+        const selected = selectedRegion === id;
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
-          material.color.copy(color);
-          const selected = selectedRegion === id;
-          material.emissive.set(selected ? "#bcefe3" : "#000000");
-          material.emissiveIntensity = selected ? 0.22 : 0;
-          material.roughness = selected ? 0.36 : 0.48;
+          const skin = base?.get(mesh);
+          if (skin !== undefined) {
+            // Skin keeps its own colour; the state is light cast over it, and
+            // brighter the more it wants attention. Mixing the data colour into
+            // the albedo instead painted a hard-edged amber block across the
+            // torso — the coloured-body-parts look this figure exists to end.
+            // Divided by the tone's own brightness so how much a region lights
+            // up is set by what it means, not by how pale its colour happens to
+            // be. Without it the near-white volume tone burned the pectoral
+            // plate to a flat white shape that read as a garment.
+            const glow =
+              TWIN_TONE_GLOW[value?.display.tone ?? "unknown"] +
+              (selected ? TWIN_SELECTION_GLOW : 0);
+            // The palette is drawn for small marks on a dark page, so its
+            // lighter tones are close to white. Laid on skin as light, white is
+            // not a colour — it just bleaches the region into a flat panel — so
+            // the body uses the same hue at full saturation instead, and the
+            // amount of light is set by the glow alone.
+            const hsl = { h: 0, s: 0, l: 0 };
+            tone.getHSL(hsl);
+            const lit = new Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.6), 0.5);
+            material.color.set(skin);
+            material.emissive.copy(lit);
+            material.emissiveIntensity = glow / Math.max(lit.r, lit.g, lit.b, 0.2);
+            material.roughness = selected ? 0.56 : 0.64;
+          } else {
+            material.color.copy(new Color("#48565d").lerp(tone, 0.55));
+            material.emissive.set(selected ? "#bcefe3" : "#000000");
+            material.emissiveIntensity = selected ? 0.22 : 0;
+            material.roughness = selected ? 0.36 : 0.48;
+          }
         }
       }
       requestRender();
     }
-
-    // Photoreal is enhancement-only. Until the asset exists and loads cleanly,
-    // the current schematic body remains visible and fully interactive.
-    void loadTwinHumanSurface().then((surface) => {
-      if (destroyed || !surface) return;
-      humanSurface = surface;
-      twinBodyRoot.add(surface.root);
-      setAnalyticalSurfaceHidden(true);
-      canvas.dataset["twinVisual"] = "photoreal";
-      requestRender();
-    });
 
     const command = (action: TwinCameraCommand) => {
       controls.enableDamping = false;
