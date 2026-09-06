@@ -11,9 +11,9 @@ import type { TwinRewindPoint } from "@/lib/twin-rewind";
 const COPY = {
   lt: {
     title: "Įrodymai tarp būsenų",
-    description: "Timeline įrašai, kurių indeksuotas įvykio laikas patenka tarp šių Twin snapshot'ų.",
-    note:
-      "Tai laiko sutapimas, o ne priežastinis paaiškinimas. Timeline occurred_at nebūtinai yra tikslus pratimo atlikimo, matavimo ar fiziologinio pokyčio momentas.",
+    description:
+      "Timeline įrašai, kurių indeksuotas įvykio laikas patenka tarp šių Twin snapshot'ų.",
+    note: "Tai laiko sutapimas, o ne priežastinis paaiškinimas. Timeline occurred_at nebūtinai yra tikslus pratimo atlikimo, matavimo ar fiziologinio pokyčio momentas.",
     loading: "Įkeliami intervalo įrodymai…",
     error: "Nepavyko įkelti intervalo įrodymų. Tai nereiškia, kad įvykių nebuvo.",
     retry: "Bandyti dar kartą",
@@ -50,9 +50,9 @@ const COPY = {
   },
   en: {
     title: "Evidence between states",
-    description: "Timeline records whose indexed event time falls between these two Twin snapshots.",
-    note:
-      "This is temporal overlap, not a causal explanation. Timeline occurred_at is not necessarily the exact time an exercise, measurement or physiological change happened.",
+    description:
+      "Timeline records whose indexed event time falls between these two Twin snapshots.",
+    note: "This is temporal overlap, not a causal explanation. Timeline occurred_at is not necessarily the exact time an exercise, measurement or physiological change happened.",
     loading: "Loading interval evidence…",
     error: "Interval evidence could not be loaded. This does not mean no events occurred.",
     retry: "Try again",
