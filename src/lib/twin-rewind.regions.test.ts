@@ -97,10 +97,7 @@ describe("Twin Rewind region comparison", () => {
   });
 
   it("refuses a region map when either Twin source was unavailable", () => {
-    const older = point(
-      "00000000-0000-4000-8000-000000000001",
-      snapshot(60, 100, false),
-    );
+    const older = point("00000000-0000-4000-8000-000000000001", snapshot(60, 100, false));
     const newer = point("00000000-0000-4000-8000-000000000002", snapshot(72, 145));
     expect(compareTwinRewindRegions(older, newer)).toBeNull();
   });

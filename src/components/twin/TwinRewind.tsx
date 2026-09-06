@@ -332,7 +332,9 @@ export function TwinRewind() {
                 <p className="mt-1 text-xs text-muted-foreground">{copy.comparisonUnavailable}</p>
               )}
             </div>
-            {older ? <TwinChangeMap older={older} newer={selected} lang={lang} regionLabel={label} /> : null}
+            {older ? (
+              <TwinChangeMap older={older} newer={selected} lang={lang} regionLabel={label} />
+            ) : null}
             <div className="mt-6">
               <TwinSnapshotView
                 key={selected.id}

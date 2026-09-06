@@ -12,8 +12,7 @@ import {
 const COPY = {
   lt: {
     title: "Twin Change Map",
-    description:
-      "Kūno regionų skirtumas tarp dviejų tikrai išsaugotų, suderinamų Twin būsenų.",
+    description: "Kūno regionų skirtumas tarp dviejų tikrai išsaugotų, suderinamų Twin būsenų.",
     note: "Spalva rodo tik apskaičiuoto atsistatymo įverčio kryptį tarp šių dviejų snapshot'ų. Teigiamas skirtumas nėra įrodymas, kad treniruotė sukėlė pagerėjimą; neigiamas nėra diagnozė ar žala.",
     front: "Priekis",
     back: "Nugara",
