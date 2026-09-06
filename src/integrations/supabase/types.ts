@@ -644,6 +644,7 @@ export type Database = {
           logged_on: string
           note: string | null
           protein: number
+          source: string | null
           user_id: string
         }
         Insert: {
@@ -657,6 +658,7 @@ export type Database = {
           logged_on?: string
           note?: string | null
           protein?: number
+          source?: string | null
           user_id: string
         }
         Update: {
@@ -670,6 +672,7 @@ export type Database = {
           logged_on?: string
           note?: string | null
           protein?: number
+          source?: string | null
           user_id?: string
         }
         Relationships: []

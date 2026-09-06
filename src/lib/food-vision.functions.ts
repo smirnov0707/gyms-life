@@ -136,7 +136,8 @@ export const savePhotoMeal = createServerFn({ method: "POST" })
     });
     const { error } = await supabase
       .from("nutrition_logs")
-      .insert({ user_id: userId, logged_on: today, ...meal });
+      // A vision model estimated these macros from a photograph.
+      .insert({ user_id: userId, logged_on: today, source: "photo_estimate", ...meal });
 
     if (error) throw new Error(error.message);
     return { ok: true };
