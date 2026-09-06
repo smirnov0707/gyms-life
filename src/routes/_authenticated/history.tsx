@@ -60,9 +60,7 @@ function WorkoutHistoryPage() {
                 const date = new Date(session.session.finishedAt);
                 const exercises = Array.from(
                   new Map(
-                    session.sets
-                      .filter((set) => set.done)
-                      .map((set) => [set.exerciseSlug, set]),
+                    session.sets.filter((set) => set.done).map((set) => [set.exerciseSlug, set]),
                   ).values(),
                 );
                 return (
@@ -93,10 +91,7 @@ function WorkoutHistoryPage() {
                     </div>
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
                       {exercises.map((set) => (
-                        <div
-                          key={set.exerciseSlug}
-                          className="rounded-lg bg-surface-2 px-4 py-3"
-                        >
+                        <div key={set.exerciseSlug} className="rounded-lg bg-surface-2 px-4 py-3">
                           <div className="font-medium">{set.exerciseName}</div>
                           <div className="mt-1 text-xs text-muted-foreground">
                             {
