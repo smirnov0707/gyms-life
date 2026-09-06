@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildTwinEvidenceWindow,
-  normalizeTwinEvidenceWindowInput,
-} from "./twin-evidence-window";
+import { buildTwinEvidenceWindow, normalizeTwinEvidenceWindowInput } from "./twin-evidence-window";
 
 function row(overrides: Record<string, unknown> = {}) {
   return {
