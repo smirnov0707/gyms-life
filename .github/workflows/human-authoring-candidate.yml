@@ -56,6 +56,7 @@ jobs:
           python scripts/human/wire-preview.py
           rm scripts/human/wire-preview.py
           npx prettier --write src/components/twin/twin-human.asset.ts src/components/twin/twin-human.asset.test.ts src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts scripts/test-human-browser.mjs scripts/human/optimize-authored-human.mjs public/assets/twin/human/asset-manifest.json
+          npx eslint --fix scripts/test-human-browser.mjs
       - run: npm run typecheck
       - run: npm run test
       - run: npm run lint
