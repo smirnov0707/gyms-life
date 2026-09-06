@@ -9,13 +9,20 @@ export default defineConfig(({ isSsrBuild }) => ({
     tanstackStart({ server: { entry: "server" } }),
     react(),
     tailwindcss(),
-    netlify({
-      dev: {
-        edgeFunctions: {
-          enabled: false,
-        },
-      },
-    }),
+    // The Netlify plugin owns the production build. The staging target skips
+    // it: the plain TanStack Start output is already a Workers module, so a
+    // second adapter would only get in the way. See STAGING.md.
+    ...(process.env["DEPLOY_TARGET"] === "cloudflare"
+      ? []
+      : [
+          netlify({
+            dev: {
+              edgeFunctions: {
+                enabled: false,
+              },
+            },
+          }),
+        ]),
   ],
   resolve: {
     tsconfigPaths: true,

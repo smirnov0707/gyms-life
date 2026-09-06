@@ -1,0 +1,18 @@
+# Cloudflare serves files from the assets directory without running the
+# worker, so these do not get the headers applied in
+# src/lib/security-headers.server.ts. They are repeated here for the same
+# reason netlify.toml repeats them: static responses need the same
+# protection as rendered ones.
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(self), microphone=(self), geolocation=()
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/media/*
+  Cache-Control: public, max-age=31536000, immutable

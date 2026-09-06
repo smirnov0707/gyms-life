@@ -1,0 +1,27 @@
+{
+  // Staging host for gyms.life.
+  //
+  // Production is served from Netlify (netlify.toml). This file adds a second,
+  // independent target so a test build can be loaded without touching the
+  // production site or its database — see STAGING.md.
+  //
+  // The build output already fits Workers without an adapter:
+  // `dist/server/server.js` is `export default { fetch(request, env, ctx) }`,
+  // which is the Workers module format, and the bundle's only Node built-ins
+  // are `node:async_hooks` and `node:crypto`, both covered by nodejs_compat.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gyms-life-staging",
+  "main": "dist/server/server.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist/client",
+    // Static files are served directly; anything else falls through to the
+    // SSR worker, which applies the security headers in code.
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
