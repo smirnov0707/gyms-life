@@ -1,0 +1,208 @@
+name: Build CC0 GYMS.LIFE digital human
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-build.yml]
+permissions:
+  contents: read
+jobs:
+  build-human:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Clone headless MakeHuman build tooling
+        run: git clone --depth 1 https://github.com/vidya-hub/makehuman-core.git "$RUNNER_TEMP/makehuman-core"
+      - name: Install generator dependencies
+        run: |
+          python -m pip install -e "$RUNNER_TEMP/makehuman-core"
+          python -m pip install pillow
+      - name: Author CC0 human and export OBJ
+        env:
+          MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
+        run: |
+          python - <<'PY'
+          import json, os, re, shutil
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image, ImageFilter, ImageOps
+          import mhcore
+
+          root = Path(os.environ['RUNNER_TEMP']) / 'gyms-human-v1'
+          root.mkdir(parents=True, exist_ok=True)
+          data = Path(os.environ['MHCORE_DATA'])
+
+          def recolor(path: Path, black, white, mix=0.82):
+              img = Image.open(path).convert('RGBA')
+              alpha = img.getchannel('A')
+              rgb = img.convert('RGB')
+              grey = ImageOps.grayscale(rgb)
+              toned = ImageOps.colorize(grey, black=black, white=white)
+              out = Image.blend(rgb, toned, mix)
+              out.putalpha(alpha)
+              out.save(path)
+
+          # GYMS.LIFE-authored neutral graphite palette over CC0 clothes.
+          recolor(data/'clothes/male_casualsuit01/male_casualsuit01_diffuse.png', '#0d1114', '#6b797b', 0.88)
+          for shoe in ['shoes01_diffuse.png', 'shoes01.png']:
+              p = data/'clothes/shoes01'/shoe
+              if p.exists(): recolor(p, '#090b0d', '#535b60', 0.9)
+
+          h = mhcore.new_human()
+          h.set_gender(1.0).set_age(0.48).set_weight(0.52).set_muscle(0.67).set_height(0.62)
+          # Gentle face/proportion adjustments only — no identity claim.
+          for name, value in [
+              ('head/head-oval', 0.18),
+              ('nose/nose-scale-vert-decr|incr', 0.08),
+              ('chin/chin-height-decr|incr', 0.06),
+              ('armslegs/l-hand-fingers-length-decr|incr', 0.02),
+              ('armslegs/r-hand-fingers-length-decr|incr', 0.02),
+          ]:
+              try: h.apply_modifier(name, value)
+              except Exception: pass
+
+          def pick(kind, token):
+              matches = [p for p in h.list_available(kind) if token.lower() in str(p).lower()]
+              if not matches: raise RuntimeError(f'Missing {kind} asset: {token}')
+              return matches[0]
+
+          h.set_skin(pick('skins', 'young_caucasian_male2'))
+          h.equip_hair(pick('hair', 'short02'))
+          h.equip_eyes(pick('eyes', 'high-poly'))
+          h.equip_eyebrows(pick('eyebrows', 'eyebrow006'))
+          h.equip_eyelashes(pick('eyelashes', 'eyelashes01'))
+          h.equip_teeth(pick('teeth', 'teeth_base'))
+          h.equip_clothes(pick('clothes', 'male_casualsuit01'))
+          h.equip_clothes(pick('clothes', 'shoes01'))
+
+          mhm = h.save_mhm(str(root/'gyms-digital-human-v1.mhm'))
+          obj = Path(h.export(str(root/'gyms-digital-human-v1.obj')))
+          mtl = obj.with_suffix('.mtl')
+          if not obj.exists() or not mtl.exists():
+              raise RuntimeError('MakeHuman OBJ/MTL export missing')
+
+          # Make all referenced textures self-contained next to the OBJ.
+          lines = mtl.read_text(errors='replace').splitlines()
+          rewritten = []
+          skin_diffuse = None
+          current_skin = False
+          for line in lines:
+              stripped = line.strip()
+              if stripped.startswith('newmtl '):
+                  current_skin = False
+              if stripped.startswith('map_Kd '):
+                  raw = stripped.split(maxsplit=1)[1]
+                  src = Path(raw)
+                  if not src.is_absolute(): src = (mtl.parent/src).resolve()
+                  if not src.exists():
+                      # MakeHuman can point directly into the data tree.
+                      candidates = list(data.rglob(Path(raw).name))
+                      if candidates: src = candidates[0]
+                  if src.exists():
+                      dst = root/src.name
+                      shutil.copy2(src, dst)
+                      line = f'map_Kd {dst.name}'
+                      if 'young_lightskinned_male_diffuse2' in dst.name:
+                          skin_diffuse = dst
+                          current_skin = True
+              elif stripped.startswith(('map_Bump ', 'bump ', 'map_Ks ', 'map_d ')):
+                  parts = stripped.split()
+                  raw = parts[-1]
+                  src = Path(raw)
+                  if not src.is_absolute(): src = (mtl.parent/src).resolve()
+                  if not src.exists():
+                      candidates = list(data.rglob(Path(raw).name))
+                      if candidates: src = candidates[0]
+                  if src.exists():
+                      dst = root/src.name
+                      shutil.copy2(src, dst)
+                      line = ' '.join(parts[:-1] + [dst.name])
+              rewritten.append(line)
+          mtl.write_text('\n'.join(rewritten)+'\n')
+
+          # Author a subtle normal map from CC0 skin detail, then attach to the skin MTL block.
+          if skin_diffuse and skin_diffuse.exists():
+              img = Image.open(skin_diffuse).convert('RGB').resize((2048, 2048), Image.Resampling.LANCZOS)
+              grey = np.asarray(ImageOps.grayscale(img), dtype=np.float32) / 255.0
+              low = np.asarray(ImageOps.grayscale(img).filter(ImageFilter.GaussianBlur(3.0)), dtype=np.float32) / 255.0
+              detail = grey - low
+              gy, gx = np.gradient(detail)
+              strength = 3.5
+              nx, ny, nz = -gx*strength, gy*strength, np.ones_like(gx)
+              norm = np.sqrt(nx*nx + ny*ny + nz*nz)
+              arr = np.stack([(nx/norm*0.5+0.5), (ny/norm*0.5+0.5), (nz/norm*0.5+0.5)], axis=-1)
+              normal = root/'skin_detail_normal.png'
+              Image.fromarray(np.clip(arr*255,0,255).astype(np.uint8), 'RGB').save(normal, optimize=True)
+              lines = mtl.read_text().splitlines()
+              out=[]; in_skin=False; inserted=False
+              for line in lines:
+                  if line.startswith('newmtl '):
+                      in_skin=False
+                  if line.startswith('map_Kd ') and 'young_lightskinned_male_diffuse2' in line:
+                      in_skin=True
+                      out.append(line)
+                      out.append(f'map_Bump {normal.name}')
+                      inserted=True
+                      continue
+                  out.append(line)
+              if not inserted: print('warning: skin normal not attached')
+              mtl.write_text('\n'.join(out)+'\n')
+
+          manifest = {
+              'name': 'GYMS.LIFE Digital Human v1 candidate',
+              'authorship': 'GYMS.LIFE-authored character parameters and graphite material derivative',
+              'base': 'MakeHuman system/core assets',
+              'license': 'CC0-1.0 for selected MakeHuman graphical assets; build tooling is not redistributed',
+              'sources': [
+                  'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html',
+                  'https://static.makehumancommunity.org/makehuman/faq/can_i_sell_models_created_with_makehuman.html'
+              ],
+              'body_parameters': {'gender':1.0,'age':0.48,'weight':0.52,'muscle':0.67,'height':0.62},
+              'assets': ['young_caucasian_male2','short02','high-poly eyes','eyebrow006','eyelashes01','teeth_base','male_casualsuit01','shoes01'],
+              'personal_scan': False,
+              'identity_claim': False,
+          }
+          (root/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest, indent=2))
+          print('OBJ bytes', obj.stat().st_size)
+          print('MTL bytes', mtl.stat().st_size)
+          PY
+      - name: Convert to self-contained GLB
+        run: |
+          cd "$RUNNER_TEMP/gyms-human-v1"
+          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v1.obj -o gyms-digital-human-v1.glb -b --secure --checkTransparency
+      - name: Record integrity and GLB intake report
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v1'
+          glb=root/'gyms-digital-human-v1.glb'
+          sha=hashlib.sha256(glb.read_bytes()).hexdigest()
+          rights={
+            'assetSha256': sha,
+            'creator': 'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets',
+            'sourceUrl': 'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html',
+            'licenseName': 'CC0-1.0-derived',
+            'evidenceReference': 'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ',
+            'permissions': {'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}
+          }
+          (root/'rights.json').write_text(json.dumps(rights,indent=2))
+          print('GLB', glb.stat().st_size, 'bytes SHA256', sha)
+          PY
+          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/gyms-human-v1/gyms-digital-human-v1.glb" "$RUNNER_TEMP/gyms-human-v1/rights.json" "$RUNNER_TEMP/gyms-human-v1/intake-report.json" || status=$?
+          test "${status:-0}" -eq 0 || { cat "$RUNNER_TEMP/gyms-human-v1/intake-report.json"; exit "${status:-1}"; }
+          cat "$RUNNER_TEMP/gyms-human-v1/intake-report.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v1-candidate
+          path: ${{ runner.temp }}/gyms-human-v1
+          retention-days: 2
+          if-no-files-found: error
