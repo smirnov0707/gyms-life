@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { reconcileAthleteHypothesisLedger } from "./athlete-hypothesis-ledger.server";
+import { loadHypothesisRetrospective } from "./athlete-hypothesis-retrospective.server";
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
 import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
@@ -137,10 +138,9 @@ async function loadRecentDecisions(
 }
 
 /**
- * Loads the Lab v1 overview: real evidence-backed hypotheses from the
- * refreshed athlete state, their durable status-transition audit trail,
- * and recent decision-ledger history. The hypothesis ledger is secondary
- * and fail-open: it may never block the current Lab state.
+ * Loads the Lab overview from current canonical athlete state plus bounded,
+ * auditable learning history. Hypothesis persistence remains secondary and
+ * fail-open; Today never consumes the retrospective.
  */
 export async function loadLabOverview(
   supabase: SupabaseClient<Database>,
@@ -154,16 +154,28 @@ export async function loadLabOverview(
 
   const athlete = await refreshAthleteStateSnapshot(supabase, userId, zone, now);
   const hypotheses = buildAthleteHypotheses(athlete.state);
-  const ledgerReconciliation = athlete.snapshot
-    ? reconcileAthleteHypothesisLedger(supabase, userId, hypotheses, athlete.snapshot.id, zone, now)
-    : Promise.resolve();
-  const [, decisions] = await Promise.all([
-    ledgerReconciliation,
+
+  // Reconcile first so a transition created from this canonical snapshot is
+  // visible in the retrospective returned by the same Lab request.
+  if (athlete.snapshot) {
+    await reconcileAthleteHypothesisLedger(
+      supabase,
+      userId,
+      hypotheses,
+      athlete.snapshot.id,
+      zone,
+      now,
+    );
+  }
+
+  const [hypothesisHistory, decisions] = await Promise.all([
+    loadHypothesisRetrospective(supabase, userId),
     loadRecentDecisions(supabase, userId, since),
   ]);
 
   return LabOverviewSchema.parse({
     hypotheses,
+    hypothesisHistory,
     decisions,
     decisionAccuracy: buildDecisionAccuracy(decisions),
     dataGaps: athlete.state.dataGaps,
