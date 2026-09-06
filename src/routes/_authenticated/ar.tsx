@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 import {
   Activity,
@@ -21,6 +22,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { evaluateStep, type CalibFrame } from "@/lib/ar-calibration";
 import { useI18n, baseLang } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +121,11 @@ function ArMode() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceUri, setVoiceUri] = useState("");
   const [rate, setRate] = useState(1);
-  const [heightCm, setHeightCm] = useState("178");
+  // This number is the scale reference: `cmPerPx = (heightCm * 0.93) / meanH`
+  // converts every pixel the camera sees into centimetres. Starting it at 178
+  // meant the coach measured a body it had invented, and reported the result
+  // in centimetres as if it had measured the athlete's.
+  const [heightCm, setHeightCm] = useState("");
 
   const slugRef = useRef(slug);
   const autoRef = useRef(autoMode);
@@ -156,6 +163,25 @@ function ArMode() {
     heightRef.current = heightCm;
   }, [heightCm]);
 
+  // The athlete's height already lives on their profile, where the meal plan,
+  // the micronutrient scan and the body scan all read it. Asking for it again
+  // here created a second copy that only this device could see, and left the
+  // canonical one untouched.
+  const { user } = useAuth();
+  const { data: profileHeightCm } = useQuery({
+    queryKey: ["profile-height", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("height_cm")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data?.height_cm ?? null;
+    },
+  });
+
   // restore saved preferences
   useEffect(() => {
     const stored = window.localStorage.getItem("forma_ar_calib");
@@ -169,6 +195,13 @@ function ArMode() {
       /* ignore */
     }
   }, []);
+
+  // Seeds the field from the profile, and never overrides a value the athlete
+  // typed here for this device's camera.
+  useEffect(() => {
+    if (profileHeightCm == null) return;
+    setHeightCm((current) => (current === "" ? String(profileHeightCm) : current));
+  }, [profileHeightCm]);
 
   useEffect(() => {
     window.localStorage.setItem("forma_ar_calib", JSON.stringify({ heightCm, voiceUri, rate }));
@@ -469,10 +502,13 @@ function ArMode() {
         if (!calibStartRef.current) calibStartRef.current = now;
         calibFramesRef.current.push({ pose, w: canvas.width, h: canvas.height });
         if (now - calibStartRef.current > 3500 && calibFramesRef.current.length > 20) {
+          // Without a real height there is no scale. `evaluateStep` already
+          // handles that: it reports in pixels and returns no `cmPerPx`, so
+          // the calibration below simply does not complete.
           const res = evaluateStep(
             "stand",
             calibFramesRef.current,
-            Number(heightRef.current) || 178,
+            Number(heightRef.current) || 0,
             langRef.current,
           );
           if (res.cmPerPx && res.standingHipY) {
@@ -1082,6 +1118,11 @@ function ArMode() {
                   onChange={(e) => setHeightCm(e.target.value)}
                   className="h-10 rounded-lg border border-border bg-surface-2 px-3"
                 />
+                {Number(heightCm) > 0 ? null : (
+                  <span className="text-xs leading-relaxed text-amber-400 light:text-amber-700">
+                    {t("ar.heightNeeded")}
+                  </span>
+                )}
               </label>
 
               <label className="grid gap-1.5 text-sm">
