@@ -211,9 +211,7 @@ export function Overview() {
               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
                 BODY MAP
               </p>
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                {t("nav.twin")}
-              </p>
+              <p className="mt-0.5 text-[10px] text-slate-500">{t("nav.twin")}</p>
             </div>
             <Link
               to="/body-map"
