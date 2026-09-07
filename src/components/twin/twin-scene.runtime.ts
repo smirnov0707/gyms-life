@@ -30,6 +30,8 @@ import {
 import {
   TWIN_CAMERA,
   TWIN_DISPLAY_COLORS,
+  TWIN_FIELD_OF_VIEW,
+  TWIN_FRAME,
   TWIN_SELECTION_GLOW,
   TWIN_TONE_GLOW,
   fittedTwinDistance,
@@ -126,10 +128,13 @@ export function mountTwinScene(
     host.append(canvas);
 
     const scene = new Scene();
-    const camera = new PerspectiveCamera(35, 1, 0.01, 40);
-    const target = new Vector3(0, 0.95, 0);
+    const camera = new PerspectiveCamera(TWIN_FIELD_OF_VIEW, 1, 0.01, 40);
+    // One height for both: the camera looks at the point the frame is
+    // measured from, so what fittedTwinDistance promises to fit is what the
+    // canvas actually shows.
+    const target = new Vector3(0, TWIN_FRAME.eyeHeight, 0);
     let fitDistance = fittedTwinDistance(0.7);
-    camera.position.set(0, 1.15, fitDistance);
+    camera.position.set(0, TWIN_FRAME.eyeHeight, fitDistance);
     const controls = new OrbitControls(camera, canvas);
     cleanups.push(() => controls.dispose());
     controls.target.copy(target);
@@ -451,12 +456,22 @@ export function mountTwinScene(
         camera,
       );
       twinBodyRoot.updateMatrixWorld(true);
-      // The nearest hit that is actually a muscle, not simply the nearest hit.
-      // The skin is drawn as glass over the anatomy and sits in front of every
-      // muscle in it, so taking the first intersection meant every tap landed
-      // on the silhouette and selected nothing at all.
+      // The nearest hit that is a muscle on the side of the body facing the
+      // athlete. Two things make that more than "the first intersection".
+      //
+      // The skin is not a closed surface any more — it is kept only where no
+      // muscle lies under it — so a tap can land in a gap between muscles and
+      // carry on through the body. Down the sternum it did exactly that and
+      // came out on the inside of the spinal muscles, so tapping the middle of
+      // the chest answered "back". Anything past the figure's own axis is the
+      // far side of it, and you cannot tap what you cannot see.
+      //
+      // And the skin itself carries no reading, so a hit on a hand or a face
+      // is skipped rather than treated as a miss.
+      const reach = raycaster.ray.origin.distanceTo(controls.target);
       const region = raycaster
         .intersectObjects(model.meshes, false)
+        .filter((hit) => hit.distance <= reach)
         .map((hit) => (hit.object instanceof Mesh ? model.regionOf.get(hit.object) : undefined))
         .find((candidate) => candidate !== undefined);
       if (region) options.onSelect(region);

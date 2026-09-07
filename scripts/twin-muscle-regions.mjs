@@ -35,7 +35,18 @@ const REGION_PATTERNS = [
     // Upper arm and forearm alike. Without the forearm group the arms ended
     // at the elbow and the rest was bare silhouette, which on a screen about
     // training is half an arm.
-    /^(right |left )?(.*head of )?(right |left )?(biceps brachii|triceps brachii|brachialis|brachioradialis|coracobrachialis|anconeus|pronator (teres|quadratus)|supinator|palmaris longus|(extensor|flexor) carpi (radialis|ulnaris)( longus| brevis)?|(extensor|flexor) digitorum( superficialis| profundus| longus| brevis)?|extensor (digiti minimi|indicis)|(extensor|flexor) pollicis (longus|brevis)|abductor pollicis longus)$/i,
+    //
+    // The digitorum group is spelled out rather than wildcarded. "Extensor
+    // digitorum" is a forearm muscle, but "extensor digitorum longus" and
+    // "flexor digitorum longus|brevis" are the shin and the sole of the foot:
+    // a pattern that accepted any suffix put the athlete's arm recovery on
+    // their feet, and the figure showed it — green feet under blue legs.
+    //
+    // The intrinsic muscles of the hand are left out on purpose. They are the
+    // width of a finger, invisible at any zoom the app allows, and the skin is
+    // drawn wherever no muscle lies under it — so leaving them out is what
+    // keeps the figure's hands hands, rather than a flayed palm.
+    /^(right |left )?(.*head of )?(right |left )?(biceps brachii|triceps brachii|brachialis|brachioradialis|coracobrachialis|anconeus|pronator (teres|quadratus)|supinator|palmaris longus|(extensor|flexor) carpi (radialis|ulnaris)( longus| brevis)?|extensor digitorum|flexor digitorum (superficialis|profundus)|extensor (digiti minimi|indicis)|(extensor|abductor|flexor) pollicis longus|extensor pollicis brevis)$/i,
   ],
   // The atlas has no separate rectus abdominis: the front of the abdomen is
   // one mesh, carrying the names "muscle of anterior abdominal wall" and
@@ -50,7 +61,11 @@ const REGION_PATTERNS = [
   ["glutes", /^(right |left )?gluteus (maximus|medius|minimus)$/i],
   [
     "legs",
-    /^(right |left )?(.*head of )?(right |left )?(rectus femoris|vastus (lateralis|medialis|intermedius)|biceps femoris|semitendinosus|semimembranosus|gastrocnemius|soleus|sartorius|gracilis|adductor (magnus|longus|brevis)|tensor fasciae latae|tibialis anterior|peroneus longus|iliopsoas|psoas major)$/i,
+    // Thigh and shin. The shin group is here rather than left out: it is what
+    // the calf raise and the ankle work land on, and without it the figure
+    // ends at the knee. The intrinsic muscles of the foot are left out for
+    // the same reason as the hand's — the sole is skin on this figure.
+    /^(right |left )?(.*head of )?(right |left )?(rectus femoris|vastus (lateralis|medialis|intermedius)|biceps femoris|semitendinosus|semimembranosus|gastrocnemius|soleus|plantaris|popliteus|sartorius|gracilis|adductor (magnus|longus|brevis)|tensor fasciae latae|tibialis (anterior|posterior)|peroneus (longus|brevis|tertius)|iliopsoas|psoas major|(extensor|flexor) digitorum longus|(extensor|flexor) hallucis longus)$/i,
   ],
 ];
 

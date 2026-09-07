@@ -6,62 +6,41 @@ import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
  * Loads the anatomical human and presents it with the same shape the scene
  * already consumes, so the renderer does not learn a second way to hold a body.
  *
- * The figure is a licensed base mesh (see public/models/twin-human.manifest.json).
- * It carries no skin texture: this is a real human form, not a photograph of
- * one, and nothing here pretends otherwise.
+ * The figure is a cadaveric anatomical atlas (see
+ * public/models/twin-anatomy.manifest.json). It carries no skin texture: this
+ * is a real human form, not a photograph of one, and nothing here pretends
+ * otherwise.
  */
 
 /** Region names ride on material names, since glTF primitives have none. */
 const REGION_MATERIAL_PREFIX = "twin-region:";
-/** Kit cut from the body's own surface at build time: shorts, and a top. */
-const GARMENT_MATERIAL_PREFIX = "twin-";
 
-/**
- * The body is a dark instrument, not a photograph of skin.
- *
- * It used to be skin-toned, on the principle that a human is tinted rather
- * than repainted — and that principle then fought every attempt to show data
- * on it, because a saturated colour laid over skin reads as clothing. The way
- * out is the one the design has always shown: make the body itself something
- * that is plainly not skin, and colour on it reads as a reading instead of as
- * a garment. Nothing is claimed by the change — this figure was never the
- * athlete's own body, and now it does not pretend to be.
- *
- * Slate blue-grey, not near-black. The first attempt at this went almost to
- * black with a metallic sheen, and the figure lost its own form: the arms and
- * legs disappeared into the page and only the lit muscle was left floating.
- * The body has to stay readable as a body where nothing is lit, so the colour
- * carries and the metalness is low enough not to swallow the fill light.
- */
 /**
  * An unlit muscle is still anatomy worth seeing.
  *
- * Every muscle sits behind the glass skin, which takes most of its light, so a
- * muscle carrying no reading has to start bright enough to read as a muscle
- * through it. This says nothing about the athlete: it is the figure being
- * visible, not a state being reported. What a reading looks like is the data
- * colour laid over this, and nothing the app does not know ever gets one.
+ * This is the colour a muscle carrying no reading has. It is a muted flesh
+ * rather than the slate blue-grey it used to be: the figure spent a build
+ * looking like a mannequin in a blue bag, because the body colour was chosen
+ * to be plainly not skin and the translucent skin over it tinted everything
+ * blue on top of that. Muscle-coloured is what the athlete recognises as a
+ * body, and it says nothing about their state — every reading the app has is
+ * one of the saturated data colours laid over this, and no region the app
+ * cannot read ever gets one.
  */
-const BODY = { color: 0x5b7290, roughness: 0.52, metalness: 0.04 };
-const FABRIC = { color: 0x1a212b, roughness: 0.9, metalness: 0.04 };
+const BODY = { color: 0xa8746a, roughness: 0.62, metalness: 0.02 };
 
 /**
- * The skin, drawn as glass over the muscles.
+ * The skin, opaque, over the parts of the figure that have no muscle.
  *
- * The figure is an anatomical atlas now: the muscles are real meshes sitting
- * inside a whole-body surface. Left opaque that surface hides every one of
- * them, which is how the first build came out — a plain grey body with the
- * whole point of the screen sealed underneath it. Depth writing is off so the
- * muscles behind it are not culled by it.
+ * The build drops every skin triangle with a muscle underneath it, so what
+ * arrives here is the head, the hands, the feet, the shins and the pelvis —
+ * and it is drawn as skin rather than as glass. The previous build kept the
+ * whole surface and made it 17%-opacity glass so the muscles could be seen
+ * through it, which left the whole figure looking as if it were sealed in
+ * frosted plastic, with black hands and a black face.
  */
-const SKIN_GLASS = {
-  color: 0x8fb4d6,
-  roughness: 0.28,
-  metalness: 0,
-  transparent: true,
-  opacity: 0.17,
-  depthWrite: false,
-};
+const SKIN = { color: 0xd7a98d, roughness: 0.78, metalness: 0 };
+
 /** Darker than the body, so the face reads as a face at a glance. */
 const EYE = { color: 0x0a0d12, roughness: 0.28, metalness: 0 };
 
@@ -139,17 +118,12 @@ function build(scene: Object3D): TwinBodyModel {
 
     // The file's own materials are replaced so the scene owns every surface it
     // later tints and disposes, rather than mutating the loader's cache.
-    const garment =
-      sourceName.startsWith(GARMENT_MATERIAL_PREFIX) &&
-      !sourceName.startsWith(REGION_MATERIAL_PREFIX);
-    // The whole-body surface is the one mesh that is not a region: it carries
-    // no reading, so it is the silhouette rather than a data surface.
+    // The kept skin is the one mesh that is not a region: it carries no
+    // reading, so it is the silhouette rather than a data surface.
     const isSkin = region === "neutral";
-    const preset = garment ? FABRIC : sourceName === "Eyes" ? EYE : isSkin ? SKIN_GLASS : BODY;
+    const preset = sourceName === "Eyes" ? EYE : isSkin ? SKIN : BODY;
     disposeMaterial(object);
     object.material = new MeshStandardMaterial(preset);
-    // Drawn after the muscles, so the glass composites over them.
-    if (isSkin) object.renderOrder = 2;
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 

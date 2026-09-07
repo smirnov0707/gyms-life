@@ -207,12 +207,16 @@ export function BodySceneStage(props: BodySceneStageProps) {
     "min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300";
   return (
     <div
-      className="w-full min-w-0"
+      // In fill mode the stage is a column that takes its container's height,
+      // so the viewport below can flex into whatever is left. Without it the
+      // viewport's own `h-full` resolves against an auto-height parent and
+      // silently falls back to its minimum, which on a laptop left a third of
+      // the page as black margin around a figure that could have filled it.
+      className={fill ? "flex h-full min-h-0 w-full min-w-0 flex-col" : "w-full min-w-0"}
       data-twin-stage={show3D ? "3d" : "2d"}
       data-twin-layer={state.layer}
     >
       {layerControls}
-      {credit ? <p className="mt-2 text-[9px] leading-relaxed text-neutral-500">{credit}</p> : null}
       <div className="flex items-center justify-between gap-2 px-3">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
           {unitLabel}
@@ -250,7 +254,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
         data-twin-viewport
         className={
           fill
-            ? "relative h-full min-h-[clamp(320px,70svh,900px)] w-full"
+            ? // Capped rather than edge to edge. A standing body is roughly
+              // twice as tall as it is wide, so on a desktop a full-width
+              // canvas is mostly empty black with a small figure in the middle
+              // of it — the camera can only fill the shorter axis. Holding the
+              // canvas near the figure's own proportion lets it fill the frame.
+              "relative mx-auto min-h-[clamp(320px,52svh,900px)] w-full max-w-[38rem] flex-1"
             : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
         }
       >
@@ -285,6 +294,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
           </p>
         )}
       </div>
+      {credit ? (
+        // Under the figure, not over it. The licence asks for the credit to
+        // travel with the model, not for it to be the first thing above the
+        // body on every screen.
+        <p className="mt-2 px-3 text-[9px] leading-relaxed text-neutral-500">{credit}</p>
+      ) : null}
       {failed && mode === "3d" && (
         <div
           role="status"

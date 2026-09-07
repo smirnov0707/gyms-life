@@ -109,14 +109,14 @@ try {
   await preset(page, "Reset view");
   await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
-  // A point on the pectoral, right of the sternum. The chest is cut along the
-  // muscle rather than along the spine's bone segments, so at this column it
-  // runs from roughly 12% to 19% of the canvas height above centre — the old
-  // band reached down to 8%, which was upper abdomen. This sits in the middle
-  // of the pec rather than on either edge, and clear of the sternum groove,
-  // which is only a few pixels wide.
+  // A point on the pectoral, right of the sternum. The pectoralis sits between
+  // 1.17 m and 1.40 m on a 1.70 m figure, the camera looks at 0.88 m, and the
+  // reset view shows about 1.85 m of height — so the muscle runs from roughly
+  // 20% to 28% of the canvas height above centre. This sits in the middle of
+  // that, and clear of the sternum groove, where there is no muscle at all and
+  // a tap now selects nothing rather than reaching the spine behind it.
   const x = box.x + box.width / 2 + 22;
-  const y = box.y + box.height / 2 - box.height * 0.155;
+  const y = box.y + box.height / 2 - box.height * 0.24;
   await page.mouse.click(x, y);
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   const beforeDrag = Number(await canvas.getAttribute("data-twin-yaw"));
@@ -129,9 +129,11 @@ try {
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   record("mesh raycast selects chest; dragging does not select another region");
 
-  // The app ships two figures and picks one from the athlete's profile. Nothing
-  // else in this suite ever fetches the second file, so a female athlete would
-  // be the first to find out it was broken.
+  // The profile still chooses a body variant, and the figure is now a single
+  // cadaveric atlas that the loader accepts the variant for and ignores. So
+  // this no longer checks that a second file downloads — it checks that
+  // switching still leaves the athlete with a figure they can read and tap,
+  // which is what would break if the variant were ever wired to an asset again.
   await page.getByRole("button", { name: "Female body", exact: true }).click();
   await expect
     .poll(async () => await canvas.getAttribute("data-twin-body"), { timeout: 20000 })
@@ -142,9 +144,8 @@ try {
   const female = await canvas.boundingBox();
   await page.mouse.click(
     female.x + female.width / 2 + 22,
-    // Same pectoral height as the male figure above: the cut is relative to
-    // each figure's own torso, so the muscle lands in the same place on both.
-    female.y + female.height / 2 - female.height * 0.155,
+    // Same pectoral height as above: it is the same figure.
+    female.y + female.height / 2 - female.height * 0.24,
   );
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   await page.screenshot({ path: path.join(artifacts, "desktop-female.png"), fullPage: true });

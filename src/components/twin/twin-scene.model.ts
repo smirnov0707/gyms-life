@@ -257,10 +257,41 @@ export const TWIN_CAMERA = {
   step: Math.PI / 8,
 } as const;
 
+/**
+ * The figure the camera has to frame, measured on the shipped asset rather
+ * than guessed. `public/models/twin-anatomy-v1.glb` stands 1.70 m tall from
+ * the soles at y = 0, and its widest horizontal section — fingertip to
+ * fingertip across the hands, and front to back at the buttocks — turns
+ * inside a circle 0.72 m across, so that is the width the frame needs at any
+ * yaw. `eyeHeight` is where the camera looks: a touch above the body's own
+ * mid at 0.85 m, which puts the torso in the middle of the frame instead of
+ * the hips.
+ *
+ * These were 1.95 m and 1.08 m, which is a body a head taller and half a
+ * metre wider than the one on screen. On a phone the width guard dominated
+ * and the figure came out at about two thirds of the frame it could have
+ * had — the "little figurine" the athlete could not get near.
+ */
+export const TWIN_FRAME = {
+  height: 1.7,
+  turnDiameter: 0.72,
+  eyeHeight: 0.88,
+  /** Air around the body, so it never touches the edge of the canvas. */
+  padding: 1.04,
+} as const;
+
+export const TWIN_FIELD_OF_VIEW = 35;
+
 export function fittedTwinDistance(aspect: number): number {
   const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 0.7;
-  const tangent = Math.tan((35 * Math.PI) / 360);
-  return Math.max(1.95 / (2 * tangent), 1.08 / (2 * tangent * safeAspect)) * 1.12;
+  const tangent = Math.tan((TWIN_FIELD_OF_VIEW * Math.PI) / 360);
+  // The camera looks at eyeHeight, so the frame has to reach the further of
+  // the two ends from there — measuring from the body's mid instead would cut
+  // the feet off whenever the eye sits above it.
+  const halfHeight = Math.max(TWIN_FRAME.eyeHeight, TWIN_FRAME.height - TWIN_FRAME.eyeHeight);
+  const framedHeight = 2 * halfHeight * TWIN_FRAME.padding;
+  const framedWidth = TWIN_FRAME.turnDiameter * TWIN_FRAME.padding;
+  return Math.max(framedHeight / (2 * tangent), framedWidth / (2 * tangent * safeAspect));
 }
 
 export function moveTwinCamera(

@@ -234,7 +234,9 @@ export function TwinHome() {
           <p className="mt-1 text-xs text-neutral-400">{t("th.tapHint")}</p>
         </header>
 
-        <div className="min-w-0 self-center px-1 sm:px-3">
+        {/* Stretched, not centred: the stage fills the row so the figure is as
+            large as the screen allows rather than sitting in the middle of it. */}
+        <div className="grid min-h-0 min-w-0 px-1 sm:px-3">
           <TwinStage
             fill
             snapshot={snapshot}
