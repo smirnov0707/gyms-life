@@ -8,6 +8,19 @@ export const TRIAL_DAYS = 7;
 type AccessState = {
   loading: boolean;
   hasAccess: boolean;
+  /**
+   * True when one of the three reads behind this gate failed.
+   *
+   * The gate then grants access and claims nothing else: not owner, not
+   * subscribed, not in trial. Locking a paying athlete out of their own
+   * training history because a subscriptions query blipped is a worse
+   * failure than a few minutes of unpaid access, and the previous code did
+   * exactly that silently — a failed read left `subRes.data` null, which is
+   * indistinguishable from having no subscription. A failed profile read was
+   * worse still: `created_at` fell back to now, handing whoever hit the
+   * outage a fresh seven-day trial.
+   */
+  readFailed: boolean;
   isOwner: boolean;
   inTrial: boolean;
   trialEndsAt: Date | null;
@@ -19,7 +32,7 @@ type AccessState = {
 // Access = owner (admin role) OR active/trialing subscription OR within 7-day beta trial.
 export function useAccess(userId: string | undefined): AccessState {
   const billingEnabled = isBillingEnabled();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["access", userId],
     enabled: billingEnabled && !!userId,
     queryFn: async () => {
@@ -42,6 +55,22 @@ export function useAccess(userId: string | undefined): AccessState {
           .maybeSingle(),
       ]);
 
+      // Nothing below may be treated as a fact about the person unless all
+      // three sources answered.
+      const readFailed =
+        roleRes.error !== null || profileRes.error !== null || subRes.error !== null;
+      if (readFailed) {
+        return {
+          readFailed: true,
+          isOwner: false,
+          subscribed: false,
+          inTrial: false,
+          trialEndsAt: null,
+          periodEnd: null,
+          cancelAtPeriodEnd: false,
+        };
+      }
+
       const isOwner = !!roleRes.data;
 
       const sub = subRes.data;
@@ -60,6 +89,7 @@ export function useAccess(userId: string | undefined): AccessState {
       const inTrial = now < trialEndsAt;
 
       return {
+        readFailed: false,
         isOwner,
         subscribed,
         inTrial,
@@ -73,10 +103,14 @@ export function useAccess(userId: string | undefined): AccessState {
   const isOwner = !!data?.isOwner;
   const subscribed = !!data?.subscribed;
   const inTrial = !!data?.inTrial;
+  // `isError` covers the query throwing; `readFailed` covers it resolving
+  // with a Supabase error inside. Both mean the same thing to the gate.
+  const readFailed = isError || !!data?.readFailed;
 
   return {
     loading: billingEnabled && (!userId || isLoading),
-    hasAccess: !billingEnabled || isOwner || subscribed || inTrial,
+    hasAccess: !billingEnabled || isOwner || subscribed || inTrial || readFailed,
+    readFailed,
     isOwner,
     inTrial: inTrial && !isOwner && !subscribed,
     trialEndsAt: data?.trialEndsAt ?? null,

@@ -44,6 +44,23 @@ export const LabHypothesisTransitionSchema = AthleteHypothesisLedgerSummarySchem
 export type LabHypothesisTransition = z.infer<typeof LabHypothesisTransitionSchema>;
 
 /**
+ * A source the Lab could not read on this request.
+ *
+ * Not the same as a source with nothing in it, and the Lab of all screens
+ * cannot afford to confuse them: a journal that says "no decisions in the
+ * last 14 days" to someone whose decision table simply would not answer has
+ * told them their history is empty. A decision listed without its evidence
+ * has told them it was made on none.
+ */
+export const LabUnreadableSourceSchema = z.enum([
+  "decisions",
+  "decision_evidence",
+  "decision_outcomes",
+]);
+
+export type LabUnreadableSource = z.infer<typeof LabUnreadableSourceSchema>;
+
+/**
  * Lab overview exposes current deterministic hypotheses, their bounded
  * longitudinal transition history, recent decisions, decision fit, shadow
  * prediction calibration and data gaps. Calibration is retrospective evidence
@@ -57,6 +74,8 @@ export const LabOverviewSchema = z
     decisionAccuracy: DecisionAccuracySchema,
     predictionCalibration: PredictionCalibrationSchema,
     dataGaps: z.array(DigitalAthleteDataGapSchema),
+    /** Empty is the normal case: every source answered. */
+    unreadable: z.array(LabUnreadableSourceSchema),
   })
   .strict();
 

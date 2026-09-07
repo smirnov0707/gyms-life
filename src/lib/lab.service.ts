@@ -6,7 +6,12 @@ import { loadHypothesisRetrospective } from "./athlete-hypothesis-retrospective.
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
 import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
-import { LabOverviewSchema, type LabDecision, type LabOverview } from "./lab.schema";
+import {
+  LabOverviewSchema,
+  type LabDecision,
+  type LabOverview,
+  type LabUnreadableSource,
+} from "./lab.schema";
 import { dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
 import { loadPredictionCalibration } from "./prediction-calibration.server";
 import { reconcileWorkoutCompletionShadowPredictions } from "./prediction-shadow-ledger.server";
@@ -92,16 +97,38 @@ export function composeLabDecisions(
 }
 
 /**
+ * Keeps the rows that parse and reports whether any were lost.
+ *
+ * All-or-nothing validation on a list is the wrong trade here: one row a
+ * schema cannot read used to cost every decision its evidence, and a decision
+ * shown with no evidence in a screen built entirely around evidence reads as
+ * a decision made on none. One bad row now costs one line, and the loss is
+ * stated rather than absorbed.
+ */
+export function parseRows<T>(schema: z.ZodType<T>, rows: unknown): { rows: T[]; lost: boolean } {
+  if (!Array.isArray(rows)) return { rows: [], lost: rows != null };
+  const kept: T[] = [];
+  let lost = false;
+  for (const row of rows) {
+    const parsed = schema.safeParse(row);
+    if (parsed.success) kept.push(parsed.data);
+    else lost = true;
+  }
+  return { rows: kept, lost };
+}
+
+/**
  * Reads the person's most recent Today decisions with their evidence and
- * outcome. A query failure degrades to an empty list rather than failing
- * the whole Lab overview: hypotheses remain visible even if history can't
- * be loaded right now.
+ * outcome. A source that could not be read is named rather than rendered as
+ * an empty history: hypotheses stay visible either way, but "you made no
+ * decisions" and "we could not read your decisions" are different sentences
+ * and the Lab has to say which one it means.
  */
 async function loadRecentDecisions(
   supabase: SupabaseClient<Database>,
   userId: string,
   since: string,
-): Promise<LabDecision[]> {
+): Promise<{ decisions: LabDecision[]; unreadable: LabUnreadableSource[] }> {
   const { data: decisionRows, error: decisionError } = await supabase
     .from("decision_records")
     .select("id, decision_on, action, decision_basis, status, created_at")
@@ -110,12 +137,13 @@ async function loadRecentDecisions(
     .order("decision_on", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(RECENT_DECISIONS_LIMIT);
-  if (decisionError) return [];
+  if (decisionError) return { decisions: [], unreadable: ["decisions"] };
 
-  const parsedDecisions = z.array(RecentDecisionRowSchema).safeParse(decisionRows);
-  if (!parsedDecisions.success || parsedDecisions.data.length === 0) return [];
+  const parsedDecisions = parseRows(RecentDecisionRowSchema, decisionRows ?? []);
+  const unreadable: LabUnreadableSource[] = parsedDecisions.lost ? ["decisions"] : [];
+  if (parsedDecisions.rows.length === 0) return { decisions: [], unreadable };
 
-  const decisionIds = parsedDecisions.data.map((row) => row.id);
+  const decisionIds = parsedDecisions.rows.map((row) => row.id);
 
   const [evidenceResult, outcomeResult] = await Promise.all([
     supabase
@@ -129,14 +157,15 @@ async function loadRecentDecisions(
       .in("decision_id", decisionIds),
   ]);
 
-  const parsedEvidence = z.array(DecisionEvidenceRowSchema).safeParse(evidenceResult.data ?? []);
-  const parsedOutcomes = z.array(DecisionOutcomeRowSchema).safeParse(outcomeResult.data ?? []);
+  const parsedEvidence = parseRows(DecisionEvidenceRowSchema, evidenceResult.data ?? []);
+  const parsedOutcomes = parseRows(DecisionOutcomeRowSchema, outcomeResult.data ?? []);
+  if (evidenceResult.error || parsedEvidence.lost) unreadable.push("decision_evidence");
+  if (outcomeResult.error || parsedOutcomes.lost) unreadable.push("decision_outcomes");
 
-  return composeLabDecisions(
-    parsedDecisions.data,
-    parsedEvidence.success ? parsedEvidence.data : [],
-    parsedOutcomes.success ? parsedOutcomes.data : [],
-  );
+  return {
+    decisions: composeLabDecisions(parsedDecisions.rows, parsedEvidence.rows, parsedOutcomes.rows),
+    unreadable,
+  };
 }
 
 /**
@@ -171,7 +200,7 @@ export async function loadLabOverview(
   }
   await reconcileWorkoutCompletionShadowPredictions(userId, now).catch(() => undefined);
 
-  const [hypothesisHistory, decisions, predictionCalibration] = await Promise.all([
+  const [hypothesisHistory, recent, predictionCalibration] = await Promise.all([
     loadHypothesisRetrospective(supabase, userId),
     loadRecentDecisions(supabase, userId, since),
     loadPredictionCalibration(supabase, userId),
@@ -180,9 +209,10 @@ export async function loadLabOverview(
   return LabOverviewSchema.parse({
     hypotheses,
     hypothesisHistory,
-    decisions,
-    decisionAccuracy: buildDecisionAccuracy(decisions),
+    decisions: recent.decisions,
+    decisionAccuracy: buildDecisionAccuracy(recent.decisions),
     predictionCalibration,
     dataGaps: athlete.state.dataGaps,
+    unreadable: recent.unreadable,
   });
 }

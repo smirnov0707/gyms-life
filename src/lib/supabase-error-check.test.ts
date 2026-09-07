@@ -79,6 +79,55 @@ function batchOffenders(source: string): number[] {
   return lines;
 }
 
+/**
+ * The third shape, and the quietest:
+ *
+ *     const [a, b] = await Promise.all([supabase..., supabase...]);
+ *     const rows = a.data ?? [];
+ *
+ * Nothing here destructures `data`, so neither rule above sees it, and the
+ * error is never named — it is simply never asked for. The one instance that
+ * existed cost the Lab every decision's evidence whenever the evidence table
+ * declined to answer, and rendered the result as decisions made on no
+ * evidence, in the screen whose whole subject is evidence.
+ */
+/**
+ * Names whose error is checked as a group rather than one at a time:
+ *
+ *     const readFailed = [a, b, c].some((result) => result.error !== null);
+ *
+ * `a.error` never appears, so the per-name rule below would report a read
+ * that is in fact handled. Deliberately loose — an array literal with an
+ * `.error` close behind it counts — because a false accusation here costs a
+ * correct file a spurious failure, while a miss costs only this one shape.
+ */
+function collectivelyChecked(source: string): Set<string> {
+  const names = new Set<string>();
+  for (const match of source.matchAll(/\[([^[\]]*)\][\s\S]{0,200}?\.error\b/g)) {
+    for (const binding of (match[1] ?? "").split(",")) {
+      const name = binding.trim();
+      if (/^\w+$/.test(name)) names.add(name);
+    }
+  }
+  return names;
+}
+
+function resultBatchOffenders(source: string): number[] {
+  if (!source.includes("supabase")) return [];
+  const grouped = collectivelyChecked(source);
+  const lines: number[] = [];
+  for (const match of source.matchAll(batchDiscardsError())) {
+    for (const binding of (match[1] ?? "").split(",")) {
+      const name = binding.trim();
+      if (!/^\w+$/.test(name) || grouped.has(name)) continue;
+      const reads = new RegExp(`\\b${name}\\.data\\b`).test(source);
+      const checks = new RegExp(`\\b${name}\\.error\\b`).test(source);
+      if (reads && !checks) lines.push(source.slice(0, match.index).split("\n").length);
+    }
+  }
+  return lines;
+}
+
 describe("Supabase reads", () => {
   it("never discards the error", () => {
     const offenders: string[] = [];
@@ -94,9 +143,27 @@ describe("Supabase reads", () => {
       for (const line of batchOffenders(source)) {
         offenders.push(`${relative}:${line}`);
       }
+      for (const line of resultBatchOffenders(source)) {
+        offenders.push(`${relative}:${line}`);
+      }
     }
 
     expect(offenders).toEqual([]);
+  });
+
+  it("recognises the shape it is looking for, and the shape that is fine", () => {
+    const dropped = [
+      "const [a, b] = await Promise.all([supabase.from('x'), supabase.from('y')]);",
+      "const rows = a.data ?? [];",
+      "const more = b.data ?? [];",
+    ].join("\n");
+    expect(resultBatchOffenders(dropped)).toHaveLength(2);
+
+    const checkedOneByOne = `${dropped}\nif (a.error || b.error) throw new Error("read failed");`;
+    expect(resultBatchOffenders(checkedOneByOne)).toEqual([]);
+
+    const checkedTogether = `${dropped}\nconst failed = [a, b].some((r) => r.error !== null);`;
+    expect(resultBatchOffenders(checkedTogether)).toEqual([]);
   });
 
   it("keeps the allowlist honest", () => {

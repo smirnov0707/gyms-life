@@ -10,7 +10,7 @@ import type {
   AthleteHypothesisStatusSchema,
   AthleteLearningDomainSchema,
 } from "@/lib/athlete-hypothesis.schema";
-import type { LabDecision, LabOverview } from "@/lib/lab.schema";
+import type { LabDecision, LabOverview, LabUnreadableSource } from "@/lib/lab.schema";
 import type { z } from "zod";
 
 type HypothesisStatus = z.infer<typeof AthleteHypothesisStatusSchema>;
@@ -26,6 +26,8 @@ type Copy = {
   hypothesesEmpty: string;
   decisionsTitle: string;
   decisionsEmpty: string;
+  unreadableLabel: Record<LabUnreadableSource, string>;
+  unreadableNote: (sources: string) => string;
   statusLabel: Record<HypothesisStatus, string>;
   domainLabel: Record<LearningDomain, string>;
   statementLabel: Record<string, string>;
@@ -60,6 +62,13 @@ function copyFor(lang: Lang): Copy {
         "No hypotheses are being tracked yet. Keep logging real training data and this will fill in.",
       decisionsTitle: "Recent decisions",
       decisionsEmpty: "No Today decisions in the last 14 days.",
+      unreadableLabel: {
+        decisions: "the decisions themselves",
+        decision_evidence: "the evidence behind them",
+        decision_outcomes: "what you did about them",
+      },
+      unreadableNote: (sources) =>
+        `Could not be read on this request: ${sources}. What is missing below is missing because of that, not because it is not there.`,
       statusLabel: {
         insufficient_evidence: "Not enough evidence yet",
         monitoring: "Monitoring",
@@ -128,6 +137,13 @@ function copyFor(lang: Lang): Copy {
       "Kol kas hipotezių nesekama. Toliau registruok realius treniruočių duomenis ir šis skyrius užsipildys.",
     decisionsTitle: "Naujausi sprendimai",
     decisionsEmpty: "Per pastarąsias 14 dienų šiandienos sprendimų nėra.",
+    unreadableLabel: {
+      decisions: "patys sprendimai",
+      decision_evidence: "juos pagrindę įrodymai",
+      decision_outcomes: "ką su jais padarei",
+    },
+    unreadableNote: (sources) =>
+      `Šios užklausos metu nepavyko perskaityti: ${sources}. Ko trūksta žemiau — trūksta dėl to, o ne dėl to, kad jo nėra.`,
     statusLabel: {
       insufficient_evidence: "Kol kas nepakanka įrodymų",
       monitoring: "Stebima",
@@ -366,6 +382,16 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                 {copy.decisionsTitle}
               </p>
+              {/* Named before the list, because it changes how the list reads:
+                  an empty journal under this line means "not read", not
+                  "nothing happened". */}
+              {data.unreadable.length > 0 ? (
+                <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-xs leading-relaxed text-amber-600 light:text-amber-700 dark:text-amber-300">
+                  {copy.unreadableNote(
+                    data.unreadable.map((source) => copy.unreadableLabel[source]).join(", "),
+                  )}
+                </p>
+              ) : null}
               {data.decisions.length === 0 ? (
                 <p className="mt-3 text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
               ) : (
