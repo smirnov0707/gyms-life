@@ -13,6 +13,7 @@ import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { LiveSignals } from "@/components/LiveSignals";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
 import { DataSourcesStrip } from "@/components/DataSourcesStrip";
+import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { FutureLabTodayIntelligence } from "@/components/future-lab/FutureLabTodayIntelligence";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
@@ -228,6 +229,9 @@ export function Overview() {
               {t("ls.open")}
             </Link>
           </div>
+          {/* Where the template puts a blended confidence percentage. Ours
+              says how much each prediction has actually been tested. */}
+          <PredictionEvidencePanel />
         </aside>
 
         <div className={`lg:col-span-12 ${anim("delay-200")}`}>

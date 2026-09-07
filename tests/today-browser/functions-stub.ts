@@ -378,3 +378,39 @@ export const getLastSessionEffect = async () => {
   }
   return { ...base, breakdown, breakdownAvailable: true };
 };
+
+/** `?evidence=fail|some` drives the prediction evidence panel. The default is
+ *  this account's state: predictions made for one target, none resolved. */
+export const getEvidenceReport = async () => {
+  const mode = new URLSearchParams(window.location.search).get("evidence");
+  if (mode === "fail") throw new Error("ledger unavailable");
+  const target = (name, captured, evaluated, pending, level, modelled) => ({
+    target: name,
+    modelled,
+    level,
+    captured,
+    evaluated,
+    pending,
+    minimumEvaluated: 8,
+  });
+  if (mode === "some") {
+    return {
+      status: "counted" as const,
+      targets: [
+        target("workout_completion", 40, 18, 22, "moderate", true),
+        target("exercise_performance", 12, 9, 3, "early", true),
+        target("readiness", 0, 0, 0, "insufficient", false),
+        target("short_term_fatigue", 0, 0, 0, "insufficient", false),
+      ],
+    };
+  }
+  return {
+    status: "counted" as const,
+    targets: [
+      target("workout_completion", 39, 0, 39, "insufficient", true),
+      target("exercise_performance", 0, 0, 0, "insufficient", false),
+      target("readiness", 0, 0, 0, "insufficient", false),
+      target("short_term_fatigue", 0, 0, 0, "insufficient", false),
+    ],
+  };
+};

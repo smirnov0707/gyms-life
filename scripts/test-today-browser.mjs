@@ -757,6 +757,30 @@ try {
   await measured.page.close();
   record("a signal gets a line only when it has two readings to draw one from");
 
+  // 21. Where the template shows "82% · High Confidence · 512 data points".
+  //     Ours shows how far each target has actually been tested, and keeps
+  //     "never predicted" apart from "predicted, nothing resolved yet".
+  const evidence = await open("?evidence=some");
+  const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
+  await expect(evidencePanel).toBeVisible({ timeout: 30000 });
+  const evidenceText = await evidencePanel.innerText();
+  expect(evidenceText).toContain("Moderate");
+  expect(evidenceText).toContain("18 tested · 22 waiting");
+  // Two targets nothing has ever predicted say so, rather than being omitted
+  // or shown as insufficient evidence about the athlete.
+  expect(evidenceText.match(/Not predicted yet/g)?.length).toBe(2);
+  // No blended percentage anywhere on the panel.
+  expect(evidenceText).not.toMatch(/\d+\s*%/);
+  await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
+  await evidence.page.close();
+
+  const noLedger = await open("?evidence=fail");
+  await expect(
+    noLedger.page.getByText("decision ledger could not be read", { exact: false }),
+  ).toBeVisible({ timeout: 30000 });
+  await noLedger.page.close();
+  record("prediction evidence is a level and a count, never a blended confidence percentage");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

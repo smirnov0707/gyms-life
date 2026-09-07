@@ -38,6 +38,7 @@ import { extra_offline } from "./i18n-extra-offline";
 import { extra_twinhome } from "./i18n-extra-twinhome";
 import { extra_load } from "./i18n-extra-load";
 import { extra_lastsession } from "./i18n-extra-lastsession";
+import { extra_evidence } from "./i18n-extra-evidence";
 import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
 export type Lang = SupportedLanguage;
@@ -751,6 +752,7 @@ export const dict = {
   ...extra_twinhome,
   ...extra_load,
   ...extra_lastsession,
+  ...extra_evidence,
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;
