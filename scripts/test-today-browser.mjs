@@ -241,6 +241,21 @@ try {
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");
 
+  // The journal's four counters all come off one query. An unread ledger must
+  // not report four zeros — "you have no hypotheses" is a claim, and an empty
+  // ledger is something an athlete might act on.
+  const journal = await openPanel("?panel=journal");
+  await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
+  const counters = journal.page.locator("p.font-mono.text-2xl");
+  expect(await counters.count()).toBe(4);
+  expect(await counters.allInnerTexts()).toEqual(["—", "—", "—", "—"]);
+  await journal.page.screenshot({
+    path: path.join(artifacts, "screen-journal.png"),
+    fullPage: true,
+  });
+  await journal.page.close();
+  record("an unread journal shows dashes, not four zeroes");
+
   // 8. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
   expect(failed.errors).toEqual([]);

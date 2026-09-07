@@ -62,6 +62,20 @@ function percent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+/**
+ * A metric that is not there prints as a dash, never as zero.
+ *
+ * The engine sets all four of these together — null together, or numbers
+ * together — but that is an invariant held by one call site, not by the type.
+ * `?? 0` used to stand where this does, so the day the invariant slipped, a
+ * calibration table would have reported a mean predicted probability of 0%:
+ * not a missing number, a wrong one, on the panel whose whole job is to say
+ * how far the model's claims are from what happened.
+ */
+function metric(value: number | null | undefined, format: (value: number) => string): string {
+  return value === null || value === undefined ? "—" : format(value);
+}
+
 export function PredictionCalibrationPanel({ data }: { data: PredictionCalibration }) {
   const { lang } = useI18n();
   const copy = copyFor(lang);
@@ -118,7 +132,7 @@ export function PredictionCalibrationPanel({ data }: { data: PredictionCalibrati
                           {copy.predicted}
                         </p>
                         <p className="mt-2 font-mono text-xl text-foreground">
-                          {percent(model.meanPredictedProbability ?? 0)}
+                          {metric(model.meanPredictedProbability, percent)}
                         </p>
                       </div>
                       <div className="rounded-xl bg-foreground/[0.03] p-3">
@@ -126,7 +140,7 @@ export function PredictionCalibrationPanel({ data }: { data: PredictionCalibrati
                           {copy.observed}
                         </p>
                         <p className="mt-2 font-mono text-xl text-foreground">
-                          {percent(model.observedCompletionRate ?? 0)}
+                          {metric(model.observedCompletionRate, percent)}
                         </p>
                       </div>
                       <div className="rounded-xl bg-foreground/[0.03] p-3">
@@ -134,7 +148,7 @@ export function PredictionCalibrationPanel({ data }: { data: PredictionCalibrati
                           {copy.gap}
                         </p>
                         <p className="mt-2 font-mono text-xl text-foreground">
-                          {percent(model.calibrationGap ?? 0)}
+                          {metric(model.calibrationGap, percent)}
                         </p>
                       </div>
                       <div className="rounded-xl bg-foreground/[0.03] p-3">
@@ -142,7 +156,7 @@ export function PredictionCalibrationPanel({ data }: { data: PredictionCalibrati
                           {copy.brier}
                         </p>
                         <p className="mt-2 font-mono text-xl text-foreground">
-                          {model.brierScore?.toFixed(3)}
+                          {metric(model.brierScore, (value) => value.toFixed(3))}
                         </p>
                         <p className="mt-1 text-[9px] leading-relaxed text-muted-foreground">
                           {copy.brierHelp}

@@ -36,7 +36,8 @@ const statements = {
 type JournalTab = "all" | "discoveries" | "experiments" | "decisions";
 
 type JournalStat = {
-  value: number;
+  /** Null while the ledger has not been read: a count nobody counted. */
+  value: number | null;
   label: string;
   icon: LucideIcon;
   tone: string;
@@ -85,6 +86,10 @@ export function JournalIntelligence() {
     staleTime: 60_000,
   });
   const data = query.data;
+  // Four counters off one query. With `data` null they all fall to zero, which
+  // tells the athlete their ledger is empty when the truth is that nobody
+  // managed to open it — and an empty ledger is a thing they might act on.
+  const counted = !query.isError && !query.isLoading && data != null;
   const supported = data?.hypotheses.filter((item) => item.status === "supported") ?? [];
   const monitoring =
     data?.hypotheses.filter(
@@ -157,25 +162,25 @@ export function JournalIntelligence() {
 
   const stats: JournalStat[] = [
     {
-      value: data?.hypotheses.length ?? 0,
+      value: counted ? (data?.hypotheses.length ?? 0) : null,
       label: copy.hypotheses,
       icon: Microscope,
       tone: "text-violet-300",
     },
     {
-      value: supported.length,
+      value: counted ? supported.length : null,
       label: copy.discoveries,
       icon: CheckCircle2,
       tone: "text-emerald-300",
     },
     {
-      value: monitoring.length,
+      value: counted ? monitoring.length : null,
       label: copy.experiments,
       icon: FlaskConical,
       tone: "text-cyan-300",
     },
     {
-      value: data?.decisions.length ?? 0,
+      value: counted ? (data?.decisions.length ?? 0) : null,
       label: copy.decisions,
       icon: History,
       tone: "text-amber-300",
@@ -228,7 +233,9 @@ export function JournalIntelligence() {
                     className="rounded-2xl border border-[#17243b] bg-[#07111d]/90 p-4"
                   >
                     <Icon className={`size-4 ${stat.tone}`} />
-                    <p className="mt-3 font-mono text-2xl text-white">{stat.value}</p>
+                    <p className="mt-3 font-mono text-2xl text-white">
+                      {stat.value === null ? "—" : stat.value}
+                    </p>
                     <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">
                       {stat.label}
                     </p>
