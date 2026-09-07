@@ -1,14 +1,22 @@
 /**
- * Body composition from the two numbers the athlete actually records.
+ * Body composition from the two numbers the athlete's record actually holds.
  *
- * Weight is measured. Body fat percentage is whatever their scale or caliper
- * said. Fat mass and lean mass are neither: they are those two multiplied
- * together, and every caller has to say so — the arithmetic is exact, the
- * inputs are not, and a lean-mass figure presented as a measurement is the
- * kind of number people change their training over.
+ * Three tiers of certainty, and the card has to keep them apart. Weight and
+ * body fat percentage may be measured — a scale, a caliper, typed in — or they
+ * may have come from the photo scan, where body fat is a blend that includes a
+ * vision model's visual estimate and weight is the model's own guess unless
+ * the athlete supplied one. Fat mass and lean mass are neither: they are those
+ * two multiplied together, exact arithmetic on inexact inputs.
+ *
+ * `estimated` carries the first distinction up to the card. It used to say
+ * flatly that weight and body fat were measured, which for a scanned row was
+ * simply false.
  *
  * Pure and total.
  */
+
+/** Absent for rows written before provenance was recorded. */
+export type BodyMetricSource = "measured" | "photo_estimate" | null;
 
 export type BodyCompositionReading = {
   day: string;
@@ -18,6 +26,10 @@ export type BodyCompositionReading = {
   fatMassKg: number;
   /** weight − fat mass. Derived from a derived number. */
   leanMassKg: number;
+  /** True when either input came from the photo scan rather than a scale. */
+  estimated: boolean;
+  /** True when the record does not say where either input came from. */
+  provenanceUnknown: boolean;
 };
 
 export type BodyCompositionChange =
@@ -41,7 +53,12 @@ export type BodyMetricRow = {
   measured_on: string;
   weight_kg: number | string | null;
   body_fat: number | string | null;
+  weight_source?: string | null;
+  body_fat_source?: string | null;
 };
+
+const source = (value: unknown): BodyMetricSource =>
+  value === "measured" || value === "photo_estimate" ? value : null;
 
 /** How far back a comparison may reach. The template's window is 30 days. */
 export const COMPOSITION_WINDOW_DAYS = 30;
@@ -67,12 +84,18 @@ export function toReading(row: BodyMetricRow): BodyCompositionReading | null {
   if (weightKg === null || bodyFatPercent === null) return null;
   if (weightKg <= 0 || bodyFatPercent < 0 || bodyFatPercent >= 100) return null;
   const fatMassKg = (weightKg * bodyFatPercent) / 100;
+  const weightFrom = source(row.weight_source);
+  const bodyFatFrom = source(row.body_fat_source);
   return {
     day: row.measured_on,
     weightKg: round(weightKg),
     bodyFatPercent: round(bodyFatPercent),
     fatMassKg: round(fatMassKg),
     leanMassKg: round(weightKg - fatMassKg),
+    // One estimated input is enough: fat mass and lean mass are the product of
+    // both, so an estimate anywhere makes the whole reading an estimate.
+    estimated: weightFrom === "photo_estimate" || bodyFatFrom === "photo_estimate",
+    provenanceUnknown: weightFrom === null || bodyFatFrom === null,
   };
 }
 

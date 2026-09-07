@@ -74,6 +74,14 @@ export type ReportStats = {
   weightDeltaKg: number | null;
   bodyFatStart: number | null;
   bodyFatEnd: number | null;
+  /**
+   * Where the weights and body fat percentages came from.
+   *
+   * A physician reading "body fat 24% → 21%" is entitled to know whether that
+   * was a scale and a caliper or a vision model's reading of a photograph.
+   * `body_metrics` holds both under the same column names.
+   */
+  bodySources: { measured: number; photo: number; unrecorded: number };
   topLifts: { exercise: string; bestWeight: number; reps: number }[];
   supplements: { name: string; dose: string | null; timesPerDay: number | null }[];
   profile: ReportProfile | null;
@@ -120,7 +128,7 @@ export async function buildReportStats(
         .gte("logged_on", fromDay),
       supabase
         .from("body_metrics")
-        .select("measured_on, weight_kg, body_fat")
+        .select("measured_on, weight_kg, body_fat, weight_source, body_fat_source")
         .eq("user_id", userId)
         .gte("measured_on", fromDay)
         .order("measured_on", { ascending: true }),
@@ -189,6 +197,15 @@ export async function buildReportStats(
   const days = [...perDay.values()];
 
   const body = bodyRes.data ?? [];
+  const bodySources = { measured: 0, photo: 0, unrecorded: 0 };
+  for (const row of body) {
+    // A row is only "measured" when both of its numbers were; one estimated
+    // input is enough to make the pair an estimate.
+    const sources = [row.weight_source, row.body_fat_source];
+    if (sources.includes("photo_estimate")) bodySources.photo += 1;
+    else if (sources.every((value) => value === "measured")) bodySources.measured += 1;
+    else bodySources.unrecorded += 1;
+  }
   const first = body[0] ?? null;
   const last = body[body.length - 1] ?? null;
   const weightStartKg = first ? num(first.weight_kg) : null;
@@ -237,6 +254,7 @@ export async function buildReportStats(
         : null,
     bodyFatStart: first ? num(first.body_fat) : null,
     bodyFatEnd: last ? num(last.body_fat) : null,
+    bodySources,
     topLifts,
     supplements: (suppRes.data ?? []).map((s) => ({
       name: s.name,
@@ -265,6 +283,24 @@ export function nutritionProvenanceNote(sources: ReportStats["nutritionSources"]
   if (text > 0) parts.push(`${text} from typed descriptions`);
   if (unrecorded > 0) parts.push(`${unrecorded} with the capture method not recorded`);
   return `${total} entries, every one a model estimate and none weighed: ${parts.join(", ")}`;
+}
+
+/**
+ * The same treatment as nutrition, for the same reason: these figures reach a
+ * physician, and the photo scan writes into the same two columns a scale does.
+ * Counted rather than asserted.
+ */
+export function bodyProvenanceNote(sources: ReportStats["bodySources"]): string {
+  const { measured, photo, unrecorded } = sources;
+  const total = measured + photo + unrecorded;
+  if (total === 0) return "no measurements recorded";
+  const parts: string[] = [];
+  if (measured > 0) parts.push(`${measured} entered by the athlete`);
+  if (photo > 0) {
+    parts.push(`${photo} estimated by a model from a photograph, not measured`);
+  }
+  if (unrecorded > 0) parts.push(`${unrecorded} with the method not recorded`);
+  return `${total} entries: ${parts.join(", ")}`;
 }
 
 export function statsToPrompt(s: ReportStats): string {
@@ -325,7 +361,7 @@ export function statsToPrompt(s: ReportStats): string {
       "body measurements",
       "BODY",
       () =>
-        `weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
+        `(${bodyProvenanceNote(s.bodySources)}) weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
     ),
     line("supplements", "SUPPLEMENTS", () =>
       s.supplements.length

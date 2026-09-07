@@ -38,8 +38,15 @@ export const recordManualBodyMetric = createServerFn({ method: "POST" })
         {
           user_id: context.userId,
           measured_on: measuredOn,
-          ...(data.weight_kg !== undefined ? { weight_kg: data.weight_kg } : {}),
-          ...(data.body_fat !== undefined ? { body_fat: data.body_fat } : {}),
+          // Provenance travels with its own field, never with the row: this
+          // upsert writes only the columns it is given, so a hand-typed
+          // weight and a photo-estimated body fat legitimately share a row.
+          ...(data.weight_kg !== undefined
+            ? { weight_kg: data.weight_kg, weight_source: "measured" }
+            : {}),
+          ...(data.body_fat !== undefined
+            ? { body_fat: data.body_fat, body_fat_source: "measured" }
+            : {}),
         },
         { onConflict: "user_id,measured_on" },
       )

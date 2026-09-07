@@ -141,6 +141,7 @@ export type Database = {
         Row: {
           arm_cm: number | null
           body_fat: number | null
+          body_fat_source: string | null
           chest_cm: number | null
           created_at: string
           hips_cm: number | null
@@ -151,10 +152,12 @@ export type Database = {
           user_id: string
           waist_cm: number | null
           weight_kg: number | null
+          weight_source: string | null
         }
         Insert: {
           arm_cm?: number | null
           body_fat?: number | null
+          body_fat_source?: string | null
           chest_cm?: number | null
           created_at?: string
           hips_cm?: number | null
@@ -165,10 +168,12 @@ export type Database = {
           user_id: string
           waist_cm?: number | null
           weight_kg?: number | null
+          weight_source?: string | null
         }
         Update: {
           arm_cm?: number | null
           body_fat?: number | null
+          body_fat_source?: string | null
           chest_cm?: number | null
           created_at?: string
           hips_cm?: number | null
@@ -179,6 +184,7 @@ export type Database = {
           user_id?: string
           waist_cm?: number | null
           weight_kg?: number | null
+          weight_source?: string | null
         }
         Relationships: []
       }

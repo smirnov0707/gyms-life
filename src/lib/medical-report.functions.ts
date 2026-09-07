@@ -57,6 +57,7 @@ HARD RULES
 - Write everything in ${language}.
 - Use ONLY numbers present in the DATA block. Never invent, round creatively, or extrapolate a metric that is not listed. If something is missing, say so and put it in dataGaps.
 - A section marked SOURCE COULD NOT BE READ is missing, not empty. Never describe it as zero, none, absent or "did not train / did not log". State that the data could not be retrieved, put it in dataGaps, and draw no conclusion from its absence.
+- The BODY line names how each figure was obtained. Weights and body fat percentages marked as estimated by a model from a photograph are not measurements: never call them measured, weighed or scanned readings, and say in the body-composition section which of the figures came from photographs.
 - No diagnosis, no medical claims, no treatment or dosage advice. Describe observed training/lifestyle data and behavioural recommendations only.
 - Every metric.value must be a literal figure from DATA with its unit (e.g. "18 sessions", "62 500 kg", "6.4 h").
 - adherenceNote: one short sentence on how consistently the athlete followed their plan. Do not state a score; the report computes it.

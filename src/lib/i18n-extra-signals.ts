@@ -161,4 +161,14 @@ export const extra_signals = {
     es: "Desde un dispositivo",
     fr: "Depuis un appareil",
   },
+  "sig.sourceEstimate": {
+    lt: "Įvertis iš nuotraukos",
+    en: "Estimated from a photo",
+    ru: "Оценка по фото",
+    uk: "Оцінка за фото",
+    pl: "Oszacowane ze zdjęcia",
+    de: "Aus einem Foto geschätzt",
+    es: "Estimado a partir de una foto",
+    fr: "Estimé d'après une photo",
+  },
 } as const;

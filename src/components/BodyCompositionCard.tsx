@@ -8,12 +8,17 @@ import { getBodyComposition } from "@/lib/body-trend.functions";
 import type { BodyCompositionReading } from "@/lib/body-trend.engine";
 
 /**
- * What the athlete's own scale says, and what follows from it arithmetically.
+ * What the athlete's own record says, and what follows from it arithmetically.
  *
- * Weight and body fat percentage are measured. Fat mass and lean mass are the
- * two of them multiplied together — exact arithmetic on inexact inputs — and
- * the card says so rather than letting a lean-mass figure pass for a
- * measurement. People change their training over that number.
+ * Three tiers, and the card names each. Weight and body fat percentage may be
+ * measured — or they may have come from the photo scan, where body fat is a
+ * blend that includes a vision model's visual estimate and weight is the
+ * model's own guess unless the athlete supplied one. Fat mass and lean mass
+ * are neither: exact arithmetic on inexact inputs.
+ *
+ * This card used to say flatly that weight and body fat were measured, which
+ * for a scanned reading was false — and people change their training over
+ * these numbers.
  */
 
 function Figure({
@@ -57,6 +62,23 @@ function Figure({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Where the two inputs came from, stated before the arithmetic note so the
+ * reader knows what the arithmetic was performed on.
+ */
+function Provenance({ reading }: { reading: BodyCompositionReading }) {
+  const { t } = useI18n();
+  if (reading.estimated) {
+    return <p className="mt-2 text-xs leading-relaxed text-accent">{t("bt.fromPhotoEstimate")}</p>;
+  }
+  if (reading.provenanceUnknown) {
+    return (
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("bt.sourceUnknown")}</p>
+    );
+  }
+  return <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("bt.fromScale")}</p>;
 }
 
 function Readings({
@@ -133,13 +155,21 @@ export function BodyCompositionCard() {
           <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">
             {state.earliest.day} → {state.latest.day}
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("bt.derived")}</p>
+          {/* A change between two readings is only as sound as the weaker of
+              them: one estimated end makes the direction an estimate too. */}
+          <Provenance
+            reading={
+              state.latest.estimated || !state.earliest.estimated ? state.latest : state.earliest
+            }
+          />
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("bt.derived")}</p>
         </>
       ) : state?.status === "single" ? (
         <>
           <Readings latest={state.latest} />
           <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">{state.latest.day}</p>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("bt.single")}</p>
+          <Provenance reading={state.latest} />
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("bt.single")}</p>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("bt.derived")}</p>
         </>
       ) : (

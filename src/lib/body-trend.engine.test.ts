@@ -18,6 +18,10 @@ describe("toReading", () => {
       bodyFatPercent: 20,
       fatMassKg: 17,
       leanMassKg: 68,
+      estimated: false,
+      // A row written before provenance was recorded says so rather than
+      // being assumed measured, which is what the card used to claim.
+      provenanceUnknown: true,
     });
   });
 
@@ -95,5 +99,39 @@ describe("buildBodyComposition", () => {
     expect(result.status).toBe("single");
     if (result.status !== "single") throw new Error("expected a single reading");
     expect(result.latest.day).toBe("2026-09-02");
+  });
+});
+
+describe("where the two numbers came from", () => {
+  const scanned = {
+    measured_on: "2026-09-02",
+    weight_kg: 85,
+    body_fat: 20,
+    weight_source: "photo_estimate",
+    body_fat_source: "photo_estimate",
+  } satisfies BodyMetricRow;
+
+  it("marks a reading estimated when either input came off a photograph", () => {
+    expect(toReading(scanned)?.estimated).toBe(true);
+    // The athlete typed the weight, the model guessed the body fat: fat mass
+    // and lean mass are the product of both, so the reading is still an
+    // estimate.
+    expect(toReading({ ...scanned, weight_source: "measured" })?.estimated).toBe(true);
+  });
+
+  it("calls a reading measured only when both inputs were", () => {
+    const reading = toReading({
+      ...scanned,
+      weight_source: "measured",
+      body_fat_source: "measured",
+    });
+    expect(reading?.estimated).toBe(false);
+    expect(reading?.provenanceUnknown).toBe(false);
+  });
+
+  it("treats an unrecognised source as not recorded, never as measured", () => {
+    const reading = toReading({ ...scanned, weight_source: "guessed", body_fat_source: null });
+    expect(reading?.estimated).toBe(false);
+    expect(reading?.provenanceUnknown).toBe(true);
   });
 });

@@ -21,7 +21,7 @@ export const getBodyComposition = createServerFn({ method: "GET" })
 
     const { data, error } = await context.supabase
       .from("body_metrics")
-      .select("measured_on, weight_kg, body_fat")
+      .select("measured_on, weight_kg, body_fat, weight_source, body_fat_source")
       .eq("user_id", context.userId)
       .gte("measured_on", from)
       .order("measured_on", { ascending: false })

@@ -167,8 +167,17 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
     const whtr = result.waistCm ? round1(result.waistCm / data.heightCm) : null;
     const whr = result.waistCm && result.hipsCm ? round1(result.waistCm / result.hipsCm) : null;
 
-    const measured = {
+    // Named `scanned`, not `measured`, because none of it was. The body fat
+    // is a blend that includes a vision model's visual estimate, the
+    // circumferences are the model's reading of a photograph, and the weight
+    // is the model's own guess unless the athlete supplied one. The scan says
+    // so on screen; until these two columns existed, the number arrived in
+    // `body_metrics` stripped of that and every reader downstream — the
+    // composition card, the signal rail, hydration targets, the meal planner,
+    // the medical report — treated it as a measurement.
+    const scanned = {
       body_fat: bodyFat,
+      body_fat_source: "photo_estimate",
       waist_cm: result.waistCm ?? null,
       neck_cm: result.neckCm ?? null,
       chest_cm: result.chestCm ?? null,
@@ -176,6 +185,7 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
       arm_cm: result.armCm ?? null,
       thigh_cm: result.thighCm ?? null,
       weight_kg: weightKg,
+      weight_source: data.weightKg != null ? "measured" : "photo_estimate",
     };
 
     // The athlete's own calendar day. A UTC date puts a 01:00 scan in
@@ -188,7 +198,7 @@ summary = 1-2 short sentences in ${language} about composition and what to focus
       const { error } = await supabase
         .from("body_metrics")
         .upsert(
-          { user_id: userId, measured_on: measuredOn, ...measured },
+          { user_id: userId, measured_on: measuredOn, ...scanned },
           { onConflict: "user_id,measured_on" },
         );
       if (error) saved = false;

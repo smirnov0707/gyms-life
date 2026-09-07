@@ -93,7 +93,11 @@ function SignalRow({ signal }: { signal: LiveSignal }) {
               ? t("sig.absent")
               : signal.source === "manual"
                 ? t("sig.sourceManual")
-                : t("sig.sourceDevice")}
+                : signal.source === "photo_estimate"
+                  ? // Not a measurement anybody took: the photo scan's blend,
+                    // which includes a vision model's visual estimate.
+                    t("sig.sourceEstimate")
+                  : t("sig.sourceDevice")}
         </span>
       </span>
 

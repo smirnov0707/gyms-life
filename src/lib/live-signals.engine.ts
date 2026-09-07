@@ -64,6 +64,8 @@ export type BodyMetricRow = {
   measured_on: string;
   weight_kg: number | string | null;
   body_fat: number | string | null;
+  weight_source?: string | null;
+  body_fat_source?: string | null;
 };
 
 type Reading = { day: string; value: number; source: string | null };
@@ -163,13 +165,28 @@ export function buildLiveSignals(input: LiveSignalsInput): LiveSignal[] {
           today,
         );
 
-  const fromBody = (id: LiveSignalId, pick: (row: BodyMetricRow) => number | null) =>
+  /**
+   * Body rows carried a hard-coded "manual", which the rail renders as
+   * "entered by hand". The photo scan writes into the same two columns, and a
+   * body fat percentage a vision model read off a photograph is not something
+   * anybody entered. The row now says which it was, and a row written before
+   * that was recorded says nothing rather than claiming either.
+   */
+  const fromBody = (
+    id: LiveSignalId,
+    pick: (row: BodyMetricRow) => number | null,
+    provenance: (row: BodyMetricRow) => string | null | undefined,
+  ) =>
     body === null
       ? unreadable(id)
       : signalFrom(
           id,
           readingsFor(
-            body.map((row) => ({ day: row.measured_on, value: pick(row), source: "manual" })),
+            body.map((row) => ({
+              day: row.measured_on,
+              value: pick(row),
+              source: provenance(row) === "photo_estimate" ? "photo_estimate" : "manual",
+            })),
           ),
           today,
         );
@@ -180,8 +197,16 @@ export function buildLiveSignals(input: LiveSignalsInput): LiveSignal[] {
     fromHealth("restingHr", (row) => numeric(row.resting_hr)),
     fromHealth("steps", (row) => numeric(row.steps)),
     fromHealth("activeKcal", (row) => numeric(row.active_kcal)),
-    fromBody("weight", (row) => numeric(row.weight_kg)),
-    fromBody("bodyFat", (row) => numeric(row.body_fat)),
+    fromBody(
+      "weight",
+      (row) => numeric(row.weight_kg),
+      (row) => row.weight_source,
+    ),
+    fromBody(
+      "bodyFat",
+      (row) => numeric(row.body_fat),
+      (row) => row.body_fat_source,
+    ),
   ];
 }
 

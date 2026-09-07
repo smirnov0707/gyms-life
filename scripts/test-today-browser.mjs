@@ -338,7 +338,7 @@ try {
   const oneText = await card.innerText();
   expect(oneText).toContain("68.0");
   expect(oneText).toContain("A second one is what turns it into a direction");
-  expect(oneText).toMatch(/calculated from those two, not measured/);
+  expect(oneText).toMatch(/calculated from the weight and the body fat percentage/);
   // One reading carries no signed change anywhere on the card.
   expect(oneText).not.toMatch(/[+−-]\d+\.\d\s*kg/);
   await one.page.screenshot({ path: path.join(artifacts, "body-single.png"), fullPage: true });
@@ -351,10 +351,36 @@ try {
   expect(trendText).toMatch(/[−-]1\.5/);
   expect(trendText).toContain("+0.5");
   expect(trendText).toContain("2026-08-13");
-  expect(trendText).toMatch(/calculated from those two, not measured/);
+  expect(trendText).toMatch(/calculated from the weight and the body fat percentage/);
   await trend.page.screenshot({ path: path.join(artifacts, "body-change.png"), fullPage: true });
   expect(trend.errors).toEqual([]);
   await trend.page.close();
+
+  // The photo scan writes weight and body fat into the same two columns a
+  // scale does. This card used to state flatly that both were measured, which
+  // for a scanned reading was false — and people change their training over
+  // these numbers.
+  const scanned = await openPanel("?panel=body&source=scan");
+  const scannedCard = scanned.page.getByRole("region", { name: "Body composition" });
+  await expect(scannedCard).toBeVisible({ timeout: 30000 });
+  const scannedText = await scannedCard.innerText();
+  expect(scannedText).toMatch(/come from the photo scan, not from a scale/);
+  expect(scannedText).toContain("includes a model's visual estimate");
+  expect(scannedText).not.toMatch(/You entered the weight/);
+  await scanned.page.close();
+
+  const weighed = await openPanel("?panel=body&source=scale");
+  const weighedCard = weighed.page.getByRole("region", { name: "Body composition" });
+  await expect(weighedCard).toBeVisible({ timeout: 30000 });
+  const weighedText = await weighedCard.innerText();
+  expect(weighedText).toMatch(/You entered the weight and the body fat percentage yourself/);
+  expect(weighedText).not.toContain("photo scan");
+  await weighed.page.close();
+
+  // The default fixture row has no provenance at all, the state every row
+  // written before these columns existed is in: not measured, not estimated,
+  // not recorded.
+  expect(oneText).toMatch(/It was not recorded whether these figures were measured/);
   record(
     "body composition shows a change only when there are two readings, and names what is derived",
   );

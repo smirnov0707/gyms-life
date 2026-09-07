@@ -92,12 +92,20 @@ export const rotateHealthToken = async () => ({
  *  account's state, which is one measurement and therefore no direction. */
 export const getBodyComposition = async () => {
   const mode = new URLSearchParams(window.location.search).get("body") ?? "single";
+  // `?source=scan|scale` picks the provenance; the default is a row written
+  // before provenance was recorded, which must not read as measured.
+  const provenance = new URLSearchParams(window.location.search).get("source");
+  const origin = {
+    estimated: provenance === "scan",
+    provenanceUnknown: provenance !== "scan" && provenance !== "scale",
+  };
   const latest = {
     day: "2026-09-02",
     weightKg: 85,
     bodyFatPercent: 20,
     fatMassKg: 17,
     leanMassKg: 68,
+    ...origin,
   };
   if (mode === "none") return { status: "none" as const };
   if (mode === "change") {
@@ -110,6 +118,7 @@ export const getBodyComposition = async () => {
         bodyFatPercent: 22,
         fatMassKg: 19,
         leanMassKg: 67.5,
+        ...origin,
       },
       days: 20,
       weightKg: -1.5,

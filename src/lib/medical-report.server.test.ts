@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { nutritionProvenanceNote, statsToPrompt, type ReportStats } from "./medical-report.server";
+import {
+  bodyProvenanceNote,
+  nutritionProvenanceNote,
+  statsToPrompt,
+  type ReportStats,
+} from "./medical-report.server";
 
 describe("nutritionProvenanceNote", () => {
   it("says nothing was logged when nothing was", () => {
@@ -49,6 +54,7 @@ describe("statsToPrompt", () => {
     avgEnergy: 6,
     nutritionDaysLogged: 5,
     nutritionSources: { photo: 3, text: 2, unrecorded: 0 },
+    bodySources: { measured: 2, photo: 1, unrecorded: 0 },
     avgKcal: 2400,
     avgProtein: 160,
     avgCarbs: 250,
@@ -89,8 +95,30 @@ describe("statsToPrompt", () => {
       ...base,
       unreadable: ["nutrition log"],
       nutritionSources: { photo: 0, text: 0, unrecorded: 0 },
+      bodySources: { measured: 0, photo: 0, unrecorded: 0 },
     });
     expect(prompt).not.toContain("no meals logged");
     expect(prompt).toContain("NUTRITION: SOURCE COULD NOT BE READ");
+  });
+});
+
+describe("bodyProvenanceNote", () => {
+  it("never lets a photograph pass for a measurement", () => {
+    const note = bodyProvenanceNote({ measured: 2, photo: 3, unrecorded: 1 });
+    expect(note).toContain("2 entered by the athlete");
+    expect(note).toMatch(/3 estimated by a model from a photograph, not measured/);
+    expect(note).toContain("1 with the method not recorded");
+  });
+
+  it("says there is nothing rather than describing an empty set", () => {
+    expect(bodyProvenanceNote({ measured: 0, photo: 0, unrecorded: 0 })).toBe(
+      "no measurements recorded",
+    );
+  });
+
+  it("mentions only the kinds that actually occur", () => {
+    const note = bodyProvenanceNote({ measured: 4, photo: 0, unrecorded: 0 });
+    expect(note).toBe("4 entries: 4 entered by the athlete");
+    expect(note).not.toContain("photograph");
   });
 });
