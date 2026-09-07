@@ -247,10 +247,11 @@ export function FutureMeSimulationDeck() {
                 {copy.learningBody(forecast.minimumSessionCount, forecast.minimumSpanDays)}
               </p>
               <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">
-                {copy.version} {forecast.forecastVersion} · {forecast.sourceWindowDays}d {copy.source}
+                {copy.version} {forecast.forecastVersion} {"·"}
+                {forecast.sourceWindowDays}d {copy.source}
               </p>
               <Button className="mt-6" onClick={() => void load()} disabled={loading}>
-                <RefreshCw className="mr-2 size-4" /> {copy.refresh}
+                <RefreshCw className="mr-1 size-4" /> {copy.refresh}
               </Button>
             </div>
           </div>
@@ -310,7 +311,9 @@ export function FutureMeSimulationDeck() {
                       {projected}
                       <span className="ml-1 text-base tracking-normal text-slate-500">kg</span>
                     </p>
-                    <p className={`mt-3 text-sm font-semibold ${change !== null && change < 0 ? "text-rose-300" : "text-emerald-300"}`}>
+                    <p
+                      className={`mt-3 text-sm font-semibold ${change !== null && change < 0 ? "text-rose-300" : "text-emerald-300"}`}
+                    >
                       {copy.change}: {signed(change)}
                     </p>
                   </article>
@@ -321,7 +324,9 @@ export function FutureMeSimulationDeck() {
                     <LockKeyhole className="mt-0.5 size-5 shrink-0 text-amber-300" />
                     <div>
                       <h2 className="text-base font-semibold text-white">{copy.boundaryTitle}</h2>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-400">{copy.boundaryBody}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                        {copy.boundaryBody}
+                      </p>
                     </div>
                   </div>
                 </article>
@@ -341,7 +346,9 @@ export function FutureMeSimulationDeck() {
                   <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">
                     {copy.evidence}
                   </p>
-                  <p className={`mt-2 text-lg font-semibold ${EVIDENCE_TONE[selectedLift.evidenceStrength]}`}>
+                  <p
+                    className={`mt-2 text-lg font-semibold ${EVIDENCE_TONE[selectedLift.evidenceStrength]}`}
+                  >
                     {copy.evidenceLabel[selectedLift.evidenceStrength]}
                   </p>
                 </div>
@@ -356,13 +363,17 @@ export function FutureMeSimulationDeck() {
               <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <p className="font-mono text-xl text-white">{selectedLift.evidence.sessionCount}</p>
+                    <p className="font-mono text-xl text-white">
+                      {selectedLift.evidence.sessionCount}
+                    </p>
                     <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-slate-600">
                       {copy.sessions}
                     </p>
                   </div>
                   <div>
-                    <p className="font-mono text-xl text-white">{selectedLift.evidence.weeksTracked}</p>
+                    <p className="font-mono text-xl text-white">
+                      {selectedLift.evidence.weeksTracked}
+                    </p>
                     <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-slate-600">
                       {copy.weeks}
                     </p>
@@ -385,8 +396,16 @@ export function FutureMeSimulationDeck() {
                 </p>
               </div>
 
-              <Button onClick={() => void load()} disabled={loading} className="min-h-12 bg-violet-600 text-white hover:bg-violet-500">
-                {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
+              <Button
+                onClick={() => void load()}
+                disabled={loading}
+                className="min-h-12 bg-violet-600 text-white hover:bg-violet-500"
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 size-4" />
+                )}
                 {loading ? copy.refreshing : copy.refresh}
               </Button>
             </aside>
