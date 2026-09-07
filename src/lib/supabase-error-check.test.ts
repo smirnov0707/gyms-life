@@ -128,6 +128,27 @@ function resultBatchOffenders(source: string): number[] {
   return lines;
 }
 
+/**
+ * The fourth shape, and the one that costs money:
+ *
+ *     await supabase.from("subscriptions").update({...}).eq("id", id);
+ *
+ * Nothing is destructured because nothing is bound at all, so every rule
+ * above looks straight past it. Three existed. Two told an athlete their
+ * cancellation was scheduled while the row still said otherwise; the third
+ * answered Paddle with `{received: true}` for a subscription that was never
+ * written — and Paddle does not retry an event it was told arrived.
+ */
+const unboundWrite = () =>
+  /(?<![=\w])\n\s*await\s+[A-Za-z_$][\w$]*(?:\([^()]*\))?\s*\n?\s*\.from\(/g;
+
+function unboundWriteOffenders(source: string): number[] {
+  if (!source.includes("supabase")) return [];
+  return [...source.matchAll(unboundWrite())].map(
+    (match) => source.slice(0, match.index).split("\n").length + 1,
+  );
+}
+
 describe("Supabase reads", () => {
   it("never discards the error", () => {
     const offenders: string[] = [];
@@ -144,6 +165,9 @@ describe("Supabase reads", () => {
         offenders.push(`${relative}:${line}`);
       }
       for (const line of resultBatchOffenders(source)) {
+        offenders.push(`${relative}:${line}`);
+      }
+      for (const line of unboundWriteOffenders(source)) {
         offenders.push(`${relative}:${line}`);
       }
     }
@@ -164,6 +188,16 @@ describe("Supabase reads", () => {
 
     const checkedTogether = `${dropped}\nconst failed = [a, b].some((r) => r.error !== null);`;
     expect(resultBatchOffenders(checkedTogether)).toEqual([]);
+  });
+
+  it("sees a write whose result nothing binds", () => {
+    const dropped =
+      'const go = async () => {\n  await supabase.from("x").update({ a: 1 }).eq("id", 1);\n};';
+    expect(unboundWriteOffenders(dropped)).toHaveLength(1);
+
+    const bound =
+      'const go = async () => {\n  const { error } = await supabase.from("x").update({ a: 1 }).eq("id", 1);\n};';
+    expect(unboundWriteOffenders(bound)).toEqual([]);
   });
 
   it("keeps the allowlist honest", () => {

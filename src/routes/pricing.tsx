@@ -6,6 +6,7 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { useAccess } from "@/lib/access";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   getPortalUrl,
   changePlan,
@@ -133,6 +134,7 @@ function PricingPage() {
   const cancelSub = useServerFn(cancelSubscription);
   const resumeSub = useServerFn(resumeSubscription);
   const [cancelling, setCancelling] = useState(false);
+  const queryClient = useQueryClient();
   const billingEnabled = isBillingEnabled();
   const betaCopy =
     lang === "lt"
@@ -156,6 +158,7 @@ function PricingPage() {
       resume: "Tęsti prenumeratą",
       resumed: "Prenumerata atnaujinta.",
       error: "Nepavyko. Bandyk dar kartą.",
+      lagging: "Užregistruota mokėjimų tiekėjo pusėje. Šis puslapis gali atsilikti kelias minutes.",
     },
     en: {
       cancel: "Cancel subscription",
@@ -165,15 +168,30 @@ function PricingPage() {
       resume: "Resume subscription",
       resumed: "Subscription resumed.",
       error: "Something went wrong. Try again.",
+      lagging:
+        "Registered with the payment provider. This page may take a few minutes to catch up.",
     },
   }[lang === "lt" ? "lt" : "en"]!;
+
+  /**
+   * Both actions change a subscription at Paddle and then mirror it locally.
+   * The button state comes from that local row, so it has to be re-read —
+   * otherwise the page keeps offering "Cancel" to somebody who just
+   * cancelled. When the mirror write failed, `synced` is false: the change is
+   * real, the page is behind, and saying so beats a success message that the
+   * screen then contradicts.
+   */
+  const afterBillingChange = async (result: { synced: boolean }, done: string) => {
+    await queryClient.invalidateQueries({ queryKey: ["access", user?.id] });
+    if (result.synced) toast.success(done);
+    else toast.success(done, { description: cancelLabels.lagging });
+  };
 
   const doCancel = async () => {
     if (!window.confirm(cancelLabels.confirm)) return;
     setCancelling(true);
     try {
-      await cancelSub();
-      toast.success(cancelLabels.done);
+      await afterBillingChange(await cancelSub(), cancelLabels.done);
     } catch {
       toast.error(cancelLabels.error);
     } finally {
@@ -184,8 +202,7 @@ function PricingPage() {
   const doResume = async () => {
     setCancelling(true);
     try {
-      await resumeSub();
-      toast.success(cancelLabels.resumed);
+      await afterBillingChange(await resumeSub(), cancelLabels.resumed);
     } catch {
       toast.error(cancelLabels.error);
     } finally {

@@ -39,6 +39,19 @@ function getSupabase() {
   return _supabase;
 }
 
+/**
+ * Every write below is money.
+ *
+ * A discarded Supabase error here answered Paddle with `{received: true}` for
+ * a row that was never written, and Paddle does not retry an event it was
+ * told arrived. Someone's subscription simply never existed, and the only
+ * trace was a log line nobody reads. Throwing turns the response into a 400,
+ * which is the one thing that brings the event back.
+ */
+function assertWritten(error: { message: string } | null, what: string): void {
+  if (error) throw new Error(`Could not write ${what}: ${error.message}`);
+}
+
 async function handleSubscriptionCreated(data: SubscriptionCreatedData, env: PaddleEnv) {
   const { id, customerId, items, status, currentBillingPeriod, customData } = data;
 
@@ -59,7 +72,7 @@ async function handleSubscriptionCreated(data: SubscriptionCreatedData, env: Pad
     return;
   }
 
-  await getSupabase()
+  const { error } = await getSupabase()
     .from("subscriptions")
     .upsert(
       {
@@ -76,12 +89,13 @@ async function handleSubscriptionCreated(data: SubscriptionCreatedData, env: Pad
       },
       { onConflict: "paddle_subscription_id" },
     );
+  assertWritten(error, `subscription ${id}`);
 }
 
 async function handleSubscriptionUpdated(data: SubscriptionUpdatedData, env: PaddleEnv) {
   const { id, status, currentBillingPeriod, scheduledChange } = data;
 
-  await getSupabase()
+  const { error } = await getSupabase()
     .from("subscriptions")
     .update({
       status,
@@ -92,22 +106,27 @@ async function handleSubscriptionUpdated(data: SubscriptionUpdatedData, env: Pad
     })
     .eq("paddle_subscription_id", id)
     .eq("environment", env);
+  assertWritten(error, `subscription ${id}`);
 }
 
 async function handleSubscriptionCanceled(data: SubscriptionCanceledData, env: PaddleEnv) {
-  await getSupabase()
+  const { error } = await getSupabase()
     .from("subscriptions")
     .update({ status: "canceled", updated_at: new Date().toISOString() })
     .eq("paddle_subscription_id", data.id)
     .eq("environment", env);
+  assertWritten(error, `cancellation of ${data.id}`);
 }
 
 /**
  * Real idempotency, not just an audit log: Paddle retries webhook delivery,
  * and event_id is this table's primary key, so a second insert for the same
  * event fails with a unique violation. That failure IS the duplicate check.
+ *
+ * The row is a *claim*, taken before the work and released if the work
+ * fails — see `releaseWebhookEvent`.
  */
-async function isDuplicateWebhookEvent(
+async function claimWebhookEvent(
   eventId: string,
   eventType: string,
   env: PaddleEnv,
@@ -115,31 +134,62 @@ async function isDuplicateWebhookEvent(
   const { error } = await getSupabase()
     .from("paddle_webhook_events")
     .insert({ event_id: eventId, event_type: eventType, environment: env });
-  if (!error) return false;
-  if (error.code === "23505") return true;
+  if (!error) return true;
+  if (error.code === "23505") return false;
   throw new Error(`Could not record Paddle webhook event: ${error.message}`);
+}
+
+/**
+ * Gives the event back so Paddle's next delivery can try again.
+ *
+ * Without this the claim doubled as a receipt: the row went in before the
+ * subscription was written, so a handler that failed left the event marked
+ * processed forever. Paddle retried, the retry was recognised as a
+ * duplicate and skipped, and a paying customer's subscription never existed
+ * — with a 400 and a log line as the only evidence.
+ *
+ * A release that itself fails is logged and swallowed: the original failure
+ * is the one worth returning, and re-throwing here would replace it.
+ */
+async function releaseWebhookEvent(eventId: string, env: PaddleEnv): Promise<void> {
+  const { error } = await getSupabase()
+    .from("paddle_webhook_events")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("environment", env);
+  if (error) {
+    console.error("Could not release Paddle webhook event for retry", {
+      eventId,
+      code: error.code,
+    });
+  }
 }
 
 async function handleWebhook(req: Request, env: PaddleEnv) {
   const event = await verifyWebhook(req, env);
 
-  if (await isDuplicateWebhookEvent(event.eventId, event.eventType, env)) {
+  if (!(await claimWebhookEvent(event.eventId, event.eventType, env))) {
     console.log("Skipping already-processed Paddle webhook event:", event.eventId);
     return;
   }
 
-  switch (event.eventType) {
-    case EventName.SubscriptionCreated:
-      await handleSubscriptionCreated(event.data, env);
-      break;
-    case EventName.SubscriptionUpdated:
-      await handleSubscriptionUpdated(event.data, env);
-      break;
-    case EventName.SubscriptionCanceled:
-      await handleSubscriptionCanceled(event.data, env);
-      break;
-    default:
-      console.log("Unhandled event:", event.eventType);
+  try {
+    switch (event.eventType) {
+      case EventName.SubscriptionCreated:
+        await handleSubscriptionCreated(event.data, env);
+        break;
+      case EventName.SubscriptionUpdated:
+        await handleSubscriptionUpdated(event.data, env);
+        break;
+      case EventName.SubscriptionCanceled:
+        await handleSubscriptionCanceled(event.data, env);
+        break;
+      default:
+        console.log("Unhandled event:", event.eventType);
+    }
+  } catch (error) {
+    await releaseWebhookEvent(event.eventId, env);
+    throw error;
   }
 }
 

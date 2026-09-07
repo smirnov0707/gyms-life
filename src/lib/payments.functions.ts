@@ -55,11 +55,22 @@ export const cancelSubscription = createServerFn({ method: "POST" })
     await paddle.subscriptions.cancel(sub.paddle_subscription_id, {
       effectiveFrom: "next_billing_period",
     } as never);
-    await supabase
+    // Paddle has already accepted the cancellation, so this is the local
+    // mirror catching up, not the cancellation itself — throwing here would
+    // tell the athlete their subscription is still running when it is not.
+    // But a discarded failure is worse: the page would keep showing a
+    // subscription with no cancellation scheduled, right up until access
+    // ended. `synced` lets the caller say which of the two it is looking at.
+    const { error: mirrorError } = await supabase
       .from("subscriptions")
       .update({ cancel_at_period_end: true, updated_at: new Date().toISOString() })
       .eq("id", sub.id);
-    return { ok: true };
+    if (mirrorError) {
+      console.error("Cancellation accepted by Paddle but not mirrored", {
+        code: mirrorError.code,
+      });
+    }
+    return { ok: true, synced: mirrorError === null };
   });
 
 // Undoes a scheduled cancellation.
@@ -80,11 +91,17 @@ export const resumeSubscription = createServerFn({ method: "POST" })
     await paddle.subscriptions.update(sub.paddle_subscription_id, {
       scheduledChange: null,
     } as never);
-    await supabase
+    // Same shape as the cancellation above: Paddle is the source of truth and
+    // has already resumed; a dropped mirror write left the page showing a
+    // cancellation that was never going to happen.
+    const { error: mirrorError } = await supabase
       .from("subscriptions")
       .update({ cancel_at_period_end: false, updated_at: new Date().toISOString() })
       .eq("id", sub.id);
-    return { ok: true };
+    if (mirrorError) {
+      console.error("Resume accepted by Paddle but not mirrored", { code: mirrorError.code });
+    }
+    return { ok: true, synced: mirrorError === null };
   });
 
 // Switches the user's plan. The new plan takes over at the next renewal:
