@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test:browser": "node scripts/test-twin-browser.mjs",
+    "test:browser:today": "node scripts/test-today-browser.mjs",
     "build:staging": "DEPLOY_TARGET=cloudflare vite build"
   },
   "overrides": {

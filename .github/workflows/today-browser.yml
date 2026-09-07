@@ -1,0 +1,45 @@
+name: Today browser
+on:
+  pull_request:
+    paths: &paths
+      - "src/components/Overview.tsx"
+      - "src/components/LiveSignals.tsx"
+      - "src/components/SmartBrief.tsx"
+      - "src/components/TodayDecision.tsx"
+      - "src/components/TodayLifeContext.tsx"
+      - "src/components/future-lab/**"
+      - "src/components/twin/TwinTodayCard.tsx"
+      - "src/lib/live-signals*"
+      - "src/styles.css"
+      - "tests/today-browser/**"
+      - "scripts/test-today-browser.mjs"
+      - "package*.json"
+      - ".github/workflows/today-browser.yml"
+  push:
+    branches: [main]
+    paths: *paths
+permissions:
+  contents: read
+concurrency:
+  group: today-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-today-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: today-browser-evidence
+          path: test-results/today
+          retention-days: 7
+          if-no-files-found: ignore
