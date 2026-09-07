@@ -207,12 +207,20 @@ export function LiveSignals() {
       {silent ? (
         <div className="border-t border-border/50 px-3 py-3">
           <p className="text-xs leading-relaxed text-muted-foreground">{t("sig.silent")}</p>
-          <Link
-            to="/progress"
-            className="mt-2 inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-          >
-            {t("sig.logBody")}
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Link
+              to="/me"
+              className="inline-flex min-h-11 items-center rounded-full border border-primary/40 bg-primary/10 px-4 text-xs font-semibold text-foreground transition-colors hover:bg-primary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {t("hs.connect")}
+            </Link>
+            <Link
+              to="/progress"
+              className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {t("sig.logBody")}
+            </Link>
+          </div>
         </div>
       ) : null}
     </section>

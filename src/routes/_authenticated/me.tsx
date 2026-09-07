@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { ConnectHealthSource } from "@/components/ConnectHealthSource";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -971,6 +972,8 @@ function AthleteModelPage() {
           )}
         </section>
       ) : null}
+
+      <ConnectHealthSource />
 
       {state ? (
         <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
