@@ -16,16 +16,40 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const getHealthSource = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("profiles")
-      .select("health_token")
-      .eq("id", context.userId)
-      .maybeSingle();
+    // The newest sample comes back with the key, because handing someone a
+    // credential and no way to see whether it worked leaves a broken
+    // automation looking exactly like one that was never set up.
+    const [profileRes, sampleRes] = await Promise.all([
+      context.supabase
+        .from("profiles")
+        .select("health_token")
+        .eq("id", context.userId)
+        .maybeSingle(),
+      context.supabase
+        .from("health_samples")
+        .select("sample_on, source, updated_at")
+        .eq("user_id", context.userId)
+        .order("sample_on", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
     // A failed read must not look like "you have no token": the caller shows
     // the difference, because one is a retry and the other is a setup step.
-    if (error) return { status: "unavailable" as const };
-    if (!data?.health_token) return { status: "missing" as const };
-    return { status: "ready" as const, token: data.health_token };
+    if (profileRes.error) return { status: "unavailable" as const };
+    if (!profileRes.data?.health_token) return { status: "missing" as const };
+
+    const sample = sampleRes.error ? undefined : sampleRes.data;
+    return {
+      status: "ready" as const,
+      token: profileRes.data.health_token,
+      // undefined: we could not look. null: we looked, nothing has arrived.
+      lastSample: sampleRes.error
+        ? undefined
+        : sample
+          ? { day: sample.sample_on, source: sample.source, receivedAt: sample.updated_at }
+          : null,
+    };
   });
 
 /**

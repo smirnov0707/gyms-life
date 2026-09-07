@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, RefreshCw } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, KeyRound, Loader2, RadioTower, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -103,7 +103,11 @@ export function ConnectHealthSource() {
         toast.error(t("hs.unavailable"));
         return;
       }
-      queryClient.setQueryData(["health-source", user?.id], result);
+      // Merged, not replaced: the reply carries the new key and nothing else,
+      // and overwriting would wipe out what we know about the last delivery.
+      queryClient.setQueryData(["health-source", user?.id], (previous: unknown) =>
+        previous && typeof previous === "object" ? { ...previous, ...result } : result,
+      );
       setRevealed(true);
       toast.success(t("hs.rotated"));
     },
@@ -142,6 +146,21 @@ export function ConnectHealthSource() {
         </p>
       ) : (
         <div className="mt-4 grid gap-3">
+          {/* Whether anything has ever arrived, stated before the setup steps:
+              a broken automation and one that was never made look identical
+              from the athlete's side unless this is on screen. */}
+          <p className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground">
+            <RadioTower
+              className={`size-3.5 shrink-0 ${data.lastSample ? "text-primary" : ""}`}
+              aria-hidden="true"
+            />
+            {data.lastSample === undefined
+              ? t("hs.receiveUnknown")
+              : data.lastSample === null
+                ? t("hs.neverReceived")
+                : `${t("hs.lastReceived")}: ${data.lastSample.day} · ${data.lastSample.source}`}
+          </p>
+
           <CopyField label={t("hs.endpoint")} value={`${origin}${ENDPOINT_PATH}`} />
 
           <div>

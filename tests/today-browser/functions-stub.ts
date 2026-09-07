@@ -45,6 +45,18 @@ export const getTwinSnapshot = async () => ({
   regions: [],
 });
 
+/** A key shaped like the real ones, so masking can be checked against it. */
+export const PREVIEW_HEALTH_TOKEN = "11111111-2222-4333-8444-555555555555";
+export const getHealthSource = async () => ({
+  status: "ready" as const,
+  token: PREVIEW_HEALTH_TOKEN,
+  lastSample: null,
+});
+export const rotateHealthToken = async () => ({
+  status: "ready" as const,
+  token: PREVIEW_HEALTH_TOKEN,
+});
+
 export const getLabOverview = async () => null;
 export const getTwinTrendHistory = async () => null;
 export const getTodaysWorkout = async () => ({ status: "NO_PLAN" as const });

@@ -106,14 +106,19 @@ try {
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
 
-  const open = async (query = "") => {
+  const openPanel = async (query = "") => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.goto(`http://127.0.0.1:4183/index.html${query}`);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
     return { page, errors };
+  };
+
+  const open = async (query = "") => {
+    const opened = await openPanel(query);
+    await expect(opened.page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
+    return opened;
   };
 
   // 1. The screen renders at all, with the signal rail and every signal in it.
@@ -161,12 +166,29 @@ try {
   await expect(failedRail.getByText("Not recorded yet")).toHaveCount(0);
   record("a source that could not be read never reads as a source with no data");
 
-  // 5. Strict mode mounts every component twice. Nothing may throw.
+  // 5. The ingest key is a bearer credential. It must not be sitting in the
+  //    page for a shoulder, a screen share or a screenshot to pick up.
+  const health = await openPanel("?panel=health");
+  const KEY = "11111111-2222-4333-8444-555555555555";
+  await expect(health.page.getByRole("region", { name: "Connect a watch or phone" })).toBeVisible();
+  expect(await health.page.locator("body").innerText()).not.toContain(KEY);
+  await health.page.getByRole("button", { name: "Show key" }).click();
+  await expect(health.page.getByText(KEY, { exact: true })).toBeVisible();
+  await health.page.getByRole("button", { name: "Hide key" }).click();
+  expect(await health.page.locator("body").innerText()).not.toContain(KEY);
+  // And it says whether anything has ever arrived, so a broken automation
+  // cannot look like one that was never set up.
+  await expect(health.page.getByText("Nothing has arrived yet")).toBeVisible();
+  await health.page.screenshot({ path: path.join(artifacts, "health-source.png"), fullPage: true });
+  expect(health.errors).toEqual([]);
+  record("the ingest key stays masked until asked for, and delivery status is stated");
+
+  // 6. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
   expect(failed.errors).toEqual([]);
   record("strict-mode double mount raises no uncaught error");
 
-  // 6. The narrowest phone still in use must not scroll sideways.
+  // 7. The narrowest phone still in use must not scroll sideways.
   await first.page.setViewportSize({ width: 320, height: 720 });
   await first.page.waitForTimeout(400);
   const overflow = await first.page.evaluate(

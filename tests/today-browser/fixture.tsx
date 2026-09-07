@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Overview } from "@/components/Overview";
+import { ConnectHealthSource } from "@/components/ConnectHealthSource";
 import { LangProvider } from "@/lib/i18n";
 import "@/styles.css";
 
@@ -25,7 +26,11 @@ createRoot(document.getElementById("root")!).render(
           TEST FIXTURE — NOT USER DATA
         </p>
         <div style={{ padding: 16 }}>
-          <Overview />
+          {new URLSearchParams(window.location.search).get("panel") === "health" ? (
+            <ConnectHealthSource />
+          ) : (
+            <Overview />
+          )}
         </div>
       </LangProvider>
     </QueryClientProvider>
