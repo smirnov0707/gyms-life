@@ -21,6 +21,17 @@ export type TwinStageProps = {
   session?: { byRegion: Readonly<Record<string, readonly unknown[]>> } | null;
 };
 /** Canonical Twin projection. Session replay never needs to manufacture a TwinSnapshot. */
+/**
+ * The credit the figure's licence requires, verbatim.
+ *
+ * The anatomy is BodyParts3D under CC BY-SA, which asks for this exact
+ * sentence wherever the data is used — so it is not translated, and it is on
+ * the screen rather than only in the manifest beside the file, which is where
+ * the previous figure's credit sat unseen.
+ */
+const ANATOMY_CREDIT =
+  "BodyParts3D, (c) The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan";
+
 export function TwinStage({
   snapshot,
   layer,
@@ -71,6 +82,7 @@ export function TwinStage({
           ))}
         </div>
       }
+      credit={ANATOMY_CREDIT}
     />
   );
 }

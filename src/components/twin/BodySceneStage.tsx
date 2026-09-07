@@ -28,6 +28,11 @@ export type BodySceneStageProps = {
   formatValue: (value: number | null) => string;
   formatRegion: (region: TwinSceneRegion) => string;
   extraNote?: string;
+  /**
+   * Attribution the figure's licence requires, shown verbatim under the scene.
+   * Not translated: the licence asks for this exact sentence.
+   */
+  credit?: string;
 };
 const COPY = {
   en: {
@@ -89,6 +94,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
     regionLabel,
     language,
     layerControls,
+    credit,
     unitLabel,
     formatValue,
     formatRegion,
@@ -196,6 +202,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       data-twin-layer={state.layer}
     >
       {layerControls}
+      {credit ? <p className="mt-2 text-[9px] leading-relaxed text-neutral-500">{credit}</p> : null}
       <div className="flex items-center justify-between gap-2 px-3">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
           {unitLabel}

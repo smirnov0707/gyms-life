@@ -35,6 +35,24 @@ const GARMENT_MATERIAL_PREFIX = "twin-";
  */
 const BODY = { color: 0x3a4a5e, roughness: 0.58, metalness: 0.06 };
 const FABRIC = { color: 0x1a212b, roughness: 0.9, metalness: 0.04 };
+
+/**
+ * The skin, drawn as glass over the muscles.
+ *
+ * The figure is an anatomical atlas now: the muscles are real meshes sitting
+ * inside a whole-body surface. Left opaque that surface hides every one of
+ * them, which is how the first build came out — a plain grey body with the
+ * whole point of the screen sealed underneath it. Depth writing is off so the
+ * muscles behind it are not culled by it.
+ */
+const SKIN_GLASS = {
+  color: 0x8fb4d6,
+  roughness: 0.28,
+  metalness: 0,
+  transparent: true,
+  opacity: 0.17,
+  depthWrite: false,
+};
 /** Darker than the body, so the face reads as a face at a glance. */
 const EYE = { color: 0x0a0d12, roughness: 0.28, metalness: 0 };
 
@@ -50,8 +68,16 @@ export type TwinBodyModel = {
 
 export type TwinHumanVariant = "male" | "female";
 
-export function twinHumanUrl(variant: TwinHumanVariant): string {
-  return `/models/twin-human-${variant}-v1.glb`;
+/**
+ * The anatomical figure, which is one body rather than two.
+ *
+ * The old asset shipped a male and a female base mesh, and the profile chose
+ * between them. This atlas is a single cadaveric body — there is no second
+ * one to offer — so the variant is accepted and ignored rather than the call
+ * sites all being changed to stop passing it.
+ */
+export function twinHumanUrl(_variant: TwinHumanVariant): string {
+  return "/models/twin-anatomy-v1.glb";
 }
 
 /**
@@ -107,9 +133,14 @@ function build(scene: Object3D): TwinBodyModel {
     const garment =
       sourceName.startsWith(GARMENT_MATERIAL_PREFIX) &&
       !sourceName.startsWith(REGION_MATERIAL_PREFIX);
-    const preset = garment ? FABRIC : sourceName === "Eyes" ? EYE : BODY;
+    // The whole-body surface is the one mesh that is not a region: it carries
+    // no reading, so it is the silhouette rather than a data surface.
+    const isSkin = region === "neutral";
+    const preset = garment ? FABRIC : sourceName === "Eyes" ? EYE : isSkin ? SKIN_GLASS : BODY;
     disposeMaterial(object);
     object.material = new MeshStandardMaterial(preset);
+    // Drawn after the muscles, so the glass composites over them.
+    if (isSkin) object.renderOrder = 2;
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 

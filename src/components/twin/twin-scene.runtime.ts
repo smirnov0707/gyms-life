@@ -451,9 +451,14 @@ export function mountTwinScene(
         camera,
       );
       twinBodyRoot.updateMatrixWorld(true);
-      // Picking always uses the stable analytical surface, even when invisible.
-      const first = raycaster.intersectObjects(model.meshes, false)[0];
-      const region = first?.object instanceof Mesh ? model.regionOf.get(first.object) : undefined;
+      // The nearest hit that is actually a muscle, not simply the nearest hit.
+      // The skin is drawn as glass over the anatomy and sits in front of every
+      // muscle in it, so taking the first intersection meant every tap landed
+      // on the silhouette and selected nothing at all.
+      const region = raycaster
+        .intersectObjects(model.meshes, false)
+        .map((hit) => (hit.object instanceof Mesh ? model.regionOf.get(hit.object) : undefined))
+        .find((candidate) => candidate !== undefined);
       if (region) options.onSelect(region);
     };
     const cancel = (event: PointerEvent) => {
