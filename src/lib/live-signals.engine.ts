@@ -45,6 +45,15 @@ export type LiveSignal = {
   delta: number | null;
   /** What produced the reading: a watch, a phone, or the athlete by hand. */
   source: string | null;
+  /**
+   * Every reading in the window, oldest first, one per day.
+   *
+   * Carried so a caller can draw the line the mockup shows — and so it can
+   * decline to. A single point is not a shape, and a sparkline invented
+   * through it would be the first fabricated trend on this screen. Callers
+   * must check the length rather than trusting the array to be plottable.
+   */
+  history: { day: string; value: number }[];
 };
 
 /** After this many days a reading describes the past, not the present. */
@@ -110,6 +119,7 @@ function signalFrom(id: LiveSignalId, readings: Reading[], today: string): LiveS
       ageDays: null,
       delta: null,
       source: null,
+      history: [],
     };
   }
   const ageDays = daysBetween(latest.day, today);
@@ -122,6 +132,8 @@ function signalFrom(id: LiveSignalId, readings: Reading[], today: string): LiveS
     ageDays,
     delta: previous ? round(latest.value - previous.value) : null,
     source: latest.source,
+    // Oldest first, which is the direction a line is read in.
+    history: [...readings].reverse().map((reading) => ({ day: reading.day, value: reading.value })),
   };
 }
 
@@ -139,6 +151,7 @@ function unreadable(id: LiveSignalId): LiveSignal {
     ageDays: null,
     delta: null,
     source: null,
+    history: [],
   };
 }
 

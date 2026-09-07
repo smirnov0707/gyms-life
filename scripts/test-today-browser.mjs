@@ -741,6 +741,22 @@ try {
   await noSplit.page.close();
   record("the last session's effect is a share of what was logged, or says why it is not");
 
+  // 20. The mockup draws a small line beside every signal. Ours draws one only
+  //     where there is a line to draw: two readings make a shape, one does not,
+  //     and inventing one would be the first fabricated trend on this screen.
+  const measured = await open("?signals=measured");
+  const plotted = measured.page.getByRole("region", { name: "Live signals" });
+  await expect(plotted).toBeVisible({ timeout: 30000 });
+  // Resting HR has three readings and gets a line; sleep has one and does not.
+  await expect(plotted.getByRole("img", { name: /Resting HR/ })).toBeVisible();
+  await expect(plotted.getByRole("img", { name: /^Sleep/ })).toHaveCount(0);
+  // Exactly one signal is plottable, so exactly one line exists.
+  expect(await plotted.locator("svg[role='img']").count()).toBe(1);
+  await measured.page.screenshot({ path: path.join(artifacts, "signals-sparkline.png") });
+  expect(measured.errors).toEqual([]);
+  await measured.page.close();
+  record("a signal gets a line only when it has two readings to draw one from");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

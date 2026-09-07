@@ -65,6 +65,64 @@ function deltaTone(signal: LiveSignal): string {
   return good ? "text-primary" : "text-destructive";
 }
 
+/**
+ * The reading's own history, positioned by date rather than by index.
+ *
+ * Two readings a month apart are two dots far apart, not two dots side by
+ * side — spacing them evenly would draw a steady weekly cadence nobody
+ * recorded. The dots stay visible on top of the line for the same reason:
+ * the line is a join between measurements, and the reader can see how few
+ * of them there are.
+ *
+ * Nothing is drawn below two readings. One point has no shape, and inventing
+ * one would be the first fabricated trend on this screen.
+ */
+function Sparkline({ history, label }: { history: LiveSignal["history"]; label: string }) {
+  if (history.length < 2) return null;
+
+  const days = history.map((point) => Date.parse(`${point.day}T00:00:00Z`));
+  const values = history.map((point) => point.value);
+  const [firstDay, lastDay] = [days[0]!, days[days.length - 1]!];
+  const span = lastDay - firstDay;
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const range = high - low;
+
+  const points = history.map((point, index) => {
+    const x =
+      span > 0 ? ((days[index]! - firstDay) / span) * 100 : index * (100 / (history.length - 1));
+    // A flat run is flat, drawn down the middle rather than stretched to fill
+    // the box and made to look like movement.
+    const y = range > 0 ? 100 - ((point.value - low) / range) * 100 : 50;
+    return { x, y };
+  });
+
+  return (
+    <svg
+      role="img"
+      aria-label={label}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      className="h-6 w-12 shrink-0 overflow-visible text-primary/70"
+    >
+      <polyline
+        points={points.map((point) => `${point.x},${point.y}`).join(" ")}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        // The viewBox is stretched to the box, so a user-unit stroke would be
+        // squashed with it. This keeps the line 1.5 real pixels wide.
+        vectorEffect="non-scaling-stroke"
+      />
+      {points.map((point, index) => (
+        <circle key={history[index]!.day} cx={point.x} cy={point.y} r="1.6" fill="currentColor" />
+      ))}
+    </svg>
+  );
+}
+
 function SignalRow({ signal }: { signal: LiveSignal }) {
   const { t, lang } = useI18n();
   const shape = SHAPES[signal.id];
@@ -100,6 +158,10 @@ function SignalRow({ signal }: { signal: LiveSignal }) {
                   : t("sig.sourceDevice")}
         </span>
       </span>
+
+      {known ? (
+        <Sparkline history={signal.history} label={`${t(shape.label)}: ${signal.history.length}`} />
+      ) : null}
 
       {known ? (
         <span className="shrink-0 text-right">
@@ -179,6 +241,7 @@ export function LiveSignals() {
         ageDays: null,
         delta: null,
         source: null,
+        history: [],
       }))
     : (data ?? null);
 

@@ -148,3 +148,76 @@ describe("live signals", () => {
     expect(failed.unreadable).toBe(7);
   });
 });
+
+describe("reading history", () => {
+  it("carries every reading, oldest first, so a line reads left to right", () => {
+    const signals = buildLiveSignals({
+      health: [
+        {
+          sample_on: "2026-09-07",
+          source: "apple_health",
+          resting_hr: 52,
+          hrv_ms: null,
+          sleep_hours: null,
+          steps: null,
+          active_kcal: null,
+        },
+        {
+          sample_on: "2026-09-05",
+          source: "apple_health",
+          resting_hr: 55,
+          hrv_ms: null,
+          sleep_hours: null,
+          steps: null,
+          active_kcal: null,
+        },
+        {
+          sample_on: "2026-09-01",
+          source: "apple_health",
+          resting_hr: 58,
+          hrv_ms: null,
+          sleep_hours: null,
+          steps: null,
+          active_kcal: null,
+        },
+      ],
+      body: [],
+      today: "2026-09-07",
+    });
+    const restingHr = signals.find((signal) => signal.id === "restingHr");
+    expect(restingHr?.history).toEqual([
+      { day: "2026-09-01", value: 58 },
+      { day: "2026-09-05", value: 55 },
+      { day: "2026-09-07", value: 52 },
+    ]);
+  });
+
+  it("gives a signal with nothing behind it an empty history, never a placeholder", () => {
+    // A caller that trusted a non-empty array here would draw a line through
+    // a measurement nobody took.
+    const signals = buildLiveSignals({ health: [], body: [], today: "2026-09-07" });
+    for (const signal of signals) expect(signal.history).toEqual([]);
+
+    const unread = buildLiveSignals({ health: null, body: null, today: "2026-09-07" });
+    for (const signal of unread) expect(signal.history).toEqual([]);
+  });
+
+  it("holds one reading for a signal measured once, so the caller can decline to draw", () => {
+    const signals = buildLiveSignals({
+      health: [
+        {
+          sample_on: "2026-09-07",
+          source: "apple_health",
+          resting_hr: 52,
+          hrv_ms: null,
+          sleep_hours: null,
+          steps: null,
+          active_kcal: null,
+        },
+      ],
+      body: [],
+      today: "2026-09-07",
+    });
+    expect(signals.find((signal) => signal.id === "restingHr")?.history).toHaveLength(1);
+  });
+});

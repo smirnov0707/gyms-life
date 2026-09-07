@@ -25,6 +25,50 @@ const LIVE_SIGNAL_IDS = [
 
 export const getLiveSignals = async () => {
   if (mode() === "fail") throw new Error("live signals unavailable");
+  // `?signals=measured` gives resting HR three readings and sleep exactly one,
+  // which is the pair the sparkline has to treat differently.
+  if (mode() === "measured") {
+    return LIVE_SIGNAL_IDS.map((id) => {
+      if (id === "restingHr") {
+        return {
+          id,
+          state: "measured" as const,
+          value: 52,
+          recordedOn: "2026-09-07",
+          ageDays: 0,
+          delta: -3,
+          source: "apple_health",
+          history: [
+            { day: "2026-09-01", value: 58 },
+            { day: "2026-09-05", value: 55 },
+            { day: "2026-09-07", value: 52 },
+          ],
+        };
+      }
+      if (id === "sleep") {
+        return {
+          id,
+          state: "measured" as const,
+          value: 7.4,
+          recordedOn: "2026-09-07",
+          ageDays: 0,
+          delta: null,
+          source: "apple_health",
+          history: [{ day: "2026-09-07", value: 7.4 }],
+        };
+      }
+      return {
+        id,
+        state: "absent" as const,
+        value: null,
+        recordedOn: null,
+        ageDays: null,
+        delta: null,
+        source: null,
+        history: [],
+      };
+    });
+  }
   return LIVE_SIGNAL_IDS.map((id) => ({
     id,
     state: "absent" as const,
@@ -33,6 +77,7 @@ export const getLiveSignals = async () => {
     ageDays: null,
     delta: null,
     source: null,
+    history: [],
   }));
 };
 
