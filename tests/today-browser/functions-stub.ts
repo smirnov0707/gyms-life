@@ -57,6 +57,38 @@ export const rotateHealthToken = async () => ({
   token: PREVIEW_HEALTH_TOKEN,
 });
 
+/** `?body=single|change` drives the composition card; the default is this
+ *  account's state, which is one measurement and therefore no direction. */
+export const getBodyComposition = async () => {
+  const mode = new URLSearchParams(window.location.search).get("body") ?? "single";
+  const latest = {
+    day: "2026-09-02",
+    weightKg: 85,
+    bodyFatPercent: 20,
+    fatMassKg: 17,
+    leanMassKg: 68,
+  };
+  if (mode === "none") return { status: "none" as const };
+  if (mode === "change") {
+    return {
+      status: "change" as const,
+      latest,
+      earliest: {
+        day: "2026-08-13",
+        weightKg: 86.5,
+        bodyFatPercent: 22,
+        fatMassKg: 19,
+        leanMassKg: 67.5,
+      },
+      days: 20,
+      weightKg: -1.5,
+      fatMassKg: -2,
+      leanMassKg: 0.5,
+    };
+  }
+  return { status: "single" as const, latest };
+};
+
 export const getLabOverview = async () => null;
 export const getTwinTrendHistory = async () => null;
 /** `?plan=ready` puts a real session in front of the panel; the default is the

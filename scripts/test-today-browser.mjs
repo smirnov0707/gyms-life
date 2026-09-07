@@ -324,6 +324,36 @@ try {
   await expect(failedSources.getByText("Nothing received")).toHaveCount(0);
   record("the sources row reports what arrived, and tells silence from an outage");
 
+  // 12. Body composition: two measured numbers, two derived from them. The
+  //     card must never let a lean-mass figure pass for something that was
+  //     weighed, and must not turn one measurement into a trend.
+  const one = await openPanel("?panel=body");
+  const card = one.page.getByRole("region", { name: "Body composition" });
+  await expect(card).toBeVisible({ timeout: 30000 });
+  const oneText = await card.innerText();
+  expect(oneText).toContain("68.0");
+  expect(oneText).toContain("A second one is what turns it into a direction");
+  expect(oneText).toMatch(/calculated from those two, not measured/);
+  // One reading carries no signed change anywhere on the card.
+  expect(oneText).not.toMatch(/[+−-]\d+\.\d\s*kg/);
+  await one.page.screenshot({ path: path.join(artifacts, "body-single.png"), fullPage: true });
+  await one.page.close();
+
+  const trend = await openPanel("?panel=body&body=change");
+  const trendCard = trend.page.getByRole("region", { name: "Body composition" });
+  await expect(trendCard).toBeVisible({ timeout: 30000 });
+  const trendText = await trendCard.innerText();
+  expect(trendText).toMatch(/[−-]1\.5/);
+  expect(trendText).toContain("+0.5");
+  expect(trendText).toContain("2026-08-13");
+  expect(trendText).toMatch(/calculated from those two, not measured/);
+  await trend.page.screenshot({ path: path.join(artifacts, "body-change.png"), fullPage: true });
+  expect(trend.errors).toEqual([]);
+  await trend.page.close();
+  record(
+    "body composition shows a change only when there are two readings, and names what is derived",
+  );
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

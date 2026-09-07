@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TwinView } from "@/components/TwinView";
+import { BodyCompositionCard } from "@/components/BodyCompositionCard";
 import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTimeline } from "@/components/twin/TwinTimeline";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
@@ -24,8 +25,11 @@ export const Route = createFileRoute("/_authenticated/twin")({
 
 function TwinPage() {
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto grid w-full max-w-6xl gap-4">
       <TwinView />
+      {/* The template puts body composition directly under the figure: the
+          shape on screen, and what the scale says about it. */}
+      <BodyCompositionCard />
       <TwinRewind />
       <TwinTrendLens />
       <TwinTimeline />

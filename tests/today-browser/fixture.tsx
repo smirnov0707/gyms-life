@@ -6,6 +6,7 @@ import { ConnectHealthSource } from "@/components/ConnectHealthSource";
 import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 import { FutureMeSimulationDeck } from "@/components/future-lab/FutureMeSimulationDeck";
 import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence";
+import { BodyCompositionCard } from "@/components/BodyCompositionCard";
 import { LangProvider } from "@/lib/i18n";
 import "@/styles.css";
 
@@ -34,6 +35,8 @@ function Panel() {
       return <FutureMeSimulationDeck />;
     case "journal":
       return <JournalIntelligence />;
+    case "body":
+      return <BodyCompositionCard />;
     default:
       return <Overview />;
   }
