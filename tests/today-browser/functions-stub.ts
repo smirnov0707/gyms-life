@@ -275,3 +275,61 @@ export const getTrainingLoad = async () => {
     uncountedSets: 3,
   };
 };
+
+/** `?effect=partial|none|nobreakdown` covers the states the effect card must
+ *  keep apart: complete shares, nothing finished, and a session whose split
+ *  could not be computed. */
+export const getLastSessionEffect = async () => {
+  const mode = new URLSearchParams(window.location.search).get("effect");
+  if (mode === "fail") throw new Error("sessions unavailable");
+  if (mode === "none") return { status: "none" as const };
+  const base = {
+    status: "session" as const,
+    title: "Upper body focus",
+    finishedAt: "2026-09-06T18:40:00.000Z",
+  };
+  if (mode === "nobreakdown") {
+    return { ...base, breakdown: [], breakdownAvailable: false };
+  }
+  const breakdown = [
+    {
+      muscleGroup: "chest",
+      volumeKg: 4200,
+      sets: 7,
+      shareOfSession: 0.42,
+      mappingStatus: "catalogue" as const,
+    },
+    {
+      muscleGroup: "back",
+      volumeKg: 3100,
+      sets: 6,
+      shareOfSession: 0.31,
+      mappingStatus: "catalogue" as const,
+    },
+    {
+      muscleGroup: "shoulders",
+      volumeKg: 1800,
+      sets: 4,
+      shareOfSession: 0.18,
+      mappingStatus: "catalogue" as const,
+    },
+    {
+      muscleGroup: "arms",
+      volumeKg: 900,
+      sets: 3,
+      shareOfSession: 0.09,
+      mappingStatus: "catalogue" as const,
+    },
+  ];
+  if (mode === "partial") {
+    // One set with no known volume makes the whole denominator incomplete.
+    return {
+      ...base,
+      breakdownAvailable: true,
+      breakdown: breakdown.map((row, index) =>
+        index === 1 ? { ...row, volumeKg: null, shareOfSession: null } : row,
+      ),
+    };
+  }
+  return { ...base, breakdown, breakdownAvailable: true };
+};

@@ -710,6 +710,37 @@ try {
   await unread.page.close();
   record("the week's load says what it counted, what it could not, and what it cannot compare");
 
+  // 19. What the last finished session did to the body, kept on the home
+  //     screen. The share is a share of recorded volume, and a session whose
+  //     denominator is incomplete gets no percentages at all rather than some.
+  const effect = await openPanel("?panel=home&twin=regions");
+  const effectPanel = effect.page.getByRole("region", { name: "Recent workout effect" });
+  await expect(effectPanel).toBeVisible({ timeout: 30000 });
+  const effectText = await effectPanel.innerText();
+  expect(effectText).toContain("42%");
+  expect(effectText).toContain("Chest");
+  expect(effectText).toMatch(/not measured muscle activation/);
+  await effect.page.close();
+
+  // One set with no known volume, so no row is given a percentage — the set
+  // count carries them instead.
+  const partial = await openPanel("?panel=home&twin=regions&effect=partial");
+  const partialPanel = partial.page.getByRole("region", { name: "Recent workout effect" });
+  await expect(partialPanel).toBeVisible({ timeout: 30000 });
+  const partialText = await partialPanel.innerText();
+  expect(partialText).not.toContain("42%");
+  expect(partialText).toMatch(/denominator would be incomplete/);
+  expect(partialText).toContain("7 × 4200 kg");
+  await partial.page.close();
+
+  // A split that could not be computed is not a session that trained nothing.
+  const noSplit = await openPanel("?panel=home&twin=regions&effect=nobreakdown");
+  await expect(noSplit.page.getByText("The workout happened", { exact: false })).toBeVisible({
+    timeout: 30000,
+  });
+  await noSplit.page.close();
+  record("the last session's effect is a share of what was logged, or says why it is not");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

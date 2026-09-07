@@ -12,6 +12,7 @@ import { targetsRegion, type TodaysTargets } from "@/lib/todays-targets.engine";
 import { TWIN_DISPLAY_COLORS, type TwinLayer } from "@/components/twin/twin-scene.model";
 import { TwinStage } from "@/components/twin/TwinStage";
 import { TrainingLoadPanel } from "@/components/TrainingLoadPanel";
+import { RecentWorkoutEffect } from "@/components/RecentWorkoutEffect";
 import { twinCopyFor } from "@/components/TwinView";
 import {
   isAnatomicalRegion,
@@ -250,7 +251,7 @@ export function TwinHome() {
           />
         </div>
 
-        <div className="grid gap-4 px-4 pb-5 sm:px-6 lg:grid-cols-3">
+        <div className="grid gap-4 px-4 pb-5 sm:px-6 lg:grid-cols-2 xl:grid-cols-4">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400">
               <Dumbbell aria-hidden="true" className="size-3.5" /> {t("th.targets")}
@@ -310,6 +311,7 @@ export function TwinHome() {
           </div>
 
           <TrainingLoadPanel />
+          <RecentWorkoutEffect />
         </div>
       </div>
     </section>
