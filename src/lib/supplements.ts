@@ -107,6 +107,27 @@ function slotsFor(s: Supplement): SlotId[] {
   return out;
 }
 
+/**
+ * Where a conflicting item can go: the nearest later meal slot that does not
+ * already hold the category it clashes with, then any other slot free of it.
+ *
+ * Null when every slot holds the other half of the pair — there is no
+ * separation to be had, and pretending otherwise is what this returns null to
+ * avoid.
+ */
+function separationTarget(
+  bySlot: Map<SlotId, ScheduledItem[]>,
+  from: SlotId,
+  clashesWith: string,
+): SlotId | null {
+  const free = (id: SlotId) =>
+    id !== from && !bySlot.get(id)!.some((i) => i.supplement.category === clashesWith);
+  const index = SLOT_ORDER.findIndex((x) => x.id === from);
+  const later = SLOT_ORDER.slice(index + 1).find((x) => MEAL_SLOTS.includes(x.id) && free(x.id));
+  if (later) return later.id;
+  return SLOT_ORDER.find((x) => free(x.id))?.id ?? null;
+}
+
 export function buildSchedule(supplements: Supplement[]): ScheduleResult {
   const active = supplements.filter((s) => s.is_active);
   const bySlot = new Map<SlotId, ScheduledItem[]>();
@@ -115,9 +136,16 @@ export function buildSchedule(supplements: Supplement[]): ScheduleResult {
 
   for (const s of active) {
     const slots = slotsFor(s);
-    const n = Math.min(Math.max(1, s.times_per_day), 4);
+    // One dose per distinct slot, and no more doses than there are slots to
+    // put them in. The cap used to be a flat four with no relation to the
+    // slots available: the stored schema allows six doses a day, so two of
+    // them simply vanished from a schedule that presented itself as the whole
+    // day. Fewer doses than asked for is now said out loud.
+    const wanted = Math.max(1, s.times_per_day);
+    const n = Math.min(wanted, slots.length);
+    if (wanted > n) warnings.add("supp.warn.dosesUnplaced");
     for (let i = 0; i < n; i++) {
-      const slot = slots[i] ?? slots[slots.length - 1]!;
+      const slot = slots[i]!;
       bySlot.get(slot)!.push({
         supplement: s,
         reasonKey: CATEGORY_REASON[s.category] ?? CATEGORY_REASON["general"]!,
@@ -130,19 +158,30 @@ export function buildSchedule(supplements: Supplement[]): ScheduleResult {
     }
   }
 
-  // Resolve same-slot conflicts: move the second conflicting item onward.
+  // Resolve same-slot conflicts.
+  //
+  // Every conflicting item has to move, not just the first one found. With two
+  // irons and two calciums at breakfast this used to move one calcium, leave
+  // the other beside both irons, and still raise the warning — telling the
+  // athlete an absorption clash had been separated while it was still there.
   for (const [a, b, warnKey] of CONFLICTS) {
     for (const { id } of SLOT_ORDER) {
       const items = bySlot.get(id)!;
-      const hasA = items.findIndex((i) => i.supplement.category === a);
-      const hasB = items.findIndex((i) => i.supplement.category === b);
-      if (hasA >= 0 && hasB >= 0) {
-        const [moved] = items.splice(hasB, 1);
-        const idx = SLOT_ORDER.findIndex((x) => x.id === id);
-        const fallback: SlotId[] = ["lunch", "dinner", "breakfast", "bedtime"];
-        const target =
-          SLOT_ORDER.slice(idx + 1).find((x) => MEAL_SLOTS.includes(x.id))?.id ??
-          fallback.find((f) => f !== id)!;
+      while (
+        items.some((i) => i.supplement.category === a) &&
+        items.some((i) => i.supplement.category === b)
+      ) {
+        const target = separationTarget(bySlot, id, a);
+        // Nowhere left that is free of the other half of the pair. Moving it
+        // anyway would only recreate the clash somewhere else, so it stays
+        // and the athlete is told it could not be separated rather than told
+        // it was.
+        if (target === null) {
+          warnings.add("supp.warn.cannotSeparate");
+          break;
+        }
+        const index = items.findIndex((i) => i.supplement.category === b);
+        const [moved] = items.splice(index, 1);
         bySlot.get(target)!.push({ ...moved!, reasonKey: "supp.why.separated" });
         warnings.add(warnKey);
       }

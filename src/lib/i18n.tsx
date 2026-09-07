@@ -685,6 +685,14 @@ const baseDict = {
     lt: "Prieštreniruotinis su kofeinu vėlai vakare gali gadinti miegą — rinkis rytines treniruotes arba versiją be kofeino.",
     en: "A caffeinated pre-workout late in the day can hurt sleep — train earlier or use a stim-free version.",
   },
+  "supp.warn.dosesUnplaced": {
+    lt: "Kai kurių papildų dozių tvarkaraštyje netilpo — dienoje nėra tiek atskirų laiko tarpsnių, kiek nurodei kartų. Rodoma tik tai, kas telpa.",
+    en: "Some doses did not fit the schedule — the day has fewer separate slots than the times you asked for. Only what fits is shown.",
+  },
+  "supp.warn.cannotSeparate": {
+    lt: "Dviejų papildų, kurie trukdo vienas kito pasisavinimui, atskirti nepavyko — visuose laiko tarpsniuose jau yra vienas iš jų. Apsvarstyk, ar imti juos skirtingomis dienomis.",
+    en: "Two supplements that compete for absorption could not be separated — every slot already holds one of them. Consider taking them on different days.",
+  },
   "supp.warn.tooMany": {
     lt: "Vienu metu susikaupė daug papildų — apsvarstyk, ar visų tikrai reikia kasdien.",
     en: "Many supplements land at the same time — consider whether you need all of them daily.",
