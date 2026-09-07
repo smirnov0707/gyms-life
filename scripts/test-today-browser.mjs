@@ -444,6 +444,72 @@ try {
   await bare.page.close();
   record("with nothing measured, Today explains itself at full width instead of spinning");
 
+  // 16. Sets logged without a connection are training that happened, and every
+  //     screen in this app reads their absence as training that did not. While
+  //     any are still on the device, the app has to say so.
+  const queued = [
+    {
+      id: "a",
+      type: "workout_set",
+      timestamp: Date.parse("2026-09-04T18:00:00.000Z"),
+      data: {
+        sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
+        exerciseSlug: "barbell-squat",
+        exerciseName: "Barbell Squat",
+        setNumber: 1,
+        reps: 8,
+        weightKg: 100,
+        rpe: null,
+        done: true,
+        performedAt: "2026-09-04T18:00:00.000Z",
+      },
+    },
+    {
+      id: "b",
+      type: "workout_set",
+      timestamp: Date.parse("2026-09-04T18:03:00.000Z"),
+      data: {
+        sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
+        exerciseSlug: "barbell-squat",
+        exerciseName: "Barbell Squat",
+        setNumber: 2,
+        reps: 8,
+        weightKg: 100,
+        rpe: null,
+        done: true,
+        performedAt: "2026-09-04T18:03:00.000Z",
+      },
+    },
+  ];
+
+  const seedQueue = async (query) => {
+    const opened = await openPanel(query);
+    await opened.page.evaluate((rows) => {
+      localStorage.setItem("gyms_life_offline_queue_v2", JSON.stringify(rows));
+    }, queued);
+    await opened.page.reload();
+    return opened;
+  };
+
+  const stuck = await seedQueue("?panel=offline&sync=fail");
+  const strip = stuck.page.getByText("Sets not sent yet: 2");
+  await expect(strip).toBeVisible({ timeout: 30000 });
+  await expect(stuck.page.getByText("They are saved on this device")).toBeVisible();
+  await stuck.page.screenshot({ path: path.join(artifacts, "offline-queue.png") });
+  await stuck.page.close();
+
+  // Delivered, the strip has nothing left to report and gets out of the way.
+  const sent = await seedQueue("?panel=offline");
+  await expect(sent.page.getByText("Sets not sent yet: 2")).toHaveCount(0, { timeout: 30000 });
+  expect(
+    await sent.page.evaluate(() =>
+      JSON.parse(localStorage.getItem("gyms_life_offline_queue_v2") ?? "[]"),
+    ),
+  ).toEqual([]);
+  expect(sent.errors).toEqual([]);
+  await sent.page.close();
+  record("sets stuck on the device are reported until they are delivered");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

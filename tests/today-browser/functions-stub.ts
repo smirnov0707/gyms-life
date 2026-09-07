@@ -187,3 +187,12 @@ export const forecastProgress = async () => null;
 export const BRIEF = { version: 1 };
 /** Loose on purpose: the fixture never feeds it a cached brief. */
 export const DailyBriefSchema = z.unknown();
+
+/** `?sync=fail` makes delivery fail, which is the state the offline strip
+ *  exists for: sets that happened and that nothing on the server knows. */
+export const logWorkoutSet = async () => {
+  if (new URLSearchParams(window.location.search).get("sync") === "fail") {
+    throw new Error("network unavailable");
+  }
+  return { ok: true };
+};

@@ -105,13 +105,22 @@ describe("syncPayload", () => {
 });
 
 describe("flushOfflineWorkoutSets", () => {
+  let dispatched: string[] = [];
+
   /** A minimal localStorage, since these paths are browser-only. */
   function stubBrowser(seed: OfflinePayload[]) {
     const store = new Map<string, string>([["gyms_life_offline_queue_v2", JSON.stringify(seed)]]);
+    dispatched = [];
     vi.stubGlobal("window", {
       localStorage: {
         getItem: (key: string) => store.get(key) ?? null,
         setItem: (key: string, value: string) => store.set(key, value),
+      },
+      // The queue announces every change so the strip that reports undelivered
+      // sets can react to one instead of polling local storage.
+      dispatchEvent: (event: Event) => {
+        dispatched.push(event.type);
+        return true;
       },
     });
     vi.stubGlobal(
@@ -172,6 +181,19 @@ describe("flushOfflineWorkoutSets", () => {
     expect(result).toEqual({ synced: 0, remaining: 1 });
     expect(JSON.parse(store.get("gyms_life_offline_queue_v2") ?? "[]")).toHaveLength(1);
 
+    vi.unstubAllGlobals();
+  });
+
+  it("announces every change, so the strip reporting undelivered sets can follow", async () => {
+    // Sets waiting here are training that happened; every screen in the app
+    // reads their absence as training that did not. The strip that says so
+    // has to learn when the queue empties without polling local storage.
+    stubBrowser([{ id: "a", type: "workout_set", data: firstSet, timestamp: 1_764_000_000_000 }]);
+    const { flushOfflineWorkoutSets, OFFLINE_QUEUE_EVENT } = await import("./offline-store");
+
+    await flushOfflineWorkoutSets(async () => undefined);
+
+    expect(dispatched).toContain(OFFLINE_QUEUE_EVENT);
     vi.unstubAllGlobals();
   });
 });

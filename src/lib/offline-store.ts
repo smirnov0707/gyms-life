@@ -53,9 +53,19 @@ function createPayloadId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * Fired whenever the queue grows or shrinks.
+ *
+ * Sets waiting here are training that happened and that nothing on the server
+ * knows about, so the screen that says so has to be able to notice them
+ * arriving and leaving without polling local storage on a timer.
+ */
+export const OFFLINE_QUEUE_EVENT = "gymslife:offline-queue";
+
 function persistOfflineQueue(queue: OfflinePayload[]): void {
   if (!isBrowser()) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+  window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_EVENT));
 }
 
 /**

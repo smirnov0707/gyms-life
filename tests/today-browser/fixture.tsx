@@ -8,6 +8,7 @@ import { FutureMeSimulationDeck } from "@/components/future-lab/FutureMeSimulati
 import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence";
 import { BodyCompositionCard } from "@/components/BodyCompositionCard";
 import { TwinScreen } from "@/components/twin/TwinScreen";
+import { OfflineQueueSync } from "@/components/OfflineQueueSync";
 import { LangProvider } from "@/lib/i18n";
 import "@/styles.css";
 
@@ -40,6 +41,8 @@ function Panel() {
       return <BodyCompositionCard />;
     case "twin":
       return <TwinScreen />;
+    case "offline":
+      return <OfflineQueueSync />;
     default:
       return <Overview />;
   }
