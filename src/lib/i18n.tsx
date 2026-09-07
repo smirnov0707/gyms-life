@@ -31,6 +31,7 @@ import { extra_signals } from "./i18n-extra-signals";
 import { extra_healthsource } from "./i18n-extra-healthsource";
 import { extra_todayplan } from "./i18n-extra-todayplan";
 import { extra_labcard } from "./i18n-extra-labcard";
+import { extra_sources } from "./i18n-extra-sources";
 import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
 export type Lang = SupportedLanguage;
@@ -737,6 +738,7 @@ export const dict = {
   ...extra_healthsource,
   ...extra_todayplan,
   ...extra_labcard,
+  ...extra_sources,
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;

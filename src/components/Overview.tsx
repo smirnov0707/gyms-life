@@ -12,6 +12,7 @@ import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { LiveSignals } from "@/components/LiveSignals";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
+import { DataSourcesStrip } from "@/components/DataSourcesStrip";
 import { FutureLabTodayIntelligence } from "@/components/future-lab/FutureLabTodayIntelligence";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
@@ -231,6 +232,12 @@ export function Overview() {
 
         <div className={`lg:col-span-12 ${anim("delay-200")}`}>
           <FutureLabTodayIntelligence />
+        </div>
+
+        {/* The template closes on a row of data sources. Ours says which kinds
+            have actually delivered rather than declaring all systems green. */}
+        <div className={`lg:col-span-12 ${anim("delay-300")}`}>
+          <DataSourcesStrip />
         </div>
       </div>
     </div>

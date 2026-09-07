@@ -151,7 +151,7 @@ try {
   expect(await rail.getByText("Not recorded yet").count()).toBe(7);
   const railText = (await rail.innerText()).replace(/[—–-]/g, "");
   expect(/\d/.test(railText)).toBe(false);
-  await expect(first.page.getByRole("link", { name: "Connect a device" })).toBeVisible();
+  await expect(rail.getByRole("link", { name: "Connect a device" })).toBeVisible();
   record("an empty source shows as empty, with no invented figure and a way to fix it");
 
   // 3. Every Future Lab panel with no evidence says so rather than showing a
@@ -300,13 +300,29 @@ try {
   // The two ways out of an empty rail are the only things to tap on it, so
   // they have to be reachable with a thumb.
   for (const name of ["Prijungti įrenginį", "Įvesti matavimą"]) {
-    const box = await lt.page.getByRole("link", { name }).boundingBox();
+    const box = await ltRail.getByRole("link", { name }).boundingBox();
     expect(box, `${name} is not on screen`).not.toBeNull();
     expect(box.height).toBeGreaterThanOrEqual(44);
   }
   await lt.page.screenshot({ path: path.join(artifacts, "today-lt-320.png"), fullPage: true });
   expect(lt.errors).toEqual([]);
   record("Lithuanian at 320px stays inside the screen with tappable controls");
+
+  // 11. The template closes on a row of data sources reporting all systems
+  //     operational. Ours reports what has actually arrived, which with
+  //     nothing connected is two sources that have sent nothing and no
+  //     readings at all — never a green light nobody earned.
+  const sources = first.page.getByRole("region", { name: "Data sources" });
+  await expect(sources).toBeVisible();
+  expect(await sources.getByText("Nothing received").count()).toBe(2);
+  await expect(sources.getByText("No readings at all")).toBeVisible();
+  const sourcesText = await sources.innerText();
+  expect(sourcesText).not.toMatch(/operational|all systems/i);
+
+  const failedSources = failed.page.getByRole("region", { name: "Data sources" });
+  expect(await failedSources.getByText("Could not check").count()).toBe(2);
+  await expect(failedSources.getByText("Nothing received")).toHaveCount(0);
+  record("the sources row reports what arrived, and tells silence from an outage");
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
