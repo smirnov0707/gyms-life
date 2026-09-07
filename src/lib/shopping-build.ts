@@ -276,6 +276,32 @@ function categoryOf(name: string) {
 const round = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, "");
 
 /** Aggregates every ingredient of the plan into a categorized shopping list. */
+/**
+ * Units that measure the same thing, and what one of them is worth in the
+ * smallest of them.
+ *
+ * Summing kept these apart, so half a kilo of chicken on Monday and a kilo on
+ * Tuesday came out as "500 g + 1 kg" — the right total, written as two things
+ * to buy. The display already converted grams to kilos above a thousand, so it
+ * knew they were the same dimension; only the addition did not.
+ */
+const UNIT_DIMENSION: Record<string, { dimension: string; inBase: number }> = {
+  g: { dimension: "mass", inBase: 1 },
+  kg: { dimension: "mass", inBase: 1000 },
+  ml: { dimension: "volume", inBase: 1 },
+  l: { dimension: "volume", inBase: 1000 },
+};
+
+/** The key a quantity is accumulated under: its dimension, or the unit itself. */
+const accumulationKey = (unit: string) => UNIT_DIMENSION[unit]?.dimension ?? unit;
+
+/** Formats a summed amount back into the largest unit that suits it. */
+function formatAmount(key: string, value: number): string {
+  if (key === "mass") return value >= 1000 ? `${round(value / 1000)} kg` : `${round(value)} g`;
+  if (key === "volume") return value >= 1000 ? `${round(value / 1000)} l` : `${round(value)} ml`;
+  return `${round(value)} ${key}`;
+}
+
 export function buildShoppingList(plan: GeneratedMealPlan, lang: string): ShoppingGroup[] {
   const bucket = new Map<
     string,
@@ -297,7 +323,11 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
         };
         if (parsed.qty != null && Number.isFinite(parsed.qty)) {
           const unit = parsed.unit || "vnt.";
-          entry.units.set(unit, (entry.units.get(unit) ?? 0) + parsed.qty);
+          // Accumulated per dimension, so grams and kilos of the same
+          // ingredient add up instead of being listed side by side.
+          const key = accumulationKey(unit);
+          const inBase = UNIT_DIMENSION[unit]?.inBase ?? 1;
+          entry.units.set(key, (entry.units.get(key) ?? 0) + parsed.qty * inBase);
         } else {
           entry.freeform += 1;
         }
@@ -312,18 +342,13 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
   const order = ["protein", "produce", "grains", "fats", "pantry", "other"];
 
   for (const entry of bucket.values()) {
-    // normalise g -> kg and ml -> l when large
     const parts: string[] = [];
-    for (const [unit, value] of entry.units) {
-      if (unit === "g" && value >= 1000) parts.push(`${round(value / 1000)} kg`);
-      else if (unit === "ml" && value >= 1000) parts.push(`${round(value / 1000)} l`);
-      else parts.push(`${round(value)}${unit === "vnt." || unit.length > 2 ? " " : " "}${unit}`);
-    }
-    if (!parts.length && entry.freeform)
-      parts.push(
-        entry.freeform > 1 ? `×${entry.freeform}` : lang === "lt" ? "pagal skonį" : "to taste",
-      );
-    else if (entry.freeform) parts.push(`+${entry.freeform}`);
+    for (const [key, value] of entry.units) parts.push(formatAmount(key, value));
+    // Mentions that carried no amount at all. With a quantity beside them this
+    // used to append a bare count, so salt came out as "150 g + +1" — a
+    // doubled plus and a number nobody can buy. What those mentions actually
+    // say is "and some, to taste", so that is what they say.
+    if (entry.freeform) parts.push(lang === "lt" ? "pagal skonį" : "to taste");
 
     const label = (CATEGORY_LABELS[entry.category] ?? CATEGORY_LABELS["other"]!)[
       lang === "lt" ? "lt" : "en"
