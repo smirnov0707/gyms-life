@@ -507,8 +507,12 @@ export type Database = {
           recovery_score: number | null
           resting_hr: number | null
           sample_on: string
+          sleep_awake_minutes: number | null
+          sleep_core_minutes: number | null
+          sleep_deep_minutes: number | null
           sleep_hours: number | null
           sleep_quality: number | null
+          sleep_rem_minutes: number | null
           source: string
           steps: number | null
           updated_at: string
@@ -524,8 +528,12 @@ export type Database = {
           recovery_score?: number | null
           resting_hr?: number | null
           sample_on?: string
+          sleep_awake_minutes?: number | null
+          sleep_core_minutes?: number | null
+          sleep_deep_minutes?: number | null
           sleep_hours?: number | null
           sleep_quality?: number | null
+          sleep_rem_minutes?: number | null
           source?: string
           steps?: number | null
           updated_at?: string
@@ -541,8 +549,12 @@ export type Database = {
           recovery_score?: number | null
           resting_hr?: number | null
           sample_on?: string
+          sleep_awake_minutes?: number | null
+          sleep_core_minutes?: number | null
+          sleep_deep_minutes?: number | null
           sleep_hours?: number | null
           sleep_quality?: number | null
+          sleep_rem_minutes?: number | null
           source?: string
           steps?: number | null
           updated_at?: string

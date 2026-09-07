@@ -144,6 +144,12 @@ export const Route = createFileRoute("/api/public/health-ingest")({
             active_kcal: p.activeKcal,
             vo2max: p.vo2max,
             recovery_score: score,
+            // Null for a stage the source did not report, never zero: zero
+            // would claim an unbroken night nobody measured.
+            sleep_awake_minutes: p.sleepStages.awakeMinutes,
+            sleep_rem_minutes: p.sleepStages.remMinutes,
+            sleep_deep_minutes: p.sleepStages.deepMinutes,
+            sleep_core_minutes: p.sleepStages.coreMinutes,
           },
           { onConflict: "user_id,sample_on,source" },
         );
@@ -187,7 +193,22 @@ export const Route = createFileRoute("/api/public/health-ingest")({
             sleep_hours: p.sleepHours,
             steps: p.steps,
             active_kcal: p.activeKcal,
+            sleep_awake_minutes: p.sleepStages.awakeMinutes,
+            sleep_rem_minutes: p.sleepStages.remMinutes,
+            sleep_deep_minutes: p.sleepStages.deepMinutes,
+            sleep_core_minutes: p.sleepStages.coreMinutes,
           },
+          // The rest of the sample is kept when stages have to be dropped —
+          // a wrong unit on one field is no reason to lose the heart rate
+          // that arrived with it. Said out loud, because an automation with
+          // the wrong unit has no other way of finding out.
+          ...(p.sleepStagesRejected
+            ? {
+                dropped: "sleep_stages",
+                message:
+                  "The sleep stages added up to more than the sleep duration sent with them, so they were not stored. Check the units: stages are read as minutes unless the field name or value says otherwise.",
+              }
+            : {}),
         });
       },
     },

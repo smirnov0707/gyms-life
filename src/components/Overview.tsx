@@ -14,6 +14,7 @@ import { LiveSignals } from "@/components/LiveSignals";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
 import { DataSourcesStrip } from "@/components/DataSourcesStrip";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
+import { SleepAnalysis } from "@/components/SleepAnalysis";
 import { FutureLabTodayIntelligence } from "@/components/future-lab/FutureLabTodayIntelligence";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
@@ -189,6 +190,9 @@ export function Overview() {
 
         <aside className={`grid content-start gap-3 lg:col-span-3 ${anim("delay-75")}`}>
           <LiveSignals />
+          {/* Beside readiness rather than beside the training panels: the
+              night is what readiness is largely made of. */}
+          <SleepAnalysis />
           <TodaysPlanPanel />
           {readinessScore != null ? (
             <ReadinessCard

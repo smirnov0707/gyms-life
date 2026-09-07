@@ -781,6 +781,54 @@ try {
   await noLedger.page.close();
   record("prediction evidence is a level and a count, never a blended confidence percentage");
 
+  // 22. Where the template shows four sleep bars that always fill a night.
+  //     Ours shows only what the source actually sent, and says which of the
+  //     several kinds of "nothing" it is looking at.
+  const noNight = await open("?sleep=");
+  const sleepPanel = noNight.page.getByRole("region", { name: "Sleep analysis" });
+  await expect(sleepPanel).toBeVisible({ timeout: 30000 });
+  expect(await sleepPanel.innerText()).toMatch(/no source has sent a night yet/i);
+  await noNight.page.close();
+
+  const staged = await open("?sleep=staged");
+  const stagedPanel = staged.page.getByRole("region", { name: "Sleep analysis" });
+  await expect(stagedPanel).toBeVisible({ timeout: 30000 });
+  const stagedText = await stagedPanel.innerText();
+  for (const stage of ["Deep", "REM", "Core", "Awake"]) expect(stagedText).toContain(stage);
+  // A whole night was described, so the shares are shown and add to 100.
+  const shares = [...stagedText.matchAll(/(\d+)\s*%/g)].map((match) => Number(match[1]));
+  expect(shares.length).toBe(4);
+  expect(shares.reduce((sum, share) => sum + share, 0)).toBe(100);
+  await staged.page.screenshot({ path: path.join(artifacts, "sleep-stages.png") });
+  await staged.page.close();
+
+  // One stage out of four: minutes, no percentages, and the reason said out
+  // loud. A share of one stage would read as the whole night.
+  const onlyDeep = await open("?sleep=partial");
+  const onlyDeepPanel = onlyDeep.page.getByRole("region", { name: "Sleep analysis" });
+  await expect(onlyDeepPanel).toBeVisible({ timeout: 30000 });
+  const onlyDeepText = await onlyDeepPanel.innerText();
+  expect(onlyDeepText).toContain("82 min");
+  expect(onlyDeepText).not.toMatch(/\d+\s*%/);
+  expect(onlyDeepText).toMatch(/did not send every stage/i);
+  // Sleep the source reported and never placed in a stage is named, not
+  // folded into the one stage that did arrive.
+  expect(onlyDeepText).toMatch(/350 min of sleep in no stage/i);
+  await onlyDeep.page.close();
+
+  const durationOnly = await open("?sleep=duration");
+  const durationPanel = durationOnly.page.getByRole("region", { name: "Sleep analysis" });
+  await expect(durationPanel).toBeVisible({ timeout: 30000 });
+  expect(await durationPanel.innerText()).toMatch(/sleep duration only/i);
+  await durationOnly.page.close();
+
+  const noSamples = await open("?sleep=fail");
+  await expect(
+    noSamples.page.getByText("sleep records could not be read", { exact: false }),
+  ).toBeVisible({ timeout: 30000 });
+  await noSamples.page.close();
+  record("the sleep panel draws only the stages a source actually reported");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

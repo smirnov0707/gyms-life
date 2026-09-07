@@ -17,6 +17,8 @@ type Answer = { data?: unknown; error?: unknown };
 /** What each table answers, in call order. Missing means "never touched". */
 let script: Record<string, Answer[]>;
 let touched: string[];
+/** Every row handed to `upsert`, so a test can assert what was written. */
+let written: Record<string, Record<string, unknown>[]>;
 
 function builder(table: string) {
   const answer = () => {
@@ -31,7 +33,10 @@ function builder(table: string) {
   }
   chain["maybeSingle"] = answer;
   chain["limit"] = answer;
-  chain["upsert"] = answer;
+  chain["upsert"] = (row: Record<string, unknown>) => {
+    (written[table] ??= []).push(row);
+    return answer();
+  };
   return chain;
 }
 
@@ -64,6 +69,7 @@ describe("public health ingest", () => {
   beforeEach(() => {
     script = {};
     touched = [];
+    written = {};
   });
 
   it("refuses a body that is not JSON without reading anything", async () => {
@@ -136,5 +142,51 @@ describe("public health ingest", () => {
     expect(body["stored"]).toMatchObject({ resting_hr: 52, steps: 8000 });
     // A sample dated today also becomes today's check-in.
     expect(touched).toEqual(["profiles", "health_samples", "health_samples", "daily_checkins"]);
+  });
+
+  it("stores sleep stages, and leaves the ones nobody reported null", async () => {
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    const { body } = await post({
+      token: TOKEN,
+      sleep_hours: 7.2,
+      sleep_rem_minutes: 96,
+      sleep_deep_minutes: 82,
+      sleep_core_minutes: 256,
+    });
+    const row = written["health_samples"]?.[0];
+    expect(row).toMatchObject({
+      sleep_rem_minutes: 96,
+      sleep_deep_minutes: 82,
+      sleep_core_minutes: 256,
+    });
+    // Nobody reported time awake, so nothing is claimed about it.
+    expect(row && row["sleep_awake_minutes"]).toBeNull();
+    expect(body["dropped"]).toBeUndefined();
+  });
+
+  it("keeps the rest of a sample whose stages contradict its own duration, and says so", async () => {
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    const { status, body } = await post({
+      token: TOKEN,
+      resting_hr: 52,
+      sleep_hours: 7.2,
+      sleep_rem_minutes: 900,
+      sleep_deep_minutes: 400,
+    });
+    expect(status).toBe(200);
+    expect(body["dropped"]).toBe("sleep_stages");
+    const row = written["health_samples"]?.[0];
+    // The heart rate and the duration survive; only the impossible night goes.
+    expect(row).toMatchObject({ resting_hr: 52, sleep_hours: 7.2 });
+    expect(row && row["sleep_rem_minutes"]).toBeNull();
+    expect(row && row["sleep_deep_minutes"]).toBeNull();
   });
 });

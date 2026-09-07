@@ -5,6 +5,20 @@
  * a variety of field names, which is why raw values looked wrong before.
  */
 
+/**
+ * How the night was spent, in minutes, exactly as the source reported it.
+ *
+ * Null means the source said nothing about that stage. Zero would be a claim —
+ * "you were never awake", "you got no deep sleep" — and no source that omits
+ * stages is making it.
+ */
+export type SleepStages = {
+  awakeMinutes: number | null;
+  remMinutes: number | null;
+  deepMinutes: number | null;
+  coreMinutes: number | null;
+};
+
 export type NormalizedHealth = {
   restingHr: number | null;
   hrvMs: number | null;
@@ -13,6 +27,17 @@ export type NormalizedHealth = {
   steps: number | null;
   activeKcal: number | null;
   vo2max: number | null;
+  sleepStages: SleepStages;
+  /**
+   * True when stages arrived but could not stand beside the sleep duration
+   * they were sent with, and were dropped rather than stored.
+   *
+   * The rest of the sample is kept: a broken stage field is no reason to lose
+   * the heart rate that came with it. The flag exists so the endpoint can say
+   * out loud that something was dropped — an automation whose units are wrong
+   * has no other way of finding out.
+   */
+  sleepStagesRejected: boolean;
 };
 
 type Raw = Record<string, unknown>;
@@ -44,20 +69,148 @@ export function toNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-const pick = (raw: Raw, keys: string[]): unknown => {
+/**
+ * The first key that carried anything, together with the value.
+ *
+ * The key is returned as well as the value because for durations the name is
+ * where the unit lives: `rem_minutes` and `rem_hours` are the same number
+ * meaning different things, and guessing between them puts a wrong hypnogram
+ * in front of the athlete.
+ */
+const pickEntry = (raw: Raw, keys: string[]): { key: string; value: unknown } | undefined => {
   const lower: Raw = {};
   for (const [k, v] of Object.entries(raw)) lower[k.toLowerCase().replace(/[\s-]+/g, "_")] = v;
   for (const k of keys) {
     const v = lower[k];
-    if (v !== undefined && v !== null && v !== "") return v;
+    if (v !== undefined && v !== null && v !== "") return { key: k, value: v };
   }
   return undefined;
 };
+
+const pick = (raw: Raw, keys: string[]): unknown => pickEntry(raw, keys)?.value;
 
 const inRange = (n: number | null, min: number, max: number) =>
   n != null && n >= min && n <= max ? n : null;
 
 const round = (n: number | null, d = 1) => (n == null ? null : Math.round(n * 10 ** d) / 10 ** d);
+
+/** Every spelling of one stage, explicit units first so the name settles them. */
+const STAGE_KEYS = {
+  awake: [
+    "sleep_awake_minutes",
+    "awake_minutes",
+    "sleep_awake_hours",
+    "awake_hours",
+    "awake_mins",
+    "awake_min",
+    "awake_seconds",
+    "wake_minutes",
+    "time_awake",
+    "awake_time",
+    "sleep_awake",
+    "awake",
+  ],
+  rem: [
+    "sleep_rem_minutes",
+    "rem_minutes",
+    "rem_sleep_minutes",
+    "sleep_rem_hours",
+    "rem_hours",
+    "rem_mins",
+    "rem_min",
+    "rem_seconds",
+    "rem_sleep",
+    "sleep_rem",
+    "rem",
+  ],
+  deep: [
+    "sleep_deep_minutes",
+    "deep_minutes",
+    "deep_sleep_minutes",
+    "slow_wave_minutes",
+    "sleep_deep_hours",
+    "deep_hours",
+    "deep_mins",
+    "deep_min",
+    "deep_seconds",
+    "deep_sleep",
+    "sleep_deep",
+    "deep",
+  ],
+  core: [
+    "sleep_core_minutes",
+    "core_minutes",
+    "core_sleep_minutes",
+    "light_minutes",
+    "light_sleep_minutes",
+    "sleep_core_hours",
+    "core_hours",
+    "light_hours",
+    "core_mins",
+    "core_min",
+    "core_seconds",
+    "core_sleep",
+    "sleep_core",
+    "light_sleep",
+    "sleep_light",
+    "core",
+    "light",
+  ],
+} as const;
+
+const HOUR_KEY = /_(?:hours|hrs)$/;
+const SECOND_KEY = /_(?:seconds|secs)$/;
+const HOUR_WORD = /\b(?:h|hr|hrs|hour|hours|val|std)\b/i;
+const SECOND_WORD = /\b(?:s|sec|secs|second|seconds)\b/i;
+
+/**
+ * One stage, in minutes, from whatever shape it arrived in.
+ *
+ * Sources report stage durations in minutes, in hours, in seconds, and as
+ * "1h 20m". A bare number is read as minutes, because that is what every
+ * source that reports stages at all reports them in; above a day it cannot be
+ * minutes, so it is read as seconds.
+ */
+function stageMinutes(raw: Raw, keys: readonly string[]): number | null {
+  const found = pickEntry(raw, [...keys]);
+  if (!found) return null;
+  const text = typeof found.value === "string" ? found.value : "";
+
+  // "1:20" and "1h 20m" carry both halves and are read whole rather than
+  // through the unit rules below.
+  const clock = text.match(/^\s*(\d{1,2}):(\d{2})\s*$/);
+  if (clock) return inRange(Number(clock[1]) * 60 + Number(clock[2]), 0, 1440);
+  const hm = text.match(
+    /^\s*(\d+)\s*(?:h|hr|hrs|hour|hours|val|std)\s*(\d+)?\s*(?:m|min|mins|minutes)?\s*$/i,
+  );
+  if (hm) return inRange(Number(hm[1]) * 60 + Number(hm[2] ?? 0), 0, 1440);
+
+  const n = toNumber(found.value);
+  if (n == null) return null;
+  const hours = HOUR_KEY.test(found.key) || HOUR_WORD.test(text);
+  const seconds = SECOND_KEY.test(found.key) || SECOND_WORD.test(text);
+  const minutes = hours ? n * 60 : seconds ? n / 60 : n > 1440 ? n / 60 : n;
+  return inRange(round(minutes), 0, 1440);
+}
+
+/**
+ * How far the staged sleep may exceed the reported sleep duration before the
+ * two are treated as contradicting each other.
+ *
+ * Stages and totals come from the same source but are rounded separately, so
+ * they never agree exactly. The slack is wide enough for that rounding and far
+ * too narrow to hide a unit error, which is what this is here to catch: stages
+ * sent in seconds and read as minutes miss by sixtyfold, not by a tenth.
+ */
+export const STAGE_TOTAL_TOLERANCE = 1.1;
+export const STAGE_TOTAL_SLACK_MINUTES = 15;
+
+const NO_STAGES: SleepStages = {
+  awakeMinutes: null,
+  remMinutes: null,
+  deepMinutes: null,
+  coreMinutes: null,
+};
 
 export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
   // Resting heart rate — bpm
@@ -125,6 +278,29 @@ export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
 
   const vo2max = inRange(toNumber(pick(raw, ["vo2max", "vo2_max", "vo2"])), 10, 100);
 
+  // Stages. Note what is deliberately *not* done here: sleepHours is never
+  // derived from rem + deep + core, even though that sum is what "time asleep"
+  // means. A derived duration stored in the same column as a reported one is
+  // indistinguishable from it afterwards, and nothing downstream could tell
+  // the athlete which they were looking at.
+  const stages: SleepStages = {
+    awakeMinutes: stageMinutes(raw, STAGE_KEYS.awake),
+    remMinutes: stageMinutes(raw, STAGE_KEYS.rem),
+    deepMinutes: stageMinutes(raw, STAGE_KEYS.deep),
+    coreMinutes: stageMinutes(raw, STAGE_KEYS.core),
+  };
+  const reported = Object.values(stages).some((value) => value !== null);
+  const asleep = (stages.remMinutes ?? 0) + (stages.deepMinutes ?? 0) + (stages.coreMinutes ?? 0);
+  const wholeNight = asleep + (stages.awakeMinutes ?? 0);
+  // Stages that add up to more sleep than the source itself reported are not
+  // a hypnogram, they are a unit error. Storing them would draw a night that
+  // never happened, so the whole set goes rather than the part that overflows:
+  // there is no way to tell which of the four is the wrong one.
+  const contradictsDuration =
+    sleepHours !== null &&
+    asleep > sleepHours * 60 * STAGE_TOTAL_TOLERANCE + STAGE_TOTAL_SLACK_MINUTES;
+  const sleepStagesRejected = reported && (contradictsDuration || wholeNight > 1440);
+
   return {
     restingHr: round(restingHr),
     hrvMs: round(hrvMs),
@@ -133,6 +309,8 @@ export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
     steps: steps == null ? null : Math.round(steps),
     activeKcal,
     vo2max: round(vo2max),
+    sleepStages: sleepStagesRejected ? NO_STAGES : stages,
+    sleepStagesRejected,
   };
 }
 

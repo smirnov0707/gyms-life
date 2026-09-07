@@ -414,3 +414,42 @@ export const getEvidenceReport = async () => {
     ],
   };
 };
+
+/** `?sleep=fail|duration|partial|staged` drives the sleep panel. The default
+ *  is this account's state: no source has ever sent a night. */
+export const getSleepNight = async () => {
+  const mode = new URLSearchParams(window.location.search).get("sleep");
+  if (mode === "fail") throw new Error("samples unavailable");
+  const night = { night: "2026-09-06", source: "apple_health", ageDays: 1 };
+  if (mode === "duration") {
+    return { status: "duration_only" as const, ...night, sleepHours: 7.2 };
+  }
+  if (mode === "partial") {
+    // One stage out of four, and 350 minutes of reported sleep that the source
+    // never placed anywhere.
+    return {
+      status: "staged" as const,
+      ...night,
+      sleepHours: 7.2,
+      slices: [{ stage: "deep" as const, minutes: 82, share: null }],
+      stagedMinutes: 82,
+      unattributedMinutes: 350,
+    };
+  }
+  if (mode === "staged") {
+    return {
+      status: "staged" as const,
+      ...night,
+      sleepHours: 7.6,
+      slices: [
+        { stage: "deep" as const, minutes: 82, share: 82 / 458 },
+        { stage: "rem" as const, minutes: 96, share: 96 / 458 },
+        { stage: "core" as const, minutes: 256, share: 256 / 458 },
+        { stage: "awake" as const, minutes: 24, share: 24 / 458 },
+      ],
+      stagedMinutes: 458,
+      unattributedMinutes: null,
+    };
+  }
+  return { status: "absent" as const };
+};

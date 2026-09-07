@@ -105,9 +105,9 @@ describe("normalizeHealthPayload", () => {
   });
 
   it("returns every field, so a missing one is null rather than absent", () => {
-    const empty = normalizeHealthPayload({});
-    expect(Object.values(empty).every((value) => value === null)).toBe(true);
-    expect(Object.keys(empty).sort()).toEqual([
+    const { sleepStages, sleepStagesRejected, ...readings } = normalizeHealthPayload({});
+    expect(Object.values(readings).every((value) => value === null)).toBe(true);
+    expect(Object.keys(readings).sort()).toEqual([
       "activeKcal",
       "hrvMs",
       "restingHr",
@@ -116,5 +116,112 @@ describe("normalizeHealthPayload", () => {
       "steps",
       "vo2max",
     ]);
+    // A night nobody reported stages for is four nulls, not four zeroes:
+    // zero deep sleep is a finding, and no one made it.
+    expect(sleepStages).toEqual({
+      awakeMinutes: null,
+      remMinutes: null,
+      deepMinutes: null,
+      coreMinutes: null,
+    });
+    expect(sleepStagesRejected).toBe(false);
+  });
+});
+
+describe("normalizeHealthPayload — sleep stages", () => {
+  it("takes each stage under the names the sources actually use", () => {
+    expect(normalizeHealthPayload({ sleep_rem_minutes: 96 }).sleepStages.remMinutes).toBe(96);
+    expect(normalizeHealthPayload({ "REM Sleep": 96 }).sleepStages.remMinutes).toBe(96);
+    expect(normalizeHealthPayload({ deep_sleep: "82" }).sleepStages.deepMinutes).toBe(82);
+    expect(normalizeHealthPayload({ light_minutes: 214 }).sleepStages.coreMinutes).toBe(214);
+    expect(normalizeHealthPayload({ time_awake: 24 }).sleepStages.awakeMinutes).toBe(24);
+  });
+
+  it("reads a stage in whatever unit it was sent in", () => {
+    expect(normalizeHealthPayload({ rem_hours: 1.5 }).sleepStages.remMinutes).toBe(90);
+    expect(normalizeHealthPayload({ rem_sleep: "1.5 h" }).sleepStages.remMinutes).toBe(90);
+    expect(normalizeHealthPayload({ rem_sleep: "1h 20m" }).sleepStages.remMinutes).toBe(80);
+    expect(normalizeHealthPayload({ rem_sleep: "1:20" }).sleepStages.remMinutes).toBe(80);
+    expect(normalizeHealthPayload({ rem_seconds: 5400 }).sleepStages.remMinutes).toBe(90);
+    // Above a day it cannot be minutes, whatever the field is called.
+    expect(normalizeHealthPayload({ rem_sleep: 5400 }).sleepStages.remMinutes).toBe(90);
+  });
+
+  it("refuses stages that add up to more sleep than the source reported", () => {
+    // Stages in seconds read as minutes miss by sixtyfold. Storing them would
+    // draw a night that never happened.
+    const wrong = normalizeHealthPayload({
+      sleep_hours: 7.2,
+      sleep_rem_minutes: 900,
+      sleep_deep_minutes: 400,
+      sleep_core_minutes: 200,
+    });
+    expect(wrong.sleepStagesRejected).toBe(true);
+    expect(wrong.sleepStages.remMinutes).toBeNull();
+    expect(wrong.sleepStages.deepMinutes).toBeNull();
+    expect(wrong.sleepStages.coreMinutes).toBeNull();
+    // The rest of the sample survives: a wrong unit on one field is no reason
+    // to lose the duration that came with it.
+    expect(wrong.sleepHours).toBe(7.2);
+  });
+
+  it("allows the rounding gap between a stage total and a reported duration", () => {
+    // 7.2 h is 432 minutes; the stages below total 434. That is rounding,
+    // not a contradiction.
+    const night = normalizeHealthPayload({
+      sleep_hours: 7.2,
+      sleep_rem_minutes: 96,
+      sleep_deep_minutes: 82,
+      sleep_core_minutes: 256,
+      sleep_awake_minutes: 24,
+    });
+    expect(night.sleepStagesRejected).toBe(false);
+    expect(night.sleepStages).toEqual({
+      awakeMinutes: 24,
+      remMinutes: 96,
+      deepMinutes: 82,
+      coreMinutes: 256,
+    });
+  });
+
+  it("does not count time awake against the time asleep", () => {
+    // Awake minutes sit inside the window in bed, not inside the sleep the
+    // source reported. Counting them would reject honest nights.
+    const night = normalizeHealthPayload({
+      sleep_hours: 6,
+      sleep_rem_minutes: 80,
+      sleep_deep_minutes: 70,
+      sleep_core_minutes: 210,
+      sleep_awake_minutes: 55,
+    });
+    expect(night.sleepStagesRejected).toBe(false);
+    expect(night.sleepStages.awakeMinutes).toBe(55);
+  });
+
+  it("refuses a night longer than a day even with no duration to check against", () => {
+    const wrong = normalizeHealthPayload({
+      sleep_rem_minutes: 700,
+      sleep_deep_minutes: 700,
+      sleep_core_minutes: 100,
+    });
+    expect(wrong.sleepStagesRejected).toBe(true);
+    expect(wrong.sleepStages.remMinutes).toBeNull();
+  });
+
+  it("keeps stages that arrive without any sleep duration to check against", () => {
+    // Nothing contradicts them, so they are stored. What is not done is
+    // deriving sleep_hours from them: a derived duration in the column that
+    // holds reported ones can never be told apart from a measurement again.
+    const partial = normalizeHealthPayload({ sleep_deep_minutes: 82, sleep_rem_minutes: 96 });
+    expect(partial.sleepStagesRejected).toBe(false);
+    expect(partial.sleepStages.deepMinutes).toBe(82);
+    expect(partial.sleepHours).toBeNull();
+  });
+
+  it("drops a single stage no night contains, keeping the ones that make sense", () => {
+    const night = normalizeHealthPayload({ sleep_rem_minutes: -20, sleep_deep_minutes: 82 });
+    expect(night.sleepStages.remMinutes).toBeNull();
+    expect(night.sleepStages.deepMinutes).toBe(82);
+    expect(night.sleepStagesRejected).toBe(false);
   });
 });
