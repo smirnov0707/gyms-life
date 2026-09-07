@@ -9,6 +9,7 @@ import {
   viewShowing,
   type BodyView,
 } from "@/components/twin/body-map.geometry";
+import { useAuth } from "@/lib/auth";
 import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinSnapshot } from "@/lib/digital-twin.functions";
@@ -140,8 +141,19 @@ export function TwinTodayView({
   const evidenceCount =
     data?.regions.filter((region) => region.provenance === "calculated").length ?? 0;
 
+  // A figure with nothing to colour is not worth two thirds of the screen.
+  // With evidence the body is the point of Today and gets the full stage;
+  // without it the card shrinks to the size of what it actually has to say,
+  // and the rail beside it stops running out into empty space.
+  const stage =
+    status === "ready" && focus === null
+      ? "min-h-[360px]"
+      : "min-h-[620px] sm:min-h-[680px] lg:min-h-[720px]";
+
   return (
-    <section className="relative min-h-[620px] overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050607] sm:min-h-[680px] lg:min-h-[720px]">
+    <section
+      className={`relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050607] ${stage}`}
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-80"
@@ -155,7 +167,7 @@ export function TwinTodayView({
         className="pointer-events-none absolute inset-x-[18%] top-[15%] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
       />
 
-      <div className="relative z-10 flex min-h-[620px] flex-col sm:min-h-[680px] lg:min-h-[720px]">
+      <div className={`relative z-10 flex flex-col ${stage}`}>
         <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-7 sm:pt-7">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.26em] text-primary">
@@ -207,7 +219,13 @@ export function TwinTodayView({
               ))}
             </div>
 
-            <div className="relative mx-auto mt-4 h-[400px] w-full max-w-[330px] flex-1 sm:h-[470px] sm:max-w-[390px] lg:max-w-[430px]">
+            <div
+              className={`relative mx-auto mt-4 w-full flex-1 ${
+                focus === null
+                  ? "h-[190px] max-w-[150px]"
+                  : "h-[400px] max-w-[330px] sm:h-[470px] sm:max-w-[390px] lg:max-w-[430px]"
+              }`}
+            >
               <BodyMap
                 regions={data.regions
                   .filter((region) => isAnatomicalRegion(region.region))
@@ -232,7 +250,17 @@ export function TwinTodayView({
               </p>
             </div>
 
-            {focus ? (
+            {/* Desktop used to render nothing here when there was no evidence,
+                so the only screen that said why the body was grey was the
+                phone. The sentence belongs wherever the figure is. */}
+            {focus === null ? (
+              <div className="absolute right-4 top-24 hidden w-56 rounded-2xl border border-white/[0.08] bg-black/40 p-3 backdrop-blur-xl sm:block lg:right-7">
+                <p className="text-sm font-semibold text-foreground">{copy.empty}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {copy.emptyHint}
+                </p>
+              </div>
+            ) : (
               <div className="absolute right-4 top-24 hidden w-44 rounded-2xl border border-white/[0.08] bg-black/40 p-3 backdrop-blur-xl sm:block lg:right-7">
                 <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   {copy.attention}
@@ -251,7 +279,7 @@ export function TwinTodayView({
                   </span>
                 </button>
               </div>
-            ) : null}
+            )}
 
             <div className="mt-auto rounded-2xl border border-white/[0.08] bg-black/35 p-3 backdrop-blur-xl sm:hidden">
               {focus ? (
@@ -289,9 +317,12 @@ export function TwinTodayView({
 
 export function TwinTodayCard() {
   const { lang, t } = useI18n();
+  const { user } = useAuth();
   const timeZone = browserTimeZone();
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["twin-snapshot", timeZone],
+    // The same key the Twin screen uses, so opening the Twin from here costs
+    // no second read of the same snapshot.
+    queryKey: ["twin-snapshot", user?.id, timeZone],
     queryFn: () => getTwinSnapshot({ data: timeZone }),
     staleTime: 60_000,
   });

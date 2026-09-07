@@ -310,10 +310,17 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
     }
   };
 
-  if (failed) {
+  // A read that came back with nothing is not a read still in flight. The
+  // spinner used to cover both, so a source that answered "no decision" left
+  // this card spinning for the rest of the day — and a spinner is a promise
+  // that something is coming.
+  if (failed || (!loading && !decision)) {
     return (
       <GlowCard className="panel border-amber-500/30 p-6 md:p-7">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Stacked rather than side by side: this card also renders in a
+            half-width column, where a row squeezed the sentence into four
+            words a line. */}
+        <div className="flex flex-col gap-4">
           <div className="flex items-start gap-3">
             <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-500" />
             <p className="text-sm leading-relaxed text-muted-foreground">{copy.unavailable}</p>
@@ -321,7 +328,7 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 shrink-0 self-start rounded-full px-4 text-sm font-bold sm:self-auto"
+            className="min-h-11 shrink-0 self-start rounded-full px-4 text-sm font-bold"
             onClick={() => void load()}
           >
             <RefreshCw className="size-4" /> {copy.retry}
@@ -332,6 +339,8 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   }
 
   if (loading || !decision) {
+    // `!decision` is unreachable here — the branch above owns it — and is kept
+    // only to narrow the type for the render below.
     return (
       <GlowCard className="panel p-6 md:p-7">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">

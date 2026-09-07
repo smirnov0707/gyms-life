@@ -417,6 +417,28 @@ try {
   await de.page.close();
   record("the optional languages render the translation written beside the key");
 
+  // 15. The wide screen owes the same explanation as the phone. With no
+  //     evidence the Twin card used to reserve two thirds of the viewport for
+  //     a grey silhouette and print the reason only under `sm:hidden`, and the
+  //     decision card spun forever on a source that answered "nothing".
+  const bare = await open("");
+  const twinCard = bare.page.getByText("Your Twin is still learning").first();
+  await expect(twinCard).toBeVisible({ timeout: 30000 });
+  const stage = await bare.page
+    .getByText("Your body, as GYMS.LIFE understands it today")
+    .locator("xpath=ancestor::section[1]")
+    .boundingBox();
+  // Below the 620px floor the card used to reserve before it had anything to
+  // put there; it comes out around 540 with the figure scaled down.
+  expect(stage.height).toBeLessThan(620);
+
+  await expect(bare.page.getByText("We couldn't load today's decision.")).toBeVisible();
+  await expect(bare.page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await bare.page.screenshot({ path: path.join(artifacts, "today-bare.png"), fullPage: true });
+  expect(bare.errors).toEqual([]);
+  await bare.page.close();
+  record("with nothing measured, Today explains itself at full width instead of spinning");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();
