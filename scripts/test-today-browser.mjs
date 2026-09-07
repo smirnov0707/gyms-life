@@ -207,12 +207,46 @@ try {
   expect(health.errors).toEqual([]);
   record("the ingest key stays masked until asked for, and delivery status is stated");
 
-  // 7. Strict mode mounts every component twice. Nothing may throw.
+  // 7. The three Future Lab screens landed with no rendering check at all.
+  //    They must come up against empty sources and say what they do not know,
+  //    rather than crashing or filling the gap with a number.
+  for (const [panel, name] of [
+    ["lab", "Lab"],
+    ["futureme", "Future Me"],
+    ["journal", "Journal"],
+  ]) {
+    const screen = await openPanel(`?panel=${panel}`);
+    await expect(screen.page.locator("section").first()).toBeVisible({ timeout: 30000 });
+    const text = await screen.page.locator("body").innerText();
+    expect(text.length).toBeGreaterThan(40);
+    expect(screen.errors, `${name} raised ${screen.errors[0]}`).toEqual([]);
+    await screen.page.screenshot({
+      path: path.join(artifacts, `screen-${panel}.png`),
+      fullPage: true,
+    });
+    await screen.page.close();
+  }
+  record("Lab, Future Me and Journal render against sources with nothing in them");
+
+  // A lab whose overview could not be read must not light ten modules green.
+  // Absence of evidence is not evidence of readiness, which is the one claim
+  // this deck makes about itself.
+  const lab = await openPanel("?panel=lab");
+  await expect(lab.page.getByText("LAB STATUS")).toBeVisible({ timeout: 30000 });
+  const readyDots = lab.page.locator('[title="Evidence path available"]');
+  const unknownDots = lab.page.locator('[title="Evidence status unknown"]');
+  expect(await readyDots.count()).toBe(0);
+  expect(await unknownDots.count()).toBeGreaterThan(0);
+  await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
+  await lab.page.close();
+  record("an unread lab shows unknown modules instead of ready ones");
+
+  // 8. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
   expect(failed.errors).toEqual([]);
   record("strict-mode double mount raises no uncaught error");
 
-  // 8. The narrowest phone still in use must not scroll sideways.
+  // 9. The narrowest phone still in use must not scroll sideways.
   await first.page.setViewportSize({ width: 320, height: 720 });
   await first.page.waitForTimeout(400);
   const overflow = await first.page.evaluate(

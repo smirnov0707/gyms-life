@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Overview } from "@/components/Overview";
 import { ConnectHealthSource } from "@/components/ConnectHealthSource";
+import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
+import { FutureMeSimulationDeck } from "@/components/future-lab/FutureMeSimulationDeck";
+import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence";
 import { LangProvider } from "@/lib/i18n";
 import "@/styles.css";
 
@@ -14,6 +17,25 @@ import "@/styles.css";
  *
  * Test-only. This directory is not a product route and never queries user data.
  */
+/**
+ * Each of the Future Lab screens gets its own mode, so a deck that only exists
+ * as a route in the running app can still be rendered on its own here.
+ */
+function Panel() {
+  switch (new URLSearchParams(window.location.search).get("panel")) {
+    case "health":
+      return <ConnectHealthSource />;
+    case "lab":
+      return <LabCommandDeck />;
+    case "futureme":
+      return <FutureMeSimulationDeck />;
+    case "journal":
+      return <JournalIntelligence />;
+    default:
+      return <Overview />;
+  }
+}
+
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false, gcTime: 0 } },
 });
@@ -26,11 +48,7 @@ createRoot(document.getElementById("root")!).render(
           TEST FIXTURE — NOT USER DATA
         </p>
         <div style={{ padding: 16 }}>
-          {new URLSearchParams(window.location.search).get("panel") === "health" ? (
-            <ConnectHealthSource />
-          ) : (
-            <Overview />
-          )}
+          <Panel />
         </div>
       </LangProvider>
     </QueryClientProvider>

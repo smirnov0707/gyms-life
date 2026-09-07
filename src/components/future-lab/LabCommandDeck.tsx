@@ -137,7 +137,20 @@ const STATEMENTS = {
   },
 } as const;
 
-function statusForModule(module: ModuleDefinition, gaps: Set<Gap>): "ready" | "waiting" {
+/**
+ * A module is only "ready" when we have actually read which gaps exist.
+ *
+ * Without `known`, an overview that failed to load left the gap set empty and
+ * every module on the deck lit green — a lab that could not be read looking
+ * like a lab with nothing missing. Absence of evidence is not evidence of
+ * readiness, which is the whole claim this deck makes about itself.
+ */
+function statusForModule(
+  module: ModuleDefinition,
+  gaps: Set<Gap>,
+  known: boolean,
+): "ready" | "waiting" | "unknown" {
+  if (!known) return "unknown";
   return module.blockingGaps.some((gap) => gaps.has(gap)) ? "waiting" : "ready";
 }
 
@@ -189,6 +202,9 @@ export function LabCommandDeck() {
   });
   const data = query.data;
   const gaps = new Set<Gap>(data?.dataGaps ?? []);
+  // Null covers both "still loading" and "the read failed"; neither is a
+  // statement about whether the evidence paths are there.
+  const gapsKnown = !query.isError && !query.isLoading && data != null;
   const primary = data?.hypotheses[0] ?? null;
   const calibration = data?.predictionCalibration ?? null;
   const evaluated = calibration?.totalEvaluated ?? 0;
@@ -253,7 +269,7 @@ export function LabCommandDeck() {
             <div className="mt-3 divide-y divide-white/[0.05]">
               {MODULES.map((module) => {
                 const Icon = module.icon;
-                const status = statusForModule(module, gaps);
+                const status = statusForModule(module, gaps, gapsKnown);
                 return (
                   <div key={module.id} className="flex items-center gap-3 py-2.5">
                     <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-[#1a2941] bg-[#091522] text-violet-300">
@@ -268,15 +284,25 @@ export function LabCommandDeck() {
                       </span>
                     </span>
                     <span
-                      className={`size-2 shrink-0 rounded-full ${status === "ready" ? "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.65)]" : "bg-amber-300"}`}
-                      title={
+                      className={`size-2 shrink-0 rounded-full ${
                         status === "ready"
+                          ? "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.65)]"
+                          : status === "waiting"
+                            ? "bg-amber-300"
+                            : "bg-slate-600"
+                      }`}
+                      title={
+                        status === "unknown"
                           ? isEnglish
-                            ? "Evidence path available"
-                            : "Duomenų kelias prieinamas"
-                          : isEnglish
-                            ? "Waiting for required evidence"
-                            : "Laukiama būtinų įrodymų"
+                            ? "Evidence status unknown"
+                            : "Įrodymų būsena nežinoma"
+                          : status === "ready"
+                            ? isEnglish
+                              ? "Evidence path available"
+                              : "Duomenų kelias prieinamas"
+                            : isEnglish
+                              ? "Waiting for required evidence"
+                              : "Laukiama būtinų įrodymų"
                       }
                     />
                   </div>
