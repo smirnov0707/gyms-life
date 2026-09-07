@@ -2,6 +2,7 @@ name: Body replay browser
 on:
   pull_request:
     paths:
+      - 'src/components/AppShell.tsx'
       - 'src/components/twin/**'
       - 'src/lib/session-muscle-breakdown*'
       - 'src/lib/finish-workout*'

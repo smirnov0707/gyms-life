@@ -1,19 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HypothesisRetrospective } from "@/components/HypothesisRetrospective";
 import { LabView } from "@/components/LabView";
+import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 
 export const Route = createFileRoute("/_authenticated/lab")({
   head: () => ({
     meta: [
-      { title: "Laboratorija — GYMS.LIFE" },
+      { title: "Lab — GYMS.LIFE FUTURE LAB" },
       {
         name: "description",
-        content: "Realios hipotezės, jų mokymosi istorija ir sprendimai su įrodymais.",
+        content: "Realios hipotezės, modelių kalibracija, sprendimai ir jų įrodymai.",
       },
-      { property: "og:title", content: "Laboratorija — GYMS.LIFE" },
+      { property: "og:title", content: "Lab — GYMS.LIFE FUTURE LAB" },
       {
         property: "og:description",
-        content: "Ką GYMS.LIFE tiria, kaip keičiasi hipotezės ir kokius sprendimus priima.",
+        content: "Ką GYMS.LIFE tiria, kokių duomenų turi ir kaip tikrina savo prognozes.",
       },
     ],
   }),
@@ -22,7 +23,8 @@ export const Route = createFileRoute("/_authenticated/lab")({
 
 function LabPage() {
   return (
-    <div className="mx-auto max-w-5xl space-y-4 px-4 py-6 md:px-6 md:py-8">
+    <div className="mx-auto max-w-[1480px] space-y-4">
+      <LabCommandDeck />
       <LabView />
       <HypothesisRetrospective />
     </div>
