@@ -89,6 +89,11 @@ export function DataSourcesStrip() {
 
   const signals = data ?? [];
   const newest = newestReading(signals);
+  // With nothing readable there is no "last reading" to be missing: saying
+  // "no readings at all" beside two chips that already say the sources could
+  // not be checked would be the strip contradicting itself, and the wrong
+  // half is the one that sounds like a fact about the athlete.
+  const anythingReadable = signals.some((signal) => signal.state !== "unreadable");
 
   return (
     <section
@@ -101,7 +106,11 @@ export function DataSourcesStrip() {
       <Source icon={Watch} label={t("ds.device")} state={stateOf(signals, DEVICE_SIGNALS)} />
       <Source icon={PencilLine} label={t("ds.manual")} state={stateOf(signals, MANUAL_SIGNALS)} />
       <span className="ml-auto text-[11px] text-muted-foreground">
-        {newest ? `${t("ds.lastReading")}: ${newest}` : t("ds.noReadings")}
+        {newest
+          ? `${t("ds.lastReading")}: ${newest}`
+          : anythingReadable
+            ? t("ds.noReadings")
+            : t("ds.unknownReadings")}
       </span>
       <Link
         to="/me"

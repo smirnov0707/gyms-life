@@ -80,4 +80,14 @@ export const extra_sources = {
     es: "Ninguna medición",
     fr: "Aucune mesure",
   },
+  "ds.unknownReadings": {
+    lt: "Kada paskutinis rodmuo — nežinoma",
+    en: "Last reading unknown",
+    ru: "Когда последнее показание — неизвестно",
+    uk: "Коли останнє показання — невідомо",
+    pl: "Ostatni odczyt nieznany",
+    de: "Letzte Messung unbekannt",
+    es: "Última lectura desconocida",
+    fr: "Dernier relevé inconnu",
+  },
 } as const;

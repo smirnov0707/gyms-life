@@ -34,7 +34,12 @@ function ExerciseDetail() {
   // A failed read used to arrive as `null`, which this page renders exactly
   // like an exercise that does not exist. "We could not load it" and "there
   // is no such exercise" are different answers.
-  const { data: ex, isLoading } = useQuery({
+  const {
+    data: ex,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["exercise", slug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -56,8 +61,27 @@ function ExerciseDetail() {
         >
           <ArrowLeft className="size-4" /> {t("ex.title")}
         </Link>
+        {/* The throw above turned a failed read into an error state; this is
+            the other half of that fix. Until now the error state fell through
+            to "not found", so an outage told the athlete the exercise does
+            not exist — the very answer the read was changed to avoid. */}
         <div className="panel p-12 text-center text-sm text-muted-foreground">
-          {isLoading ? t("common.loading") : t("rt.ex.notFound")}
+          {isLoading ? (
+            t("common.loading")
+          ) : isError ? (
+            <>
+              <p>{t("rt.ex.loadFailed")}</p>
+              <button
+                type="button"
+                onClick={() => void refetch()}
+                className="mt-4 inline-flex min-h-11 items-center rounded-full border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {t("rt.ex.retry")}
+              </button>
+            </>
+          ) : (
+            t("rt.ex.notFound")
+          )}
         </div>
       </AppShell>
     );

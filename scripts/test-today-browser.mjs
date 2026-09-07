@@ -322,6 +322,11 @@ try {
   const failedSources = failed.page.getByRole("region", { name: "Data sources" });
   expect(await failedSources.getByText("Could not check").count()).toBe(2);
   await expect(failedSources.getByText("Nothing received")).toHaveCount(0);
+  // The tail used to read "No readings at all" beside two chips saying the
+  // sources could not be checked — the strip contradicting itself, with the
+  // wrong half sounding like a fact about the athlete.
+  await expect(failedSources.getByText("No readings at all")).toHaveCount(0);
+  await expect(failedSources.getByText("Last reading unknown")).toBeVisible();
   record("the sources row reports what arrived, and tells silence from an outage");
 
   // 12. Body composition: two measured numbers, two derived from them. The
