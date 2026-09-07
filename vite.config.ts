@@ -6,7 +6,12 @@ import netlify from "@netlify/vite-plugin-tanstack-start";
 
 export default defineConfig(({ isSsrBuild }) => ({
   plugins: [
-    tanstackStart({ server: { entry: "server" } }),
+    tanstackStart({
+      server: { entry: "server" },
+      // A test beside its route is not a route. Without this the generator
+      // warns on every build and every `vitest run`.
+      router: { routeFileIgnorePattern: "\\.test\\.tsx?$" },
+    }),
     react(),
     tailwindcss(),
     // The Netlify plugin owns the production build. The staging target skips

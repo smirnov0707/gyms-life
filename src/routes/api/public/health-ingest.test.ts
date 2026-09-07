@@ -1,0 +1,140 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * The only path into this database that does not carry a signed-in session.
+ *
+ * Everything else in the app answers as the person who asked; this answers to
+ * whoever holds a uuid, from any origin. So the properties worth pinning are
+ * not about copy: a malformed token must cost no database work at all, an
+ * unknown token must be refused rather than filed under somebody, a failed
+ * read must not be reported as success, and a sample dated outside the
+ * accepted window must be refused with a reason rather than quietly filed
+ * under today.
+ */
+
+type Answer = { data?: unknown; error?: unknown };
+
+/** What each table answers, in call order. Missing means "never touched". */
+let script: Record<string, Answer[]>;
+let touched: string[];
+
+function builder(table: string) {
+  const answer = () => {
+    touched.push(table);
+    const next = script[table]?.shift();
+    if (!next) throw new Error(`unscripted read of ${table}`);
+    return Promise.resolve({ data: next.data ?? null, error: next.error ?? null });
+  };
+  const chain: Record<string, unknown> = {};
+  for (const method of ["select", "eq", "order", "limit", "not", "gte", "lt"]) {
+    chain[method] = () => chain;
+  }
+  chain["maybeSingle"] = answer;
+  chain["limit"] = answer;
+  chain["upsert"] = answer;
+  return chain;
+}
+
+vi.mock("@/integrations/supabase/client.server", () => ({
+  supabaseAdmin: { from: (table: string) => builder(table) },
+}));
+
+const TOKEN = "11111111-2222-4333-8444-555555555555";
+
+async function post(body: unknown) {
+  const { Route } = await import("./health-ingest");
+  // The file route exposes its handlers; there is no server to go through.
+  const handlers = (
+    Route as unknown as {
+      options: {
+        server: { handlers: { POST: (input: { request: Request }) => Promise<Response> } };
+      };
+    }
+  ).options.server.handlers;
+  const request = new Request("https://gyms.life/api/public/health-ingest", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  });
+  const response = await handlers.POST({ request });
+  return { status: response.status, body: (await response.json()) as Record<string, unknown> };
+}
+
+describe("public health ingest", () => {
+  beforeEach(() => {
+    script = {};
+    touched = [];
+  });
+
+  it("refuses a body that is not JSON without reading anything", async () => {
+    const { status } = await post("{not json");
+    expect(status).toBe(400);
+    expect(touched).toEqual([]);
+  });
+
+  it("refuses a token that is not a uuid before touching the database", async () => {
+    // The cost of a wrong guess has to be zero: this endpoint is reachable by
+    // anyone with the URL, and a read per attempt is an amplifier.
+    for (const token of [undefined, "", "not-a-uuid", 12345]) {
+      const { status } = await post({ token, resting_hr: 50 });
+      expect(status).toBe(400);
+    }
+    expect(touched).toEqual([]);
+  });
+
+  it("refuses a token nobody holds, and files nothing", async () => {
+    script = { profiles: [{ data: null }] };
+    const { status } = await post({ token: TOKEN, resting_hr: 50 });
+    expect(status).toBe(401);
+    expect(touched).toEqual(["profiles"]);
+  });
+
+  it("reports a failed lookup as unavailable rather than as an unknown token", async () => {
+    script = { profiles: [{ error: { code: "57014" } }] };
+    const { status, body } = await post({ token: TOKEN, resting_hr: 50 });
+    expect(status).toBe(503);
+    expect(String(body["error"])).toMatch(/temporarily unavailable/i);
+  });
+
+  it("refuses a date it cannot read instead of filing the reading under today", async () => {
+    script = { profiles: [{ data: { id: "u1", time_zone: "Europe/Vilnius" } }] };
+    const { status, body } = await post({ token: TOKEN, date: "yesterday", resting_hr: 50 });
+    expect(status).toBe(400);
+    expect(body["error"]).toBe("Unreadable date");
+    // The sample write must not have happened.
+    expect(touched).toEqual(["profiles"]);
+  });
+
+  it("refuses a date outside the accepted window, and says what the window is", async () => {
+    script = { profiles: [{ data: { id: "u1", time_zone: "UTC" } }] };
+    const { status, body } = await post({ token: TOKEN, date: "1999-01-01", resting_hr: 50 });
+    expect(status).toBe(400);
+    expect(body["error"]).toBe("Date out of range");
+    expect(String(body["message"])).toMatch(/\d+ days/);
+    expect(touched).toEqual(["profiles"]);
+  });
+
+  it("does not report success when the sample write failed", async () => {
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, { error: { code: "23505" } }],
+    };
+    const { status, body } = await post({ token: TOKEN, resting_hr: 50 });
+    expect(status).toBe(503);
+    expect(body["ok"]).toBeUndefined();
+  });
+
+  it("stores a valid sample and echoes back what was actually written", async () => {
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    const { status, body } = await post({ token: TOKEN, resting_hr: 52, steps: 8000 });
+    expect(status).toBe(200);
+    expect(body["ok"]).toBe(true);
+    expect(body["stored"]).toMatchObject({ resting_hr: 52, steps: 8000 });
+    // A sample dated today also becomes today's check-in.
+    expect(touched).toEqual(["profiles", "health_samples", "health_samples", "daily_checkins"]);
+  });
+});
