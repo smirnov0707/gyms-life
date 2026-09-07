@@ -61,21 +61,47 @@ export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
  * that ask for attention light up, and the rest of the body stays skin.
  */
 export const TWIN_TONE_GLOW: Record<TwinDisplayTone, number> = {
-  fresh: 0,
-  moderate: 0,
-  fatigued: 0.012,
-  unknown: 0,
-  volume_low: 0,
-  volume_medium: 0,
-  volume_high: 0.012,
+  // Read as light cast on skin, divided by the tone's own brightness in the
+  // renderer. These used to sit at 0.012 with the calm states at zero, which
+  // is two orders of magnitude below anything the eye picks up: the figure was
+  // never marked, in any layer, in any state. The panels underneath said
+  // "chest 41%" while the body showed plain skin.
+  //
+  // The concern that produced those numbers — that lighting every region turns
+  // a body into coloured panels and reads as clothing — is real, and it is
+  // already answered twice over: the data colour is emissive rather than mixed
+  // into the albedo, and the intensity is divided by the tone's brightness so
+  // a pale colour cannot bleach a region. Crushing the scalars on top of that
+  // was a third correction for a problem already solved.
+  //
+  // Ordered by how much attention the state has earned. A recovered muscle is
+  // information too — "what is ready to train" is half of what this figure is
+  // for — so it carries a low presence rather than none.
+  //
+  // The ceiling matters as much as the floor. The region masks come from the
+  // shipped model's own materials and have hard, straight-edged boundaries;
+  // lit hard enough, the tint stops reading as light and the edge takes over,
+  // so the chest becomes a pink rectangle that looks like a crop top. Kept
+  // low, the skin's own shading and highlights still read through the tint and
+  // the boundary softens by itself.
+  fresh: 0.06,
+  moderate: 0.1,
+  fatigued: 0.16,
+  volume_low: 0.05,
+  volume_medium: 0.09,
+  volume_high: 0.15,
   // The one layer where lighting a region up is the whole point: it is
   // pointing at what to train, not reporting a value to read off.
-  in_session: 0.014,
+  in_session: 0.2,
+  // The two states that mean "nothing to say here" stay dark. An unknown
+  // region must never draw the eye, and everything outside today's session
+  // recedes so the session reads at a glance.
+  unknown: 0,
   not_in_session: 0,
 };
 
 /** Added on top for the region the athlete has selected, whatever its state. */
-export const TWIN_SELECTION_GLOW = 0.01;
+export const TWIN_SELECTION_GLOW = 0.08;
 
 /** Existing 2D renderer tones, sharing the same semantic layer vocabulary. */
 export function twinDisplayToneFor2D(tone: TwinDisplayTone) {

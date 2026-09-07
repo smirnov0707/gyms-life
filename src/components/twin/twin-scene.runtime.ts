@@ -334,7 +334,10 @@ export function mountTwinScene(
             // amount of light is set by the glow alone.
             const hsl = { h: 0, s: 0, l: 0 };
             tone.getHSL(hsl);
-            const lit = new Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.6), 0.5);
+            // Saturation lifted only slightly. Pushed harder, the emissive overwhelms
+            // the skin's shading and the region's straight-edged mask reads as a
+            // piece of clothing rather than as a lit muscle.
+            const lit = new Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.15), 0.5);
             material.color.set(skin);
             material.emissive.copy(lit);
             material.emissiveIntensity = glow / Math.max(lit.r, lit.g, lit.b, 0.2);

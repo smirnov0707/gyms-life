@@ -228,27 +228,54 @@ describe("region glow", () => {
     for (const tone of Object.keys(TWIN_DISPLAY_COLORS) as TwinDisplayTone[]) {
       expect(Number.isFinite(TWIN_TONE_GLOW[tone])).toBe(true);
       expect(TWIN_TONE_GLOW[tone]).toBeGreaterThanOrEqual(0);
-      expect(TWIN_TONE_GLOW[tone]).toBeLessThan(0.2);
+      // Above this the emissive stops reading as light on skin and starts
+      // bleaching the region into a flat panel.
+      // Above this the tint stops reading as light on skin: the region masks
+      // have hard straight edges, and a strong emissive makes the edge rather
+      // than the muscle the thing you see.
+      expect(TWIN_TONE_GLOW[tone]).toBeLessThanOrEqual(0.25);
     }
   });
 
-  it("lights only the states that ask for attention", () => {
-    // Lighting the calm states too paints every region a different colour,
-    // and a body in coloured panels reads as clothing rather than as skin.
-    expect(TWIN_TONE_GLOW.fatigued).toBeGreaterThan(0);
-    expect(TWIN_TONE_GLOW.volume_high).toBeGreaterThan(0);
-    expect(TWIN_TONE_GLOW.fresh).toBe(0);
-    expect(TWIN_TONE_GLOW.moderate).toBe(0);
-    expect(TWIN_TONE_GLOW.volume_low).toBe(0);
-    expect(TWIN_TONE_GLOW.volume_medium).toBe(0);
-    // Nothing the app does not know should draw the eye at all.
+  it("marks every state that carries a reading", () => {
+    // These sat at 0.012, with the calm states at zero — two orders of
+    // magnitude below anything the eye picks up. The panel said "chest 41%"
+    // and the body showed plain skin, which is the one thing this figure
+    // exists not to do.
+    for (const tone of [
+      "fresh",
+      "moderate",
+      "fatigued",
+      "volume_low",
+      "volume_medium",
+      "volume_high",
+      "in_session",
+    ] as const) {
+      expect(TWIN_TONE_GLOW[tone], `${tone} is invisible`).toBeGreaterThan(0.03);
+    }
+  });
+
+  it("brightens with how much attention the state has earned", () => {
+    expect(TWIN_TONE_GLOW.fresh).toBeLessThan(TWIN_TONE_GLOW.moderate);
+    expect(TWIN_TONE_GLOW.moderate).toBeLessThan(TWIN_TONE_GLOW.fatigued);
+    expect(TWIN_TONE_GLOW.volume_low).toBeLessThan(TWIN_TONE_GLOW.volume_medium);
+    expect(TWIN_TONE_GLOW.volume_medium).toBeLessThan(TWIN_TONE_GLOW.volume_high);
+    // Pointing at what to train is the loudest thing the figure does.
+    expect(TWIN_TONE_GLOW.in_session).toBeGreaterThan(TWIN_TONE_GLOW.fatigued);
+  });
+
+  it("leaves dark the two states that mean nothing is being said", () => {
+    // Nothing the app does not know should draw the eye at all, and
+    // everything outside today's session has to recede for the session to
+    // read at a glance.
     expect(TWIN_TONE_GLOW.unknown).toBe(0);
+    expect(TWIN_TONE_GLOW.not_in_session).toBe(0);
   });
 
   it("still shows the athlete which region they picked", () => {
-    // Selection has to be visible on a fresh region, which has no glow of its
-    // own, or picking a recovered muscle looks like the click did nothing.
-    expect(TWIN_SELECTION_GLOW).toBeGreaterThan(0);
-    expect(TWIN_SELECTION_GLOW + TWIN_TONE_GLOW.fresh).toBeGreaterThan(0);
+    // Selection has to be visible on top of whatever the region already
+    // shows, including the two dark states.
+    expect(TWIN_SELECTION_GLOW).toBeGreaterThan(0.03);
+    expect(TWIN_SELECTION_GLOW + TWIN_TONE_GLOW.unknown).toBeGreaterThan(0.03);
   });
 });
