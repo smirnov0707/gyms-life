@@ -49,6 +49,13 @@ export type TwinSceneHandle = {
   dispose: () => void;
 };
 
+/**
+ * How long to wait for the figure before falling back to the generated
+ * surface. Generous: on a gym connection the file is worth waiting for, and
+ * the athlete is looking at their real data on the 2D map meanwhile.
+ */
+const TWIN_BODY_TIMEOUT_MS = 20_000;
+
 /** A radial fade, black at the centre, used as the figure's contact shade. */
 function contactShadow(): CanvasTexture | null {
   const canvas = document.createElement("canvas");
@@ -77,6 +84,11 @@ export function mountTwinScene(
     /** Off switches the anatomical figure back to the generated surface. */
     human?: boolean;
     humanVariant?: TwinHumanVariant;
+    /**
+     * Fires once there is a body in the scene, and says which one. Until then
+     * the stage has nothing to show and keeps its 2D map up.
+     */
+    onBodyReady?: (kind: "human" | "surface") => void;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -175,20 +187,32 @@ export function mountTwinScene(
     twinBodyRoot.name = "twin-body-root";
     scene.add(twinBodyRoot);
 
-    // The generated surface paints immediately, with no network involved, so
-    // the scene is never blank. The anatomical human replaces it once it has
-    // loaded; if that fetch fails, is aborted, or the file is unusable, the
-    // surface simply stays. A missing asset must not cost the athlete a Twin.
     let model: TwinBodyModel | ReturnType<typeof createTwinBody> = createTwinBody();
-    twinBodyRoot.add(model.body);
-    // While the figure is still on its way, the stand-in is a stand-in and
-    // says so: no region colours, no selection highlight, dimmed. Painted with
-    // the data it looked like the athlete's twin — a flat mannequin with a
-    // white slab across the chest — and stayed on screen for as long as a
-    // 1.2 MB download takes on a phone. It only carries the reading once it is
-    // the answer rather than the wait, which is when the load has failed.
+    // The generated surface is no longer shown while the figure downloads. It
+    // is a mannequin, and for the seconds a 1.2 MB glTF takes on a phone it
+    // stood in the athlete's stage looking like their twin. Nothing is added
+    // to the scene until the real figure lands; the stage keeps its 2D body
+    // map up meanwhile, which is a true view of the same data rather than a
+    // body nobody has.
+    //
+    // The surface remains the fallback, and only then does it carry the
+    // reading: if the fetch fails, is unusable, or never arrives, it goes in
+    // and is painted. A missing asset must not cost the athlete a Twin.
     let humanPending = options.human !== false;
+    if (!humanPending) twinBodyRoot.add(model.body);
     canvas.dataset["twinBody"] = humanPending ? "loading" : "surface";
+    const useSurface = () => {
+      if (!humanPending) return;
+      humanPending = false;
+      twinBodyRoot.add(model.body);
+      canvas.dataset["twinBody"] = "surface";
+      applyState();
+      options.onBodyReady?.("surface");
+    };
+    // A request that neither resolves nor rejects would otherwise leave the
+    // athlete on the 2D map indefinitely.
+    const surfaceTimer = window.setTimeout(useSurface, TWIN_BODY_TIMEOUT_MS);
+    cleanups.push(() => window.clearTimeout(surfaceTimer));
     const humanLoad = new AbortController();
     cleanups.push(() => {
       humanLoad.abort();
@@ -204,6 +228,9 @@ export function mountTwinScene(
             human.dispose();
             return;
           }
+          window.clearTimeout(surfaceTimer);
+          // The stand-in never entered the scene; dispose it and put the real
+          // figure in its place.
           twinBodyRoot.remove(model.body);
           model.dispose();
           model = human;
@@ -211,13 +238,13 @@ export function mountTwinScene(
           humanPending = false;
           canvas.dataset["twinBody"] = "human";
           applyState();
+          options.onBodyReady?.("human");
         })
         .catch(() => {
-          // Deliberately quiet: the surface is already on screen, and now that
-          // it is the answer rather than the wait, it carries the reading.
-          humanPending = false;
-          canvas.dataset["twinBody"] = "surface";
-          applyState();
+          // Deliberately quiet: the surface goes in, and now that it is the
+          // answer rather than the wait, it carries the reading.
+          window.clearTimeout(surfaceTimer);
+          useSurface();
         });
     }
     let state = options.state;
@@ -312,13 +339,6 @@ export function mountTwinScene(
             material.emissive.copy(lit);
             material.emissiveIntensity = glow / Math.max(lit.r, lit.g, lit.b, 0.2);
             material.roughness = selected ? 0.56 : 0.64;
-          } else if (humanPending) {
-            // Uniform, unlit, dark: a shape holding the place, not a body
-            // making a claim about this athlete.
-            material.color.set("#2b3238");
-            material.emissive.set("#000000");
-            material.emissiveIntensity = 0;
-            material.roughness = 0.9;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");

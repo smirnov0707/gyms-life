@@ -137,6 +137,13 @@ export function BodySceneStage(props: BodySceneStageProps) {
           label: COPY[current.language].scene,
           onSelect: (region) => latest.current.onSelectRegion(region),
           onFailure: fail,
+          // The stage is not ready when the renderer mounts, it is ready when
+          // there is a body in it. Between the two the scene is empty, and
+          // showing an empty stage — or the mannequin that used to fill it —
+          // is worse than keeping the 2D map, which is the same data.
+          onBodyReady: () => {
+            if (!cancelled && !invalidated) setReady(true);
+          },
           ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
         });
         window.clearTimeout(timeout);
@@ -148,7 +155,6 @@ export function BodySceneStage(props: BodySceneStageProps) {
         scene.current = handle;
         // The two-view preference seeds orientation only; updates preserve free orbit.
         handle.command(current.view);
-        setReady(true);
       })
       .catch(() => {
         window.clearTimeout(timeout);
