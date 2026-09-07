@@ -848,6 +848,39 @@ try {
   await noSamples.page.close();
   record("the sleep panel draws only the stages a source actually reported");
 
+  // 23. Where the template plots a seven-day performance forecast against
+  //     weekdays. The plan carries no calendar and the prediction model is
+  //     validated at four and twelve weeks, so this says when each region
+  //     comes back — arithmetic on the fatigue already on the figure — and
+  //     carries the assumption it rests on.
+  const ahead = await open("?twin=regions");
+  const aheadPanel = ahead.page.getByRole("region", { name: "When it comes back" });
+  await expect(aheadPanel).toBeVisible({ timeout: 30000 });
+  const aheadText = await aheadPanel.innerText();
+  // Back is at 55% and chest at 41%; with a 40-hour constant and an 80%
+  // threshold that is 32 and 43 hours, soonest first.
+  expect(aheadText).toContain("In 32 h");
+  expect(aheadText).toContain("In 43 h");
+  expect(aheadText.indexOf("In 32 h")).toBeLessThan(aheadText.indexOf("In 43 h"));
+  // The region with no calculated recovery is counted, not dropped: an
+  // outlook listing two of three regions reads as a smaller body.
+  expect(aheadText).toMatch(/1 regions have no calculated recovery/i);
+  // The assumption is on screen, not in a footnote somewhere else.
+  expect(aheadText).toMatch(/holds only if you do not train that region/i);
+  expect(aheadText).toMatch(/calculated estimate, not a measurement/i);
+  // And no weekday is named anywhere, because the plan has no calendar.
+  expect(aheadText).not.toMatch(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/i);
+  await ahead.page.screenshot({ path: path.join(artifacts, "recovery-outlook.png") });
+  await ahead.page.close();
+
+  // A source that failed must never render as a body with nothing to recover.
+  const noTwin = await open("?twin=unreadable");
+  await expect(
+    noTwin.page.getByText("does not mean everything is recovered", { exact: false }),
+  ).toBeVisible({ timeout: 30000 });
+  await noTwin.page.close();
+  record("recovery ahead is projected arithmetic with its assumption stated, never a forecast");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

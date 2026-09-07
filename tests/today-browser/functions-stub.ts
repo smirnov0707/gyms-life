@@ -89,7 +89,9 @@ export const getTwinSnapshot = async () => ({
   bodyVariant: "male" as const,
   computedAt: "2026-09-07T06:00:00.000Z",
   evidenceWindowDays: 14,
-  dataAvailable: true,
+  // `?twin=unreadable` is the source failing rather than answering empty —
+  // the one case that must never render as a recovered body.
+  dataAvailable: new URLSearchParams(window.location.search).get("twin") !== "unreadable",
   regions:
     new URLSearchParams(window.location.search).get("twin") === "regions"
       ? [

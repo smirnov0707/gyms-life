@@ -40,6 +40,7 @@ import { extra_load } from "./i18n-extra-load";
 import { extra_lastsession } from "./i18n-extra-lastsession";
 import { extra_evidence } from "./i18n-extra-evidence";
 import { extra_sleep } from "./i18n-extra-sleep";
+import { extra_outlook } from "./i18n-extra-outlook";
 import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
 export type Lang = SupportedLanguage;
@@ -755,6 +756,7 @@ export const dict = {
   ...extra_lastsession,
   ...extra_evidence,
   ...extra_sleep,
+  ...extra_outlook,
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;

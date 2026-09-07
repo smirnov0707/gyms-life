@@ -15,6 +15,7 @@ import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
 import { DataSourcesStrip } from "@/components/DataSourcesStrip";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
+import { RecoveryOutlook } from "@/components/RecoveryOutlook";
 import { FutureLabTodayIntelligence } from "@/components/future-lab/FutureLabTodayIntelligence";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
@@ -205,6 +206,9 @@ export function Overview() {
               {t("ov.readinessReadFailed")}
             </p>
           ) : null}
+          {/* Readiness is now; this is the same estimate read forward. Where
+              the template puts a seven-day performance forecast. */}
+          <RecoveryOutlook />
         </aside>
 
         <div
