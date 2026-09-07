@@ -33,6 +33,7 @@ import { extra_todayplan } from "./i18n-extra-todayplan";
 import { extra_labcard } from "./i18n-extra-labcard";
 import { extra_sources } from "./i18n-extra-sources";
 import { extra_bodytrend } from "./i18n-extra-bodytrend";
+import { extra_twintabs } from "./i18n-extra-twintabs";
 import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
 export type Lang = SupportedLanguage;
@@ -741,6 +742,7 @@ export const dict = {
   ...extra_labcard,
   ...extra_sources,
   ...extra_bodytrend,
+  ...extra_twintabs,
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;

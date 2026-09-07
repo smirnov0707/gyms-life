@@ -7,6 +7,7 @@ import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 import { FutureMeSimulationDeck } from "@/components/future-lab/FutureMeSimulationDeck";
 import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence";
 import { BodyCompositionCard } from "@/components/BodyCompositionCard";
+import { TwinScreen } from "@/components/twin/TwinScreen";
 import { LangProvider } from "@/lib/i18n";
 import "@/styles.css";
 
@@ -37,6 +38,8 @@ function Panel() {
       return <JournalIntelligence />;
     case "body":
       return <BodyCompositionCard />;
+    case "twin":
+      return <TwinScreen />;
     default:
       return <Overview />;
   }

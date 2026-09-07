@@ -36,13 +36,44 @@ export const getLiveSignals = async () => {
   }));
 };
 
+/** `?twin=regions` gives the snapshot three regions: two calculated and one
+ *  with no evidence at all, which is the pair the region list has to keep
+ *  apart. The default stays empty, because that is this account's state. */
 export const getTwinSnapshot = async () => ({
   calculationVersion: "TEST-FIXTURE-NOT-USER-DATA",
   bodyVariant: "male" as const,
   computedAt: "2026-09-07T06:00:00.000Z",
   evidenceWindowDays: 14,
   dataAvailable: true,
-  regions: [],
+  regions:
+    new URLSearchParams(window.location.search).get("twin") === "regions"
+      ? [
+          {
+            region: "chest",
+            provenance: "calculated" as const,
+            recoveryPct: 41,
+            recoveryBand: "fatigued" as const,
+            volumeKg: 4200,
+            lastTrainedHoursAgo: 18,
+          },
+          {
+            region: "back",
+            provenance: "calculated" as const,
+            recoveryPct: 88,
+            recoveryBand: "fresh" as const,
+            volumeKg: 5100,
+            lastTrainedHoursAgo: 96,
+          },
+          {
+            region: "calves",
+            provenance: "unknown" as const,
+            recoveryPct: null,
+            recoveryBand: "unknown" as const,
+            volumeKg: null,
+            lastTrainedHoursAgo: null,
+          },
+        ]
+      : [],
 });
 
 /** A key shaped like the real ones, so masking can be checked against it. */

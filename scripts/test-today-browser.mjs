@@ -354,6 +354,54 @@ try {
     "body composition shows a change only when there are two readings, and names what is derived",
   );
 
+  // 13. The Twin screen's three views. Each one answers from a different
+  //     source — the figure and the body from logged sets, the regions from
+  //     the same sets in full, the systems from what a device measured — so
+  //     switching tabs must never carry one panel's evidence into another.
+  const twin = await openPanel("?panel=twin&twin=regions");
+  const tabs = twin.page.getByRole("tablist", { name: "Twin views" });
+  await expect(tabs).toBeVisible({ timeout: 30000 });
+  await expect(twin.page.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(twin.page.getByRole("region", { name: "Body composition" })).toBeVisible({
+    timeout: 30000,
+  });
+
+  // The figure the app ships must actually be reachable: the scene starts on
+  // a generated surface and only marks itself human once the glTF has loaded,
+  // so this fails if the asset is missing, unusable or served wrong.
+  await expect(twin.page.locator('[data-twin-body="human"]')).toHaveCount(1, { timeout: 30000 });
+  await twin.page.screenshot({ path: path.join(artifacts, "twin-overview.png"), fullPage: true });
+
+  await twin.page.getByRole("tab", { name: "Muscles" }).click();
+  const table = twin.page.getByRole("region", { name: "Every region" });
+  await expect(table).toBeVisible({ timeout: 30000 });
+  const tableText = await table.innerText();
+  // Least recovered first, and the region with no evidence is last and blank
+  // rather than sorted in among the recovered ones.
+  expect(tableText.indexOf("41%")).toBeLessThan(tableText.indexOf("88%"));
+  expect(tableText.indexOf("88%")).toBeLessThan(tableText.indexOf("Calves"));
+  expect(tableText).toMatch(/Calves\s*\n?\s*—/);
+  expect(tableText).toContain("it is not");
+  // The body composition card belongs to Overview and must not follow along.
+  await expect(twin.page.getByRole("region", { name: "Body composition" })).toHaveCount(0);
+
+  await twin.page.screenshot({ path: path.join(artifacts, "twin-muscles.png"), fullPage: true });
+
+  await twin.page.getByRole("tab", { name: "Systems" }).click();
+  await expect(twin.page.getByRole("region", { name: "Live signals" })).toBeVisible({
+    timeout: 30000,
+  });
+  const systemsText = await twin.page.innerText("body");
+  expect(systemsText).toMatch(/colours come from logged sets alone/);
+  await expect(table).toHaveCount(0);
+  await twin.page.screenshot({ path: path.join(artifacts, "twin-systems.png"), fullPage: true });
+  expect(twin.errors).toEqual([]);
+  await twin.page.close();
+  record("the Twin's three views each answer from their own source, and none borrows another's");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

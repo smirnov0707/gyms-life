@@ -293,11 +293,18 @@ export function TwinSnapshotView({
   copy,
   label,
   lang = "lt",
+  showAllRegions = true,
 }: {
   data: TwinSnapshot;
   copy: Copy;
   label: (region: string) => string;
   lang?: Lang;
+  /**
+   * The live screen puts every region on its own tab, where it has room for
+   * volume and last-trained beside the percentage. A stored state opened in
+   * Rewind has no such tab, so it keeps the list inline.
+   */
+  showAllRegions?: boolean;
 }) {
   const [layer, setLayer] = useState<TwinLayer>("recovery");
   const language = baseLang(lang);
@@ -464,48 +471,50 @@ export function TwinSnapshotView({
         </div>
       </details>
 
-      <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
-        <button
-          type="button"
-          onClick={() => setDetailsOpen((open) => !open)}
-          aria-expanded={detailsOpen}
-          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-        >
-          <div>
-            <p className="text-sm font-semibold text-foreground">{copy.allRegions}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {copy.evidenceWindow(data.evidenceWindowDays)}
-            </p>
-          </div>
-          <ChevronDown
-            className={`size-4 text-muted-foreground transition-transform ${detailsOpen ? "rotate-180" : ""}`}
-          />
-        </button>
+      {showAllRegions ? (
+        <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((open) => !open)}
+            aria-expanded={detailsOpen}
+            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+          >
+            <div>
+              <p className="text-sm font-semibold text-foreground">{copy.allRegions}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {copy.evidenceWindow(data.evidenceWindowDays)}
+              </p>
+            </div>
+            <ChevronDown
+              className={`size-4 text-muted-foreground transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+            />
+          </button>
 
-        {detailsOpen ? (
-          <div className="grid border-t border-border sm:grid-cols-2">
-            {data.regions.map((region) => (
-              <button
-                key={region.region}
-                type="button"
-                onClick={() => selectRegion(region.region)}
-                className="flex items-center justify-between gap-4 border-b border-border px-5 py-3 text-left hover:bg-foreground/[0.03] sm:odd:border-r"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: TWIN_DISPLAY_COLORS[display(region.region).tone] }}
-                  />
-                  <span className="truncate text-sm text-foreground">{label(region.region)}</span>
-                </span>
-                <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                  {formatTwinValue(display(region.region).value, layer, language)}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </section>
+          {detailsOpen ? (
+            <div className="grid border-t border-border sm:grid-cols-2">
+              {data.regions.map((region) => (
+                <button
+                  key={region.region}
+                  type="button"
+                  onClick={() => selectRegion(region.region)}
+                  className="flex items-center justify-between gap-4 border-b border-border px-5 py-3 text-left hover:bg-foreground/[0.03] sm:odd:border-r"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: TWIN_DISPLAY_COLORS[display(region.region).tone] }}
+                    />
+                    <span className="truncate text-sm text-foreground">{label(region.region)}</span>
+                  </span>
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    {formatTwinValue(display(region.region).value, layer, language)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -543,6 +552,7 @@ export function TwinView() {
       data={data}
       copy={copy}
       lang={lang}
+      showAllRegions={false}
       label={(region) => regionLabelFor(region, t)}
     />
   );
