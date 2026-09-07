@@ -1,5 +1,5 @@
 import { tr, type Lang } from "./i18n";
-import { LM, type Point } from "./ar-angles";
+import { LM, landmarkVisible, type Point } from "./ar-angles";
 
 export type CalibFrame = { pose: Point[]; w: number; h: number };
 
@@ -75,17 +75,35 @@ const r = (n: number, d = 1) => {
 const visibilityOf = (f: CalibFrame) =>
   avg(KEY_LANDMARKS.map((i) => f.pose[i]?.visibility ?? (f.pose[i] ? 0.9 : 0)));
 
+// Visible, not merely present. These two set `cmPerPx`, which converts every
+// later depth reading into centimetres — so one low-confidence ankle here
+// silently rescales a number the athlete is shown as a measurement. The 0.5
+// floor is the one this file already applies to a frame's tracking quality.
 const bodyPx = (f: CalibFrame) => {
   const nose = f.pose[LM.nose];
-  const ankles = [f.pose[LM.lAnkle], f.pose[LM.rAnkle]].filter(Boolean) as Point[];
-  if (!nose || !ankles.length) return 0;
+  if (!landmarkVisible(nose)) return 0;
+  const ankles = [f.pose[LM.lAnkle], f.pose[LM.rAnkle]].filter(landmarkVisible);
+  if (!ankles.length) return 0;
   return (avg(ankles.map((p) => p.y)) - nose.y) * f.h;
 };
 
 const hipPx = (f: CalibFrame) => {
-  const hips = [f.pose[LM.lHip], f.pose[LM.rHip]].filter(Boolean) as Point[];
+  const hips = [f.pose[LM.lHip], f.pose[LM.rHip]].filter(landmarkVisible);
   return hips.length ? avg(hips.map((p) => p.y)) * f.h : 0;
 };
+
+/**
+ * How good a standing calibration has to be before its scale is used.
+ *
+ * The metrics this step reports call themselves ok at visibility above 0.7,
+ * steadiness above 60 and framing above 60 — which works out to a quality of
+ * exactly 60. So this is not a new judgement: it is the panel's own idea of an
+ * acceptable calibration, applied instead of merely displayed. Below it the
+ * scale is not returned at all, because a `cmPerPx` derived from a bad frame
+ * turns every later reading into a confident centimetre figure that was never
+ * measured.
+ */
+export const CALIBRATION_MINIMUM_QUALITY = 60;
 
 /** Scores a single calibration step from the frames captured during it. */
 export function evaluateStep(
@@ -122,11 +140,18 @@ export function evaluateStep(
     const coverage = meanH / (frames[0]!.h || 1);
     const frameScore = clamp((coverage - 0.35) / 0.35) * 100;
     const quality = visScore * 0.4 + steadyScore * 0.3 + frameScore * 0.3;
+    const trusted = quality >= CALIBRATION_MINIMUM_QUALITY;
     return {
       id,
       quality,
-      cmPerPx: meanH > 40 ? (heightCm * 0.93) / meanH : undefined,
-      standingHipY: hips.length ? avg(hips) : undefined,
+      // 0.93: nose to ankle is about 93% of standing height, the eyes and
+      // crown sitting above the topmost landmark the model reports.
+      // Explicitly undefined rather than a scale of zero. The caller's own
+      // comment says no `cmPerPx` comes back without a real height, and that
+      // only held because zero happens to be falsy — anything checking for
+      // `undefined` would have taken a scale that turns every depth into 0 cm.
+      cmPerPx: trusted && meanH > 40 && heightCm > 0 ? (heightCm * 0.93) / meanH : undefined,
+      standingHipY: trusted && hips.length ? avg(hips) : undefined,
       metrics: [
         { label: T.vis, value: `${Math.round(vis * 100)} %`, ok: vis > 0.7 },
         { label: T.steady, value: `±${r(jitter)} px`, ok: steadyScore > 60 },
