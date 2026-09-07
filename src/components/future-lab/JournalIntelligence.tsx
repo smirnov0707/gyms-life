@@ -287,7 +287,9 @@ export function JournalIntelligence() {
                             <span className="text-emerald-300">
                               {item.evidenceCount} {copy.evidencePoints}
                             </span>
-                            <span className="text-slate-600">{item.domain.replaceAll("_", " ")}</span>
+                            <span className="text-slate-600">
+                              {item.domain.replaceAll("_", " ")}
+                            </span>
                           </div>
                         </article>
                       ))}
@@ -470,7 +472,8 @@ export function JournalIntelligence() {
 
             {contradicted.length ? (
               <p className="mt-4 flex items-center gap-2 text-[11px] text-slate-500">
-                <XCircle className="size-4 text-rose-300" /> {copy.contradicted}: {contradicted.length}
+                <XCircle className="size-4 text-rose-300" /> {copy.contradicted}:{" "}
+                {contradicted.length}
               </p>
             ) : null}
 
