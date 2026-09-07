@@ -43,7 +43,8 @@ export const scanMicronutrients = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ScanInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { loadMicroSnapshot, fallbackMicroScan } = await import("./micronutrient.server");
+    const { loadMicroSnapshot, fallbackMicroScan, supplementsLine, trainingLine } =
+      await import("./micronutrient.server");
     const snap = await loadMicroSnapshot(context.supabase, context.userId);
     if (!isAiConfigured()) return fallbackMicroScan(data.lang, snap.days);
 
@@ -55,6 +56,7 @@ export const scanMicronutrients = createServerFn({ method: "POST" })
     const system = `You are a sports dietitian doing a micronutrient gap analysis. Answer entirely in ${language}.
 
 Use ONLY the athlete data below. Estimate typical micronutrient intake from the logged foods; never invent lab values and never claim to diagnose.
+A line marked SOURCE COULD NOT BE READ is missing, not empty: do not treat it as zero, none or absent, do not cite it as evidence, and say in dataQuality that it was unavailable.
 Return 4-7 findings, ordered by priority (critical > high > medium > low). Cover both micronutrients that are LOW and any that are already covered by supplements (mark those low priority with gapPercent 0).
 Consider double-dosing risk: if a supplement the athlete already takes covers a nutrient, say so in evidence and set supplement to null.
 current/target = short human strings with units per day (e.g. "~210 mg/d" / "350-400 mg/d").
@@ -65,10 +67,10 @@ supplement = a supplement row to add, or null when food is enough or it is alrea
 strengths = 2-3 things already good. warnings = interaction/overdose/medical cautions plus a note that this is not a diagnosis.
 
 ATHLETE: ${snap.profile.gender}, ${age ?? "?"} y, ${snap.profile.weight === null ? "weight not recorded" : `${snap.profile.weight} kg`}, ${snap.profile.height === null ? "height not recorded" : `${snap.profile.height} cm`}, goal ${snap.profile.goal ?? "not recorded"}, diet ${snap.profile.diet}.
-TRAINING: ${snap.training.sessions14d} sessions in 14 days, avg sleep ${snap.training.avgSleep} h, avg readiness ${snap.training.avgReadiness}.
+${snap.unreadable.length ? `SOURCES UNAVAILABLE: ${snap.unreadable.join(", ")}. These are missing, not empty.\n` : ""}TRAINING: ${trainingLine(snap)}.
 NUTRITION: ${snap.days} logged days, avg ${snap.avgKcal} kcal/day, avg ${snap.avgProtein} g protein/day.
 FOOD LOG (every entry is an estimate, never weighed; [photo] = a model read a photograph of the plate, [described] = a model read the athlete's own text, [source unknown] = logged before the app recorded which): ${snap.foodEntries.map((f) => `${f.day} ${f.food} (${f.kcal}kcal P${f.protein}/C${f.carbs}/F${f.fat}) ${f.source === "photo" ? "[photo]" : f.source === "text" ? "[described]" : "[source unknown]"}`).join("; ") || "empty"}.
-CURRENT SUPPLEMENTS: ${snap.supplements.map((s) => `${s.name} ${s.dose} x${s.times_per_day}`).join("; ") || "none"}.
+CURRENT SUPPLEMENTS: ${supplementsLine(snap)}.
 
 Return exactly: {"summary":"","dataQuality":"","findings":[{"name":"","current":"","target":"","gapPercent":0,"priority":"high","reason":"","evidence":"","foodFix":"","supplement":{"name":"","dose":"","category":"vitamin","times_per_day":1,"with_food":true,"preferred_time":"morning"}}],"strengths":[""],"warnings":[""]}`;
 

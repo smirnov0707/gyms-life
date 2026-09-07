@@ -32,7 +32,39 @@ export type MicroSnapshot = {
     birthYear: number | null;
   };
   training: { sessions14d: number; avgSleep: number; avgReadiness: number };
+  /**
+   * Supporting sources whose query failed. The food log is not among them —
+   * without it there is nothing to analyse, so that read throws instead.
+   */
+  unreadable: string[];
 };
+
+/**
+ * The two prompt lines where a failed read would have done real harm.
+ *
+ * Told "none", a dietitian model recommends what the athlete already takes —
+ * and this prompt asks it to weigh double-dosing risk, so an unreadable
+ * supplement list turns a safety check into its opposite. Told zero sessions
+ * and zero sleep, it reasons about a body at rest that has been training.
+ */
+export function supplementsLine(snap: MicroSnapshot): string {
+  if (snap.unreadable.includes("supplements")) {
+    return "SOURCE COULD NOT BE READ — do not conclude the athlete takes none, and do not recommend anything as if nothing were already covered";
+  }
+  return (
+    snap.supplements.map((s) => `${s.name} ${s.dose} x${s.times_per_day}`).join("; ") || "none"
+  );
+}
+
+export function trainingLine(snap: MicroSnapshot): string {
+  if (
+    snap.unreadable.includes("training sessions") ||
+    snap.unreadable.includes("daily check-ins")
+  ) {
+    return "SOURCE COULD NOT BE READ";
+  }
+  return `${snap.training.sessions14d} sessions in 14 days, avg sleep ${snap.training.avgSleep} h, avg readiness ${snap.training.avgReadiness}`;
+}
 
 /** Pulls the last 14 days of real logs so the scan is based on user data, not guesses. */
 export async function loadMicroSnapshot(
@@ -80,6 +112,24 @@ export async function loadMicroSnapshot(
       .limit(30),
   ]);
 
+  // The whole analysis is about what the athlete ate. A failed food read used
+  // to arrive as an empty array, which becomes "0 kcal, 0 g protein, food log
+  // empty" in a prompt the model is told to reason only from — and a
+  // micronutrient gap analysis run on nothing finds a gap in everything.
+  if (foods.error) throw new Error(foods.error.message);
+
+  const unreadable = (
+    [
+      ["supplements", sups.error],
+      ["profile", prof.error],
+      ["training sessions", sessions.error],
+      ["daily check-ins", checkins.error],
+      ["body measurements", weights.error],
+    ] satisfies [string, unknown][]
+  )
+    .filter(([, error]) => error)
+    .map(([source]) => source);
+
   const rows = foods.data ?? [];
 
   const dayKeys = new Set(rows.map((r) => r.logged_on));
@@ -125,6 +175,7 @@ export async function loadMicroSnapshot(
       diet: profile?.diet ?? "any",
       birthYear: profile?.birth_year ?? null,
     },
+    unreadable,
     training: {
       sessions14d: (sessions.data ?? []).length,
       avgSleep: Number(avg(ci.map((c) => Number(c.sleep_hours ?? 0)).filter(Boolean)).toFixed(1)),
