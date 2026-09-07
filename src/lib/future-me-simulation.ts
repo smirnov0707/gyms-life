@@ -18,7 +18,12 @@ export function projectedEstimated1RM(
 }
 
 export function projectedChangePercent(current: number, projected: number | null): number | null {
-  if (!Number.isFinite(current) || current <= 0 || projected === null || !Number.isFinite(projected)) {
+  if (
+    !Number.isFinite(current) ||
+    current <= 0 ||
+    projected === null ||
+    !Number.isFinite(projected)
+  ) {
     return null;
   }
   return Math.round(((projected - current) / current) * 1000) / 10;
