@@ -536,6 +536,90 @@ try {
   await sent.page.close();
   record("sets stuck on the device are reported until they are delivered");
 
+  // 17. Everything added since the last 320px check, in Lithuanian, which runs
+  //     longer than English almost everywhere. A gym phone held one-handed is
+  //     the real viewport for this app, and a panel that only survives at
+  //     desktop width has not shipped.
+  const narrow = { locale: "lt-LT", viewport: { width: 320, height: 720 } };
+  const overflowOf = (page) =>
+    page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+
+  for (const [name, query] of [
+    ["twin views", "?panel=twin&twin=regions"],
+    ["body composition", "?panel=body&body=change&source=scan"],
+    ["offline queue", "?panel=offline&sync=fail"],
+  ]) {
+    const page =
+      query === "?panel=offline&sync=fail"
+        ? await (async () => {
+            const seeded = await openPanel(query, narrow);
+            await seeded.page.evaluate((rows) => {
+              localStorage.setItem("gyms_life_offline_queue_v2", JSON.stringify(rows));
+            }, queued);
+            await seeded.page.reload();
+            return seeded;
+          })()
+        : await openPanel(query, narrow);
+
+    // Wait for the panel to actually be on screen. An empty page has no
+    // horizontal overflow and no controls, so measuring too early passes
+    // every assertion below without looking at anything. Text, not controls:
+    // the composition card in its change state legitimately has neither a
+    // button nor a link.
+    await page.page.waitForFunction(() => document.body.innerText.length > 120, null, {
+      timeout: 60000,
+    });
+    await page.page.waitForTimeout(400);
+    expect(await overflowOf(page.page), `${name} overflows at 320px`).toBeLessThanOrEqual(1);
+
+    // Anything tappable has to be reachable with a thumb, not a fingernail.
+    // Measured in one pass inside the page: the Twin's scene re-renders, and
+    // walking Playwright locators one at a time raced with nodes detaching.
+    const controls = await page.page.evaluate(() =>
+      [...document.querySelectorAll("button, a[href]")]
+        .map((node) => {
+          const box = node.getBoundingClientRect();
+          return {
+            label: (node.textContent ?? node.getAttribute("aria-label") ?? "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 40),
+            height: Math.round(box.height),
+            width: Math.round(box.width),
+          };
+        })
+        // Zero-sized nodes are not on screen to be tapped at all.
+        .filter((control) => control.height > 0),
+    );
+    expect(
+      controls.filter((control) => control.height < 44),
+      `${name} has controls too small to tap`,
+    ).toEqual([]);
+
+    // Overflow inside a scrolling row does not push the page, so the check
+    // above cannot see it: three nowrap tab labels forced into a third of the
+    // width each overlapped into an unreadable smear and everything passed.
+    const clipped = await page.page.evaluate(() =>
+      [...document.querySelectorAll("button, a[href]")]
+        .filter((node) => node.scrollWidth > node.clientWidth + 1)
+        .map((node) => ({
+          label: (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 40),
+          clientWidth: node.clientWidth,
+          scrollWidth: node.scrollWidth,
+        })),
+    );
+    expect(clipped, `${name} has controls whose own text does not fit`).toEqual([]);
+    await page.page.screenshot({
+      path: path.join(artifacts, `narrow-${name.replace(/\s+/g, "-")}.png`),
+      fullPage: true,
+    });
+    expect(page.errors).toEqual([]);
+    await page.page.close();
+  }
+  record("the panels added since stay inside a 320px screen in Lithuanian");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

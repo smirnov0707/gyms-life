@@ -66,7 +66,12 @@ export function TwinScreen() {
               aria-controls={`twin-panel-${tab.id}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(tab.id)}
-              className={`flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-[11px] font-bold uppercase tracking-[0.16em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+              // `flex-1` only once there is room for it. At 320px in
+              // Lithuanian, forcing three nowrap labels into a third of the
+              // width each made them overlap into an unreadable smear — the
+              // row scrolled, so nothing overflowed the page and the layout
+              // check passed while the words sat on top of one another.
+              className={`flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:flex-1 sm:px-4 sm:tracking-[0.16em] ${
                 selected
                   ? "bg-surface text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"

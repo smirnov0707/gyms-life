@@ -42,10 +42,14 @@ function Figure({
 
   return (
     <div className="rounded-2xl border border-border bg-surface-2 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+      {/* Tighter tracking on a narrow column: "RIEBALŲ MASĖ" was breaking
+          after "RIEBAL" in a third of a 320px screen. */}
+      <p className="text-balance text-[10px] font-bold uppercase tracking-[0.04em] text-muted-foreground sm:tracking-[0.14em]">
         {label}
       </p>
-      <p className="mt-1.5 font-display text-xl leading-none tabular-nums text-foreground">
+      {/* Nowrap: at 320px the unit broke onto its own line and the column
+          read "85,0 K / G". */}
+      <p className="mt-1.5 whitespace-nowrap font-display text-lg leading-none tabular-nums text-foreground sm:text-xl">
         {format(value)}
         <span className="ml-1 font-sans text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           {unit}

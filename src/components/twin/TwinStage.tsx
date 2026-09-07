@@ -43,7 +43,10 @@ export function TwinStage({ snapshot, layer, onLayerChange, ...props }: TwinStag
               style={{ minWidth: 44, minHeight: 44, flexShrink: 0 }}
               aria-pressed={layer === option}
               onClick={() => onLayerChange(option)}
-              className={`min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300 ${layer === option ? "bg-white/10 text-white" : ""}`}
+              // Balanced across two lines rather than broken mid-word: at
+              // 320px "Atsistatymas" and "Registruotas tūris" split into
+              // "Atsistatym / as" and "Registruot / as tūris".
+              className={`min-h-11 min-w-11 text-balance rounded-xl px-2 py-1 text-[11px] font-medium leading-tight text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300 sm:px-3 sm:text-xs ${layer === option ? "bg-white/10 text-white" : ""}`}
             >
               {copy.label[option]}
             </button>
