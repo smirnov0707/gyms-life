@@ -228,3 +228,50 @@ export const getTodaysTargets = async () => {
     unplaceable: [{ slug: "sled-push", name: "Sled push", sets: 3, reps: "20 m" }],
   };
 };
+
+/** `?load=first|none|fail` covers the three states the load panel must keep
+ *  apart: a week to compare against, a first week, and an unread source. */
+export const getTrainingLoad = async () => {
+  const mode = new URLSearchParams(window.location.search).get("load");
+  if (mode === "fail") throw new Error("sets unavailable");
+  const days = [
+    { day: "2026-09-01", volumeKg: 0 },
+    { day: "2026-09-02", volumeKg: 3200 },
+    { day: "2026-09-03", volumeKg: 0 },
+    { day: "2026-09-04", volumeKg: 4100 },
+    { day: "2026-09-05", volumeKg: 0 },
+    { day: "2026-09-06", volumeKg: 5180 },
+    { day: "2026-09-07", volumeKg: 2100 },
+  ];
+  if (mode === "none") {
+    return {
+      status: "counted" as const,
+      days: days.map((day) => ({ ...day, volumeKg: 0 })),
+      thisWeekKg: 0,
+      lastWeekKg: 0,
+      changeFraction: null,
+      countedSets: 0,
+      uncountedSets: 4,
+    };
+  }
+  if (mode === "first") {
+    return {
+      status: "counted" as const,
+      days,
+      thisWeekKg: 14580,
+      lastWeekKg: 0,
+      changeFraction: null,
+      countedSets: 42,
+      uncountedSets: 0,
+    };
+  }
+  return {
+    status: "counted" as const,
+    days,
+    thisWeekKg: 14580,
+    lastWeekKg: 12400,
+    changeFraction: 0.1758,
+    countedSets: 42,
+    uncountedSets: 3,
+  };
+};

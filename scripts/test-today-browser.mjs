@@ -650,6 +650,18 @@ try {
     "true",
   );
   await expect(homeStage.getByText("exercises · from your programme")).toBeVisible();
+  // The week's work, as arithmetic: a total, a comparison, and the two things
+  // the sum cannot include said out loud.
+  const loadPanel = homeStage.getByRole("region", { name: "Training load" });
+  await expect(loadPanel).toBeVisible();
+  const loadText = await loadPanel.innerText();
+  expect(loadText).toContain("14,580");
+  expect(loadText).toContain("+18%");
+  expect(loadText).toContain("12,400");
+  // Three completed sets carried no weight or reps; the total says so rather
+  // than quietly understating the week.
+  expect(loadText).toMatch(/3 completed sets are not in this total/);
+
   await home.page.screenshot({ path: path.join(artifacts, "twin-home.png"), fullPage: true });
 
   // And recovery is one tap away, still meaning only recovery.
@@ -680,6 +692,23 @@ try {
   );
   await rest.page.close();
   record("the Twin screen carries today's session and today's fatigue without blurring them");
+
+  // A first week is not an infinite improvement, and an unread source is not
+  // a week without training.
+  const firstWeek = await openPanel("?panel=home&twin=regions&load=first");
+  await expect(firstWeek.page.getByText("no logged load last week", { exact: false })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(firstWeek.page.getByText("%", { exact: true })).toHaveCount(0);
+  await firstWeek.page.close();
+
+  const unread = await openPanel("?panel=home&twin=regions&load=fail");
+  await expect(unread.page.getByText("Your sets could not be read")).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(unread.page.getByText("No completed set in the last two weeks")).toHaveCount(0);
+  await unread.page.close();
+  record("the week's load says what it counted, what it could not, and what it cannot compare");
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
