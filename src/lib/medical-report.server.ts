@@ -23,9 +23,29 @@ type ReportProfile = Pick<
   | "days_per_week"
 >;
 
+/** The seven reads this report is assembled from, named as the prompt names them. */
+export const REPORT_SOURCES = [
+  "training sessions",
+  "logged sets",
+  "daily check-ins",
+  "nutrition log",
+  "body measurements",
+  "supplements",
+  "profile",
+] as const;
+
+export type ReportSource = (typeof REPORT_SOURCES)[number];
+
 export type ReportStats = {
   from: string;
   to: string;
+  /**
+   * Sources whose query failed. Not the same as a source with nothing in it,
+   * and the difference matters more here than anywhere else in the app: this
+   * text becomes a document a physician reads, and "no sessions" is a claim
+   * about the athlete while "could not be read" is a claim about us.
+   */
+  unreadable: ReportSource[];
   sessions: number;
   totalVolumeKg: number;
   trainingMinutes: number;
@@ -127,6 +147,23 @@ export async function buildReportStats(
         .maybeSingle(),
     ]);
 
+  // Which reads failed, recorded rather than absorbed. Everything below still
+  // aggregates whatever did come back, so one broken source does not cost the
+  // athlete the other six.
+  const unreadable = (
+    [
+      ["training sessions", sessionsRes.error],
+      ["logged sets", setsRes.error],
+      ["daily check-ins", checkinsRes.error],
+      ["nutrition log", nutriRes.error],
+      ["body measurements", bodyRes.error],
+      ["supplements", suppRes.error],
+      ["profile", profileRes.error],
+    ] satisfies [ReportSource, unknown][]
+  )
+    .filter(([, error]) => error)
+    .map(([source]) => source);
+
   const sessions = sessionsRes.data ?? [];
   const totalVolumeKg = Math.round(sessions.reduce((a, s) => a + (num(s.total_volume) ?? 0), 0));
   const trainingSeconds = sessions.reduce((a, s) => a + (num(s.duration_seconds) ?? 0), 0);
@@ -174,6 +211,7 @@ export async function buildReportStats(
   return {
     from: fromDay,
     to: to.toISOString().slice(0, 10),
+    unreadable,
     sessions: sessions.length,
     totalVolumeKg,
     trainingMinutes,
@@ -232,17 +270,67 @@ export function nutritionProvenanceNote(sources: ReportStats["nutritionSources"]
 export function statsToPrompt(s: ReportStats): string {
   const profile = s.profile;
   const age = profile?.birth_year ? new Date().getFullYear() - profile.birth_year : null;
+
+  /**
+   * A line whose source could not be read carries no figures at all.
+   *
+   * The model is told to use only the numbers in this block, so a failed
+   * read left as `sessions=0` becomes "the athlete trained zero times" in a
+   * document handed to a physician. Zero is a finding; "could not be read" is
+   * not, and the two must never be written the same way.
+   */
+  const line = (source: ReportSource, label: string, body: () => string) =>
+    s.unreadable.includes(source)
+      ? `${label}: SOURCE COULD NOT BE READ — no figures available for this section`
+      : `${label}: ${body()}`;
+
   return [
     `PERIOD: ${s.from} → ${s.to} (30 days)`,
-    `SUBJECT: age=${age ?? "?"}, gender=${profile?.gender ?? "?"}, height=${profile?.height_cm ?? "?"}cm, goal=${profile?.goal ?? "?"}, experience=${profile?.experience ?? "?"}, limitations=${profile?.limitations ?? "none"}, diet=${profile?.diet ?? "?"}, allergies=${profile?.allergies ?? "none"}`,
-    `TRAINING: sessions=${s.sessions}, ${s.sessionsPerWeek}/week, total volume=${s.totalVolumeKg}kg, total time=${s.trainingMinutes}min, avg session=${s.avgSessionMinutes}min`,
-    `TOP LIFTS: ${s.topLifts.length ? s.topLifts.map((l) => `${l.exercise} ${l.bestWeight}kg×${l.reps}`).join("; ") : "no logged sets"}`,
-    `RECOVERY: check-ins=${s.checkins}, avg readiness=${s.avgReadiness ?? "—"}, avg sleep=${s.avgSleepHours ?? "—"}h, soreness=${s.avgSoreness ?? "—"}, stress=${s.avgStress ?? "—"}, energy=${s.avgEnergy ?? "—"}`,
+    s.unreadable.length
+      ? `SOURCES UNAVAILABLE: ${s.unreadable.join(", ")}. These sections are missing, not empty. Say so in dataGaps and never describe them as zero, none or absent.`
+      : `SOURCES: all seven read successfully`,
+    line(
+      "profile",
+      "SUBJECT",
+      () =>
+        `age=${age ?? "?"}, gender=${profile?.gender ?? "?"}, height=${profile?.height_cm ?? "?"}cm, goal=${profile?.goal ?? "?"}, experience=${profile?.experience ?? "?"}, limitations=${profile?.limitations ?? "none"}, diet=${profile?.diet ?? "?"}, allergies=${profile?.allergies ?? "none"}`,
+    ),
+    line(
+      "training sessions",
+      "TRAINING",
+      () =>
+        `sessions=${s.sessions}, ${s.sessionsPerWeek}/week, total volume=${s.totalVolumeKg}kg, total time=${s.trainingMinutes}min, avg session=${s.avgSessionMinutes}min`,
+    ),
+    line("logged sets", "TOP LIFTS", () =>
+      s.topLifts.length
+        ? s.topLifts.map((l) => `${l.exercise} ${l.bestWeight}kg×${l.reps}`).join("; ")
+        : "no logged sets",
+    ),
+    line(
+      "daily check-ins",
+      "RECOVERY",
+      () =>
+        `check-ins=${s.checkins}, avg readiness=${s.avgReadiness ?? "—"}, avg sleep=${s.avgSleepHours ?? "—"}h, soreness=${s.avgSoreness ?? "—"}, stress=${s.avgStress ?? "—"}, energy=${s.avgEnergy ?? "—"}`,
+    ),
     // A report a physician reads must not present estimated intake as
     // weighed, and must not guess at the mix either: the counts come from
     // the rows themselves.
-    `NUTRITION (${nutritionProvenanceNote(s.nutritionSources)}): days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
-    `BODY: weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
-    `SUPPLEMENTS: ${s.supplements.length ? s.supplements.map((x) => `${x.name} ${x.dose ?? ""} ×${x.timesPerDay ?? 1}`).join("; ") : "none"}`,
+    line(
+      "nutrition log",
+      "NUTRITION",
+      () =>
+        `(${nutritionProvenanceNote(s.nutritionSources)}) days logged=${s.nutritionDaysLogged}/30, avg ${s.avgKcal ?? "—"} kcal, P${s.avgProtein ?? "—"} C${s.avgCarbs ?? "—"} F${s.avgFat ?? "—"} g/day`,
+    ),
+    line(
+      "body measurements",
+      "BODY",
+      () =>
+        `weight ${s.weightStartKg ?? "—"}kg → ${s.weightEndKg ?? "—"}kg (Δ ${s.weightDeltaKg ?? "—"}kg), body fat ${s.bodyFatStart ?? "—"}% → ${s.bodyFatEnd ?? "—"}%, target ${profile?.target_weight_kg ?? "—"}kg`,
+    ),
+    line("supplements", "SUPPLEMENTS", () =>
+      s.supplements.length
+        ? s.supplements.map((x) => `${x.name} ${x.dose ?? ""} ×${x.timesPerDay ?? 1}`).join("; ")
+        : "none",
+    ),
   ].join("\n");
 }
