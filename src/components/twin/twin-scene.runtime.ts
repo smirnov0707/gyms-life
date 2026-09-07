@@ -181,6 +181,14 @@ export function mountTwinScene(
     // surface simply stays. A missing asset must not cost the athlete a Twin.
     let model: TwinBodyModel | ReturnType<typeof createTwinBody> = createTwinBody();
     twinBodyRoot.add(model.body);
+    // While the figure is still on its way, the stand-in is a stand-in and
+    // says so: no region colours, no selection highlight, dimmed. Painted with
+    // the data it looked like the athlete's twin — a flat mannequin with a
+    // white slab across the chest — and stayed on screen for as long as a
+    // 1.2 MB download takes on a phone. It only carries the reading once it is
+    // the answer rather than the wait, which is when the load has failed.
+    let humanPending = options.human !== false;
+    canvas.dataset["twinBody"] = humanPending ? "loading" : "surface";
     const humanLoad = new AbortController();
     cleanups.push(() => {
       humanLoad.abort();
@@ -200,12 +208,16 @@ export function mountTwinScene(
           model.dispose();
           model = human;
           twinBodyRoot.add(model.body);
+          humanPending = false;
           canvas.dataset["twinBody"] = "human";
           applyState();
         })
         .catch(() => {
-          // Deliberately quiet: the surface is already on screen and correct.
+          // Deliberately quiet: the surface is already on screen, and now that
+          // it is the answer rather than the wait, it carries the reading.
+          humanPending = false;
           canvas.dataset["twinBody"] = "surface";
+          applyState();
         });
     }
     let state = options.state;
@@ -300,6 +312,13 @@ export function mountTwinScene(
             material.emissive.copy(lit);
             material.emissiveIntensity = glow / Math.max(lit.r, lit.g, lit.b, 0.2);
             material.roughness = selected ? 0.56 : 0.64;
+          } else if (humanPending) {
+            // Uniform, unlit, dark: a shape holding the place, not a body
+            // making a claim about this athlete.
+            material.color.set("#2b3238");
+            material.emissive.set("#000000");
+            material.emissiveIntensity = 0;
+            material.roughness = 0.9;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");

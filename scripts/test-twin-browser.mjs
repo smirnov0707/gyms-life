@@ -253,6 +253,59 @@ try {
   await expect(page.locator("canvas")).toHaveCount(1);
   expect(errors).toEqual([]);
   record("strict-mode mount/unmount cleanup without uncaught browser errors");
+
+  // While the figure is downloading, the scene shows a generated stand-in. It
+  // used to be painted with the athlete's recovery data — a flat mannequin
+  // with a white slab across the chest, on screen for as long as a 1.2 MB
+  // file takes on a phone, and indistinguishable from "this is your twin".
+  // A stand-in must look like a wait, not like an answer.
+  {
+    const slow = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+    const waiting = await slow.newPage();
+    let release = () => {};
+    const held = new Promise((resolve) => {
+      release = resolve;
+    });
+    await waiting.route("**/*.glb", async (route) => {
+      await held;
+      await route.continue();
+    });
+    await waiting.goto("http://127.0.0.1:4179/index.html");
+    const stage = waiting.locator("canvas");
+    await expect
+      .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 20000 })
+      .toBe("loading");
+    await waiting.waitForTimeout(600);
+
+    // No region colour anywhere on the stand-in: sampled across the figure,
+    // the most saturated pixel is still essentially grey.
+    const saturation = await waiting.evaluate(() => {
+      const canvas = document.querySelector("canvas");
+      const shot = document.createElement("canvas");
+      shot.width = canvas.width;
+      shot.height = canvas.height;
+      shot.getContext("2d").drawImage(canvas, 0, 0);
+      const { data } = shot.getContext("2d").getImageData(0, 0, shot.width, shot.height);
+      let worst = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+        const max = Math.max(r, g, b);
+        if (max < 24) continue; // the background, not the body
+        worst = Math.max(worst, (max - Math.min(r, g, b)) / max);
+      }
+      return worst;
+    });
+    expect(saturation).toBeLessThan(0.25);
+    await waiting.screenshot({ path: path.join(artifacts, "loading-placeholder.png") });
+
+    release();
+    await expect
+      .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 30000 })
+      .toBe("human");
+    await waiting.close();
+    await slow.close();
+  }
+  record("the stand-in shown while the figure loads carries no reading of its own");
   await context.close();
 
   const mobile = await browser.newContext({
