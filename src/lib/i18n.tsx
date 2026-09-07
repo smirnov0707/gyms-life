@@ -35,6 +35,7 @@ import { extra_sources } from "./i18n-extra-sources";
 import { extra_bodytrend } from "./i18n-extra-bodytrend";
 import { extra_twintabs } from "./i18n-extra-twintabs";
 import { extra_offline } from "./i18n-extra-offline";
+import { extra_twinhome } from "./i18n-extra-twinhome";
 import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
 export type Lang = SupportedLanguage;
@@ -745,6 +746,7 @@ export const dict = {
   ...extra_bodytrend,
   ...extra_twintabs,
   ...extra_offline,
+  ...extra_twinhome,
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;

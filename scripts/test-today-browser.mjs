@@ -412,8 +412,8 @@ try {
   const tableText = await table.innerText();
   // Least recovered first, and the region with no evidence is last and blank
   // rather than sorted in among the recovered ones.
-  expect(tableText.indexOf("41%")).toBeLessThan(tableText.indexOf("88%"));
-  expect(tableText.indexOf("88%")).toBeLessThan(tableText.indexOf("Calves"));
+  expect(tableText.indexOf("41%")).toBeLessThan(tableText.indexOf("55%"));
+  expect(tableText.indexOf("55%")).toBeLessThan(tableText.indexOf("Calves"));
   expect(tableText).toMatch(/Calves\s*\n?\s*—/);
   expect(tableText).toContain("it is not");
   // The body composition card belongs to Overview and must not follow along.
@@ -619,6 +619,45 @@ try {
     await page.page.close();
   }
   record("the panels added since stay inside a 320px screen in Lithuanian");
+
+  // 18. The Twin as the screen. It carries two readings from two sources at
+  //     once — what the session asks of the body, and what the body has not
+  //     finished recovering from — and must keep them apart.
+  const home = await openPanel("?panel=home&twin=regions");
+  const homeStage = home.page.getByRole("region", { name: "Your Digital Twin" });
+  await expect(homeStage).toBeVisible({ timeout: 30000 });
+  await expect(home.page.getByRole("heading", { name: "Upper body focus" })).toBeVisible();
+
+  const homeText = await homeStage.innerText();
+  // Both headings are uppercased by CSS, so innerText shouts them back.
+  expect(homeText).toMatch(/what you train today/i);
+  expect(homeText).toMatch(/still recovering/i);
+  // An exercise the catalogue cannot place is named rather than dropped: the
+  // body would otherwise look lighter than the session actually is.
+  expect(homeText).toContain("Sled push");
+
+  // Tapping a region says which of the two readings it is talking about.
+  await homeStage.getByRole("button", { name: /Chest/ }).first().click();
+  await expect(homeStage.getByText("In today's session")).toBeVisible();
+  await homeStage.getByRole("button", { name: /Back/ }).first().click();
+  await expect(homeStage.getByText("Not trained today")).toBeVisible();
+
+  await home.page.screenshot({ path: path.join(artifacts, "twin-home.png"), fullPage: true });
+  expect(home.errors).toEqual([]);
+  await home.page.close();
+
+  // A programme that could not be read never reads as a rest day.
+  const noPlan = await openPanel("?panel=home&twin=regions&targets=fail");
+  await expect(noPlan.page.getByText("Your programme could not be read")).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(noPlan.page.getByText("has no session today")).toHaveCount(0);
+  await noPlan.page.close();
+
+  const rest = await openPanel("?panel=home&twin=regions&targets=rest");
+  await expect(rest.page.getByText("has no session today")).toBeVisible({ timeout: 30000 });
+  await rest.page.close();
+  record("the Twin screen carries today's session and today's fatigue without blurring them");
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {

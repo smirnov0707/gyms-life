@@ -9,6 +9,7 @@ import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence
 import { BodyCompositionCard } from "@/components/BodyCompositionCard";
 import { TwinScreen } from "@/components/twin/TwinScreen";
 import { OfflineQueueSync } from "@/components/OfflineQueueSync";
+import { TwinHome } from "@/components/twin/TwinHome";
 import { LangProvider } from "@/lib/i18n";
 import "@/styles.css";
 
@@ -43,6 +44,8 @@ function Panel() {
       return <TwinScreen />;
     case "offline":
       return <OfflineQueueSync />;
+    case "home":
+      return <TwinHome />;
     default:
       return <Overview />;
   }

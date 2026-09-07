@@ -59,8 +59,8 @@ export const getTwinSnapshot = async () => ({
           {
             region: "back",
             provenance: "calculated" as const,
-            recoveryPct: 88,
-            recoveryBand: "fresh" as const,
+            recoveryPct: 55,
+            recoveryBand: "moderate" as const,
             volumeKg: 5100,
             lastTrainedHoursAgo: 96,
           },
@@ -204,4 +204,27 @@ export const logWorkoutSet = async () => {
     throw new Error("network unavailable");
   }
   return { ok: true };
+};
+
+/** `?targets=rest|fail` drives the Twin home's session panel; the default is
+ *  a real session, so the body has something to carry. */
+export const getTodaysTargets = async () => {
+  const mode = new URLSearchParams(window.location.search).get("targets");
+  if (mode === "fail") throw new Error("programme unavailable");
+  if (mode === "rest") return { status: "rest" as const };
+  return {
+    status: "session" as const,
+    title: "Upper body focus",
+    // Chest is on today's list and fatigued; back is fatigued and not on it.
+    // One colour could not say both, which is why the session is marked
+    // beside the body rather than painted on to it.
+    regions: ["chest"],
+    byRegion: {
+      chest: [
+        { slug: "bench-press", name: "Bench press", sets: 4, reps: "6" },
+        { slug: "incline-db-press", name: "Incline dumbbell press", sets: 3, reps: "10" },
+      ],
+    },
+    unplaceable: [{ slug: "sled-push", name: "Sled push", sets: 3, reps: "20 m" }],
+  };
 };
