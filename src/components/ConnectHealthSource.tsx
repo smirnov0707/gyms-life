@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { getHealthSource, rotateHealthToken } from "@/lib/health-source.functions";
+import { HEALTH_INGEST_FIELDS, healthPayloadExample } from "@/lib/health-fields";
 
 /**
  * The last mile between the health endpoint and the athlete.
@@ -22,14 +23,11 @@ import { getHealthSource, rotateHealthToken } from "@/lib/health-source.function
 
 const ENDPOINT_PATH = "/api/public/health-ingest";
 
-const SAMPLE = `{
-  "token": "…",
-  "sleep_hours": 7.4,
-  "hrv_ms": 68,
-  "resting_hr": 52,
-  "steps": 8342,
-  "active_kcal": 563
-}`;
+// Generated from the field list rather than written out here. The example
+// used to be a hand-maintained string, and the endpoint grew fields it never
+// mentioned — which nobody could notice, because a field that was never sent
+// and a field that was rejected both look like an empty panel.
+const SAMPLE = healthPayloadExample();
 
 function CopyField({
   label,
@@ -199,6 +197,33 @@ export function ConnectHealthSource() {
               {SAMPLE}
             </pre>
             <p className="mt-1.5 text-xs text-muted-foreground">{t("hs.payloadNote")}</p>
+          </div>
+
+          {/* The same list the example is built from, with the unit each value
+              is read in — the one thing a shortcut gets wrong most often. */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              {t("hs.fields")}
+            </p>
+            <ul className="mt-1.5 grid gap-x-4 gap-y-1 sm:grid-cols-2">
+              {HEALTH_INGEST_FIELDS.map((field) => (
+                <li
+                  key={field.key}
+                  className="flex items-baseline justify-between gap-2 text-[11px]"
+                >
+                  <code className="min-w-0 truncate font-mono text-muted-foreground">
+                    {field.key}
+                  </code>
+                  <span className="shrink-0 tabular-nums text-muted-foreground/70">
+                    {field.unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {t("hs.stageNote")}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("hs.aliases")}</p>
           </div>
 
           <div className="border-t border-border/60 pt-3">

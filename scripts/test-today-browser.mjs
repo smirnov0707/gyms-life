@@ -206,6 +206,25 @@ try {
   // And it says whether anything has ever arrived, so a broken automation
   // cannot look like one that was never set up.
   await expect(health.page.getByText("Nothing has arrived yet")).toBeVisible();
+  // The screen has to name every field the endpoint accepts. It used to carry
+  // a hand-written example, the endpoint grew fields it never mentioned, and
+  // nobody could notice: a field never sent and a field rejected are the same
+  // empty panel from the athlete's side.
+  const healthText = await health.page.locator("body").innerText();
+  for (const field of [
+    "sleep_hours",
+    "sleep_deep_minutes",
+    "sleep_rem_minutes",
+    "sleep_core_minutes",
+    "sleep_awake_minutes",
+    "hrv_ms",
+    "resting_hr",
+    "steps",
+    "active_kcal",
+    "vo2max",
+  ]) {
+    expect(healthText, `${field} is not documented on the setup screen`).toContain(field);
+  }
   await health.page.screenshot({ path: path.join(artifacts, "health-source.png"), fullPage: true });
   expect(health.errors).toEqual([]);
   record("the ingest key stays masked until asked for, and delivery status is stated");
