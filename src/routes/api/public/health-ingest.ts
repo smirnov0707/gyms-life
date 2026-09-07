@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { recoveryScore, healthLoadModifier } from "@/lib/health-metrics";
-import { normalizeHealthPayload, normalizeDate } from "@/lib/health-normalize";
+import {
+  normalizeHealthPayload,
+  normalizeDate,
+  sampleDateWithinWindow,
+  SAMPLE_BACKFILL_DAYS,
+} from "@/lib/health-normalize";
 import { dayInTimeZone } from "@/lib/local-day";
 
 const Envelope = z.object({
@@ -71,8 +76,27 @@ export const Route = createFileRoute("/api/public/health-ingest")({
         } catch {
           athleteToday = dayInTimeZone(new Date(), "UTC");
         }
-        const sampleOn =
-          normalizeDate(raw["date"] ?? raw["sample_on"] ?? raw["day"]) ?? athleteToday;
+        const requestedDay = raw["date"] ?? raw["sample_on"] ?? raw["day"];
+        const sampleOn = normalizeDate(requestedDay) ?? athleteToday;
+
+        // A date the sender supplied but we could not read, or one years away,
+        // is a broken automation. Refusing it with a reason is the only way
+        // its owner ever finds out; filing it under today would quietly put a
+        // reading on a day it did not happen.
+        if (requestedDay !== undefined && requestedDay !== null && requestedDay !== "") {
+          if (normalizeDate(requestedDay) === null) {
+            return json({ error: "Unreadable date" }, 400);
+          }
+          if (!sampleDateWithinWindow(sampleOn, athleteToday)) {
+            return json(
+              {
+                error: "Date out of range",
+                message: `A sample must be dated within the last ${SAMPLE_BACKFILL_DAYS} days and not in the future.`,
+              },
+              400,
+            );
+          }
+        }
 
         const { data: history, error: historyError } = await supabaseAdmin
           .from("health_samples")

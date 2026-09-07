@@ -137,13 +137,56 @@ export function normalizeHealthPayload(raw: Raw): NormalizedHealth {
 }
 
 /** Extracts a YYYY-MM-DD date from many shapes ("2026-08-28T06:00:00Z", "28/08/2026"). */
+/** True only for a day that exists: rejects 2026-13-45 and 2025-02-30 alike. */
+function realDay(day: string): boolean {
+  const parsed = new Date(`${day}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day;
+}
+
 export function normalizeDate(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const s = value.trim();
+  // Each branch is checked against the calendar before it is returned. The
+  // first two used to hand their capture groups straight back, so "2026-13-45"
+  // travelled all the way to Postgres and came back as a write failure the
+  // athlete was told was a temporary outage.
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  if (iso) {
+    const day = `${iso[1]}-${iso[2]}-${iso[3]}`;
+    return realDay(day) ? day : null;
+  }
   const dmy = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/);
-  if (dmy) return `${dmy[3]}-${dmy[2]!.padStart(2, "0")}-${dmy[1]!.padStart(2, "0")}`;
+  if (dmy) {
+    const day = `${dmy[3]}-${dmy[2]!.padStart(2, "0")}-${dmy[1]!.padStart(2, "0")}`;
+    return realDay(day) ? day : null;
+  }
   const parsed = new Date(s);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+}
+
+/**
+ * How far back a phone may date a sample it is only now managing to send.
+ * Long enough for a holiday with no signal, short enough that a shortcut with
+ * the wrong date format cannot quietly rewrite a year of history.
+ */
+export const SAMPLE_BACKFILL_DAYS = 90;
+
+/**
+ * One day of slack forward, because a profile whose time zone is wrong or
+ * stale will legitimately send a day that is still tomorrow on the server.
+ */
+export const SAMPLE_FORWARD_DAYS = 1;
+
+/**
+ * Whether a sample may be filed against `day`, given the athlete's own today.
+ *
+ * Out-of-window samples are refused rather than moved: silently filing
+ * someone's reading under a different day makes the history wrong in a way
+ * nothing downstream can detect, and the athlete is never told.
+ */
+export function sampleDateWithinWindow(day: string, athleteToday: string): boolean {
+  if (!realDay(day) || !realDay(athleteToday)) return false;
+  const distance =
+    (Date.parse(`${athleteToday}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / 86_400_000;
+  return distance <= SAMPLE_BACKFILL_DAYS && distance >= -SAMPLE_FORWARD_DAYS;
 }
