@@ -14,6 +14,7 @@ const TXT = {
     deeper: "Giliau",
     asym: "Suvienodink puses",
     hold: "Laikyk kūną tvirtai",
+    noPose: "Nematau tavęs — atsitrauk nuo kameros",
     pause: "Nesustok, dar viena serija tavęs laukia",
     push: ["Dar vienas", "Spausk", "Turim jėgų"],
   },
@@ -26,6 +27,7 @@ const TXT = {
     deeper: "Go deeper",
     asym: "Even out both sides",
     hold: "Keep the body tight",
+    noPose: "I can't see you — step back from the camera",
     pause: "Keep going, you've got more",
     push: ["One more", "Drive", "Strong"],
   },
@@ -41,7 +43,8 @@ export class VoiceCoach {
   private spokenAt = new Map<string, number>();
   private lastSpeech = 0;
   private lastRepAt = 0;
-  private started = 0;
+  /** Null until `reset` runs. Zero is a legitimate start time, not an absence. */
+  private started: number | null = null;
 
   reset(now: number) {
     this.spokenAt.clear();
@@ -95,7 +98,7 @@ export class VoiceCoach {
       if (rep.up > 1.6) {
         candidates.push({ text: T.faster, priority: 8, key: "tempoUp", cooldown: 8000 });
       }
-      if (rep.asymmetry >= 12) {
+      if (rep.asymmetry !== null && rep.asymmetry >= 12) {
         candidates.push({ text: T.asym, priority: 8, key: "asym", cooldown: 9000 });
       }
     } else {
@@ -122,8 +125,16 @@ export class VoiceCoach {
       if (repCount > 0 && idle >= 25000) {
         candidates.push({ text: T.pause, priority: 3, key: "pause", cooldown: 20000 });
       }
-      if (!states.length && now - this.started > 4000) {
-        candidates.push({ text: T.hold, priority: 2, key: "hold", cooldown: 15000 });
+      // An empty evaluation means the camera could not see the joints this
+      // exercise is judged on. It used to be answered with "keep the body
+      // tight" — a technique instruction given about a body nobody was
+      // looking at, and the one line the athlete cannot check against
+      // anything. Say what is actually wrong instead.
+      //
+      // `started` is only meaningful once `reset` has been called; without it
+      // a brand-new coach would speak on its first frame.
+      if (!states.length && this.started !== null && now - this.started > 4000) {
+        candidates.push({ text: T.noPose, priority: 2, key: "noPose", cooldown: 15000 });
       }
     }
 

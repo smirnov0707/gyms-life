@@ -91,4 +91,23 @@ describe("summarizeSet", () => {
   it("reports nothing for a set with no reps", () => {
     expect(summarizeSet([], "en")).toBeNull();
   });
+
+  it("withholds symmetry the camera never had both sides for", () => {
+    // Filming a squat side-on hides the left side entirely. The comparison
+    // was never made, and zero would report the set as symmetrical on the
+    // strength of the camera angle.
+    const summary = summarizeSet(
+      [rep({ asymmetry: null }), rep({ index: 2, asymmetry: null })],
+      "en",
+    );
+    expect(summary?.asymmetry).toBeNull();
+  });
+
+  it("averages symmetry over only the reps that had both sides", () => {
+    const summary = summarizeSet(
+      [rep({ asymmetry: 12 }), rep({ index: 2, asymmetry: null }), rep({ index: 3, asymmetry: 8 })],
+      "en",
+    );
+    expect(summary?.asymmetry).toBe(10);
+  });
 });

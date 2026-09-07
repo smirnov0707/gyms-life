@@ -944,7 +944,8 @@ function ArMode() {
               {summary.fix && <p className="mt-1 text-sm text-accent">→ {summary.fix}</p>}
               <p className="mt-1 text-xs text-muted-foreground">{summary.praise}</p>
               <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <Scale className="size-4 text-primary" /> {TX.symmetry}: {summary.asymmetry}°
+                <Scale className="size-4 text-primary" /> {TX.symmetry}:{" "}
+                {summary.asymmetry === null ? "—" : `${summary.asymmetry}°`}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Input
@@ -992,10 +993,15 @@ function ArMode() {
                     <span
                       className="text-display text-xl"
                       style={{
-                        color: lastRep.asymmetry <= 10 ? "var(--primary)" : "var(--accent)",
+                        color:
+                          lastRep.asymmetry === null
+                            ? "var(--muted-foreground)"
+                            : lastRep.asymmetry <= 10
+                              ? "var(--primary)"
+                              : "var(--accent)",
                       }}
                     >
-                      {lastRep.asymmetry}°
+                      {lastRep.asymmetry === null ? "—" : `${lastRep.asymmetry}°`}
                     </span>
                   </div>
                   {lastRep.fix && <p className="text-sm text-accent">→ {lastRep.fix}</p>}

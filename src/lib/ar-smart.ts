@@ -119,8 +119,16 @@ export type RepRecord = {
   up: number;
   /** peak depth angle reached at the bottom */
   bottomAngle: number;
-  /** left vs right difference in degrees at the bottom (0 = perfect) */
-  asymmetry: number;
+  /**
+   * Left vs right difference in degrees at the bottom, or null when both
+   * sides were never visible at once.
+   *
+   * Zero means the two sides matched. It used to mean that *and* "the camera
+   * only ever saw one side", which is the normal case when filming a squat
+   * side-on — so a rep nobody could compare came back as perfectly
+   * symmetrical.
+   */
+  asymmetry: number | null;
   /** dominant cue during this rep, empty when clean */
   fix: string;
 };
@@ -145,7 +153,8 @@ export class RepAnalyser {
   private okFrames = 0;
   private frames = 0;
   private bottom = 999;
-  private asym = 0;
+  /** Null until a frame showed both sides at once. */
+  private asym: number | null = null;
   private cues = new Map<string, number>();
   reps: RepRecord[] = [];
 
@@ -157,7 +166,7 @@ export class RepAnalyser {
     this.frames = 0;
     this.okFrames = 0;
     this.bottom = 999;
-    this.asym = 0;
+    this.asym = null;
     this.cues.clear();
     this.reps = [];
   }
@@ -216,7 +225,7 @@ export class RepAnalyser {
       this.bottom = angle;
       this.frames = 0;
       this.okFrames = 0;
-      this.asym = 0;
+      this.asym = null;
       this.cues.clear();
       return null;
     }
@@ -227,7 +236,9 @@ export class RepAnalyser {
       const up = Math.max(0.1, (now - this.bottomAt) / 1000);
       const cleanliness = this.frames ? this.okFrames / this.frames : 0;
       const tempoPenalty = down + up < 1 ? 12 : 0;
-      const asymPenalty = Math.min(20, Math.max(0, this.asym - 8));
+      // Nothing measured is nothing to penalise. A rep filmed from one side
+      // is not a symmetrical rep, but it is not a lopsided one either.
+      const asymPenalty = this.asym === null ? 0 : Math.min(20, Math.max(0, this.asym - 8));
       const score = Math.round(
         Math.max(0, Math.min(100, cleanliness * 100 - tempoPenalty - asymPenalty)),
       );
@@ -245,7 +256,7 @@ export class RepAnalyser {
         down: Math.round(down * 10) / 10,
         up: Math.round(up * 10) / 10,
         bottomAngle: Math.round(this.bottom),
-        asymmetry: Math.round(this.asym),
+        asymmetry: this.asym === null ? null : Math.round(this.asym),
         fix: score >= 90 ? "" : fix,
       };
       this.reps.push(rep);
@@ -263,7 +274,8 @@ export type SetSummary = {
   reps: number;
   score: number;
   tempo: string;
-  asymmetry: number;
+  /** Null when not one rep in the set had both sides visible at once. */
+  asymmetry: number | null;
   headline: string;
   fix: string;
   praise: string;
@@ -296,7 +308,11 @@ export function summarizeSet(reps: RepRecord[], lang: Base): SetSummary | null {
   const score = Math.round(mean(reps.map((r) => r.score)));
   const down = mean(reps.map((r) => r.down));
   const up = mean(reps.map((r) => r.up));
-  const asym = Math.round(mean(reps.map((r) => r.asymmetry)));
+  // Only the reps where both sides were actually seen. Averaging an
+  // unmeasured rep in as zero would report a set as symmetrical on the
+  // strength of the camera angle.
+  const asyms = reps.map((r) => r.asymmetry).filter((value): value is number => value !== null);
+  const asym = asyms.length ? Math.round(mean(asyms)) : null;
 
   const counts = new Map<string, number>();
   for (const r of reps) if (r.fix) counts.set(r.fix, (counts.get(r.fix) ?? 0) + 1);
@@ -309,7 +325,7 @@ export function summarizeSet(reps: RepRecord[], lang: Base): SetSummary | null {
     }
   }
   if (!fix && down < 1) fix = T.fast;
-  if (!fix && asym > 10) fix = T.asym;
+  if (!fix && asym !== null && asym > 10) fix = T.asym;
 
   return {
     reps: reps.length,
