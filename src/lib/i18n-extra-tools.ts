@@ -16,6 +16,16 @@ export const extra_tools = {
     lt: "Sinergistai (Pagalbiniai raumenys)",
     en: "Synergists (Assisting muscles)",
   },
+  "tl.mtv.generic": {
+    lt: "Bendra šios raumenų grupės anatomija — konkrečiai šiam pratimui atskiro aprašo dar neturime.",
+    en: "General anatomy for this muscle group — we do not have a separate entry for this exercise yet.",
+    ru: "Общая анатомия для этой мышечной группы — отдельного описания для этого упражнения пока нет.",
+    uk: "Загальна анатомія для цієї м'язової групи — окремого опису для цієї вправи ще немає.",
+    pl: "Ogólna anatomia tej grupy mięśniowej — nie mamy jeszcze osobnego opisu dla tego ćwiczenia.",
+    de: "Allgemeine Anatomie dieser Muskelgruppe — für diese Übung gibt es noch keinen eigenen Eintrag.",
+    es: "Anatomía general de este grupo muscular: todavía no tenemos una entrada propia para este ejercicio.",
+    fr: "Anatomie générale de ce groupe musculaire — nous n'avons pas encore de fiche propre à cet exercice.",
+  },
   "tl.mtv.stabilizersLabel": {
     lt: "Stabilizatoriai & Sąnarių apsauga",
     en: "Stabilizers & Joint protection",

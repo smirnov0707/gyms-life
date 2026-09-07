@@ -2,9 +2,18 @@ export type ExerciseAnatomy = {
   primary: string;
   synergists: string;
   stabilizers: string;
+  /**
+   * Whether this describes the exercise itself or its muscle group generally.
+   *
+   * The two used to render identically, so "what this movement trains" and
+   * "roughly what chest work trains" were indistinguishable — and only 25 of
+   * the catalogue's 175 exercises have an entry of their own, so the generic
+   * answer is the usual one rather than the exception.
+   */
+  scope: "exercise" | "group";
 };
 
-const bySlug: Record<string, ExerciseAnatomy> = {
+const bySlug: Record<string, Omit<ExerciseAnatomy, "scope">> = {
   "bench-dip": {
     primary: "Triceps brachii",
     synergists: "Anterior deltoid, pectoralis major",
@@ -174,19 +183,29 @@ const bySlug: Record<string, ExerciseAnatomy> = {
   },
 };
 
+/**
+ * The anatomy of an exercise, or null when there is none to give.
+ *
+ * Null rather than a placeholder. An unknown movement used to come back as
+ * "Primary target muscles / Supporting muscles / Stabilizers and joint-support
+ * muscles" — three phrases shaped exactly like anatomy and containing none,
+ * rendered under the same headings as a real entry. Twenty-nine of the
+ * catalogue's exercises are cardio, mobility or full-body work, which have no
+ * primary agonist to name in the first place; for them the honest panel is no
+ * panel.
+ */
 export function exerciseAnatomy(
   slug?: string | null,
   muscleGroup?: string | null,
-): ExerciseAnatomy {
+): ExerciseAnatomy | null {
   const key = (slug ?? "").toLowerCase();
 
-  if (bySlug[key]) {
-    return bySlug[key];
-  }
+  const exact = bySlug[key];
+  if (exact) return { ...exact, scope: "exercise" };
 
   const group = (muscleGroup ?? "").toLowerCase();
 
-  const fallback: Record<string, ExerciseAnatomy> = {
+  const fallback: Record<string, Omit<ExerciseAnatomy, "scope">> = {
     chest: {
       primary: "Pectoralis major",
       synergists: "Anterior deltoid, triceps brachii",
@@ -229,11 +248,6 @@ export function exerciseAnatomy(
     },
   };
 
-  return (
-    fallback[group] ?? {
-      primary: "Primary target muscles",
-      synergists: "Supporting muscles",
-      stabilizers: "Stabilizers and joint-support muscles",
-    }
-  );
+  const generic = fallback[group];
+  return generic ? { ...generic, scope: "group" } : null;
 }
