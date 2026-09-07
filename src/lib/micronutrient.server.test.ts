@@ -9,6 +9,7 @@ const snapshot: MicroSnapshot = {
   supplements: [{ name: "Creatine", dose: "5 g", times_per_day: 1 }],
   profile: {
     weight: 78.6,
+    weightSource: "measured" as const,
     height: 181,
     gender: "male",
     goal: "muscle",

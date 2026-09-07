@@ -47,4 +47,49 @@ describe("resolveBodyWeight", () => {
       source: null,
     });
   });
+
+  it("takes a scale reading over a newer guess from a photograph", () => {
+    // The photo scan writes into the same column as the scale panel, and when
+    // the athlete does not supply a weight the number is the vision model's
+    // own. Sizing meals and hydration from that in preference to an actual
+    // weighing three days earlier is the wrong way round.
+    expect(
+      resolveBodyWeight(
+        [
+          { weight_kg: 84, weight_source: "photo_estimate" },
+          { weight_kg: 82, weight_source: "measured" },
+        ],
+        90,
+      ),
+    ).toEqual({ weightKg: 82, source: "measured" });
+  });
+
+  it("uses a photo estimate when that is all there is, and says so", () => {
+    expect(resolveBodyWeight([{ weight_kg: 84, weight_source: "photo_estimate" }], 90)).toEqual({
+      weightKg: 84,
+      source: "photo_estimate",
+    });
+  });
+
+  it("takes the most recent of several photo estimates", () => {
+    expect(
+      resolveBodyWeight(
+        [
+          { weight_kg: 84, weight_source: "photo_estimate" },
+          { weight_kg: 86, weight_source: "photo_estimate" },
+        ],
+        null,
+      ),
+    ).toEqual({ weightKg: 84, source: "photo_estimate" });
+  });
+
+  it("treats a row with no recorded provenance as a weighing", () => {
+    // Every row predates the scan recording its own provenance, and the manual
+    // panel is the older and far more common path. Downgrading them all would
+    // put a warning on numbers people did weigh.
+    expect(resolveBodyWeight([{ weight_kg: 80, weight_source: null }], 90)).toEqual({
+      weightKg: 80,
+      source: "measured",
+    });
+  });
 });

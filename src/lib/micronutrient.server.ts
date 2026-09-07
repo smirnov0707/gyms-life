@@ -25,6 +25,13 @@ export type MicroSnapshot = {
   profile: {
     /** Each is null when it has never been recorded. */
     weight: number | null;
+    /**
+     * Where that weight came from: a scale the athlete read, the photo scan's
+     * guess, or the figure they stated at onboarding. Null when there is no
+     * weight to attribute. Advice here is sized from body mass, so a model's
+     * estimate must not be handed over as a weighing.
+     */
+    weightSource: "measured" | "photo_estimate" | "stated" | null;
     height: number | null;
     gender: string;
     goal: string | null;
@@ -106,7 +113,7 @@ export async function loadMicroSnapshot(
     // is any use — and this analysis reasons from body mass.
     supabase
       .from("body_metrics")
-      .select("weight_kg")
+      .select("weight_kg, weight_source")
       .eq("user_id", userId)
       .order("measured_on", { ascending: false })
       .limit(30),
@@ -141,6 +148,7 @@ export async function loadMicroSnapshot(
   const avg = (list: number[]) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
 
   const profile = prof.data;
+  const bodyWeight = resolveBodyWeight(weights.data ?? [], profile?.weight_kg ?? null);
 
   return {
     days: dayCount,
@@ -168,7 +176,11 @@ export async function loadMicroSnapshot(
       // this task tells the model to use only the data below — handing it a
       // 178 cm athlete chasing muscle gain, when we know neither, made that
       // instruction false before the model ever saw it.
-      weight: resolveBodyWeight(weights.data ?? [], profile?.weight_kg ?? null).weightKg,
+      // The source travels with the number: a weight the photo scan guessed
+      // from an image is not the same evidence as one off a scale, and this
+      // scan's advice is sized from body mass.
+      weight: bodyWeight.weightKg,
+      weightSource: bodyWeight.source,
       height: profile?.height_cm == null ? null : Number(profile.height_cm),
       gender: profile?.gender ?? "unknown",
       goal: profile?.goal ?? null,

@@ -8,6 +8,7 @@ import {
   type HydrationTarget,
 } from "./hydration.schema";
 import { dayBoundsInTimeZone, dayInTimeZone } from "./local-day";
+import { resolveBodyWeight } from "./body-weight.engine";
 
 /**
  * The I/O half of hydration: gathers today's evidence and hands it to the
@@ -32,7 +33,7 @@ export async function loadHydrationTarget(
     // that carries each rather than insisting they share a row.
     supabase
       .from("body_metrics")
-      .select("weight_kg, body_fat, measured_on")
+      .select("weight_kg, body_fat, measured_on, weight_source")
       .eq("user_id", userId)
       .order("measured_on", { ascending: false })
       .limit(30),
@@ -60,15 +61,16 @@ export async function loadHydrationTarget(
   );
 
   const measurements = measured.data ?? [];
-  const latestWeight = measurements.find((row) => row.weight_kg != null)?.weight_kg;
   const latestBodyFat = measurements.find((row) => row.body_fat != null)?.body_fat;
 
-  const bodyWeightKg =
-    latestWeight != null
-      ? Number(latestWeight)
-      : profile.data?.weight_kg != null
-        ? Number(profile.data.weight_kg)
-        : null;
+  // Through the shared resolver rather than inline, which is where this rule
+  // came from originally and where it stopped being kept: a scale reading now
+  // beats a newer weight the photo scan guessed off an image, and only then
+  // does the figure stated at onboarding apply.
+  const { weightKg: bodyWeightKg } = resolveBodyWeight(
+    measurements,
+    profile.data?.weight_kg ?? null,
+  );
 
   // Bounded to what the schema accepts; a stored oddity must not silently
   // become a lean-mass figure the athlete would never recognise.
