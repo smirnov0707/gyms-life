@@ -206,6 +206,22 @@ export function Overview() {
           className={`grid content-start gap-3 lg:col-span-6 ${anim("delay-100")}`}
           aria-label={t("nav.today")}
         >
+          <div className="flex min-h-11 items-center justify-between gap-3 rounded-[1.2rem] border border-[#182846] bg-[#07111d]/70 px-3 py-2">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
+                BODY MAP
+              </p>
+              <p className="mt-0.5 text-[10px] text-slate-500">
+                {t("nav.twin")}
+              </p>
+            </div>
+            <Link
+              to="/body-map"
+              className="inline-flex min-h-10 items-center rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 text-[10px] font-bold uppercase tracking-wider text-violet-100 transition-colors hover:bg-violet-500/20"
+            >
+              Explore body map →
+            </Link>
+          </div>
           <TwinTodayCard />
           <div className="grid gap-3 xl:grid-cols-2">
             <TodayDecision workoutDay={today?.day ?? null} />
