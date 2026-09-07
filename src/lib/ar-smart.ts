@@ -3,6 +3,7 @@ import {
   angleAt,
   AR_EXERCISES,
   evaluateTargets,
+  landmarkVisible,
   type ArExercise,
   type Point,
 } from "./ar-angles";
@@ -21,6 +22,9 @@ const midX = (pose: Point[], a: number, b: number) => ((pose[a]?.x ?? 0) + (pose
 const range = (list: number[]) => (list.length ? Math.max(...list) - Math.min(...list) : 0);
 const mean = (list: number[]) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
 
+/** The frames where the joint could actually be measured. */
+const measured = (list: (number | null)[]) => list.filter((v): v is number => v !== null);
+
 const kneeAngle = (p: Point[], side: "l" | "r") =>
   side === "r"
     ? angleAt(p[LM.rHip]!, p[LM.rKnee]!, p[LM.rAnkle]!)
@@ -36,8 +40,13 @@ const hipAngle = (p: Point[], side: "l" | "r") =>
     ? angleAt(p[LM.rShoulder]!, p[LM.rHip]!, p[LM.rKnee]!)
     : angleAt(p[LM.lShoulder]!, p[LM.lHip]!, p[LM.lKnee]!);
 
+// Visible, not merely present. A landmark the model returns with low
+// confidence is a guess about where a joint might be, and a whole exercise
+// used to be recognised from a frame made of them.
 const complete = (p: Point[]) =>
-  [LM.rShoulder, LM.rHip, LM.rKnee, LM.rAnkle, LM.rElbow, LM.rWrist].every((i) => p[i]);
+  [LM.rShoulder, LM.rHip, LM.rKnee, LM.rAnkle, LM.rElbow, LM.rWrist].every((i) =>
+    landmarkVisible(p[i]),
+  );
 
 /**
  * Guesses which of the tracked exercises the athlete is doing from a short
@@ -57,9 +66,14 @@ export function detectExercise(samples: PoseSample[]): string | null {
   const horizontal = Math.abs(mean(hipX.map((x, i) => x - shoulderX[i]!)));
   const lying = vertical < horizontal * 0.9;
 
-  const knees = poses.map((p) => kneeAngle(p, "r"));
-  const elbows = poses.map((p) => elbowAngle(p, "r"));
-  const hips = poses.map((p) => hipAngle(p, "r"));
+  const knees = measured(poses.map((p) => kneeAngle(p, "r")));
+  const elbows = measured(poses.map((p) => elbowAngle(p, "r")));
+  const hips = measured(poses.map((p) => hipAngle(p, "r")));
+  // Every branch below reads these three series, and `range` and `mean` of an
+  // empty list are both zero — which would quietly satisfy the "everything is
+  // still" test and report a plank. Ambiguous is the honest answer.
+  const enough = poses.length / 2;
+  if (knees.length < enough || elbows.length < enough || hips.length < enough) return null;
   const wristAboveShoulder = mean(
     poses.map((p) => ((p[LM.rWrist]?.y ?? 1) < (p[LM.rShoulder]?.y ?? 0) ? 1 : 0)),
   );
@@ -111,7 +125,7 @@ export type RepRecord = {
   fix: string;
 };
 
-const SYM_JOINTS: Record<string, (p: Point[], s: "l" | "r") => number> = {
+const SYM_JOINTS: Record<string, (p: Point[], s: "l" | "r") => number | null> = {
   squat: kneeAngle,
   lunge: kneeAngle,
   pushup: elbowAngle,
@@ -155,21 +169,42 @@ export class RepAnalyser {
     const a = pose[ri];
     const b = pose[rj];
     const c = pose[rk];
-    if (!a || !b || !c) return null;
+    // Visible, not merely present: the rep phase turns on this angle, so a
+    // landmark the model is guessing at would start and close reps that never
+    // happened.
+    if (!landmarkVisible(a) || !landmarkVisible(b) || !landmarkVisible(c)) return null;
     const angle = angleAt(a, b, c);
+    if (angle === null) return null;
 
     const states = evaluateTargets(pose, ex, lang);
     const bad = states.filter((s) => s.status !== "ok");
     if (this.phase === "down") {
-      this.frames++;
-      if (!bad.length) this.okFrames++;
+      // A frame counts towards cleanliness only when something was actually
+      // measured on it: an empty list of faults must never read as a flawless
+      // frame. Defensive today — every exercise's rep joint is also one of its
+      // form targets, so a frame that got this far has at least one measured
+      // target — but the two lists are defined separately and nothing keeps
+      // them in step.
+      if (states.length) {
+        this.frames++;
+        if (!bad.length) this.okFrames++;
+      }
       for (const s of bad) this.cues.set(s.cue, (this.cues.get(s.cue) ?? 0) + 1);
       if (angle < this.bottom) {
         this.bottom = angle;
         this.bottomAt = now;
         const sym = SYM_JOINTS[ex.slug];
-        if (sym && complete(pose) && pose[LM.lKnee] && pose[LM.lElbow]) {
-          this.asym = Math.abs(sym(pose, "l") - sym(pose, "r"));
+        if (
+          sym &&
+          complete(pose) &&
+          landmarkVisible(pose[LM.lKnee]) &&
+          landmarkVisible(pose[LM.lElbow])
+        ) {
+          const left = sym(pose, "l");
+          const right = sym(pose, "r");
+          // Asymmetry is a claim about both sides. One measurable side is not
+          // half a claim, it is none.
+          if (left !== null && right !== null) this.asym = Math.abs(left - right);
         }
       }
     }

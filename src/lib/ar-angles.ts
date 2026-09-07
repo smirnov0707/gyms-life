@@ -31,15 +31,45 @@ export const SKELETON: [number, number][] = [
   [26, 28],
 ];
 
-/** Angle in degrees at point b formed by a-b-c. */
-export function angleAt(a: Point, b: Point, c: Point): number {
+/**
+ * Below this, the pose model is not confident the joint is where it says it
+ * is. The same floor `ar-calibration` already uses to decide a frame is not
+ * worth trusting.
+ */
+export const LANDMARK_VISIBILITY_FLOOR = 0.5;
+
+/**
+ * What a landmark is taken to be worth when it reports no visibility at all.
+ *
+ * Present and unscored is not the same as scored low, and a source that does
+ * not report confidence should not have its readings thrown away — the same
+ * choice `ar-calibration` makes.
+ */
+const ASSUMED_VISIBILITY = 0.9;
+
+/** Whether a landmark can be measured from, rather than merely being present. */
+export function landmarkVisible(point: Point | undefined): point is Point {
+  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
+  return (point.visibility ?? ASSUMED_VISIBILITY) >= LANDMARK_VISIBILITY_FLOOR;
+}
+
+/**
+ * Angle in degrees at point b formed by a-b-c, or null when there is no angle
+ * to measure.
+ *
+ * Null rather than zero. Zero degrees is a real reading — a fully folded joint
+ * — so returning it for a degenerate triangle turned a failed measurement into
+ * the most extreme possible one, and the caller then told the athlete their
+ * knee was too deep.
+ */
+export function angleAt(a: Point, b: Point, c: Point): number | null {
   const abx = a.x - b.x;
   const aby = a.y - b.y;
   const cbx = c.x - b.x;
   const cby = c.y - b.y;
   const dot = abx * cbx + aby * cby;
   const mag = Math.hypot(abx, aby) * Math.hypot(cbx, cby);
-  if (!mag) return 0;
+  if (!Number.isFinite(mag) || mag === 0) return null;
   return (Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180) / Math.PI;
 }
 
@@ -226,19 +256,36 @@ export type TargetState = {
   vertex: Point;
 };
 
+/**
+ * The targets that could actually be measured on this frame.
+ *
+ * A target whose landmarks are missing, off-frame or below the visibility
+ * floor is left out rather than given an angle. It used to assert the three
+ * landmarks with `!`, which is a crash when the model returns a shorter array
+ * and a fabricated angle when it returns a landmark it cannot see — and that
+ * angle became a correction shouted at the athlete about a joint the camera
+ * never had.
+ *
+ * Callers must treat an absent target as unmeasured, not as correct: an empty
+ * result means nothing was seen, never that the form was good.
+ */
 export function evaluateTargets(
   landmarks: Point[],
   exercise: ArExercise,
   lang: "lt" | "en",
 ): TargetState[] {
-  return exercise.targets.map((target) => {
+  const states: TargetState[] = [];
+  for (const target of exercise.targets) {
     const [ai, bi, ci] = target.joints;
-    const a = landmarks[ai]!;
-    const b = landmarks[bi]!;
-    const c = landmarks[ci]!;
-    const angle = Math.round(angleAt(a, b, c));
+    const a = landmarks[ai];
+    const b = landmarks[bi];
+    const c = landmarks[ci];
+    if (!landmarkVisible(a) || !landmarkVisible(b) || !landmarkVisible(c)) continue;
+    const measured = angleAt(a, b, c);
+    if (measured === null) continue;
+    const angle = Math.round(measured);
     const status = angle < target.min ? "low" : angle > target.max ? "high" : "ok";
-    return {
+    states.push({
       id: target.id,
       label: target.label[lang],
       angle,
@@ -247,6 +294,7 @@ export function evaluateTargets(
       status,
       cue: status === "low" ? target.low[lang] : status === "high" ? target.high[lang] : "",
       vertex: b,
-    };
-  });
+    });
+  }
+  return states;
 }

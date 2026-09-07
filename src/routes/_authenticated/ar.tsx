@@ -649,7 +649,13 @@ function ArMode() {
   };
 
   const exercise = AR_EXERCISES.find((e) => e.slug === slug)!;
-  const cue = states.find((s) => s.status !== "ok")?.cue ?? t("ar.formOk");
+  // No measured target is not a clean rep. `evaluateTargets` returns nothing
+  // for joints the camera could not see, and "form looks good" there is a
+  // verdict on something nobody looked at.
+  const nothingMeasured = states.length === 0;
+  const cue = nothingMeasured
+    ? t("ar.noPose")
+    : (states.find((s) => s.status !== "ok")?.cue ?? t("ar.formOk"));
 
   return (
     <div className="grid gap-6">
@@ -818,9 +824,11 @@ function ArMode() {
               <div
                 className={cn(
                   "absolute bottom-3 left-3 max-w-[60%] rounded-xl px-4 py-2 text-sm font-bold backdrop-blur",
-                  states.some((s) => s.status !== "ok")
-                    ? "bg-destructive/85 text-foreground"
-                    : "bg-primary/85 text-primary-foreground",
+                  nothingMeasured
+                    ? "bg-surface-2/90 text-muted-foreground"
+                    : states.some((s) => s.status !== "ok")
+                      ? "bg-destructive/85 text-foreground"
+                      : "bg-primary/85 text-primary-foreground",
                 )}
               >
                 {cue}
