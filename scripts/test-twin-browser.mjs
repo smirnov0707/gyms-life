@@ -109,11 +109,14 @@ try {
   await preset(page, "Reset view");
   await canvas.scrollIntoViewIfNeeded();
   const box = await canvas.boundingBox();
-  // A point on the pectoral, right of the sternum: the chest band of the human
-  // figure runs from roughly 8% to 19% of the canvas height above centre, so
-  // this sits in the middle of it rather than on its edge.
+  // A point on the pectoral, right of the sternum. The chest is cut along the
+  // muscle rather than along the spine's bone segments, so at this column it
+  // runs from roughly 12% to 19% of the canvas height above centre — the old
+  // band reached down to 8%, which was upper abdomen. This sits in the middle
+  // of the pec rather than on either edge, and clear of the sternum groove,
+  // which is only a few pixels wide.
   const x = box.x + box.width / 2 + 22;
-  const y = box.y + box.height / 2 - box.height * 0.12;
+  const y = box.y + box.height / 2 - box.height * 0.155;
   await page.mouse.click(x, y);
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   const beforeDrag = Number(await canvas.getAttribute("data-twin-yaw"));
@@ -139,7 +142,9 @@ try {
   const female = await canvas.boundingBox();
   await page.mouse.click(
     female.x + female.width / 2 + 22,
-    female.y + female.height / 2 - female.height * 0.12,
+    // Same pectoral height as the male figure above: the cut is relative to
+    // each figure's own torso, so the muscle lands in the same place on both.
+    female.y + female.height / 2 - female.height * 0.155,
   );
   await expect(page.getByRole("heading", { name: "Chest", exact: true })).toBeVisible();
   await page.screenshot({ path: path.join(artifacts, "desktop-female.png"), fullPage: true });
