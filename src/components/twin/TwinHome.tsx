@@ -236,6 +236,7 @@ export function TwinHome() {
 
         <div className="min-w-0 self-center px-1 sm:px-3">
           <TwinStage
+            fill
             snapshot={snapshot}
             layer={shownLayer}
             onLayerChange={setLayer}

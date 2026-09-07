@@ -249,7 +249,10 @@ export const TWIN_CAMERA = {
   minPitch: Math.PI * 0.37,
   maxPitch: Math.PI * 0.58,
   defaultPitch: Math.PI * 0.48,
-  minDistanceRatio: 0.58,
+  // Close enough to fill the frame with one muscle. This was 0.58, which is a
+  // magnification of about 1.35x — the athlete could never get near enough to
+  // look at a pectoral, only at a slightly larger whole body.
+  minDistanceRatio: 0.22,
   maxDistanceRatio: 1.35,
   step: Math.PI / 8,
 } as const;

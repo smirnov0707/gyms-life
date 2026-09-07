@@ -21,7 +21,7 @@
  * this script, so the credit cannot drift away from the file it describes.
  */
 import { Document, NodeIO, PropertyType } from "@gltf-transform/core";
-import { dedup, prune, weld } from "@gltf-transform/functions";
+import { dedup, prune, quantize, weld } from "@gltf-transform/functions";
 import { MeshoptSimplifier } from "meshoptimizer";
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -56,7 +56,10 @@ const SOURCE = {
  * silhouette only has to read as a body.
  */
 const SKIN_TRIANGLES = 26_000;
-const MUSCLE_TRIANGLES = 90_000;
+// Shared out in proportion to the surface each region covers in the source,
+// which is why this is lower than it looks: the forearm alone is 24 finely
+// modelled muscles and takes a large share of whatever it is given.
+const MUSCLE_TRIANGLES = 62_000;
 
 /** Metres of stature to scale the atlas to, so the figure matches the app's. */
 const TARGET_HEIGHT_M = 1.7;
@@ -353,7 +356,14 @@ for (const primitive of mesh.listPrimitives()) {
 
 // Prune last: replacing an attribute leaves the accessor it replaced behind,
 // and those orphans were most of the file — 17 MB for 140k triangles.
-await document.transform(dedup({ propertyTypes: DEDUP_TYPES }), prune());
+await document.transform(
+  dedup({ propertyTypes: DEDUP_TYPES }),
+  prune(),
+  // Positions and normals to fixed point. Three reads KHR_mesh_quantization
+  // natively, so this costs the browser no decoder — unlike meshopt or Draco,
+  // which would each add one to the page for the same kind of saving.
+  quantize({ quantizePosition: 14, quantizeNormal: 10 }),
+);
 
 mkdirSync(dirname(OUT), { recursive: true });
 await new NodeIO().write(OUT, document);

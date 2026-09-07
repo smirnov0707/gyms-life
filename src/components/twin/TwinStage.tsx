@@ -19,6 +19,8 @@ export type TwinStageProps = {
    * so rather than showing every region as untrained.
    */
   session?: { byRegion: Readonly<Record<string, readonly unknown[]>> } | null;
+  /** Let the figure take the whole height its container offers. */
+  fill?: boolean;
 };
 /** Canonical Twin projection. Session replay never needs to manufacture a TwinSnapshot. */
 /**

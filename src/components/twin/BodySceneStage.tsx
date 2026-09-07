@@ -29,6 +29,15 @@ export type BodySceneStageProps = {
   formatRegion: (region: TwinSceneRegion) => string;
   extraNote?: string;
   /**
+   * Let the scene take the whole height its container gives it.
+   *
+   * The canvas was capped at 540px on every large screen, so on a full-height
+   * layout the figure sat in the middle of a wide, short letterbox with half
+   * the page empty around it — a small figure on a big screen, which is the
+   * opposite of what this screen is for.
+   */
+  fill?: boolean;
+  /**
    * Attribution the figure's licence requires, shown verbatim under the scene.
    * Not translated: the licence asks for this exact sentence.
    */
@@ -95,6 +104,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
     language,
     layerControls,
     credit,
+    fill = false,
     unitLabel,
     formatValue,
     formatRegion,
@@ -238,7 +248,11 @@ export function BodySceneStage(props: BodySceneStageProps) {
       </div>
       <div
         data-twin-viewport
-        className="relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
+        className={
+          fill
+            ? "relative h-full min-h-[clamp(320px,70svh,900px)] w-full"
+            : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
+        }
       >
         {mode === "3d" && (
           <div

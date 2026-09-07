@@ -32,7 +32,10 @@ const REGION_PATTERNS = [
   ],
   [
     "arms",
-    /^(right |left )?(.*head of )?(right |left )?(biceps brachii|triceps brachii|brachialis|brachioradialis|coracobrachialis|anconeus|pronator teres)$/i,
+    // Upper arm and forearm alike. Without the forearm group the arms ended
+    // at the elbow and the rest was bare silhouette, which on a screen about
+    // training is half an arm.
+    /^(right |left )?(.*head of )?(right |left )?(biceps brachii|triceps brachii|brachialis|brachioradialis|coracobrachialis|anconeus|pronator (teres|quadratus)|supinator|palmaris longus|(extensor|flexor) carpi (radialis|ulnaris)( longus| brevis)?|(extensor|flexor) digitorum( superficialis| profundus| longus| brevis)?|extensor (digiti minimi|indicis)|(extensor|flexor) pollicis (longus|brevis)|abductor pollicis longus)$/i,
   ],
   // The atlas has no separate rectus abdominis: the front of the abdomen is
   // one mesh, carrying the names "muscle of anterior abdominal wall" and

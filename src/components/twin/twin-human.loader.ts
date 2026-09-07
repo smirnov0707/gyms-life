@@ -33,7 +33,16 @@ const GARMENT_MATERIAL_PREFIX = "twin-";
  * The body has to stay readable as a body where nothing is lit, so the colour
  * carries and the metalness is low enough not to swallow the fill light.
  */
-const BODY = { color: 0x3a4a5e, roughness: 0.58, metalness: 0.06 };
+/**
+ * An unlit muscle is still anatomy worth seeing.
+ *
+ * Every muscle sits behind the glass skin, which takes most of its light, so a
+ * muscle carrying no reading has to start bright enough to read as a muscle
+ * through it. This says nothing about the athlete: it is the figure being
+ * visible, not a state being reported. What a reading looks like is the data
+ * colour laid over this, and nothing the app does not know ever gets one.
+ */
+const BODY = { color: 0x5b7290, roughness: 0.52, metalness: 0.04 };
 const FABRIC = { color: 0x1a212b, roughness: 0.9, metalness: 0.04 };
 
 /**
