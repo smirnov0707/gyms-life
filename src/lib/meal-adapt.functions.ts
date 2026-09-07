@@ -40,7 +40,7 @@ export const adaptMealPlan = createServerFn({ method: "POST" })
     }
 
     const since = new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10);
-    const [{ data: profile }, { data: logs }, { data: metrics }] = await Promise.all([
+    const [profileRes, logsRes, metricsRes] = await Promise.all([
       supabase
         .from("profiles")
         .select("weight_kg, target_weight_kg, goal, days_per_week, meals_per_day")
@@ -60,6 +60,16 @@ export const adaptMealPlan = createServerFn({ method: "POST" })
         .order("measured_on", { ascending: false })
         .limit(5),
     ]);
+
+    // Adapting a meal plan means changing what the athlete is told to eat. A
+    // failed read used to arrive as "no profile, no logs, no measurements",
+    // which the adaptation reads as an athlete who has eaten nothing and
+    // weighs nothing — and it would rewrite their targets on that basis.
+    const readFailure = profileRes.error ?? logsRes.error ?? metricsRes.error;
+    if (readFailure) throw new Error(readFailure.message);
+    const profile = profileRes.data;
+    const logs = logsRes.data;
+    const metrics = metricsRes.data;
 
     const plan = GeneratedMealPlanSchema.safeParse(row.data);
     if (!plan.success) {

@@ -170,7 +170,7 @@ RETURN EXACTLY THIS JSON SHAPE:
       .flatMap((action) => (isBriefRoute(action.route) ? [{ ...action, route: action.route }] : []))
       .slice(0, 4);
 
-    const [{ data: recentWorkouts }, { data: latestCheckin }] = await Promise.all([
+    const [workoutsRes, checkinRes] = await Promise.all([
       supabase
         .from("workout_sessions")
         .select("started_at")
@@ -187,15 +187,25 @@ RETURN EXACTLY THIS JSON SHAPE:
         .maybeSingle(),
     ]);
     const today = dayInTimeZone(new Date(), timeZone);
-    const workoutDates = (recentWorkouts ?? []).map((workout) => workout.started_at);
+    // A gap is a claim that something is missing from the athlete's record. A
+    // failed read cannot support that claim: it used to, and the brief would
+    // tell someone who had just checked in to check in, and someone who had
+    // trained yesterday that they had not trained in a week.
+    const latestCheckin = checkinRes.error ? null : checkinRes.data;
+    const workoutDates = (workoutsRes.error ? [] : (workoutsRes.data ?? [])).map(
+      (workout) => workout.started_at,
+    );
     const gaps = [
-      ...(latestCheckin?.checkin_on === today ? [] : ["daily_readiness_checkin"]),
+      ...(checkinRes.error || latestCheckin?.checkin_on === today
+        ? []
+        : ["daily_readiness_checkin"]),
       ...(snapshot.currentDay.nutrition.available &&
       snapshot.currentDay.nutrition.calories !== null &&
       snapshot.currentDay.nutrition.calories > 0
         ? []
         : ["nutrition_logged_today"]),
-      ...(workoutDates.some((date) => Date.now() - new Date(date).getTime() <= 7 * 86_400_000)
+      ...(workoutsRes.error ||
+      workoutDates.some((date) => Date.now() - new Date(date).getTime() <= 7 * 86_400_000)
         ? []
         : ["workout_last_7_days"]),
     ];

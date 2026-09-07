@@ -56,7 +56,7 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
 
     const since = new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString();
 
-    const [{ data: supps }, { data: sessions }, { data: checkins }] = await Promise.all([
+    const [suppsRes, sessionsRes, checkinsRes] = await Promise.all([
       supabase
         .from("supplements")
         .select(
@@ -79,6 +79,22 @@ export const analyzeSupplementCycles = createServerFn({ method: "POST" })
         .order("checkin_on", { ascending: false })
         .limit(40),
     ]);
+
+    // The list is the subject of the analysis. A failed read used to arrive as
+    // an empty array and return `empty: true`, which tells an athlete who takes
+    // six supplements that they take none.
+    if (suppsRes.error) throw new Error(suppsRes.error.message);
+    const supps = suppsRes.data;
+
+    // Training and recovery are context, not the subject: if they could not be
+    // read the plan is still worth producing, as long as the model is not told
+    // the athlete trained zero times and slept zero hours.
+    const contextUnreadable = [
+      ...(sessionsRes.error ? ["training sessions"] : []),
+      ...(checkinsRes.error ? ["daily check-ins"] : []),
+    ];
+    const sessions = sessionsRes.error ? [] : sessionsRes.data;
+    const checkins = checkinsRes.error ? [] : checkinsRes.data;
 
     const active = (supps ?? []).filter((s) => s.is_active);
     if (active.length === 0) {
@@ -116,8 +132,8 @@ reason = max 2 short sentences, specific to that substance (tolerance, receptor 
 progress = 2-4 short bullet observations tying training volume, readiness and the supplement stack together.
 summary = 2 sentences of overall guidance.`,
       prompt: `Active supplements: ${JSON.stringify(active)}
-Recent workout sessions: ${JSON.stringify(sessions ?? [])}
-Recent daily check-ins: ${JSON.stringify(checkins ?? [])}`,
+${contextUnreadable.length ? `SOURCES UNAVAILABLE: ${contextUnreadable.join(", ")}. These are missing, not empty — do not read them as no training or no recovery data, and do not cite them.\n` : ""}Recent workout sessions: ${sessionsRes.error ? "SOURCE COULD NOT BE READ" : JSON.stringify(sessions ?? [])}
+Recent daily check-ins: ${checkinsRes.error ? "SOURCE COULD NOT BE READ" : JSON.stringify(checkins ?? [])}`,
       schema: AdviceSchema,
       maxOutputTokens: 4000,
     });

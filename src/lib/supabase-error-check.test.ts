@@ -55,6 +55,30 @@ function walk(dir: string): string[] {
  */
 const discardsError = () => /const \{ data(?::\s*\w+)? \} = await supabase/g;
 
+/**
+ * The same defect wearing a different shape:
+ *
+ *     const [{ data: a }, { data: b }] = await Promise.all([...])
+ *
+ * The single-read rule above never saw these, and all three that existed fed
+ * a prompt: the daily brief told an athlete who had just checked in to check
+ * in, the supplement planner told someone taking six supplements that they
+ * took none, and the meal adapter rewrote calorie targets for a body it
+ * believed had eaten nothing. A destructuring pattern that binds `data`
+ * without binding `error` is the tell.
+ */
+const batchDiscardsError = () => /const \[([\s\S]*?)\] = await Promise\.all\(/g;
+
+function batchOffenders(source: string): number[] {
+  const lines: number[] = [];
+  for (const match of source.matchAll(batchDiscardsError())) {
+    const pattern = match[1] ?? "";
+    if (!/\bdata\b/.test(pattern) || /\berror\b/.test(pattern)) continue;
+    lines.push(source.slice(0, match.index).split("\n").length);
+  }
+  return lines;
+}
+
 describe("Supabase reads", () => {
   it("never discards the error", () => {
     const offenders: string[] = [];
@@ -65,6 +89,9 @@ describe("Supabase reads", () => {
       const source = readFileSync(file, "utf8");
       for (const match of source.matchAll(discardsError())) {
         const line = source.slice(0, match.index).split("\n").length;
+        offenders.push(`${relative}:${line}`);
+      }
+      for (const line of batchOffenders(source)) {
         offenders.push(`${relative}:${line}`);
       }
     }
