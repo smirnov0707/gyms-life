@@ -13,15 +13,27 @@ export type TwinStageProps = {
   onViewChange: (view: BodyView) => void;
   regionLabel: (region: string) => string;
   language: "lt" | "en";
+  /**
+   * Today's session, grouped by region. Only the `todays_session` layer reads
+   * it; null there means the programme could not be read, and the figure says
+   * so rather than showing every region as untrained.
+   */
+  session?: { byRegion: Readonly<Record<string, readonly unknown[]>> } | null;
 };
 /** Canonical Twin projection. Session replay never needs to manufacture a TwinSnapshot. */
-export function TwinStage({ snapshot, layer, onLayerChange, ...props }: TwinStageProps) {
+export function TwinStage({
+  snapshot,
+  layer,
+  onLayerChange,
+  session = null,
+  ...props
+}: TwinStageProps) {
   const copy = twinLayerCopy(props.language);
   return (
     <BodySceneStage
       {...props}
       bodyVariant={snapshot.bodyVariant}
-      state={mapTwinScene(snapshot, layer)}
+      state={mapTwinScene(snapshot, layer, session)}
       unitLabel={copy.unit[layer]}
       formatValue={(value) => formatTwinValue(value, layer, props.language)}
       formatRegion={(region) =>
@@ -29,12 +41,18 @@ export function TwinStage({ snapshot, layer, onLayerChange, ...props }: TwinStag
           ? copy.band[region.display.tone]
           : formatTwinValue(region.display.value, layer, props.language)
       }
-      {...(layer === "logged_volume" ? { extraNote: copy.volumeNote } : {})}
+      {...(layer === "logged_volume"
+        ? { extraNote: copy.volumeNote }
+        : layer === "todays_session"
+          ? { extraNote: copy.sessionNote }
+          : {})}
       layerControls={
         <div
           role="group"
           aria-label={copy.selector}
-          className="mx-3 mb-2 grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1"
+          // One column per layer, so a third option does not wrap on to a row of
+          // its own and leave the selector twice as tall as it needs to be.
+          className="mx-3 mb-2 grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1"
         >
           {TWIN_LAYERS.map((option) => (
             <button

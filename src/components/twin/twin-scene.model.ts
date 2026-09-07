@@ -17,10 +17,22 @@ export type TwinBodyRegion = (typeof TWIN_BODY_REGIONS)[number];
 export const isTwinBodyRegion = (value: string): value is TwinBodyRegion =>
   TWIN_BODY_REGIONS.some((region) => region === value);
 
-export const TWIN_LAYERS = ["recovery", "logged_volume"] as const;
+/**
+ * The three questions the figure can answer, each from its own source and
+ * never at the same time. Recovery and logged volume come from the athlete's
+ * own sets; today's session is read off the programme. One colour cannot say
+ * "fatigued" and "on today's list" at once — a region is regularly one and
+ * not the other — so they are layers rather than a single painting.
+ */
+export const TWIN_LAYERS = ["recovery", "logged_volume", "todays_session"] as const;
 export type TwinLayer = (typeof TWIN_LAYERS)[number];
 export type TwinDisplayTone =
-  TwinRegionRecoveryBand | "volume_low" | "volume_medium" | "volume_high";
+  | TwinRegionRecoveryBand
+  | "volume_low"
+  | "volume_medium"
+  | "volume_high"
+  | "in_session"
+  | "not_in_session";
 export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
   fresh: "#438c7a",
   moderate: "#a58b55",
@@ -29,6 +41,10 @@ export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
   volume_low: "#49657c",
   volume_medium: "#659fc3",
   volume_high: "#9bd4ee",
+  // The app's own action colour: this layer is not a measurement, it is the
+  // list of what to do. Everything not on it recedes rather than competing.
+  in_session: "#c6f24e",
+  not_in_session: "#3f484f",
 };
 
 /**
@@ -52,6 +68,10 @@ export const TWIN_TONE_GLOW: Record<TwinDisplayTone, number> = {
   volume_low: 0,
   volume_medium: 0,
   volume_high: 0.012,
+  // The one layer where lighting a region up is the whole point: it is
+  // pointing at what to train, not reporting a value to read off.
+  in_session: 0.014,
+  not_in_session: 0,
 };
 
 /** Added on top for the region the athlete has selected, whatever its state. */
@@ -63,6 +83,8 @@ export function twinDisplayToneFor2D(tone: TwinDisplayTone) {
   if (tone === "moderate") return "warm";
   if (tone === "fatigued") return "hot";
   if (tone === "unknown") return "muted";
+  if (tone === "in_session") return "cool";
+  if (tone === "not_in_session") return "muted";
   return tone;
 }
 
@@ -91,6 +113,8 @@ export function getTwinRegionDisplay(
       ? { value: source.recoveryPct, tone: source.recoveryBand }
       : unknown;
   }
+  // `todays_session` falls out here too, and must: its evidence is the
+  // programme, which this function has never been given.
   if (
     layer !== "logged_volume" ||
     source.volumeKg === null ||
@@ -128,10 +152,30 @@ export type TwinSceneState = {
   regions: TwinSceneRegion[];
 };
 
+/**
+ * What today's session asks of a region, as a display the figure can wear.
+ *
+ * Deliberately separate from `getTwinRegionDisplay`, which reads the snapshot
+ * and only the snapshot. This layer's evidence is the programme, and no
+ * amount of recovery data can answer it — so a figure asked for this layer
+ * without it says "unknown" rather than painting every region as untrained.
+ */
+export function twinSessionDisplay(
+  session: { byRegion: Readonly<Record<string, readonly unknown[]>> } | null,
+  region: string,
+): TwinRegionDisplay {
+  if (!session) return { value: null, tone: "unknown" };
+  const work = session.byRegion[region];
+  if (!work) return { value: null, tone: "not_in_session" };
+  return { value: work.length, tone: "in_session" };
+}
+
 /** No new physiological calculation: both values come from the canonical snapshot. */
 export function mapTwinScene(
   snapshot: TwinSnapshot,
   layer: TwinLayer = "recovery",
+  /** Required by the `todays_session` layer; ignored by the other two. */
+  session: { byRegion: Readonly<Record<string, readonly unknown[]>> } | null = null,
 ): TwinSceneState {
   const visual = mapTwinSnapshotToVisualState(snapshot);
   return {
@@ -150,7 +194,10 @@ export function mapTwinScene(
           recovery.value !== null
             ? (visual.regions.find((region) => region.region === id)?.emphasis ?? 0)
             : 0,
-        display: getTwinRegionDisplay(snapshot, id, layer),
+        display:
+          layer === "todays_session"
+            ? twinSessionDisplay(session, id)
+            : getTwinRegionDisplay(snapshot, id, layer),
       };
     }),
   };

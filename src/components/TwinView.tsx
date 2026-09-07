@@ -258,7 +258,11 @@ function RegionReadout({
       </button>
       <div id={detailsId} hidden={!expanded} className="border-t border-white/10 pt-3">
         <p className="text-xs leading-relaxed text-neutral-300">
-          {layer === "recovery" ? `${copy.estimateNote} ${copy.sourceNote}` : layerCopy.volumeNote}
+          {layer === "recovery"
+            ? `${copy.estimateNote} ${copy.sourceNote}`
+            : layer === "todays_session"
+              ? layerCopy.sessionNote
+              : layerCopy.volumeNote}
         </p>
         {!isAnatomicalRegion(region.region) && (
           <p className="mt-2 text-xs leading-relaxed text-neutral-300">{copy.otherTrainingNote}</p>
@@ -389,7 +393,11 @@ export function TwinSnapshotView({
             />
             <div className="mt-4 hidden lg:block">
               <p className="text-xs font-medium text-neutral-400">
-                {layer === "recovery" ? copy.ranking : layerCopy.ranking}
+                {layer === "recovery"
+                  ? copy.ranking
+                  : layer === "todays_session"
+                    ? layerCopy.sessionRanking
+                    : layerCopy.ranking}
               </p>
               {ranked.slice(0, 4).map((region) => (
                 <button
@@ -427,7 +435,13 @@ export function TwinSnapshotView({
           />
         </summary>
         <div className="space-y-4 border-t border-border p-4 text-sm text-muted-foreground">
-          <p>{layer === "recovery" ? copy.description : layerCopy.volumeDescription}</p>
+          <p>
+            {layer === "recovery"
+              ? copy.description
+              : layer === "todays_session"
+                ? layerCopy.sessionDescription
+                : layerCopy.volumeDescription}
+          </p>
           <p>{copy.evidenceWindow(data.evidenceWindowDays)}</p>
           <dl className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
             <div>
@@ -452,12 +466,18 @@ export function TwinSnapshotView({
             </div>
           </dl>
           <p className="text-xs font-medium">
-            {layer === "recovery" ? copy.legend : layerCopy.volumeLegend}
+            {layer === "recovery"
+              ? copy.legend
+              : layer === "todays_session"
+                ? layerCopy.sessionLegend
+                : layerCopy.volumeLegend}
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
             {(layer === "recovery"
               ? (["fresh", "moderate", "fatigued", "unknown"] as const)
-              : (["volume_low", "volume_medium", "volume_high", "unknown"] as const)
+              : layer === "todays_session"
+                ? (["in_session", "not_in_session", "unknown"] as const)
+                : (["volume_low", "volume_medium", "volume_high", "unknown"] as const)
             ).map((band) => (
               <span key={band} className="flex items-center gap-2">
                 <span

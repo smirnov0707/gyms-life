@@ -9,7 +9,7 @@ import { getTwinSnapshot } from "@/lib/digital-twin.functions";
 import { getTodaysTargets } from "@/lib/todays-targets.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { targetsRegion, type TodaysTargets } from "@/lib/todays-targets.engine";
-import { TWIN_DISPLAY_COLORS } from "@/components/twin/twin-scene.model";
+import { TWIN_DISPLAY_COLORS, type TwinLayer } from "@/components/twin/twin-scene.model";
 import { TwinStage } from "@/components/twin/TwinStage";
 import { twinCopyFor } from "@/components/TwinView";
 import {
@@ -163,7 +163,11 @@ export function TwinHome() {
     staleTime: 60_000,
   });
 
-  const [layer, setLayer] = useState<"recovery" | "logged_volume">("recovery");
+  // Opens on today's session where there is one: the first question this
+  // screen answers is "what am I training", and recovery is one tap away.
+  // Falls back to recovery on a rest day or an unread programme, because a
+  // session layer with no session to show is an empty answer.
+  const [layer, setLayer] = useState<TwinLayer | null>(null);
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -171,6 +175,9 @@ export function TwinHome() {
   const targets: TodaysTargets | undefined = targetsQuery.isError
     ? { status: "unreadable" }
     : targetsQuery.data;
+
+  const hasSession = targets?.status === "session";
+  const shownLayer: TwinLayer = layer ?? (hasSession ? "todays_session" : "recovery");
 
   const selectRegion = (region: string) => {
     setSelected(region);
@@ -228,10 +235,11 @@ export function TwinHome() {
         <div className="min-w-0 self-center px-1 sm:px-3">
           <TwinStage
             snapshot={snapshot}
-            layer={layer}
-            onLayerChange={(next) =>
-              setLayer(next === "logged_volume" ? "logged_volume" : "recovery")
-            }
+            layer={shownLayer}
+            onLayerChange={setLayer}
+            // Null when the programme could not be read, so the session layer
+            // shows every region as unknown rather than as untrained.
+            session={targets?.status === "session" ? targets : null}
             selectedRegion={selected}
             onSelectRegion={selectRegion}
             view={view}

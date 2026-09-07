@@ -642,7 +642,23 @@ try {
   await homeStage.getByRole("button", { name: /Back/ }).first().click();
   await expect(homeStage.getByText("Not trained today")).toBeVisible();
 
+  // The figure itself carries today's session as its own layer, opened by
+  // default when there is one, with its own legend — never mixed into the
+  // recovery colour, which a region can contradict.
+  await expect(homeStage.getByRole("button", { name: "Today's session" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(homeStage.getByText("exercises · from your programme")).toBeVisible();
   await home.page.screenshot({ path: path.join(artifacts, "twin-home.png"), fullPage: true });
+
+  // And recovery is one tap away, still meaning only recovery.
+  await homeStage.getByRole("button", { name: "Recovery", exact: true }).click();
+  await expect(homeStage.getByText("% · calculated")).toBeVisible();
+  await home.page.screenshot({
+    path: path.join(artifacts, "twin-home-recovery.png"),
+    fullPage: true,
+  });
   expect(home.errors).toEqual([]);
   await home.page.close();
 
@@ -656,6 +672,12 @@ try {
 
   const rest = await openPanel("?panel=home&twin=regions&targets=rest");
   await expect(rest.page.getByText("has no session today")).toBeVisible({ timeout: 30000 });
+  // A session layer with no session is an empty answer, so a rest day opens
+  // on recovery instead.
+  await expect(rest.page.getByRole("button", { name: "Recovery", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await rest.page.close();
   record("the Twin screen carries today's session and today's fatigue without blurring them");
 
