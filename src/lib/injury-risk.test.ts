@@ -108,4 +108,52 @@ describe("unassessed signals", () => {
       expect(report.unassessed).not.toContain(factor.key);
     }
   });
+
+  it("keeps it open when check-ins exist but carry neither soreness nor readiness", () => {
+    // A row is not an answer. A watch sync writes a check-in for the sleep
+    // alone, and readiness is withheld whenever too little of it was
+    // measured. Averaging those absent values as zero reported "0.0 / 5" at a
+    // green level — the safest possible soreness, from nothing.
+    const report = buildRiskReport(
+      [],
+      [],
+      [
+        {
+          checkin_on: new Date(NOW - 2 * DAY).toISOString(),
+          soreness: null,
+          readiness_score: null,
+        },
+        {
+          checkin_on: new Date(NOW - 1 * DAY).toISOString(),
+          soreness: null,
+          readiness_score: null,
+        },
+      ],
+      NOW,
+    );
+
+    expect(report.unassessed).toContain("nx.risk.readiness");
+    expect(report.factors.some((factor) => factor.key === "nx.risk.readiness")).toBe(false);
+  });
+
+  it("assesses the term on soreness alone when readiness was withheld", () => {
+    // The half that was answered still counts. Only the missing half is
+    // withheld, not the whole factor.
+    const report = buildRiskReport(
+      [],
+      [],
+      [
+        { checkin_on: new Date(NOW - 2 * DAY).toISOString(), soreness: 5, readiness_score: null },
+        { checkin_on: new Date(NOW - 1 * DAY).toISOString(), soreness: 4, readiness_score: null },
+      ],
+      NOW,
+    );
+
+    const factor = report.factors.find((entry) => entry.key === "nx.risk.readiness");
+    expect(factor?.value).toBe("4.5 / 5");
+    expect(report.unassessed).not.toContain("nx.risk.readiness");
+    // Soreness of 4.5 is well above the 2.5 the term starts counting from,
+    // so it has to move the score rather than sit there as a label.
+    expect(report.score).toBeGreaterThan(0);
+  });
 });

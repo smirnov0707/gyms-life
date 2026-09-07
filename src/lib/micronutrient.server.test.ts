@@ -47,4 +47,24 @@ describe("micronutrient prompt lines", () => {
       expect(line).not.toContain("0");
     }
   });
+
+  it("says a value was not recorded rather than handing the model a zero", () => {
+    // Check-ins that were read but carried no sleep and no readiness. This
+    // used to reach the model as "avg sleep 0 h, avg readiness 0" — two
+    // findings about the athlete that nobody made.
+    const line = trainingLine({
+      ...snapshot,
+      training: { sessions14d: 6, avgSleep: null, avgReadiness: null },
+    });
+    expect(line).toBe("6 sessions in 14 days, avg sleep not recorded, avg readiness not recorded");
+    expect(line).not.toMatch(/\b0\b/);
+  });
+
+  it("keeps the half that was recorded", () => {
+    const line = trainingLine({
+      ...snapshot,
+      training: { sessions14d: 6, avgSleep: 7.1, avgReadiness: null },
+    });
+    expect(line).toBe("6 sessions in 14 days, avg sleep 7.1 h, avg readiness not recorded");
+  });
 });

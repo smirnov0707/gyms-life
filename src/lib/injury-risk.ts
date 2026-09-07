@@ -181,22 +181,29 @@ export function buildRiskReport(
 
   /* 4. Soreness & readiness ------------------------------------------ */
   const fresh = checkins.filter((c) => new Date(c.checkin_on).getTime() > now - 10 * DAY);
-  if (fresh.length) {
-    const soreness =
-      fresh.reduce((n, c) => n + (c.soreness ?? 0), 0) /
-      Math.max(1, fresh.filter((c) => c.soreness != null).length);
-    const readinessVals = fresh.map((c) => c.readiness_score).filter((v): v is number => v != null);
-    const readiness = readinessVals.length
-      ? readinessVals.reduce((n, v) => n + v, 0) / readinessVals.length
-      : null;
+  const sorenessVals = fresh.map((c) => c.soreness).filter((v): v is number => v != null);
+  const readinessVals = fresh.map((c) => c.readiness_score).filter((v): v is number => v != null);
+  // A check-in row is not the same as an answer. Rows exist that carry neither
+  // soreness nor readiness — a watch sync writes one for the sleep alone, and
+  // readiness is withheld whenever too little of it was measured. Averaging
+  // those absent values as zero reported "0.0 / 5" and a green level, which
+  // reads as the safest possible soreness rather than as nothing asked and
+  // nothing answered. On a risk screen that is the wrong direction to be
+  // wrong in.
+  if (sorenessVals.length || readinessVals.length) {
+    const mean = (values: number[]) => values.reduce((n, v) => n + v, 0) / values.length;
+    const soreness = sorenessVals.length ? mean(sorenessVals) : null;
+    const readiness = readinessVals.length ? mean(readinessVals) : null;
     const add = Math.min(
       20,
-      Math.max(0, soreness - 2.5) * 8 + (readiness != null ? Math.max(0, 65 - readiness) / 3 : 0),
+      (soreness != null ? Math.max(0, soreness - 2.5) * 8 : 0) +
+        (readiness != null ? Math.max(0, 65 - readiness) / 3 : 0),
     );
     risk += add;
     factors.push({
       key: "nx.risk.readiness",
-      value: readiness != null ? `${Math.round(readiness)} / 100` : `${soreness.toFixed(1)} / 5`,
+      value:
+        readiness != null ? `${Math.round(readiness)} / 100` : `${(soreness ?? 0).toFixed(1)} / 5`,
       level: levelOf(add, 6, 13),
       adviceKey:
         add >= 13

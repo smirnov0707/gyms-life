@@ -38,7 +38,12 @@ export type MicroSnapshot = {
     diet: string;
     birthYear: number | null;
   };
-  training: { sessions14d: number; avgSleep: number; avgReadiness: number };
+  /**
+   * Null where the check-ins carried no such value. Zero is a reading — "this
+   * athlete sleeps no hours", "this athlete has no readiness" — and it used to
+   * be handed to the model as one whenever nothing had been recorded.
+   */
+  training: { sessions14d: number; avgSleep: number | null; avgReadiness: number | null };
   /**
    * Supporting sources whose query failed. The food log is not among them —
    * without it there is nothing to analyse, so that read throws instead.
@@ -70,7 +75,10 @@ export function trainingLine(snap: MicroSnapshot): string {
   ) {
     return "SOURCE COULD NOT BE READ";
   }
-  return `${snap.training.sessions14d} sessions in 14 days, avg sleep ${snap.training.avgSleep} h, avg readiness ${snap.training.avgReadiness}`;
+  const sleep = snap.training.avgSleep === null ? "not recorded" : `${snap.training.avgSleep} h`;
+  const readiness =
+    snap.training.avgReadiness === null ? "not recorded" : snap.training.avgReadiness;
+  return `${snap.training.sessions14d} sessions in 14 days, avg sleep ${sleep}, avg readiness ${readiness}`;
 }
 
 /** Pulls the last 14 days of real logs so the scan is based on user data, not guesses. */
@@ -145,7 +153,18 @@ export async function loadMicroSnapshot(
   const totalProtein = rows.reduce((a, r) => a + Number(r.protein ?? 0), 0);
 
   const ci = checkins.data ?? [];
-  const avg = (list: number[]) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
+  // Null for an empty list, never zero, and a genuine zero among the values is
+  // kept: `filter(Boolean)` used to drop it alongside the absent ones.
+  const num = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const avg = (values: (number | null)[]) => {
+    const present = values.filter((value): value is number => value !== null);
+    return present.length ? present.reduce((a, b) => a + b, 0) / present.length : null;
+  };
+  const round1 = (value: number | null) => (value === null ? null : Math.round(value * 10) / 10);
+  const roundOrNull = (value: number | null) => (value === null ? null : Math.round(value));
 
   const profile = prof.data;
   const bodyWeight = resolveBodyWeight(weights.data ?? [], profile?.weight_kg ?? null);
@@ -190,8 +209,8 @@ export async function loadMicroSnapshot(
     unreadable,
     training: {
       sessions14d: (sessions.data ?? []).length,
-      avgSleep: Number(avg(ci.map((c) => Number(c.sleep_hours ?? 0)).filter(Boolean)).toFixed(1)),
-      avgReadiness: Math.round(avg(ci.map((c) => Number(c.readiness_score ?? 0)).filter(Boolean))),
+      avgSleep: round1(avg(ci.map((c) => num(c.sleep_hours)))),
+      avgReadiness: roundOrNull(avg(ci.map((c) => num(c.readiness_score)))),
     },
   };
 }
