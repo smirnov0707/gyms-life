@@ -11,6 +11,7 @@ import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { LiveSignals } from "@/components/LiveSignals";
+import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
 import { FutureLabTodayIntelligence } from "@/components/future-lab/FutureLabTodayIntelligence";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
@@ -186,6 +187,7 @@ export function Overview() {
 
         <aside className={`grid content-start gap-3 lg:col-span-3 ${anim("delay-75")}`}>
           <LiveSignals />
+          <TodaysPlanPanel />
           {readinessScore != null ? (
             <ReadinessCard
               score={readinessScore}

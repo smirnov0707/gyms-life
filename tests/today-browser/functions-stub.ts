@@ -59,7 +59,60 @@ export const rotateHealthToken = async () => ({
 
 export const getLabOverview = async () => null;
 export const getTwinTrendHistory = async () => null;
-export const getTodaysWorkout = async () => ({ status: "NO_PLAN" as const });
+/** `?plan=ready` puts a real session in front of the panel; the default is the
+ *  account's actual state, which is no active programme. */
+export const getTodaysWorkout = async () => {
+  if (new URLSearchParams(window.location.search).get("plan") !== "ready") {
+    return { status: "NO_ACTIVE_PLAN" as const };
+  }
+  return {
+    status: "READY" as const,
+    plan: { id: "fixture", daysPerWeek: 4 },
+    workout: {
+      day: 2,
+      title: "Upper body focus",
+      focus: "upper",
+      warmup: "",
+      cooldown: "",
+      estimated_minutes: 49,
+      exercises: [
+        {
+          slug: "bench-press",
+          name: "Bench press",
+          sets: 4,
+          reps: "6",
+          rest_seconds: 150,
+          notes: "",
+        },
+        { slug: "pull-up", name: "Pull up", sets: 4, reps: "8", rest_seconds: 120, notes: "" },
+        {
+          slug: "incline-db-press",
+          name: "Incline dumbbell press",
+          sets: 3,
+          reps: "10",
+          rest_seconds: 90,
+          notes: "",
+        },
+        {
+          slug: "chest-supported-row",
+          name: "Chest supported row",
+          sets: 3,
+          reps: "10",
+          rest_seconds: 90,
+          notes: "",
+        },
+        {
+          slug: "lateral-raise",
+          name: "Lateral raise",
+          sets: 3,
+          reps: "12",
+          rest_seconds: 60,
+          notes: "",
+        },
+      ],
+    },
+  };
+};
 export const getTodayDecision = async () => null;
 export const recordTodayDecisionOutcome = async () => null;
 export const getActiveLifeContexts = async () => [];

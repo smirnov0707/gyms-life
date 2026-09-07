@@ -29,6 +29,7 @@ import { extra_landing3 } from "./i18n-extra-landing3";
 import { extra_scan2 } from "./i18n-extra-scan2";
 import { extra_signals } from "./i18n-extra-signals";
 import { extra_healthsource } from "./i18n-extra-healthsource";
+import { extra_todayplan } from "./i18n-extra-todayplan";
 import { parseSupportedLanguage, type SupportedLanguage } from "./language.schema";
 
 export type Lang = SupportedLanguage;
@@ -733,6 +734,7 @@ export const dict = {
   ...extra_scan2,
   ...extra_signals,
   ...extra_healthsource,
+  ...extra_todayplan,
 } satisfies Dict;
 
 export type TKey = keyof typeof dict;

@@ -71,6 +71,10 @@ try {
   server = await createServer({
     configFile: false,
     root: path.join(root, "tests/today-browser"),
+    // The real public directory, so the Twin loads the figure it ships rather
+    // than falling back to the generated surface and making the evidence
+    // screenshots show a body the athlete never sees.
+    publicDir: path.join(root, "public"),
     plugins: [serverFunctionStub(), react(), tailwindcss()],
     resolve: {
       alias: [
@@ -166,7 +170,27 @@ try {
   await expect(failedRail.getByText("Not recorded yet")).toHaveCount(0);
   record("a source that could not be read never reads as a source with no data");
 
-  // 5. The ingest key is a bearer credential. It must not be sitting in the
+  // 5. The plan panel lists the real session, and shows no load — the
+  //    programme does not carry one, and printing a weight here would be the
+  //    screen writing a prescription nobody set.
+  await expect(first.page.getByRole("region", { name: "Today's plan" })).toBeVisible();
+  await expect(first.page.getByRole("link", { name: "Create a programme" })).toBeVisible();
+
+  const planned = await open("?plan=ready");
+  const plan = planned.page.getByRole("region", { name: "Today's plan" });
+  await expect(plan.getByText("Upper body focus")).toBeVisible();
+  await expect(plan.getByText("Bench press", { exact: true })).toBeVisible();
+  await expect(plan.getByText("4 × 6", { exact: true })).toBeVisible();
+  expect(await plan.innerText()).not.toMatch(/\bkg\b/);
+  await expect(planned.page.getByRole("link", { name: "Start workout" })).toBeVisible();
+  expect(planned.errors).toEqual([]);
+  await planned.page.screenshot({
+    path: path.join(artifacts, "today-with-plan.png"),
+    fullPage: true,
+  });
+  record("today's session is listed from the programme, with no load it does not have");
+
+  // 6. The ingest key is a bearer credential. It must not be sitting in the
   //    page for a shoulder, a screen share or a screenshot to pick up.
   const health = await openPanel("?panel=health");
   const KEY = "11111111-2222-4333-8444-555555555555";
@@ -183,12 +207,12 @@ try {
   expect(health.errors).toEqual([]);
   record("the ingest key stays masked until asked for, and delivery status is stated");
 
-  // 6. Strict mode mounts every component twice. Nothing may throw.
+  // 7. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
   expect(failed.errors).toEqual([]);
   record("strict-mode double mount raises no uncaught error");
 
-  // 7. The narrowest phone still in use must not scroll sideways.
+  // 8. The narrowest phone still in use must not scroll sideways.
   await first.page.setViewportSize({ width: 320, height: 720 });
   await first.page.waitForTimeout(400);
   const overflow = await first.page.evaluate(
