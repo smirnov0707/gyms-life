@@ -165,7 +165,11 @@ export const QuickHydrationWidget: React.FC = () => {
 
   // Intake is the athlete's own rows, so it survives a cleared browser and
   // follows them to a second device.
-  const { data: intake, isPending: intakePending } = useQuery({
+  const {
+    data: intake,
+    isPending: intakePending,
+    isError: intakeFailed,
+  } = useQuery({
     queryKey: intakeKey,
     queryFn: () => getHydrationIntake({ data: timeZone }),
     enabled: !!user,
@@ -185,7 +189,10 @@ export const QuickHydrationWidget: React.FC = () => {
 
   const targetMl = target?.targetMl ?? HYDRATION_GENERIC_BASELINE_ML;
   const currentMl = intake?.totalMl ?? 0;
-  const ready = !intakePending;
+  // A read that failed is not a day with nothing drunk. Both used to print as
+  // zero, so an outage told the athlete they had drunk nothing and left the
+  // bar empty to agree with it.
+  const ready = !intakePending && !intakeFailed;
 
   const percentage = Math.min(100, Math.round((currentMl / targetMl) * 100));
 
@@ -202,9 +209,9 @@ export const QuickHydrationWidget: React.FC = () => {
             </h3>
             <p className="text-xs text-muted-foreground">
               {t("ms.hydration.progress")
-                .replace("{cur}", String(ready ? currentMl : 0))
+                .replace("{cur}", ready ? String(currentMl) : "—")
                 .replace("{target}", String(targetMl))
-                .replace("{pct}", String(ready ? percentage : 0))}
+                .replace("{pct}", ready ? String(percentage) : "—")}
             </p>
           </div>
         </div>
@@ -219,6 +226,12 @@ export const QuickHydrationWidget: React.FC = () => {
           <RotateCcw className="size-4" />
         </Button>
       </div>
+
+      {intakeFailed ? (
+        <p className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          {copy.readFailedNote}
+        </p>
+      ) : null}
 
       <div className="relative mb-4 h-3.5 w-full overflow-hidden rounded-full border border-border bg-surface">
         <div
