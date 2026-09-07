@@ -110,8 +110,11 @@ try {
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
 
-  const openPanel = async (query = "") => {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
+  const openPanel = async (query = "", options = {}) => {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 1100 },
+      ...options,
+    });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
@@ -119,8 +122,8 @@ try {
     return { page, errors };
   };
 
-  const open = async (query = "") => {
-    const opened = await openPanel(query);
+  const open = async (query = "", options = {}) => {
+    const opened = await openPanel(query, options);
     await expect(opened.page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
     return opened;
   };
@@ -270,6 +273,40 @@ try {
   expect(overflow).toBeLessThanOrEqual(1);
   await first.page.screenshot({ path: path.join(artifacts, "today-320.png"), fullPage: true });
   record("no horizontal overflow at 320px");
+
+  // 10. And in the language the athlete actually reads it in. Lithuanian runs
+  //     longer than English almost everywhere, so a layout that survives 320px
+  //     in English can still break here — and this is the app's default
+  //     language, not an afterthought.
+  const lt = await open("", { locale: "lt-LT", viewport: { width: 320, height: 720 } });
+  const ltRail = lt.page.getByRole("region", { name: "Gyvi signalai" });
+  await expect(ltRail).toBeVisible({ timeout: 30000 });
+  for (const label of ["Miegas", "Ramybės pulsas", "Aktyvi energija", "Kūno riebalai"]) {
+    await expect(ltRail.getByText(label, { exact: true })).toBeVisible();
+  }
+  await expect(lt.page.getByRole("region", { name: "Šiandienos planas" })).toBeVisible();
+  // Every sentence on the screen has to be in the athlete's language. The Lab
+  // card shipped its paragraph and its button in English only, so a Lithuanian
+  // Today carried one English paragraph in the middle of it.
+  const ltBody = await lt.page.locator("body").innerText();
+  expect(ltBody).not.toContain("separates measurements");
+  expect(ltBody).not.toContain("OPEN LAB");
+  expect(ltBody).toContain("atskiria matavimus");
+  const ltOverflow = await lt.page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(ltOverflow).toBeLessThanOrEqual(1);
+
+  // The two ways out of an empty rail are the only things to tap on it, so
+  // they have to be reachable with a thumb.
+  for (const name of ["Prijungti įrenginį", "Įvesti matavimą"]) {
+    const box = await lt.page.getByRole("link", { name }).boundingBox();
+    expect(box, `${name} is not on screen`).not.toBeNull();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  await lt.page.screenshot({ path: path.join(artifacts, "today-lt-320.png"), fullPage: true });
+  expect(lt.errors).toEqual([]);
+  record("Lithuanian at 320px stays inside the screen with tappable controls");
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {

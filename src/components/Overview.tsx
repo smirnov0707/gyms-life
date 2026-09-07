@@ -163,7 +163,7 @@ export function Overview() {
         >
           <div className="min-w-0">
             <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-cyan-300/75">
-              GYMS.LIFE FUTURE LAB · TODAY
+              GYMS.LIFE FUTURE LAB · {t("nav.today")}
             </p>
             <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-white sm:text-4xl">
               {greeting}
@@ -216,18 +216,15 @@ export function Overview() {
           <SmartBrief />
           <div className="rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4">
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
-              LAB STATUS
+              {t("ls.status")}
             </p>
             <p className="mt-2 text-sm font-semibold text-white">{t("nav.lab")}</p>
-            <p className="mt-2 text-xs leading-relaxed text-slate-400">
-              GYMS.LIFE separates measurements, hypotheses and predictions. Open Lab to inspect
-              evidence and model maturity.
-            </p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">{t("ls.body")}</p>
             <Link
               to="/lab"
               className="mt-4 inline-flex min-h-10 items-center rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 text-[10px] font-bold uppercase tracking-wider text-violet-200"
             >
-              OPEN LAB
+              {t("ls.open")}
             </Link>
           </div>
         </aside>
