@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeManualBodyMetric, parseBodyMetrics } from "./body-metric.schema";
+import { normalizeManualBodyMetric, parseBodyMetric, parseBodyMetrics } from "./body-metric.schema";
 
 describe("manual body metric domain", () => {
   it("normalizes localized decimal input before persistence", () => {
@@ -26,6 +26,8 @@ describe("manual body metric domain", () => {
           measured_on: "2026-09-03",
           weight_kg: 82.4,
           body_fat: 18.2,
+          weight_source: "measured",
+          body_fat_source: "measured",
           created_at: "2026-09-03T12:00:00+00:00",
         },
         {
@@ -33,9 +35,35 @@ describe("manual body metric domain", () => {
           measured_on: "2026-09-04",
           weight_kg: 0,
           body_fat: 18.1,
+          weight_source: null,
+          body_fat_source: null,
           created_at: "2026-09-04T12:00:00+00:00",
         },
       ]),
     ).toHaveLength(1);
+  });
+});
+
+describe("stored provenance", () => {
+  const row = {
+    id: "f154ee80-6ae5-4a82-b629-c3c2119f6fd2",
+    measured_on: "2026-09-03",
+    weight_kg: 82.4,
+    body_fat: 18.2,
+    weight_source: "measured" as string | null,
+    body_fat_source: "photo_estimate" as string | null,
+    created_at: "2026-09-03T12:00:00+00:00",
+  };
+
+  it("keeps each field's source, because one row can hold both kinds", () => {
+    const parsed = parseBodyMetric(row);
+    expect(parsed.weightSource).toBe("measured");
+    expect(parsed.bodyFatSource).toBe("photo_estimate");
+  });
+
+  it("reads an unrecognised stored value as not recorded, never as measured", () => {
+    const parsed = parseBodyMetric({ ...row, weight_source: "scale", body_fat_source: null });
+    expect(parsed.weightSource).toBeNull();
+    expect(parsed.bodyFatSource).toBeNull();
   });
 });

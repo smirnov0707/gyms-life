@@ -19,6 +19,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /** Unified body metrics: log weight / body fat and see the progress curve in one place. */
+/**
+ * A one-line note under a headline figure saying it was not measured.
+ *
+ * Only ever shown for an estimate. A figure the athlete typed needs no
+ * caveat, and a row written before provenance existed gets no claim either
+ * way — a badge reading "measured" on a number nobody vouched for would be
+ * the same defect in the other direction.
+ */
+function EstimateMark({ source }: { source: "measured" | "photo_estimate" | null }) {
+  const { t } = useI18n();
+  if (source !== "photo_estimate") return null;
+  return <p className="mt-1 text-[11px] font-semibold text-accent">{t("bm.fromPhoto")}</p>;
+}
+
 export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const { user } = useAuth();
@@ -36,8 +50,14 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
   const list = rows?.metrics ?? [];
   const withWeight = list.filter((row) => row.weightKg != null);
   const withFat = list.filter((row) => row.bodyFat != null);
-  const latestWeight = withWeight.at(-1)?.weightKg ?? null;
-  const latestFat = withFat.at(-1)?.bodyFat ?? null;
+  const latestWeightRow = withWeight.at(-1) ?? null;
+  const latestFatRow = withFat.at(-1) ?? null;
+  const latestWeight = latestWeightRow?.weightKg ?? null;
+  const latestFat = latestFatRow?.bodyFat ?? null;
+  // The photo scan writes into these same two columns. A figure it estimated
+  // from an image is not a measurement, and this is the screen the athlete
+  // comes to precisely to read their own measurements.
+  const estimatedPoints = withWeight.filter((row) => row.weightSource === "photo_estimate").length;
   const firstWeight = withWeight[0]?.weightKg ?? null;
   const delta =
     latestWeight != null && firstWeight != null ? Number(latestWeight) - Number(firstWeight) : null;
@@ -94,6 +114,7 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
             {latestWeight != null ? Number(latestWeight).toFixed(1) : "—"}{" "}
             <span className="text-sm text-muted-foreground">{t("common.kg")}</span>
           </p>
+          <EstimateMark source={latestWeightRow?.weightSource ?? null} />
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -103,6 +124,7 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
             {latestFat != null ? Number(latestFat).toFixed(1) : "—"}{" "}
             <span className="text-sm text-muted-foreground">%</span>
           </p>
+          <EstimateMark source={latestFatRow?.bodyFatSource ?? null} />
         </div>
         {delta != null && (
           <p className={`text-sm font-semibold ${delta > 0 ? "text-accent" : "text-primary"}`}>
@@ -111,6 +133,12 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
           </p>
         )}
       </div>
+
+      {estimatedPoints > 0 ? (
+        <p className="mt-3 text-xs leading-relaxed text-accent">
+          {t("bm.chartEstimated").replace("{n}", String(estimatedPoints))}
+        </p>
+      ) : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <Input

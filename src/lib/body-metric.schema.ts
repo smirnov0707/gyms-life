@@ -1,18 +1,34 @@
 import { z } from "zod";
 import type { Tables } from "@/integrations/supabase/types";
 
-export const BODY_METRIC_SELECT = "id, measured_on, weight_kg, body_fat, created_at";
+export const BODY_METRIC_SELECT =
+  "id, measured_on, weight_kg, body_fat, weight_source, body_fat_source, created_at";
 
 export type BodyMetricRow = Pick<
   Tables<"body_metrics">,
-  "id" | "measured_on" | "weight_kg" | "body_fat" | "created_at"
+  | "id"
+  | "measured_on"
+  | "weight_kg"
+  | "body_fat"
+  | "weight_source"
+  | "body_fat_source"
+  | "created_at"
 >;
+
+/**
+ * Where a stored figure came from. `body_metrics` holds scale readings and the
+ * photo scan's numbers under the same column names, and only one of the two is
+ * a measurement. Null on rows written before the app recorded this.
+ */
+export const BodyMetricSourceSchema = z.enum(["measured", "photo_estimate"]).nullable();
 
 export const BodyMetricSchema = z.object({
   id: z.string().uuid(),
   measuredOn: z.string().date(),
   weightKg: z.number().finite().positive().max(500).nullable(),
   bodyFat: z.number().finite().min(0).max(100).nullable(),
+  weightSource: BodyMetricSourceSchema,
+  bodyFatSource: BodyMetricSourceSchema,
   createdAt: z.string().datetime({ offset: true }),
 });
 
@@ -52,26 +68,28 @@ export function normalizeManualBodyMetric(value: unknown): ManualBodyMetric {
   };
 }
 
+/** An unrecognised stored value is "not recorded", never "measured". */
+const asSource = (value: string | null) =>
+  value === "measured" || value === "photo_estimate" ? value : null;
+
+const shape = (row: BodyMetricRow) => ({
+  id: row.id,
+  measuredOn: row.measured_on,
+  weightKg: row.weight_kg,
+  bodyFat: row.body_fat,
+  weightSource: asSource(row.weight_source),
+  bodyFatSource: asSource(row.body_fat_source),
+  createdAt: row.created_at,
+});
+
 export function parseBodyMetric(row: BodyMetricRow): BodyMetric {
-  return BodyMetricSchema.parse({
-    id: row.id,
-    measuredOn: row.measured_on,
-    weightKg: row.weight_kg,
-    bodyFat: row.body_fat,
-    createdAt: row.created_at,
-  });
+  return BodyMetricSchema.parse(shape(row));
 }
 
 /** Invalid historical measurements stay out of charts and athlete-state inputs. */
 export function parseBodyMetrics(rows: BodyMetricRow[]): BodyMetric[] {
   return rows.flatMap((row) => {
-    const parsed = BodyMetricSchema.safeParse({
-      id: row.id,
-      measuredOn: row.measured_on,
-      weightKg: row.weight_kg,
-      bodyFat: row.body_fat,
-      createdAt: row.created_at,
-    });
+    const parsed = BodyMetricSchema.safeParse(shape(row));
     return parsed.success ? [parsed.data] : [];
   });
 }
