@@ -21,6 +21,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
+import { createTwinStageDecor } from "./twin-stage.scene";
 import {
   loadTwinHuman,
   twinHumanUrl,
@@ -148,21 +149,41 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    // Lit for skin rather than for a matte solid: one warm key that models the
-    // form, a dim cool fill so the shadow side is readable without flattening
-    // it, and a mint rim behind that separates the silhouette from the dark
-    // stage. The earlier setup was three near-equal lights, which washed the
-    // body out until it read as plastic.
-    scene.add(new HemisphereLight(0xe4eef8, 0x1b1512, 0.55));
+    // Lit for a dark instrument rather than for skin: a cool ambient that keeps
+    // the unlit body readable as a body, a cold key that models the form, and
+    // two rims — one cyan behind and one violet from the side — that draw the
+    // silhouette out of the stage. It was warm and bright while the figure was
+    // skin-coloured; a warm key on a near-black body just makes it grey.
+    scene.add(new HemisphereLight(0x9fc4ec, 0x0a1018, 0.5));
     for (const [position, color, intensity] of [
-      [[2.2, 3.2, 3.0], 0xffe9d2, 2.05],
-      [[-3.0, 1.2, 1.6], 0x8fb4dc, 0.6],
-      [[-0.6, 2.4, -3.2], 0xa8f0e0, 1.45],
+      [[2.0, 3.0, 3.2], 0xdcecff, 1.5],
+      [[-3.0, 1.0, 1.4], 0x5b8cc4, 0.5],
+      [[-0.8, 2.2, -3.2], 0x35d6ff, 1.9],
+      [[3.0, 0.6, -2.0], 0x9a6bff, 1.1],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
+
+    // The apparatus the figure stands in: the lit platform, the rings behind
+    // it, the floor grid and the particles. Decoration only — nothing in it
+    // reads the athlete's data, and it never changes with it.
+    //
+    // Built now and shown with the body, not before it. An empty lit platform
+    // is a promise that something is about to stand on it, and while the file
+    // downloads the athlete is meant to be looking at the 2D map instead.
+    const decor = createTwinStageDecor(TWIN_FRAME.height);
+    let stageShown = false;
+    const showStage = () => {
+      if (stageShown) return;
+      stageShown = true;
+      scene.add(decor.group);
+    };
+    cleanups.push(() => {
+      scene.remove(decor.group);
+      decor.dispose();
+    });
 
     // A body with nothing under it floats. There is no floor in this scene, so
     // the contact is a painted ellipse of shade rather than a shadow map the
@@ -204,12 +225,16 @@ export function mountTwinScene(
     // reading: if the fetch fails, is unusable, or never arrives, it goes in
     // and is painted. A missing asset must not cost the athlete a Twin.
     let humanPending = options.human !== false;
-    if (!humanPending) twinBodyRoot.add(model.body);
+    if (!humanPending) {
+      twinBodyRoot.add(model.body);
+      showStage();
+    }
     canvas.dataset["twinBody"] = humanPending ? "loading" : "surface";
     const useSurface = () => {
       if (!humanPending) return;
       humanPending = false;
       twinBodyRoot.add(model.body);
+      showStage();
       canvas.dataset["twinBody"] = "surface";
       applyState();
       options.onBodyReady?.("surface");
@@ -240,6 +265,7 @@ export function mountTwinScene(
           model.dispose();
           model = human;
           twinBodyRoot.add(model.body);
+          showStage();
           humanPending = false;
           canvas.dataset["twinBody"] = "human";
           applyState();
@@ -325,17 +351,24 @@ export function mountTwinScene(
             const glow =
               TWIN_TONE_GLOW[value?.display.tone ?? "unknown"] +
               (selected ? TWIN_SELECTION_GLOW : 0);
-            // How far the surface itself takes the data colour, rising with
-            // the light so a strongly lit muscle is coloured through rather
-            // than a dark shape with a glow floating on it.
-            const painted = Math.min(0.85, glow);
+            // How far the surface itself takes the data colour. Capped well
+            // below full: past about half, the albedo is the colour and the
+            // key light has nothing left to model with, so the muscle goes
+            // flat and its striations disappear into a painted panel. The rest
+            // of the brightness is emissive, which adds light without taking
+            // the shading away.
+            const painted = Math.min(0.52, glow * 0.6);
             material.color.set(bodyColour).lerp(tone, painted);
             material.emissive.copy(tone);
             // Divided by the tone's own brightness, so how much a region lights
             // up is set by what it means rather than by how pale its colour
             // happens to be.
             material.emissiveIntensity = glow / Math.max(tone.r, tone.g, tone.b, 0.25);
-            material.roughness = selected ? 0.34 : 0.46;
+            // Wet rather than matte: a low roughness keeps a specular highlight
+            // running along each muscle belly, which is what separates one from
+            // the next on a body lit from three sides.
+            material.roughness = selected ? 0.2 : 0.28;
+            material.metalness = 0.3;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");

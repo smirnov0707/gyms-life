@@ -16,33 +16,37 @@ import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 const REGION_MATERIAL_PREFIX = "twin-region:";
 
 /**
- * An unlit muscle is still anatomy worth seeing.
+ * An unlit muscle, and the colour a region carrying no reading has.
  *
- * This is the colour a muscle carrying no reading has. It is a muted flesh
- * rather than the slate blue-grey it used to be: the figure spent a build
- * looking like a mannequin in a blue bag, because the body colour was chosen
- * to be plainly not skin and the translucent skin over it tinted everything
- * blue on top of that. Muscle-coloured is what the athlete recognises as a
- * body, and it says nothing about their state — every reading the app has is
- * one of the saturated data colours laid over this, and no region the app
- * cannot read ever gets one.
+ * The figure is a dark instrument, not a photograph of skin. It was briefly
+ * flesh-coloured, on the reasoning that a body should look like a body — and
+ * that reasoning cost the screen everything it is for: on skin, a saturated
+ * data colour reads as clothing, so every reading had to be muted until none
+ * of them could be seen. A near-black body carries a lit muscle as a lit
+ * muscle, which is how the design has always been drawn.
+ *
+ * Slate blue rather than near-black, and barely metallic. Both were darker and
+ * half metal, which looks right in isolation and is wrong here: metalness eats
+ * the diffuse term, so every part of the figure carrying no reading — the
+ * head, the hands, the kneecaps, the sternum — rendered as a black hole in the
+ * middle of the lit muscle around it. It has to read as unlit body, not as
+ * missing body.
  */
-const BODY = { color: 0xa8746a, roughness: 0.62, metalness: 0.02 };
+const BODY = { color: 0x33506e, roughness: 0.34, metalness: 0.12 };
 
 /**
- * The skin, opaque, over the parts of the figure that have no muscle.
+ * The skin, over the parts of the figure that have no muscle.
  *
  * The build drops every skin triangle with a muscle underneath it, so what
- * arrives here is the head, the hands, the feet, the shins and the pelvis —
- * and it is drawn as skin rather than as glass. The previous build kept the
- * whole surface and made it 17%-opacity glass so the muscles could be seen
- * through it, which left the whole figure looking as if it were sealed in
- * frosted plastic, with black hands and a black face.
+ * arrives here is the head, the hands, the feet, the shins and the pelvis. It
+ * is the same instrument as the muscle, a shade lighter, so a hand reads as a
+ * hand without turning the figure into a mannequin with a flesh-coloured head
+ * on it.
  */
-const SKIN = { color: 0xd7a98d, roughness: 0.78, metalness: 0 };
+const SKIN = { color: 0x415f7d, roughness: 0.34, metalness: 0.1 };
 
 /** Darker than the body, so the face reads as a face at a glance. */
-const EYE = { color: 0x0a0d12, roughness: 0.28, metalness: 0 };
+const EYE = { color: 0x05080d, roughness: 0.18, metalness: 0.2 };
 
 export type TwinBodyModel = {
   body: Group;

@@ -64,6 +64,37 @@ const MUSCLE_TRIANGLES = 62_000;
 /** Metres of stature to scale the atlas to, so the figure matches the app's. */
 const TARGET_HEIGHT_M = 1.7;
 
+/**
+ * How far each region's muscle is pushed out along its own surface, as a
+ * fraction of stature.
+ *
+ * The atlas is a cadaver, and a cadaver is lean: every belly sits flat against
+ * the bone, so the figure read as a thin man with coloured patches rather than
+ * as the trained body the screen is drawn around. Pushing each muscle out
+ * along its own normals gives it the fullness a trained one has, and does it
+ * to the real shape rather than by swapping in a different body — a deltoid
+ * still ends where a deltoid ends.
+ *
+ * This claims nothing about the athlete. The figure has never been their body,
+ * their measurements do not move it, and nothing here is drawn from a scan;
+ * it is the schematic the app colours, and it is built to look like a body
+ * that trains because that is what the athlete is looking at.
+ *
+ * Per region, because they do not carry the same mass: the shoulder and the
+ * arm are what the eye reads first on a trained body, and the abdominal wall
+ * is a sheet that only needs enough to stop looking like paper.
+ */
+const MUSCLE_FULLNESS = {
+  chest: 0.011,
+  shoulders: 0.013,
+  back: 0.009,
+  arms: 0.008,
+  abs: 0.004,
+  core: 0.004,
+  glutes: 0.01,
+  legs: 0.009,
+};
+
 /** Parses the subset of OBJ these files use: vertices and triangular faces. */
 function readObj(path) {
   const positions = [];
@@ -266,6 +297,29 @@ for (let i = 0; i < silhouette.positions.length; i += 3) {
 const scale = TARGET_HEIGHT_M / (maxY - minY);
 const centreX = sumX / count;
 const centreZ = sumZ / count;
+/** Half the figure's width, so the hand and foot tests are in its own terms. */
+let halfWidth = 0;
+for (let i = 0; i < silhouette.positions.length; i += 3) {
+  halfWidth = Math.max(halfWidth, Math.abs(silhouette.positions[i] - centreX));
+}
+
+/**
+ * How much of a muscle's fullness applies at a point: none inside the hand or
+ * the foot, all of it above them, and a short blend between.
+ *
+ * The forearm and shin tendons run on to the fingers and toes, and the skin
+ * over them is thinner than anywhere else on the body. Pushing them out by the
+ * same centimetre as a deltoid burst them straight through it, and the figure
+ * came out with coloured fingers and toes poking out of grey hands and feet.
+ */
+const fullnessAt = (x, y) => {
+  const fraction = (y - minY) / (maxY - minY);
+  const offset = Math.abs(x - centreX) / halfWidth;
+  const above = (value, from, to) => Math.min(1, Math.max(0, (value - from) / (to - from)));
+  const clearOfFoot = above(fraction, FOOT_TOP, FOOT_TOP + 0.05);
+  const clearOfHand = offset < HAND_SPREAD ? 1 : above(fraction, HAND_TOP, HAND_TOP + 0.05);
+  return Math.min(clearOfFoot, clearOfHand);
+};
 
 // The skin is one mesh covering the whole body. Every triangle of it that has
 // a muscle underneath is dropped here, before anything is scaled or
@@ -293,6 +347,9 @@ const centreZ = sumZ / count;
       else grid.set(at, [group.positions[i], group.positions[i + 1], group.positions[i + 2]]);
     }
   }
+  // Wide enough that the skin over a thigh or a shoulder goes, narrow enough
+  // that it is still a question about what is underneath rather than nearby.
+  const probe = reach * 0.85;
   const covered = (x, y, z) => {
     const cx = Math.floor(x / cell);
     const cy = Math.floor(y / cell);
@@ -306,7 +363,7 @@ const centreZ = sumZ / count;
             const ax = bucket[i] - x;
             const ay = bucket[i + 1] - y;
             const az = bucket[i + 2] - z;
-            if (ax * ax + ay * ay + az * az <= reach * reach) return true;
+            if (ax * ax + ay * ay + az * az <= probe * probe) return true;
           }
         }
       }
@@ -314,12 +371,6 @@ const centreZ = sumZ / count;
     return false;
   };
 
-  // Half the figure's width, measured on the skin, so the hand test is stated
-  // in the body's own proportions rather than in millimetres of atlas.
-  let halfWidth = 0;
-  for (let i = 0; i < skin.positions.length; i += 3) {
-    halfWidth = Math.max(halfWidth, Math.abs(skin.positions[i] - centreX));
-  }
   /** True where the skin is kept whatever lies under it: the hands and feet. */
   const extremity = (x, y) => {
     const fraction = (y - minY) / height;
@@ -329,16 +380,35 @@ const centreZ = sumZ / count;
 
   const keep = [];
   for (let i = 0; i < skin.indices.length; i += 3) {
-    let x = 0;
-    let y = 0;
-    let z = 0;
-    for (let k = 0; k < 3; k += 1) {
-      const at = skin.indices[i + k] * 3;
-      x += skin.positions[at] / 3;
-      y += skin.positions[at + 1] / 3;
-      z += skin.positions[at + 2] / 3;
-    }
-    if (extremity(x, y) || !covered(x, y, z)) {
+    const a = skin.indices[i] * 3;
+    const b = skin.indices[i + 1] * 3;
+    const c = skin.indices[i + 2] * 3;
+    const x = (skin.positions[a] + skin.positions[b] + skin.positions[c]) / 3;
+    const y = (skin.positions[a + 1] + skin.positions[b + 1] + skin.positions[c + 1]) / 3;
+    const z = (skin.positions[a + 2] + skin.positions[b + 2] + skin.positions[c + 2]) / 3;
+    // Which way the skin faces here, so the question can be "is there muscle
+    // under this" rather than "is there muscle near this". Asking the second
+    // took the skin off the sternum, the kneecap and the iliotibial band —
+    // places with no muscle of their own but a large one an inch to the side —
+    // and left ragged black holes across the front of the figure.
+    const ux = skin.positions[b] - skin.positions[a];
+    const uy = skin.positions[b + 1] - skin.positions[a + 1];
+    const uz = skin.positions[b + 2] - skin.positions[a + 2];
+    const vx = skin.positions[c] - skin.positions[a];
+    const vy = skin.positions[c + 1] - skin.positions[a + 1];
+    const vz = skin.positions[c + 2] - skin.positions[a + 2];
+    let nx = uy * vz - uz * vy;
+    let ny = uz * vx - ux * vz;
+    let nz = ux * vy - uy * vx;
+    const length = Math.hypot(nx, ny, nz) || 1;
+    nx /= length;
+    ny /= length;
+    nz /= length;
+    // Straight inwards, a little more than half the clearance, and asked with
+    // a tighter radius than the step so the two do not simply add up to the
+    // old undirected test.
+    const under = covered(x - nx * reach * 0.55, y - ny * reach * 0.55, z - nz * reach * 0.55);
+    if (extremity(x, y) || !under) {
       keep.push(skin.indices[i], skin.indices[i + 1], skin.indices[i + 2]);
     }
   }
@@ -422,6 +492,52 @@ const centreZ = sumZ / count;
     }
   }
   console.log(`  groin: ${movable.length} vertices rounded`);
+}
+
+// Each muscle is pushed out along its own surface, so the figure reads as a
+// body that trains rather than as the lean cadaver the atlas is. Done after
+// the skin is cut — the cut asks which triangles have a muscle under them, and
+// it should ask that of the anatomy rather than of the anatomy plus a
+// centimetre of this.
+for (const [region, group] of merged) {
+  const fullness = MUSCLE_FULLNESS[region];
+  if (!fullness) continue;
+  const positions = new Float32Array(group.positions);
+  const normals = computeNormals(positions, new Uint32Array(group.indices));
+  const push = fullness * (maxY - minY);
+
+  // A region is several source meshes appended into one buffer, so the same
+  // point on the surface exists once per mesh that touches it, each with its
+  // own averaged normal. Moving those copies apart tears the region open along
+  // every seam — and a torn surface is one the simplifier will not collapse,
+  // which took the figure from 167k triangles to 251k before this. So
+  // coincident points are found, given one shared direction, and moved
+  // together.
+  const shared = new Map();
+  const key = (i) =>
+    `${Math.round(positions[i] * 10)},${Math.round(positions[i + 1] * 10)},${Math.round(positions[i + 2] * 10)}`;
+  for (let i = 0; i < positions.length; i += 3) {
+    const at = key(i);
+    const found = shared.get(at);
+    if (found) {
+      found[0] += normals[i];
+      found[1] += normals[i + 1];
+      found[2] += normals[i + 2];
+      found[3].push(i);
+    } else {
+      shared.set(at, [normals[i], normals[i + 1], normals[i + 2], [i]]);
+    }
+  }
+  for (const [nx, ny, nz, at] of shared.values()) {
+    const length = Math.hypot(nx, ny, nz) || 1;
+    for (const i of at) {
+      const scale = (push * fullnessAt(positions[i], positions[i + 1])) / length;
+      if (scale === 0) continue;
+      group.positions[i] = positions[i] + nx * scale;
+      group.positions[i + 1] = positions[i + 1] + ny * scale;
+      group.positions[i + 2] = positions[i + 2] + nz * scale;
+    }
+  }
 }
 
 const document = new Document();

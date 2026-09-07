@@ -34,24 +34,27 @@ export type TwinDisplayTone =
   | "in_session"
   | "not_in_session";
 export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
-  // Saturated, because the body underneath is a dark instrument rather than
-  // skin. These were muted for a figure that was skin-coloured, where a strong
-  // colour read as clothing; on a near-black body a muted colour just reads as
-  // dirt, and the state stops being legible at a glance.
-  fresh: "#2fbf6d",
-  moderate: "#3b82f6",
-  fatigued: "#f5623c",
-  volume_low: "#3f6fb5",
-  volume_medium: "#7c5cf0",
-  volume_high: "#b14cf0",
+  // The screen's own legend, hue for hue: ready is violet, mid is cyan, and
+  // the state that wants attention is amber. They are saturated because the
+  // body underneath is a near-black instrument — on skin a strong colour reads
+  // as clothing, but on this figure it reads as a lit muscle, which is the
+  // whole point of the screen.
+  fresh: "#a855f7",
+  moderate: "#38bdf8",
+  fatigued: "#f97316",
+  // The volume layer runs the same violet ramp, low to high, so a glance tells
+  // the athlete which end of it a region sits at without reading a number.
+  volume_low: "#4f7ce8",
+  volume_medium: "#8b5cf6",
+  volume_high: "#c026d3",
   // This layer is not a measurement, it is the list of what to do, so it takes
   // the strongest colour on the figure. Everything not on it recedes rather
   // than competing.
-  in_session: "#c026d3",
-  // The two that mean nothing is being said sit close to the body's own
-  // colour, so they read as unlit rather than as a state of their own.
-  unknown: "#2a3442",
-  not_in_session: "#222c39",
+  in_session: "#d946ef",
+  // The two that mean nothing is being said sit at the body's own colour, so
+  // they read as unlit rather than as a state of their own.
+  unknown: "#0e1826",
+  not_in_session: "#0b1420",
 };
 
 /**
@@ -68,36 +71,29 @@ export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
  * that ask for attention light up, and the rest of the body stays skin.
  */
 export const TWIN_TONE_GLOW: Record<TwinDisplayTone, number> = {
-  // Read as light cast on skin, divided by the tone's own brightness in the
-  // renderer. These used to sit at 0.012 with the calm states at zero, which
-  // is two orders of magnitude below anything the eye picks up: the figure was
-  // never marked, in any layer, in any state. The panels underneath said
-  // "chest 41%" while the body showed plain skin.
+  // Read as light cast on the figure, divided by the tone's own brightness in
+  // the renderer, so a pale colour and a dark one at the same number lift the
+  // surface by the same amount.
   //
-  // The concern that produced those numbers — that lighting every region turns
-  // a body into coloured panels and reads as clothing — is real, and it is
-  // already answered twice over: the data colour is emissive rather than mixed
-  // into the albedo, and the intensity is divided by the tone's brightness so
-  // a pale colour cannot bleach a region. Crushing the scalars on top of that
-  // was a third correction for a problem already solved.
+  // These sat around a third of where they are now, which was calibrated for a
+  // flesh-coloured body: on skin, real brightness turned a region into a
+  // garment, so the light had to be held down until the figure was barely
+  // marked. The body is a dark instrument again and the constraint is gone —
+  // a lit muscle on it reads as a lit muscle, which is what the screen this is
+  // drawn from shows and what the athlete asked for twice.
   //
   // Ordered by how much attention the state has earned. A recovered muscle is
   // information too — "what is ready to train" is half of what this figure is
-  // for — so it carries a low presence rather than none.
-  //
-  // These were an order of magnitude lower while the body was skin-coloured,
-  // where any real brightness turned a region into a garment. The body is a
-  // dark instrument now, so a lit muscle reads as a lit muscle and the light
-  // can be the strength the screen was always drawn with.
-  fresh: 0.3,
-  moderate: 0.4,
-  fatigued: 0.55,
-  volume_low: 0.28,
-  volume_medium: 0.42,
-  volume_high: 0.56,
+  // for — so it carries a real presence rather than a hint of one.
+  fresh: 0.62,
+  moderate: 0.72,
+  fatigued: 0.88,
+  volume_low: 0.55,
+  volume_medium: 0.7,
+  volume_high: 0.86,
   // The one layer where lighting a region up is the whole point: it is
   // pointing at what to train, not reporting a value to read off.
-  in_session: 0.7,
+  in_session: 1,
   // The two states that mean "nothing to say here" stay dark. An unknown
   // region must never draw the eye, and everything outside today's session
   // recedes so the session reads at a glance.
