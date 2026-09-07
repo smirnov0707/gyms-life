@@ -17,6 +17,9 @@ import "@/styles.css";
  *
  * Test-only. This directory is not a product route and never queries user data.
  */
+/* eslint-disable react-refresh/only-export-components -- the fixture is an
+   entry point, not a module anything imports, and is never hot-reloaded. */
+
 /**
  * Each of the Future Lab screens gets its own mode, so a deck that only exists
  * as a route in the running app can still be rendered on its own here.
