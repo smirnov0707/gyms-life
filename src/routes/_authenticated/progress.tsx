@@ -6,9 +6,9 @@ import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
-import { ProgressForecast } from "@/components/ProgressForecast";
 import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
 import { WorkoutReportExporter } from "@/components/WorkoutReportExporter";
+import { FutureMeSimulationDeck } from "@/components/future-lab/FutureMeSimulationDeck";
 import { FutureMeSummary } from "@/components/future-lab/FutureMeSummary";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/progress")({
       {
         name: "description",
         content:
-          "Observed Digital Athlete trajectory, measured progress and future-model readiness.",
+          "Deterministic performance simulation, observed Digital Athlete trajectory and measured progress.",
       },
     ],
   }),
@@ -42,7 +42,8 @@ function copyFor(lang: Lang): Copy {
   if (baseLang(lang) === "en") {
     return {
       intelligence: "What the system sees changing",
-      intelligenceHint: "Performance, weekly patterns, forecast and current risk observations.",
+      intelligenceHint:
+        "Observed performance, weekly patterns and current risk signals beneath the simulation layer.",
       measuredHint: "Completed-session volume over time. Recorded history, not a prediction.",
       recordsHint: "Highest recorded working weights by exercise.",
       historyHint: "Completed sessions in reverse chronological order.",
@@ -53,7 +54,7 @@ function copyFor(lang: Lang): Copy {
   return {
     intelligence: "Ką sistema mato besikeičiant",
     intelligenceHint:
-      "Performance, savaitiniai dėsningumai, prognozės sluoksniai ir dabartiniai rizikos stebėjimai.",
+      "Stebėtas rezultatyvumas, savaitiniai dėsningumai ir dabartiniai rizikos signalai po simuliacijos sluoksniu.",
     measuredHint: "Užbaigtų treniruočių tūris laike. Tai užregistruota istorija, ne prognozė.",
     recordsHint: "Didžiausi užregistruoti darbiniai svoriai pagal pratimą.",
     historyHint: "Užbaigtos treniruotės nuo naujausios iki seniausios.",
@@ -117,7 +118,9 @@ function ProgressPage() {
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-4">
+      <FutureMeSimulationDeck />
       <FutureMeSummary />
+
       <section className="rounded-[1.75rem] border border-[#182846] bg-[#07111d]/72 p-4 sm:p-6">
         <div className="mb-5">
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
@@ -128,7 +131,6 @@ function ProgressPage() {
         <div className="space-y-4">
           <PerformanceProgressPanel />
           <WeeklyIntelligenceReview />
-          <ProgressForecast />
           <InjuryRiskRadar />
         </div>
       </section>
