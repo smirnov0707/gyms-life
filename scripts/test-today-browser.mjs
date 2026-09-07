@@ -402,6 +402,21 @@ try {
   await twin.page.close();
   record("the Twin's three views each answer from their own source, and none borrows another's");
 
+  // 14. The six optional languages carry their translations inline, beside the
+  //     English, in the newer dictionary files. Nothing read them until the
+  //     lookup in `translate` existed, so every one of these screens rendered
+  //     in English for a German athlete. One live screen proves the read.
+  const de = await open("", { locale: "de-DE" });
+  const deRail = de.page.getByRole("region", { name: "Live-Signale" });
+  await expect(deRail).toBeVisible({ timeout: 30000 });
+  const deText = await deRail.innerText();
+  expect(deText).toContain("Schlaf");
+  expect(deText).toContain("Ruhepuls");
+  expect(deText).toMatch(/noch nicht erfasst/i);
+  expect(deText).not.toMatch(/\bSleep\b|Not recorded yet/);
+  await de.page.close();
+  record("the optional languages render the translation written beside the key");
+
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
   await browser?.close();

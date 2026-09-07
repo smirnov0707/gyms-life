@@ -764,13 +764,31 @@ const LangContext = createContext<{
   t: (k: TKey) => string;
 }>({ lang: "lt", setLang: () => {}, t: (k) => dict[k].lt });
 
+/**
+ * A translation written beside the key itself, rather than in a locale pack.
+ *
+ * The newer `i18n-extra-*` files carry all eight languages inline, because
+ * copy is easier to keep true when every language sits under one line of
+ * English. Nothing read them: `translate` went straight from the locale pack
+ * to the English fallback, so a German athlete saw English on every screen
+ * those files cover — the signal rail, the sources row, body composition,
+ * today's session, the Twin's views — with the German sitting in the repo
+ * unused. This is the read that was missing.
+ */
+function inlineTranslation(key: TKey, lang: SupplementalLanguage): string | undefined {
+  const entry: Record<string, string | undefined> = dict[key];
+  return entry[lang];
+}
+
 function translate(
   lang: Lang,
   key: TKey,
   loadedSupplementalLocales: SupplementalLocales = supplementalLocales,
 ): string {
   if (lang === "lt" || lang === "en") return dict[key][lang];
-  return loadedSupplementalLocales[lang]?.[key] ?? dict[key].en;
+  // The locale pack wins where it has the key, so nothing already translated
+  // changes meaning; the inline value only fills what the pack never covered.
+  return loadedSupplementalLocales[lang]?.[key] ?? inlineTranslation(key, lang) ?? dict[key].en;
 }
 
 function detectLang(): Lang {

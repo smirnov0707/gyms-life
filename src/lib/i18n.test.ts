@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { preloadSupplementalLocale, tr } from "./i18n";
+import { dict, preloadSupplementalLocale, tr, type TKey } from "./i18n";
 
 describe("supplemental locale loading", () => {
   it("keeps base translations synchronous and upgrades only the selected optional language", async () => {
@@ -97,5 +97,44 @@ describe("copy fallback guard", () => {
       .map((file) => path.relative(process.cwd(), file));
 
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("translations written beside the key", () => {
+  /**
+   * The `i18n-extra-*` files carry all eight languages inline. Until the
+   * lookup below existed, nothing read the six optional ones: every screen
+   * those files cover rendered in English for a Russian, Ukrainian, Polish,
+   * German, Spanish or French athlete, with the translation sitting in the
+   * repo two lines above the English it was losing to.
+   */
+  const SUPPLEMENTAL = ["ru", "uk", "pl", "de", "es", "fr"] as const;
+
+  it("renders the inline language wherever no locale pack covers the key", async () => {
+    const packs = new Map(
+      await Promise.all(
+        SUPPLEMENTAL.map(async (lang) => [lang, await preloadSupplementalLocale(lang)] as const),
+      ),
+    );
+
+    let checked = 0;
+    for (const [key, entry] of Object.entries(dict)) {
+      const inline: Record<string, string | undefined> = entry;
+      for (const lang of SUPPLEMENTAL) {
+        const written = inline[lang];
+        if (written === undefined) continue;
+        checked += 1;
+        expect(tr(lang, key as TKey)).toBe(packs.get(lang)?.[key] ?? written);
+      }
+    }
+
+    // Guards against the loop passing because it found nothing to check.
+    expect(checked).toBeGreaterThan(300);
+  });
+
+  it("still falls back to English for a key no optional language was written for", () => {
+    const entry: Record<string, string | undefined> = dict["nav.training"];
+    expect(entry["de"]).toBeUndefined();
+    expect(tr("de", "nav.training")).toBe(dict["nav.training"].en);
   });
 });
