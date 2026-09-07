@@ -230,10 +230,9 @@ describe("region glow", () => {
       expect(TWIN_TONE_GLOW[tone]).toBeGreaterThanOrEqual(0);
       // Above this the emissive stops reading as light on skin and starts
       // bleaching the region into a flat panel.
-      // Above this the tint stops reading as light on skin: the region masks
-      // have hard straight edges, and a strong emissive makes the edge rather
-      // than the muscle the thing you see.
-      expect(TWIN_TONE_GLOW[tone]).toBeLessThanOrEqual(0.25);
+      // Above this the emissive stops being light on a dark body and blows
+      // out to a flat colour, taking the form of the muscle with it.
+      expect(TWIN_TONE_GLOW[tone]).toBeLessThanOrEqual(1);
     }
   });
 
@@ -251,7 +250,7 @@ describe("region glow", () => {
       "volume_high",
       "in_session",
     ] as const) {
-      expect(TWIN_TONE_GLOW[tone], `${tone} is invisible`).toBeGreaterThan(0.03);
+      expect(TWIN_TONE_GLOW[tone], `${tone} is invisible`).toBeGreaterThan(0.2);
     }
   });
 
@@ -275,7 +274,7 @@ describe("region glow", () => {
   it("still shows the athlete which region they picked", () => {
     // Selection has to be visible on top of whatever the region already
     // shows, including the two dark states.
-    expect(TWIN_SELECTION_GLOW).toBeGreaterThan(0.03);
-    expect(TWIN_SELECTION_GLOW + TWIN_TONE_GLOW.unknown).toBeGreaterThan(0.03);
+    expect(TWIN_SELECTION_GLOW).toBeGreaterThan(0.2);
+    expect(TWIN_SELECTION_GLOW + TWIN_TONE_GLOW.unknown).toBeGreaterThan(0.2);
   });
 });

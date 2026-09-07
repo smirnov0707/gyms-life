@@ -34,17 +34,24 @@ export type TwinDisplayTone =
   | "in_session"
   | "not_in_session";
 export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
-  fresh: "#438c7a",
-  moderate: "#a58b55",
-  fatigued: "#a65e6c",
-  unknown: "#566068",
-  volume_low: "#49657c",
-  volume_medium: "#659fc3",
-  volume_high: "#9bd4ee",
-  // The app's own action colour: this layer is not a measurement, it is the
-  // list of what to do. Everything not on it recedes rather than competing.
-  in_session: "#c6f24e",
-  not_in_session: "#3f484f",
+  // Saturated, because the body underneath is a dark instrument rather than
+  // skin. These were muted for a figure that was skin-coloured, where a strong
+  // colour read as clothing; on a near-black body a muted colour just reads as
+  // dirt, and the state stops being legible at a glance.
+  fresh: "#2fbf6d",
+  moderate: "#3b82f6",
+  fatigued: "#f5623c",
+  volume_low: "#3f6fb5",
+  volume_medium: "#7c5cf0",
+  volume_high: "#b14cf0",
+  // This layer is not a measurement, it is the list of what to do, so it takes
+  // the strongest colour on the figure. Everything not on it recedes rather
+  // than competing.
+  in_session: "#c026d3",
+  // The two that mean nothing is being said sit close to the body's own
+  // colour, so they read as unlit rather than as a state of their own.
+  unknown: "#2a3442",
+  not_in_session: "#222c39",
 };
 
 /**
@@ -78,21 +85,19 @@ export const TWIN_TONE_GLOW: Record<TwinDisplayTone, number> = {
   // information too — "what is ready to train" is half of what this figure is
   // for — so it carries a low presence rather than none.
   //
-  // The ceiling matters as much as the floor. The region masks come from the
-  // shipped model's own materials and have hard, straight-edged boundaries;
-  // lit hard enough, the tint stops reading as light and the edge takes over,
-  // so the chest becomes a pink rectangle that looks like a crop top. Kept
-  // low, the skin's own shading and highlights still read through the tint and
-  // the boundary softens by itself.
-  fresh: 0.06,
-  moderate: 0.1,
-  fatigued: 0.16,
-  volume_low: 0.05,
-  volume_medium: 0.09,
-  volume_high: 0.15,
+  // These were an order of magnitude lower while the body was skin-coloured,
+  // where any real brightness turned a region into a garment. The body is a
+  // dark instrument now, so a lit muscle reads as a lit muscle and the light
+  // can be the strength the screen was always drawn with.
+  fresh: 0.3,
+  moderate: 0.4,
+  fatigued: 0.55,
+  volume_low: 0.28,
+  volume_medium: 0.42,
+  volume_high: 0.56,
   // The one layer where lighting a region up is the whole point: it is
   // pointing at what to train, not reporting a value to read off.
-  in_session: 0.2,
+  in_session: 0.7,
   // The two states that mean "nothing to say here" stay dark. An unknown
   // region must never draw the eye, and everything outside today's session
   // recedes so the session reads at a glance.
@@ -101,7 +106,7 @@ export const TWIN_TONE_GLOW: Record<TwinDisplayTone, number> = {
 };
 
 /** Added on top for the region the athlete has selected, whatever its state. */
-export const TWIN_SELECTION_GLOW = 0.08;
+export const TWIN_SELECTION_GLOW = 0.3;
 
 /** Existing 2D renderer tones, sharing the same semantic layer vocabulary. */
 export function twinDisplayToneFor2D(tone: TwinDisplayTone) {

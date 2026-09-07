@@ -16,12 +16,27 @@ const REGION_MATERIAL_PREFIX = "twin-region:";
 /** Kit cut from the body's own surface at build time: shorts, and a top. */
 const GARMENT_MATERIAL_PREFIX = "twin-";
 
-/** Deliberately not a data colour. Skin is a dielectric, so metalness is 0. */
-const SKIN = { color: 0xb08872, roughness: 0.64, metalness: 0 };
-const FABRIC = { color: 0x232830, roughness: 0.94, metalness: 0 };
-/** A blank white sphere reads as a mannequin; without a texture, a dark iris
- *  is the closest honest approximation of an eye. */
-const EYE = { color: 0x2a2320, roughness: 0.28, metalness: 0 };
+/**
+ * The body is a dark instrument, not a photograph of skin.
+ *
+ * It used to be skin-toned, on the principle that a human is tinted rather
+ * than repainted — and that principle then fought every attempt to show data
+ * on it, because a saturated colour laid over skin reads as clothing. The way
+ * out is the one the design has always shown: make the body itself something
+ * that is plainly not skin, and colour on it reads as a reading instead of as
+ * a garment. Nothing is claimed by the change — this figure was never the
+ * athlete's own body, and now it does not pretend to be.
+ *
+ * Slate blue-grey, not near-black. The first attempt at this went almost to
+ * black with a metallic sheen, and the figure lost its own form: the arms and
+ * legs disappeared into the page and only the lit muscle was left floating.
+ * The body has to stay readable as a body where nothing is lit, so the colour
+ * carries and the metalness is low enough not to swallow the fill light.
+ */
+const BODY = { color: 0x3a4a5e, roughness: 0.58, metalness: 0.06 };
+const FABRIC = { color: 0x1a212b, roughness: 0.9, metalness: 0.04 };
+/** Darker than the body, so the face reads as a face at a glance. */
+const EYE = { color: 0x0a0d12, roughness: 0.28, metalness: 0 };
 
 export type TwinBodyModel = {
   body: Group;
@@ -92,7 +107,7 @@ function build(scene: Object3D): TwinBodyModel {
     const garment =
       sourceName.startsWith(GARMENT_MATERIAL_PREFIX) &&
       !sourceName.startsWith(REGION_MATERIAL_PREFIX);
-    const preset = garment ? FABRIC : sourceName === "Eyes" ? EYE : SKIN;
+    const preset = garment ? FABRIC : sourceName === "Eyes" ? EYE : BODY;
     disposeMaterial(object);
     object.material = new MeshStandardMaterial(preset);
     baseColorOf.set(object, preset.color);

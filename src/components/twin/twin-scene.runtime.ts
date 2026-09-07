@@ -303,10 +303,11 @@ export function mountTwinScene(
 
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
-      // A human is tinted, not repainted. Replacing skin with a solid data
-      // colour turns the figure back into coloured body parts, so the data
-      // colour is mixed lightly into the surface it belongs to and the rest
-      // of the reading is carried by selection emphasis and the region panel.
+      // The body is a dark instrument, so the data colour goes into the
+      // surface as well as over it. The old rule — tint a human, never repaint
+      // one — existed to protect a skin tone the figure no longer has, and it
+      // was the thing keeping every reading off the body: on skin, colour
+      // reads as clothing at any strength worth seeing.
       const base = "baseColorOf" in model ? model.baseColorOf : null;
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
@@ -314,34 +315,22 @@ export function mountTwinScene(
         const selected = selectedRegion === id;
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
-          const skin = base?.get(mesh);
-          if (skin !== undefined) {
-            // Skin keeps its own colour; the state is light cast over it, and
-            // brighter the more it wants attention. Mixing the data colour into
-            // the albedo instead painted a hard-edged amber block across the
-            // torso — the coloured-body-parts look this figure exists to end.
-            // Divided by the tone's own brightness so how much a region lights
-            // up is set by what it means, not by how pale its colour happens to
-            // be. Without it the near-white volume tone burned the pectoral
-            // plate to a flat white shape that read as a garment.
+          const bodyColour = base?.get(mesh);
+          if (bodyColour !== undefined) {
             const glow =
               TWIN_TONE_GLOW[value?.display.tone ?? "unknown"] +
               (selected ? TWIN_SELECTION_GLOW : 0);
-            // The palette is drawn for small marks on a dark page, so its
-            // lighter tones are close to white. Laid on skin as light, white is
-            // not a colour — it just bleaches the region into a flat panel — so
-            // the body uses the same hue at full saturation instead, and the
-            // amount of light is set by the glow alone.
-            const hsl = { h: 0, s: 0, l: 0 };
-            tone.getHSL(hsl);
-            // Saturation lifted only slightly. Pushed harder, the emissive overwhelms
-            // the skin's shading and the region's straight-edged mask reads as a
-            // piece of clothing rather than as a lit muscle.
-            const lit = new Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.15), 0.5);
-            material.color.set(skin);
-            material.emissive.copy(lit);
-            material.emissiveIntensity = glow / Math.max(lit.r, lit.g, lit.b, 0.2);
-            material.roughness = selected ? 0.56 : 0.64;
+            // How far the surface itself takes the data colour, rising with
+            // the light so a strongly lit muscle is coloured through rather
+            // than a dark shape with a glow floating on it.
+            const painted = Math.min(0.85, glow);
+            material.color.set(bodyColour).lerp(tone, painted);
+            material.emissive.copy(tone);
+            // Divided by the tone's own brightness, so how much a region lights
+            // up is set by what it means rather than by how pale its colour
+            // happens to be.
+            material.emissiveIntensity = glow / Math.max(tone.r, tone.g, tone.b, 0.25);
+            material.roughness = selected ? 0.34 : 0.46;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");
