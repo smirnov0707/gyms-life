@@ -115,7 +115,7 @@ export const Route = createFileRoute("/api/public/health-ingest")({
           return list.length ? list.reduce((a, b) => a + b, 0) / list.length : null;
         };
 
-        const score = recoveryScore(
+        const readiness = recoveryScore(
           {
             restingHr: p.restingHr,
             hrvMs: p.hrvMs,
@@ -129,6 +129,10 @@ export const Route = createFileRoute("/api/public/health-ingest")({
             hrvMs: avg((history ?? []).map((h) => h.hrv_ms as number | null)),
           },
         );
+        // Null when too little was measured to say anything. Stored as null
+        // rather than as a low number: an athlete whose watch sent only a step
+        // count has not been measured as unrecovered.
+        const score = readiness === null ? null : readiness.score;
         const modifier = healthLoadModifier(score);
 
         const { error: sampleError } = await supabaseAdmin.from("health_samples").upsert(
@@ -163,14 +167,18 @@ export const Route = createFileRoute("/api/public/health-ingest")({
         // against UTC's, so for several hours a day the reading was stored
         // but never became that day's check-in.
         if (sampleOn === athleteToday) {
+          // Only the fields this payload actually carries. The check-in row is
+          // shared with the manual morning check-in, and writing null over an
+          // answer the athlete typed in themselves — their sleep, their
+          // readiness — would destroy it on every watch sync that happened to
+          // omit that field.
           const { error: checkinError } = await supabaseAdmin.from("daily_checkins").upsert(
             {
               user_id: userId,
               checkin_on: sampleOn,
-              sleep_hours: p.sleepHours,
-              sleep_quality: p.sleepQuality,
-              readiness_score: score,
-              load_modifier: modifier,
+              ...(p.sleepHours === null ? {} : { sleep_hours: p.sleepHours }),
+              ...(p.sleepQuality === null ? {} : { sleep_quality: p.sleepQuality }),
+              ...(score === null ? {} : { readiness_score: score, load_modifier: modifier }),
             },
             { onConflict: "user_id,checkin_on" },
           );
@@ -186,6 +194,10 @@ export const Route = createFileRoute("/api/public/health-ingest")({
           sample_on: sampleOn,
           recovery_score: score,
           load_modifier: modifier,
+          // What the score actually rests on, so an automation sending too
+          // little can see why no readiness came back rather than guessing.
+          readiness_coverage: readiness === null ? 0 : readiness.coverage,
+          readiness_measured: readiness === null ? [] : readiness.measured,
           // echo back what was actually stored so automations can be verified
           stored: {
             resting_hr: p.restingHr,

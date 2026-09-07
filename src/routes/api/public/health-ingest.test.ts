@@ -168,6 +168,39 @@ describe("public health ingest", () => {
     expect(body["dropped"]).toBeUndefined();
   });
 
+  it("stores no readiness when too little was measured, and does not touch the plan", async () => {
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    // A step count alone. This used to produce a readiness score and cut the
+    // day's prescribed load by a fifth.
+    const { body } = await post({ token: TOKEN, steps: 8342 });
+    expect(body["recovery_score"]).toBeNull();
+    expect(body["load_modifier"]).toBe(1);
+    expect(written["health_samples"]?.[0]?.["recovery_score"]).toBeNull();
+  });
+
+  it("never writes a null readiness over an answer the athlete typed in", async () => {
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    const { status } = await post({ token: TOKEN, steps: 8342 });
+    expect(status).toBe(200);
+    const checkin = written["daily_checkins"]?.[0];
+    // The check-in row is shared with the manual morning check-in. A watch
+    // sync that measured nothing must leave those fields alone rather than
+    // overwrite them with null.
+    expect(checkin).toBeDefined();
+    expect(checkin && "readiness_score" in checkin).toBe(false);
+    expect(checkin && "load_modifier" in checkin).toBe(false);
+    expect(checkin && "sleep_hours" in checkin).toBe(false);
+    expect(checkin).toMatchObject({ user_id: "u1" });
+  });
+
   it("keeps the rest of a sample whose stages contradict its own duration, and says so", async () => {
     script = {
       profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
