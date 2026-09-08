@@ -23,10 +23,7 @@ export function authoredWorkflow(source) {
 async function run() {
   if (process.argv[2] === "--self-test") {
     const fixture = `unchanged lights\n${legacyPreset}\nunchanged cameras`;
-    assert.equal(
-      authoredWorkflow(fixture),
-      `unchanged lights\n${nativePreset}\nunchanged cameras`,
-    );
+    assert.equal(authoredWorkflow(fixture), `unchanged lights\n${nativePreset}\nunchanged cameras`);
     assert.throws(() => authoredWorkflow("no preset"), /exactly one/);
     assert.throws(() => authoredWorkflow(fixture + legacyPreset), /exactly one/);
     console.log("3 material-mode transformation checks passed.");
@@ -55,14 +52,7 @@ async function run() {
     await writeFile(path.join(isolated, workflowPath), authored);
     const result = spawnSync(
       process.execPath,
-      [
-        path.join(isolated, runnerPath),
-        model,
-        out,
-        "--dependencies",
-        repo,
-        "--extra-full-body",
-      ],
+      [path.join(isolated, runnerPath), model, out, "--dependencies", repo, "--extra-full-body"],
       { stdio: "inherit", timeout: 600000 },
     );
     if (result.error || result.status !== 0) {

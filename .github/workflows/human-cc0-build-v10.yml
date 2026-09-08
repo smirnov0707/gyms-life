@@ -22,12 +22,12 @@ jobs:
   build-and-review:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    env:
-      V9_REVIEW_DIR: ${{ runner.temp }}/gyms-human-v9
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Set the review directory after runner initialization
+        run: echo "V9_REVIEW_DIR=$RUNNER_TEMP/gyms-human-v9" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
