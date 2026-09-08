@@ -93,6 +93,12 @@ function salvageUnreadableQueue(): void {
 
 function persistOfflineQueue(queue: OfflinePayload[]): void {
   if (!isBrowser()) return;
+  // Every write here replaces whatever is stored, so the check belongs here
+  // rather than at each caller. Guarding only `queueWorkoutSet` left the flush
+  // path — which persists `retainUnacknowledgedWorkoutSets(...)` over the same
+  // key — free to overwrite a corrupt queue with an empty one, and that path
+  // is worse: it destroys without even adding a set in exchange.
+  if (!readOfflineQueue().readable) salvageUnreadableQueue();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
   window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_EVENT));
 }
@@ -157,11 +163,10 @@ export function getOfflineQueue(): OfflinePayload[] {
 
 export function queueWorkoutSet(input: WorkoutSetSync): OfflinePayload {
   const data = WorkoutSetSyncSchema.parse(input);
-  const { items: queue, readable } = readOfflineQueue();
-  // Never build the next queue on top of a queue we could not read. What is
-  // there is somebody's logged sets, and the write below would replace all of
-  // them with this one.
-  if (!readable) salvageUnreadableQueue();
+  // Never build the next queue on top of a queue we could not read: what is
+  // there is somebody's logged sets, and the write below replaces all of them
+  // with this one. `persistOfflineQueue` puts the unreadable value aside.
+  const queue = getOfflineQueue();
   if (queue.length >= MAX_QUEUE_ITEMS) {
     throw new Error("Offline workout queue is full. Reconnect to sync your saved sets.");
   }

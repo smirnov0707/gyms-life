@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  flushOfflineWorkoutSets,
   getOfflineQueue,
   isNetworkUnavailable,
   queueWorkoutSet,
@@ -281,6 +282,48 @@ describe("a queue that cannot be read", () => {
       ]),
     );
     expect(getOfflineQueue()).toHaveLength(1);
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
+  });
+});
+
+describe("flushing over a queue that cannot be read", () => {
+  function stubBrowser(raw: string) {
+    const store = new Map<string, string>([["gyms_life_offline_queue_v2", raw]]);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => store.set(key, value),
+      },
+      dispatchEvent: () => true,
+    });
+    vi.stubGlobal(
+      "localStorage",
+      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
+    );
+    vi.stubGlobal("navigator", { onLine: true });
+    return store;
+  }
+
+  it("does not overwrite a corrupt queue with an empty one", async () => {
+    // The worse of the two write paths. A corrupt store reads as `[]`, so the
+    // snapshot is empty, nothing syncs, and the flush then persists `[]` over
+    // the only copy of the athlete's sets — destroying them without even
+    // adding a set in exchange.
+    const store = stubBrowser('[{"id":"a","type":"workout_set"');
+    const sync = vi.fn();
+
+    const result = await flushOfflineWorkoutSets(sync);
+
+    expect(sync).not.toHaveBeenCalled();
+    expect(result.synced).toBe(0);
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBe(
+      '[{"id":"a","type":"workout_set"',
+    );
+  });
+
+  it("leaves a readable queue alone when there is nothing to deliver", async () => {
+    const store = stubBrowser("[]");
+    await flushOfflineWorkoutSets(vi.fn());
     expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
   });
 });
