@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { HypothesisRetrospective } from "@/components/HypothesisRetrospective";
 import { LabView } from "@/components/LabView";
 import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
+import { NightLabPanel } from "@/components/future-lab/NightLabPanel";
 
 export const Route = createFileRoute("/_authenticated/lab")({
   head: () => ({
@@ -25,6 +26,7 @@ function LabPage() {
   return (
     <div className="mx-auto max-w-[1480px] space-y-4">
       <LabCommandDeck />
+      <NightLabPanel />
       <LabView />
       <HypothesisRetrospective />
     </div>
