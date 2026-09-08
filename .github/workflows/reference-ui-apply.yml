@@ -1,0 +1,84 @@
+name: Apply and verify reference UI interactions
+on:
+  push:
+    branches: [audit/reference-ui-workspace-20260908]
+    paths:
+      - .github/workflows/reference-ui-apply.yml
+      - scripts/apply-reference-ui-interactions.py
+permissions:
+  contents: write
+concurrency:
+  group: reference-ui-apply-20260908
+  cancel-in-progress: false
+jobs:
+  prepare-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 437cc7618ab13bf0d6917f915f37c70b0e5e824f
+          path: app
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Verify the target has not moved and apply exact reviewed patches
+        working-directory: app
+        run: |
+          CURRENT=$(git ls-remote origin refs/heads/codex/future-lab-reference-ui | cut -f1)
+          test "$CURRENT" = '437cc7618ab13bf0d6917f915f37c70b0e5e824f'
+          python ../tools/scripts/apply-reference-ui-interactions.py "$PWD"
+      - run: npm ci --ignore-scripts
+        working-directory: app
+      - name: Format only the changed paths
+        working-directory: app
+        run: |
+          xargs -d '\n' npx prettier --write < reference-patch-files.txt
+          git diff --stat
+      - name: Typecheck
+        working-directory: app
+        run: npm run typecheck
+      - name: Unit tests
+        working-directory: app
+        run: npm run test
+      - name: Lint
+        working-directory: app
+        run: npm run lint
+      - name: Build
+        working-directory: app
+        run: npm run build
+      - name: Save a review candidate, never main or the deployed branch
+        working-directory: app
+        run: |
+          CURRENT=$(git ls-remote origin refs/heads/codex/future-lab-reference-ui | cut -f1)
+          test "$CURRENT" = '437cc7618ab13bf0d6917f915f37c70b0e5e824f'
+          git config user.name 'GYMS.LIFE reference UI review'
+          git config user.email '138158634+smirnov0707@users.noreply.github.com'
+          while IFS= read -r FILE; do git add -- "$FILE"; done < reference-patch-files.txt
+          git diff --cached --check
+          git commit -m 'Connect reference UI muscle navigation and received-data refresh' -m 'Use validated persistent Twin search state, preserve evidence tabs and connect Today body-map actions. Add real refresh feedback distinguishing empty, old, partial and failed reads. Preserve canonical analytics and all existing routes. Fix schema-invalid empty fixtures; extend browser interaction coverage. No production deploy or visual parity claim.'
+          git push origin HEAD:refs/heads/audit/reference-ui-functional-20260908
+          git rev-parse HEAD | tee "$RUNNER_TEMP/REFERENCE_CANDIDATE_SHA.txt"
+      - name: Browser regression including six reference screens
+        working-directory: app
+        run: |
+          npx playwright install --with-deps chromium
+          node scripts/test-today-browser.mjs
+      - name: Save review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-ui-functional-evidence
+          path: |
+            app/test-results/today
+            app/reference-patch-files.txt
+            ${{ runner.temp }}/REFERENCE_CANDIDATE_SHA.txt
+          retention-days: 14
+          if-no-files-found: warn
