@@ -157,7 +157,7 @@ function floorGrid(step: number, reach: number) {
     new LineBasicMaterial({
       vertexColors: true,
       transparent: true,
-      opacity: 0.24,
+      opacity: 0.12,
       blending: AdditiveBlending,
       depthWrite: false,
     }),
@@ -347,9 +347,9 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   // The dashed rings behind the figure, standing upright and centred on the
   // chest, which is where the screen they come from puts them.
   for (const [radius, steps, gapFraction, opacity] of [
-    [0.44, 56, 0.5, 0.75],
-    [0.62, 76, 0.55, 0.45],
-    [0.86, 100, 0.6, 0.22],
+    [0.44, 56, 0.5, 0.32],
+    [0.62, 76, 0.55, 0.22],
+    [0.86, 100, 0.6, 0.11],
   ] as const) {
     const circle = dashedCircle(
       radius * (bodyHeight / 1.7),

@@ -17,6 +17,7 @@ import {
 import { baseLang, useI18n } from "@/lib/i18n";
 import type { LabOverview } from "@/lib/lab.schema";
 import { useLabOverview } from "./lab-overview.query";
+import "./lab-roster-tiles.css";
 
 type Module = {
   id: string;
@@ -117,7 +118,7 @@ export function LabRosterRows({
   const restricted =
     gaps.has("personalization_consent_required") || gaps.has("personalization_consent_unavailable");
   return (
-    <ul className={tiles ? "grid grid-cols-5 gap-1.5 sm:gap-2" : "divide-y divide-border/60"}>
+    <ul className={tiles ? "fl-lab-roster-tiles" : "divide-y divide-border/60"}>
       {MODULES.map((module) => {
         const Icon = module.icon;
         const waiting =
@@ -161,18 +162,18 @@ export function LabRosterRows({
             }
           >
             <span
-              className={`grid shrink-0 place-items-center border border-violet-400/20 bg-violet-500/[0.06] text-violet-300 light:text-violet-700 ${tiles ? "mb-2 size-10 rounded-full" : "size-7 rounded-lg"}`}
+              className={`grid shrink-0 place-items-center border border-violet-400/20 bg-violet-500/[0.06] text-violet-300 light:text-violet-700 ${tiles ? "fl-role-icon" : "size-7 rounded-lg"}`}
             >
               <Icon className={tiles ? "size-4" : "size-3.5"} strokeWidth={1.4} />
             </span>
             <span className="min-w-0 flex-1">
               <span
-                className={`block font-medium text-foreground ${tiles ? "text-[9px] leading-snug sm:text-[10px]" : "text-[11px]"}`}
+                className={`block font-medium text-foreground ${tiles ? "fl-role-name" : "text-[11px]"}`}
               >
                 {english ? module.en : module.lt}
               </span>
               <span
-                className={`block text-[9px] leading-snug text-muted-foreground ${tiles ? "mt-1" : "mt-0.5"}`}
+                className={`block text-muted-foreground ${tiles ? "fl-role-status" : "mt-0.5 text-[9px] leading-snug"}`}
               >
                 {label}
               </span>

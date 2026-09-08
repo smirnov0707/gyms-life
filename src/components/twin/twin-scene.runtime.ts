@@ -161,20 +161,20 @@ export function mountTwinScene(
     // two rims — one cyan behind and one violet from the side — that draw the
     // silhouette out of the stage. It was warm and bright while the figure was
     // skin-coloured; a warm key on a near-black body just makes it grey.
-    scene.add(new HemisphereLight(0x8fb4dc, 0x080e16, 0.26));
+    scene.add(new HemisphereLight(0xadc3d1, 0x101722, 0.58));
     for (const [position, color, intensity] of [
       // The key, high and slightly to the front, which is what models a muscle
       // belly. Kept modest: the data colour is emissive, so a bright key on top
       // of it flattens the very thing it is there to shape.
-      [[1.8, 2.8, 2.6], 0xdfeaff, 1.8],
-      [[-2.6, 1.0, 1.6], 0x4a7bb0, 0.38],
+      [[1.8, 2.8, 2.6], 0xdeebf4, 1.7],
+      [[-2.6, 1.0, 1.6], 0x9cadc1, 0.65],
       // The rim, hard behind and to each side. This is where the figure gets
       // its edge against the stage. A scaled-up inside-out copy of every mesh
       // was tried for that first, and on a body made of a hundred overlapping
       // muscles each copy glows over its neighbours as well as over the stage —
       // the figure came out milky and lost every muscle boundary it had.
-      [[-1.6, 1.9, -3.0], 0x77e7ff, 3.4],
-      [[2.2, 1.4, -2.6], 0x7b96ff, 2.4],
+      [[-1.6, 1.9, -3.0], 0x9adceb, 1.4],
+      [[2.2, 1.4, -2.6], 0x98acd8, 1.0],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
@@ -383,13 +383,12 @@ export function mountTwinScene(
             // up is set by what it means rather than by how pale its colour
             // happens to be.
             material.emissiveIntensity = lit
-              ? ((selected ? 0.3 : 0.16) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
+              ? ((selected ? 0.22 : 0.12) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
               : 0;
-            // Wet rather than matte: a low roughness keeps a specular highlight
-            // running along each muscle belly, which is what separates one from
-            // the next on a body lit from three sides.
-            material.roughness = selected ? 0.26 : 0.33;
-            material.metalness = 0.2;
+            // A broad highlight describes the muscle belly without turning
+            // every small atlas triangle into a bright metallic glint.
+            material.roughness = selected ? 0.56 : 0.6;
+            material.metalness = 0.12;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");

@@ -177,6 +177,32 @@ try {
     return opened;
   };
 
+  const assertInteractiveTwin = async (canvas) => {
+    await expect(canvas).toBeVisible({ timeout: 30000 });
+    // Playwright's visible state includes below-fold elements. The renderer
+    // deliberately stops offscreen and when ambient motion is disabled; one
+    // frame is valid. Bring it into view, then prove a real input is repainted.
+    await canvas.scrollIntoViewIfNeeded();
+    await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+      .toBeGreaterThanOrEqual(1);
+    const beforeFrames = Number(await canvas.getAttribute("data-twin-frames"));
+    const beforeYaw = Number(await canvas.getAttribute("data-twin-yaw"));
+    await canvas.press("ArrowRight");
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+      .toBeGreaterThan(beforeFrames);
+    await expect
+      .poll(async () => Math.abs(Number(await canvas.getAttribute("data-twin-yaw")) - beforeYaw))
+      .toBeGreaterThan(0.05);
+    await canvas.press("ArrowLeft");
+    await expect
+      .poll(async () => Math.abs(Number(await canvas.getAttribute("data-twin-yaw")) - beforeYaw))
+      .toBeLessThan(0.01);
+    await canvas.evaluate((element) => element.blur());
+  };
+
   // Capture the real route trees inside the real shell before legacy checks,
   // so downloadable design evidence survives a later regression failure.
   const references = [];
@@ -198,10 +224,7 @@ try {
       ).toBeVisible();
       const canvas = shown.page.locator("canvas[data-twin-frames]").first();
       if (["today", "twin", "muscle"].includes(screen)) {
-        await expect(canvas).toBeVisible({ timeout: 30000 });
-        await expect
-          .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
-          .toBeGreaterThan(1);
+        await assertInteractiveTwin(canvas);
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -212,15 +235,17 @@ try {
           .click();
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
         await expect(detail).toBeVisible();
-        await expect(detail.locator("canvas[data-twin-frames]")).toBeVisible({ timeout: 30000 });
+        await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
+      }
+      for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
+        await illustration.scrollIntoViewIfNeeded();
         await expect
           .poll(async () =>
-            Number(
-              await detail.locator("canvas[data-twin-frames]").getAttribute("data-twin-frames"),
-            ),
+            illustration.evaluate((image) => image.complete && image.naturalWidth > 0),
           )
-          .toBeGreaterThan(1);
+          .toBe(true);
       }
+      await shown.page.evaluate(() => window.scrollTo(0, 0));
       await shown.page.waitForTimeout(700);
       const overflow = await shown.page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

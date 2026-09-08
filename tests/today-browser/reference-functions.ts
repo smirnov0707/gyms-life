@@ -1,3 +1,10 @@
+import { TwinSnapshotSchema } from "@/lib/digital-twin.schema";
+import {
+  KNOWN_MUSCLE_GROUPS,
+  MUSCLE_RECOVERY_FRESH_THRESHOLD,
+  MUSCLE_RECOVERY_MODERATE_THRESHOLD,
+} from "@/lib/muscle-load.schema";
+import { buildTodaysTargets } from "@/lib/todays-targets.engine";
 import { LabOverviewSchema } from "@/lib/lab.schema";
 import { TodayDecisionSchema } from "@/lib/today-decision.schema";
 import { DeterministicPerformanceForecastSchema } from "@/lib/forecast.schema";
@@ -42,7 +49,50 @@ export async function getLiveSignals() {
 export async function getTwinSnapshot() {
   if (scenario() === "failure")
     return { ...(await legacy.getTwinSnapshot()), dataAvailable: false, regions: [] };
-  return legacy.getTwinSnapshot();
+  if (!isReference()) return legacy.getTwinSnapshot();
+  // Authored visual coverage, not physiology inferred from these sample hours.
+  // The canonical source has "legs"; it does not claim separate quad evidence.
+  const readings: Record<
+    (typeof KNOWN_MUSCLE_GROUPS)[number],
+    {
+      recoveryPct: number;
+      volumeKg: number;
+      lastTrainedHoursAgo: number;
+    }
+  > = {
+    chest: { recoveryPct: 86, volumeKg: 4200, lastTrainedHoursAgo: 72 },
+    shoulders: { recoveryPct: 43, volumeKg: 1800, lastTrainedHoursAgo: 18 },
+    legs: { recoveryPct: 66, volumeKg: 7200, lastTrainedHoursAgo: 42 },
+    back: { recoveryPct: 72, volumeKg: 5100, lastTrainedHoursAgo: 48 },
+    arms: { recoveryPct: 74, volumeKg: 1600, lastTrainedHoursAgo: 48 },
+    glutes: { recoveryPct: 68, volumeKg: 3600, lastTrainedHoursAgo: 42 },
+    core: { recoveryPct: 76, volumeKg: 900, lastTrainedHoursAgo: 54 },
+    abs: { recoveryPct: 75, volumeKg: 600, lastTrainedHoursAgo: 54 },
+    fullbody: { recoveryPct: 70, volumeKg: 2400, lastTrainedHoursAgo: 48 },
+    cardio: { recoveryPct: 78, volumeKg: 0, lastTrainedHoursAgo: 48 },
+    mobility: { recoveryPct: 78, volumeKg: 0, lastTrainedHoursAgo: 48 },
+  };
+  return TwinSnapshotSchema.parse({
+    calculationVersion: "SYNTHETIC-REFERENCE-NOT-USER-DATA",
+    bodyVariant: "male",
+    computedAt: when,
+    evidenceWindowDays: 14,
+    dataAvailable: true,
+    regions: KNOWN_MUSCLE_GROUPS.map((region) => {
+      const reading = readings[region];
+      return {
+        region,
+        provenance: "calculated",
+        ...reading,
+        recoveryBand:
+          reading.recoveryPct >= MUSCLE_RECOVERY_FRESH_THRESHOLD
+            ? "fresh"
+            : reading.recoveryPct >= MUSCLE_RECOVERY_MODERATE_THRESHOLD
+              ? "moderate"
+              : "fatigued",
+      };
+    }),
+  });
 }
 export async function getLabOverview() {
   assertReadable();
@@ -175,7 +225,19 @@ export async function getTodaysWorkout() {
 }
 export async function getTodaysTargets() {
   assertReadable();
-  return isReference() ? legacy.getTodaysTargets() : { status: "rest" as const };
+  if (!isReference()) return { status: "rest" as const };
+  const workout = await legacy.getTodaysWorkout();
+  return buildTodaysTargets({
+    session: workout.status === "READY" ? workout.workout : null,
+    sessionReadable: true,
+    muscleGroupBySlug: new Map([
+      ["bench-press", "chest"],
+      ["incline-db-press", "chest"],
+      ["pull-up", "back"],
+      ["chest-supported-row", "back"],
+      ["lateral-raise", "shoulders"],
+    ]),
+  });
 }
 export async function getTrainingLoad() {
   assertReadable();
@@ -209,7 +271,7 @@ export async function getDailyBrief() {
       ? {
           headline: "A steady day to build on",
           summary:
-            "Your check-in is 72 and last night's sleep is 7.4 hours. Keep the recorded plan in view and review the chest region's calculated fatigue before your session.",
+            "Your check-in is 72 and last night's sleep is 7.4 hours. Keep the recorded plan in view and review the shoulder region's calculated fatigue before your session.",
           focus: "Consistency",
           signals: [
             {
@@ -230,7 +292,9 @@ export async function getDailyBrief() {
               priority: "medium",
             },
           ],
-          watchouts: ["Chest recovery is a calculated estimate, not a physiological measurement."],
+          watchouts: [
+            "Shoulder recovery is a calculated estimate, not a physiological measurement.",
+          ],
           gaps: [],
           streakDays: 0,
           readiness: 72,

@@ -430,3 +430,13 @@
     transition: none;
   }
 }
+
+/* Match the reference's restrained sans-serif typography across app routes. */
+.future-lab-app h1,
+.future-lab-app h2,
+.future-lab-app h3,
+.future-lab-app h4,
+.future-lab-app .font-display,
+.future-lab-app .text-display {
+  font-family: var(--font-sans);
+}

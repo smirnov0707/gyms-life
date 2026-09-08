@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BrainCircuit, FlaskConical, LockKeyhole, Sparkles } from "lucide-react";
 import { RecentWorkoutEffect } from "@/components/RecentWorkoutEffect";
+import { IllustrativeAthlete } from "./IllustrativeAthlete";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import { useLabOverview } from "./lab-overview.query";
 import { baseLang, useI18n } from "@/lib/i18n";
@@ -123,45 +124,39 @@ export function FutureLabTodayIntelligence() {
                 : "Šis modelis neturi 180 dienų projekcijos."}
             </FutureLabEmpty>
           ) : lift && projected !== null ? (
-            <>
-              <p className="truncate text-[11px] font-medium text-foreground">
-                {lift.exerciseName}
-              </p>
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] text-muted-foreground">
-                    {english ? "Current e1RM" : "Dabartinis e1RM"}
-                  </p>
-                  <p className="mt-1 font-mono text-xl text-foreground">
-                    {lift.currentEstimated1RMKg}
-                    <span className="ml-1 text-[10px] text-muted-foreground">kg</span>
-                  </p>
-                </div>
-                <ArrowRight className="size-4 text-violet-400" />
-                <div className="text-right">
-                  <p className="text-[9px] text-muted-foreground">
-                    {english ? "Projected e1RM" : "Numatomas e1RM"}
-                  </p>
-                  <p className="mt-1 font-mono text-xl text-violet-300 light:text-violet-700">
-                    {projected}
-                    <span className="ml-1 text-[10px]">kg</span>
-                  </p>
-                </div>
+            <div className="grid grid-cols-[.85fr_1.15fr] items-center gap-3">
+              <IllustrativeAthlete compact />
+              <div className="min-w-0">
+                <p className="truncate text-[10px] font-medium text-foreground">
+                  {lift.exerciseName}
+                </p>
+                <dl className="mt-2.5 space-y-2 text-[9px]">
+                  <div className="flex flex-wrap justify-between gap-x-2 gap-y-0.5">
+                    <dt className="text-muted-foreground">
+                      {english ? "Current e1RM" : "Dabartinis e1RM"}
+                    </dt>
+                    <dd className="font-mono text-foreground">{lift.currentEstimated1RMKg} kg</dd>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-x-2 gap-y-0.5">
+                    <dt className="text-muted-foreground">
+                      {english ? "Projected e1RM" : "Numatomas e1RM"}
+                    </dt>
+                    <dd className="font-mono text-violet-300 light:text-violet-700">
+                      {projected} kg
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-x-2 gap-y-0.5">
+                    <dt className="text-muted-foreground">{english ? "Change" : "Pokytis"}</dt>
+                    <dd className="font-mono text-cyan-300 light:text-cyan-700">
+                      {change === null ? "—" : `${change > 0 ? "+" : ""}${change}%`}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-2.5 border-t border-border/60 pt-2 text-[9px] text-muted-foreground">
+                  {lift.evidence.sessionCount} {english ? "completed sessions" : "baigtų sesijų"}
+                </p>
               </div>
-              <p className="mt-3 flex justify-between gap-2 text-[10px] text-muted-foreground">
-                <span>
-                  {lift.evidence.sessionCount} {english ? "sessions" : "sesijų"}
-                </span>
-                <span className="font-mono text-cyan-300 light:text-cyan-700">
-                  {change === null ? "—" : `${change > 0 ? "+" : ""}${change}%`}
-                </span>
-              </p>
-              <p className="mt-2 text-[9px] text-muted-foreground">
-                {english
-                  ? "Calculated estimate · no future body is inferred."
-                  : "Apskaičiuotas įvertis · būsimas kūnas nenuspėjamas."}
-              </p>
-            </>
+            </div>
           ) : (
             <FutureLabEmpty>
               {forecast.status === "learning"

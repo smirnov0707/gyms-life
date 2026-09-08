@@ -116,7 +116,7 @@ export function SmartBrief({ compact = false }: { compact?: boolean }) {
         {brief ? (
           <>
             <h3>{brief.headline}</h3>
-            <p>{brief.summary}</p>
+            <p className="fl-brief-preview">{brief.summary}</p>
             {brief.watchouts.map((warning, index) => (
               <p key={index} className="fl-brief-warning">
                 {t("brief.watch")}: {warning}
@@ -124,6 +124,7 @@ export function SmartBrief({ compact = false }: { compact?: boolean }) {
             ))}
             <details className="fl-disclosure">
               <summary>{t("brief.why")}</summary>
+              <p>{brief.summary}</p>
               <p>
                 {t("brief.focus")}: {brief.focus}
               </p>

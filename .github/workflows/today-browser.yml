@@ -17,6 +17,7 @@ on:
       - "src/components/TodayDecision.tsx"
       - "src/components/TodayLifeContext.tsx"
       - "src/components/future-lab/**"
+      - "public/assets/future-lab/**"
       - "src/components/twin/TwinTodayCard.tsx"
       - "src/lib/live-signals*"
       - "src/styles.css"

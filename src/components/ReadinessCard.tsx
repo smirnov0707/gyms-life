@@ -122,7 +122,9 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({
         </div>
       )}
 
-      <p className="mt-2 text-[11px] leading-snug text-muted-foreground">{hint}</p>
+      {(!compact || open) && (
+        <p className="mt-2 text-[11px] leading-snug text-muted-foreground">{hint}</p>
+      )}
 
       <Button
         variant="ghost"

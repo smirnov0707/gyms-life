@@ -33,7 +33,7 @@ const REGION_MATERIAL_PREFIX = "twin-region:";
  * middle of the lit muscle around it. It has to read as unlit body, not as
  * missing body.
  */
-const BODY = { color: 0x182d42, roughness: 0.32, metalness: 0.2 };
+const BODY = { color: 0x243746, roughness: 0.6, metalness: 0.12 };
 
 /**
  * The skin, over the parts of the figure that have no muscle.
@@ -44,10 +44,10 @@ const BODY = { color: 0x182d42, roughness: 0.32, metalness: 0.2 };
  * hand without turning the figure into a mannequin with a flesh-coloured head
  * on it.
  */
-const SKIN = { color: 0x263f55, roughness: 0.28, metalness: 0.18 };
+const SKIN = { color: 0x354956, roughness: 0.55, metalness: 0.1 };
 
 /** Darker than the body, so the face reads as a face at a glance. */
-const EYE = { color: 0x05080d, roughness: 0.18, metalness: 0.2 };
+const EYE = { color: 0x15222c, roughness: 0.4, metalness: 0.08 };
 
 export type TwinBodyModel = {
   body: Group;

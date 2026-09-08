@@ -14,10 +14,10 @@ export function createTwinAnatomyMaterial(
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <emissivemap_fragment>",
       `#include <emissivemap_fragment>
-      float twinRim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);
-      totalEmissiveRadiance += vec3(0.12, 0.53, 0.68) * twinRim * 0.42;`,
+      float twinRim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 6.0);
+      totalEmissiveRadiance += vec3(0.14, 0.38, 0.46) * twinRim * 0.18;`,
     );
   };
-  material.customProgramCacheKey = () => "twin-anatomy-rim-v1";
+  material.customProgramCacheKey = () => "twin-anatomy-rim-v2";
   return material;
 }

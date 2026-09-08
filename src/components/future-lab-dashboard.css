@@ -660,3 +660,23 @@
     height: 36px;
   }
 }
+
+.fl-dashboard .fl-brief-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fl-dashboard .fl-bottom-deck a {
+  border-radius: 5px;
+  min-height: 34px;
+}
+.fl-dashboard .twin-home--cockpit {
+  border-radius: 9px;
+  background: radial-gradient(ellipse at 40% 45%, rgb(10 44 69 / 22%), transparent 65%), #030914;
+}
+@media (max-width: 759px) {
+  .fl-dashboard .fl-bottom-deck a {
+    min-height: 44px;
+  }
+}

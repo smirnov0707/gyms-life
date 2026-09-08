@@ -56,7 +56,7 @@ export function LabCommandDeck() {
 
   return (
     <section className="fl-lab-page fl-panel overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 sm:p-5">
-      <header className="flex items-start justify-between gap-3 border-b border-border/70 pb-4">
+      <header className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
         <div>
           <p className="text-[9px] uppercase tracking-[0.18em] text-violet-300 light:text-violet-700">
             GYMS.LIFE FUTURE LAB
@@ -79,7 +79,7 @@ export function LabCommandDeck() {
         </span>
       </header>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <LabRosterRows
           data={data}
           status={query.isError ? "error" : data ? "ready" : "loading"}
@@ -92,7 +92,7 @@ export function LabCommandDeck() {
           : "Vaidmenys apibūdina GYMS.LIFE duomenų sritis ir taisykles."}
       </p>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+      <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
         <FutureLabPanel
           eyebrow={english ? "CURRENT INVESTIGATION" : "DABARTINIS TYRIMAS"}
           title={english ? "The question being tested" : "Tikrinamas klausimas"}
@@ -104,8 +104,8 @@ export function LabCommandDeck() {
             <FutureLabEmpty>{t("common.loading")}</FutureLabEmpty>
           ) : primary ? (
             <>
-              <p className="max-w-xl text-base leading-relaxed text-foreground">{statement}</p>
-              <div className="mt-4 flex items-center justify-between gap-3 text-[10px]">
+              <p className="max-w-xl text-sm leading-relaxed text-foreground">{statement}</p>
+              <div className="mt-3 flex items-center justify-between gap-3 text-[10px]">
                 <span className="text-muted-foreground">
                   {english ? "Evidence gathered" : "Surinkta įrodymų"}
                 </span>
