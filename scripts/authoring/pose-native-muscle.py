@@ -27,23 +27,20 @@ for side, sign in [('L', -1), ('R', 1)]:
     angle = sign*np.deg2rad(24)
     c,s = np.cos(angle), np.sin(angle)
     world = np.array([[c,-s,0],[s,c,0],[0,0,1]])
-    basis = bone.matRestGlobal[:3,:3]
-    pose[bone.index,:3,:3] = basis.T@world@basis
+    pose[bone.index,:3,:3] = world
     rotations[bone.name] = float(np.rad2deg(angle))
     # Straighten the source proxy's forward elbow bend in the rest rig.
     forearm = skel.getBone('lowerarm01.'+side)
     a = np.deg2rad(48)
     c,s = np.cos(a),np.sin(a)
     world_x = np.array([[1,0,0],[0,c,-s],[0,s,c]])
-    basis = forearm.matRestGlobal[:3,:3]
-    pose[forearm.index,:3,:3] = basis.T@world_x@basis
+    pose[forearm.index,:3,:3] = world_x
     rotations[forearm.name] = {'worldXDegrees':48}
     leg = skel.getBone('upperleg01.'+side)
     a = -sign*np.deg2rad(3.5)
     c,s = np.cos(a),np.sin(a)
     world_z = np.array([[c,-s,0],[s,c,0],[0,0,1]])
-    basis = leg.matRestGlobal[:3,:3]
-    pose[leg.index,:3,:3] = basis.T@world_z@basis
+    pose[leg.index,:3,:3] = world_z
     rotations[leg.name] = {'worldZDegrees':float(np.rad2deg(a))}
 track = animation.Pose('gyms-reference-rest', pose)
 h.human.addAnimation(track)

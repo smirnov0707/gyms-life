@@ -15,8 +15,8 @@ const candidatePath =
   candidateMode === "muscular"
     ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
     : candidateMode === "pose"
-    ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
-    : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+      ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+      : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;

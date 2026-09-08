@@ -15,12 +15,24 @@ export function createTwinAnatomyMaterial(
     if (regionMask) {
       shader.uniforms.twinNeutral = { value: new Color(0x354956) };
       shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", "#include <common>\nattribute float _twin_mask;\nvarying float vTwinMask;")
+        .replace(
+          "#include <common>",
+          "#include <common>\nattribute float _twin_mask;\nvarying float vTwinMask;",
+        )
         .replace("#include <begin_vertex>", "#include <begin_vertex>\nvTwinMask = _twin_mask;");
       shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", "#include <common>\nuniform vec3 twinNeutral;\nvarying float vTwinMask;")
-        .replace("#include <color_fragment>", "#include <color_fragment>\ndiffuseColor.rgb = mix(twinNeutral, diffuseColor.rgb, clamp(vTwinMask, 0.0, 1.0));")
-        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance *= clamp(vTwinMask, 0.0, 1.0);");
+        .replace(
+          "#include <common>",
+          "#include <common>\nuniform vec3 twinNeutral;\nvarying float vTwinMask;",
+        )
+        .replace(
+          "#include <color_fragment>",
+          "#include <color_fragment>\ndiffuseColor.rgb = mix(twinNeutral, diffuseColor.rgb, clamp(vTwinMask, 0.0, 1.0));",
+        )
+        .replace(
+          "#include <emissivemap_fragment>",
+          "#include <emissivemap_fragment>\ntotalEmissiveRadiance *= clamp(vTwinMask, 0.0, 1.0);",
+        );
     }
     // Only the authoring build's explicit directional coordinates enable this
     // detail. Arbitrary atlas UVs would draw lines across unrelated anatomy.
@@ -49,6 +61,7 @@ export function createTwinAnatomyMaterial(
       totalEmissiveRadiance += vec3(0.14, 0.38, 0.46) * twinRim * 0.18;`,
     );
   };
-  material.customProgramCacheKey = () => `twin-anatomy-rim-v4-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}`;
+  material.customProgramCacheKey = () =>
+    `twin-anatomy-rim-v4-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}`;
   return material;
 }
