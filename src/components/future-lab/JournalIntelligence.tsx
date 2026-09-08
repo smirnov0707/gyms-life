@@ -209,6 +209,26 @@ export function JournalIntelligence() {
           </p>
         </header>
 
+        <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-border bg-surface-2/65 p-2.5 sm:p-3"
+              >
+                <Icon className={`size-4 ${stat.tone}`} />
+                <p className="mt-2 font-mono text-xl text-foreground">
+                  {stat.value === null ? "—" : stat.value}
+                </p>
+                <p className="mt-1 text-[9px] uppercase tracking-wide text-muted-foreground">
+                  {stat.label}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
         {query.isError ? (
           <div className="mt-6">
             <FutureLabEmpty>
@@ -235,25 +255,6 @@ export function JournalIntelligence() {
                   : "Dalis sprendimų istorijos nepasiekiama. Trūkstamos detalės nespėjamos."}
               </p>
             ) : null}
-            <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
-              {stats.map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <div
-                    key={stat.label}
-                    className="rounded-xl border border-border bg-surface-2/65 p-2.5 sm:p-3"
-                  >
-                    <Icon className={`size-4 ${stat.tone}`} />
-                    <p className="mt-2 font-mono text-xl text-foreground">
-                      {stat.value === null ? "—" : stat.value}
-                    </p>
-                    <p className="mt-1 text-[9px] uppercase tracking-wide text-muted-foreground">
-                      {stat.label}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
 
             <nav
               aria-label={english ? "Journal filters" : "Žurnalo filtrai"}

@@ -482,7 +482,7 @@ try {
   // A lab whose overview could not be read must not light ten modules green.
   // Absence of evidence is not evidence of readiness, which is the one claim
   // this deck makes about itself.
-  const lab = await openPanel("?panel=lab");
+  const lab = await openPanel("?panel=lab&scenario=failure");
   await expect(lab.page.getByRole("heading", { name: "Lab", exact: true })).toBeVisible({
     timeout: 30000,
   });
@@ -496,7 +496,7 @@ try {
   // The journal's four counters all come off one query. An unread ledger must
   // not report four zeros — "you have no hypotheses" is a claim, and an empty
   // ledger is something an athlete might act on.
-  const journal = await openPanel("?panel=journal");
+  const journal = await openPanel("?panel=journal&scenario=failure");
   await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
   const counters = journal.page.locator("p.font-mono.text-xl");
   expect(await counters.count()).toBe(4);
@@ -705,9 +705,9 @@ try {
   const twinCard = bare.page.getByText("Your Twin is still learning").first();
   await expect(twinCard).toBeVisible({ timeout: 30000 });
   const stage = await bare.page
-    .getByText("Your body, as GYMS.LIFE understands it today")
-    .locator("xpath=ancestor::section[1]")
+    .getByRole("region", { name: "Your Digital Twin", exact: true })
     .boundingBox();
+  expect(stage).not.toBeNull();
   // Below the 620px floor the card used to reserve before it had anything to
   // put there; it comes out around 540 with the figure scaled down.
   expect(stage.height).toBeLessThan(620);

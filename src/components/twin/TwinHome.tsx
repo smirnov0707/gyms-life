@@ -241,7 +241,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
       </section>
     );
   }
-  if (snapshotQuery.isError || !snapshot) {
+  if (snapshotQuery.isError || !snapshot || !snapshot.dataAvailable) {
     return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
   }
 
@@ -275,6 +275,21 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           <h2>{copy.title}</h2>
           <span>{language === "lt" ? "Tempk ir tyrinėk 360°" : "Drag to explore 360°"}</span>
         </header>
+        {!snapshot.regions.some((region) => region.recoveryPct !== null) ? (
+          <div
+            data-testid="twin-evidence-empty"
+            className="mx-3 mt-3 rounded-lg border border-border bg-surface/60 px-3 py-2 text-[11px] leading-relaxed"
+          >
+            <p className="font-medium">
+              {language === "lt" ? "Tavo dvynys dar mokosi" : "Your Twin is still learning"}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              {language === "lt"
+                ? "Šiame lange nepakanka užbaigtų setų duomenų atsistatymui įvertinti. Nežinomas regionas nereiškia atsistačiusio."
+                : "This window has insufficient completed-set evidence to estimate recovery. An unknown region does not mean a recovered one."}
+            </p>
+          </div>
+        ) : null}
         <TwinStage
           presentation="cockpit"
           snapshot={snapshot}
