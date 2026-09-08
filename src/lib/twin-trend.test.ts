@@ -132,6 +132,35 @@ describe("Twin Trend eligibility", () => {
     expect(series.direction).toBeNull();
   });
 
+  it("has no net change to report from a single observation", () => {
+    // With one point the earliest and the latest sample are the same row, so
+    // the subtraction returns zero — and "net change: 0" beside "observations:
+    // 1" is a measurement of stability made out of one reading. The live rail
+    // refuses to draw a delta for exactly this reason; the trend lens printed
+    // one.
+    const series = buildTwinMetricTrend(buildTwinTrendHistory([row(0)]), "readiness");
+    expect(series.pointCount).toBe(1);
+    expect(series.netChange).toBeNull();
+    expect(series.direction).toBeNull();
+    expect(series.availability).toBe("insufficient_points");
+  });
+
+  it("still reports a net change once there are two points to subtract", () => {
+    // The guard is about having two readings, not about the trend being
+    // publishable: a difference between two real states is a fact, even while
+    // the series is still too short to call a direction.
+    const history = buildTwinTrendHistory([
+      row(0, {
+        state: { ...baseState, recovery: { ...baseState.recovery, latestReadinessScore: 60 } },
+      }),
+      row(3),
+    ]);
+    const series = buildTwinMetricTrend(history, "readiness");
+    expect(series.pointCount).toBe(2);
+    expect(series.netChange).toBe(12);
+    expect(series.availability).toBe("insufficient_points");
+  });
+
   it("requires temporal spread even when four snapshots exist", () => {
     const rows = [0, 1, 2, 3].map((index) =>
       row(index, { computed_at: `2026-09-01T0${index}:00:00Z` }),

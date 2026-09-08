@@ -196,8 +196,15 @@ function summarize(samples: TwinTrendSample[]): TwinTrendSeries {
   const values = ordered.map((sample) => sample.value);
   const minValue = values.length > 0 ? Math.min(...values) : null;
   const maxValue = values.length > 0 ? Math.max(...values) : null;
+  // Null from a single observation, not zero. With one point the earliest and
+  // the latest sample are the same row, so the subtraction returns 0 — and a
+  // "net change: 0" beside "observations: 1" is a measurement of stability
+  // made out of one reading, which is the same fabricated trend the live rail
+  // refuses to draw a delta for.
   const netChange =
-    earliestValue !== null && latestValue !== null ? round(latestValue - earliestValue) : null;
+    pointCount >= 2 && earliestValue !== null && latestValue !== null
+      ? round(latestValue - earliestValue)
+      : null;
   const availability: TwinTrendAvailability =
     pointCount < TWIN_TREND_MIN_POINTS
       ? "insufficient_points"

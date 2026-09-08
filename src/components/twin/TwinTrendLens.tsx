@@ -121,7 +121,15 @@ function signed(value: number | null, locale: string, unit?: string): string {
   return `${value > 0 ? "+" : ""}${formatValue(value, locale, unit)}`;
 }
 
+/**
+ * The line for one series.
+ *
+ * Only ever called for an `available` series, and it says so rather than
+ * trusting the caller: with fewer than two samples there is no span to place
+ * points along, and everything collapses onto the left edge.
+ */
 function Sparkline({ series, label }: { series: TwinTrendSeries; label: string }) {
+  if (series.samples.length < 2) return null;
   const width = 520;
   const height = 112;
   const pad = 10;
@@ -201,7 +209,12 @@ function SeriesCard({
           {copy.days}
         </span>
       </div>
-      {series.samples.length > 0 ? <Sparkline series={series} label={label} /> : null}
+      {/* Only a series the engine will actually speak about gets a line. A
+          single stored state used to slip through `length > 0` and draw a lone
+          dot pinned to the left edge of a 520-unit chart, under a heading that
+          then said there were not enough points to say anything — the picture
+          claiming what the sentence below it withheld. */}
+      {series.availability === "available" ? <Sparkline series={series} label={label} /> : null}
       {series.availability === "insufficient_points" ? (
         <p className="mt-3 text-xs text-muted-foreground">{copy.insufficientPoints}</p>
       ) : series.availability === "insufficient_span" ? (
