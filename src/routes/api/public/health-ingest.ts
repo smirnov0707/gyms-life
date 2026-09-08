@@ -7,11 +7,15 @@ import {
   sampleDateWithinWindow,
   SAMPLE_BACKFILL_DAYS,
 } from "@/lib/health-normalize";
+import { DEFAULT_HEALTH_SAMPLE_SOURCE, HEALTH_SAMPLE_SOURCES } from "@/lib/health-sample-source";
 import { dayInTimeZone } from "@/lib/local-day";
 
 const Envelope = z.object({
   token: z.string().uuid(),
-  source: z.enum(["apple_health", "google_fit", "manual", "import"]).default("apple_health"),
+  // A sender that does not say what it is gets recorded as unknown, not as
+  // a named vendor. What arrives without saying where it came from is a
+  // reading whose origin we do not know.
+  source: z.enum(HEALTH_SAMPLE_SOURCES).default(DEFAULT_HEALTH_SAMPLE_SOURCE),
 });
 
 const json = (body: unknown, status = 200) =>

@@ -2,10 +2,22 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Activity, Flame, Footprints, HeartPulse, Moon, Percent, Scale } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { sourceClaim, type HealthSourceClaim } from "@/lib/health-sample-source";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getLiveSignals } from "@/lib/live-signals.functions";
 import { LIVE_SIGNAL_IDS, type LiveSignal, type LiveSignalId } from "@/lib/live-signals.engine";
+
+/** One label per claim, so a new source cannot silently borrow another's. */
+const SOURCE_LABEL: Record<HealthSourceClaim, TKey> = {
+  device: "sig.sourceDevice",
+  manual: "sig.sourceManual",
+  // Not a measurement anybody took: the photo scan's blend, which includes a
+  // vision model's visual estimate.
+  estimate: "sig.sourceEstimate",
+  imported: "sig.sourceImported",
+  unknown: "sig.sourceUnknown",
+};
 
 /**
  * The athlete's own measured signals, and — just as prominently — what has
@@ -149,13 +161,11 @@ function SignalRow({ signal }: { signal: LiveSignal }) {
             ? t("sig.unreadable")
             : signal.state === "absent"
               ? t("sig.absent")
-              : signal.source === "manual"
-                ? t("sig.sourceManual")
-                : signal.source === "photo_estimate"
-                  ? // Not a measurement anybody took: the photo scan's blend,
-                    // which includes a vision model's visual estimate.
-                    t("sig.sourceEstimate")
-                  : t("sig.sourceDevice")}
+              : // Every non-manual source used to read as "from a device",
+                // which made an imported file look like something the
+                // athlete's watch saw, and a reading that named no source at
+                // all look like one that had.
+                t(SOURCE_LABEL[sourceClaim(signal.source)])}
         </span>
       </span>
 
