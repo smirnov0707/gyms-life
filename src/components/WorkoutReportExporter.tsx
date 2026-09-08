@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { getMedicalReport, type MedicalReport } from "@/lib/medical-report.functions";
+import { formatReportFigure, reportFigure } from "@/lib/report-figures";
 
 export const WorkoutReportExporter: React.FC = () => {
   const { t, lang } = useI18n();
@@ -55,6 +56,17 @@ export const WorkoutReportExporter: React.FC = () => {
   };
 
   const s = report?.stats;
+  // A figure whose source could not be read says so rather than printing the
+  // zero its counter started at. This grid used to read `s.sessions` straight
+  // out, so a failed query showed the athlete a month in which they trained
+  // nothing — which is a claim about them, not about our database.
+  const figure = (key: Parameters<typeof reportFigure>[1], render: (value: number) => string) =>
+    s
+      ? formatReportFigure(reportFigure(s, key), render, {
+          absent: "—",
+          unreadable: t("sc.report.unread"),
+        })
+      : "—";
 
   return (
     <div className="p-5 sm:p-6 rounded-3xl border border-border bg-surface backdrop-blur-xl shadow-2xl space-y-5">
@@ -73,10 +85,13 @@ export const WorkoutReportExporter: React.FC = () => {
       {s && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
           {[
-            { k: t("sc.report.sessions"), v: `${s.sessions}` },
-            { k: t("sc.report.totalTonnage"), v: `${Math.round(s.totalVolumeKg / 1000)} t` },
-            { k: t("sc.report.readiness"), v: s.avgReadiness != null ? `${s.avgReadiness}` : "—" },
-            { k: t("sc.report.sleep"), v: s.avgSleepHours != null ? `${s.avgSleepHours} h` : "—" },
+            { k: t("sc.report.sessions"), v: figure("sessions", (value) => `${value}`) },
+            {
+              k: t("sc.report.totalTonnage"),
+              v: figure("totalVolumeKg", (value) => `${Math.round(value / 1000)} t`),
+            },
+            { k: t("sc.report.readiness"), v: figure("avgReadiness", (value) => `${value}`) },
+            { k: t("sc.report.sleep"), v: figure("avgSleepHours", (value) => `${value} h`) },
           ].map((cell) => (
             <div key={cell.k} className="p-3 rounded-2xl bg-surface-2 border border-border">
               <span className="block text-[10px] font-mono text-muted-foreground uppercase leading-tight">

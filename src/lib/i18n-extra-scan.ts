@@ -94,6 +94,14 @@ export const extra_scan = {
   "sc.report.recs": { lt: "Rekomendacijos kitam mėnesiui", en: "Recommendations for next month" },
   "sc.report.questions": { lt: "Klausimai gydytojui", en: "Questions for your doctor" },
   "sc.report.gaps": { lt: "Trūkstami duomenys", en: "Missing data" },
+  // Printed instead of a figure whose source could not be read. Deliberately
+  // not an em dash: an em dash says "nothing here", and a failed query is not
+  // nothing here.
+  "sc.report.unread": { lt: "neperskaityta", en: "not read" },
+  "sc.report.unreadSources": {
+    lt: "Nepavyko perskaityti: {n}. Šios dalys yra trūkstamos, o ne tuščios.",
+    en: "Could not be read: {n}. These sections are missing, not empty.",
+  },
   "sc.report.topLifts": { lt: "Geriausi svoriai", en: "Best lifts" },
   "sc.report.trainingTime": { lt: "Treniruočių laikas", en: "Training time" },
   "sc.report.readiness": { lt: "Vid. pasiruošimas", en: "Avg. readiness" },

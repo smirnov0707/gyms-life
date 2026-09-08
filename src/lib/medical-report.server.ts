@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/integrations/supabase/types";
+import { REPORT_SOURCES, type ReportSource } from "./medical-report.schema";
 
 /**
  * Aggregates the last 30 days of real user data for the monthly / medical
@@ -24,17 +25,7 @@ type ReportProfile = Pick<
 >;
 
 /** The seven reads this report is assembled from, named as the prompt names them. */
-export const REPORT_SOURCES = [
-  "training sessions",
-  "logged sets",
-  "daily check-ins",
-  "nutrition log",
-  "body measurements",
-  "supplements",
-  "profile",
-] as const;
-
-export type ReportSource = (typeof REPORT_SOURCES)[number];
+export { REPORT_SOURCES, type ReportSource } from "./medical-report.schema";
 
 export type ReportStats = {
   from: string;

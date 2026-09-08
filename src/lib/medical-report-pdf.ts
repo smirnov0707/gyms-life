@@ -1,6 +1,8 @@
 import type { MedicalReport } from "./medical-report.functions";
 import { formatLocale, tr, type Lang, type TKey } from "./i18n";
 import { browserTimeZone, dayInTimeZone } from "./local-day";
+import { REPORT_SOURCES } from "./medical-report.schema";
+import { formatReportFigure, reportFigure, unreadableSources } from "./report-figures";
 
 /**
  * Draws the 30-day report on canvases first (so diacritics render correctly)
@@ -193,20 +195,31 @@ export async function downloadMedicalReportPdf(
   // key stats grid
   heading(txt.period);
   {
+    // Every figure through `reportFigure`, so a source that could not be read
+    // says so instead of printing the zero its counter was initialised with.
+    // This grid used to read `s.sessions` straight out: a failed query put
+    // "0 (0/w)" and "0 kg" in front of a physician, which is a claim about the
+    // athlete's month rather than about our database.
+    const marks = { absent: "—", unreadable: tr(lang, "sc.report.unread") };
+    const cell = (key: Parameters<typeof reportFigure>[1], render: (value: number) => string) =>
+      formatReportFigure(reportFigure(s, key), render, marks);
     const cells: [string, string][] = [
-      [tr(lang, "sc.report.sessions"), `${s.sessions} (${s.sessionsPerWeek}/w)`],
+      [
+        tr(lang, "sc.report.sessions"),
+        cell("sessions", (value) => `${value} (${s.sessionsPerWeek}/w)`),
+      ],
       [
         tr(lang, "sc.report.totalTonnage"),
-        `${s.totalVolumeKg.toLocaleString(formatLocale(lang))} kg`,
+        cell("totalVolumeKg", (value) => `${value.toLocaleString(formatLocale(lang))} kg`),
       ],
-      [tr(lang, "sc.report.trainingTime"), `${s.trainingMinutes} min`],
-      [tr(lang, "sc.report.readiness"), s.avgReadiness != null ? `${s.avgReadiness}/100` : "—"],
-      [tr(lang, "sc.report.sleep"), s.avgSleepHours != null ? `${s.avgSleepHours} h` : "—"],
-      [tr(lang, "sc.report.kcal"), s.avgKcal != null ? `${s.avgKcal} kcal` : "—"],
-      [tr(lang, "sc.report.protein"), s.avgProtein != null ? `${s.avgProtein} g` : "—"],
+      [tr(lang, "sc.report.trainingTime"), cell("trainingMinutes", (value) => `${value} min`)],
+      [tr(lang, "sc.report.readiness"), cell("avgReadiness", (value) => `${value}/100`)],
+      [tr(lang, "sc.report.sleep"), cell("avgSleepHours", (value) => `${value} h`)],
+      [tr(lang, "sc.report.kcal"), cell("avgKcal", (value) => `${value} kcal`)],
+      [tr(lang, "sc.report.protein"), cell("avgProtein", (value) => `${value} g`)],
       [
         tr(lang, "sc.report.weightChange"),
-        s.weightDeltaKg != null ? `${s.weightDeltaKg > 0 ? "+" : ""}${s.weightDeltaKg} kg` : "—",
+        cell("weightDeltaKg", (value) => `${value > 0 ? "+" : ""}${value} kg`),
       ],
     ];
     const cols = 4;
@@ -249,6 +262,18 @@ export async function downloadMedicalReportPdf(
       y += 14;
     }
     y += 10;
+  }
+
+  // Said from the stats, not left to the model. It is asked to put a failed
+  // read in `dataGaps` and usually does, but on a document a physician reads
+  // "we could not open your training log" cannot depend on whether a language
+  // model remembered to mention it.
+  {
+    const missing = unreadableSources(s, REPORT_SOURCES);
+    if (missing.length) {
+      para(tr(lang, "sc.report.unreadSources").replace("{n}", missing.join(", ")));
+      y += 8;
+    }
   }
 
   if (s.topLifts.length) {
