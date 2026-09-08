@@ -175,7 +175,7 @@ export const getBodyComposition = async () => {
   return { status: "single" as const, latest };
 };
 
-export const getLabOverview = async () => null;
+export const getLabOverview = async () => (await import("./reference-functions")).getLabOverview();
 export const getTwinTrendHistory = async () => null;
 /** `?plan=ready` puts a real session in front of the panel; the default is the
  *  account's actual state, which is no active programme. */
@@ -237,7 +237,8 @@ export const getActiveLifeContexts = async () => [];
 export const setActiveLifeContext = async () => null;
 export const dismissActiveLifeContext = async () => null;
 export const getDailyBrief = async () => null;
-export const forecastProgress = async () => null;
+export const forecastProgress = async () =>
+  (await import("./reference-functions")).forecastProgress();
 
 export const BRIEF = { version: 1 };
 /** Loose on purpose: the fixture never feeds it a cached brief. */

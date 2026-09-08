@@ -292,6 +292,64 @@ try {
   }
   record("full-shell empty data and source failures remain visibly distinct");
 
+  // Real UI controls, not direct calls to state setters. Search values survive
+  // page reload and browser history; the fixture still has no live backend.
+  const linked = await openPanel("?shell=1&screen=today&scenario=reference", {
+    viewport: { width: 390, height: 844 },
+    locale: "en-US",
+  });
+  await linked.page.getByRole("link", { name: "Explore muscles", exact: false }).click();
+  await expect(linked.page.getByRole("tab", { name: "Muscles", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await linked.page
+    .getByRole("button", { name: /^Chest(?:\s|$)/ })
+    .first()
+    .click();
+  await expect(linked.page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+  await linked.page.getByRole("button", { name: "Impact", exact: true }).click();
+  await expect(linked.page).toHaveURL(/detail=impact/);
+  await expect(linked.page.getByText("Latest completed session", { exact: true })).toBeVisible();
+  await linked.page.reload();
+  await expect(linked.page.getByRole("button", { name: "Impact", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await linked.page.goBack();
+  await expect(linked.page.getByRole("button", { name: "Status", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await linked.page.getByRole("button", { name: "History", exact: true }).click();
+  await expect(linked.page).toHaveURL(/detail=history/);
+  expect(linked.errors).toEqual([]);
+  await linked.page.context().close();
+  record(
+    "Today opens muscle evidence; status, impact and history survive URL navigation and reload",
+  );
+
+  for (const [scenario, expected] of [
+    ["reference", "Received records refreshed."],
+    ["empty", "Records checked. No readings have arrived yet."],
+    ["failure", "Records could not be refreshed. No successful sync is claimed."],
+  ]) {
+    const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
+      locale: "en-US",
+      viewport: { width: 390, height: 844 },
+    });
+    const button = checked.page.getByTestId("refresh-received-data");
+    await expect(button).toBeEnabled({ timeout: 30000 });
+    await button.click();
+    await expect(checked.page.getByTestId("received-data-refresh-status")).toHaveText(expected);
+    await expect(button).toBeEnabled();
+    expect(checked.errors).toEqual([]);
+    await checked.page.context().close();
+  }
+  record(
+    "manual data refresh distinguishes received, empty and failed records without claiming watch sync",
+  );
+
   // 1. The screen renders at all, with the signal rail and every signal in it.
   const first = await open();
   const rail = first.page.getByRole("region", { name: "Live signals" });
@@ -320,8 +378,15 @@ try {
 
   // 3. Every Future Lab panel with no evidence says so rather than showing a
   //    number it does not have.
+  await expect(
+    first.page.getByText("No pattern has reached its evidence threshold yet.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    first.page.getByText("No hypothesis is awaiting more evidence.", { exact: true }),
+  ).toBeVisible();
   const body = await first.page.locator("body").innerText();
-  expect(body).toContain("Not enough verified data yet.");
+  expect(body).not.toContain("Not enough verified data yet."); // obsolete copy must not mask a stuck loading state
+
   await writeFile(path.join(artifacts, "today.txt"), body);
   await first.page.screenshot({
     path: path.join(artifacts, "today-desktop.png"),

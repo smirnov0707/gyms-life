@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { TWIN_DETAIL_TABS, type TwinDetailTab } from "@/lib/twin-navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -40,7 +42,7 @@ const COPY = {
     share: "Treniruotės registruoto krūvio dalis",
   },
 } as const;
-const TABS = ["status", "history", "impact"] as const;
+const TABS = TWIN_DETAIL_TABS;
 const KNOWN_GROUPS = new Set<string>(KNOWN_MUSCLE_GROUPS);
 
 /** Region detail uses the same snapshot, geometry and logged session as the overview. */
@@ -49,11 +51,15 @@ export function TwinMuscleDetail({
   onRegionChange,
   onBack,
   backLabel,
+  activeTab,
+  onTabChange,
 }: {
   regionId: string;
   onRegionChange: (region: string) => void;
   onBack: () => void;
   backLabel?: string;
+  activeTab?: TwinDetailTab;
+  onTabChange?: (tab: TwinDetailTab) => void;
 }) {
   const { user } = useAuth();
   const { lang, t } = useI18n();
@@ -61,7 +67,9 @@ export function TwinMuscleDetail({
   const copy = COPY[language];
   const twin = twinCopyFor(lang);
   const layerCopy = twinLayerCopy(language);
-  const [tab, setTab] = useState<(typeof TABS)[number]>("status");
+  const [localTab, setLocalTab] = useState<TwinDetailTab>("status");
+  const tab = activeTab ?? localTab;
+  const setTab = onTabChange ?? setLocalTab;
   const [view, setView] = useState<BodyView>(
     isAnatomicalRegion(regionId) ? viewShowing(regionId, "front") : "front",
   );
@@ -114,7 +122,7 @@ export function TwinMuscleDetail({
         ))}
       </div>
       {tab === "status" ? (
-        snapshot.isError ? (
+        snapshot.isError || snapshot.data?.dataAvailable === false ? (
           <p className="twin-detail-message">{twin.unavailable}</p>
         ) : !snapshot.data ? (
           <p className="twin-detail-message" role="status">
@@ -178,7 +186,30 @@ export function TwinMuscleDetail({
                   <dt>{twin.volume}</dt>
                   <dd>{formatTwinValue(volume?.value ?? null, "logged_volume", language)}</dd>
                 </div>
+                <div>
+                  <dt>{language === "lt" ? "Augimo signalas" : "Growth signal"}</dt>
+                  <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
+                </div>
+                <div>
+                  <dt>{language === "lt" ? "Traumos rizika" : "Injury risk"}</dt>
+                  <dd>{language === "lt" ? "Nevertinta" : "Not assessed"}</dd>
+                </div>
+                <div>
+                  <dt>{language === "lt" ? "Būsimas jėgos pokytis" : "Future strength impact"}</dt>
+                  <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
+                </div>
               </dl>
+              <p className="twin-detail-note">
+                {language === "lt"
+                  ? "Registruotas krūvis nėra išmatuotas raumens augimas ar klinikinis traumos rizikos vertinimas."
+                  : "Logged load is not measured muscle growth or a clinical injury-risk assessment."}
+              </p>
+              <Link
+                to="/training"
+                className="fl-card-action inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm"
+              >
+                {language === "lt" ? "Atidaryti treniruotes" : "Open training"}
+              </Link>
               <details>
                 <summary>{copy.details}</summary>
                 <p>

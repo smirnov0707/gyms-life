@@ -10,6 +10,7 @@ import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
 import { LiveSignals } from "@/components/LiveSignals";
 import { useI18n, type TKey } from "@/lib/i18n";
 import "./TwinScreen.css";
+import { nextTwinView, type TwinNavigation } from "@/lib/twin-navigation";
 
 /**
  * The Twin screen's three views, the way the design splits them.
@@ -28,26 +29,36 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function TwinScreen() {
+export function TwinScreen({
+  navigation,
+  onNavigate,
+}: { navigation?: TwinNavigation; onNavigate?: (next: TwinNavigation) => void } = {}) {
   const { t } = useI18n();
-  const [active, setActive] = useState<TabId>("overview");
-  const [detailRegion, setDetailRegion] = useState<string | null>(null);
+  const [localNavigation, setLocalNavigation] = useState<TwinNavigation>({});
+  const current = navigation ?? localNavigation;
+  const change = onNavigate ?? setLocalNavigation;
+  const active = current.view ?? "overview";
+  const detailRegion = current.region ?? null;
+  const setActive = (view: TabId) => change({ view });
+  const setDetailRegion = (region: string | null) =>
+    change(region ? { view: active, region, detail: "status" } : { view: active });
   const tabRefs = useRef(new Map<TabId, HTMLButtonElement>());
 
   const onKeyDown = (event: React.KeyboardEvent) => {
-    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    if (step === 0) return;
+    const next = nextTwinView(active, event.key);
+    if (!next) return;
     event.preventDefault();
-    const index = TABS.findIndex((tab) => tab.id === active);
-    const next = TABS[(index + step + TABS.length) % TABS.length]!;
-    setActive(next.id);
-    tabRefs.current.get(next.id)?.focus();
+    setActive(next);
+    tabRefs.current.get(next)?.focus();
   };
 
   return (
     <div className="twin-screen mx-auto grid w-full max-w-6xl gap-4">
       {detailRegion ? (
         <TwinMuscleDetail
+          key={detailRegion}
+          activeTab={current.detail ?? "status"}
+          onTabChange={(detail) => change({ ...current, detail })}
           regionId={detailRegion}
           onRegionChange={setDetailRegion}
           onBack={() => setDetailRegion(null)}
