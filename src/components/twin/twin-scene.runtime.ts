@@ -1,5 +1,6 @@
 import {
   ACESFilmicToneMapping,
+  Box3,
   CanvasTexture,
   CircleGeometry,
   Color,
@@ -36,6 +37,7 @@ import {
   TWIN_SELECTION_GLOW,
   TWIN_TONE_GLOW,
   fittedTwinDistance,
+  isTwinBodyRegion,
   isTwinTap,
   moveTwinCamera,
   shouldAnimateTwin,
@@ -47,6 +49,7 @@ import {
 export type TwinSceneHandle = {
   setState: (state: TwinSceneState) => void;
   select: (region: string | null) => void;
+  focus: (region: string | null) => void;
   command: (command: TwinCameraCommand) => void;
   setMotion: (enabled: boolean) => void;
   dispose: () => void;
@@ -163,15 +166,15 @@ export function mountTwinScene(
       // The key, high and slightly to the front, which is what models a muscle
       // belly. Kept modest: the data colour is emissive, so a bright key on top
       // of it flattens the very thing it is there to shape.
-      [[1.8, 2.8, 2.6], 0xdfeaff, 2.3],
-      [[-2.6, 1.0, 1.6], 0x4a7bb0, 0.45],
+      [[1.8, 2.8, 2.6], 0xdfeaff, 1.8],
+      [[-2.6, 1.0, 1.6], 0x4a7bb0, 0.38],
       // The rim, hard behind and to each side. This is where the figure gets
       // its edge against the stage. A scaled-up inside-out copy of every mesh
       // was tried for that first, and on a body made of a hundred overlapping
       // muscles each copy glows over its neighbours as well as over the stage —
       // the figure came out milky and lost every muscle boundary it had.
-      [[-1.6, 1.9, -3.0], 0x3fdcff, 3.0],
-      [[2.2, 1.4, -2.6], 0x8f6bff, 2.1],
+      [[-1.6, 1.9, -3.0], 0x77e7ff, 3.4],
+      [[2.2, 1.4, -2.6], 0x7b96ff, 2.4],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
@@ -372,7 +375,7 @@ export function mountTwinScene(
             // panels. A muscle belly reads because it is shaded, so the data
             // colour goes into the albedo and the light does its work on it.
             const lit = glow > 0;
-            material.color.set(bodyColour).lerp(tone, lit ? 0.88 : 0);
+            material.color.set(bodyColour).lerp(tone, lit ? 0.8 : 0);
             material.emissive.copy(tone);
             // Enough to lift a region off the stage and to keep the states in
             // order against each other, not enough to bleach the shading.
@@ -380,13 +383,13 @@ export function mountTwinScene(
             // up is set by what it means rather than by how pale its colour
             // happens to be.
             material.emissiveIntensity = lit
-              ? ((selected ? 0.34 : 0.22) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
+              ? ((selected ? 0.3 : 0.16) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
               : 0;
             // Wet rather than matte: a low roughness keeps a specular highlight
             // running along each muscle belly, which is what separates one from
             // the next on a body lit from three sides.
-            material.roughness = selected ? 0.3 : 0.4;
-            material.metalness = 0.12;
+            material.roughness = selected ? 0.26 : 0.33;
+            material.metalness = 0.2;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");
@@ -399,6 +402,7 @@ export function mountTwinScene(
     }
 
     const command = (action: TwinCameraCommand) => {
+      if (action === "reset") controls.target.copy(target);
       controls.enableDamping = false;
       controls.update();
       const next = moveTwinCamera(
@@ -413,6 +417,38 @@ export function mountTwinScene(
       camera.position
         .copy(controls.target)
         .add(new Vector3().setFromSpherical(new Spherical(next.distance, next.pitch, next.yaw)));
+      controls.update();
+      controls.enableDamping = !reducedMotion.matches;
+      requestRender();
+    };
+    const focus = (region: string | null) => {
+      if (!region || !isTwinBodyRegion(region)) return;
+      const surfaces = model.regionMeshes.get(region);
+      if (!surfaces?.length) return;
+      twinBodyRoot.updateMatrixWorld(true);
+      const bounds = new Box3();
+      for (const surface of surfaces) bounds.union(new Box3().setFromObject(surface));
+      if (bounds.isEmpty()) return;
+      const size = bounds.getSize(new Vector3());
+      const centre = bounds.getCenter(new Vector3());
+      // Keep the orbit axis inside the body, so the near-side picking cutoff
+      // still rejects hits through a gap onto the opposite side.
+      controls.target.set(centre.x, centre.y, 0);
+      const tangent = Math.tan((TWIN_FIELD_OF_VIEW * Math.PI) / 360);
+      const distance = (Math.max(size.y, size.x / camera.aspect) * 0.68) / tangent + size.z;
+      const yaw = region === "back" || region === "glutes" ? Math.PI : 0;
+      controls.enableDamping = false;
+      camera.position
+        .copy(controls.target)
+        .add(
+          new Vector3().setFromSpherical(
+            new Spherical(
+              Math.max(controls.minDistance, Math.min(fitDistance, distance)),
+              Math.PI / 2,
+              yaw,
+            ),
+          ),
+        );
       controls.update();
       controls.enableDamping = !reducedMotion.matches;
       requestRender();
@@ -579,6 +615,7 @@ export function mountTwinScene(
         applyState();
       },
       command,
+      focus,
       setMotion(enabled) {
         motionEnabled = enabled;
         requestRender();

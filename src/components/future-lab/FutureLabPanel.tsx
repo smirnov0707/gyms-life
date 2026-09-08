@@ -15,7 +15,7 @@ export function FutureLabPanel({
 }) {
   return (
     <section
-      className={`relative overflow-hidden rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4 shadow-[0_20px_70px_rgba(0,0,0,.25)] backdrop-blur-xl ${className}`}
+      className={`fl-panel relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface/90 p-3.5 ${className}`}
     >
       <div
         aria-hidden="true"
@@ -24,22 +24,22 @@ export function FutureLabPanel({
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           {eyebrow ? (
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-cyan-300/75">
+            <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               {eyebrow}
             </p>
           ) : null}
-          <h2 className="mt-1 text-sm font-semibold tracking-tight text-white">{title}</h2>
+          <h2 className="mt-1 text-xs font-medium tracking-tight text-foreground">{title}</h2>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className="relative mt-3">{children}</div>
+      <div className="relative mt-3 flex flex-1 flex-col">{children}</div>
     </section>
   );
 }
 
 export function FutureLabEmpty({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-white/[0.05] bg-white/[0.025] px-3 py-3 text-xs leading-relaxed text-slate-400">
+    <p className="rounded-lg border border-border/60 bg-surface-2/45 px-3 py-3 text-[11px] leading-relaxed text-muted-foreground">
       {children}
     </p>
   );

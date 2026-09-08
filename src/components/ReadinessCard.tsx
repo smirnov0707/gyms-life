@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "./ui/button";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { useAuth } from "@/lib/auth";
 import { loadModifierFor, notifyAdaptationChanged } from "@/lib/readiness-adapt";
@@ -47,15 +47,21 @@ const COPY = {
 } as const;
 
 export interface ReadinessCardProps {
+  compact?: boolean;
   score: number;
   state: string | null;
   ring: React.ReactNode;
 }
 
 /** Interactive readiness card: shows the score, what it means for load, and lets the athlete re-tune it. */
-export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring }) => {
+export const ReadinessCard: React.FC<ReadinessCardProps> = ({
+  score,
+  state,
+  ring,
+  compact = false,
+}) => {
   const { lang } = useI18n();
-  const c = COPY[lang === "lt" ? "lt" : "en"];
+  const c = COPY[baseLang(lang)];
   const { user } = useAuth();
   const qc = useQueryClient();
   const saveAdjustment = useServerFn(saveReadinessAdjustment);
@@ -88,14 +94,18 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
   };
 
   return (
-    <div className="panel w-full min-w-[16rem] p-4 md:w-auto">
-      <div className="flex items-center gap-4">
+    <div
+      className={
+        compact ? "fl-surface fl-readiness-card" : "panel w-full min-w-[16rem] p-4 md:w-auto"
+      }
+    >
+      <div className="fl-readiness-summary flex items-center gap-4">
         {ring}
         <div className="flex-1 text-right">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {c.readiness}
           </p>
-          <p className="text-display text-2xl text-primary">
+          <p className={compact ? "sr-only" : "text-display text-2xl text-primary"}>
             {score}
             <span className="ml-1 text-sm text-muted-foreground">/100</span>
           </p>
@@ -103,12 +113,14 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-surface-2 px-3 py-2">
-        <span className="text-[10px] font-mono uppercase text-muted-foreground">{c.load}</span>
-        <span className="font-mono text-sm font-bold text-primary">
-          {Math.round(loadModifierFor(score) * 100)}%
-        </span>
-      </div>
+      {(!compact || open) && (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-surface-2 px-3 py-2">
+          <span className="text-[10px] font-mono uppercase text-muted-foreground">{c.load}</span>
+          <span className="font-mono text-sm font-bold text-primary">
+            {Math.round(loadModifierFor(score) * 100)}%
+          </span>
+        </div>
+      )}
 
       <p className="mt-2 text-[11px] leading-snug text-muted-foreground">{hint}</p>
 
@@ -132,7 +144,7 @@ export const ReadinessCard: React.FC<ReadinessCardProps> = ({ score, state, ring
             value={value}
             aria-label={c.how}
             onChange={(e) => setValue(Number(e.target.value))}
-            className="w-full accent-[hsl(var(--primary))]"
+            className="w-full accent-primary"
           />
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
             <span className="font-bold text-foreground">{label}</span>

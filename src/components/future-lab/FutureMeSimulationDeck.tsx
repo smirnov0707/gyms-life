@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Clock3,
@@ -14,11 +13,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { forecastProgress } from "@/lib/forecast.functions";
-import type {
-  DeterministicLiftForecast,
-  DeterministicPerformanceForecast,
-} from "@/lib/forecast.schema";
+import { useStrengthForecast } from "./forecast.query";
+import type { DeterministicLiftForecast } from "@/lib/forecast.schema";
 import {
   FUTURE_ME_HORIZONS,
   isValidatedFutureMeHorizon,
@@ -29,8 +25,8 @@ import {
 import { baseLang, useI18n } from "@/lib/i18n";
 
 const HORIZON_LABEL: Record<FutureMeHorizon, string> = {
-  "30d": "30D",
-  "90d": "90D",
+  "30d": "4W",
+  "90d": "12W",
   "180d": "180D",
   "1y": "1Y",
 };
@@ -55,31 +51,13 @@ function trendIcon(trend: DeterministicLiftForecast["trend"]) {
 export function FutureMeSimulationDeck() {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
-  const runForecast = useServerFn(forecastProgress);
-  const [forecast, setForecast] = useState<DeterministicPerformanceForecast | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const query = useStrengthForecast();
+  const forecast = query.data ?? null;
+  const loading = query.isFetching;
+  const failed = query.isError;
+  const load = () => query.refetch();
   const [horizon, setHorizon] = useState<FutureMeHorizon>("30d");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
-  const initialRequested = useRef(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setFailed(false);
-    try {
-      setForecast(await runForecast({ data: {} }));
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [runForecast]);
-
-  useEffect(() => {
-    if (initialRequested.current) return;
-    initialRequested.current = true;
-    void load();
-  }, [load]);
 
   const selectedLift = useMemo(() => {
     if (forecast?.status !== "ready") return null;
@@ -107,8 +85,8 @@ export function FutureMeSimulationDeck() {
 
   const copy = english
     ? {
-        eyebrow: "FUTURE ME · DETERMINISTIC SIMULATION",
-        title: "See the path before you commit to it",
+        eyebrow: "FUTURE ME · STRENGTH PROJECTION",
+        title: "If you stay on this path",
         subtitle:
           "A bounded strength projection from your completed training history — separated from your Today decision and never treated as a promise.",
         current: "Current estimated 1RM",
@@ -125,7 +103,7 @@ export function FutureMeSimulationDeck() {
           "The model uses one best estimated 1RM per completed exercise session, derives the observed weekly slope, retains only half of that slope and caps its weekly influence. The 12-week output is damped further.",
         boundaryTitle: "Long horizon intentionally locked",
         boundaryBody:
-          "The current model is validated only for 4- and 12-week outputs. 180-day and 1-year tabs stay visible so the product shows the boundary instead of inventing a future result.",
+          "The current model produces only 4- and 12-week outputs. 180-day and 1-year tabs stay visible so the product shows the boundary instead of inventing a future result.",
         learningTitle: "Future Me is still learning your strength trajectory",
         learningBody: (sessions: number, days: number) =>
           `A lift needs at least ${sessions} completed sessions across ${days} days, plus enough weekly observations, before a projection is shown.`,
@@ -140,8 +118,8 @@ export function FutureMeSimulationDeck() {
         evidenceLabel: { low: "Low", moderate: "Moderate", high: "High" },
       }
     : {
-        eyebrow: "FUTURE ME · DETERMINISTINĖ SIMULIACIJA",
-        title: "Pamatyk kryptį prieš jai įsipareigodamas",
+        eyebrow: "FUTURE ME · JĖGOS PROJEKCIJA",
+        title: "Jei tęsi šia kryptimi",
         subtitle:
           "Ribota jėgos projekcija iš tavo užbaigtų treniruočių istorijos — atskirta nuo šiandienos sprendimo ir niekada nepateikiama kaip pažadas.",
         current: "Dabartinis apskaičiuotas 1RM",
@@ -174,7 +152,7 @@ export function FutureMeSimulationDeck() {
       };
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-[#20345b] bg-[#030814] shadow-[0_30px_90px_rgba(0,0,0,.5)]">
+    <section className="fl-future-page fl-panel relative overflow-hidden rounded-xl border border-border bg-surface/90">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-80"
@@ -184,16 +162,18 @@ export function FutureMeSimulationDeck() {
         }}
       />
 
-      <div className="relative p-4 sm:p-6 lg:p-8">
-        <header className="flex flex-col gap-5 border-b border-white/[0.07] pb-6 xl:flex-row xl:items-end xl:justify-between">
+      <div className="relative p-4 sm:p-5">
+        <header className="flex flex-col gap-4 border-b border-border pb-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-violet-300">
               <Sparkles className="size-4" /> {copy.eyebrow}
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               {copy.title}
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-400">{copy.subtitle}</p>
+            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              {copy.subtitle}
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2" aria-label="Future Me horizon">
@@ -206,15 +186,15 @@ export function FutureMeSimulationDeck() {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setHorizon(option)}
-                  className={`relative min-h-11 min-w-[64px] rounded-xl border px-4 text-xs font-bold tracking-[0.12em] transition-colors ${
+                  className={`relative min-h-10 min-w-[58px] rounded-lg border px-3 text-[10px] font-bold tracking-[0.12em] transition-colors ${
                     active
-                      ? "border-violet-400/70 bg-violet-500/20 text-white shadow-[0_0_28px_rgba(124,58,237,.2)]"
-                      : "border-white/[0.08] bg-white/[0.025] text-slate-400 hover:border-violet-400/30 hover:text-white"
+                      ? "border-violet-400/70 bg-violet-500/20 text-foreground shadow-[0_0_28px_rgba(124,58,237,.2)]"
+                      : "border-border bg-surface-2/40 text-muted-foreground hover:border-violet-400/30 hover:text-foreground"
                   }`}
                 >
                   {HORIZON_LABEL[option]}
                   {!supported ? (
-                    <LockKeyhole className="absolute right-1.5 top-1.5 size-2.5 text-slate-600" />
+                    <LockKeyhole className="absolute right-1.5 top-1.5 size-2.5 text-muted-foreground" />
                   ) : null}
                 </button>
               );
@@ -222,31 +202,31 @@ export function FutureMeSimulationDeck() {
           </div>
         </header>
 
-        {loading && !forecast ? (
-          <div className="grid min-h-[360px] place-items-center text-sm text-slate-400">
+        {!forecast && !failed ? (
+          <div className="grid min-h-[220px] place-items-center text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
               <Loader2 className="size-4 animate-spin text-violet-300" /> {copy.refreshing}
             </span>
           </div>
         ) : failed ? (
-          <div className="grid min-h-[320px] place-items-center px-4 text-center">
+          <div className="grid min-h-[220px] place-items-center px-4 text-center">
             <div className="max-w-lg">
               <ShieldCheck className="mx-auto size-8 text-amber-300" />
-              <p className="mt-4 text-sm text-slate-300">{copy.unavailable}</p>
+              <p className="mt-4 text-sm text-muted-foreground">{copy.unavailable}</p>
               <Button className="mt-5" onClick={() => void load()} disabled={loading}>
                 <RefreshCw className="mr-2 size-4" /> {copy.refresh}
               </Button>
             </div>
           </div>
         ) : forecast?.status === "learning" ? (
-          <div className="grid min-h-[380px] place-items-center py-10">
-            <div className="max-w-2xl rounded-[1.75rem] border border-violet-400/15 bg-violet-500/[0.05] p-6 text-center sm:p-8">
+          <div className="grid min-h-[240px] place-items-center py-6">
+            <div className="max-w-2xl rounded-xl border border-violet-400/15 bg-violet-500/[0.05] p-6 text-center sm:p-8">
               <Gauge className="mx-auto size-9 text-violet-300" />
-              <h2 className="mt-4 text-xl font-semibold text-white">{copy.learningTitle}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              <h2 className="mt-4 text-xl font-semibold text-foreground">{copy.learningTitle}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {copy.learningBody(forecast.minimumSessionCount, forecast.minimumSpanDays)}
               </p>
-              <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">
+              <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                 {copy.version} {forecast.forecastVersion} {"·"}
                 {forecast.sourceWindowDays}d {copy.source}
               </p>
@@ -256,10 +236,10 @@ export function FutureMeSimulationDeck() {
             </div>
           </div>
         ) : forecast?.status === "ready" && selectedLift ? (
-          <div className="grid gap-5 pt-6 xl:grid-cols-[1.35fr_.65fr]">
-            <div className="min-w-0 space-y-5">
+          <div className="grid gap-3 pt-4 xl:grid-cols-[1.35fr_.65fr]">
+            <div className="min-w-0 space-y-3">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                   {copy.select}
                 </p>
                 <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
@@ -272,7 +252,7 @@ export function FutureMeSimulationDeck() {
                       className={`min-h-10 shrink-0 rounded-xl border px-3 text-xs font-semibold transition-colors ${
                         selectedLift.exerciseSlug === lift.exerciseSlug
                           ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-100"
-                          : "border-white/[0.07] bg-white/[0.025] text-slate-400 hover:text-white"
+                          : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {lift.exerciseName}
@@ -283,15 +263,17 @@ export function FutureMeSimulationDeck() {
 
               {validated && projected !== null ? (
                 <div className="grid items-stretch gap-3 sm:grid-cols-[1fr_auto_1fr]">
-                  <article className="rounded-[1.5rem] border border-white/[0.08] bg-black/20 p-5">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <article className="rounded-xl border border-border bg-surface-2/50 p-5">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                       {copy.current}
                     </p>
-                    <p className="mt-3 font-mono text-4xl tracking-[-0.06em] text-white sm:text-5xl">
+                    <p className="mt-3 font-mono text-3xl tracking-[-0.04em] text-foreground sm:text-4xl">
                       {selectedLift.currentEstimated1RMKg}
-                      <span className="ml-1 text-base tracking-normal text-slate-500">kg</span>
+                      <span className="ml-1 text-base tracking-normal text-muted-foreground">
+                        kg
+                      </span>
                     </p>
-                    <p className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                    <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                       <TrendIcon className="size-4 text-cyan-300" /> {copy.observed}:{" "}
                       {copy.trend[selectedLift.trend]}
                     </p>
@@ -303,13 +285,15 @@ export function FutureMeSimulationDeck() {
                     </span>
                   </div>
 
-                  <article className="rounded-[1.5rem] border border-violet-400/20 bg-violet-500/[0.07] p-5 shadow-[inset_0_0_35px_rgba(124,58,237,.05)]">
+                  <article className="rounded-xl border border-violet-400/20 bg-violet-500/[0.07] p-5 shadow-[inset_0_0_35px_rgba(124,58,237,.05)]">
                     <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-violet-300">
                       {HORIZON_LABEL[horizon]} · {copy.projected}
                     </p>
-                    <p className="mt-3 font-mono text-4xl tracking-[-0.06em] text-white sm:text-5xl">
+                    <p className="mt-3 font-mono text-3xl tracking-[-0.04em] text-foreground sm:text-4xl">
                       {projected}
-                      <span className="ml-1 text-base tracking-normal text-slate-500">kg</span>
+                      <span className="ml-1 text-base tracking-normal text-muted-foreground">
+                        kg
+                      </span>
                     </p>
                     <p
                       className={`mt-3 text-sm font-semibold ${change !== null && change < 0 ? "text-rose-300" : "text-emerald-300"}`}
@@ -319,12 +303,14 @@ export function FutureMeSimulationDeck() {
                   </article>
                 </div>
               ) : (
-                <article className="rounded-[1.5rem] border border-amber-300/15 bg-amber-300/[0.035] p-5 sm:p-6">
+                <article className="rounded-xl border border-amber-300/15 bg-amber-300/[0.035] p-5 sm:p-6">
                   <div className="flex items-start gap-3">
                     <LockKeyhole className="mt-0.5 size-5 shrink-0 text-amber-300" />
                     <div>
-                      <h2 className="text-base font-semibold text-white">{copy.boundaryTitle}</h2>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                      <h2 className="text-base font-semibold text-foreground">
+                        {copy.boundaryTitle}
+                      </h2>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                         {copy.boundaryBody}
                       </p>
                     </div>
@@ -332,18 +318,20 @@ export function FutureMeSimulationDeck() {
                 </article>
               )}
 
-              <article className="rounded-[1.5rem] border border-white/[0.07] bg-white/[0.02] p-5">
-                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <article className="rounded-xl border border-border bg-surface-2/30 p-5">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   {copy.method}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-400">{copy.methodBody}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {copy.methodBody}
+                </p>
               </article>
             </div>
 
             <aside className="grid content-start gap-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">
+                <div className="rounded-xl border border-border bg-surface-2/50 p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                     {copy.evidence}
                   </p>
                   <p
@@ -352,42 +340,44 @@ export function FutureMeSimulationDeck() {
                     {copy.evidenceLabel[selectedLift.evidenceStrength]}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-600">
+                <div className="rounded-xl border border-border bg-surface-2/50 p-4">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
                     {copy.change}
                   </p>
-                  <p className="mt-2 font-mono text-lg text-white">{signed(change)}</p>
+                  <p className="mt-2 font-mono text-lg text-foreground">{signed(change)}</p>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+              <div className="rounded-xl border border-border bg-surface-2/50 p-4">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <p className="font-mono text-xl text-white">
+                    <p className="font-mono text-xl text-foreground">
                       {selectedLift.evidence.sessionCount}
                     </p>
-                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-slate-600">
+                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                       {copy.sessions}
                     </p>
                   </div>
                   <div>
-                    <p className="font-mono text-xl text-white">
+                    <p className="font-mono text-xl text-foreground">
                       {selectedLift.evidence.weeksTracked}
                     </p>
-                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-slate-600">
+                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                       {copy.weeks}
                     </p>
                   </div>
                   <div>
-                    <p className="font-mono text-xl text-white">{selectedLift.evidence.spanDays}</p>
-                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-slate-600">
+                    <p className="font-mono text-xl text-foreground">
+                      {selectedLift.evidence.spanDays}
+                    </p>
+                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                       {copy.days}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.035] p-4 text-xs leading-relaxed text-slate-400">
+              <div className="rounded-xl border border-cyan-400/10 bg-cyan-400/[0.035] p-4 text-xs leading-relaxed text-muted-foreground">
                 <p className="flex items-center gap-2 font-semibold text-cyan-200">
                   <Clock3 className="size-4" /> {copy.version} {forecast.forecastVersion}
                 </p>
@@ -399,7 +389,7 @@ export function FutureMeSimulationDeck() {
               <Button
                 onClick={() => void load()}
                 disabled={loading}
-                className="min-h-12 bg-violet-600 text-white hover:bg-violet-500"
+                className="min-h-12 bg-violet-600 text-foreground hover:bg-violet-500"
               >
                 {loading ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
@@ -412,7 +402,7 @@ export function FutureMeSimulationDeck() {
           </div>
         ) : null}
 
-        <p className="relative mt-5 flex items-start gap-2 border-t border-white/[0.06] pt-4 text-[11px] leading-relaxed text-slate-500">
+        <p className="relative mt-5 flex items-start gap-2 border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-cyan-400" /> {copy.disclaimer}
         </p>
       </div>

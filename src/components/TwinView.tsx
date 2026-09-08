@@ -298,6 +298,7 @@ export function TwinSnapshotView({
   label,
   lang = "lt",
   showAllRegions = true,
+  onInspectRegion,
 }: {
   data: TwinSnapshot;
   copy: Copy;
@@ -309,6 +310,8 @@ export function TwinSnapshotView({
    * Rewind has no such tab, so it keeps the list inline.
    */
   showAllRegions?: boolean;
+  /** Live Twin can open a region detail; stored snapshots keep their inline inspector. */
+  onInspectRegion?: (region: string) => void;
 }) {
   const [layer, setLayer] = useState<TwinLayer>("recovery");
   const language = baseLang(lang);
@@ -338,6 +341,7 @@ export function TwinSnapshotView({
   const selectRegion = (region: string) => {
     setSelectedRegion(region);
     if (isAnatomicalRegion(region)) setView((current) => viewShowing(region, current));
+    onInspectRegion?.(region);
   };
 
   return (
@@ -539,7 +543,7 @@ export function TwinSnapshotView({
   );
 }
 
-export function TwinView() {
+export function TwinView({ onInspectRegion }: { onInspectRegion?: (region: string) => void } = {}) {
   const { user, loading: authLoading } = useAuth();
   const { lang, t } = useI18n();
   const timeZone = browserTimeZone();
@@ -573,6 +577,7 @@ export function TwinView() {
       copy={copy}
       lang={lang}
       showAllRegions={false}
+      {...(onInspectRegion ? { onInspectRegion } : {})}
       label={(region) => regionLabelFor(region, t)}
     />
   );

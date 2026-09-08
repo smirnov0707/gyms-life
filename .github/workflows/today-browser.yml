@@ -3,6 +3,15 @@ on:
   pull_request:
     paths: &paths
       - "src/components/Overview.tsx"
+      - "src/components/AppShell.tsx"
+      - "src/components/future-lab-shell.css"
+      - "src/components/future-lab-dashboard.css"
+      - "src/components/twin/**"
+      - "src/routes/_authenticated/app.tsx"
+      - "src/routes/_authenticated/twin.tsx"
+      - "src/routes/_authenticated/lab.tsx"
+      - "src/routes/_authenticated/progress.tsx"
+      - "src/routes/_authenticated/history.tsx"
       - "src/components/LiveSignals.tsx"
       - "src/components/SmartBrief.tsx"
       - "src/components/TodayDecision.tsx"
@@ -41,5 +50,5 @@ jobs:
         with:
           name: today-browser-evidence
           path: test-results/today
-          retention-days: 7
+          retention-days: 14
           if-no-files-found: ignore

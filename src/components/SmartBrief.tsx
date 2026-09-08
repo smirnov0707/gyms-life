@@ -55,7 +55,7 @@ const cacheKey = (lang: string, timeZone: string) =>
  * An evidence-led interpretation layer. Training entry stays in TodayDecision
  * so an AI-produced action card can never skip a deterministic safety check.
  */
-export function SmartBrief() {
+export function SmartBrief({ compact = false }: { compact?: boolean }) {
   const { t, lang } = useI18n();
   const timeZone = browserTimeZone();
   const fetchBrief = useServerFn(getDailyBrief);
@@ -95,6 +95,58 @@ export function SmartBrief() {
   useEffect(() => {
     void load(false);
   }, [load]);
+
+  if (compact) {
+    return (
+      <section className="fl-surface fl-smart-brief">
+        <header>
+          <h2 className="fl-eyebrow">{t("brief.title")}</h2>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void load(true)}
+            aria-label={t("brief.refresh")}
+            className="fl-brief-refresh"
+          >
+            <RefreshCw className={cn("size-3", busy && "animate-spin")} />
+          </button>
+        </header>
+        {busy && !brief ? <p>{t("brief.loading")}</p> : null}
+        {failed && !brief ? <p role="status">{failed}</p> : null}
+        {brief ? (
+          <>
+            <h3>{brief.headline}</h3>
+            <p>{brief.summary}</p>
+            {brief.watchouts.map((warning, index) => (
+              <p key={index} className="fl-brief-warning">
+                {t("brief.watch")}: {warning}
+              </p>
+            ))}
+            <details className="fl-disclosure">
+              <summary>{t("brief.why")}</summary>
+              <p>
+                {t("brief.focus")}: {brief.focus}
+              </p>
+              {brief.signals?.map((signal, index) => (
+                <p key={index}>
+                  {signal.label}: {signal.value}
+                  {signal.note ? ` · ${signal.note}` : ""}
+                </p>
+              ))}
+              {brief.actions.map((action, index) => (
+                <Link key={index} to={action.route} className="fl-brief-action">
+                  <strong>{action.title}</strong>
+                  <span>{action.reason}</span>
+                  {action.evidence ? <span>{action.evidence}</span> : null}
+                  <span className="fl-text-link">{action.cta} →</span>
+                </Link>
+              ))}
+            </details>
+          </>
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <GlowCard className="panel relative overflow-hidden p-6 md:p-7">

@@ -125,7 +125,7 @@ export function SleepAnalysis() {
   return (
     <section
       aria-label={t("sl.title")}
-      className="rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4"
+      className="fl-sleep-analysis rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4"
     >
       <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-indigo-300">
         <Moon aria-hidden="true" className="size-3" /> {t("sl.title")}

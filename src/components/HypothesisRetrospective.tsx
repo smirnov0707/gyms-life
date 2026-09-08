@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ChevronDown, History } from "lucide-react";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
-import { getLabOverview } from "@/lib/lab.functions";
+import { useLabOverview } from "@/components/future-lab/lab-overview.query";
 import type { LabHypothesisTransition } from "@/lib/lab.schema";
-import { browserTimeZone } from "@/lib/local-day";
 
 const COLLAPSED_HISTORY_LIMIT = 5;
 
@@ -143,14 +141,9 @@ function TransitionRow({
 
 export function HypothesisRetrospective() {
   const { lang } = useI18n();
-  const timeZone = browserTimeZone();
   const copy = copyFor(lang);
   const [expanded, setExpanded] = useState(false);
-  const { data } = useQuery({
-    queryKey: ["lab-overview", timeZone],
-    queryFn: () => getLabOverview({ data: timeZone }),
-    staleTime: 60_000,
-  });
+  const { data } = useLabOverview();
 
   if (!data) return null;
 

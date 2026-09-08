@@ -85,7 +85,7 @@ export function DataSourcesStrip() {
   return (
     <section
       aria-label={t("ds.title")}
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-3xl border border-border bg-surface px-3 py-2.5"
+      className="fl-data-sources flex flex-wrap items-center gap-x-3 gap-y-2 rounded-3xl border border-border bg-surface px-3 py-2.5"
     >
       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
         {t("ds.title")}

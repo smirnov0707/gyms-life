@@ -1,6 +1,10 @@
 export const useAuth = () => ({
   session: null,
-  user: { id: "preview", email: "a@b.c", user_metadata: { full_name: "Tomas" } },
+  user: {
+    id: "preview",
+    email: "fixture@example.invalid",
+    user_metadata: { full_name: "Alex Fixture" },
+  },
   loading: false,
   refresh: async () => true,
 });

@@ -2,14 +2,14 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
-import { createServer } from "vite";
+import { createServer, transformWithEsbuild } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 /**
  * Today is the one screen two people are always editing at once, and its whole
  * job is to be honest when there is nothing to show. These checks run it
- * against sources that answer with nothing — this account's real state — and
+ * against explicit synthetic empty-source fixtures and
  * against a source that fails, and assert the screen tells those apart.
  *
  * It renders the real Overview component. Only the server functions, the
@@ -39,6 +39,7 @@ const stubs = (name) => path.join(root, "tests/today-browser", name);
  * of the harness, not of the screen it is meant to be checking.
  */
 const SERVER_FUNCTION_STUB = "\0today-server-functions";
+const BRIEF_SCHEMA_STUB = "\0fixture-brief-schema";
 function serverFunctionStub() {
   const names = new Set();
   for (const file of readdirSync(path.join(root, "src/lib"))) {
@@ -49,17 +50,42 @@ function serverFunctionStub() {
   return {
     name: "today-server-function-stub",
     enforce: "pre",
-    resolveId: (source) => (/\.functions(\.tsx?)?$/.test(source) ? SERVER_FUNCTION_STUB : null),
-    load(id) {
+    resolveId: (source) =>
+      source === "virtual:fixture-brief-schema"
+        ? BRIEF_SCHEMA_STUB
+        : /\.functions(\.tsx?)?$/.test(source)
+          ? SERVER_FUNCTION_STUB
+          : null,
+    async load(id) {
+      if (id === BRIEF_SCHEMA_STUB) {
+        // The brief schema currently lives beside a server function. Reuse its
+        // exact declaration block without importing any auth/provider runtime.
+        const source = readFileSync(path.join(root, "src/lib/brief.functions.ts"), "utf8");
+        const begin = source.indexOf("export const BRIEF_ROUTES");
+        const end = source.indexOf("\nfunction isBriefRoute(");
+        if (begin < 0 || end <= begin)
+          throw new Error("Brief schema boundary changed; update the fixture adapter.");
+        return (
+          await transformWithEsbuild(
+            `import { z } from "zod";\n${source.slice(begin, end)}`,
+            "fixture-brief-schema.ts",
+            { loader: "ts" },
+          )
+        ).code;
+      }
       if (id !== SERVER_FUNCTION_STUB) return null;
       const overrides = JSON.stringify(stubs("functions-stub.ts"));
+      const reference = JSON.stringify(stubs("reference-functions.ts"));
       return (
-        `import * as answers from ${overrides};\n` +
+        `import * as answers from ${overrides};\nimport * as reference from ${reference};\nimport * as briefSchemas from "virtual:fixture-brief-schema";\n` +
         [...names]
-          .map(
-            (name) =>
-              `export const ${name} = ${JSON.stringify(name)} in answers` +
-              ` ? answers[${JSON.stringify(name)}] : async () => null;`,
+          .map((name) =>
+            ["DailyBriefSchema", "BRIEF_ROUTES"].includes(name)
+              ? `export const ${name} = briefSchemas.${name};`
+              : `export const ${name} = typeof answers[${JSON.stringify(name)}] !== "function" && ${JSON.stringify(name)} in answers` +
+                ` ? answers[${JSON.stringify(name)}] : (...args) => {` +
+                ` const fn = new URLSearchParams(window.location.search).has("scenario") && ${JSON.stringify(name)} in reference ? reference[${JSON.stringify(name)}] : answers[${JSON.stringify(name)}];` +
+                ` return typeof fn === "function" ? fn(...args) : Promise.resolve(null); };`,
           )
           .join("\n")
       );
@@ -97,11 +123,28 @@ try {
         "zod",
         "lucide-react",
         "sonner",
+        // These route trees include Recharts. Prebundle its CommonJS graph even
+        // when node_modules is shared through a worktree symlink.
+        "recharts",
+        "lodash",
       ],
     },
     server: { host: "127.0.0.1", port: 4183, strictPort: true, fs: { allow: [root] } },
   });
   await server.listen();
+
+  if (process.argv.includes("--serve-only")) {
+    console.log(
+      "Reference UI fixture ready: http://127.0.0.1:4183/index.html?shell=1&screen=today&scenario=reference",
+    );
+    console.log("Local serving only; no Playwright browser is launched.");
+    await new Promise((resolve) => {
+      process.once("SIGINT", resolve);
+      process.once("SIGTERM", resolve);
+    });
+    await server.close();
+    process.exit(0);
+  }
 
   browser = await chromium.launch({
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
@@ -113,6 +156,7 @@ try {
   const openPanel = async (query = "", options = {}) => {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1100 },
+      colorScheme: "dark",
       ...options,
     });
     const page = await context.newPage();
@@ -125,8 +169,103 @@ try {
   const open = async (query = "", options = {}) => {
     const opened = await openPanel(query, options);
     await expect(opened.page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
+    // The compact Today panels keep evidence behind real disclosure controls.
+    // Legacy evidence assertions inspect the same content after opening them.
+    for (const disclosure of await opened.page.locator("details.fl-disclosure > summary").all()) {
+      await disclosure.click();
+    }
     return opened;
   };
+
+  // Capture the real route trees inside the real shell before legacy checks,
+  // so downloadable design evidence survives a later regression failure.
+  const references = [];
+  for (const viewport of [
+    { name: "desktop", width: 1440, height: 1000 },
+    { name: "mobile", width: 390, height: 844 },
+  ]) {
+    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal"]) {
+      const shown = await openPanel(`?shell=1&screen=${screen}&scenario=reference`, {
+        viewport: { width: viewport.width, height: viewport.height },
+        locale: "en-US",
+      });
+      await expect(shown.page.getByTestId("fixture-watermark")).toBeVisible({ timeout: 30000 });
+      await expect(shown.page.locator(".fl-shell-header")).toBeVisible();
+      await expect(
+        shown.page.locator(
+          viewport.name === "mobile" ? ".fl-mobile-navigation" : ".fl-desktop-navigation",
+        ),
+      ).toBeVisible();
+      const canvas = shown.page.locator("canvas[data-twin-frames]").first();
+      if (["today", "twin", "muscle"].includes(screen)) {
+        await expect(canvas).toBeVisible({ timeout: 30000 });
+        await expect
+          .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+          .toBeGreaterThan(1);
+      }
+      if (screen === "muscle") {
+        // Exercise the real UI. There is deliberately no invented detail route.
+        await shown.page.getByRole("tab", { name: "Muscles", exact: true }).click();
+        await shown.page
+          .getByRole("button", { name: /^Chest(?:\s|$)/ })
+          .first()
+          .click();
+        const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
+        await expect(detail).toBeVisible();
+        await expect(detail.locator("canvas[data-twin-frames]")).toBeVisible({ timeout: 30000 });
+        await expect
+          .poll(async () =>
+            Number(
+              await detail.locator("canvas[data-twin-frames]").getAttribute("data-twin-frames"),
+            ),
+          )
+          .toBeGreaterThan(1);
+      }
+      await shown.page.waitForTimeout(700);
+      const overflow = await shown.page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `${screen} ${viewport.name} overflows`).toBeLessThanOrEqual(1);
+      expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
+      const filename = `reference-${screen}-${viewport.name}.png`;
+      await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
+      await writeFile(
+        path.join(artifacts, `reference-${screen}-${viewport.name}.txt`),
+        await shown.page.locator("body").innerText(),
+      );
+      references.push({
+        screen,
+        viewport,
+        filename,
+        scenario: "synthetic-reference",
+        url: shown.page.url(),
+      });
+      await shown.page.context().close();
+    }
+  }
+  await writeFile(
+    path.join(artifacts, "reference-screens.json"),
+    JSON.stringify(references, null, 2),
+  );
+  record("all six actual route/detail views render inside the shell at 1440px and 390px");
+
+  for (const scenario of ["empty", "failure"]) {
+    const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
+      viewport: { width: 390, height: 844 },
+      locale: "en-US",
+    });
+    const rail = checked.page.getByRole("region", { name: "Live signals" });
+    await expect(rail).toBeVisible({ timeout: 30000 });
+    const label = scenario === "failure" ? "Could not be read" : "Not recorded yet";
+    expect(await rail.getByText(label, { exact: false }).count()).toBe(7);
+    expect(checked.errors).toEqual([]);
+    await checked.page.screenshot({
+      path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),
+      fullPage: true,
+    });
+    await checked.page.context().close();
+  }
+  record("full-shell empty data and source failures remain visibly distinct");
 
   // 1. The screen renders at all, with the signal rail and every signal in it.
   const first = await open();
@@ -254,11 +393,12 @@ try {
   // Absence of evidence is not evidence of readiness, which is the one claim
   // this deck makes about itself.
   const lab = await openPanel("?panel=lab");
-  await expect(lab.page.getByText("LAB STATUS")).toBeVisible({ timeout: 30000 });
-  const readyDots = lab.page.locator('[title="Evidence path available"]');
-  const unknownDots = lab.page.locator('[title="Evidence status unknown"]');
-  expect(await readyDots.count()).toBe(0);
-  expect(await unknownDots.count()).toBeGreaterThan(0);
+  await expect(lab.page.getByRole("heading", { name: "Lab", exact: true })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(lab.page.getByText("Source available", { exact: true })).toHaveCount(0);
+  await expect(lab.page.getByText("Rules defined", { exact: true })).toHaveCount(0);
+  await expect(lab.page.getByText("Unknown", { exact: true })).toHaveCount(10);
   await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");
@@ -268,7 +408,7 @@ try {
   // ledger is something an athlete might act on.
   const journal = await openPanel("?panel=journal");
   await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
-  const counters = journal.page.locator("p.font-mono.text-2xl");
+  const counters = journal.page.locator("p.font-mono.text-xl");
   expect(await counters.count()).toBe(4);
   expect(await counters.allInnerTexts()).toEqual(["—", "—", "—", "—"]);
   await journal.page.screenshot({
@@ -872,6 +1012,20 @@ try {
   expect(aheadText).not.toMatch(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/i);
   await ahead.page.screenshot({ path: path.join(artifacts, "recovery-outlook.png") });
   await ahead.page.close();
+
+  // Empty evidence must not claim every region is recovered, in either view.
+  for (const query of ["?twin=empty", "?panel=recovery&twin=empty"]) {
+    const unknown = await openPanel(query);
+    const outlook = unknown.page.getByRole("region", { name: "When it comes back" });
+    await expect(
+      outlook.getByText("Not enough data to estimate recovery.", { exact: true }),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(
+      outlook.getByText("No region is waiting to recover", { exact: false }),
+    ).toHaveCount(0);
+    await unknown.page.close();
+  }
+  record("unknown recovery remains unknown in compact and full outlooks");
 
   // A source that failed must never render as a body with nothing to recover.
   const noTwin = await open("?twin=unreadable");

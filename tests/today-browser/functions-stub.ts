@@ -3,9 +3,8 @@ import { z } from "zod";
 /**
  * Stands in for every `*.functions` module the Today tree imports.
  *
- * The default is "the source answered, and it had nothing", because that is
- * this account's real database: no health samples, no nutrition rows, one
- * logged set. `?signals=fail` makes the signal read throw instead, so the
+ * The default is a synthetic "the source answered, and it had nothing" case.
+ * `?signals=fail` makes the signal read throw instead, so the
  * screen can be checked in the state where nobody could look — a case that
  * renders identically to "no data" unless the component keeps them apart.
  *
@@ -83,7 +82,7 @@ export const getLiveSignals = async () => {
 
 /** `?twin=regions` gives the snapshot three regions: two calculated and one
  *  with no evidence at all, which is the pair the region list has to keep
- *  apart. The default stays empty, because that is this account's state. */
+ *  apart. The default is the synthetic empty-evidence case. */
 export const getTwinSnapshot = async () => ({
   calculationVersion: "TEST-FIXTURE-NOT-USER-DATA",
   bodyVariant: "male" as const,

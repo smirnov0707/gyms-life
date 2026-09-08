@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Brain, ChevronDown, FlaskConical, Loader2 } from "lucide-react";
 import { PredictionCalibrationPanel } from "@/components/PredictionCalibrationPanel";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
-import { browserTimeZone } from "@/lib/local-day";
-import { getLabOverview } from "@/lib/lab.functions";
+import { useLabOverview } from "@/components/future-lab/lab-overview.query";
 import type {
   AthleteHypothesis,
   AthleteHypothesisStatusSchema,
@@ -452,13 +450,8 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
 
 export function LabView() {
   const { lang } = useI18n();
-  const timeZone = browserTimeZone();
   const copy = copyFor(lang);
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["lab-overview", timeZone],
-    queryFn: () => getLabOverview({ data: timeZone }),
-    staleTime: 60_000,
-  });
+  const { data, isLoading, isError } = useLabOverview();
 
   if (isLoading) {
     return (

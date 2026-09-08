@@ -313,10 +313,12 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   // The platform: a bright rim, a dimmer one outside it, and a flat pool of
   // light on the floor inside both.
   for (const ring of [
-    platformRing(PLATFORM_INNER, PLATFORM_INNER + 0.018, STAGE_COLOUR, 1),
+    platformRing(PLATFORM_INNER, PLATFORM_INNER + 0.01, 0xb2f5ff, 1),
+    platformRing(PLATFORM_INNER + 0.01, PLATFORM_INNER + 0.022, STAGE_COLOUR, 0.8),
     platformRing(PLATFORM_INNER - 0.03, PLATFORM_INNER, STAGE_COLOUR, 0.45),
     platformRing(PLATFORM_INNER + 0.018, PLATFORM_INNER + 0.055, STAGE_COLOUR, 0.35),
-    platformRing(PLATFORM_OUTER + 0.12, PLATFORM_OUTER + 0.136, STAGE_COLOUR, 0.6),
+    platformRing(PLATFORM_OUTER + 0.025, PLATFORM_OUTER + 0.03, STAGE_COLOUR, 0.65),
+    platformRing(PLATFORM_OUTER + 0.045, PLATFORM_OUTER + 0.051, STAGE_COLOUR, 0.4),
   ]) {
     ring.position.y = 0.004;
     keep(ring.geometry);
@@ -330,7 +332,7 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
         map: halo,
         color: STAGE_DEEP,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.8,
         blending: AdditiveBlending,
         depthWrite: false,
       }),

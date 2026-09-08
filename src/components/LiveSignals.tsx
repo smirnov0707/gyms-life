@@ -260,7 +260,7 @@ export function LiveSignals() {
   return (
     <section
       aria-label={t("sig.title")}
-      className="overflow-hidden rounded-3xl border border-border bg-surface"
+      className="fl-live-signals overflow-hidden rounded-3xl border border-border bg-surface"
     >
       <header className="px-3 pb-2.5 pt-3">
         <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">

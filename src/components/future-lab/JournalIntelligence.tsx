@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   BrainCircuit,
   CheckCircle2,
@@ -12,9 +11,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
+import { HypothesisEvidence } from "./HypothesisEvidence";
 import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
-import { browserTimeZone } from "@/lib/local-day";
-import { getLabOverview } from "@/lib/lab.functions";
+import { useLabOverview } from "./lab-overview.query";
 import type { LabDecision } from "@/lib/lab.schema";
 import type { AthleteHypothesis } from "@/lib/athlete-hypothesis.schema";
 
@@ -79,12 +78,7 @@ export function JournalIntelligence() {
   const locale = baseLang(lang);
   const english = locale === "en";
   const [tab, setTab] = useState<JournalTab>("all");
-  const timeZone = browserTimeZone();
-  const query = useQuery({
-    queryKey: ["journal-lab", timeZone],
-    queryFn: () => getLabOverview({ data: timeZone }),
-    staleTime: 60_000,
-  });
+  const query = useLabOverview();
   const data = query.data;
   // Four counters off one query. With `data` null they all fall to zero, which
   // tells the athlete their ledger is empty when the truth is that nobody
@@ -103,17 +97,16 @@ export function JournalIntelligence() {
   const copy = english
     ? {
         eyebrow: "JOURNAL · LEARNING LEDGER",
-        title: "What GYMS.LIFE has learned about you",
-        subtitle:
-          "A traceable record of hypotheses, discoveries, experiments and decisions. Raw workout history remains separate below.",
+        title: "Journal",
+        subtitle: "Hypotheses, discoveries and decisions, with their evidence.",
         hypotheses: "Hypotheses",
         discoveries: "Discoveries",
-        experiments: "Active tests",
+        experiments: "Observations",
         decisions: "Decisions",
         all: "All",
         supported: "Supported discovery",
         supportedEmpty: "No hypothesis has crossed its deterministic evidence threshold yet.",
-        active: "Active experiments",
+        active: "Patterns under observation",
         activeEmpty: "No hypothesis currently needs more evidence.",
         decisionTitle: "Recent decisions",
         decisionEmpty: "No recent Today decisions are available.",
@@ -132,17 +125,16 @@ export function JournalIntelligence() {
       }
     : {
         eyebrow: "JOURNAL · MOKYMOSI ŽURNALAS",
-        title: "Ką GYMS.LIFE jau išmoko apie tave",
-        subtitle:
-          "Atsekama hipotezių, atradimų, eksperimentų ir sprendimų istorija. Žalia treniruočių istorija lieka atskirai žemiau.",
+        title: "Journal",
+        subtitle: "Hipotezės, atradimai ir sprendimai su juos pagrindžiančiais duomenimis.",
         hypotheses: "Hipotezės",
         discoveries: "Atradimai",
-        experiments: "Aktyvūs testai",
+        experiments: "Stebėjimai",
         decisions: "Sprendimai",
         all: "Visi",
         supported: "Patvirtintas atradimas",
         supportedEmpty: "Dar nė viena hipotezė nepasiekė deterministinės įrodymų ribos.",
-        active: "Aktyvūs eksperimentai",
+        active: "Stebimi dėsningumai",
         activeEmpty: "Šiuo metu nė vienai hipotezei nereikia papildomų įrodymų.",
         decisionTitle: "Naujausi sprendimai",
         decisionEmpty: "Naujausių Today sprendimų nėra.",
@@ -180,7 +172,8 @@ export function JournalIntelligence() {
       tone: "text-cyan-300",
     },
     {
-      value: counted ? (data?.decisions.length ?? 0) : null,
+      value:
+        counted && !data?.unreadable.includes("decisions") ? (data?.decisions.length ?? 0) : null,
       label: copy.decisions,
       icon: History,
       tone: "text-amber-300",
@@ -198,20 +191,22 @@ export function JournalIntelligence() {
   );
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-[#20345b] bg-[#030814] shadow-[0_30px_90px_rgba(0,0,0,.45)]">
+    <section className="fl-journal-page fl-panel relative overflow-hidden rounded-2xl border border-border bg-surface/90">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(124,58,237,.20),transparent_31%),radial-gradient(circle_at_8%_90%,rgba(6,182,212,.08),transparent_30%)]"
       />
-      <div className="relative p-4 sm:p-6 lg:p-8">
+      <div className="relative p-4 sm:p-5">
         <header>
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-violet-300">
             <BrainCircuit className="size-4" /> {copy.eyebrow}
           </p>
-          <h1 className="mt-2 max-w-4xl text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-2 max-w-4xl text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             {copy.title}
           </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">{copy.subtitle}</p>
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            {copy.subtitle}
+          </p>
         </header>
 
         {query.isError ? (
@@ -222,21 +217,37 @@ export function JournalIntelligence() {
                 : "Journal intelligence laikinai nepasiekiamas."}
             </FutureLabEmpty>
           </div>
+        ) : !data ? (
+          <div className="mt-4">
+            <FutureLabEmpty>
+              {english ? "Reading your journal…" : "Skaitomas tavo žurnalas…"}
+            </FutureLabEmpty>
+          </div>
         ) : (
           <>
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {data.unreadable.length > 0 ? (
+              <p
+                role="status"
+                className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-[11px] text-muted-foreground"
+              >
+                {english
+                  ? "Some decision history could not be read. Missing details are not inferred."
+                  : "Dalis sprendimų istorijos nepasiekiama. Trūkstamos detalės nespėjamos."}
+              </p>
+            ) : null}
+            <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
                   <div
                     key={stat.label}
-                    className="rounded-2xl border border-[#17243b] bg-[#07111d]/90 p-4"
+                    className="rounded-xl border border-border bg-surface-2/65 p-2.5 sm:p-3"
                   >
                     <Icon className={`size-4 ${stat.tone}`} />
-                    <p className="mt-3 font-mono text-2xl text-white">
+                    <p className="mt-2 font-mono text-xl text-foreground">
                       {stat.value === null ? "—" : stat.value}
                     </p>
-                    <p className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">
+                    <p className="mt-1 text-[9px] uppercase tracking-wide text-muted-foreground">
                       {stat.label}
                     </p>
                   </div>
@@ -246,7 +257,7 @@ export function JournalIntelligence() {
 
             <nav
               aria-label={english ? "Journal filters" : "Žurnalo filtrai"}
-              className="mt-5 flex gap-2 overflow-x-auto border-b border-white/[0.07] pb-3"
+              className="mt-4 flex gap-1.5 overflow-x-auto border-b border-border pb-3"
             >
               {tabs.map((item) => (
                 <button
@@ -254,10 +265,10 @@ export function JournalIntelligence() {
                   type="button"
                   aria-pressed={tab === item.id}
                   onClick={() => setTab(item.id)}
-                  className={`min-h-10 shrink-0 rounded-xl border px-4 text-[10px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                  className={`min-h-10 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
                     tab === item.id
-                      ? "border-violet-400/50 bg-violet-500/15 text-white"
-                      : "border-white/[0.07] bg-white/[0.025] text-slate-500 hover:text-white"
+                      ? "border-violet-400/50 bg-violet-500/15 text-foreground"
+                      : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {item.label}
@@ -287,17 +298,18 @@ export function JournalIntelligence() {
                           key={item.id}
                           className="rounded-xl border border-emerald-400/10 bg-emerald-400/[0.035] p-3"
                         >
-                          <p className="text-sm leading-relaxed text-slate-200">
+                          <p className="text-sm leading-relaxed text-foreground">
                             {statement(item.statementKey)}
                           </p>
                           <div className="mt-3 flex items-center justify-between gap-3 text-[10px]">
                             <span className="text-emerald-300">
                               {item.evidenceCount} {copy.evidencePoints}
                             </span>
-                            <span className="text-slate-600">
+                            <span className="text-muted-foreground">
                               {item.domain.replaceAll("_", " ")}
                             </span>
                           </div>
+                          <HypothesisEvidence evidence={item.evidence} />
                         </article>
                       ))}
                     </div>
@@ -306,50 +318,52 @@ export function JournalIntelligence() {
                   )}
                 </FutureLabPanel>
 
-                <FutureLabPanel
-                  eyebrow={copy.active.toUpperCase()}
-                  title={
-                    monitoring.length
-                      ? english
-                        ? `${monitoring.length} patterns under observation`
-                        : `Stebima dėsningumų: ${monitoring.length}`
-                      : english
-                        ? "Nothing active"
-                        : "Aktyvių testų nėra"
-                  }
-                  action={<FlaskConical className="size-4 text-cyan-300" />}
-                >
-                  {monitoring.length ? (
-                    <div className="space-y-3">
-                      {monitoring.slice(0, 3).map((item) => (
-                        <article
-                          key={item.id}
-                          className="rounded-xl border border-cyan-400/10 bg-cyan-400/[0.025] p-3"
-                        >
-                          <p className="text-xs leading-relaxed text-slate-300">
-                            {statement(item.statementKey)}
-                          </p>
-                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                            <div
-                              className="h-full rounded-full bg-cyan-400"
-                              style={{ width: `${progressFor(item)}%` }}
-                            />
-                          </div>
-                          <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10px] text-slate-500">
-                            <span>
-                              {item.evidenceCount}/{item.minimumEvidenceCount}
-                            </span>
-                            <span className={statusTone(item.status)}>
-                              {item.status === "monitoring" ? copy.monitoring : copy.gathering}
-                            </span>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <FutureLabEmpty>{copy.activeEmpty}</FutureLabEmpty>
-                  )}
-                </FutureLabPanel>
+                {tab === "all" && (
+                  <FutureLabPanel
+                    eyebrow={copy.active.toUpperCase()}
+                    title={
+                      monitoring.length
+                        ? english
+                          ? `${monitoring.length} patterns under observation`
+                          : `Stebima dėsningumų: ${monitoring.length}`
+                        : english
+                          ? "Nothing active"
+                          : "Aktyvių testų nėra"
+                    }
+                    action={<FlaskConical className="size-4 text-cyan-300" />}
+                  >
+                    {monitoring.length ? (
+                      <div className="space-y-3">
+                        {monitoring.slice(0, 3).map((item) => (
+                          <article
+                            key={item.id}
+                            className="rounded-xl border border-cyan-400/10 bg-cyan-400/[0.025] p-3"
+                          >
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                              {statement(item.statementKey)}
+                            </p>
+                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                              <div
+                                className="h-full rounded-full bg-cyan-400"
+                                style={{ width: `${progressFor(item)}%` }}
+                              />
+                            </div>
+                            <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10px] text-muted-foreground">
+                              <span>
+                                {item.evidenceCount}/{item.minimumEvidenceCount}
+                              </span>
+                              <span className={statusTone(item.status)}>
+                                {item.status === "monitoring" ? copy.monitoring : copy.gathering}
+                              </span>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <FutureLabEmpty>{copy.activeEmpty}</FutureLabEmpty>
+                    )}
+                  </FutureLabPanel>
+                )}
               </div>
             )}
 
@@ -363,20 +377,20 @@ export function JournalIntelligence() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <CircleDot className="size-4 text-cyan-300" />
-                        <span className="font-mono text-[10px] text-slate-500">
+                        <span className="font-mono text-[10px] text-muted-foreground">
                           {item.evidenceCount}/{item.minimumEvidenceCount}
                         </span>
                       </div>
-                      <p className="mt-3 text-sm leading-relaxed text-slate-200">
+                      <p className="mt-3 text-sm leading-relaxed text-foreground">
                         {statement(item.statementKey)}
                       </p>
-                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-foreground/10">
                         <div
                           className="h-full rounded-full bg-cyan-400"
                           style={{ width: `${progressFor(item)}%` }}
                         />
                       </div>
-                      <p className="mt-3 text-[10px] uppercase tracking-[0.12em] text-slate-600">
+                      <p className="mt-3 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                         {item.domain.replaceAll("_", " ")}
                       </p>
                     </article>
@@ -402,7 +416,13 @@ export function JournalIntelligence() {
                   }
                   action={<History className="size-4 text-amber-300" />}
                 >
-                  {data?.decisions.length ? (
+                  {data?.unreadable.includes("decisions") ? (
+                    <FutureLabEmpty>
+                      {english
+                        ? "Decision history is temporarily unavailable."
+                        : "Sprendimų istorija laikinai nepasiekiama."}
+                    </FutureLabEmpty>
+                  ) : data?.decisions.length ? (
                     <div className="divide-y divide-white/[0.06]">
                       {data.decisions.slice(0, tab === "decisions" ? 12 : 5).map((decision) => (
                         <article
@@ -410,17 +430,21 @@ export function JournalIntelligence() {
                           className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
                         >
                           <div className="min-w-0">
-                            <p className="text-sm text-slate-200">
+                            <p className="text-sm text-foreground">
                               {ACTION_LABEL[decision.action][locale]}
                             </p>
-                            <p className="mt-1 font-mono text-[10px] text-slate-600">
+                            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
                               {decision.decisionOn} · {decision.basis.replaceAll("_", " ")}
                             </p>
                           </div>
-                          <span className="shrink-0 rounded-full border border-white/[0.07] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                            {decision.outcome
-                              ? OUTCOME_LABEL[decision.outcome][locale]
-                              : copy.noResponse}
+                          <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                            {data.unreadable.includes("decision_outcomes")
+                              ? english
+                                ? "Response unavailable"
+                                : "Atsakas nepasiekiamas"
+                              : decision.outcome
+                                ? OUTCOME_LABEL[decision.outcome][locale]
+                                : copy.noResponse}
                           </span>
                         </article>
                       ))}
@@ -449,17 +473,17 @@ export function JournalIntelligence() {
                           className="relative border-l border-violet-400/20 pl-4"
                         >
                           <span className="absolute -left-1 top-1 size-2 rounded-full bg-violet-400" />
-                          <p className="text-xs leading-relaxed text-slate-300">
+                          <p className="text-xs leading-relaxed text-muted-foreground">
                             {statement(transition.statementKey)}
                           </p>
-                          <p className="mt-1 font-mono text-[9px] text-slate-600">
+                          <p className="mt-1 font-mono text-[9px] text-muted-foreground">
                             {new Date(transition.occurredAt).toLocaleString(formatLocale(lang), {
                               year: "numeric",
                               month: "short",
                               day: "numeric",
                             })}
                           </p>
-                          <p className="mt-1 text-[10px] text-slate-500">
+                          <p className="mt-1 text-[10px] text-muted-foreground">
                             {transition.previousStatus
                               ? `${copy.previous}: ${transition.previousStatus.replaceAll("_", " ")} → `
                               : `${copy.firstObserved} → `}
@@ -478,13 +502,13 @@ export function JournalIntelligence() {
             )}
 
             {contradicted.length ? (
-              <p className="mt-4 flex items-center gap-2 text-[11px] text-slate-500">
+              <p className="mt-4 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <XCircle className="size-4 text-rose-300" /> {copy.contradicted}:{" "}
                 {contradicted.length}
               </p>
             ) : null}
 
-            <p className="mt-5 flex items-start gap-2 border-t border-white/[0.06] pt-4 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-violet-300" /> {copy.auditNote}
             </p>
           </>

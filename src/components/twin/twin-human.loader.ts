@@ -1,6 +1,7 @@
-import { Group, Mesh, MeshStandardMaterial, type Object3D } from "three";
+import { Group, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
+import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
 
 /**
  * Loads the anatomical human and presents it with the same shape the scene
@@ -32,7 +33,7 @@ const REGION_MATERIAL_PREFIX = "twin-region:";
  * middle of the lit muscle around it. It has to read as unlit body, not as
  * missing body.
  */
-const BODY = { color: 0x23394f, roughness: 0.36, metalness: 0.1 };
+const BODY = { color: 0x182d42, roughness: 0.32, metalness: 0.2 };
 
 /**
  * The skin, over the parts of the figure that have no muscle.
@@ -43,7 +44,7 @@ const BODY = { color: 0x23394f, roughness: 0.36, metalness: 0.1 };
  * hand without turning the figure into a mannequin with a flesh-coloured head
  * on it.
  */
-const SKIN = { color: 0x304a63, roughness: 0.3, metalness: 0.12 };
+const SKIN = { color: 0x263f55, roughness: 0.28, metalness: 0.18 };
 
 /** Darker than the body, so the face reads as a face at a glance. */
 const EYE = { color: 0x05080d, roughness: 0.18, metalness: 0.2 };
@@ -132,7 +133,7 @@ function build(scene: Object3D): TwinBodyModel {
     const isSkin = region === "neutral";
     const preset = sourceName === "Eyes" ? EYE : isSkin ? SKIN : BODY;
     disposeMaterial(object);
-    object.material = new MeshStandardMaterial(preset);
+    object.material = createTwinAnatomyMaterial(preset);
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 

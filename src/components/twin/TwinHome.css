@@ -1,0 +1,269 @@
+.twin-home--cockpit {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  color: #eaf3ff;
+  border: 1px solid rgba(139, 166, 224, 0.13);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 30% 49%, rgba(17, 67, 104, 0.27), transparent 64%),
+    linear-gradient(155deg, #0d152b, #060c19 65%);
+  box-shadow: inset 0 1px 0 rgba(196, 222, 255, 0.04);
+}
+
+.twin-cockpit-header {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.twin-cockpit-header > p {
+  margin: 0 0 4px;
+  color: #9e8de0;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+
+.twin-cockpit-header h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.twin-cockpit-header > span {
+  display: block;
+  margin-top: 5px;
+  color: #899ab7;
+  font-size: 10px;
+}
+
+.twin-home--cockpit [data-twin-layer-controls] {
+  margin: 8px 12px 4px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid rgba(166, 189, 226, 0.1);
+  border-radius: 0;
+  background: none;
+}
+
+.twin-home--cockpit [data-twin-layer-controls] button {
+  border-radius: 0;
+  padding-inline: 3px;
+  color: #8f9db7;
+  font-size: 10px;
+  min-height: 30px;
+  background: none;
+}
+
+.twin-home--cockpit [data-twin-layer-controls] button[aria-pressed="true"] {
+  color: #d8c5ff;
+  box-shadow: inset 0 -2px #9270f4;
+}
+
+.twin-home--cockpit [data-twin-toolbar] > p {
+  max-width: 58%;
+  color: #8597b6;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.twin-home--cockpit [data-twin-toolbar] > div {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.twin-home--cockpit [data-twin-toolbar] button {
+  font-size: 10px;
+  padding-inline: 6px;
+  min-height: 26px;
+}
+
+.twin-cockpit-scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px;
+  min-width: 0;
+  height: 420px;
+  padding-right: 12px;
+}
+
+.twin-cockpit-side {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 20px;
+  font-size: 10px;
+  scrollbar-width: thin;
+}
+
+.twin-cockpit-side > :first-child {
+  margin-top: auto;
+}
+
+.twin-cockpit-side > :last-child {
+  margin-bottom: auto;
+}
+
+.twin-cockpit-legend h2 {
+  margin: 0 0 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #aab9d5;
+}
+
+.twin-cockpit-legend-title {
+  margin: 0 0 13px;
+  font-size: 10px;
+  color: #7f8faa;
+}
+
+.twin-cockpit-legend ul {
+  display: grid;
+  gap: 11px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.twin-cockpit-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a9b6ce;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.twin-cockpit-legend li > span {
+  display: block;
+  flex: 0 0 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 9px 1px rgba(109, 149, 220, 0.2);
+}
+
+.twin-cockpit-legend li > .is-unlit {
+  border: 1px solid #66748d;
+  box-shadow: none;
+}
+
+.twin-cockpit-source {
+  margin: 13px 0 0;
+  color: #7185a8;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.twin-cockpit-load {
+  border-top: 1px solid rgba(156, 181, 226, 0.12);
+  padding-top: 16px;
+}
+
+.twin-cockpit-load h2 {
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.twin-cockpit-load h2 svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+.twin-cockpit-load p {
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.twin-cockpit-load p.tabular-nums.text-2xl {
+  font-size: 23px;
+  line-height: 1.2;
+}
+
+.twin-cockpit-load p > span.font-sans {
+  display: block;
+  margin: 4px 0 0;
+  font-size: 8px;
+}
+
+.twin-cockpit-load [role="img"] {
+  height: 45px;
+  gap: 3px;
+}
+
+.twin-cockpit-load [role="img"] > span {
+  background: linear-gradient(to top, #515dc5, #a077f2);
+}
+
+.twin-cockpit-load [role="img"] > span.bg-border {
+  background: #263246;
+}
+
+.twin-cockpit-reading {
+  border-left: 2px solid #638fae;
+  padding-left: 8px;
+}
+
+.twin-cockpit-reading p {
+  margin: 0 0 4px;
+  color: #c4d6ef;
+}
+
+.twin-cockpit-reading strong {
+  display: block;
+  font-size: 15px;
+}
+
+.twin-cockpit-reading > span {
+  display: block;
+  margin-top: 4px;
+  color: #8fa0bc;
+  font-size: 9px;
+}
+
+.twin-home--cockpit [data-twin-credit] {
+  font-size: 7px;
+  color: #7585a3;
+  margin: 5px 12px 7px;
+  padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.twin-home--cockpit [data-twin-selection] select {
+  background: rgba(14, 25, 45, 0.9);
+  border-color: rgba(154, 180, 227, 0.14);
+  font-size: 11px;
+  min-height: 32px;
+  height: 32px;
+  padding-block: 4px;
+}
+
+.twin-cockpit-loading {
+  min-height: 420px;
+}
+
+@media (min-width: 768px) {
+  .twin-cockpit-scene {
+    height: 430px;
+    grid-template-columns: minmax(0, 1fr) 112px;
+  }
+
+  .twin-cockpit-loading {
+    min-height: 480px;
+  }
+}

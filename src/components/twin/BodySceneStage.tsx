@@ -37,6 +37,10 @@ export type BodySceneStageProps = {
    * opposite of what this screen is for.
    */
   fill?: boolean;
+  /** Bounded overview stage; the full Twin keeps its existing flexible frame. */
+  presentation?: "full" | "cockpit" | "detail";
+  sidePanel?: ReactNode;
+  focusRegion?: string | null;
   /**
    * Attribution the figure's licence requires, shown verbatim under the scene.
    * Not translated: the licence asks for this exact sentence.
@@ -105,6 +109,9 @@ export function BodySceneStage(props: BodySceneStageProps) {
     layerControls,
     credit,
     fill = false,
+    presentation = "full",
+    sidePanel,
+    focusRegion,
     unitLabel,
     formatValue,
     formatRegion,
@@ -190,6 +197,9 @@ export function BodySceneStage(props: BodySceneStageProps) {
     scene.current?.select(selectedRegion);
   }, [selectedRegion, ready]);
   useEffect(() => {
+    if (ready && focusRegion !== undefined) scene.current?.focus(focusRegion);
+  }, [focusRegion, ready]);
+  useEffect(() => {
     scene.current?.setMotion(motion);
   }, [motion, ready]);
   useEffect(() => {
@@ -203,6 +213,8 @@ export function BodySceneStage(props: BodySceneStageProps) {
   };
   // Explicit local touch targets survive the legacy unlayered global min-width reset.
   const controlStyle = { minWidth: 44, minHeight: 44, flexShrink: 0 };
+  const toolbarControlStyle =
+    presentation === "cockpit" ? { minWidth: 30, minHeight: 26, flexShrink: 0 } : controlStyle;
   const controlClass =
     "min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300";
   return (
@@ -215,9 +227,10 @@ export function BodySceneStage(props: BodySceneStageProps) {
       className={fill ? "flex h-full min-h-0 w-full min-w-0 flex-col" : "w-full min-w-0"}
       data-twin-stage={show3D ? "3d" : "2d"}
       data-twin-layer={state.layer}
+      data-twin-presentation={presentation}
     >
       {layerControls}
-      <div className="flex items-center justify-between gap-2 px-3">
+      <div data-twin-toolbar className="flex items-center justify-between gap-2 px-3">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
           {unitLabel}
         </p>
@@ -227,7 +240,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
         >
           <button
             type="button"
-            style={controlStyle}
+            style={toolbarControlStyle}
             className={`${controlClass} ${show3D ? "bg-white/10 text-white" : ""}`}
             aria-pressed={show3D}
             onClick={() => {
@@ -241,7 +254,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           </button>
           <button
             type="button"
-            style={controlStyle}
+            style={toolbarControlStyle}
             className={`${controlClass} ${mode === "2d" ? "bg-white/10 text-white" : ""}`}
             aria-pressed={mode === "2d"}
             onClick={() => setMode("2d")}
@@ -250,55 +263,68 @@ export function BodySceneStage(props: BodySceneStageProps) {
           </button>
         </div>
       </div>
-      <div
-        data-twin-viewport
-        className={
-          fill
-            ? // Capped rather than edge to edge. A standing body is roughly
-              // twice as tall as it is wide, so on a desktop a full-width
-              // canvas is mostly empty black with a small figure in the middle
-              // of it — the camera can only fill the shorter axis. Holding the
-              // canvas near the figure's own proportion lets it fill the frame.
-              "relative mx-auto min-h-[clamp(320px,52svh,900px)] w-full max-w-[38rem] flex-1"
-            : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
-        }
-      >
-        {mode === "3d" && (
-          <div
-            ref={host}
-            className={`absolute inset-0 ${show3D ? "" : "invisible pointer-events-none"}`}
-          />
-        )}
-        {!show3D && (
-          <div className="absolute inset-0 mx-auto max-w-[370px]">
-            <BodyMap
-              regions={state.regions.map((region) => ({
-                region: region.id,
-                tone: twinDisplayToneFor2D(region.display.tone),
-                value: formatValue(region.display.value),
-              }))}
-              view={view}
-              selectedRegion={selectedRegion}
-              onSelectRegion={selectRegion}
-              regionLabel={regionLabel}
-              showFraming
+      <div className={presentation === "cockpit" ? "twin-cockpit-scene" : "contents"}>
+        <div
+          data-twin-viewport
+          className={
+            presentation === "cockpit"
+              ? "relative min-h-0 min-w-0"
+              : presentation === "detail"
+                ? "relative h-[340px] w-full sm:h-[440px]"
+                : fill
+                  ? // Capped rather than edge to edge. A standing body is roughly
+                    // twice as tall as it is wide, so on a desktop a full-width
+                    // canvas is mostly empty black with a small figure in the middle
+                    // of it — the camera can only fill the shorter axis. Holding the
+                    // canvas near the figure's own proportion lets it fill the frame.
+                    "relative mx-auto min-h-[clamp(320px,52svh,900px)] w-full max-w-[38rem] flex-1"
+                  : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
+          }
+        >
+          {mode === "3d" && (
+            <div
+              ref={host}
+              className={`absolute inset-0 ${show3D ? "" : "invisible pointer-events-none"}`}
             />
-          </div>
-        )}
-        {!ready && mode === "3d" && !failed && (
-          <p
-            role="status"
-            className="absolute bottom-2 inset-x-3 rounded-xl bg-black/80 p-3 text-center text-xs text-neutral-300"
-          >
-            {copy.loading}
-          </p>
-        )}
+          )}
+          {!show3D && (
+            <div className="absolute inset-0 mx-auto max-w-[370px]">
+              <BodyMap
+                regions={state.regions.map((region) => ({
+                  region: region.id,
+                  tone: twinDisplayToneFor2D(region.display.tone),
+                  value: formatValue(region.display.value),
+                }))}
+                view={view}
+                selectedRegion={selectedRegion}
+                onSelectRegion={selectRegion}
+                regionLabel={regionLabel}
+                showFraming
+              />
+            </div>
+          )}
+          {!ready && mode === "3d" && !failed && (
+            <p
+              role="status"
+              className="absolute bottom-2 inset-x-3 rounded-xl bg-black/80 p-3 text-center text-xs text-neutral-300"
+            >
+              {copy.loading}
+            </p>
+          )}
+        </div>
+        {sidePanel}
       </div>
       {credit ? (
         // Under the figure, not over it. The licence asks for the credit to
         // travel with the model, not for it to be the first thing above the
         // body on every screen.
-        <p className="mt-2 px-3 text-[9px] leading-relaxed text-neutral-500">{credit}</p>
+        <p
+          data-twin-credit
+          title={credit}
+          className="mt-2 px-3 text-[9px] leading-relaxed text-neutral-500"
+        >
+          {credit}
+        </p>
       ) : null}
       {failed && mode === "3d" && (
         <div
@@ -316,7 +342,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           </button>
         </div>
       )}
-      <div className="mx-3 mb-3 flex min-w-0 items-center gap-2">
+      <div data-twin-selection className="mx-3 mb-3 flex min-w-0 items-center gap-2">
         <label className="relative block min-w-0 flex-1">
           <span className="sr-only">{copy.region}</span>
           <select
@@ -350,7 +376,11 @@ export function BodySceneStage(props: BodySceneStageProps) {
           aria-expanded={controlsOpen}
           aria-controls={controlsId}
           onClick={() => setControlsOpen((value) => !value)}
-          style={controlStyle}
+          style={
+            presentation === "cockpit"
+              ? { minWidth: 32, minHeight: 32, flexShrink: 0 }
+              : controlStyle
+          }
           className={`${controlClass} ${controlsOpen ? "bg-white/10" : ""}`}
         >
           <Settings2 aria-hidden="true" className="size-4" />

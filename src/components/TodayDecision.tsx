@@ -224,7 +224,13 @@ function copyFor(lang: Lang): Copy {
   };
 }
 
-export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
+export function TodayDecision({
+  workoutDay,
+  compact = false,
+}: {
+  workoutDay?: number | null;
+  compact?: boolean;
+}) {
   const { lang } = useI18n();
   const copy = copyFor(lang);
   const navigate = useNavigate();
@@ -316,7 +322,11 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   // that something is coming.
   if (failed || (!loading && !decision)) {
     return (
-      <GlowCard className="panel border-amber-500/30 p-6 md:p-7">
+      <GlowCard
+        className={
+          compact ? "fl-surface fl-today-decision" : "panel border-amber-500/30 p-6 md:p-7"
+        }
+      >
         {/* Stacked rather than side by side: this card also renders in a
             half-width column, where a row squeezed the sentence into four
             words a line. */}
@@ -342,7 +352,7 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
     // `!decision` is unreachable here — the branch above owns it — and is kept
     // only to narrow the type for the render below.
     return (
-      <GlowCard className="panel p-6 md:p-7">
+      <GlowCard className={compact ? "fl-surface fl-today-decision" : "panel p-6 md:p-7"}>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin text-primary" /> {copy.eyebrow}
         </div>
@@ -353,6 +363,53 @@ export function TodayDecision({ workoutDay }: { workoutDay?: number | null }) {
   const action = copy.action[decision.action];
   const feedbackRecorded = feedbackState === "recorded" || decision.status === "dismissed";
   const alternative = decision.alternatives[0];
+  if (compact) {
+    return (
+      <section className="fl-surface fl-today-decision">
+        <p className="fl-eyebrow">{copy.eyebrow}</p>
+        <h2>{action.title}</h2>
+        <p className="fl-decision-summary">{action.summary}</p>
+        <Button className="fl-action" disabled={acting} onClick={() => void continueToAction()}>
+          {acting ? <Loader2 className="size-3 animate-spin" /> : null}
+          {action.cta}
+          <ArrowRight className="size-3" />
+        </Button>
+        <details className="fl-disclosure">
+          <summary>{copy.evidence}</summary>
+          <ul>
+            {decision.evidence.map((item) => (
+              <li key={item.position}>{copy.evidenceLabel[item.key](item.value)}</li>
+            ))}
+          </ul>
+          <p>
+            {copy.basis}: {copy.basisLabel[decision.basis]}
+          </p>
+          {feedbackRecorded ? (
+            <p>{copy.feedbackRecorded}</p>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={acting || feedbackState === "sending"}
+              onClick={() => void reportNotHelpful()}
+            >
+              <ThumbsDown className="size-3" />
+              {copy.notHelpful}
+            </Button>
+          )}
+          {feedbackRecorded && alternative ? (
+            <div>
+              <p>{copy.alternativePrompt}</p>
+              <Button variant="outline" size="sm" onClick={() => navigateToAction(alternative)}>
+                {copy.action[alternative].cta}
+                <ArrowRight className="size-3" />
+              </Button>
+            </div>
+          ) : null}
+        </details>
+      </section>
+    );
+  }
   return (
     <GlowCard className="panel relative overflow-hidden border-primary/40 p-6 md:p-7">
       <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-primary/12 blur-3xl" />

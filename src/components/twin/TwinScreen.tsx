@@ -3,11 +3,13 @@ import { Activity, HeartPulse, PersonStanding } from "lucide-react";
 import { TwinView } from "@/components/TwinView";
 import { BodyCompositionCard } from "@/components/BodyCompositionCard";
 import { TwinMuscleTable } from "@/components/twin/TwinMuscleTable";
+import { TwinMuscleDetail } from "@/components/twin/TwinMuscleDetail";
 import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTimeline } from "@/components/twin/TwinTimeline";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
 import { LiveSignals } from "@/components/LiveSignals";
 import { useI18n, type TKey } from "@/lib/i18n";
+import "./TwinScreen.css";
 
 /**
  * The Twin screen's three views, the way the design splits them.
@@ -29,6 +31,7 @@ type TabId = (typeof TABS)[number]["id"];
 export function TwinScreen() {
   const { t } = useI18n();
   const [active, setActive] = useState<TabId>("overview");
+  const [detailRegion, setDetailRegion] = useState<string | null>(null);
   const tabRefs = useRef(new Map<TabId, HTMLButtonElement>());
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -42,82 +45,93 @@ export function TwinScreen() {
   };
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-4">
-      <div
-        role="tablist"
-        aria-label={t("tw.views")}
-        onKeyDown={onKeyDown}
-        className="flex gap-1 overflow-x-auto rounded-full border border-border bg-surface-2 p-1"
-      >
-        {TABS.map((tab) => {
-          const selected = tab.id === active;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              ref={(node) => {
-                if (node) tabRefs.current.set(tab.id, node);
-                else tabRefs.current.delete(tab.id);
-              }}
-              type="button"
-              role="tab"
-              id={`twin-tab-${tab.id}`}
-              aria-selected={selected}
-              aria-controls={`twin-panel-${tab.id}`}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => setActive(tab.id)}
-              // `flex-1` only once there is room for it. At 320px in
-              // Lithuanian, forcing three nowrap labels into a third of the
-              // width each made them overlap into an unreadable smear — the
-              // row scrolled, so nothing overflowed the page and the layout
-              // check passed while the words sat on top of one another.
-              className={`flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:flex-1 sm:px-4 sm:tracking-[0.16em] ${
-                selected
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon aria-hidden="true" className="size-3.5" />
-              {t(tab.label)}
-            </button>
-          );
-        })}
-      </div>
+    <div className="twin-screen mx-auto grid w-full max-w-6xl gap-4">
+      {detailRegion ? (
+        <TwinMuscleDetail
+          regionId={detailRegion}
+          onRegionChange={setDetailRegion}
+          onBack={() => setDetailRegion(null)}
+          backLabel={t(active === "muscles" ? "tw.tabMuscles" : "tw.tabOverview")}
+        />
+      ) : (
+        <>
+          <div
+            role="tablist"
+            aria-label={t("tw.views")}
+            onKeyDown={onKeyDown}
+            className="flex gap-1 overflow-x-auto rounded-full border border-border bg-surface-2 p-1"
+          >
+            {TABS.map((tab) => {
+              const selected = tab.id === active;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  ref={(node) => {
+                    if (node) tabRefs.current.set(tab.id, node);
+                    else tabRefs.current.delete(tab.id);
+                  }}
+                  type="button"
+                  role="tab"
+                  id={`twin-tab-${tab.id}`}
+                  aria-selected={selected}
+                  aria-controls={`twin-panel-${tab.id}`}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setActive(tab.id)}
+                  // `flex-1` only once there is room for it. At 320px in
+                  // Lithuanian, forcing three nowrap labels into a third of the
+                  // width each made them overlap into an unreadable smear — the
+                  // row scrolled, so nothing overflowed the page and the layout
+                  // check passed while the words sat on top of one another.
+                  className={`flex min-h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 text-[11px] font-bold uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:flex-1 sm:px-4 sm:tracking-[0.16em] ${
+                    selected
+                      ? "bg-surface text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon aria-hidden="true" className="size-3.5" />
+                  {t(tab.label)}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Each panel stays mounted only while selected: the figure is a WebGL
+          {/* Each panel stays mounted only while selected: the figure is a WebGL
           scene, and three of them holding contexts open is not free. */}
-      <div
-        role="tabpanel"
-        id={`twin-panel-${active}`}
-        aria-labelledby={`twin-tab-${active}`}
-        className="grid gap-4"
-      >
-        {active === "overview" ? (
-          <>
-            <TwinView />
-            <BodyCompositionCard />
-            <TwinTimeline />
-          </>
-        ) : active === "muscles" ? (
-          <>
-            <TwinMuscleTable />
-            <TwinTrendLens />
-            <TwinRewind />
-          </>
-        ) : (
-          <>
-            <section className="rounded-3xl border border-border bg-surface p-4 md:p-5">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
-                {t("tw.systemsTitle")}
-              </h2>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {t("tw.systemsNote")}
-              </p>
-            </section>
-            <LiveSignals />
-          </>
-        )}
-      </div>
+          <div
+            role="tabpanel"
+            id={`twin-panel-${active}`}
+            aria-labelledby={`twin-tab-${active}`}
+            className="grid gap-4"
+          >
+            {active === "overview" ? (
+              <>
+                <TwinView onInspectRegion={setDetailRegion} />
+                <BodyCompositionCard />
+                <TwinTimeline />
+              </>
+            ) : active === "muscles" ? (
+              <>
+                <TwinMuscleTable onSelectRegion={setDetailRegion} />
+                <TwinTrendLens />
+                <TwinRewind />
+              </>
+            ) : (
+              <>
+                <section className="rounded-3xl border border-border bg-surface p-4 md:p-5">
+                  <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
+                    {t("tw.systemsTitle")}
+                  </h2>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {t("tw.systemsNote")}
+                  </p>
+                </section>
+                <LiveSignals />
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

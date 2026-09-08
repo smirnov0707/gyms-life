@@ -22,7 +22,15 @@ import type { TwinRegionState } from "@/lib/digital-twin.schema";
 
 const KNOWN_MUSCLE_GROUP_SET = new Set<string>(KNOWN_MUSCLE_GROUPS);
 
-function Row({ region, label }: { region: TwinRegionState; label: string }) {
+function Row({
+  region,
+  label,
+  onSelect,
+}: {
+  region: TwinRegionState;
+  label: string;
+  onSelect?: () => void;
+}) {
   const { lang, t } = useI18n();
   const copy = twinCopyFor(lang);
   const known = region.recoveryPct !== null;
@@ -37,7 +45,17 @@ function Row({ region, label }: { region: TwinRegionState; label: string }) {
           className="size-2 shrink-0 rounded-full"
           style={{ backgroundColor: TWIN_DISPLAY_COLORS[region.recoveryBand] }}
         />
-        <span className="truncate text-sm text-foreground">{label}</span>
+        {onSelect ? (
+          <button
+            type="button"
+            onClick={onSelect}
+            className="min-h-11 min-w-0 flex-1 truncate text-left text-sm text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            {label}
+          </button>
+        ) : (
+          <span className="truncate text-sm text-foreground">{label}</span>
+        )}
       </span>
 
       <span className="text-right font-display text-base leading-none tabular-nums text-foreground sm:order-2">
@@ -66,7 +84,9 @@ function Row({ region, label }: { region: TwinRegionState; label: string }) {
   );
 }
 
-export function TwinMuscleTable() {
+export function TwinMuscleTable({
+  onSelectRegion,
+}: { onSelectRegion?: (region: string) => void } = {}) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const timeZone = browserTimeZone();
@@ -130,7 +150,12 @@ export function TwinMuscleTable() {
           </div>
           <ul>
             {ranked.map((region) => (
-              <Row key={region.region} region={region} label={label(region.region)} />
+              <Row
+                key={region.region}
+                region={region}
+                label={label(region.region)}
+                {...(onSelectRegion ? { onSelect: () => onSelectRegion(region.region) } : {})}
+              />
             ))}
           </ul>
           <p className="border-t border-border/60 px-4 py-3 text-[11px] text-muted-foreground">

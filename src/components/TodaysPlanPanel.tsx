@@ -62,7 +62,7 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
         <Link
           to="/workout/$day"
           params={{ day: String(day) }}
-          className="flex min-h-11 w-full items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.14em] text-foreground transition-colors hover:bg-primary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          className="fl-plan-start flex min-h-11 w-full items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.14em] text-foreground transition-colors hover:bg-primary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
         >
           {t("tp.start")}
         </Link>
@@ -95,7 +95,7 @@ export function TodaysPlanPanel() {
   return (
     <section
       aria-label={t("tp.title")}
-      className="overflow-hidden rounded-3xl border border-border bg-surface"
+      className="fl-todays-plan overflow-hidden rounded-3xl border border-border bg-surface"
     >
       <header className="flex items-center gap-2 px-3 pb-2.5 pt-3">
         <ClipboardList aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
