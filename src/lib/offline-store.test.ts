@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  getOfflineQueue,
   isNetworkUnavailable,
+  queueWorkoutSet,
   retainUnacknowledgedWorkoutSets,
   syncPayload,
   synchronizeWorkoutSets,
@@ -195,5 +197,90 @@ describe("flushOfflineWorkoutSets", () => {
 
     expect(dispatched).toContain(OFFLINE_QUEUE_EVENT);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("a queue that cannot be read", () => {
+  /** The same minimal storage, seeded with a raw string rather than a queue. */
+  function stubBrowser(raw: string) {
+    const store = new Map<string, string>([["gyms_life_offline_queue_v2", raw]]);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => store.set(key, value),
+      },
+      dispatchEvent: () => true,
+    });
+    vi.stubGlobal(
+      "localStorage",
+      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
+    );
+    return store;
+  }
+
+  const set: WorkoutSetSync = {
+    sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
+    exerciseSlug: "barbell-squat",
+    exerciseName: "Barbell Squat",
+    setNumber: 9,
+    reps: 5,
+    weightKg: 120,
+    rpe: 9,
+    done: true,
+    performedAt: "2026-09-08T19:00:00.000Z",
+  };
+
+  it("keeps the unreadable value instead of writing over it", () => {
+    // The defect. `getOfflineQueue` answered a corrupt store with `[]`, and
+    // `queueWorkoutSet` built the next queue from that answer — so one bad
+    // blob and the next set replaced every set the athlete had logged offline.
+    const store = stubBrowser("{ this is not a queue");
+    queueWorkoutSet(set);
+
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBe("{ this is not a queue");
+    // And the athlete can keep logging: the new set is queued, not refused.
+    expect(getOfflineQueue()).toHaveLength(1);
+  });
+
+  it("treats a stored value that is not a list as unreadable too", () => {
+    const store = stubBrowser(JSON.stringify({ not: "an array" }));
+    queueWorkoutSet(set);
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeDefined();
+  });
+
+  it("appends normally to a queue it could read", () => {
+    const existing: OfflinePayload[] = [
+      {
+        id: "a",
+        type: "workout_set",
+        data: { ...set, setNumber: 1 },
+        timestamp: 1_764_000_000_000,
+      },
+    ];
+    const store = stubBrowser(JSON.stringify(existing));
+    queueWorkoutSet(set);
+
+    expect(getOfflineQueue()).toHaveLength(2);
+    // Nothing was salvaged, because nothing was in danger.
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
+  });
+
+  it("treats an empty store as readable, not as damaged", () => {
+    const store = stubBrowser("[]");
+    queueWorkoutSet(set);
+    expect(getOfflineQueue()).toHaveLength(1);
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
+  });
+
+  it("still drops a single malformed entry without losing its neighbours", () => {
+    // The behaviour the file's own comment was written for, unchanged.
+    const store = stubBrowser(
+      JSON.stringify([
+        { id: "a", type: "workout_set", data: set, timestamp: 1_764_000_000_000 },
+        { id: "b", nonsense: true },
+      ]),
+    );
+    expect(getOfflineQueue()).toHaveLength(1);
+    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
   });
 });

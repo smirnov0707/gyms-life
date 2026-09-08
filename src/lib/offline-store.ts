@@ -1,6 +1,23 @@
 import { z } from "zod";
 
 const STORAGE_KEY = "gyms_life_offline_queue_v2";
+
+/**
+ * Where an unreadable queue is put before a new one takes its place.
+ *
+ * `getOfflineQueue` answers an unreadable store with an empty list, which is
+ * fine for anything that only reads. It was not fine for `queueWorkoutSet`,
+ * which builds the next queue from that answer: one corrupt blob, and the
+ * following set overwrote every set the athlete had logged offline. PART LXXIX
+ * says not to lose workout state, and that was the one place in the product
+ * that could.
+ *
+ * Moving the raw value aside costs nothing and keeps it recoverable, so an
+ * athlete can go on logging without their earlier sets being destroyed to do
+ * it. Throwing instead would have cost them the set they were adding, and
+ * refusing to write at all would have cost them the rest of the session.
+ */
+const SALVAGE_KEY = "gyms_life_offline_queue_v2.unreadable";
 const MAX_QUEUE_ITEMS = 200;
 
 export const WorkoutSetSyncSchema = z.object({
@@ -62,6 +79,18 @@ function createPayloadId(): string {
  */
 export const OFFLINE_QUEUE_EVENT = "gymslife:offline-queue";
 
+/** Keeps an unreadable queue where it can still be recovered by hand. */
+function salvageUnreadableQueue(): void {
+  if (!isBrowser()) return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) localStorage.setItem(SALVAGE_KEY, raw);
+  } catch {
+    // Nothing more can be done here, and failing the athlete's set over it
+    // would trade a recoverable loss for a certain one.
+  }
+}
+
 function persistOfflineQueue(queue: OfflinePayload[]): void {
   if (!isBrowser()) return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
@@ -85,26 +114,54 @@ export function syncPayload(item: OfflinePayload): WorkoutSetSync {
  * server. Records are validated one at a time: a single unreadable entry used
  * to discard the whole queue, which meant losing every other set in it.
  */
-export function getOfflineQueue(): OfflinePayload[] {
-  if (!isBrowser()) return [];
+type OfflineQueueRead = {
+  items: OfflinePayload[];
+  /**
+   * False when something is stored under the queue key that could not be read
+   * as a queue. An empty queue is readable; a corrupt one is not, and only the
+   * second must stop a writer from overwriting it.
+   */
+  readable: boolean;
+};
+
+function readOfflineQueue(): OfflineQueueRead {
+  if (!isBrowser()) return { items: [], readable: true };
+
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    // Storage itself is unavailable, so nothing can be written over either.
+    return { items: [], readable: true };
+  }
+  if (!raw) return { items: [], readable: true };
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const rows = JSON.parse(raw);
-    if (!Array.isArray(rows)) return [];
-    return rows.flatMap((row) => {
-      const parsed = OfflinePayloadSchema.safeParse(row);
-      return parsed.success ? [parsed.data] : [];
-    });
+    const rows: unknown = JSON.parse(raw);
+    if (!Array.isArray(rows)) return { items: [], readable: false };
+    return {
+      items: rows.flatMap((row) => {
+        const parsed = OfflinePayloadSchema.safeParse(row);
+        return parsed.success ? [parsed.data] : [];
+      }),
+      readable: true,
+    };
   } catch {
-    return [];
+    return { items: [], readable: false };
   }
+}
+
+export function getOfflineQueue(): OfflinePayload[] {
+  return readOfflineQueue().items;
 }
 
 export function queueWorkoutSet(input: WorkoutSetSync): OfflinePayload {
   const data = WorkoutSetSyncSchema.parse(input);
-  const queue = getOfflineQueue();
+  const { items: queue, readable } = readOfflineQueue();
+  // Never build the next queue on top of a queue we could not read. What is
+  // there is somebody's logged sets, and the write below would replace all of
+  // them with this one.
+  if (!readable) salvageUnreadableQueue();
   if (queue.length >= MAX_QUEUE_ITEMS) {
     throw new Error("Offline workout queue is full. Reconnect to sync your saved sets.");
   }
