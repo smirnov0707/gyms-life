@@ -994,8 +994,8 @@
   }
   .fl-dashboard .fl-dashboard-footer .fl-data-sources {
     gap: 7px;
-    padding: 4px 8px;
-    min-height: 36px;
+    padding: 2px 8px;
+    min-height: 32px;
   }
   .fl-dashboard .fl-data-sources > button,
   .fl-dashboard .fl-data-sources > a {

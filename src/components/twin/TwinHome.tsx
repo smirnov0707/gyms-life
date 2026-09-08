@@ -302,7 +302,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             <aside className="twin-cockpit-side">
               <CockpitLegend layer={shownLayer} language={language} />
               <div className="twin-cockpit-load">
-                <TrainingLoadPanel />
+                <TrainingLoadPanel compact />
               </div>
               {reading ? (
                 <div className="twin-cockpit-reading" role="status">

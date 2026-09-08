@@ -4,6 +4,7 @@ import { BodyMap } from "./BodyMap";
 import { viewShowing, type BodyView } from "./body-map.geometry";
 import {
   TWIN_BODY_REGIONS,
+  TWIN_DISPLAY_COLORS,
   twinDisplayToneFor2D,
   isTwinBodyRegion,
   type TwinSceneState,
@@ -213,10 +214,43 @@ export function BodySceneStage(props: BodySceneStageProps) {
   };
   // Explicit local touch targets survive the legacy unlayered global min-width reset.
   const controlStyle = { minWidth: 44, minHeight: 44, flexShrink: 0 };
-  const toolbarControlStyle =
-    presentation === "cockpit" ? { minWidth: 30, minHeight: 26, flexShrink: 0 } : controlStyle;
   const controlClass =
     "min-h-11 min-w-11 rounded-xl px-3 text-xs font-medium text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300";
+  const rendererControls = (
+    <div data-twin-toolbar className="flex items-center justify-between gap-2 px-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+        {unitLabel}
+      </p>
+      <div
+        className="flex rounded-full border border-white/10 bg-black/30 p-1"
+        aria-label={copy.renderer}
+      >
+        <button
+          type="button"
+          style={controlStyle}
+          className={`${controlClass} ${show3D ? "bg-white/10 text-white" : ""}`}
+          aria-pressed={show3D}
+          onClick={() => {
+            if (mode === "2d" || failed) {
+              setMode("3d");
+              setAttempt((value) => value + 1);
+            }
+          }}
+        >
+          3D
+        </button>
+        <button
+          type="button"
+          style={controlStyle}
+          className={`${controlClass} ${mode === "2d" ? "bg-white/10 text-white" : ""}`}
+          aria-pressed={mode === "2d"}
+          onClick={() => setMode("2d")}
+        >
+          2D
+        </button>
+      </div>
+    </div>
+  );
   return (
     <div
       // In fill mode the stage is a column that takes its container's height,
@@ -229,40 +263,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
       data-twin-layer={state.layer}
       data-twin-presentation={presentation}
     >
-      {layerControls}
-      <div data-twin-toolbar className="flex items-center justify-between gap-2 px-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-          {unitLabel}
-        </p>
-        <div
-          className="flex rounded-full border border-white/10 bg-black/30 p-1"
-          aria-label={copy.renderer}
-        >
-          <button
-            type="button"
-            style={toolbarControlStyle}
-            className={`${controlClass} ${show3D ? "bg-white/10 text-white" : ""}`}
-            aria-pressed={show3D}
-            onClick={() => {
-              if (mode === "2d" || failed) {
-                setMode("3d");
-                setAttempt((value) => value + 1);
-              }
-            }}
-          >
-            3D
-          </button>
-          <button
-            type="button"
-            style={toolbarControlStyle}
-            className={`${controlClass} ${mode === "2d" ? "bg-white/10 text-white" : ""}`}
-            aria-pressed={mode === "2d"}
-            onClick={() => setMode("2d")}
-          >
-            2D
-          </button>
-        </div>
-      </div>
+      {presentation !== "cockpit" && (
+        <>
+          {layerControls}
+          {rendererControls}
+        </>
+      )}
       <div className={presentation === "cockpit" ? "twin-cockpit-scene" : "contents"}>
         <div
           data-twin-viewport
@@ -293,6 +299,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
                 regions={state.regions.map((region) => ({
                   region: region.id,
                   tone: twinDisplayToneFor2D(region.display.tone),
+                  displayColor: TWIN_DISPLAY_COLORS[region.display.tone],
                   value: formatValue(region.display.value),
                 }))}
                 view={view}
@@ -326,6 +333,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           {credit}
         </p>
       ) : null}
+      {presentation === "cockpit" && layerControls}
       {failed && mode === "3d" && (
         <div
           role="status"
@@ -397,6 +405,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
         }}
         className="mx-3 mb-3 rounded-2xl border border-white/10 bg-black/30 p-3"
       >
+        {presentation === "cockpit" && rendererControls}
         <p className="text-xs leading-relaxed text-neutral-300">{copy.hint}</p>
         <div className="flex flex-wrap justify-center gap-1 pt-2">
           {show3D &&

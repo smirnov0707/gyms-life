@@ -299,9 +299,13 @@
   }
 
   .twin-cockpit-scene {
-    height: clamp(380px, calc(100svh - 450px), 480px);
+    height: clamp(410px, calc(100svh - 412px), 518px);
     grid-template-columns: minmax(0, 1fr) 100px;
     padding-right: 8px;
+  }
+
+  .twin-home--cockpit:has(.twin-cockpit-notice) .twin-cockpit-scene {
+    height: clamp(330px, calc(100svh - 412px), 430px);
   }
 
   .twin-cockpit-side {

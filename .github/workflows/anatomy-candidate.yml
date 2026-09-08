@@ -1,0 +1,47 @@
+name: Anatomy candidate browser
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tests/twin-browser/**"
+      - "tests/today-browser/**"
+      - "src/components/twin/twin-anatomy.*"
+      - "src/components/twin/twin-human.loader.ts"
+      - "scripts/test-twin-browser.mjs"
+      - "scripts/test-today-browser.mjs"
+      - "package*.json"
+      - ".github/workflows/anatomy-candidate.yml"
+permissions:
+  contents: read
+concurrency:
+  group: anatomy-candidate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [twin, today]
+    env:
+      TWIN_ANATOMY_CANDIDATE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require the isolated candidate asset
+        run: test -s tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run the full unchanged browser suite against the candidate
+        run: node scripts/test-${{ matrix.suite }}-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.suite }}-candidate-browser-evidence
+          path: test-results/${{ matrix.suite }}-candidate
+          retention-days: 14
+          if-no-files-found: warn

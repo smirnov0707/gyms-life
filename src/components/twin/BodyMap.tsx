@@ -36,6 +36,8 @@ export type BodyMapRegion = {
   /** What the callout shows for this region, already formatted by the caller
    *  — a recovery percentage on the Twin, a session's volume on the replay. */
   value?: string | null;
+  /** Optional scene palette, so a 2D fallback keeps its adjacent legend's hue. */
+  displayColor?: string;
 };
 
 /** Colours as literal stops so the gradients read the same in both themes. */
@@ -164,6 +166,21 @@ export function BodyMap({
             <stop offset="100%" stopColor={TONE_GRADIENT[band].bottom} />
           </linearGradient>
         ))}
+        {drawable
+          .filter((region) => region.displayColor)
+          .map((region) => (
+            <linearGradient
+              key={region.region}
+              id={`${uid}-region-${region.region}`}
+              x1="0"
+              y1="0"
+              x2="0.35"
+              y2="1"
+            >
+              <stop offset="0%" stopColor={region.displayColor} />
+              <stop offset="100%" stopColor={region.displayColor} stopOpacity="0.65" />
+            </linearGradient>
+          ))}
         {/* Real relief, not a painted approximation of it: blurring a shape's
             own alpha gives a height map, and lighting that map rounds the
             form the way its own outline says it should be rounded. One light
@@ -323,7 +340,7 @@ export function BodyMap({
               {hasEvidence ? (
                 <path
                   d={region.d}
-                  fill={TONE_GRADIENT[region.tone].top}
+                  fill={region.displayColor ?? TONE_GRADIENT[region.tone].top}
                   fillOpacity={isSelected ? 0.3 : 0.14}
                   filter={`url(#${uid}-bloom)`}
                   aria-hidden="true"
@@ -337,7 +354,10 @@ export function BodyMap({
               >
                 <path
                   d={region.d}
-                  fill={`url(#${uid}-${region.tone})`}
+                  fill={`url(#${uid}-${region.displayColor ? `region-${region.region}` : region.tone})`}
+                  style={
+                    !isSelected && region.displayColor ? { stroke: region.displayColor } : undefined
+                  }
                   strokeWidth={isSelected ? 1.2 : 0.7}
                   strokeLinejoin="round"
                   filter={`url(#${uid}-relief)`}
@@ -415,7 +435,7 @@ export function BodyMap({
               x={calloutX}
               y={calloutY + 10.5}
               textAnchor="end"
-              fill={TONE_GRADIENT[selected.tone].top}
+              fill={selected.displayColor ?? TONE_GRADIENT[selected.tone].top}
               fontSize={7}
               fontWeight={700}
             >
