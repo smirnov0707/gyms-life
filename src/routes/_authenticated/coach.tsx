@@ -7,6 +7,7 @@ import {
   getAiPersonalizationConsent,
   recordAiPersonalizationConsent,
 } from "@/lib/ai-personalization-consent.functions";
+import { COACH_HISTORY_TURNS } from "@/lib/coach-message.schema";
 import { askCoach, listCoachMessages } from "@/lib/plan.functions";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { aiErrorMessage } from "@/lib/ai-error";
@@ -202,8 +203,7 @@ function AiPersonalizationConsentCard() {
       ? {
           eyebrow: "AI PRIVATUMAS",
           title: "Asmeninis kontekstas",
-          description:
-            "Coach ir Daily Brief AI tiekėjui gali perduoti tik 7/28/30 dienų suvestines bei iki 12 aktyvių faktų, pirmenybių ir dėsningumų. Neperduodami žali įrašai, paskyros vardas ar pokalbių istorija.",
+          description: `Coach ir Daily Brief AI tiekėjui gali perduoti tik 7/28/30 dienų suvestines bei iki 12 aktyvių faktų, pirmenybių ir dėsningumų. Kad Coach neatsakinėtų taip, tarsi pokalbio nebūtų buvę, perduodami ir paskutiniai ${COACH_HISTORY_TURNS} šio pokalbio pranešimų. Neperduodami žali įrašai ir paskyros vardas.`,
           active: "Asmeninis kontekstas įjungtas",
           inactive: "Naudojami tik baziniai treniruočių nustatymai",
           enable: "Įjungti",
@@ -213,8 +213,7 @@ function AiPersonalizationConsentCard() {
       : {
           eyebrow: "AI PRIVACY",
           title: "Personal context",
-          description:
-            "Coach and Daily Brief can send only 7/28/30-day summaries and up to 12 active facts, preferences, and patterns. Raw records, your account name, and chat history are never sent.",
+          description: `Coach and Daily Brief can send only 7/28/30-day summaries and up to 12 active facts, preferences, and patterns. The last ${COACH_HISTORY_TURNS} messages of this conversation are sent too, so Coach does not answer as if it never happened. Raw records and your account name are never sent.`,
           active: "Personal context enabled",
           inactive: "Using basic training preferences only",
           enable: "Enable",

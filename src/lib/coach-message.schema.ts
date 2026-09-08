@@ -1,6 +1,17 @@
 import type { Tables } from "@/integrations/supabase/types";
 import { z } from "zod";
 
+/**
+ * How many turns of the conversation go to the provider with each question.
+ *
+ * Exported so that the privacy card on the Coach screen states this number
+ * rather than a number somebody wrote down once. The card used to say chat
+ * history was never sent while `askCoach` sent ten turns of it, and a copy
+ * that quotes the constant cannot drift away from the code the way a
+ * hand-written sentence did.
+ */
+export const COACH_HISTORY_TURNS = 10;
+
 export const CoachMessageRoleSchema = z.enum(["user", "coach"]);
 
 export const CoachHistoryMessageSchema = z.object({
