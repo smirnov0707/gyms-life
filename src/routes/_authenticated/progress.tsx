@@ -117,33 +117,39 @@ function ProgressPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-[1480px] space-y-4">
+    <div className="fl-progress-page mx-auto max-w-[1480px] space-y-3">
       <FutureMeSimulationDeck />
-      <FutureMeSummary />
-
-      <section className="rounded-[1.75rem] border border-[#182846] bg-[#07111d]/72 p-4 sm:p-6">
-        <div className="mb-5">
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
-            <Activity className="size-4" /> {copy.intelligence}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">{copy.intelligenceHint}</p>
+      <details className="fl-secondary-details">
+        <summary>{baseLang(lang) === "en" ? "Observed evolution" : "Stebimi pokyčiai"}</summary>
+        <div className="fl-disclosed-content">
+          <FutureMeSummary />
         </div>
-        <div className="space-y-4">
+      </details>
+
+      <details className="fl-secondary-details">
+        <summary className="flex items-center gap-2">
+          <Activity className="size-3.5 text-cyan-300" />
+          {copy.intelligence}
+        </summary>
+        <div className="fl-disclosed-content space-y-4">
+          <p className="text-xs text-muted-foreground">{copy.intelligenceHint}</p>
           <PerformanceProgressPanel />
           <WeeklyIntelligenceReview />
           <InjuryRiskRadar />
         </div>
-      </section>
+      </details>
 
-      <details className="group rounded-[1.75rem] border border-[#182846] bg-[#07111d]/60">
+      <details className="fl-secondary-details group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-foreground">{t("pr.volume")}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{copy.measuredHint}</p>
-            </div>
+          <span className="flex items-center justify-between gap-4">
+            <span>
+              <span className="block text-sm font-semibold text-foreground">{t("pr.volume")}</span>
+              <span className="fl-summary-hint mt-1 block text-xs text-muted-foreground">
+                {copy.measuredHint}
+              </span>
+            </span>
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-          </div>
+          </span>
         </summary>
         <div className="border-t border-border p-5 sm:p-6">
           {volumeData.length ? (
@@ -173,18 +179,20 @@ function ProgressPage() {
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-[#182846] bg-[#07111d]/60">
+      <details className="fl-secondary-details group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-semibold">
+          <span className="flex items-center justify-between gap-4">
+            <span>
+              <span className="flex items-center gap-2 text-sm font-semibold">
                 <Trophy className="size-4 text-violet-300" />
                 {t("pr.records")}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">{copy.recordsHint}</p>
-            </div>
+              </span>
+              <span className="fl-summary-hint mt-1 block text-xs text-muted-foreground">
+                {copy.recordsHint}
+              </span>
+            </span>
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-          </div>
+          </span>
         </summary>
         <div className="border-t border-border px-5 py-2 sm:px-6">
           {records?.length ? (
@@ -206,18 +214,20 @@ function ProgressPage() {
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-[#182846] bg-[#07111d]/60">
+      <details className="fl-secondary-details group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-semibold">
+          <span className="flex items-center justify-between gap-4">
+            <span>
+              <span className="flex items-center gap-2 text-sm font-semibold">
                 <History className="size-4 text-violet-300" />
                 {t("pr.history")}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">{copy.historyHint}</p>
-            </div>
+              </span>
+              <span className="fl-summary-hint mt-1 block text-xs text-muted-foreground">
+                {copy.historyHint}
+              </span>
+            </span>
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-          </div>
+          </span>
         </summary>
         <div className="border-t border-border px-5 py-2 sm:px-6">
           <div className="divide-y divide-white/[0.06]">
@@ -243,15 +253,17 @@ function ProgressPage() {
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-[#182846] bg-[#07111d]/60">
+      <details className="fl-secondary-details group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold">{copy.tools}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{copy.toolsHint}</p>
-            </div>
+          <span className="flex items-center justify-between gap-4">
+            <span>
+              <span className="block text-sm font-semibold">{copy.tools}</span>
+              <span className="fl-summary-hint mt-1 block text-xs text-muted-foreground">
+                {copy.toolsHint}
+              </span>
+            </span>
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-          </div>
+          </span>
         </summary>
         <div className="space-y-5 border-t border-border p-5 sm:p-6">
           <BodyMetricsPanel />

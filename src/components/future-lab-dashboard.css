@@ -680,3 +680,340 @@
     min-height: 44px;
   }
 }
+
+.fl-dashboard-footer {
+  display: grid;
+  gap: inherit;
+  min-width: 0;
+}
+.fl-context-label-short {
+  display: none;
+}
+
+/* Desktop reference composition. Expanded explanations may grow the page;
+   the resting cockpit fits the reference without clipping evidence or actions. */
+@media (min-width: 1200px) {
+  .fl-dashboard {
+    --fl-cockpit-height: clamp(500px, calc(100svh - 326px), 600px);
+    --fl-deck-height: clamp(188px, 22.5svh, 218px);
+    gap: 8px;
+  }
+  .fl-dashboard .fl-cockpit {
+    grid-template-columns:
+      minmax(0, 1.05fr) minmax(0, 0.98fr) minmax(0, 1.43fr)
+      minmax(0, 0.94fr) minmax(0, 1.18fr);
+    min-height: var(--fl-cockpit-height);
+    gap: 8px;
+  }
+  .fl-dashboard .fl-left-rail,
+  .fl-dashboard .fl-daily-column,
+  .fl-dashboard .fl-predictions {
+    gap: 7px;
+  }
+  .fl-dashboard .fl-greeting {
+    padding: 15px 10px 10px;
+  }
+  .fl-dashboard .fl-greeting h1 {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .fl-greeting > p:last-child {
+    margin-top: 8px;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .fl-dashboard .fl-surface,
+  .fl-dashboard .fl-sleep-analysis,
+  .fl-dashboard .fl-evidence,
+  .fl-dashboard .fl-outlook {
+    padding: 9px 10px;
+    border-radius: 8px;
+  }
+  .fl-dashboard .fl-live-signals header,
+  .fl-dashboard .fl-todays-plan header {
+    padding: 8px 10px 6px;
+  }
+  .fl-dashboard .fl-live-signals li {
+    min-height: 40px;
+    padding: 5px 9px;
+    gap: 6px;
+  }
+  .fl-dashboard .fl-live-signals li > span:first-child {
+    width: 27px;
+    height: 27px;
+  }
+  .fl-dashboard .fl-live-signals li > span:last-child > span:first-child {
+    font-size: 11px;
+  }
+  .fl-dashboard .fl-todays-plan > div {
+    padding-inline: 10px;
+  }
+  .fl-dashboard .fl-todays-plan > div > p:first-child {
+    font-size: 10px;
+  }
+  .fl-dashboard .fl-todays-plan > div > p:last-child {
+    font-size: 8px;
+    letter-spacing: 0.04em;
+  }
+  .fl-dashboard .fl-todays-plan > ul {
+    margin-top: 4px;
+    padding-inline: 10px;
+  }
+  .fl-dashboard .fl-todays-plan .fl-plan-exercise {
+    min-height: 22px;
+    gap: 7px;
+    padding-block: 4px;
+  }
+  .fl-dashboard .fl-plan-exercise > span:first-child {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .fl-dashboard .fl-plan-exercise .fl-plan-exercise-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-plan-exercise .fl-plan-exercise-rest {
+    flex-shrink: 0;
+    font-size: 7px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .fl-dashboard .fl-todays-plan li > span:last-child {
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-todays-plan > div:last-child {
+    padding-top: 6px;
+    padding-bottom: 9px;
+  }
+  .fl-dashboard .fl-plan-start,
+  .fl-dashboard .fl-action {
+    min-height: 27px;
+    padding-block: 4px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-readiness-summary > div:first-child,
+  .fl-dashboard .fl-readiness-summary > div:first-child svg {
+    width: 44px;
+    height: 44px;
+  }
+  .fl-dashboard .fl-readiness-summary > div:first-child > span {
+    font-size: 15px;
+  }
+  .fl-dashboard .fl-readiness-summary > div:last-child > p:last-child {
+    font-size: 13px;
+    margin-top: 3px;
+  }
+  .fl-dashboard .fl-readiness-card > button {
+    min-height: 21px;
+    height: 21px;
+    margin-top: 0;
+  }
+  .fl-dashboard .fl-smart-brief h3 {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+  .fl-dashboard .fl-smart-brief p,
+  .fl-dashboard .fl-decision-summary {
+    margin-top: 5px;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .fl-dashboard .fl-brief-refresh {
+    width: 20px;
+    height: 20px;
+  }
+  .fl-dashboard .fl-disclosure {
+    margin-top: 5px;
+    line-height: 1.45;
+  }
+  .fl-dashboard .fl-disclosure > summary {
+    padding-block: 4px;
+  }
+  .fl-dashboard .fl-today-decision h2 {
+    margin-top: 5px;
+    font-size: 13px;
+  }
+  .fl-dashboard .fl-today-decision > .fl-action {
+    margin-top: 7px;
+  }
+  .fl-dashboard .fl-lab-roster {
+    padding: 9px 10px;
+  }
+  .fl-dashboard .fl-lab-roster li {
+    padding-block: 7px;
+    gap: 7px;
+  }
+  .fl-dashboard .fl-lab-roster li > span:first-child {
+    width: 21px;
+    height: 21px;
+  }
+  .fl-dashboard .fl-lab-roster li > span:nth-child(2) > span:first-child {
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-lab-roster > a {
+    min-height: 27px;
+    margin-top: 5px;
+    padding-block: 3px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-evidence-overview {
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .fl-dashboard .fl-evidence-count {
+    width: 70px;
+    height: 70px;
+  }
+  .fl-dashboard .fl-evidence-count strong {
+    font-size: 23px;
+  }
+  .fl-dashboard .fl-evidence-targets {
+    gap: 5px;
+  }
+  .fl-dashboard .fl-evidence-targets li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-evidence-targets li > span:last-child {
+    text-align: right;
+    font-size: 7px;
+  }
+  .fl-dashboard .fl-outlook-chart {
+    height: 74px;
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-outlook-legend {
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-sleep-analysis > p:nth-child(2) {
+    margin-top: 6px;
+  }
+  .fl-dashboard .fl-sleep-analysis > p:nth-child(2) > span:first-child {
+    font-size: 12px;
+  }
+  .fl-dashboard .fl-sleep-analysis ul {
+    margin-top: 6px;
+  }
+  .fl-dashboard .fl-sleep-analysis li {
+    font-size: 9px;
+    margin-block: 0;
+  }
+  .fl-dashboard .fl-sleep-analysis li + li {
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-bottom-deck {
+    grid-template-columns: 1.28fr 1.7fr 0.88fr 0.94fr;
+    min-height: var(--fl-deck-height);
+    gap: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck > .fl-panel {
+    padding: 9px;
+    border-radius: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck > .fl-panel > div:last-child {
+    margin-top: 6px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-card-action {
+    min-height: 26px;
+    padding: 4px 7px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-recent-effect {
+    gap: 6px;
+  }
+  .fl-dashboard .fl-recent-effect section > p {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .fl-recent-effect section > p:last-child {
+    margin-top: 5px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-recent-effect ul {
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-recent-effect li {
+    margin-block: 0;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .fl-recent-effect li + li {
+    margin-top: 3px;
+  }
+  .fl-dashboard .fl-bottom-deck [aria-label] > button {
+    min-height: 24px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-illustrative-athlete img {
+    height: 66px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-illustrative-athlete figcaption {
+    margin-top: 3px;
+    font-size: 7px;
+  }
+  .fl-dashboard .fl-bottom-deck .mb-3 {
+    margin-bottom: 4px;
+  }
+  .fl-dashboard .fl-bottom-deck dl {
+    margin-top: 6px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck dl > div {
+    margin-block: 0;
+  }
+  .fl-dashboard .fl-bottom-deck dl > div + div {
+    margin-top: 4px;
+  }
+  .fl-dashboard .fl-bottom-deck dl + p {
+    margin-top: 5px;
+    padding-top: 5px;
+  }
+  .fl-dashboard .fl-bottom-deck p {
+    line-height: 1.4;
+  }
+  .fl-dashboard .fl-bottom-deck .mt-4 {
+    margin-top: 9px;
+  }
+  .fl-dashboard .fl-bottom-deck h2 {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  .fl-dashboard .fl-dashboard-footer {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+  .fl-dashboard .fl-dashboard-footer:has(> details[open]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-dashboard .fl-dashboard-footer .fl-data-sources {
+    gap: 7px;
+    padding: 4px 8px;
+    min-height: 36px;
+  }
+  .fl-dashboard .fl-data-sources > button,
+  .fl-dashboard .fl-data-sources > a {
+    min-height: 26px;
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-data-sources > span {
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-context-disclosure > summary {
+    padding: 10px 4px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-context-label-full {
+    display: none;
+  }
+  .fl-dashboard .fl-context-label-short {
+    display: inline;
+  }
+}

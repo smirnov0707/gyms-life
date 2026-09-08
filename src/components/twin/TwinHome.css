@@ -276,3 +276,70 @@
     min-height: 480px;
   }
 }
+
+@media (min-width: 1200px) {
+  .twin-home--cockpit {
+    border-radius: 8px;
+    background:
+      radial-gradient(ellipse at 37% 58%, rgba(13, 55, 87, 0.2), transparent 63%),
+      linear-gradient(160deg, #050d18, #030913 70%);
+  }
+
+  .twin-home--cockpit [data-twin-layer-controls] {
+    margin: 4px 8px 0;
+  }
+
+  .twin-home--cockpit [data-twin-layer-controls] button {
+    min-height: 26px;
+    font-size: 9px;
+  }
+
+  .twin-home--cockpit [data-twin-toolbar] {
+    padding-inline: 8px;
+  }
+
+  .twin-cockpit-scene {
+    height: clamp(380px, calc(100svh - 450px), 480px);
+    grid-template-columns: minmax(0, 1fr) 100px;
+    padding-right: 8px;
+  }
+
+  .twin-cockpit-side {
+    gap: 14px;
+  }
+
+  .twin-cockpit-legend-title {
+    margin-bottom: 9px;
+  }
+
+  .twin-cockpit-legend ul {
+    gap: 8px;
+  }
+
+  .twin-cockpit-legend li,
+  .twin-cockpit-legend-title,
+  .twin-cockpit-load p {
+    font-size: 9px;
+  }
+
+  .twin-cockpit-source {
+    margin-top: 8px;
+    font-size: 8px;
+  }
+
+  .twin-cockpit-load {
+    padding-top: 10px;
+  }
+
+  .twin-cockpit-load p.tabular-nums.text-2xl {
+    font-size: 21px;
+  }
+
+  .twin-home--cockpit [data-twin-credit] {
+    margin-inline: 8px;
+  }
+
+  .twin-home--cockpit [data-twin-selection] {
+    margin: 0 8px 8px;
+  }
+}

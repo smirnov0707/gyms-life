@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
@@ -17,7 +18,42 @@ import tailwindcss from "@tailwindcss/vite";
  * exist outside a running app.
  */
 const root = process.cwd();
-const artifacts = path.join(root, "test-results/today");
+const candidate = process.env.TWIN_ANATOMY_CANDIDATE === "1";
+const candidatePath = "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+// Read before starting Vite or Chromium. A missing candidate must fail instead
+// of silently rendering the production asset and passing the visual gate.
+const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
+if (
+  candidateBytes &&
+  (candidateBytes.length < 12 ||
+    candidateBytes.toString("ascii", 0, 4) !== "glTF" ||
+    candidateBytes.readUInt32LE(4) !== 2 ||
+    candidateBytes.readUInt32LE(8) !== candidateBytes.length)
+)
+  throw new Error(`Invalid candidate GLB: ${candidatePath}`);
+let candidateRequests = 0;
+const candidatePlugin = {
+  name: "test-only-anatomy-candidate",
+  configureServer(vite) {
+    vite.middlewares.use((request, response, next) => {
+      if (
+        !candidateBytes ||
+        !["GET", "HEAD"].includes(request.method) ||
+        new URL(request.url, "http://localhost").pathname !== "/models/twin-anatomy-v1.glb"
+      )
+        return next();
+      response.setHeader("Content-Type", "model/gltf-binary");
+      response.setHeader("Content-Length", candidateBytes.length);
+      response.setHeader("Cache-Control", "no-store");
+      if (request.method === "GET") candidateRequests++;
+      response.end(request.method === "HEAD" ? undefined : candidateBytes);
+    });
+  },
+};
+const artifacts = path.join(
+  root,
+  candidate ? "test-results/today-candidate" : "test-results/today",
+);
 await mkdir(artifacts, { recursive: true });
 const results = [];
 let server;
@@ -101,7 +137,12 @@ try {
     // than falling back to the generated surface and making the evidence
     // screenshots show a body the athlete never sees.
     publicDir: path.join(root, "public"),
-    plugins: [serverFunctionStub(), react(), tailwindcss()],
+    plugins: [
+      ...(candidate ? [candidatePlugin] : []),
+      serverFunctionStub(),
+      react(),
+      tailwindcss(),
+    ],
     resolve: {
       alias: [
         { find: "@/lib/auth", replacement: stubs("auth-stub.ts") },
@@ -188,6 +229,7 @@ try {
     // frame is valid. Bring it into view, then prove a real input is repainted.
     await canvas.scrollIntoViewIfNeeded();
     await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
+    if (candidate) expect(candidateRequests).toBeGreaterThan(0);
     await expect
       .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
       .toBeGreaterThanOrEqual(1);
@@ -211,10 +253,12 @@ try {
   // so downloadable design evidence survives a later regression failure.
   const references = [];
   for (const viewport of [
+    { name: "reference", width: 1280, height: 853 },
     { name: "desktop", width: 1440, height: 1000 },
     { name: "mobile", width: 390, height: 844 },
   ]) {
     for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal"]) {
+      if (viewport.name === "reference" && screen !== "today") continue;
       const shown = await openPanel(`?shell=1&screen=${screen}&scenario=reference`, {
         viewport: { width: viewport.width, height: viewport.height },
         locale: "en-US",
@@ -258,6 +302,22 @@ try {
       expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
       const filename = `reference-${screen}-${viewport.name}.png`;
       await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
+      if (viewport.name === "reference") {
+        await shown.page.screenshot({
+          path: path.join(artifacts, "reference-today-1280x853.png"),
+          fullPage: false,
+        });
+        const layout = await shown.page.evaluate(() =>
+          [".fl-cockpit", ".fl-bottom-deck", ".fl-dashboard-footer"].map((selector) => {
+            const rect = document.querySelector(selector)?.getBoundingClientRect();
+            return { selector, ...(rect?.toJSON() ?? {}) };
+          }),
+        );
+        await writeFile(
+          path.join(artifacts, "reference-layout.json"),
+          JSON.stringify(layout, null, 2),
+        );
+      }
       await writeFile(
         path.join(artifacts, `reference-${screen}-${viewport.name}.txt`),
         await shown.page.locator("body").innerText(),
@@ -1200,6 +1260,21 @@ try {
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
+  if (candidateBytes)
+    await writeFile(
+      path.join(artifacts, "anatomy-asset.json"),
+      JSON.stringify(
+        {
+          path: candidatePath,
+          sha256: createHash("sha256").update(candidateBytes).digest("hex"),
+          bytes: candidateBytes.length,
+          requests: candidateRequests,
+          servedAs: "/models/twin-anatomy-v1.glb",
+        },
+        null,
+        2,
+      ),
+    );
   await browser?.close();
   await server?.close();
 }

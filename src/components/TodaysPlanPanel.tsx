@@ -25,13 +25,16 @@ import type { TrainingPlanDay } from "@/lib/training-plan.schema";
 function ExerciseRow({ exercise }: { exercise: TrainingPlanDay["exercises"][number] }) {
   const { t } = useI18n();
   return (
-    <li className="flex items-baseline justify-between gap-3 border-t border-border/50 py-2 first:border-t-0">
+    <li className="fl-plan-exercise flex items-baseline justify-between gap-3 border-t border-border/50 py-2 first:border-t-0">
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-semibold text-foreground">
+        <span
+          className="fl-plan-exercise-name block truncate text-xs font-semibold text-foreground"
+          title={exercise.name}
+        >
           {exercise.name}
         </span>
         {exercise.rest_seconds > 0 ? (
-          <span className="block text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          <span className="fl-plan-exercise-rest block text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             {exercise.rest_seconds}s {t("tp.rest")}
           </span>
         ) : null}

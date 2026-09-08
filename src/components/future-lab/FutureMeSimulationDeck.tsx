@@ -1,16 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Loader2,
-  LockKeyhole,
-  Minus,
-  RefreshCw,
-  ShieldCheck,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { Loader2, LockKeyhole, Minus, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStrengthForecast } from "./forecast.query";
 import { IllustrativeAthlete } from "./IllustrativeAthlete";
+import "./reference-page-density.css";
 import type { DeterministicLiftForecast } from "@/lib/forecast.schema";
 import {
   FUTURE_ME_HORIZONS,
@@ -154,7 +147,7 @@ export function FutureMeSimulationDeck() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(96,54,170,.13),transparent_55%)]"
       />
-      <div className="relative p-3.5 sm:p-5">
+      <div className="fl-page-content relative p-3.5 sm:p-5">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -224,7 +217,7 @@ export function FutureMeSimulationDeck() {
           <IllustrativeAthlete />
 
           <div className="min-w-0">
-            <article className="rounded-xl border border-violet-400/20 bg-surface-2/70 p-3.5">
+            <article className="fl-strength-summary rounded-xl border border-violet-400/20 bg-surface-2/70 p-3.5">
               <h2 className="text-xs font-medium text-foreground">{copy.title}</h2>
               {!forecast && !failed ? (
                 <p
@@ -320,6 +313,9 @@ export function FutureMeSimulationDeck() {
               <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
                 {copy.methodBody}
               </p>
+              <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                {copy.disclaimer}
+              </p>
               {forecast ? (
                 <p className="mt-2 font-mono text-[9px] text-muted-foreground">
                   {copy.version} {forecast.forecastVersion} · {forecast.sourceWindowDays}d{" "}
@@ -329,10 +325,6 @@ export function FutureMeSimulationDeck() {
             </details>
           </div>
         </div>
-        <p className="mt-3 flex items-start gap-1.5 border-t border-border/60 pt-2.5 text-[9px] leading-relaxed text-muted-foreground">
-          <ShieldCheck className="mt-0.5 size-3 shrink-0 text-cyan-400" />
-          {copy.disclaimer}
-        </p>
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { createServer } from "vite";
@@ -6,7 +7,39 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 const root = process.cwd();
-const artifacts = path.join(root, "test-results/twin");
+const candidate = process.env.TWIN_ANATOMY_CANDIDATE === "1";
+const candidatePath = "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+// Read before starting Vite or Chromium. A missing candidate must fail instead
+// of silently rendering the production asset and passing the visual gate.
+const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
+if (
+  candidateBytes &&
+  (candidateBytes.length < 12 ||
+    candidateBytes.toString("ascii", 0, 4) !== "glTF" ||
+    candidateBytes.readUInt32LE(4) !== 2 ||
+    candidateBytes.readUInt32LE(8) !== candidateBytes.length)
+)
+  throw new Error(`Invalid candidate GLB: ${candidatePath}`);
+let candidateRequests = 0;
+const candidatePlugin = {
+  name: "test-only-anatomy-candidate",
+  configureServer(vite) {
+    vite.middlewares.use((request, response, next) => {
+      if (
+        !candidateBytes ||
+        !["GET", "HEAD"].includes(request.method) ||
+        new URL(request.url, "http://localhost").pathname !== "/models/twin-anatomy-v1.glb"
+      )
+        return next();
+      response.setHeader("Content-Type", "model/gltf-binary");
+      response.setHeader("Content-Length", candidateBytes.length);
+      response.setHeader("Cache-Control", "no-store");
+      if (request.method === "GET") candidateRequests++;
+      response.end(request.method === "HEAD" ? undefined : candidateBytes);
+    });
+  },
+};
+const artifacts = path.join(root, candidate ? "test-results/twin-candidate" : "test-results/twin");
 await mkdir(artifacts, { recursive: true });
 const results = [];
 let server;
@@ -36,6 +69,7 @@ const loaded = async (target) => {
   await expect
     .poll(async () => Number(await target.locator("canvas").getAttribute("data-twin-frames")))
     .toBeGreaterThan(0);
+  if (candidate) expect(candidateRequests).toBeGreaterThan(0);
 };
 const record = (name) => {
   results.push({ name, status: "passed" });
@@ -46,7 +80,7 @@ try {
     configFile: false,
     root: path.join(root, "tests/twin-browser"),
     publicDir: path.join(root, "public"),
-    plugins: [react(), tailwindcss()],
+    plugins: [...(candidate ? [candidatePlugin] : []), react(), tailwindcss()],
     resolve: {
       alias: [
         {
@@ -529,6 +563,21 @@ try {
   });
   throw error;
 } finally {
+  if (candidateBytes)
+    await writeFile(
+      path.join(artifacts, "anatomy-asset.json"),
+      JSON.stringify(
+        {
+          path: candidatePath,
+          sha256: createHash("sha256").update(candidateBytes).digest("hex"),
+          bytes: candidateBytes.length,
+          requests: candidateRequests,
+          servedAs: "/models/twin-anatomy-v1.glb",
+        },
+        null,
+        2,
+      ),
+    );
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
   await browser?.close();
   await server?.close();

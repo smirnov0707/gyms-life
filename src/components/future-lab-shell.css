@@ -289,6 +289,16 @@
   margin: 0 auto;
   padding: 10px 14px 24px;
 }
+
+@media (min-width: 1200px) {
+  .fl-shell-header-inner {
+    height: 59px;
+  }
+
+  .fl-shell-main {
+    padding: 8px 12px 6px;
+  }
+}
 .fl-mobile-navigation {
   display: none;
 }

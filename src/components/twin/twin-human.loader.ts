@@ -133,7 +133,13 @@ function build(scene: Object3D): TwinBodyModel {
     const isSkin = region === "neutral";
     const preset = sourceName === "Eyes" ? EYE : isSkin ? SKIN : BODY;
     disposeMaterial(object);
-    object.material = createTwinAnatomyMaterial(preset);
+    object.material = createTwinAnatomyMaterial(preset, {
+      fibers:
+        object.userData["twinFiberUV"] === true &&
+        object.geometry.getAttribute("uv")?.itemSize === 2 &&
+        region !== null &&
+        isTwinBodyRegion(region),
+    });
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 

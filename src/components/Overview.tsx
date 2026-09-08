@@ -214,20 +214,27 @@ export function Overview() {
         </aside>
       </div>
       <FutureLabTodayIntelligence />
-      <DataSourcesStrip />
-      <details className="fl-context-disclosure">
-        <summary>
-          {english
-            ? "Daily context & programme settings"
-            : "Dienos kontekstas ir programos nustatymai"}
-        </summary>
-        <TodayLifeContext />
-        {planData ? (
-          <Link to="/onboarding" className="fl-text-link">
-            {t("dash.regenerate")} →
-          </Link>
-        ) : null}
-      </details>
+      <div className="fl-dashboard-footer">
+        <DataSourcesStrip />
+        <details className="fl-context-disclosure">
+          <summary>
+            <span className="fl-context-label-full">
+              {english
+                ? "Daily context & programme settings"
+                : "Dienos kontekstas ir programos nustatymai"}
+            </span>
+            <span className="fl-context-label-short">
+              {english ? "Context & settings" : "Kontekstas ir nustatymai"}
+            </span>
+          </summary>
+          <TodayLifeContext />
+          {planData ? (
+            <Link to="/onboarding" className="fl-text-link">
+              {t("dash.regenerate")} →
+            </Link>
+          ) : null}
+        </details>
+      </div>
     </div>
   );
 }

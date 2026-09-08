@@ -5,13 +5,16 @@
 }
 
 .fl-lab-roster-tiles > li {
-  padding: 8px 4px;
+  padding: 5px 3px;
+  border-color: transparent;
+  border-radius: 0;
+  background: none;
 }
 
 .fl-lab-roster-tiles .fl-role-icon {
   width: 36px;
   height: 36px;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   border-radius: 50%;
 }
 

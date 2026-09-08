@@ -5,6 +5,7 @@ import { LabRosterRows } from "./FutureLabRoster";
 import { HypothesisEvidence } from "./HypothesisEvidence";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import { useLabOverview } from "./lab-overview.query";
+import "./reference-page-density.css";
 
 const STATEMENTS = {
   lt: {
@@ -56,13 +57,13 @@ export function LabCommandDeck() {
 
   return (
     <section className="fl-lab-page fl-panel overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 sm:p-5">
-      <header className="flex items-start justify-between gap-3 border-b border-border/70 pb-3">
+      <header className="fl-page-heading flex items-start justify-between gap-3 border-b border-border/70 pb-3">
         <div>
-          <p className="text-[9px] uppercase tracking-[0.18em] text-violet-300 light:text-violet-700">
+          <p className="fl-page-eyebrow text-[9px] uppercase tracking-[0.18em] text-violet-300 light:text-violet-700">
             GYMS.LIFE FUTURE LAB
           </p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("nav.lab")}</h1>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="fl-page-intro mt-1 text-[11px] text-muted-foreground">
             {english ? "Your evidence. Your investigations." : "Tavo duomenys. Tavo tyrimai."}
           </p>
         </div>
@@ -94,8 +95,8 @@ export function LabCommandDeck() {
 
       <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
         <FutureLabPanel
-          eyebrow={english ? "CURRENT INVESTIGATION" : "DABARTINIS TYRIMAS"}
-          title={english ? "The question being tested" : "Tikrinamas klausimas"}
+          className="fl-investigation-card"
+          title={english ? "Current investigation" : "Dabartinis tyrimas"}
           action={<FlaskConical className="size-4 text-cyan-300" />}
         >
           {query.isError ? (
@@ -131,77 +132,89 @@ export function LabCommandDeck() {
           )}
         </FutureLabPanel>
 
-        <FutureLabPanel
-          eyebrow={english ? "MODEL CALIBRATION" : "MODELIO KALIBRACIJA"}
-          title={english ? "Evidence maturity" : "Įrodymų branda"}
-          action={<Gauge className="size-4 text-violet-300" />}
-        >
-          <div className="flex items-center gap-4">
-            <div className="relative grid size-24 shrink-0 place-items-center">
-              <svg viewBox="0 0 96 96" className="absolute size-24 -rotate-90" aria-hidden="true">
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="38"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="5"
-                  className="text-foreground/10"
-                />
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="38"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  pathLength="100"
-                  strokeDasharray={`${maturity ?? 0} 100`}
-                  className="text-cyan-400"
-                />
-              </svg>
-              <span className="font-mono text-xl text-foreground">
-                {maturity === null ? "—" : `${maturity}%`}
-              </span>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-foreground">
-                {english ? "Workout completion" : "Treniruotės užbaigimas"}
+        <details className="fl-secondary-details self-start">
+          <summary>
+            {english ? "Prediction calibration" : "Prognozių kalibracija"} ·{" "}
+            {calibration ? `${calibration.totalEvaluated}/${calibration.minimumEvaluated}` : "—"}
+          </summary>
+          <div className="fl-disclosed-content">
+            <FutureLabPanel
+              eyebrow={english ? "MODEL CALIBRATION" : "MODELIO KALIBRACIJA"}
+              title={english ? "Evidence maturity" : "Įrodymų branda"}
+              action={<Gauge className="size-4 text-violet-300" />}
+            >
+              <div className="flex items-center gap-4">
+                <div className="relative grid size-24 shrink-0 place-items-center">
+                  <svg
+                    viewBox="0 0 96 96"
+                    className="absolute size-24 -rotate-90"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="38"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="5"
+                      className="text-foreground/10"
+                    />
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="38"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      pathLength="100"
+                      strokeDasharray={`${maturity ?? 0} 100`}
+                      className="text-cyan-400"
+                    />
+                  </svg>
+                  <span className="font-mono text-xl text-foreground">
+                    {maturity === null ? "—" : `${maturity}%`}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-foreground">
+                    {english ? "Workout completion" : "Treniruotės užbaigimas"}
+                  </p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {calibration
+                      ? `${calibration.totalEvaluated}/${calibration.minimumEvaluated} ${english ? "evaluated outcomes" : "įvertintų rezultatų"}`
+                      : query.isError
+                        ? unknown
+                        : t("common.loading")}
+                  </p>
+                  <p className="mt-2 text-[9px] uppercase tracking-wider text-violet-300 light:text-violet-700">
+                    Shadow
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-[10px]">
+                <p className="text-muted-foreground">
+                  {english ? "Captured" : "Užfiksuota"}
+                  <span className="ml-2 font-mono text-foreground">
+                    {calibration?.totalCaptured ?? "—"}
+                  </span>
+                </p>
+                <p className="text-muted-foreground">
+                  {english ? "Pending" : "Laukia"}
+                  <span className="ml-2 font-mono text-foreground">
+                    {calibration?.totalPending ?? "—"}
+                  </span>
+                </p>
+              </div>
+              <p className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-muted-foreground">
+                <ShieldCheck className="mt-0.5 size-3 shrink-0 text-cyan-400" />
+                {english
+                  ? "Evidence maturity is not prediction confidence. These forecasts do not influence Today."
+                  : "Įrodymų branda nėra prognozės tikrumas. Šios prognozės nedaro įtakos Today."}
               </p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {calibration
-                  ? `${calibration.totalEvaluated}/${calibration.minimumEvaluated} ${english ? "evaluated outcomes" : "įvertintų rezultatų"}`
-                  : query.isError
-                    ? unknown
-                    : t("common.loading")}
-              </p>
-              <p className="mt-2 text-[9px] uppercase tracking-wider text-violet-300 light:text-violet-700">
-                Shadow
-              </p>
-            </div>
+            </FutureLabPanel>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-[10px]">
-            <p className="text-muted-foreground">
-              {english ? "Captured" : "Užfiksuota"}
-              <span className="ml-2 font-mono text-foreground">
-                {calibration?.totalCaptured ?? "—"}
-              </span>
-            </p>
-            <p className="text-muted-foreground">
-              {english ? "Pending" : "Laukia"}
-              <span className="ml-2 font-mono text-foreground">
-                {calibration?.totalPending ?? "—"}
-              </span>
-            </p>
-          </div>
-          <p className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-muted-foreground">
-            <ShieldCheck className="mt-0.5 size-3 shrink-0 text-cyan-400" />
-            {english
-              ? "Evidence maturity is not prediction confidence. These forecasts do not influence Today."
-              : "Įrodymų branda nėra prognozės tikrumas. Šios prognozės nedaro įtakos Today."}
-          </p>
-        </FutureLabPanel>
+        </details>
       </div>
     </section>
   );

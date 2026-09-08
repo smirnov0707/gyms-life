@@ -1,0 +1,150 @@
+.fl-secondary-details {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.fl-secondary-details > summary {
+  min-height: 40px;
+  cursor: pointer;
+  padding: 11px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.fl-secondary-details > .fl-disclosed-content {
+  padding: 0 10px 10px;
+}
+
+@media (max-width: 639px) {
+  .fl-lab-page,
+  .fl-journal-page {
+    border-radius: 12px;
+  }
+
+  .fl-lab-page,
+  .fl-journal-page > .fl-page-content,
+  .fl-future-page > .fl-page-content {
+    padding: 12px;
+  }
+
+  .fl-page-heading {
+    padding-bottom: 10px;
+  }
+
+  .fl-page-heading h1,
+  .fl-future-page h1 {
+    margin-top: 0;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .fl-page-heading .fl-page-intro,
+  .fl-page-heading .fl-page-eyebrow {
+    display: none;
+  }
+
+  .fl-lab-page .fl-panel,
+  .fl-journal-page .fl-panel {
+    padding: 12px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  .fl-lab-page .fl-investigation-card h2,
+  .fl-journal-page .fl-panel h2 {
+    margin-top: 0;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+  }
+
+  .fl-journal-stats {
+    margin-top: 0;
+  }
+
+  .fl-journal-stats > div > svg {
+    display: none;
+  }
+
+  .fl-journal-stats > div > p:first-of-type {
+    margin-top: 0;
+    font-size: 18px;
+  }
+
+  .fl-journal-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .fl-journal-filters button {
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 8px;
+    letter-spacing: 0;
+  }
+
+  .fl-journal-page .fl-panel article {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .fl-journal-page .fl-plain-state {
+    border: 0;
+    padding: 0;
+    background: none;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .fl-journal-page .fl-model-note {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+
+  .fl-future-page .fl-illustrative-athlete img {
+    height: 260px;
+  }
+
+  .fl-future-page .fl-illustrative-athlete figcaption {
+    font-size: 8px;
+  }
+
+  .fl-future-page .fl-strength-summary {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .fl-progress-page,
+  .fl-lab-route,
+  .fl-history-page {
+    display: grid;
+    gap: 8px;
+  }
+
+  .fl-progress-page > *,
+  .fl-lab-route > *,
+  .fl-history-page > * {
+    margin-top: 0;
+  }
+
+  .fl-progress-page > .fl-secondary-details > summary {
+    padding: 11px 12px;
+  }
+
+  .fl-progress-page > .fl-secondary-details > summary span {
+    font-size: 11px;
+  }
+
+  .fl-progress-page > .fl-secondary-details:not([open]) .fl-summary-hint {
+    display: none;
+  }
+}

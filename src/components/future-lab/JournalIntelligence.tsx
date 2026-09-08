@@ -6,7 +6,6 @@ import {
   FlaskConical,
   History,
   Microscope,
-  ShieldCheck,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { useLabOverview } from "./lab-overview.query";
 import type { LabDecision } from "@/lib/lab.schema";
 import type { AthleteHypothesis } from "@/lib/athlete-hypothesis.schema";
 import "./journal-stats.css";
+import "./reference-page-density.css";
 
 const statements = {
   lt: {
@@ -197,15 +197,15 @@ export function JournalIntelligence() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(124,58,237,.20),transparent_31%),radial-gradient(circle_at_8%_90%,rgba(6,182,212,.08),transparent_30%)]"
       />
-      <div className="relative p-4 sm:p-5">
-        <header>
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-violet-300">
+      <div className="fl-page-content relative p-4 sm:p-5">
+        <header className="fl-page-heading">
+          <p className="fl-page-eyebrow flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-violet-300">
             <BrainCircuit className="size-4" /> {copy.eyebrow}
           </p>
           <h1 className="mt-2 max-w-4xl text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             {copy.title}
           </h1>
-          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+          <p className="fl-page-intro mt-2 max-w-3xl text-xs leading-relaxed text-muted-foreground">
             {copy.subtitle}
           </p>
         </header>
@@ -253,40 +253,10 @@ export function JournalIntelligence() {
               })}
             </div>
 
-            <nav
-              aria-label={english ? "Journal filters" : "Žurnalo filtrai"}
-              className="mt-4 flex gap-1.5 overflow-x-auto border-b border-border pb-3"
-            >
-              {tabs.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={tab === item.id}
-                  onClick={() => setTab(item.id)}
-                  className={`min-h-10 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
-                    tab === item.id
-                      ? "border-violet-400/50 bg-violet-500/15 text-foreground"
-                      : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-
             {(tab === "all" || tab === "discoveries") && (
               <div className="mt-4 grid gap-3 lg:grid-cols-2">
                 <FutureLabPanel
-                  eyebrow={copy.supported.toUpperCase()}
-                  title={
-                    supported.length
-                      ? english
-                        ? `${supported.length} evidence-backed finding${supported.length === 1 ? "" : "s"}`
-                        : `Įrodymais pagrįstų atradimų: ${supported.length}`
-                      : english
-                        ? "No discovery yet"
-                        : "Atradimų dar nėra"
-                  }
+                  title={copy.supported}
                   action={<CheckCircle2 className="size-4 text-emerald-300" />}
                 >
                   {supported.length ? (
@@ -312,22 +282,15 @@ export function JournalIntelligence() {
                       ))}
                     </div>
                   ) : (
-                    <FutureLabEmpty>{copy.supportedEmpty}</FutureLabEmpty>
+                    <p className="fl-plain-state text-xs leading-relaxed text-muted-foreground">
+                      {copy.supportedEmpty}
+                    </p>
                   )}
                 </FutureLabPanel>
 
                 {tab === "all" && (
                   <FutureLabPanel
-                    eyebrow={copy.active.toUpperCase()}
-                    title={
-                      monitoring.length
-                        ? english
-                          ? `${monitoring.length} patterns under observation`
-                          : `Stebima dėsningumų: ${monitoring.length}`
-                        : english
-                          ? "Nothing active"
-                          : "Aktyvių testų nėra"
-                    }
+                    title={copy.active}
                     action={<FlaskConical className="size-4 text-cyan-300" />}
                   >
                     {monitoring.length ? (
@@ -358,7 +321,9 @@ export function JournalIntelligence() {
                         ))}
                       </div>
                     ) : (
-                      <FutureLabEmpty>{copy.activeEmpty}</FutureLabEmpty>
+                      <p className="fl-plain-state text-xs leading-relaxed text-muted-foreground">
+                        {copy.activeEmpty}
+                      </p>
                     )}
                   </FutureLabPanel>
                 )}
@@ -395,108 +360,136 @@ export function JournalIntelligence() {
                   ))
                 ) : (
                   <div className="md:col-span-2 xl:col-span-3">
-                    <FutureLabEmpty>{copy.activeEmpty}</FutureLabEmpty>
+                    <p className="fl-plain-state text-xs leading-relaxed text-muted-foreground">
+                      {copy.activeEmpty}
+                    </p>
                   </div>
                 )}
               </div>
             )}
 
-            {(tab === "all" || tab === "decisions") && (
-              <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_.8fr]">
-                <FutureLabPanel
-                  eyebrow={copy.decisionTitle.toUpperCase()}
-                  title={
-                    data?.decisions.length
-                      ? english
-                        ? "What the system proposed — and what happened next"
-                        : "Ką sistema pasiūlė ir kas įvyko po to"
-                      : copy.decisionEmpty
-                  }
-                  action={<History className="size-4 text-amber-300" />}
+            <details className="fl-secondary-details mt-3">
+              <summary>
+                {english ? "Browse journal" : "Naršyti žurnalą"} ·{" "}
+                {tabs.find((item) => item.id === tab)?.label}
+              </summary>
+              <div className="fl-disclosed-content">
+                <nav
+                  aria-label={english ? "Journal filters" : "Žurnalo filtrai"}
+                  className="fl-journal-filters mt-4 flex gap-1.5 overflow-x-auto border-b border-border pb-3"
                 >
-                  {data?.unreadable.includes("decisions") ? (
-                    <FutureLabEmpty>
-                      {english
-                        ? "Decision history is temporarily unavailable."
-                        : "Sprendimų istorija laikinai nepasiekiama."}
-                    </FutureLabEmpty>
-                  ) : data?.decisions.length ? (
-                    <div className="divide-y divide-white/[0.06]">
-                      {data.decisions.slice(0, tab === "decisions" ? 12 : 5).map((decision) => (
-                        <article
-                          key={decision.id}
-                          className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm text-foreground">
-                              {ACTION_LABEL[decision.action][locale]}
-                            </p>
-                            <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-                              {decision.decisionOn} · {decision.basis.replaceAll("_", " ")}
-                            </p>
-                          </div>
-                          <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                            {data.unreadable.includes("decision_outcomes")
-                              ? english
-                                ? "Response unavailable"
-                                : "Atsakas nepasiekiamas"
-                              : decision.outcome
-                                ? OUTCOME_LABEL[decision.outcome][locale]
-                                : copy.noResponse}
-                          </span>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <FutureLabEmpty>{copy.decisionEmpty}</FutureLabEmpty>
-                  )}
-                </FutureLabPanel>
-
-                <FutureLabPanel
-                  eyebrow={copy.learningTimeline.toUpperCase()}
-                  title={
-                    data?.hypothesisHistory.length
-                      ? english
-                        ? "How hypotheses changed status"
-                        : "Kaip keitėsi hipotezių statusai"
-                      : copy.timelineEmpty
-                  }
-                  action={<Microscope className="size-4 text-violet-300" />}
-                >
-                  {data?.hypothesisHistory.length ? (
-                    <div className="space-y-3">
-                      {data.hypothesisHistory.slice(0, 6).map((transition) => (
-                        <article
-                          key={`${transition.hypothesisId}-${transition.occurredAt}`}
-                          className="relative border-l border-violet-400/20 pl-4"
-                        >
-                          <span className="absolute -left-1 top-1 size-2 rounded-full bg-violet-400" />
-                          <p className="text-xs leading-relaxed text-muted-foreground">
-                            {statement(transition.statementKey)}
-                          </p>
-                          <p className="mt-1 font-mono text-[9px] text-muted-foreground">
-                            {new Date(transition.occurredAt).toLocaleString(formatLocale(lang), {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </p>
-                          <p className="mt-1 text-[10px] text-muted-foreground">
-                            {transition.previousStatus
-                              ? `${copy.previous}: ${transition.previousStatus.replaceAll("_", " ")} → `
-                              : `${copy.firstObserved} → `}
-                            <span className={statusTone(transition.status)}>
-                              {transition.status.replaceAll("_", " ")}
-                            </span>
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <FutureLabEmpty>{copy.timelineEmpty}</FutureLabEmpty>
-                  )}
-                </FutureLabPanel>
+                  {tabs.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-pressed={tab === item.id}
+                      onClick={() => setTab(item.id)}
+                      className={`min-h-10 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                        tab === item.id
+                          ? "border-violet-400/50 bg-violet-500/15 text-foreground"
+                          : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
               </div>
+            </details>
+
+            {(tab === "all" || tab === "decisions") && (
+              <details className="fl-secondary-details mt-3" open={tab === "decisions"}>
+                <summary>
+                  {copy.decisionTitle} ·{" "}
+                  {data.unreadable.includes("decisions") ? "—" : data.decisions.length}
+                </summary>
+                <div className="fl-disclosed-content">
+                  <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_.8fr]">
+                    <FutureLabPanel
+                      title={copy.decisionTitle}
+                      action={<History className="size-4 text-amber-300" />}
+                    >
+                      {data?.unreadable.includes("decisions") ? (
+                        <FutureLabEmpty>
+                          {english
+                            ? "Decision history is temporarily unavailable."
+                            : "Sprendimų istorija laikinai nepasiekiama."}
+                        </FutureLabEmpty>
+                      ) : data?.decisions.length ? (
+                        <div className="divide-y divide-white/[0.06]">
+                          {data.decisions.slice(0, tab === "decisions" ? 12 : 5).map((decision) => (
+                            <article
+                              key={decision.id}
+                              className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm text-foreground">
+                                  {ACTION_LABEL[decision.action][locale]}
+                                </p>
+                                <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                                  {decision.decisionOn} · {decision.basis.replaceAll("_", " ")}
+                                </p>
+                              </div>
+                              <span className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                                {data.unreadable.includes("decision_outcomes")
+                                  ? english
+                                    ? "Response unavailable"
+                                    : "Atsakas nepasiekiamas"
+                                  : decision.outcome
+                                    ? OUTCOME_LABEL[decision.outcome][locale]
+                                    : copy.noResponse}
+                              </span>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <FutureLabEmpty>{copy.decisionEmpty}</FutureLabEmpty>
+                      )}
+                    </FutureLabPanel>
+
+                    <FutureLabPanel
+                      title={copy.learningTimeline}
+                      action={<Microscope className="size-4 text-violet-300" />}
+                    >
+                      {data?.hypothesisHistory.length ? (
+                        <div className="space-y-3">
+                          {data.hypothesisHistory.slice(0, 6).map((transition) => (
+                            <article
+                              key={`${transition.hypothesisId}-${transition.occurredAt}`}
+                              className="relative border-l border-violet-400/20 pl-4"
+                            >
+                              <span className="absolute -left-1 top-1 size-2 rounded-full bg-violet-400" />
+                              <p className="text-xs leading-relaxed text-muted-foreground">
+                                {statement(transition.statementKey)}
+                              </p>
+                              <p className="mt-1 font-mono text-[9px] text-muted-foreground">
+                                {new Date(transition.occurredAt).toLocaleString(
+                                  formatLocale(lang),
+                                  {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                  },
+                                )}
+                              </p>
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {transition.previousStatus
+                                  ? `${copy.previous}: ${transition.previousStatus.replaceAll("_", " ")} → `
+                                  : `${copy.firstObserved} → `}
+                                <span className={statusTone(transition.status)}>
+                                  {transition.status.replaceAll("_", " ")}
+                                </span>
+                              </p>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <FutureLabEmpty>{copy.timelineEmpty}</FutureLabEmpty>
+                      )}
+                    </FutureLabPanel>
+                  </div>
+                </div>
+              </details>
             )}
 
             {contradicted.length ? (
@@ -506,9 +499,12 @@ export function JournalIntelligence() {
               </p>
             ) : null}
 
-            <p className="mt-5 flex items-start gap-2 border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-violet-300" /> {copy.auditNote}
-            </p>
+            <details className="fl-secondary-details mt-3">
+              <summary>{english ? "About these observations" : "Apie šiuos stebėjimus"}</summary>
+              <p className="fl-model-note px-3 pb-3 text-xs text-muted-foreground">
+                {copy.auditNote}
+              </p>
+            </details>
           </>
         )}
       </div>

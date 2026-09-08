@@ -88,10 +88,15 @@ function ReferenceScreen() {
       <aside
         data-testid="fixture-watermark"
         style={{
+          position: "fixed",
+          right: 6,
+          bottom: 2,
+          zIndex: 100,
+          pointerEvents: "none",
           color: "var(--muted-foreground)",
+          background: "var(--background)",
           fontSize: 9,
           letterSpacing: ".12em",
-          marginBottom: 8,
         }}
       >
         SYNTHETIC TEST FIXTURE · {query.get("scenario") ?? "empty"} · NOT USER DATA
