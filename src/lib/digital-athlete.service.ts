@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import {
+  averageDailyTotal,
+  dailyNutritionTotals,
+  NUTRITION_LOG_READ_LIMIT,
+} from "./nutrition-daily.engine";
+import {
   BodyMetricSourceSchema,
   CompletedWorkoutSourceSchema,
   DailyCheckinSourceSchema,
@@ -326,6 +331,13 @@ export function buildDigitalAthleteState(
   const nutritionLogsLast14Days = sources.nutritionLogs.filter((log) =>
     isDayWithinPastDays(log.logged_on, 14, today),
   );
+  // One row per logged item, so a day is a sum rather than a sample. A read
+  // that came back at its limit may hold a half-present oldest day, and
+  // `dailyNutritionTotals` drops it rather than reporting that day low.
+  const nutritionDays = dailyNutritionTotals(
+    nutritionLogsLast14Days,
+    sources.nutritionLogs.length >= NUTRITION_LOG_READ_LIMIT,
+  );
   const hasCompletedReadiness = sources.checkins.some(
     (checkin) => checkin.checkin_on === today && checkin.readiness_score !== null,
   );
@@ -415,9 +427,9 @@ export function buildDigitalAthleteState(
       weightChangeKgLast30Days: weightChange,
     },
     nutrition: {
-      loggedDaysLast14Days: new Set(nutritionLogsLast14Days.map((log) => log.logged_on)).size,
-      averageCaloriesOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.calories)),
-      averageProteinGOnLoggedDays: average(nutritionLogsLast14Days.map((log) => log.protein)),
+      loggedDaysLast14Days: nutritionDays.length,
+      averageCaloriesOnLoggedDays: averageDailyTotal(nutritionDays, (day) => day.calories),
+      averageProteinGOnLoggedDays: averageDailyTotal(nutritionDays, (day) => day.proteinG),
     },
     currentDay: {
       day: today,
@@ -444,7 +456,10 @@ export function buildDigitalAthleteState(
       workouts: workoutsLast28Days.length,
       checkins: checkinsLast7Days.length,
       bodyMetrics: bodyMetricsLast30Days.length,
-      nutritionLogs: nutritionLogsLast14Days.length,
+      // Days, not rows. Six items logged in one afternoon is one day of
+      // evidence about how this person eats, and counting it as six made a
+      // single well-logged day look like a week of them.
+      nutritionLogs: nutritionDays.length,
     }),
     dataGaps,
     muscleLoad,
@@ -515,7 +530,7 @@ export async function loadDigitalAthleteState(
       .eq("user_id", userId)
       .gte("logged_on", nutritionSince)
       .order("logged_on", { ascending: false })
-      .limit(280),
+      .limit(NUTRITION_LOG_READ_LIMIT),
     supabase
       .from("decision_records")
       .select("decision_on, decision_outcomes(outcome)")

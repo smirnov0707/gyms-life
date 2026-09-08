@@ -298,6 +298,53 @@ describe("buildDigitalAthleteState", () => {
     ]);
   });
 
+  it("reads a day of eating as the sum of its meals, not the average of them", () => {
+    // `nutrition_logs` holds one row per item. Every fixture in this file logs
+    // exactly one row a day, which is the one arrangement where a per-entry
+    // average and a per-day average agree — which is why nothing here caught
+    // the state reporting 400 kcal for somebody eating 2000.
+    const state = buildDigitalAthleteState(
+      {
+        workouts: [],
+        workoutResponses: [],
+        checkins: [],
+        bodyMetrics: [],
+        nutritionLogs: [
+          { logged_on: "2026-09-02", calories: 700, protein: 55 },
+          { logged_on: "2026-09-02", calories: 800, protein: 60 },
+          { logged_on: "2026-09-02", calories: 500, protein: 35 },
+          { logged_on: "2026-09-01", calories: 1100, protein: 80 },
+          { logged_on: "2026-09-01", calories: 900, protein: 70 },
+        ],
+        decisionFeedback: [],
+        lifeContexts: [],
+        trainingRhythm: null,
+        setLogs: [],
+        exerciseMuscleGroups: [],
+        availability: {
+          training: true,
+          trainingResponse: true,
+          recovery: true,
+          body: true,
+          nutrition: true,
+          decisionFeedback: true,
+          muscleLoad: true,
+          context: true,
+          trainingRhythm: true,
+        },
+      },
+      new Date("2026-09-02T09:00:00.000Z"),
+      "UTC",
+    );
+
+    expect(state.nutrition).toEqual({
+      loggedDaysLast14Days: 2,
+      // 2000 and 2000, not the 800 the five rows average to.
+      averageCaloriesOnLoggedDays: 2000,
+      averageProteinGOnLoggedDays: 150,
+    });
+  });
+
   it("retains a user-reported temporary limitation as current state without inflating model maturity", () => {
     const state = buildDigitalAthleteState(
       {
