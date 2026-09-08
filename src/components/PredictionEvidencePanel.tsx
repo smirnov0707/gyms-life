@@ -3,7 +3,8 @@ import { Gauge } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { getEvidenceReport } from "@/lib/evidence-level.functions";
-import type { EvidenceLevel, EvidenceReport } from "@/lib/evidence-level.engine";
+import type { EvidenceLevel, EvidenceReport, TargetEvidence } from "@/lib/evidence-level.engine";
+import { evidenceSteps, type StepFill } from "./evidence-steps.model";
 
 /**
  * What the prediction system has actually been tested on.
@@ -27,18 +28,24 @@ const LEVEL_STYLE: Record<EvidenceLevel, string> = {
   strong: "text-primary",
 };
 
-/** Four steps, filled to the level reached. A shape, not a percentage. */
-function Steps({ level }: { level: EvidenceLevel }) {
-  const reached = { insufficient: 0, early: 1, moderate: 2, strong: 3 }[level];
+const STEP_TONE: Record<StepFill, string> = {
+  reached: "bg-primary/70",
+  current: "bg-primary/40",
+  empty: "bg-white/10",
+};
+
+/**
+ * Four steps, filled to the level reached. A shape, not a percentage.
+ *
+ * A target nothing has ever predicted gets an empty track rather than the
+ * bottom of the scale — see `evidence-steps.model.ts` for why those are not
+ * the same mark.
+ */
+function Steps({ entry }: { entry: TargetEvidence }) {
   return (
     <span aria-hidden="true" className="flex shrink-0 gap-0.5">
-      {[0, 1, 2, 3].map((step) => (
-        <span
-          key={step}
-          className={`h-1 w-3 rounded-full ${
-            step < reached ? "bg-primary/70" : step === reached ? "bg-primary/40" : "bg-white/10"
-          }`}
-        />
+      {evidenceSteps(entry).map((fill, step) => (
+        <span key={step} className={`h-1 w-3 rounded-full ${STEP_TONE[fill]}`} />
       ))}
     </span>
   );
@@ -79,7 +86,7 @@ export function PredictionEvidencePanel() {
                     {t(`ev.target.${entry.target}` as TKey)}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <Steps level={entry.level} />
+                    <Steps entry={entry} />
                     <span
                       className={`w-20 shrink-0 text-right font-semibold ${
                         entry.modelled ? LEVEL_STYLE[entry.level] : "text-neutral-600"
