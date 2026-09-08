@@ -252,6 +252,14 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
             </div>
           )}
 
+          {/* This block carries the "not a medical diagnosis" sentence, and
+              this emptiness check is what used to remove it: the model decided
+              whether there were any warnings, and an empty list hid the whole
+              panel on a screen still recommending a supplement and a dose.
+              `withMedicalDisclaimer` now guarantees the first entry on both
+              the AI and the fallback path, so the list is never empty — the
+              check stays as a guard, not as the thing keeping the sentence on
+              screen. */}
           {data.warnings.length > 0 && (
             <div className="p-3 rounded-2xl bg-amber-950/20 border border-amber-500/20 space-y-1">
               <p className="text-[10px] font-mono uppercase text-accent flex items-center gap-1.5">

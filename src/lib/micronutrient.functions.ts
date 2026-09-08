@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { SupplementCategorySchema, SupplementPreferredTimeSchema } from "./supplement.schema";
+import { withMedicalDisclaimer } from "./micronutrient.warnings";
 
 const looseNum = z.coerce.number().catch(0);
 
@@ -112,7 +113,11 @@ Return exactly: {"summary":"","dataQuality":"","findings":[{"name":"","current":
               : null,
         })),
         strengths: r.strengths.slice(0, 4),
-        warnings: r.warnings.slice(0, 4),
+        // Never `r.warnings` alone: the component hides the whole block when
+        // the list is empty, so a model that returned no warnings produced a
+        // screen prescribing vitamin D with nothing on it saying this is not
+        // a diagnosis.
+        warnings: withMedicalDisclaimer(r.warnings, data.lang),
         fallback: false,
       };
     } catch {

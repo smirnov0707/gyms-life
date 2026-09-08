@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { resolveBodyWeight } from "./body-weight.engine";
+import { withMedicalDisclaimer } from "./micronutrient.warnings";
 
 export type MicroSnapshot = {
   days: number;
@@ -395,7 +396,9 @@ export function fallbackMicroScan(lang: string, loggedDays: number): MicroScanRe
     loggedDays,
     findings: c.items.map((i, idx) => ({ ...i, key: `fb-${idx}` })),
     strengths: c.strengths,
-    warnings: c.warnings,
+    // Through the same guarantee as the AI path, so the sentence has one
+    // definition rather than a copy here and a hope there.
+    warnings: withMedicalDisclaimer(c.warnings, lang),
     fallback: true,
   };
 }
