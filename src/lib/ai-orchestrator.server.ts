@@ -6,15 +6,13 @@ import { createAiModel, type AiModelId } from "./ai-gateway.server";
 import { generateJson, isAiProviderRecoverable, normalizeAiError } from "./ai-json.server";
 import { reserveAiRequest } from "./ai-quota.server";
 import { recordObservabilityEvent } from "./observability.server";
+import { AI_TASK_CONTEXT_SCOPE, type AiContextScope, type ScopedAiTask } from "./ai-task-context";
 import { buildUserContext, contextForAi, type CentralUserContext } from "./user-context.server";
-
-type AiContextScope = "none" | "personalized";
 
 type AiTaskPolicy = {
   model: AiModelId;
   /** Ordered, schema-compatible backup models for a recoverable provider failure. */
   fallbackModels?: readonly AiModelId[];
-  contextScope: AiContextScope;
 };
 
 /**
@@ -22,24 +20,17 @@ type AiTaskPolicy = {
  * task; it cannot select a provider or model itself.
  */
 const AI_TASK_POLICIES = {
-  "body-scan": {
-    model: "google/gemini-3.1-flash-lite",
-    contextScope: "none",
-  },
-  "coach.ask": { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
-  "coach.warmup": { model: "google/gemini-2.5-flash", contextScope: "personalized" },
-  "daily-brief": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
-  "daily-readiness": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
+  "body-scan": { model: "google/gemini-3.1-flash-lite" },
+  "coach.ask": { model: "groq/openai/gpt-oss-120b" },
+  "coach.warmup": { model: "google/gemini-2.5-flash" },
+  "daily-brief": { model: "google/gemini-3.1-flash-lite" },
+  "daily-readiness": { model: "google/gemini-3.1-flash-lite" },
   dineout: {
     model: "groq/openai/gpt-oss-120b",
     fallbackModels: ["google/gemini-3.1-flash-lite"],
-    contextScope: "personalized",
   },
-  "exercise-filter": { model: "groq/openai/gpt-oss-120b", contextScope: "none" },
-  "exercise-suggestion": {
-    model: "google/gemini-3.1-flash-lite",
-    contextScope: "personalized",
-  },
+  "exercise-filter": { model: "groq/openai/gpt-oss-120b" },
+  "exercise-suggestion": { model: "google/gemini-3.1-flash-lite" },
   "food-vision": {
     model: "google/gemini-2.5-flash",
     // Vision tasks need vision-capable backups. Text-only workers are never
@@ -49,36 +40,22 @@ const AI_TASK_POLICIES = {
       "openrouter/meta-llama/llama-4-scout",
       "openai/gpt-4o-mini",
     ],
-    contextScope: "personalized",
   },
-  "form-analysis": {
-    model: "google/gemini-3.1-flash-lite",
-    contextScope: "none",
-  },
-  fridge: { model: "groq/openai/gpt-oss-120b", contextScope: "personalized" },
-  "meal-adaptation": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
+  "form-analysis": { model: "google/gemini-3.1-flash-lite" },
+  fridge: { model: "groq/openai/gpt-oss-120b" },
+  "meal-adaptation": { model: "google/gemini-3.1-flash-lite" },
   "meal-plan": {
     model: "google/gemini-3.1-flash-lite",
     fallbackModels: ["groq/openai/gpt-oss-120b"],
-    contextScope: "personalized",
   },
-  "meal-translation": { model: "google/gemini-3.1-flash-lite", contextScope: "none" },
-  "medical-report": { model: "google/gemini-3.1-flash-lite", contextScope: "none" },
-  micronutrients: { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
-  motivation: { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
-  "nutrition-analysis": {
-    model: "google/gemini-3.1-flash-lite",
-    contextScope: "personalized",
-  },
-  "plan-translation": { model: "google/gemini-3.1-flash-lite", contextScope: "none" },
-  "supplement-cycle": {
-    model: "google/gemini-3.1-flash-lite",
-    contextScope: "personalized",
-  },
-  "supplement-vision": {
-    model: "google/gemini-2.5-flash",
-    contextScope: "none",
-  },
+  "meal-translation": { model: "google/gemini-3.1-flash-lite" },
+  "medical-report": { model: "google/gemini-3.1-flash-lite" },
+  micronutrients: { model: "google/gemini-3.1-flash-lite" },
+  motivation: { model: "google/gemini-3.1-flash-lite" },
+  "nutrition-analysis": { model: "google/gemini-3.1-flash-lite" },
+  "plan-translation": { model: "google/gemini-3.1-flash-lite" },
+  "supplement-cycle": { model: "google/gemini-3.1-flash-lite" },
+  "supplement-vision": { model: "google/gemini-2.5-flash" },
   "training-plan": {
     model: "openai/gpt-4o-mini",
     fallbackModels: [
@@ -86,21 +63,31 @@ const AI_TASK_POLICIES = {
       "groq/openai/gpt-oss-120b",
       "google/gemini-3.1-flash-lite",
     ],
-    contextScope: "personalized",
   },
-  "voice-log-structuring": {
-    model: "groq/openai/gpt-oss-120b",
-    contextScope: "none",
-  },
-  "workout-request": { model: "google/gemini-2.5-flash", contextScope: "personalized" },
-  "workout-structure": { model: "google/gemini-3.1-flash-lite", contextScope: "personalized" },
-  biomechanics: {
-    model: "google/gemini-2.5-flash",
-    contextScope: "none",
-  },
+  "voice-log-structuring": { model: "groq/openai/gpt-oss-120b" },
+  "workout-request": { model: "google/gemini-2.5-flash" },
+  "workout-structure": { model: "google/gemini-3.1-flash-lite" },
+  biomechanics: { model: "google/gemini-2.5-flash" },
 } satisfies Record<string, AiTaskPolicy>;
 
 export type AiTask = keyof typeof AI_TASK_POLICIES;
+
+/**
+ * The two tables must name the same tasks, checked here rather than hoped for.
+ *
+ * A task with a model and no declared scope would fall through
+ * `AI_TASK_CONTEXT_SCOPE[task] === "personalized"` as `undefined` and quietly
+ * run without context; a scope with no model would be a disclosure about a
+ * task that does not exist. Both are compile errors now, so the privacy card —
+ * which counts the scope table — cannot describe a different set of features
+ * from the one that runs.
+ */
+type EveryTaskHasAScope = Record<AiTask, AiContextScope>;
+type EveryScopeHasATask = Record<ScopedAiTask, unknown>;
+const _scopeCoversTasks: EveryTaskHasAScope = AI_TASK_CONTEXT_SCOPE;
+const _tasksCoverScopes: EveryScopeHasATask = AI_TASK_POLICIES;
+void _scopeCoversTasks;
+void _tasksCoverScopes;
 
 export function getAiTaskPolicy(task: AiTask): Readonly<AiTaskPolicy> {
   return AI_TASK_POLICIES[task];
@@ -166,9 +153,8 @@ function aiFailureCode(error: unknown): string {
 async function prepareOrchestratedExecutions(
   request: OrchestrationRequest,
 ): Promise<OrchestratedExecution[]> {
-  const policy = getAiTaskPolicy(request.task);
   let contextPrompt = "";
-  if (policy.contextScope === "personalized") {
+  if (AI_TASK_CONTEXT_SCOPE[request.task] === "personalized") {
     let userContext = request.centralUserContext;
     if (!userContext) {
       const supabase = request.supabase;

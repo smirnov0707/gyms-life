@@ -4,20 +4,22 @@ import {
   getAiTaskModelRoute,
   getAiTaskPolicy,
 } from "./ai-orchestrator.server";
+import { AI_TASK_CONTEXT_SCOPE } from "./ai-task-context";
 
 describe("GYMS.LIFE AI task policy", () => {
-  it("keeps model selection and context scope in the central orchestrator", () => {
-    expect(getAiTaskPolicy("training-plan")).toMatchObject({
-      model: "openai/gpt-4o-mini",
-      contextScope: "personalized",
-    });
-    expect(getAiTaskPolicy("food-vision")).toMatchObject({
-      model: "google/gemini-2.5-flash",
-      contextScope: "personalized",
-    });
-    expect(getAiTaskPolicy("plan-translation")).toMatchObject({
-      contextScope: "none",
-    });
+  it("keeps model selection in the central orchestrator", () => {
+    expect(getAiTaskPolicy("training-plan")).toMatchObject({ model: "openai/gpt-4o-mini" });
+    expect(getAiTaskPolicy("food-vision")).toMatchObject({ model: "google/gemini-2.5-flash" });
+  });
+
+  it("keeps context scope where the athlete's privacy card can read it", () => {
+    // Scope moved out of this table so the browser can import it: the privacy
+    // card counts the personalized tasks instead of naming two of seventeen
+    // from memory. A model id must never reach that bundle, so the two stayed
+    // apart rather than moving together.
+    expect(AI_TASK_CONTEXT_SCOPE["training-plan"]).toBe("personalized");
+    expect(AI_TASK_CONTEXT_SCOPE["food-vision"]).toBe("personalized");
+    expect(AI_TASK_CONTEXT_SCOPE["plan-translation"]).toBe("none");
   });
 
   it("uses a centrally-owned compatibility route for critical plan generation", () => {
