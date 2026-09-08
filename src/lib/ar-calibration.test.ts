@@ -101,3 +101,54 @@ describe("evaluateStep — standing", () => {
     expect(moving.quality).toBeLessThan(still.quality);
   });
 });
+
+/**
+ * The scale step is not reached from the app today — the AR route only ever
+ * runs "stand" — but it is the step that would derive the camera's scale from
+ * wingspan against height, and it read its wrists by presence rather than by
+ * visibility. Every other landmark read in that file had already been moved to
+ * `landmarkVisible`; this one was missed, so it is pinned here for whoever
+ * wires the step up.
+ */
+describe("evaluateStep — scale", () => {
+  /** Someone standing with their arms out, wrists as confident as given. */
+  function armsOut(wristVisibility: number): CalibFrame {
+    const frame = standingFrame();
+    // A wingspan about equal to height, which is what a clean scale frame is.
+    frame.pose[LM.lWrist] = at(0.06, 0.22, wristVisibility);
+    frame.pose[LM.rWrist] = at(0.94, 0.22, wristVisibility);
+    return frame;
+  }
+
+  const scaleOf = (result: ReturnType<typeof evaluateStep>) =>
+    result.metrics.find((metric) => metric.value.endsWith("×"));
+
+  it("measures a wingspan it could see", () => {
+    // Asserts that a ratio was produced, not that it passes. Whether it passes
+    // depends on the frame's aspect ratio, which this step does not account
+    // for — see the note on `evaluateStep`. Pinning a pass here would mean
+    // choosing a frame shape to satisfy the arithmetic rather than testing it.
+    const result = evaluateStep(
+      "scale",
+      Array.from({ length: 20 }, () => armsOut(0.95)),
+      HEIGHT_CM,
+      "en",
+    );
+    expect(scaleOf(result)).toBeDefined();
+  });
+
+  it("measures nothing from wrists the model is guessing at", () => {
+    // The frames are identical apart from the confidence on the two wrists.
+    // Reading them anyway produces a plausible ratio, a passing score, and a
+    // calibration the athlete is told succeeded from a measurement that never
+    // happened.
+    const result = evaluateStep(
+      "scale",
+      Array.from({ length: 20 }, () => armsOut(0.1)),
+      HEIGHT_CM,
+      "en",
+    );
+    expect(scaleOf(result)).toBeUndefined();
+    expect(result.metrics.some((metric) => metric.value === "—")).toBe(true);
+  });
+});

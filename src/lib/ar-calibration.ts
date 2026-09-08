@@ -105,7 +105,24 @@ const hipPx = (f: CalibFrame) => {
  */
 export const CALIBRATION_MINIMUM_QUALITY = 60;
 
-/** Scores a single calibration step from the frames captured during it. */
+/**
+ * Scores a single calibration step from the frames captured during it.
+ *
+ * Only `stand` is reached from the app: the AR route runs it in the background
+ * over the first few seconds of standing and calls nothing else. The `scale`
+ * and `move` branches below, and `combineCalibration` which weighs all three,
+ * are scaffolding for a guided calibration that is not wired up — worth
+ * knowing before trusting them, and worth fixing rather than leaving wrong,
+ * since whoever wires them up will inherit whatever is here.
+ *
+ * One thing they will have to fix first: `scale` compares a wingspan measured
+ * across the frame's width against a height measured down its height, and
+ * normalised coordinates are scaled by each. On a portrait phone frame a
+ * person filling the picture would need a wingspan wider than the frame to
+ * reach the ratio of 1 the score is centred on, so the step scores near zero
+ * however well the athlete stands. It needs the two measured in the same
+ * units, or the score re-centred on the frame's own aspect.
+ */
 export function evaluateStep(
   id: CalibStepId,
   frames: CalibFrame[],
@@ -165,7 +182,16 @@ export function evaluateStep(
       .map((f) => {
         const lw = f.pose[LM.lWrist];
         const rw = f.pose[LM.rWrist];
-        if (!lw || !rw) return 0;
+        // Visibility, not presence. The pose model returns all thirty-three
+        // landmarks every frame whatever it can see, each with a confidence,
+        // so `!lw` almost never fires and what got measured instead was a
+        // wrist the model had guessed at. This step exists to work out the
+        // camera's scale from wingspan against height: a guessed wrist gives a
+        // plausible-looking ratio, a passing score, and a calibration the
+        // athlete is told succeeded when nothing was measured. Every other
+        // landmark read in this file was moved to `landmarkVisible`; this one
+        // was missed.
+        if (!landmarkVisible(lw) || !landmarkVisible(rw)) return 0;
         return Math.hypot((lw.x - rw.x) * f.w, (lw.y - rw.y) * f.h);
       })
       .filter((n) => n > 0);
