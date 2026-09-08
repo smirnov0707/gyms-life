@@ -169,7 +169,11 @@ try {
       process.once("SIGTERM", resolve);
     });
   } else {
-    const { chromium } = await import(pathToFileURL(require.resolve("@playwright/test")).href);
+    // require.resolve selects Playwright's CommonJS entry. Dynamic import of
+    // that file exposes only default/module.exports, not named chromium.
+    const { chromium } = require("@playwright/test");
+    if (typeof chromium?.launch !== "function")
+      throw new Error("Playwright Chromium is unavailable");
     const executablePath =
       values["chromium-executable"] || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
     browser = await chromium.launch({
