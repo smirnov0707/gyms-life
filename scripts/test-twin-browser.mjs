@@ -360,7 +360,7 @@ try {
   await loaded(page);
   await preset(page, "Front");
   await stopMotion(page);
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
   const regionHeading = page.locator("[data-twin-inspector] h2");
   const regionBox = await regionHeading.boundingBox();
   expect(regionBox.y + regionBox.height).toBeLessThan(844 - 96);
@@ -375,7 +375,18 @@ try {
     "mobile selected region is visible above a reserved 96px dock and controls have touch targets",
   );
   const mobileCanvas = page.locator("canvas");
-  await mobileCanvas.scrollIntoViewIfNeeded();
+  await expect(mobileCanvas).toHaveAttribute("data-twin-body", "human", { timeout: 30000 });
+  // The app enables smooth scrolling. Finish test positioning before sampling
+  // touch coordinates, then wait for an actual visible paint with motion off.
+  await mobileCanvas.evaluate((element) =>
+    element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }),
+  );
+  const framesBeforeReset = Number(await mobileCanvas.getAttribute("data-twin-frames"));
+  await mobileCanvas.press("Home");
+  await expect
+    .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-frames")))
+    .toBeGreaterThan(framesBeforeReset);
+  await page.screenshot({ path: path.join(artifacts, "mobile-before-pinch.png") });
   const mobileBox = await mobileCanvas.boundingBox();
   const center = {
     x: mobileBox.x + mobileBox.width / 2,
@@ -383,24 +394,70 @@ try {
   };
   const client = await mobile.newCDPSession(page);
   const distanceBeforePinch = Number(await mobileCanvas.getAttribute("data-twin-distance"));
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [
-      { x: center.x - 30, y: center.y, id: 1 },
-      { x: center.x + 30, y: center.y, id: 2 },
-    ],
+  const framesBeforePinch = Number(await mobileCanvas.getAttribute("data-twin-frames"));
+  const viewportScale = await page.evaluate(() => window.visualViewport.scale);
+  await mobileCanvas.evaluate((element) => {
+    const events = [];
+    const record = (event) => {
+      events.push({
+        type: event.type,
+        pointerType: event.pointerType,
+        pointerId: event.pointerId,
+        trusted: event.isTrusted,
+        x: event.clientX,
+        y: event.clientY,
+        time: event.timeStamp,
+      });
+    };
+    element.__twinPinchCapture = { events, record };
+    for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel"])
+      element.addEventListener(type, record, { capture: true, passive: true });
   });
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [
-      { x: center.x - 55, y: center.y, id: 1 },
-      { x: center.x + 55, y: center.y, id: 2 },
-    ],
-  });
-  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  await expect
-    .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-distance")))
-    .toBeLessThan(distanceBeforePinch);
+  try {
+    // CDP synthesizes a time-based series of real touch events. A single
+    // start/move/end burst can finish before Chromium delivers a useful move
+    // while a software GPU is busy. This still exercises OrbitControls' two
+    // pointer path; it never invokes the runtime's zoom command directly.
+    await client.send("Input.synthesizePinchGesture", {
+      ...center,
+      scaleFactor: 1.8,
+      relativeSpeed: 120,
+      gestureSourceType: "touch",
+    });
+    await expect
+      .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-distance")))
+      .toBeLessThan(distanceBeforePinch);
+    await expect
+      .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-frames")))
+      .toBeGreaterThan(framesBeforePinch);
+    expect(await page.evaluate(() => window.visualViewport.scale)).toBe(viewportScale);
+  } finally {
+    const touchEvents = await mobileCanvas.evaluate((element) => {
+      const { events, record } = element.__twinPinchCapture;
+      for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel"])
+        element.removeEventListener(type, record, true);
+      delete element.__twinPinchCapture;
+      return events;
+    });
+    await writeFile(
+      path.join(artifacts, "mobile-pinch.json"),
+      JSON.stringify(
+        {
+          center,
+          mobileBox,
+          distanceBeforePinch,
+          distanceAfterPinch: Number(await mobileCanvas.getAttribute("data-twin-distance")),
+          framesBeforePinch,
+          framesAfterPinch: Number(await mobileCanvas.getAttribute("data-twin-frames")),
+          viewportScale,
+          touchEvents,
+        },
+        null,
+        2,
+      ),
+    );
+    await client.detach();
+  }
   await preset(page, "Reset view");
   await page.screenshot({ path: path.join(artifacts, "mobile-front.png"), fullPage: true });
   await preset(page, "Back");

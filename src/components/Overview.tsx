@@ -28,7 +28,12 @@ function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(100, Math.max(0, score)) / 100);
-  const tone = score >= 80 ? "text-primary" : score >= 55 ? "text-accent" : "text-destructive";
+  const tone =
+    score >= 80
+      ? "text-emerald-400 light:text-emerald-700"
+      : score >= 55
+        ? "text-teal-400 light:text-teal-700"
+        : "text-destructive";
   return (
     <div className="relative grid size-14 place-items-center">
       <svg viewBox="0 0 56 56" className="absolute inset-0 size-14 -rotate-90" aria-hidden="true">
