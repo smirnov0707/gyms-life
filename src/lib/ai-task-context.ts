@@ -84,3 +84,20 @@ export const NAMED_AI_TASKS = [
 export const OTHER_PERSONALIZED_AI_TASK_COUNT: number = PERSONALIZED_AI_TASKS.filter(
   (task) => !(NAMED_AI_TASKS as readonly string[]).includes(task),
 ).length;
+
+/**
+ * The rolling windows the athlete's summaries are measured over.
+ *
+ * The card said "7/28/30-day summaries". A fourteen-day one goes too —
+ * `loggedDaysLast14Days`, how many days of the last fortnight carry a food log
+ * — and it was simply not on the list. Nothing was hiding it; the list was
+ * written by hand from the fields somebody remembered.
+ *
+ * A test walks the context schema for `Last<n>Days` fields and fails if a
+ * window appears there that is missing here, so the sentence cannot fall
+ * behind the payload again.
+ */
+export const AI_CONTEXT_WINDOW_DAYS: readonly number[] = [7, 14, 28, 30];
+
+/** "7/14/28/30", for the sentence that has to name them. */
+export const AI_CONTEXT_WINDOW_LABEL: string = AI_CONTEXT_WINDOW_DAYS.join("/");

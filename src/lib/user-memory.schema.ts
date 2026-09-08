@@ -145,10 +145,20 @@ export const ActiveMemoryForAiItemSchema = z
   })
   .strict();
 
+/**
+ * How many active facts may travel with the athlete's context.
+ *
+ * The number was written three times — this schema, the slice that builds
+ * the list, and the privacy card that promises it — and a promise written
+ * separately from the thing it describes is the shape every disclosure defect
+ * in this area has had.
+ */
+export const ACTIVE_MEMORY_FACT_LIMIT = 12;
+
 export const ActiveMemoryForAiSchema = z
   .object({
     available: z.boolean(),
-    entries: z.array(ActiveMemoryForAiItemSchema).max(12),
+    entries: z.array(ActiveMemoryForAiItemSchema).max(ACTIVE_MEMORY_FACT_LIMIT),
   })
   .strict();
 
@@ -163,7 +173,7 @@ export function buildActiveMemoryForAi(value: unknown): ActiveMemoryForAi {
         item.type !== "current_context" &&
         item.evidenceState !== "requires_review",
     )
-    .slice(0, 12)
+    .slice(0, ACTIVE_MEMORY_FACT_LIMIT)
     .map((item) => ({
       type: item.type,
       content: item.content,
