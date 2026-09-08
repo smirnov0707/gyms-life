@@ -32,7 +32,7 @@ const REGION_MATERIAL_PREFIX = "twin-region:";
  * middle of the lit muscle around it. It has to read as unlit body, not as
  * missing body.
  */
-const BODY = { color: 0x33506e, roughness: 0.34, metalness: 0.12 };
+const BODY = { color: 0x23394f, roughness: 0.36, metalness: 0.1 };
 
 /**
  * The skin, over the parts of the figure that have no muscle.
@@ -43,7 +43,7 @@ const BODY = { color: 0x33506e, roughness: 0.34, metalness: 0.12 };
  * hand without turning the figure into a mannequin with a flesh-coloured head
  * on it.
  */
-const SKIN = { color: 0x415f7d, roughness: 0.34, metalness: 0.1 };
+const SKIN = { color: 0x304a63, roughness: 0.3, metalness: 0.12 };
 
 /** Darker than the body, so the face reads as a face at a glance. */
 const EYE = { color: 0x05080d, roughness: 0.18, metalness: 0.2 };
@@ -113,8 +113,13 @@ function build(scene: Object3D): TwinBodyModel {
   const regionOf = new Map<Mesh, TwinBodyRegion>();
   const baseColorOf = new Map<Mesh, number>();
 
+  // Collected first: adding a child inside a traverse would have the traversal
+  // walk straight into it.
+  const surfaces: Mesh[] = [];
   scene.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
+    if (object instanceof Mesh) surfaces.push(object);
+  });
+  for (const object of surfaces) {
     const sourceName = materialName(object);
     const region = sourceName.startsWith(REGION_MATERIAL_PREFIX)
       ? sourceName.slice(REGION_MATERIAL_PREFIX.length)
@@ -137,7 +142,7 @@ function build(scene: Object3D): TwinBodyModel {
       if (existing) existing.push(object);
       else regionMeshes.set(region, [object]);
     }
-  });
+  }
 
   if (regionMeshes.size === 0) {
     throw new Error("the human carries no region materials; region selection would be dead");

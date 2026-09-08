@@ -158,7 +158,7 @@ export function BodyReplayView({
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{copy.noAssignment}</p>
       )}
       <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="min-w-0 rounded-2xl bg-[#080e0d] py-3 text-white">
+        <div className="min-w-0 rounded-2xl bg-[#040a14] py-3 text-white">
           <BodySceneStage
             state={scene}
             language={language}

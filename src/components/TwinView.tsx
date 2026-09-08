@@ -350,7 +350,7 @@ export function TwinSnapshotView({
 
       <section
         data-twin-cockpit
-        className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-[#050706] text-white"
+        className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-[#040a14] text-white"
       >
         <div
           aria-hidden="true"

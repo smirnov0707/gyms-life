@@ -85,14 +85,14 @@ const TARGET_HEIGHT_M = 1.7;
  * is a sheet that only needs enough to stop looking like paper.
  */
 const MUSCLE_FULLNESS = {
-  chest: 0.011,
-  shoulders: 0.013,
-  back: 0.009,
-  arms: 0.008,
-  abs: 0.004,
-  core: 0.004,
-  glutes: 0.01,
-  legs: 0.009,
+  chest: 0.008,
+  shoulders: 0.016,
+  back: 0.012,
+  arms: 0.011,
+  abs: 0.005,
+  core: 0.005,
+  glutes: 0.012,
+  legs: 0.011,
 };
 
 /** Parses the subset of OBJ these files use: vertices and triangular faces. */
@@ -205,7 +205,7 @@ const SKIN_CLEARANCE = 0.012;
  * extra skin — where culling a muscle by height would lose the muscle.
  */
 const FOOT_TOP = 0.065;
-const HAND_TOP = 0.47;
+const HAND_TOP = 0.5;
 const HAND_SPREAD = 0.55;
 
 /**

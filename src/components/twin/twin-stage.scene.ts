@@ -116,32 +116,38 @@ function dashedCircle(radius: number, steps: number, gap: number, colour: number
 }
 
 /**
- * A radial floor grid: rings and spokes, fading out with distance.
+ * The floor: a square grid running back to the horizon, fading with distance.
  *
- * Drawn as one set of segments rather than a texture so it has no resolution
- * to run out of when the athlete zooms in on a foot.
+ * It was a set of concentric rings, which reads as a target painted under the
+ * figure rather than as a room it is standing in. A grid in perspective is
+ * what gives the stage its depth, and it is the one the screen this is drawn
+ * from uses.
+ *
+ * Drawn as segments rather than a texture so it has no resolution to run out
+ * of when the athlete zooms in on a foot.
  */
-function floorGrid(rings: number, spokes: number, radius: number) {
+function floorGrid(step: number, reach: number) {
   const points: number[] = [];
   const colours: number[] = [];
   const near = new Color(STAGE_COLOUR);
-  const far = new Color(0x0a1622);
-  for (let r = 1; r <= rings; r += 1) {
-    const at = (r / rings) * radius;
-    const shade = near.clone().lerp(far, r / rings);
-    for (let i = 0; i < 96; i += 1) {
-      const from = (i / 96) * Math.PI * 2;
-      const to = ((i + 1) / 96) * Math.PI * 2;
-      points.push(Math.cos(from) * at, 0, Math.sin(from) * at);
-      points.push(Math.cos(to) * at, 0, Math.sin(to) * at);
-      colours.push(shade.r, shade.g, shade.b, shade.r, shade.g, shade.b);
+  const far = new Color(0x050c18);
+  // Brightness by distance from the figure, so the grid dissolves outwards
+  // instead of ending on a hard square edge.
+  const shadeAt = (x: number, z: number) =>
+    near.clone().lerp(far, Math.min(1, Math.hypot(x, z) / reach));
+  const line = (x1: number, z1: number, x2: number, z2: number) => {
+    const a = shadeAt(x1, z1);
+    const b = shadeAt(x2, z2);
+    points.push(x1, 0, z1, x2, 0, z2);
+    colours.push(a.r, a.g, a.b, b.r, b.g, b.b);
+  };
+  for (let at = -reach; at <= reach + 1e-6; at += step) {
+    // Each line is cut into segments so its colour can fade along its length
+    // rather than only at its ends.
+    for (let piece = -reach; piece < reach - 1e-6; piece += step) {
+      line(at, piece, at, piece + step);
+      line(piece, at, piece + step, at);
     }
-  }
-  for (let s = 0; s < spokes; s += 1) {
-    const angle = (s / spokes) * Math.PI * 2;
-    points.push(Math.cos(angle) * (radius / rings), 0, Math.sin(angle) * (radius / rings));
-    points.push(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-    colours.push(near.r, near.g, near.b, far.r, far.g, far.b);
   }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new BufferAttribute(new Float32Array(points), 3));
@@ -151,11 +157,37 @@ function floorGrid(rings: number, spokes: number, radius: number) {
     new LineBasicMaterial({
       vertexColors: true,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.24,
       blending: AdditiveBlending,
       depthWrite: false,
     }),
   );
+}
+
+/**
+ * The wash of light behind the figure: a wide plane carrying a radial glow,
+ * standing upright well behind it and always facing the camera's home.
+ *
+ * The canvas is transparent and sits on whatever card the host gives it, so
+ * this is how the stage gets its own deep blue rather than borrowing the
+ * page's black.
+ */
+function backdrop(texture: CanvasTexture | null, size: number) {
+  if (!texture) return null;
+  const plane = new Mesh(
+    new RingGeometry(0, size, 64),
+    new MeshBasicMaterial({
+      map: texture,
+      color: 0x1a4e96,
+      transparent: true,
+      opacity: 0.32,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+    }),
+  );
+  plane.renderOrder = -10;
+  return plane;
 }
 
 /**
@@ -222,9 +254,10 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   // The platform: a bright rim, a dimmer one outside it, and a flat pool of
   // light on the floor inside both.
   for (const ring of [
-    platformRing(PLATFORM_INNER, PLATFORM_INNER + 0.012, STAGE_COLOUR, 0.95),
-    platformRing(PLATFORM_OUTER, PLATFORM_OUTER + 0.008, STAGE_COLOUR, 0.5),
-    platformRing(PLATFORM_OUTER + 0.1, PLATFORM_OUTER + 0.005 + 0.1, STAGE_DEEP, 0.3),
+    platformRing(PLATFORM_INNER, PLATFORM_INNER + 0.018, STAGE_COLOUR, 1),
+    platformRing(PLATFORM_INNER - 0.03, PLATFORM_INNER, STAGE_COLOUR, 0.45),
+    platformRing(PLATFORM_INNER + 0.018, PLATFORM_INNER + 0.055, STAGE_COLOUR, 0.35),
+    platformRing(PLATFORM_OUTER + 0.12, PLATFORM_OUTER + 0.136, STAGE_COLOUR, 0.6),
   ]) {
     ring.position.y = 0.004;
     keep(ring.geometry);
@@ -238,7 +271,7 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
         map: halo,
         color: STAGE_DEEP,
         transparent: true,
-        opacity: 0.34,
+        opacity: 0.6,
         blending: AdditiveBlending,
         depthWrite: false,
       }),
@@ -253,9 +286,9 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   // The dashed rings behind the figure, standing upright and centred on the
   // chest, which is where the screen they come from puts them.
   for (const [radius, steps, gapFraction, opacity] of [
-    [0.52, 64, 0.55, 0.4],
-    [0.66, 84, 0.6, 0.26],
-    [0.82, 104, 0.65, 0.16],
+    [0.44, 56, 0.5, 0.75],
+    [0.62, 76, 0.55, 0.45],
+    [0.86, 100, 0.6, 0.22],
   ] as const) {
     const circle = dashedCircle(
       radius * (bodyHeight / 1.7),
@@ -270,7 +303,15 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
     group.add(circle);
   }
 
-  const grid = floorGrid(5, 24, 2.6);
+  const glow = backdrop(halo, bodyHeight * 2.1);
+  if (glow) {
+    glow.position.set(0, bodyHeight * 0.5, -1.2);
+    keep(glow.geometry);
+    keep(glow.material as MeshBasicMaterial);
+    group.add(glow);
+  }
+
+  const grid = floorGrid(0.22, 3.2);
   keep(grid.geometry);
   keep(grid.material as LineBasicMaterial);
   group.add(grid);

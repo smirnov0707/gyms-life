@@ -213,13 +213,13 @@ export function TwinHome() {
     <section
       aria-label={copy.title}
       data-twin-home
-      className="relative -mx-4 overflow-hidden rounded-none border-y border-white/[0.07] bg-[#050706] text-white sm:mx-0 sm:rounded-[1.75rem] sm:border"
+      className="relative -mx-4 overflow-hidden rounded-none border-y border-white/[0.07] bg-[#040a14] text-white sm:mx-0 sm:rounded-[1.75rem] sm:border"
     >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse at 42% 38%, rgba(81,138,123,.12), transparent 66%)",
+          background: "radial-gradient(ellipse at 50% 42%, rgba(29,95,180,.22), transparent 68%)",
         }}
       />
 

@@ -152,7 +152,7 @@ export function TwinTodayView({
 
   return (
     <section
-      className={`relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050607] ${stage}`}
+      className={`relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#040a14] ${stage}`}
     >
       <div
         aria-hidden="true"

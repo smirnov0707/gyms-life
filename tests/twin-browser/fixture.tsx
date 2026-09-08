@@ -56,7 +56,7 @@ export function Fixture() {
   const applyTheme = (next: "dark" | "light") => {
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(next);
-    document.body.style.background = next === "light" ? "#f8fafc" : "#050706";
+    document.body.style.background = next === "light" ? "#f8fafc" : "#040a14";
     setTheme(next);
   };
   return (

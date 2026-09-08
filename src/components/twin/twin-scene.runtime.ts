@@ -116,8 +116,12 @@ export function mountTwinScene(
     });
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
-    renderer.setClearColor(0x050706, 0);
+    // Under one, deliberately. The data colours are saturated and the key is
+    // strong, and at neutral exposure the figure came out pastel — every
+    // muscle the same washed lilac rather than the deep violet the screen is
+    // drawn in. Pulling the exposure down puts the range back into the colour.
+    renderer.toneMappingExposure = 0.86;
+    renderer.setClearColor(0x040a14, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     const canvas = renderer.domElement;
     canvas.style.cssText =
@@ -154,12 +158,20 @@ export function mountTwinScene(
     // two rims — one cyan behind and one violet from the side — that draw the
     // silhouette out of the stage. It was warm and bright while the figure was
     // skin-coloured; a warm key on a near-black body just makes it grey.
-    scene.add(new HemisphereLight(0x9fc4ec, 0x0a1018, 0.5));
+    scene.add(new HemisphereLight(0x8fb4dc, 0x080e16, 0.26));
     for (const [position, color, intensity] of [
-      [[2.0, 3.0, 3.2], 0xdcecff, 1.5],
-      [[-3.0, 1.0, 1.4], 0x5b8cc4, 0.5],
-      [[-0.8, 2.2, -3.2], 0x35d6ff, 1.9],
-      [[3.0, 0.6, -2.0], 0x9a6bff, 1.1],
+      // The key, high and slightly to the front, which is what models a muscle
+      // belly. Kept modest: the data colour is emissive, so a bright key on top
+      // of it flattens the very thing it is there to shape.
+      [[1.8, 2.8, 2.6], 0xdfeaff, 2.3],
+      [[-2.6, 1.0, 1.6], 0x4a7bb0, 0.45],
+      // The rim, hard behind and to each side. This is where the figure gets
+      // its edge against the stage. A scaled-up inside-out copy of every mesh
+      // was tried for that first, and on a body made of a hundred overlapping
+      // muscles each copy glows over its neighbours as well as over the stage —
+      // the figure came out milky and lost every muscle boundary it had.
+      [[-1.6, 1.9, -3.0], 0x3fdcff, 2.2],
+      [[2.2, 1.4, -2.6], 0x8f6bff, 1.5],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
@@ -351,24 +363,30 @@ export function mountTwinScene(
             const glow =
               TWIN_TONE_GLOW[value?.display.tone ?? "unknown"] +
               (selected ? TWIN_SELECTION_GLOW : 0);
-            // How far the surface itself takes the data colour. Capped well
-            // below full: past about half, the albedo is the colour and the
-            // key light has nothing left to model with, so the muscle goes
-            // flat and its striations disappear into a painted panel. The rest
-            // of the brightness is emissive, which adds light without taking
-            // the shading away.
-            const painted = Math.min(0.52, glow * 0.6);
-            material.color.set(bodyColour).lerp(tone, painted);
+            // The colour is the surface, and the glow is only a glow.
+            //
+            // This was the other way round — most of the brightness emissive,
+            // the albedo barely tinted — and it cost the figure every muscle
+            // it had: an emissive surface is lit by nothing, so the key light
+            // had no shading left to do and the body came out as flat pastel
+            // panels. A muscle belly reads because it is shaded, so the data
+            // colour goes into the albedo and the light does its work on it.
+            const lit = glow > 0;
+            material.color.set(bodyColour).lerp(tone, lit ? 0.88 : 0);
             material.emissive.copy(tone);
+            // Enough to lift a region off the stage and to keep the states in
+            // order against each other, not enough to bleach the shading.
             // Divided by the tone's own brightness, so how much a region lights
             // up is set by what it means rather than by how pale its colour
             // happens to be.
-            material.emissiveIntensity = glow / Math.max(tone.r, tone.g, tone.b, 0.25);
+            material.emissiveIntensity = lit
+              ? ((selected ? 0.34 : 0.22) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
+              : 0;
             // Wet rather than matte: a low roughness keeps a specular highlight
             // running along each muscle belly, which is what separates one from
             // the next on a body lit from three sides.
-            material.roughness = selected ? 0.2 : 0.28;
-            material.metalness = 0.3;
+            material.roughness = selected ? 0.3 : 0.4;
+            material.metalness = 0.12;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");
