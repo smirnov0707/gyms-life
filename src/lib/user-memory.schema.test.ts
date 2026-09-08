@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { CalculatedMemoryValueSchema } from "./calculated-memory.contract";
 import {
+  ACTIVE_MEMORY_FACT_LIMIT,
   buildActiveMemoryForAi,
+  selectMemoryForAi,
   calculatedMemoryValueForTransparency,
   CorrectUserMemoryInputSchema,
   parseUserMemoryTransparencyItems,
@@ -101,6 +103,49 @@ describe("user memory transparency contracts", () => {
         },
       ],
     });
+  });
+
+  it("marks exactly the entries the AI payload is built from", () => {
+    // The transparency page lists up to fifty entries and the privacy card
+    // promises twelve. Between those two numbers a person had no way to tell
+    // which twelve leave the product, so the page badges the selection — and
+    // the badge has to come from this function rather than a second copy of
+    // the same filter, or the two can disagree.
+    const rows = parseUserMemoryTransparencyItems([
+      { ...row, source: "user_reported" },
+      { ...row, id: "018f2e48-0000-4000-8000-000000000002", memory_type: "current_context" },
+      { ...row, id: "018f2e48-0000-4000-8000-000000000003", status: "incorrect" },
+    ]);
+
+    const shared = selectMemoryForAi(rows);
+    expect(shared.map((item) => item.id)).toEqual([row.id]);
+
+    // What the payload carries and what the badge marks are the same rows.
+    const payload = buildActiveMemoryForAi([
+      { ...row, source: "user_reported" },
+      { ...row, id: "018f2e48-0000-4000-8000-000000000002", memory_type: "current_context" },
+      { ...row, id: "018f2e48-0000-4000-8000-000000000003", status: "incorrect" },
+    ]);
+    expect(payload.entries).toHaveLength(shared.length);
+    expect(payload.entries.map((entry) => entry.content)).toEqual(
+      shared.map((item) => item.content),
+    );
+  });
+
+  it("never marks more than the disclosed number of facts", () => {
+    const many = Array.from({ length: ACTIVE_MEMORY_FACT_LIMIT + 8 }, (_, index) => ({
+      ...row,
+      id: `018f2e48-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      source: "user_reported" as const,
+    }));
+    const shared = selectMemoryForAi(parseUserMemoryTransparencyItems(many));
+    expect(shared).toHaveLength(ACTIVE_MEMORY_FACT_LIMIT);
+    // And the ones marked are the ones the query put first: importance, then
+    // most recently confirmed. The badge must not claim a different twelve
+    // from the payload.
+    expect(shared.map((item) => item.id)).toEqual(
+      many.slice(0, ACTIVE_MEMORY_FACT_LIMIT).map((item) => item.id),
+    );
   });
 
   it("withholds a calculated claim from AI when its structured evidence cannot be validated", () => {

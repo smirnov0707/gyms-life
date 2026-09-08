@@ -164,23 +164,42 @@ export const ActiveMemoryForAiSchema = z
 
 export type ActiveMemoryForAi = z.infer<typeof ActiveMemoryForAiSchema>;
 
-/** Removes IDs, dates, evidence references, and temporary context before AI routing. */
-export function buildActiveMemoryForAi(value: unknown): ActiveMemoryForAi {
-  const entries = parseUserMemoryTransparencyItems(value)
+/**
+ * Which of the athlete's memory entries travel with their context, in order.
+ *
+ * Separated from the payload builder so the transparency page can mark exactly
+ * these rows. The page lists up to fifty entries and the privacy card promises
+ * twelve; between those two facts a person had no way to tell which twelve
+ * leave the product. Answering that from a second copy of this filter would
+ * mean the badge and the payload could disagree, which is the failure it is
+ * meant to prevent.
+ *
+ * The order is the query's — importance first, then most recently confirmed —
+ * so the twelve are the twelve that matter most, not the twelve the database
+ * happened to return.
+ */
+export function selectMemoryForAi(
+  items: readonly UserMemoryTransparencyItem[],
+): UserMemoryTransparencyItem[] {
+  return items
     .filter(
       (item) =>
         item.status === "active" &&
         item.type !== "current_context" &&
         item.evidenceState !== "requires_review",
     )
-    .slice(0, ACTIVE_MEMORY_FACT_LIMIT)
-    .map((item) => ({
-      type: item.type,
-      content: item.content,
-      source: item.source,
-      evidenceState: item.evidenceState,
-      importance: item.importance,
-    }));
+    .slice(0, ACTIVE_MEMORY_FACT_LIMIT);
+}
+
+/** Removes IDs, dates, evidence references, and temporary context before AI routing. */
+export function buildActiveMemoryForAi(value: unknown): ActiveMemoryForAi {
+  const entries = selectMemoryForAi(parseUserMemoryTransparencyItems(value)).map((item) => ({
+    type: item.type,
+    content: item.content,
+    source: item.source,
+    evidenceState: item.evidenceState,
+    importance: item.importance,
+  }));
   return ActiveMemoryForAiSchema.parse({ available: true, entries });
 }
 

@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ConnectHealthSource } from "@/components/ConnectHealthSource";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Apple,
@@ -35,7 +35,11 @@ import {
   markMemoryIncorrect,
 } from "@/lib/user-memory.functions";
 import type { MemoryEvidenceState } from "@/lib/memory-evidence.schema";
-import type { UserMemorySource, UserMemoryTransparencyItem } from "@/lib/user-memory.schema";
+import {
+  selectMemoryForAi,
+  type UserMemorySource,
+  type UserMemoryTransparencyItem,
+} from "@/lib/user-memory.schema";
 import { displayedMemoryContent, memoryEvidenceSummary } from "@/lib/user-memory.presentation";
 import { getProfileBody, ProfileBodySchema, saveProfileBody } from "@/lib/profile-body.functions";
 
@@ -107,6 +111,8 @@ type Copy = {
     correctedSaved: string;
     incorrectSaved: string;
     forgotten: string;
+    sharedWithAi: string;
+    keptLocal: string;
     error: string;
   };
   bodyFacts: {
@@ -198,6 +204,8 @@ function copyFor(lang: Lang): Copy {
         correctedSaved: "Your correction is now the active memory.",
         incorrectSaved: "This memory will no longer be used.",
         forgotten: "This memory was permanently removed.",
+        sharedWithAi: "Sent with AI requests",
+        keptLocal: "Kept here, not sent",
         error: "Could not update this memory. Please try again.",
       },
       bodyFacts: {
@@ -290,6 +298,8 @@ function copyFor(lang: Lang): Copy {
       correctedSaved: "Tavo pataisymas dabar yra aktyvus įrašas.",
       incorrectSaved: "Šis įrašas daugiau nebus naudojamas.",
       forgotten: "Šis įrašas pašalintas visam laikui.",
+      sharedWithAi: "Perduodama AI užklausose",
+      keptLocal: "Lieka čia, neperduodama",
       error: "Nepavyko atnaujinti šio atminties įrašo. Bandyk dar kartą.",
     },
     bodyFacts: {
@@ -399,6 +409,11 @@ function AthleteModelPage() {
   const [pendingMemoryAction, setPendingMemoryAction] = useState<string | null>(null);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [correctedContent, setCorrectedContent] = useState("");
+  // The very entries the payload builder picks, not a second guess at them.
+  const aiSharedMemoryIds = useMemo(
+    () => new Set(selectMemoryForAi(memories).map((item) => item.id)),
+    [memories],
+  );
   const loadBody = useServerFn(getProfileBody);
   const persistBody = useServerFn(saveProfileBody);
   const [bodyLoading, setBodyLoading] = useState(true);
@@ -782,6 +797,11 @@ function AthleteModelPage() {
         ) : (
           <div className="mt-5 divide-y divide-white/[0.06]">
             {memories.map((memory) => {
+              // The page lists up to fifty entries; twelve of them travel with
+              // the athlete's context. Between those two numbers there was no
+              // way to tell which twelve, so the same selection the payload
+              // uses marks them here.
+              const sharedWithAi = aiSharedMemoryIds.has(memory.id);
               const correctPending = pendingMemoryAction === `correct:${memory.id}`;
               const incorrectPending = pendingMemoryAction === `incorrect:${memory.id}`;
               const forgetPending = pendingMemoryAction === `forget:${memory.id}`;
@@ -802,6 +822,15 @@ function AthleteModelPage() {
                           </span>
                           <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
                             {copy.memory.evidenceStateLabel[memory.evidenceState]}
+                          </span>
+                          <span
+                            className={
+                              sharedWithAi
+                                ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300"
+                                : "rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+                            }
+                          >
+                            {sharedWithAi ? copy.memory.sharedWithAi : copy.memory.keptLocal}
                           </span>
                         </div>
                         <p className="mt-2 text-sm font-medium leading-relaxed text-foreground">
