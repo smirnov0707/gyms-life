@@ -16,6 +16,7 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getLabOverview } from "@/lib/lab.functions";
 import type { LabOverview } from "@/lib/lab.schema";
+import { calibrationMaturityPercent } from "@/lib/prediction-calibration.engine";
 
 type Gap = LabOverview["dataGaps"][number];
 
@@ -154,10 +155,21 @@ function statusForModule(
   return module.blockingGaps.some((gap) => gaps.has(gap)) ? "waiting" : "ready";
 }
 
-function CalibrationRing({ percent }: { percent: number }) {
+/**
+ * The maturity ring. `percent` is null when the calibration read has not
+ * answered, and the ring then draws no arc and shows a dash.
+ *
+ * Zero and "we do not know yet" look identical on a progress ring, and only
+ * one of them is a claim about the model. This deck used to hand it
+ * `totalEvaluated ?? 0`, so a failed or still-running query drew an empty ring
+ * over the words "0/8 evaluated outcomes required" — a confident statement
+ * that the shadow model had never been checked against anything. The panel two
+ * screens over already prints a dash for exactly this reason.
+ */
+function CalibrationRing({ percent }: { percent: number | null }) {
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - Math.min(100, Math.max(0, percent)) / 100);
+  const offset = circumference * (1 - Math.min(100, Math.max(0, percent ?? 0)) / 100);
 
   return (
     <div className="relative grid size-24 place-items-center">
@@ -183,7 +195,9 @@ function CalibrationRing({ percent }: { percent: number }) {
         />
       </svg>
       <div className="text-center">
-        <p className="font-mono text-2xl font-semibold text-white">{percent}%</p>
+        <p className="font-mono text-2xl font-semibold text-white">
+          {percent === null ? "—" : `${percent}%`}
+        </p>
         <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-cyan-300">evidence</p>
       </div>
     </div>
@@ -207,9 +221,10 @@ export function LabCommandDeck() {
   const gapsKnown = !query.isError && !query.isLoading && data != null;
   const primary = data?.hypotheses[0] ?? null;
   const calibration = data?.predictionCalibration ?? null;
-  const evaluated = calibration?.totalEvaluated ?? 0;
-  const minimum = calibration?.minimumEvaluated ?? 8;
-  const calibrationEvidence = Math.min(100, Math.round((evaluated / minimum) * 100));
+  // Null all the way through when the read has not answered. Substituting a
+  // zero here — and a minimum of eight, which nothing had told us — turned
+  // "we have not looked" into "the model has been checked against nothing".
+  const calibrationEvidence = calibrationMaturityPercent(calibration);
   const statement = primary
     ? (STATEMENTS[locale][primary.statementKey as keyof (typeof STATEMENTS)[typeof locale]] ??
       (isEnglish
@@ -380,8 +395,13 @@ export function LabCommandDeck() {
                   {isEnglish ? "Shadow model maturity" : "Shadow modelio branda"}
                 </p>
                 <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-                  {evaluated}/{minimum}{" "}
-                  {isEnglish ? "evaluated outcomes required" : "reikalingų įvertintų rezultatų"}
+                  {calibration
+                    ? `${calibration.totalEvaluated}/${calibration.minimumEvaluated} ${
+                        isEnglish ? "evaluated outcomes required" : "reikalingų įvertintų rezultatų"
+                      }`
+                    : isEnglish
+                      ? "Calibration could not be read"
+                      : "Kalibracijos nepavyko perskaityti"}
                 </p>
               </div>
             </div>
@@ -392,11 +412,15 @@ export function LabCommandDeck() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-slate-500">{isEnglish ? "Captured" : "Užfiksuota"}</span>
-                <span className="font-mono text-slate-200">{calibration?.totalCaptured ?? 0}</span>
+                <span className="font-mono text-slate-200">
+                  {calibration ? calibration.totalCaptured : "—"}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-slate-500">{isEnglish ? "Pending" : "Laukia"}</span>
-                <span className="font-mono text-slate-200">{calibration?.totalPending ?? 0}</span>
+                <span className="font-mono text-slate-200">
+                  {calibration ? calibration.totalPending : "—"}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-slate-500">{isEnglish ? "Mode" : "Režimas"}</span>

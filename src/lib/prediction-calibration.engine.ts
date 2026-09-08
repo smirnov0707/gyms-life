@@ -156,3 +156,29 @@ export function buildPredictionCalibration(
     models,
   });
 }
+
+/**
+ * How far the shadow model has come towards having enough evaluated outcomes
+ * to be worth calibrating, as a percentage — or null when nothing has been
+ * read.
+ *
+ * Null rather than zero, and that is the whole reason this is a function. The
+ * Lab deck computed it inline from `calibration?.totalEvaluated ?? 0` over a
+ * minimum of `?? 8`, so a read that had failed or not yet answered drew an
+ * empty ring reading "0%" above the words "0/8 evaluated outcomes required":
+ * a confident statement that the model had been checked against nothing, made
+ * out of a number nobody had. An empty ring and an unknown ring look the same,
+ * and only one of them is a claim.
+ */
+export function calibrationMaturityPercent(
+  calibration:
+    Pick<PredictionCalibration, "totalEvaluated" | "minimumEvaluated"> | null | undefined,
+): number | null {
+  if (!calibration) return null;
+  const { totalEvaluated, minimumEvaluated } = calibration;
+  if (!Number.isFinite(totalEvaluated) || !Number.isFinite(minimumEvaluated)) return null;
+  // A minimum of zero would make every athlete instantly mature by division,
+  // which is a claim the arithmetic should not be able to invent.
+  if (minimumEvaluated <= 0) return null;
+  return Math.max(0, Math.min(100, Math.round((totalEvaluated / minimumEvaluated) * 100)));
+}

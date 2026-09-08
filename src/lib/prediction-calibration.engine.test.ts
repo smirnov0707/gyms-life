@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { AthletePredictionSchema } from "./prediction.schema";
-import { buildPredictionCalibration } from "./prediction-calibration.engine";
+import {
+  buildPredictionCalibration,
+  calibrationMaturityPercent,
+} from "./prediction-calibration.engine";
 import { MINIMUM_EVALUATED_PREDICTIONS_FOR_CALIBRATION } from "./prediction-calibration.schema";
 
 function prediction(input: {
@@ -117,5 +120,36 @@ describe("buildPredictionCalibration", () => {
 
     expect(report.totalCaptured).toBe(0);
     expect(report.models).toEqual([]);
+  });
+});
+
+describe("shadow model maturity", () => {
+  const at = (totalEvaluated: number, minimumEvaluated: number) => ({
+    totalEvaluated,
+    minimumEvaluated,
+  });
+
+  it("is the share of the minimum that has been evaluated", () => {
+    expect(calibrationMaturityPercent(at(4, 8))).toBe(50);
+    expect(calibrationMaturityPercent(at(0, 8))).toBe(0);
+  });
+
+  it("does not run past a hundred once the minimum is met", () => {
+    expect(calibrationMaturityPercent(at(20, 8))).toBe(100);
+  });
+
+  it("is unknown rather than zero when nothing was read", () => {
+    // The failure this exists for: a still-running or failed query drew an
+    // empty ring reading "0%", which is a claim that the model has been
+    // checked against nothing rather than an admission that nobody looked.
+    expect(calibrationMaturityPercent(null)).toBeNull();
+    expect(calibrationMaturityPercent(undefined)).toBeNull();
+  });
+
+  it("is unknown when the minimum could make the arithmetic lie", () => {
+    // Dividing by zero would report every athlete instantly mature.
+    expect(calibrationMaturityPercent(at(3, 0))).toBeNull();
+    expect(calibrationMaturityPercent(at(3, -1))).toBeNull();
+    expect(calibrationMaturityPercent(at(Number.NaN, 8))).toBeNull();
   });
 });
