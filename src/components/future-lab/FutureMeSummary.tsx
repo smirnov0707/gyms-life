@@ -133,6 +133,16 @@ export function FutureMeSummary() {
                             : "Krypčiai dar nepakanka laiko aprėpties."}
                       </p>
                     </>
+                  ) : query.data === undefined ? (
+                    // Nothing has been read yet. "No compatible observations
+                    // in this window" is a claim about the athlete's stored
+                    // snapshots, and it was on screen before a single one had
+                    // come back.
+                    <FutureLabEmpty>
+                      {isEnglish
+                        ? "Reading your stored snapshots…"
+                        : "Skaitomi tavo išsaugoti snapshot'ai…"}
+                    </FutureLabEmpty>
                   ) : (
                     <FutureLabEmpty>
                       {isEnglish

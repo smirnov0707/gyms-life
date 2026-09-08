@@ -146,7 +146,12 @@ export function BodyCompositionCard() {
         </p>
       </div>
 
-      {state?.status === "change" ? (
+      {/* Nothing has come back yet. "No measurement yet carries both a weight
+          and a body fat percentage" is a statement about the athlete's record,
+          and it was being made before the record had been read — permanently
+          for anyone whose session had not resolved, because the query does not
+          run without a user. The card keeps its heading and says nothing. */}
+      {!state ? null : state.status === "change" ? (
         <>
           <Readings
             latest={state.latest}
@@ -168,7 +173,7 @@ export function BodyCompositionCard() {
           />
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("bt.derived")}</p>
         </>
-      ) : state?.status === "single" ? (
+      ) : state.status === "single" ? (
         <>
           <Readings latest={state.latest} />
           <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">{state.latest.day}</p>
@@ -179,9 +184,9 @@ export function BodyCompositionCard() {
       ) : (
         <div className="mt-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            {state?.status === "unreadable" ? t("bt.unreadable") : t("bt.none")}
+            {state.status === "unreadable" ? t("bt.unreadable") : t("bt.none")}
           </p>
-          {state?.status === "none" ? (
+          {state.status === "none" ? (
             <Link
               to="/progress"
               className="mt-2 inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
