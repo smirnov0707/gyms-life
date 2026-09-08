@@ -18,6 +18,12 @@ import tailwindcss from "@tailwindcss/vite";
  * exist outside a running app.
  */
 const root = process.cwd();
+// A local --serve-only preview must not prevent an independent test run.
+// Keep a strict port so the browser can never hit somebody else's fixture.
+const port = Number(process.env.TODAY_BROWSER_PORT ?? "4183");
+if (!Number.isInteger(port) || port < 1024 || port > 65535)
+  throw new Error("TODAY_BROWSER_PORT must be an integer between 1024 and 65535");
+const origin = `http://127.0.0.1:${port}`;
 const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
 if (!["", "1", "clean", "pose", "muscular"].includes(candidateMode))
   throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
@@ -180,13 +186,13 @@ try {
         "lodash",
       ],
     },
-    server: { host: "127.0.0.1", port: 4183, strictPort: true, fs: { allow: [root] } },
+    server: { host: "127.0.0.1", port, strictPort: true, fs: { allow: [root] } },
   });
   await server.listen();
 
   if (process.argv.includes("--serve-only")) {
     console.log(
-      "Reference UI fixture ready: http://127.0.0.1:4183/index.html?shell=1&screen=today&scenario=reference",
+      `Reference UI fixture ready: ${origin}/index.html?shell=1&screen=today&scenario=reference`,
     );
     console.log("Local serving only; no Playwright browser is launched.");
     await new Promise((resolve) => {
@@ -213,7 +219,7 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
-    await page.goto(`http://127.0.0.1:4183/index.html${query}`);
+    await page.goto(`${origin}/index.html${query}`);
     return { page, errors };
   };
 

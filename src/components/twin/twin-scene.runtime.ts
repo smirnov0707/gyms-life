@@ -23,6 +23,7 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import { createTwinStageDecor } from "./twin-stage.scene";
+import { createTwinCameraFrame } from "./twin-camera.framing";
 import {
   loadTwinHuman,
   twinHumanUrl,
@@ -137,11 +138,11 @@ export function mountTwinScene(
 
     const scene = new Scene();
     const camera = new PerspectiveCamera(TWIN_FIELD_OF_VIEW, 1, 0.01, 40);
-    // One height for both: the camera looks at the point the frame is
-    // measured from, so what fittedTwinDistance promises to fit is what the
-    // canvas actually shows.
+    // Start with the fallback frame. Once the actual GLB arrives, measure
+    // that geometry and replace both the target and fit distance together.
     const target = new Vector3(0, TWIN_FRAME.eyeHeight, 0);
     let fitDistance = fittedTwinDistance(0.7);
+    let bodyFrame: ReturnType<typeof createTwinCameraFrame> | null = null;
     camera.position.set(0, TWIN_FRAME.eyeHeight, fitDistance);
     const controls = new OrbitControls(camera, canvas);
     cleanups.push(() => controls.dispose());
@@ -273,6 +274,15 @@ export function mountTwinScene(
             human.dispose();
             return;
           }
+          let nextFrame: ReturnType<typeof createTwinCameraFrame>;
+          try {
+            nextFrame = createTwinCameraFrame(human.body);
+          } catch {
+            human.dispose();
+            window.clearTimeout(surfaceTimer);
+            useSurface();
+            return;
+          }
           window.clearTimeout(surfaceTimer);
           // The stand-in never entered the scene; dispose it and put the real
           // figure in its place.
@@ -280,6 +290,15 @@ export function mountTwinScene(
           model.dispose();
           model = human;
           twinBodyRoot.add(model.body);
+          // Preserve the orbit/zoom when replacing a late fallback; only the
+          // frame changes. The geometry itself and its proportions do not.
+          const offset = camera.position.clone().sub(controls.target);
+          bodyFrame = nextFrame;
+          target.copy(nextFrame.target);
+          controls.target.copy(target);
+          camera.position.copy(target).add(offset);
+          canvas.dataset["twinBodyHeight"] = nextFrame.height.toFixed(6);
+          resize();
           showStage();
           humanPending = false;
           canvas.dataset["twinBody"] = "human";
@@ -456,7 +475,7 @@ export function mountTwinScene(
       if (destroyed || host.clientWidth < 1 || host.clientHeight < 1) return;
       const relativeDistance = controls.getDistance() / fitDistance;
       camera.aspect = host.clientWidth / host.clientHeight;
-      fitDistance = fittedTwinDistance(camera.aspect);
+      fitDistance = bodyFrame?.fitDistance(camera.aspect) ?? fittedTwinDistance(camera.aspect);
       controls.minDistance = fitDistance * TWIN_CAMERA.minDistanceRatio;
       controls.maxDistance = fitDistance * TWIN_CAMERA.maxDistanceRatio;
       camera.position

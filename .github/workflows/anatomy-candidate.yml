@@ -5,8 +5,8 @@ on:
     paths:
       - "tests/twin-browser/**"
       - "tests/today-browser/**"
-      - "src/components/twin/twin-anatomy.*"
-      - "src/components/twin/twin-human.loader.ts"
+      - "src/components/twin/**"
+      - "scripts/authoring/**"
       - "scripts/test-twin-browser.mjs"
       - "scripts/test-today-browser.mjs"
       - "package*.json"
@@ -17,7 +17,28 @@ concurrency:
   group: anatomy-candidate-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test scripts/authoring/audit-native-glb.selftest.mjs
+      - name: Audit the exact native GLB used by the browser
+        run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/native-geometry/intersections.audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-geometry-evidence
+          path: test-results/native-geometry
+          retention-days: 14
+          if-no-files-found: warn
   browser:
+    needs: geometry
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:

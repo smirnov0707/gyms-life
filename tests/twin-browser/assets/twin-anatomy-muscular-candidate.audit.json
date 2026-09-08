@@ -1,6 +1,6 @@
 {
-  "assetSha256": "8cefec6f8561530193d77af27bf0f8c29ffc937cba8576e38165351dacc8e571",
-  "bytes": 827432,
+  "assetSha256": "5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158",
+  "bytes": 827436,
   "vertices": 13290,
   "triangles": 26576,
   "components": [
@@ -11,7 +11,7 @@
   "inconsistentWinding": 0,
   "degenerateTriangles": 0,
   "eulerCharacteristic": 2,
-  "signedVolumeMetres3": 0.0703211591311082,
+  "signedVolumeMetres3": 0.07009679799916214,
   "garmentMeshes": 0,
   "overlaidSurfaces": 0,
   "regions": {

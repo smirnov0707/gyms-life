@@ -49,3 +49,24 @@ The next authoring decision must follow the same front/back/side/close-up GPU re
 The candidate applies symmetric 8° hip abduction with 6° relative knee counterrotation, grounded feet, and continuous pelvis/joint blending. Head/hands stay fixed. Its global oriented triangles and existing regional UV coordinates are preserved. The classification change deliberately moves some triangle ownership from neutral to legs/abs; new faces receive compatible region UVs. The script fails on triangle inversions/degeneracy, altered topology, lost UVs or oriented triangles, moved head/hands, failed region raycasts, or non-grounded feet. It is generic visual authoring, not a personal prediction.
 
 The first pose/classification candidate SHA is `78f9290273242756b0f12299a5ae490f953e23788668b6dd8d4c11e557e9cba9`, with a 28.71 cm ankle-slice centre proxy. Its pubic-cap orientation repair is at most 1.014 mm, but one local triangle reaches approximately 3.02× area and a normal rotation near 86°; review this closely in the GPU render. No muscular volume was added. Flat chest/abs relief and projected material borders remain visual limitations. Keep the original clean asset for comparison and leave visual/production gates closed.
+
+## Native muscular continuation: exact-file validation and framing
+
+The native candidate remains isolated in `tests/twin-browser/assets/`; it is not the production atlas. The preserved local pose recipe uses upper-arm world-Z rotations of −20°/+20°, forearm world-X rotations of 48°, and upper-leg world-Z rotations of −3.5°/+3.5°.
+
+The earlier committed GLB `8cefec6f8561530193d77af27bf0f8c29ffc937cba8576e38165351dacc8e571` has two intersecting nonincident triangle pairs under the exact-file audit. The continued pose export `5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158` has zero detected nonincident intersections and zero coplanar ambiguities under that same audit. Both have 26,576 triangles. These are numerical observations, not visual or anatomical approval.
+
+```sh
+node --test scripts/authoring/audit-native-glb.selftest.mjs
+node scripts/authoring/audit-native-glb.mjs \
+  tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb \
+  test-results/native-geometry/intersections.audit.json
+```
+
+This audit reads positions, indices, and world transforms from the exact bytes it hashes. It welds exact coincident material-seam positions, rejects unsupported animated/skinned/morphed or non-Float32 geometry, and fails closed on coplanar ambiguity. Shared-vertex triangle pairs are excluded explicitly: passing does not prove those incident faces are intersection-free. The former NPZ-based authoring diagnostic is not the CI acceptance gate.
+
+The candidate-browser workflow now reruns the exact-GLB audit before its browser matrix. Unit tests also reject stale topology/intersection report fingerprints. Keep `visualGatePassed` and `productionIntegration` false until a separate review authorizes promotion.
+
+`createTwinCameraFrame` measures the actual loaded mesh, including node transforms, and fits its per-vertex vertical/radial profile for all horizontal yaw angles at the initial and reset pitches. It accounts for perspective depth, not just a flat 1.70 m height rectangle. It does not rescale or reshape the asset. All vertices of the production atlas and three candidate GLBs are projection-tested at three aspect ratios, sixteen yaw angles, and both home pitches. Deliberate close-up zoom and non-home pitch can still crop the figure by design.
+
+The adjacent `.validation.json` is a freshly generated Khronos `2.0.0-dev.3.10` format report for the same native GLB. Its SHA, error count, and warning count are checked by the evidence-binding tests; it does not grant visual approval. A persistent local Today preview can remain on port 4183 while the full test suite runs with `TODAY_BROWSER_PORT=4185 node scripts/test-today-browser.mjs`. The override remains loopback-only and rejects invalid port numbers.

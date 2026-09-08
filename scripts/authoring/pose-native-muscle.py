@@ -24,7 +24,7 @@ pose = np.tile(np.eye(4, dtype=np.float32), (len(bones), 1, 1))
 rotations = {}
 for side, sign in [('L', -1), ('R', 1)]:
     bone = skel.getBone('upperarm01.'+side)
-    angle = sign*np.deg2rad(24)
+    angle = sign*np.deg2rad(20)
     c,s = np.cos(angle), np.sin(angle)
     world = np.array([[c,-s,0],[s,c,0],[0,0,1]])
     pose[bone.index,:3,:3] = world
@@ -37,7 +37,7 @@ for side, sign in [('L', -1), ('R', 1)]:
     pose[forearm.index,:3,:3] = world_x
     rotations[forearm.name] = {'worldXDegrees':48}
     leg = skel.getBone('upperleg01.'+side)
-    a = -sign*np.deg2rad(3.5)
+    a = sign*np.deg2rad(3.5)
     c,s = np.cos(a),np.sin(a)
     world_z = np.array([[c,-s,0],[s,c,0],[0,0,1]])
     pose[leg.index,:3,:3] = world_z

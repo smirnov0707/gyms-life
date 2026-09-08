@@ -13,7 +13,7 @@ export function createTwinAnatomyMaterial(
   const material = new MeshStandardMaterial(parameters);
   material.onBeforeCompile = (shader) => {
     if (regionMask) {
-      shader.uniforms.twinNeutral = { value: new Color(0x354956) };
+      shader.uniforms["twinNeutral"] = { value: new Color(0x354956) };
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
