@@ -249,8 +249,10 @@
 
 @media (max-width: 639px) {
   .twin-screen > [role="tablist"] [role="tab"] {
-    flex: 1 1 0;
-    min-width: 0;
+    /* Keep translated labels intact, including when mobile text is enlarged.
+       The tablist can scroll instead of clipping text inside equal thirds. */
+    flex: 1 0 auto;
+    min-width: max-content;
     padding-inline: 5px;
     gap: 4px;
     font-size: 9px;
