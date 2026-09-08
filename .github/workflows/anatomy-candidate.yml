@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         suite: [twin, today]
-        candidate: [clean, pose]
+        candidate: [clean, pose, muscular]
     env:
       TWIN_ANATOMY_CANDIDATE: ${{ matrix.candidate }}
     steps:
@@ -33,6 +33,7 @@ jobs:
         run: |
           test -s tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb
           test -s tests/twin-browser/assets/twin-anatomy-pose-candidate.glb
+          test -s tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb
       - uses: actions/setup-node@v4
         with:
           node-version: 22

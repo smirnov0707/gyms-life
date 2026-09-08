@@ -134,6 +134,9 @@ function build(scene: Object3D): TwinBodyModel {
     const preset = sourceName === "Eyes" ? EYE : isSkin ? SKIN : BODY;
     disposeMaterial(object);
     object.material = createTwinAnatomyMaterial(preset, {
+      regionMask:
+        object.userData["twinRegionMask"] === true &&
+        object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
       fibers:
         object.userData["twinFiberUV"] === true &&
         object.geometry.getAttribute("uv")?.itemSize === 2 &&

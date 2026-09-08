@@ -8,11 +8,13 @@ import tailwindcss from "@tailwindcss/vite";
 
 const root = process.cwd();
 const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
-if (!["", "1", "clean", "pose"].includes(candidateMode))
+if (!["", "1", "clean", "pose", "muscular"].includes(candidateMode))
   throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
 const candidate = candidateMode !== "";
 const candidatePath =
-  candidateMode === "pose"
+  candidateMode === "muscular"
+    ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
+    : candidateMode === "pose"
     ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
     : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
 // Read before starting Vite or Chromium. A missing candidate must fail instead
