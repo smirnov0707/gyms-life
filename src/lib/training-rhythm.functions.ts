@@ -24,7 +24,9 @@ export const setTrainingRhythm = createServerFn({ method: "POST" })
         eventName: "training_rhythm.set",
         userId: context.userId,
         failureCode: "TRAINING_RHYTHM_SET_FAILED",
-        metadata: { weekdayCount: data.preferredWeekdays.length },
+        // snake_case, because the metadata schema requires it and silently drops
+        // the whole event when a key does not match.
+        metadata: { weekday_count: data.preferredWeekdays.length },
       },
       async () => {
         const { saveTrainingRhythm } = await import("./training-rhythm.server");

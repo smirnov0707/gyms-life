@@ -26,7 +26,9 @@ export const setActiveLifeContext = createServerFn({ method: "POST" })
         eventName: "life_context.set",
         userId: context.userId,
         failureCode: "LIFE_CONTEXT_SET_FAILED",
-        metadata: { kind: data.kind, durationHours: data.durationHours },
+        // snake_case, because the metadata schema requires it and silently drops
+        // the whole event when a key does not match.
+        metadata: { kind: data.kind, duration_hours: data.durationHours },
       },
       async () => {
         const { saveLifeContext } = await import("./life-context.server");
