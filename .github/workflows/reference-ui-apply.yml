@@ -29,12 +29,28 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - name: Verify the target has not moved and apply exact reviewed patches
+      - name: Verify target and apply exact reviewed patches
         working-directory: app
         run: |
           CURRENT=$(git ls-remote origin refs/heads/codex/future-lab-reference-ui | cut -f1)
           test "$CURRENT" = '437cc7618ab13bf0d6917f915f37c70b0e5e824f'
           python ../tools/scripts/apply-reference-ui-interactions.py "$PWD"
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/lib/twin-navigation.ts')
+          s=p.read_text()
+          for key in ('view','region','detail'):
+              s=s.replace('search.'+key, 'search["'+key+'"]')
+          s=s.replace('return TWIN_VIEWS[TWIN_VIEWS.length - 1];', 'return TWIN_VIEWS[TWIN_VIEWS.length - 1] ?? active;')
+          s=s.replace('return TWIN_VIEWS[(TWIN_VIEWS.indexOf(active) + direction + TWIN_VIEWS.length) % TWIN_VIEWS.length];', 'return TWIN_VIEWS[(TWIN_VIEWS.indexOf(active) + direction + TWIN_VIEWS.length) % TWIN_VIEWS.length] ?? active;')
+          p.write_text(s)
+          p=Path('src/lib/live-signal-refresh.test.ts')
+          s=p.read_text().replace('expect(signalRefreshOutcome([...rows, rows[0]])).toBe("unreadable");', 'const first = rows[0];\n    if (!first) throw new Error("Fixture must contain signals");\n    expect(signalRefreshOutcome([...rows, first])).toBe("unreadable");')
+          p.write_text(s)
+          p=Path('tests/today-browser/router-stub.tsx')
+          s=p.read_text().replace('export const useLocation = () => {', 'const fixtureLocation = () => {').replace('const navigate = (options:', 'export const useLocation = fixtureLocation;\nconst navigate = (options:').replace('options.to ?? useLocation().pathname','options.to ?? fixtureLocation().pathname')
+          p.write_text(s)
+          PY
       - run: npm ci --ignore-scripts
         working-directory: app
       - name: Format only the changed paths
