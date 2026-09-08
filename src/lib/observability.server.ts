@@ -85,6 +85,34 @@ export async function recordObservabilityEvent(input: ObservabilityEventInput): 
   }
 }
 
+/**
+ * A failure that knows which rule rejected it.
+ *
+ * `observeServerAction` records one fixed code per workflow, so six distinct
+ * ways of failing a training-plan generation all landed as
+ * `TRAINING_PLAN_GENERATION_FAILED` with an empty metadata object. Production
+ * holds exactly that: six failures against two successes on the product's most
+ * important generative action, and nothing recorded says whether the model
+ * returned the wrong number of days, too few exercises, a duplicate, an
+ * exercise outside the catalogue, or JSON the schema would not take.
+ *
+ * The message stays human, because it reaches the athlete. The reason is a
+ * stable slug for the ledger, and it is validated here rather than trusted: a
+ * value the metadata schema rejects would fail the whole observability write,
+ * turning a failure that tried to explain itself into one that vanished.
+ */
+const OBSERVED_REASON = /^[a-z][a-z0-9_]{2,63}$/;
+
+export class ObservedFailure extends Error {
+  readonly reason: string;
+
+  constructor(reason: string, message: string) {
+    super(message);
+    this.name = "ObservedFailure";
+    this.reason = OBSERVED_REASON.test(reason) ? reason : "unspecified";
+  }
+}
+
 /** Measures a server-owned workflow and records only its stable result code. */
 export async function observeServerAction<T>(
   input: Omit<ObservabilityEventInput, "outcome" | "durationMs" | "errorCode"> & {
@@ -109,6 +137,11 @@ export async function observeServerAction<T>(
       outcome: "failure",
       durationMs: durationSince(startedAt),
       errorCode: failureCode,
+      // The workflow's own account of which rule rejected it, where it gave
+      // one. Six identical rows are six rows nobody can act on.
+      ...(error instanceof ObservedFailure
+        ? { metadata: { ...(event.metadata ?? {}), reason: error.reason } }
+        : {}),
     });
     throw error;
   }

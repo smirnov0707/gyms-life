@@ -1,3 +1,4 @@
+import { ObservedFailure } from "./observability.server";
 import {
   MEAL_PLAN_MAX_DAILY_KCAL,
   MEAL_PLAN_MIN_DAILY_KCAL,
@@ -39,12 +40,18 @@ export function validateGeneratedMealPlan(
     (kcal) => kcal < MEAL_PLAN_MIN_DAILY_KCAL || kcal > MEAL_PLAN_MAX_DAILY_KCAL,
   );
   if (outOfRange !== undefined) {
-    throw new Error("Generated meal plan is outside the safe daily energy range.");
+    throw new ObservedFailure(
+      "unsafe_energy_range",
+      "Generated meal plan is outside the safe daily energy range.",
+    );
   }
 
   const invalidMealCount = plan.days.some((day) => day.meals.length !== requirements.mealsPerDay);
   if (invalidMealCount) {
-    throw new Error("Generated meal plan does not contain the requested number of meals per day.");
+    throw new ObservedFailure(
+      "meal_count",
+      "Generated meal plan does not contain the requested number of meals per day.",
+    );
   }
 
   const inconsistentDay = plan.days.find((day) => {
@@ -52,7 +59,10 @@ export function validateGeneratedMealPlan(
     return !isCloseTo(day.total_kcal, mealCalories, 0.15);
   });
   if (inconsistentDay) {
-    throw new Error("Generated meal plan has inconsistent daily calorie totals.");
+    throw new ObservedFailure(
+      "day_calories_inconsistent",
+      "Generated meal plan has inconsistent daily calorie totals.",
+    );
   }
 
   const inconsistentMacros = plan.days.find((day) => {
@@ -66,7 +76,10 @@ export function validateGeneratedMealPlan(
     );
   });
   if (inconsistentMacros) {
-    throw new Error("Generated meal plan has inconsistent daily macro totals.");
+    throw new ObservedFailure(
+      "day_macros_inconsistent",
+      "Generated meal plan has inconsistent daily macro totals.",
+    );
   }
 
   const energyMismatch = plan.days.find(
@@ -78,24 +91,36 @@ export function validateGeneratedMealPlan(
       ),
   );
   if (energyMismatch) {
-    throw new Error("Generated meal plan has calories that do not match its macros.");
+    throw new ObservedFailure(
+      "calories_macros_mismatch",
+      "Generated meal plan has calories that do not match its macros.",
+    );
   }
 
   const incompleteRecipe = plan.days.some((day) =>
     day.meals.some((meal) => meal.ingredients.length === 0 || meal.steps.length === 0),
   );
   if (incompleteRecipe) {
-    throw new Error("Generated meal plan contains an incomplete recipe.");
+    throw new ObservedFailure(
+      "incomplete_recipe",
+      "Generated meal plan contains an incomplete recipe.",
+    );
   }
 
   const fixedKcalTarget = requirements.fixedKcalTarget;
   if (fixedKcalTarget !== null && fixedKcalTarget !== undefined) {
     if (!isCloseTo(plan.kcal_target, fixedKcalTarget, 0.01)) {
-      throw new Error("Generated meal plan does not match the requested calorie target.");
+      throw new ObservedFailure(
+        "target_not_met",
+        "Generated meal plan does not match the requested calorie target.",
+      );
     }
     const offTargetDay = plan.days.find((day) => !isCloseTo(day.total_kcal, fixedKcalTarget, 0.1));
     if (offTargetDay) {
-      throw new Error("Generated meal plan has a day outside the requested calorie target.");
+      throw new ObservedFailure(
+        "day_off_target",
+        "Generated meal plan has a day outside the requested calorie target.",
+      );
     }
   }
 

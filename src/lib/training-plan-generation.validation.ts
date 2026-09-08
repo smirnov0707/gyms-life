@@ -1,3 +1,4 @@
+import { ObservedFailure } from "./observability.server";
 import type { TrainingPlanData } from "./training-plan.schema";
 
 /**
@@ -17,15 +18,24 @@ export function validateGeneratedTrainingPlan(
     receivedDayNumbers.length !== expectedDayNumbers.length ||
     receivedDayNumbers.some((day, index) => day !== expectedDayNumbers[index])
   ) {
-    throw new Error("Generated training plan does not contain the requested workout days.");
+    throw new ObservedFailure(
+      "missing_days",
+      "Generated training plan does not contain the requested workout days.",
+    );
   }
 
   for (const day of plan.days) {
     if (day.exercises.length < 4 || day.exercises.length > 6) {
-      throw new Error("Generated training plan must contain 4–6 exercises per workout day.");
+      throw new ObservedFailure(
+        "exercise_count",
+        "Generated training plan must contain 4–6 exercises per workout day.",
+      );
     }
     if (new Set(day.exercises.map((exercise) => exercise.slug)).size !== day.exercises.length) {
-      throw new Error("Generated training plan repeats an exercise within a workout day.");
+      throw new ObservedFailure(
+        "duplicate_exercise",
+        "Generated training plan repeats an exercise within a workout day.",
+      );
     }
   }
 
@@ -39,7 +49,10 @@ export function validateGeneratedTrainingPlan(
   ];
 
   if (unavailableSlugs.length > 0) {
-    throw new Error("Generated training plan contains exercises outside the available catalog.");
+    throw new ObservedFailure(
+      "outside_catalog",
+      "Generated training plan contains exercises outside the available catalog.",
+    );
   }
 
   return plan;

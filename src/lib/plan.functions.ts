@@ -11,7 +11,7 @@ import {
   parseDemonstratedExerciseCatalog,
   selectPlanExerciseCatalog,
 } from "./exercise-catalog.schema";
-import { observeServerAction } from "./observability.server";
+import { ObservedFailure, observeServerAction } from "./observability.server";
 import { validateGeneratedTrainingPlan } from "./training-plan-generation.validation";
 import { TrainingPlanDataSchema } from "./training-plan.schema";
 
@@ -93,7 +93,10 @@ export const generatePlan = createServerFn({ method: "POST" })
           .select("slug, name_lt, name_en, muscle_group, equipment, location, difficulty");
         const catalogExercises = parseDemonstratedExerciseCatalog(exercises);
         if (catalogError || catalogExercises.length === 0) {
-          throw new Error("Exercise catalog is unavailable. Please try again shortly.");
+          throw new ObservedFailure(
+            "catalog_unavailable",
+            "Exercise catalog is unavailable. Please try again shortly.",
+          );
         }
         // `exercises` is what the model may choose from, and what its answer
         // is checked against. When the catalog could not honour the athlete's
@@ -118,7 +121,12 @@ export const generatePlan = createServerFn({ method: "POST" })
         });
         const plan = TrainingPlanDataSchema.safeParse(generated);
         if (!plan.success) {
-          throw new Error("Generated training plan is incomplete. Please try again.");
+          // The most likely single cause and, until now, the least
+          // distinguishable: the model's JSON did not fit the contract at all.
+          throw new ObservedFailure(
+            "schema_rejected",
+            "Generated training plan is incomplete. Please try again.",
+          );
         }
         const canonicalPlan = canonicalizeGeneratedPlanExercises(
           plan.data,
