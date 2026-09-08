@@ -300,6 +300,11 @@
   outline-offset: 3px;
 }
 
+.future-lab-drawer [role="group"] button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 @media (max-width: 1399px) {
   .fl-shell-header-inner {
     gap: 15px;

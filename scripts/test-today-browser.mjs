@@ -296,6 +296,34 @@ try {
   }
   record("full-shell empty data and source failures remain visibly distinct");
 
+  const menu = await openPanel("?shell=1&screen=twin&scenario=reference&view=muscles", {
+    viewport: { width: 320, height: 720 },
+    locale: "en-US",
+  });
+  await menu.page.getByRole("button", { name: "More", exact: true }).click();
+  const drawer = menu.page.getByRole("dialog");
+  await drawer.getByRole("button", { name: "LT", exact: true }).click();
+  await expect(drawer.getByRole("button", { name: "LT", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await menu.page.screenshot({
+    path: path.join(artifacts, "mobile-menu-language.png"),
+    fullPage: false,
+  });
+  await drawer.press("Escape");
+  await expect(menu.page.getByRole("tab", { name: "Raumenys", exact: true })).toBeVisible();
+  await menu.page.getByRole("button", { name: "Daugiau", exact: true }).click();
+  await menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }).click();
+  await expect(
+    menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(menu.errors).toEqual([]);
+  await menu.page.context().close();
+  record(
+    "the scrolled mobile tools menu keeps language controls clickable and updates the actual page",
+  );
+
   // Real UI controls, not direct calls to state setters. Search values survive
   // page reload and browser history; the fixture still has no live backend.
   const linked = await openPanel("?shell=1&screen=today&scenario=reference", {

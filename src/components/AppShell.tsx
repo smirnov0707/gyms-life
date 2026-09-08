@@ -59,63 +59,65 @@ function MoreNavigation() {
           <Menu aria-hidden="true" size={17} />
         </button>
       </DrawerTrigger>
-      <DrawerContent className="future-lab-drawer max-h-[85vh] overflow-y-auto rounded-t-2xl border-border bg-surface px-4 pb-[max(1.5rem,var(--sab))] text-foreground sm:mx-auto sm:max-w-2xl">
-        <DrawerHeader className="px-1 pb-4 pt-5 text-left">
-          <DrawerTitle className="text-lg font-semibold text-foreground">
-            {t("nav.more")}
-          </DrawerTitle>
-          <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
-            {t("nav.moreDescription")}
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="grid gap-5">
-          {groups.map((group) => (
-            <section key={group.key}>
-              <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                {t(group.key)}
-              </h2>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <DrawerClose key={item.to} asChild>
-                      <Link
-                        to={item.to}
-                        className="group flex min-h-20 flex-col justify-between rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
-                      >
-                        <Icon aria-hidden="true" className="size-4 text-primary" />
-                        <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
-                          <span className="leading-tight">{t(item.key)}</span>
-                          <ArrowUpRight
-                            aria-hidden="true"
-                            className="size-3 shrink-0 text-muted-foreground group-hover:text-primary"
-                          />
-                        </span>
-                      </Link>
-                    </DrawerClose>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-          <DrawerClose asChild>
-            <Link
-              to="/me"
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3"
-            >
-              <UserRound aria-hidden="true" className="size-5 text-primary" />
-              <span className="flex-1">
-                <span className="block text-sm font-bold">{t("nav.athlete")}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {t("nav.athleteDescription")}
+      <DrawerContent className="future-lab-drawer max-h-[85vh] rounded-t-2xl border-border bg-surface px-4 text-foreground sm:mx-auto sm:max-w-2xl">
+        <div className="min-h-0 overflow-y-auto pb-[max(1.5rem,var(--sab))]" data-vaul-no-drag>
+          <DrawerHeader className="px-1 pb-4 pt-5 text-left">
+            <DrawerTitle className="text-lg font-semibold text-foreground">
+              {t("nav.more")}
+            </DrawerTitle>
+            <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              {t("nav.moreDescription")}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="grid gap-5">
+            {groups.map((group) => (
+              <section key={group.key}>
+                <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  {t(group.key)}
+                </h2>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DrawerClose key={item.to} asChild>
+                        <Link
+                          to={item.to}
+                          className="group flex min-h-20 flex-col justify-between rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
+                        >
+                          <Icon aria-hidden="true" className="size-4 text-primary" />
+                          <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
+                            <span className="leading-tight">{t(item.key)}</span>
+                            <ArrowUpRight
+                              aria-hidden="true"
+                              className="size-3 shrink-0 text-muted-foreground group-hover:text-primary"
+                            />
+                          </span>
+                        </Link>
+                      </DrawerClose>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+            <DrawerClose asChild>
+              <Link
+                to="/me"
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3"
+              >
+                <UserRound aria-hidden="true" className="size-5 text-primary" />
+                <span className="flex-1">
+                  <span className="block text-sm font-bold">{t("nav.athlete")}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {t("nav.athleteDescription")}
+                  </span>
                 </span>
-              </span>
-              <ArrowUpRight aria-hidden="true" className="size-4 text-primary" />
-            </Link>
-          </DrawerClose>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-3 py-2">
-            <LangSwitch />
-            <ThemeToggle />
+                <ArrowUpRight aria-hidden="true" className="size-4 text-primary" />
+              </Link>
+            </DrawerClose>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-3 py-2">
+              <LangSwitch />
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </DrawerContent>
