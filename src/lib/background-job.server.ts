@@ -70,16 +70,21 @@ function asExistingRun(row: LedgerRow | null) {
 /**
  * Runs `work` at most once for the current period, and records what it did.
  *
- * `work` is handed the window it may consider and the number of items it may
- * touch, and returns one result per item. It must not throw for a single
- * item's failure — a night where one athlete's snapshot fails is a night where
- * every other athlete's snapshot should still be written — so per-item errors
- * belong in the returned results, and only a failure of the run as a whole
- * should propagate.
+ * `work` is handed the window it may consider, the number of items it may
+ * touch, and the run's own key — so anything it writes can point back at the
+ * ledger row that authorised it. It returns one result per item, and must not
+ * throw for a single item's failure: a night where one athlete's snapshot
+ * fails is a night where every other athlete's snapshot should still be
+ * written, so per-item errors belong in the returned results and only a
+ * failure of the run as a whole should propagate.
  */
 export async function runBackgroundJob(
   jobName: JobName,
-  work: (context: { window: JobWindow; limit: number }) => Promise<readonly JobItemResult[]>,
+  work: (context: {
+    window: JobWindow;
+    limit: number;
+    runKey: string;
+  }) => Promise<readonly JobItemResult[]>,
   options?: { now?: Date; limit?: number },
 ): Promise<JobRunReport> {
   const now = options?.now ?? new Date();
@@ -146,7 +151,7 @@ export async function runBackgroundJob(
   let fatal = false;
 
   try {
-    results = await work({ window, limit });
+    results = await work({ window, limit, runKey });
   } catch {
     // The run as a whole failed. The row is closed as failed rather than left
     // `running`, so the next period reads a finished night instead of waiting

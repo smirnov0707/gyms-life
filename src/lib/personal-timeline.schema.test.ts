@@ -1,7 +1,10 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   PersonalTimelineEventInputSchema,
   PersonalTimelineEventTypeSchema,
+  TIMELINE_AUDIT_EVENT_TYPES,
 } from "./personal-timeline.schema";
 
 describe("PersonalTimelineEventInputSchema", () => {
@@ -66,6 +69,23 @@ describe("PersonalTimelineEventInputSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a nightly recalculation as an audit record and not as a user event", () => {
+    const input = PersonalTimelineEventInputSchema.safeParse({
+      eventType: "twin_recalculated",
+      occurredAt: "2026-09-08T03:10:00.000Z",
+      timeZone: "Europe/Vilnius",
+      provenance: "calculated",
+      sourceSystem: "gymslife",
+      sourceTable: "background_job_runs",
+      sourceReference: "2026-09-08",
+      summary: { job: "night_lab" },
+    });
+
+    expect(input.success).toBe(true);
+    // A background job looking at somebody is not an event in their life.
+    expect(PersonalTimelineEventTypeSchema.safeParse("twin_recalculated").success).toBe(false);
+  });
+
   it("requires an offset-aware occurrence time", () => {
     const result = PersonalTimelineEventInputSchema.safeParse({
       eventType: "decision_recorded",
@@ -79,5 +99,51 @@ describe("PersonalTimelineEventInputSchema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+});
+
+/**
+ * The audit types and the user-visible ones share one table, so every generic
+ * reader has to exclude the audit ones. Each of the three that existed did it
+ * by hand — `.neq("event_type", "hypothesis_transition")` — which was correct
+ * only for as long as there was exactly one audit type. Adding the second
+ * would have leaked a background job into the athlete's timeline, the Twin's
+ * evidence window and the decision evidence behind them, as something they did.
+ */
+describe("the audit types the timeline must not show", () => {
+  it("shares no name with the events the athlete actually produced", () => {
+    for (const audit of TIMELINE_AUDIT_EVENT_TYPES) {
+      expect(PersonalTimelineEventTypeSchema.options).not.toContain(audit);
+    }
+  });
+
+  it("is never filtered by a hand-written literal", () => {
+    // The regression guard. A reader that names one audit type is a reader
+    // that will be wrong the next time one is added.
+    const SRC = path.resolve("src");
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return walk(full);
+        return /\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [full] : [];
+      });
+
+    const offenders: string[] = [];
+    for (const file of walk(SRC)) {
+      const relative = path.relative(SRC, file).split(path.sep).join("/");
+      // The schema itself is where the names are allowed to be written down.
+      if (relative === "lib/personal-timeline.schema.ts") continue;
+      const source = readFileSync(file, "utf8");
+      for (const audit of TIMELINE_AUDIT_EVENT_TYPES) {
+        // Only exclusions. A reader that selects one audit type with `.eq` is
+        // doing the opposite of leaking it — that is the Lab ledger reading
+        // its own records, and it is meant to name the one it wants. A writer
+        // naming its own type is fine for the same reason.
+        const excludes = new RegExp(`\\.(?:neq|not)\\([^)]*"${audit}"`);
+        if (excludes.test(source)) offenders.push(`${relative}: ${audit}`);
+      }
+    }
+
+    expect(offenders).toEqual([]);
   });
 });

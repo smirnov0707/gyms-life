@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import type { Database } from "@/integrations/supabase/types";
 import { PERSONAL_TIMELINE_LIMIT } from "./personal-timeline.read";
+import { TIMELINE_AUDIT_EVENT_TYPES } from "./personal-timeline.schema";
 import { loadTwinEvidenceWindow } from "./twin-evidence-window.server";
 
 function clientFor(body: unknown, status = 200) {
@@ -33,7 +34,14 @@ describe("authenticated Twin evidence reader", () => {
     const url = new URL(String(request.mock.calls[0]?.[0]));
     expect(url.pathname).toBe("/rest/v1/personal_timeline_events");
     expect(url.searchParams.get("user_id")).toBe(`eq.${USER_ID}`);
-    expect(url.searchParams.get("event_type")).toBe("neq.hypothesis_transition");
+    // Every server-owned audit type, not just the one that existed when
+    // this was written: a filter naming one leaks the next one added.
+    expect(url.searchParams.get("event_type")).toBe(
+      `not.in.(${TIMELINE_AUDIT_EVENT_TYPES.join(",")})`,
+    );
+    for (const audit of TIMELINE_AUDIT_EVENT_TYPES) {
+      expect(url.searchParams.get("event_type")).toContain(audit);
+    }
     expect(url.searchParams.getAll("occurred_at")).toEqual([
       "gt.2026-09-06T09:00:00.000Z",
       "lte.2026-09-06T10:00:00.000Z",

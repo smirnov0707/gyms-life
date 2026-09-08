@@ -5,6 +5,7 @@ import {
   PERSONAL_TIMELINE_LIMIT,
   type PersonalTimelinePage,
 } from "./personal-timeline.read";
+import { TIMELINE_AUDIT_EVENT_TYPES } from "./personal-timeline.schema";
 
 /** Use the authenticated request client. Never substitute the admin client. */
 export async function loadPersonalTimeline(
@@ -19,7 +20,7 @@ export async function loadPersonalTimeline(
       "id,event_type,occurred_at,created_at,timezone,provenance,quality,source_system,source_table,source_reference,schema_version",
     )
     .eq("user_id", userId)
-    .neq("event_type", "hypothesis_transition")
+    .not("event_type", "in", `(${TIMELINE_AUDIT_EVENT_TYPES.join(",")})`)
     .order("occurred_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(PERSONAL_TIMELINE_LIMIT + 1);

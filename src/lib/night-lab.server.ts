@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { runBackgroundJob, type JobItemResult, type JobRunReport } from "./background-job.server";
 import { nightLabCandidates, type EvidenceSighting } from "./night-lab.engine";
+import { recordPersonalTimelineEvent } from "./personal-timeline.server";
 import type { JobWindow } from "./background-job.engine";
 
 /**
@@ -112,7 +113,7 @@ async function timeZoneFor(userId: string): Promise<string | null> {
 export async function runNightLab(options?: { now?: Date }): Promise<JobRunReport> {
   return runBackgroundJob(
     "night_lab",
-    async ({ window, limit }) => {
+    async ({ window, limit, runKey }) => {
       const gathered = await Promise.all(
         EVIDENCE_SOURCES.map((source) => sightingsFrom(source, window)),
       );
@@ -132,6 +133,19 @@ export async function runNightLab(options?: { now?: Date }): Promise<JobRunRepor
           // ran and correctly declined to store something it could not stand
           // behind. Counting it as a failure would mark every new athlete's
           // first night red.
+          await recordPersonalTimelineEvent(candidate.userId, {
+            eventType: "twin_recalculated",
+            occurredAt: window.end,
+            timeZone,
+            provenance: "calculated",
+            sourceSystem: "gymslife",
+            sourceTable: "background_job_runs",
+            // The run's own key, so this row and the ledger row point at each
+            // other. It is also what makes the write idempotent: a reclaimed
+            // run writing the same period again upserts rather than duplicates.
+            sourceReference: runKey,
+            summary: { job: "night_lab" },
+          });
           results.push({ ok: true });
         } catch {
           // Never let one athlete's broken data end the night for everyone

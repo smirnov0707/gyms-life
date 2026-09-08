@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { PERSONAL_TIMELINE_LIMIT } from "./personal-timeline.read";
+import { TIMELINE_AUDIT_EVENT_TYPES } from "./personal-timeline.schema";
 import {
   buildTwinEvidenceWindow,
   normalizeTwinEvidenceWindowInput,
@@ -28,7 +29,7 @@ export async function loadTwinEvidenceWindow(
       "id,event_type,occurred_at,created_at,timezone,provenance,quality,source_system,source_table,source_reference,schema_version",
     )
     .eq("user_id", userId)
-    .neq("event_type", "hypothesis_transition")
+    .not("event_type", "in", `(${TIMELINE_AUDIT_EVENT_TYPES.join(",")})`)
     .gt("occurred_at", interval.olderAt)
     .lte("occurred_at", interval.newerAt)
     .order("occurred_at", { ascending: false })

@@ -13,13 +13,26 @@ export const PersonalTimelineEventTypeSchema = z.enum([
 ]);
 
 /**
- * The underlying timeline index may also carry server-owned audit records that
- * are intentionally excluded from the generic user-event timeline. Hypothesis
- * transitions are consumed by the Lab ledger, not presented as source evidence.
+ * Server-owned audit records the index also carries, and which the generic
+ * user-event timeline must never show.
+ *
+ * These are not things the athlete did. Hypothesis transitions are consumed by
+ * the Lab ledger rather than presented as source evidence, and a nightly
+ * recalculation is the system's own bookkeeping about when it last looked at
+ * this athlete — real, worth recording, and not an event in their life.
+ *
+ * This is a list rather than a literal because every generic reader has to
+ * exclude all of them. The three that existed each wrote
+ * `.neq("event_type", "hypothesis_transition")` by hand, so the second audit
+ * type would have leaked into the timeline, the Twin's evidence window and the
+ * decision evidence behind them — three screens quietly reporting a background
+ * job as something the athlete did.
  */
+export const TIMELINE_AUDIT_EVENT_TYPES = ["hypothesis_transition", "twin_recalculated"] as const;
+
 export const PersonalTimelineStoredEventTypeSchema = z.union([
   PersonalTimelineEventTypeSchema,
-  z.literal("hypothesis_transition"),
+  z.enum(TIMELINE_AUDIT_EVENT_TYPES),
 ]);
 
 /**

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Database } from "@/integrations/supabase/types";
 import { loadPersonalTimeline } from "./personal-timeline.read.server";
 import { PERSONAL_TIMELINE_LIMIT } from "./personal-timeline.read";
+import { TIMELINE_AUDIT_EVENT_TYPES } from "./personal-timeline.schema";
 
 function clientFor(body: unknown, status = 200) {
   const request = vi.fn<typeof fetch>().mockImplementation(
@@ -30,7 +31,14 @@ describe("authenticated personal timeline reader", () => {
     const url = new URL(String(call?.[0]));
     expect(url.pathname).toBe("/rest/v1/personal_timeline_events");
     expect(url.searchParams.get("user_id")).toBe(`eq.${USER_ID}`);
-    expect(url.searchParams.get("event_type")).toBe("neq.hypothesis_transition");
+    // Every server-owned audit type, not just the one that existed when
+    // this was written: a filter naming one leaks the next one added.
+    expect(url.searchParams.get("event_type")).toBe(
+      `not.in.(${TIMELINE_AUDIT_EVENT_TYPES.join(",")})`,
+    );
+    for (const audit of TIMELINE_AUDIT_EVENT_TYPES) {
+      expect(url.searchParams.get("event_type")).toContain(audit);
+    }
     expect(url.searchParams.get("order")).toBe("occurred_at.desc,id.desc");
     expect(url.searchParams.get("limit")).toBe(String(PERSONAL_TIMELINE_LIMIT + 1));
     expect(url.searchParams.get("select")).not.toContain("summary");
