@@ -1,4 +1,8 @@
-import type { GeneratedMealPlan } from "./meal-plan.schema";
+import {
+  MEAL_PLAN_MAX_DAILY_KCAL,
+  MEAL_PLAN_MIN_DAILY_KCAL,
+  type GeneratedMealPlan,
+} from "./meal-plan.schema";
 
 type MealPlanGenerationRequirements = {
   mealsPerDay: number;
@@ -20,6 +24,24 @@ export function validateGeneratedMealPlan(
   plan: GeneratedMealPlan,
   requirements: MealPlanGenerationRequirements,
 ): GeneratedMealPlan {
+  // Every other check in this file is about a plan agreeing with itself, and
+  // they are thorough: day totals match their meals, calories match macros,
+  // and a requested target is honoured to one percent. None of them has an
+  // opinion about the number itself. A plan at 700 kcal a day passes all of
+  // them — the meals sum correctly, the macros are consistent, the recipes are
+  // complete — and it is internally perfect and nutritionally dangerous.
+  //
+  // The gap only opens when the athlete has not fixed a target, which is the
+  // ordinary path: the prompt then says "compute realistic daily kcal from body
+  // data", and whatever comes back is what they are told to eat. A person may
+  // not type a target below 1000 or above 6000. Until now a model could.
+  const outOfRange = [plan.kcal_target, ...plan.days.map((day) => day.total_kcal)].find(
+    (kcal) => kcal < MEAL_PLAN_MIN_DAILY_KCAL || kcal > MEAL_PLAN_MAX_DAILY_KCAL,
+  );
+  if (outOfRange !== undefined) {
+    throw new Error("Generated meal plan is outside the safe daily energy range.");
+  }
+
   const invalidMealCount = plan.days.some((day) => day.meals.length !== requirements.mealsPerDay);
   if (invalidMealCount) {
     throw new Error("Generated meal plan does not contain the requested number of meals per day.");

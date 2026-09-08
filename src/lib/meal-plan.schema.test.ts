@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseStoredMealPlan } from "./meal-plan.schema";
+import {
+  MEAL_PLAN_MAX_DAILY_KCAL,
+  MEAL_PLAN_MIN_DAILY_KCAL,
+  parseStoredMealPlan,
+} from "./meal-plan.schema";
 import { validateGeneratedMealPlan } from "./meal-plan-generation.validation";
 
 const validMealPlan = {
@@ -145,5 +149,87 @@ describe("stored meal plan validation", () => {
         { mealsPerDay: 1, fixedKcalTarget: null },
       ),
     ).toThrow("incomplete recipe");
+  });
+});
+
+/**
+ * Every other rule in the generation validator is about a plan agreeing with
+ * itself, and they are thorough. None of them has an opinion about the number.
+ * A plan at 700 kcal a day passes all of them.
+ */
+describe("the safe daily energy range", () => {
+  const at = (kcal: number) => {
+    const scale = kcal / 2400;
+    const plan = parseStoredMealPlan({
+      ...validMealPlan,
+      kcal_target: String(kcal),
+      protein_target: String(Math.round(170 * scale)),
+      carbs_target: String(Math.round(250 * scale)),
+      fat_target: String(Math.round(75 * scale)),
+      days: validMealPlan.days.map((day) => ({
+        ...day,
+        total_kcal: String(kcal),
+        total_protein: String(Math.round(170 * scale)),
+        total_carbs: String(Math.round(250 * scale)),
+        total_fat: String(Math.round(75 * scale)),
+        meals: day.meals.map((meal) => ({
+          ...meal,
+          kcal: String(kcal),
+          protein: String(Math.round(170 * scale)),
+          carbs: String(Math.round(250 * scale)),
+          fat: String(Math.round(75 * scale)),
+        })),
+      })),
+    });
+    if (!plan) throw new Error(`fixture at ${kcal} kcal did not parse`);
+    return plan;
+  };
+
+  it("refuses a plan below the floor a person is allowed to ask for", () => {
+    // The dangerous case, and the one that reaches an athlete: with no fixed
+    // target the prompt says "compute realistic daily kcal from body data",
+    // and whatever comes back is what they are told to eat.
+    expect(() =>
+      validateGeneratedMealPlan(at(700), { mealsPerDay: 1, fixedKcalTarget: null }),
+    ).toThrow("safe daily energy range");
+  });
+
+  it("refuses a plan above the ceiling", () => {
+    expect(() =>
+      validateGeneratedMealPlan(at(9000), { mealsPerDay: 1, fixedKcalTarget: null }),
+    ).toThrow("safe daily energy range");
+  });
+
+  it("accepts a plan inside the range", () => {
+    const plan = at(2400);
+    expect(validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: null })).toBe(plan);
+    expect(
+      validateGeneratedMealPlan(at(MEAL_PLAN_MIN_DAILY_KCAL), {
+        mealsPerDay: 1,
+        fixedKcalTarget: null,
+      }),
+    ).toBeTruthy();
+    expect(
+      validateGeneratedMealPlan(at(MEAL_PLAN_MAX_DAILY_KCAL), {
+        mealsPerDay: 1,
+        fixedKcalTarget: null,
+      }),
+    ).toBeTruthy();
+  });
+
+  it("checks the range before the internal-consistency rules can pass it", () => {
+    // A 700 kcal plan is internally perfect: its meals sum correctly, its
+    // macros match its calories, its recipes are complete. That is exactly why
+    // the range check has to exist separately.
+    const starved = at(700);
+    const mealCalories = starved.days[0]?.meals.reduce((sum, meal) => sum + meal.kcal, 0);
+    expect(mealCalories).toBe(starved.days[0]?.total_kcal);
+  });
+
+  it("still parses a stored plan outside the range, so old data stays readable", () => {
+    // The bound belongs to generation, not to the shape. Tightening the schema
+    // would make a plan already in somebody's account unreadable, which turns
+    // a safety fix into data loss.
+    expect(parseStoredMealPlan({ ...validMealPlan, kcal_target: "700" })).not.toBeNull();
   });
 });

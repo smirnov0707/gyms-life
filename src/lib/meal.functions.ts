@@ -5,7 +5,11 @@ import { rethrowSafeAiError } from "./ai-error";
 import { serializeJson } from "./json.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { validateGeneratedMealPlan } from "./meal-plan-generation.validation";
-import { GeneratedMealPlanSchema } from "./meal-plan.schema";
+import {
+  GeneratedMealPlanSchema,
+  MEAL_PLAN_MAX_DAILY_KCAL,
+  MEAL_PLAN_MIN_DAILY_KCAL,
+} from "./meal-plan.schema";
 import { observeServerAction } from "./observability.server";
 import { withCompleteShoppingList } from "./shopping-build";
 import { resolveBodyWeight } from "./body-weight.engine";
@@ -21,7 +25,15 @@ const MealPlanInput = z.object({
   cookingLevel: z
     .enum(["beginner, max 20 min", "intermediate", "advanced"])
     .default("intermediate"),
-  kcalTarget: z.coerce.number().int().min(1000).max(6000).nullable().optional(),
+  // The same range a generated plan is held to. One definition, so the
+  // machine cannot prescribe what a person is not allowed to ask for.
+  kcalTarget: z.coerce
+    .number()
+    .int()
+    .min(MEAL_PLAN_MIN_DAILY_KCAL)
+    .max(MEAL_PLAN_MAX_DAILY_KCAL)
+    .nullable()
+    .optional(),
   lang: SupportedLanguageSchema.default("lt"),
 });
 

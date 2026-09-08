@@ -1,5 +1,22 @@
 import { z } from "zod";
 
+/**
+ * The daily energy range a prescribed plan may fall in.
+ *
+ * These are not new numbers: they are the bounds the meal-plan request has
+ * always placed on a target the athlete types in by hand. They live here so
+ * that what a person may ask for and what a model may produce are one
+ * definition rather than two, because they were two, and only one of them
+ * existed.
+ *
+ * Deliberately a refusal rather than a clamp. Clamping a 700 kcal plan up to
+ * 1000 leaves seven days of meals that still add to 700 under a header saying
+ * 1000, which is a plan that lies about itself — and this file's other checks
+ * exist precisely to stop that.
+ */
+export const MEAL_PLAN_MIN_DAILY_KCAL = 1000;
+export const MEAL_PLAN_MAX_DAILY_KCAL = 6000;
+
 const NonEmptyText = z.string().trim().min(1);
 const MacroValue = z.coerce.number().finite().nonnegative();
 const PositiveEnergyValue = z.coerce.number().finite().positive();
