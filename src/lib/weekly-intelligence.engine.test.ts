@@ -169,4 +169,19 @@ describe("weekly intelligence review", () => {
     expect(review.status).toBe("learning");
     expect(review.discoveries).toEqual([]);
   });
+
+  it("says the patterns could not be read, rather than that it is still learning", () => {
+    // `weekly-intelligence.service.ts` used to turn a failed memory read into
+    // an empty list, and an empty list into "I am still learning your
+    // patterns" — a claim about the athlete's history, told to somebody whose
+    // history we simply failed to load. It is also the only one of the three
+    // messages they cannot act on.
+    const unreadable = buildWeeklyIntelligenceReview({ state: informedState, memories: null });
+    expect(unreadable.status).toBe("unreadable");
+    expect(unreadable.discoveries).toEqual([]);
+
+    const empty = buildWeeklyIntelligenceReview({ state: informedState, memories: [] });
+    expect(empty.status).toBe("learning");
+    expect(empty.status).not.toBe(unreadable.status);
+  });
 });

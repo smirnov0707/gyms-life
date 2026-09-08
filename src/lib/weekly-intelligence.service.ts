@@ -21,11 +21,16 @@ export async function loadWeeklyIntelligenceReview(
 ): Promise<WeeklyIntelligenceReview> {
   const athlete = await refreshAthleteStateSnapshot(supabase, userId, timeZone, now);
   const memories =
+    // Not read at all: the state was too thin to persist, and the review's
+    // own `stillLearning` gaps are what justify "learning" on that path — not
+    // an assumption about memory nobody looked at.
     athlete.snapshot === null
       ? []
       : await loadUserMemoryTransparency(supabase, userId)
           .then((page) => page.items)
-          .catch((): UserMemoryTransparencyItem[] => []);
+          // Null, not []. A read that failed is not a read that found nothing,
+          // and the review is the screen that says which.
+          .catch((): UserMemoryTransparencyItem[] | null => null);
 
   return buildWeeklyIntelligenceReview({
     state: athlete.state,

@@ -32,7 +32,16 @@ export type WeeklyIntelligenceDiscovery = z.infer<typeof WeeklyIntelligenceDisco
 
 export const WeeklyIntelligenceReviewSchema = z
   .object({
-    status: z.enum(["ready", "learning"]),
+    /**
+     * `ready`      — patterns were read and there are some to show.
+     * `learning`   — patterns were read and there are none yet. A fact about
+     *                the athlete's history.
+     * `unreadable` — the patterns could not be read. A fact about us, and not
+     *                the same sentence at all: "I am still learning your
+     *                patterns" told to somebody whose patterns we simply
+     *                failed to load is the defect this vocabulary exists for.
+     */
+    status: z.enum(["ready", "learning", "unreadable"]),
     thisWeek: z
       .object({
         completedWorkouts: z.number().int().nonnegative(),

@@ -18,6 +18,7 @@ type Copy = {
   loading: string;
   unavailable: string;
   learning: string;
+  patternsUnreadable: string;
   discoveries: string;
   thisWeek: string;
   workouts: string;
@@ -40,6 +41,8 @@ function copyFor(lang: Lang): Copy {
       unavailable: "This weekly review is temporarily unavailable.",
       learning:
         "I am still learning your patterns. Log a few more real actions and the review will become more personal.",
+      patternsUnreadable:
+        "Your observed patterns could not be read just now. That does not mean there are none — this is on our side, not yours.",
       discoveries: "Observed patterns",
       thisWeek: "This week",
       workouts: "completed workouts",
@@ -82,6 +85,8 @@ function copyFor(lang: Lang): Copy {
     unavailable: "Savaitinė apžvalga šiuo metu nepasiekiama.",
     learning:
       "Dar mokausi tavo dėsningumų. Užregistruok kelis realius veiksmus ir apžvalga taps asmeniškesnė.",
+    patternsUnreadable:
+      "Šiuo metu nepavyko perskaityti tavo pastebėtų dėsningumų. Tai nereiškia, kad jų nėra — problema mūsų pusėje, ne tavo.",
     discoveries: "Pastebėti dėsningumai",
     thisWeek: "Ši savaitė",
     workouts: "baigtos treniruotės",
@@ -219,8 +224,18 @@ export function WeeklyIntelligenceReview() {
           </div>
         </div>
       ) : (
-        <p className="relative mt-6 rounded-2xl bg-surface-2 p-4 text-sm leading-relaxed text-muted-foreground">
-          {copy.learning}
+        <p
+          className={`relative mt-6 rounded-2xl p-4 text-sm leading-relaxed ${
+            // "Still learning" is a fact about the athlete's history and reads
+            // as an invitation. "Could not be read" is a fact about us, and
+            // saying the first when the second is true is the one message they
+            // cannot act on.
+            data.status === "unreadable"
+              ? "bg-amber-950/20 text-amber-200"
+              : "bg-surface-2 text-muted-foreground"
+          }`}
+        >
+          {data.status === "unreadable" ? copy.patternsUnreadable : copy.learning}
         </p>
       )}
 

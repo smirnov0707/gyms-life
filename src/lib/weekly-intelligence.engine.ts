@@ -10,7 +10,12 @@ import {
 const WeeklyIntelligenceInputSchema = z
   .object({
     state: DigitalAthleteStateSchema,
-    memories: z.array(UserMemoryTransparencyItemResultSchema).max(50),
+    /**
+     * Null when the memory read failed, as the sleep and overnight readers do
+     * it. An empty list is "you have no patterns yet"; null is "we could not
+     * look", and the review says a different sentence for each.
+     */
+    memories: z.array(UserMemoryTransparencyItemResultSchema).max(50).nullable(),
   })
   .strict();
 
@@ -33,7 +38,7 @@ function nextActionFor(state: z.infer<typeof DigitalAthleteStateSchema>): Weekly
  */
 export function buildWeeklyIntelligenceReview(value: unknown): WeeklyIntelligenceReview {
   const input = WeeklyIntelligenceInputSchema.parse(value);
-  const discoveries = input.memories
+  const discoveries = (input.memories ?? [])
     .flatMap((memory) => {
       if (memory.source !== "calculated" || memory.calculatedValue === null) return [];
       return [
@@ -51,7 +56,10 @@ export function buildWeeklyIntelligenceReview(value: unknown): WeeklyIntelligenc
     .slice(0, 3);
 
   return WeeklyIntelligenceReviewSchema.parse({
-    status: discoveries.length > 0 ? "ready" : "learning",
+    // "I am still learning your patterns" is a claim about the athlete's
+    // history. Told to somebody whose patterns we merely failed to load, it is
+    // a false one, and the only one of the three they cannot act on.
+    status: input.memories === null ? "unreadable" : discoveries.length > 0 ? "ready" : "learning",
     thisWeek: {
       completedWorkouts: input.state.training.sessionsLast7Days,
       readinessCheckins: input.state.recovery.checkinsLast7Days,
