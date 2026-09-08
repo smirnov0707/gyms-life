@@ -25,3 +25,7 @@ The fallback screenshot also exposed a cropped head: its geometry is taller than
 The full CI, Twin, Today, replay, and candidate-browser workflows remain required before integration. Local browser evidence uses synthetic fixtures, not athlete measurements. No user records, health calculations, production model bytes, or production settings are changed by this block.
 
 When an asset is intentionally rebuilt, rerun its geometry/format/visual review, update the registered digest deliberately, and run the evidence-binding tests. An unregistered file falls back instead of acquiring a guessed source. Visual 1:1 approval remains a separate unfinished review.
+
+## Follow-up: review-label mobile space
+
+The first full candidate matrix found a real mobile layout regression in clean/pose review fixtures: the inspector heading ended at 761.875px, below the 748px limit on an 844px viewport reserving a 96px dock. Their longer source credit plus the review status consumed an extra row. The bounded review-candidate stage now reserves 24px for that row, keeping the existing 240px minimum canvas height. Production scenes are unchanged by this reservation, the full credit remains visible, and the original browser assertions are retained.

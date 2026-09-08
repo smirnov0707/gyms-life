@@ -305,7 +305,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
                     // of it — the camera can only fill the shorter axis. Holding the
                     // canvas near the figure's own proportion lets it fill the frame.
                     "relative mx-auto min-h-[clamp(320px,52svh,900px)] w-full max-w-[38rem] flex-1"
-                  : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
+                  : provenance?.candidate
+                    ? // Reserve a row for the review-only status as well as the
+                      // full source credit. Keep the 240px canvas floor and the
+                      // existing 96px mobile dock clearance for the inspector.
+                      "relative h-[clamp(240px,calc(100svh_-_604px),540px)] w-full lg:h-[540px]"
+                    : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
           }
         >
           {mode === "3d" && (
