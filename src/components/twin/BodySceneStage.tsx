@@ -12,6 +12,7 @@ import {
   type TwinCameraCommand,
 } from "./twin-scene.model";
 import type { TwinSceneHandle } from "./twin-scene.runtime";
+import type { TwinBodyProvenance } from "./twin-body.provenance";
 import type { TwinBodyVariant } from "@/lib/digital-twin.schema";
 
 export type BodySceneStageProps = {
@@ -44,11 +45,6 @@ export type BodySceneStageProps = {
   focusRegion?: string | null;
   /** Live mobile screens keep view/layer options in the existing disclosure. */
   compactMobileControls?: boolean;
-  /**
-   * Attribution the figure's licence requires, shown verbatim under the scene.
-   * Not translated: the licence asks for this exact sentence.
-   */
-  credit?: string;
 };
 const COPY = {
   en: {
@@ -73,6 +69,8 @@ const COPY = {
     note: "Schematic body, not a personal scan. Motion is decorative, not a biometric signal.",
     controls: "View controls",
     renderer: "Twin renderer",
+    candidate: "Review candidate · Not released",
+    simplified: "Simplified 3D body · The model asset could not be loaded or verified.",
   },
   lt: {
     scene:
@@ -96,6 +94,8 @@ const COPY = {
     note: "Bendrinis kūnas, ne tavo skenavimas. Judesys dekoratyvus, ne biometrinis signalas.",
     controls: "Vaizdo valdymas",
     renderer: "Dvynio vaizdas",
+    candidate: "Peržiūros kandidatas · Dar neįdiegtas",
+    simplified: "Supaprastintas 3D kūnas · Modelio failo nepavyko įkelti arba patikrinti.",
   },
 } as const;
 
@@ -110,7 +110,6 @@ export function BodySceneStage(props: BodySceneStageProps) {
     regionLabel,
     language,
     layerControls,
-    credit,
     fill = false,
     presentation = "full",
     sidePanel,
@@ -141,6 +140,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
   const latest = useRef(props);
   const [mode, setMode] = useState<"3d" | "2d">("3d");
   const [ready, setReady] = useState(false);
+  const [provenance, setProvenance] = useState<TwinBodyProvenance | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [motion, setMotion] = useState(true);
@@ -154,6 +154,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
     let owned: TwinSceneHandle | null = null;
     const target = host.current;
     setReady(false);
+    setProvenance(null);
     setFailed(false);
     const fail = () => {
       if (cancelled) return;
@@ -162,6 +163,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       if (scene.current === owned) scene.current = null;
       setFailed(true);
       setReady(false);
+      setProvenance(null);
     };
     const timeout = window.setTimeout(fail, 15000);
     void import("./twin-scene.runtime")
@@ -178,8 +180,11 @@ export function BodySceneStage(props: BodySceneStageProps) {
           // there is a body in it. Between the two the scene is empty, and
           // showing an empty stage — or the mannequin that used to fill it —
           // is worse than keeping the 2D map, which is the same data.
-          onBodyReady: () => {
-            if (!cancelled && !invalidated) setReady(true);
+          onBodyReady: (_kind, loadedProvenance) => {
+            if (!cancelled && !invalidated) {
+              setProvenance(loadedProvenance);
+              setReady(true);
+            }
           },
           ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
         });
@@ -273,6 +278,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       // the page as black margin around a figure that could have filled it.
       className={fill ? "flex h-full min-h-0 w-full min-w-0 flex-col" : "w-full min-w-0"}
       data-twin-stage={show3D ? "3d" : "2d"}
+      data-twin-source={show3D ? (provenance?.source ?? "generated") : "2d"}
       data-twin-layer={state.layer}
       data-twin-presentation={presentation}
       data-twin-mobile-compact={mobileDisclosure || undefined}
@@ -336,16 +342,26 @@ export function BodySceneStage(props: BodySceneStageProps) {
         </div>
         {sidePanel}
       </div>
-      {credit ? (
-        // Under the figure, not over it. The licence asks for the credit to
-        // travel with the model, not for it to be the first thing above the
-        // body on every screen.
+      {show3D && provenance ? (
         <p
           data-twin-credit
-          title={credit}
-          className="mt-2 px-3 text-[9px] leading-relaxed text-neutral-500"
+          title={provenance.credit}
+          className="mt-2 px-3 text-[9px] leading-relaxed text-neutral-400"
         >
-          {credit}
+          {provenance.credit}
+          {provenance.candidate ? (
+            <span data-twin-candidate-status className="block">
+              {copy.candidate}
+            </span>
+          ) : null}
+        </p>
+      ) : show3D ? (
+        <p
+          data-twin-model-fallback
+          role="status"
+          className="mt-2 px-3 text-[10px] leading-relaxed text-neutral-400"
+        >
+          {copy.simplified}
         </p>
       ) : null}
       {presentation === "cockpit" && layerControls}

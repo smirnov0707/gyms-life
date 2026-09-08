@@ -2,6 +2,11 @@ import { Group, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
+import {
+  MAX_TWIN_ASSET_BYTES,
+  verifyTwinAsset,
+  type TwinBodyProvenance,
+} from "./twin-body.provenance";
 
 /**
  * Loads the anatomical human and presents it with the same shape the scene
@@ -50,6 +55,7 @@ const SKIN = { color: 0x354956, roughness: 0.55, metalness: 0.1 };
 const EYE = { color: 0x15222c, roughness: 0.4, metalness: 0.08 };
 
 export type TwinBodyModel = {
+  provenance: TwinBodyProvenance;
   body: Group;
   meshes: Mesh[];
   regionMeshes: Map<TwinBodyRegion, Mesh[]>;
@@ -77,34 +83,30 @@ export function twinHumanUrl(_variant: TwinHumanVariant): string {
  * Resolves with the model, or rejects. Callers keep the surface they already
  * have on rejection — a missing or corrupt asset must never blank the scene.
  */
-export function loadTwinHuman(url: string, signal?: AbortSignal): Promise<TwinBodyModel> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new Error("aborted"));
-      return;
-    }
-    new GLTFLoader().load(
-      url,
-      (gltf) => {
-        if (signal?.aborted) {
-          disposeObject(gltf.scene);
-          reject(new Error("aborted"));
-          return;
-        }
-        try {
-          resolve(build(gltf.scene));
-        } catch (error) {
-          disposeObject(gltf.scene);
-          reject(error instanceof Error ? error : new Error(String(error)));
-        }
-      },
-      undefined,
-      (error) => reject(error instanceof Error ? error : new Error("failed to load the human")),
-    );
-  });
+export async function loadTwinHuman(url: string, signal?: AbortSignal): Promise<TwinBodyModel> {
+  signal?.throwIfAborted();
+  const response = await fetch(url, { signal: signal ?? null });
+  if (!response.ok) throw new Error(`Twin asset request failed (${response.status})`);
+  const length = Number(response.headers.get("content-length"));
+  if (Number.isFinite(length) && length > MAX_TWIN_ASSET_BYTES)
+    throw new Error("Twin asset exceeds the supported size");
+  const bytes = await response.arrayBuffer();
+  signal?.throwIfAborted();
+  const provenance = await verifyTwinAsset(bytes);
+  signal?.throwIfAborted();
+  // All registered assets are self-contained GLBs. Verify the bytes before
+  // parsing: neither an overridden URL nor glTF extras can claim a source.
+  const gltf = await new GLTFLoader().parseAsync(bytes, "");
+  try {
+    signal?.throwIfAborted();
+    return build(gltf.scene, provenance);
+  } catch (error) {
+    disposeObject(gltf.scene);
+    throw error;
+  }
 }
 
-function build(scene: Object3D): TwinBodyModel {
+function build(scene: Object3D, provenance: TwinBodyProvenance): TwinBodyModel {
   const body = new Group();
   body.name = "twin-human";
   body.add(scene);
@@ -160,6 +162,7 @@ function build(scene: Object3D): TwinBodyModel {
 
   let disposed = false;
   return {
+    provenance,
     body,
     meshes,
     regionMeshes,

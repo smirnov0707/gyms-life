@@ -24,6 +24,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import { createTwinStageDecor } from "./twin-stage.scene";
 import { createTwinCameraFrame } from "./twin-camera.framing";
+import type { TwinBodyProvenance } from "./twin-body.provenance";
 import {
   loadTwinHuman,
   twinHumanUrl,
@@ -95,7 +96,7 @@ export function mountTwinScene(
      * Fires once there is a body in the scene, and says which one. Until then
      * the stage has nothing to show and keeps its 2D map up.
      */
-    onBodyReady?: (kind: "human" | "surface") => void;
+    onBodyReady?: (kind: "human" | "surface", provenance: TwinBodyProvenance | null) => void;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -247,13 +248,16 @@ export function mountTwinScene(
     }
     canvas.dataset["twinBody"] = humanPending ? "loading" : "surface";
     const useSurface = () => {
-      if (!humanPending) return;
+      // An aborted fetch may reject after unmount. Never revive a disposed scene.
+      if (destroyed || !humanPending) return;
       humanPending = false;
       twinBodyRoot.add(model.body);
+      frameBody(createTwinCameraFrame(model.body));
       showStage();
       canvas.dataset["twinBody"] = "surface";
+      canvas.dataset["twinSource"] = "generated";
       applyState();
-      options.onBodyReady?.("surface");
+      options.onBodyReady?.("surface", null);
     };
     // A request that neither resolves nor rejects would otherwise leave the
     // athlete on the 2D map indefinitely.
@@ -292,18 +296,14 @@ export function mountTwinScene(
           twinBodyRoot.add(model.body);
           // Preserve the orbit/zoom when replacing a late fallback; only the
           // frame changes. The geometry itself and its proportions do not.
-          const offset = camera.position.clone().sub(controls.target);
-          bodyFrame = nextFrame;
-          target.copy(nextFrame.target);
-          controls.target.copy(target);
-          camera.position.copy(target).add(offset);
-          canvas.dataset["twinBodyHeight"] = nextFrame.height.toFixed(6);
-          resize();
+          frameBody(nextFrame);
           showStage();
           humanPending = false;
           canvas.dataset["twinBody"] = "human";
+          canvas.dataset["twinSource"] = human.provenance.source;
+          canvas.dataset["twinAssetSha256"] = human.provenance.sha256;
           applyState();
-          options.onBodyReady?.("human");
+          options.onBodyReady?.("human", human.provenance);
         })
         .catch(() => {
           // Deliberately quiet: the surface goes in, and now that it is the
@@ -487,6 +487,15 @@ export function mountTwinScene(
       controls.update();
       requestRender();
     };
+    function frameBody(nextFrame: ReturnType<typeof createTwinCameraFrame>) {
+      const offset = camera.position.clone().sub(controls.target);
+      bodyFrame = nextFrame;
+      target.copy(nextFrame.target);
+      controls.target.copy(target);
+      camera.position.copy(target).add(offset);
+      canvas.dataset["twinBodyHeight"] = nextFrame.height.toFixed(6);
+      resize();
+    }
     if (typeof ResizeObserver !== "undefined") {
       const observer = new ResizeObserver(resize);
       observer.observe(host);

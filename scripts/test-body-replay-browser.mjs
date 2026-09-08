@@ -69,6 +69,12 @@ try {
   page = await desktop.newPage();
   page.on("pageerror", (error) => errors.push(String(error)));
   await ready();
+  await expect(page.locator("[data-twin-credit]")).toContainText("BodyParts3D");
+  await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
+    "data-twin-source",
+    "bodyparts3d",
+  );
+  record("session replay credits the actual loaded model through the shared renderer");
   await expect(inspect()).toHaveText("2 sets");
   await controls(true);
   await page.getByLabel("Ambient motion", { exact: true }).uncheck();
@@ -96,6 +102,7 @@ try {
   await page.screenshot({ path: path.join(artifacts, "desktop-volume.png"), fullPage: true });
   await page.getByRole("button", { name: "2D", exact: true }).click();
   await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible();
+  await expect(page.locator("[data-twin-credit]")).toHaveCount(0);
   await expect(
     page.getByLabel("Inspect a region", { exact: true }).locator('option[value="chest"]'),
   ).toContainText("800 kg × reps");

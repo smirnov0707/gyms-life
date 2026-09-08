@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Group, Mesh, PerspectiveCamera, Spherical, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createTwinCameraFrame } from "./twin-camera.framing";
+import { createTwinBody } from "./twin-body.geometry";
 import {
   TWIN_CAMERA,
   TWIN_FIELD_OF_VIEW,
@@ -93,4 +94,39 @@ describe("actual-asset full-body camera framing", () => {
     });
     expect(top).toBeGreaterThan(1);
   });
+});
+
+// The generated fallback is taller than the shipped atlas. It needs its own
+// frame too; using the atlas default clipped its head after an asset failure.
+it("frames the actual generated fallback without clipping", () => {
+  const model = createTwinBody();
+  const frame = createTwinCameraFrame(model.body);
+  const points: Vector3[] = [];
+  model.body.traverse((object) => {
+    if (!(object instanceof Mesh)) return;
+    const positions = object.geometry.getAttribute("position");
+    for (let i = 0; i < positions.count; i++)
+      points.push(new Vector3().fromBufferAttribute(positions, i).applyMatrix4(object.matrixWorld));
+  });
+  for (const aspect of [0.35, 0.65, 1.6]) {
+    const camera = new PerspectiveCamera(TWIN_FIELD_OF_VIEW, aspect, 0.01, 40);
+    for (const yaw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      camera.position
+        .copy(frame.target)
+        .add(
+          new Vector3().setFromSpherical(
+            new Spherical(frame.fitDistance(aspect), TWIN_CAMERA.defaultPitch, yaw),
+          ),
+        );
+      camera.lookAt(frame.target);
+      camera.updateMatrixWorld(true);
+      let edge = 0;
+      for (const point of points) {
+        const screen = point.clone().project(camera);
+        edge = Math.max(edge, Math.abs(screen.x), Math.abs(screen.y));
+      }
+      expect(edge).toBeLessThanOrEqual(1 / TWIN_FRAME.padding + 1e-6);
+    }
+  }
+  model.dispose();
 });

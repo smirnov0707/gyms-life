@@ -244,13 +244,12 @@
 }
 
 .twin-home--cockpit [data-twin-credit] {
-  font-size: 7px;
-  color: #7585a3;
+  font-size: 9px;
+  color: #93a4be;
   margin: 5px 12px 7px;
   padding: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .twin-home--cockpit [data-twin-selection] select {

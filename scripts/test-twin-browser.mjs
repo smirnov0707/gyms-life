@@ -134,6 +134,20 @@ try {
   await loaded(page);
   await preset(page, "Front");
   await stopMotion(page);
+  const expectedSource = candidateMode === "muscular" ? "makehuman" : "bodyparts3d";
+  const expectedCredit =
+    candidateMode === "muscular" ? "MakeHuman graphical assets (CC0)" : "BodyParts3D";
+  const expectedBytes =
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-anatomy-v1.glb")));
+  const expectedSha = createHash("sha256").update(expectedBytes).digest("hex");
+  await expect(page.locator("canvas")).toHaveAttribute("data-twin-asset-sha256", expectedSha);
+  await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
+    "data-twin-source",
+    expectedSource,
+  );
+  await expect(page.locator("[data-twin-credit]")).toContainText(expectedCredit);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
+  record("visible model source and review status match the exact downloaded GLB");
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(artifacts, "desktop-front.png"), fullPage: true });
   const canvas = page.locator("canvas");
@@ -294,6 +308,8 @@ try {
   await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
   await page.getByRole("button", { name: "2D", exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.locator("[data-twin-credit]")).toHaveCount(0);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(0);
   record("real WebGL context loss, retry and manual 2D fallback");
   await page.getByRole("button", { name: "3D", exact: true }).click();
   await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
@@ -347,6 +363,7 @@ try {
     // wait costs them the figure, not their data.
     await expect(waiting.locator("[data-twin-stage]")).toHaveAttribute("data-twin-stage", "2d");
     await expect(waiting.getByRole("status").filter({ hasText: "Preparing 3D" })).toBeVisible();
+    await expect(waiting.locator("[data-twin-credit]")).toHaveCount(0);
     await waiting.screenshot({ path: path.join(artifacts, "loading-placeholder.png") });
 
     release();
@@ -358,6 +375,47 @@ try {
     await slow.close();
   }
   record("no stand-in body while the figure loads; the 2D map holds the stage");
+  {
+    const unavailable = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const recovering = await unavailable.newPage();
+    await recovering.route("**/*.glb", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><p>Unavailable model</p>",
+      }),
+    );
+    await recovering.goto("http://127.0.0.1:4179/index.html");
+    await expect(recovering.locator("[data-twin-stage]")).toHaveAttribute(
+      "data-twin-source",
+      "generated",
+      { timeout: 30000 },
+    );
+    await expect(recovering.locator("[data-twin-model-fallback]")).toBeVisible();
+    await expect(recovering.locator("canvas")).toHaveAttribute(
+      "data-twin-body-height",
+      /^[0-9]+\.[0-9]+$/,
+    );
+    await expect(recovering.locator("[data-twin-credit]")).toHaveCount(0);
+    await expect(recovering.locator("[data-twin-candidate-status]")).toHaveCount(0);
+    await recovering.screenshot({
+      path: path.join(artifacts, "asset-unavailable.png"),
+      fullPage: true,
+    });
+    await recovering.getByRole("button", { name: "2D", exact: true }).click();
+    await expect(recovering.locator("[data-twin-model-fallback]")).toHaveCount(0);
+    await recovering.unroute("**/*.glb");
+    await recovering.getByRole("button", { name: "3D", exact: true }).click();
+    await expect(recovering.locator("[data-twin-stage]")).toHaveAttribute(
+      "data-twin-source",
+      expectedSource,
+      { timeout: 30000 },
+    );
+    await expect(recovering.locator("[data-twin-credit]")).toContainText(expectedCredit);
+    await expect(recovering.locator("[data-twin-model-fallback]")).toHaveCount(0);
+    await unavailable.close();
+  }
+  record("unverifiable model uses an explicit fallback; retry restores the actual source");
   await context.close();
 
   const mobile = await browser.newContext({
