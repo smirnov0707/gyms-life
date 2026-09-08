@@ -18,7 +18,10 @@ export default tseslint.config(
   },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ["**/*.{ts,tsx}"],
+    // `.mts` is here for the Netlify scheduled functions, which are the only
+    // code in this repository that runs outside the application's own bundle.
+    // Unlinted code in the critical path is how a schedule quietly stops.
+    files: ["**/*.{ts,tsx,mts}"],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,

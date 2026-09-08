@@ -39,6 +39,7 @@ import { Route as AuthenticatedTwinRouteImport } from './routes/_authenticated/t
 import { Route as ExercisesIndexRouteImport } from './routes/exercises.index'
 import { Route as ExercisesSlugRouteImport } from './routes/exercises.$slug'
 import { Route as AuthenticatedWorkoutDayRouteImport } from './routes/_authenticated/workout/$day'
+import { Route as ApiInternalNightLabRouteImport } from './routes/api/internal/night-lab'
 import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/health-ingest'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
@@ -194,6 +195,11 @@ const AuthenticatedWorkoutDayRoute = AuthenticatedWorkoutDayRouteImport.update({
   path: '/workout/$day',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiInternalNightLabRoute = ApiInternalNightLabRouteImport.update({
+  id: '/api/internal/night-lab',
+  path: '/api/internal/night-lab',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthIngestRoute = ApiPublicHealthIngestRouteImport.update({
   id: '/api/public/health-ingest',
   path: '/api/public/health-ingest',
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/workout/$day': typeof AuthenticatedWorkoutDayRoute
+  '/api/internal/night-lab': typeof ApiInternalNightLabRoute
   '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises': typeof ExercisesIndexRoute
   '/workout/$day': typeof AuthenticatedWorkoutDayRoute
+  '/api/internal/night-lab': typeof ApiInternalNightLabRoute
   '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/exercises/$slug': typeof ExercisesSlugRoute
   '/exercises/': typeof ExercisesIndexRoute
   '/_authenticated/workout/$day': typeof AuthenticatedWorkoutDayRoute
+  '/api/internal/night-lab': typeof ApiInternalNightLabRoute
   '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/exercises/$slug'
     | '/exercises/'
     | '/workout/$day'
+    | '/api/internal/night-lab'
     | '/api/public/health-ingest'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/exercises/$slug'
     | '/exercises'
     | '/workout/$day'
+    | '/api/internal/night-lab'
     | '/api/public/health-ingest'
     | '/api/public/payments/webhook'
   id:
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/exercises/$slug'
     | '/exercises/'
     | '/_authenticated/workout/$day'
+    | '/api/internal/night-lab'
     | '/api/public/health-ingest'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -422,6 +434,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ExercisesSlugRoute: typeof ExercisesSlugRoute
   ExercisesIndexRoute: typeof ExercisesIndexRoute
+  ApiInternalNightLabRoute: typeof ApiInternalNightLabRoute
   ApiPublicHealthIngestRoute: typeof ApiPublicHealthIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -638,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkoutDayRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/internal/night-lab': {
+      id: '/api/internal/night-lab'
+      path: '/api/internal/night-lab'
+      fullPath: '/api/internal/night-lab'
+      preLoaderRoute: typeof ApiInternalNightLabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health-ingest': {
       id: '/api/public/health-ingest'
       path: '/api/public/health-ingest'
@@ -714,6 +734,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ExercisesSlugRoute: ExercisesSlugRoute,
   ExercisesIndexRoute: ExercisesIndexRoute,
+  ApiInternalNightLabRoute: ApiInternalNightLabRoute,
   ApiPublicHealthIngestRoute: ApiPublicHealthIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }

@@ -137,6 +137,54 @@ export type Database = {
         }
         Relationships: []
       }
+      background_job_runs: {
+        Row: {
+          attempted: number
+          created_at: string
+          error_code: string | null
+          failed: number
+          finished_at: string | null
+          id: string
+          job_name: string
+          run_key: string
+          started_at: string
+          status: string
+          succeeded: number
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          attempted?: number
+          created_at?: string
+          error_code?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          job_name: string
+          run_key: string
+          started_at?: string
+          status?: string
+          succeeded?: number
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          attempted?: number
+          created_at?: string
+          error_code?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          job_name?: string
+          run_key?: string
+          started_at?: string
+          status?: string
+          succeeded?: number
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       body_metrics: {
         Row: {
           arm_cm: number | null
