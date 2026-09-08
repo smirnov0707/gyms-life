@@ -141,6 +141,16 @@ export const extra_sleep = {
     es: "La fuente no envió todas las fases, así que no se muestran porcentajes: serían una parte de parte de una noche.",
     fr: "La source n'a pas envoyé toutes les phases, donc aucun pourcentage : ce serait une part d'une partie de nuit.",
   },
+  "sl.barsReported": {
+    lt: "Juostos lygina tik atsiųstas stadijas tarpusavyje — jos matuojamos nuo ilgiausios iš jų, o ne nuo nakties.",
+    en: "The bars compare only the stages that arrived, scaled to the longest of them rather than to the night.",
+    ru: "Полосы сравнивают только пришедшие стадии — они отмерены от самой длинной из них, а не от ночи.",
+    uk: "Смуги порівнюють лише ті стадії, що надійшли — вони відміряні від найдовшої з них, а не від ночі.",
+    pl: "Paski porównują tylko fazy, które dotarły — są mierzone od najdłuższej z nich, a nie od nocy.",
+    de: "Die Balken vergleichen nur die eingegangenen Phasen, gemessen an der längsten davon und nicht an der Nacht.",
+    es: "Las barras comparan solo las fases que llegaron, medidas desde la más larga de ellas y no desde la noche.",
+    fr: "Les barres comparent seulement les phases reçues, mesurées sur la plus longue d'entre elles et non sur la nuit.",
+  },
   "sl.unattributed": {
     lt: "{minutes} min miego šaltinis nepriskyrė jokiai stadijai.",
     en: "The source placed {minutes} min of sleep in no stage at all.",

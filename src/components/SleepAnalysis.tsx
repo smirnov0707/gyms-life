@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/auth";
 import { useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getSleepNight } from "@/lib/sleep-stages.functions";
-import { SLEEP_STAGE_ORDER, type SleepNight, type SleepStage } from "@/lib/sleep-stages.engine";
+import type { SleepNight, SleepStage } from "@/lib/sleep-stages.engine";
+import { stageBars } from "@/lib/sleep-stages.view";
 
 /**
  * The night, as the source described it.
@@ -14,6 +15,13 @@ import { SLEEP_STAGE_ORDER, type SleepNight, type SleepStage } from "@/lib/sleep
  * a source that sent some stages gets those stages in minutes with no
  * percentages, and sleep the source reported but never placed in a stage is
  * shown as unattributed rather than absorbed into the largest bar.
+ *
+ * The withheld percentage used to be withheld only in words. The bar beside it
+ * was still drawn from minutes over staged minutes — the share the engine had
+ * just declined to publish — so a watch reporting deep sleep alone filled the
+ * track under a sentence explaining why no percentage could be given. What a
+ * bar is a fraction of now comes from `stageBars`, and so does whether there is
+ * a bar at all.
  */
 
 const STAGE_TONE: Record<SleepStage, string> = {
@@ -22,6 +30,66 @@ const STAGE_TONE: Record<SleepStage, string> = {
   core: "bg-slate-400",
   awake: "bg-amber-400",
 };
+
+type StagedNight = Extract<SleepNight, { status: "staged" }>;
+
+function Stages({ night }: { night: StagedNight }) {
+  const { t, lang } = useI18n();
+  const bars = stageBars(night.slices);
+  const percent = (fraction: number) =>
+    new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 }).format(fraction);
+
+  return (
+    <>
+      {/* Ordered deepest first so the panel reads the same every night, and
+          only the stages that arrived get a row. */}
+      <ul className="mt-3 space-y-2">
+        {bars.bars.map((bar) => (
+          <li key={bar.stage} className="text-xs">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="text-slate-300">{t(`sl.stage.${bar.stage}` as TKey)}</span>
+              <span className="shrink-0 tabular-nums text-slate-400">
+                {t("sl.minutes").replace("{minutes}", String(Math.round(bar.minutes)))}
+                {bar.share === null ? null : (
+                  <span className="ml-2 font-semibold text-slate-200">{percent(bar.share)}</span>
+                )}
+              </span>
+            </span>
+            {bar.widthPercent === null ? null : (
+              <span className="mt-1 block h-1 rounded-full bg-white/5">
+                <span
+                  className={`block h-1 rounded-full ${
+                    // The stage colours belong to a share of the night. A
+                    // comparison between whatever happened to arrive is drawn
+                    // in one muted fill, so it cannot be read as one.
+                    bars.basis === "night" ? STAGE_TONE[bar.stage] : "bg-slate-500/60"
+                  }`}
+                  style={{ width: `${bar.widthPercent}%` }}
+                />
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {bars.basis === "night" ? null : (
+        <>
+          <p className="mt-3 text-[10px] leading-relaxed text-slate-500">{t("sl.partial")}</p>
+          {bars.basis === "reported" ? (
+            <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+              {t("sl.barsReported")}
+            </p>
+          ) : null}
+        </>
+      )}
+      {night.unattributedMinutes === null ? null : (
+        <p className="mt-2 text-[10px] leading-relaxed text-amber-300/80">
+          {t("sl.unattributed").replace("{minutes}", String(night.unattributedMinutes))}
+        </p>
+      )}
+    </>
+  );
+}
 
 export function SleepAnalysis() {
   const { t, lang } = useI18n();
@@ -36,8 +104,6 @@ export function SleepAnalysis() {
   });
 
   const night: SleepNight | undefined = isError ? { status: "unreadable" } : data;
-  const percent = (fraction: number) =>
-    new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 }).format(fraction);
 
   // How old the night is, said plainly. An empty panel and a week-old night
   // look the same otherwise, and only one of them means the watch stopped.
@@ -86,48 +152,7 @@ export function SleepAnalysis() {
           {night.status === "duration_only" ? (
             <p className="mt-3 text-[11px] leading-relaxed text-slate-400">{t("sl.noStages")}</p>
           ) : (
-            <>
-              {/* Ordered deepest first so the bar reads the same every night,
-                  and only the stages that arrived get a segment. */}
-              <ul className="mt-3 space-y-2">
-                {SLEEP_STAGE_ORDER.map((stage) => {
-                  const slice = night.slices.find((entry) => entry.stage === stage);
-                  if (!slice) return null;
-                  const width =
-                    night.stagedMinutes > 0 ? (slice.minutes / night.stagedMinutes) * 100 : 0;
-                  return (
-                    <li key={stage} className="text-xs">
-                      <span className="flex items-baseline justify-between gap-3">
-                        <span className="text-slate-300">{t(`sl.stage.${stage}` as TKey)}</span>
-                        <span className="shrink-0 tabular-nums text-slate-400">
-                          {t("sl.minutes").replace("{minutes}", String(Math.round(slice.minutes)))}
-                          {slice.share === null ? null : (
-                            <span className="ml-2 font-semibold text-slate-200">
-                              {percent(slice.share)}
-                            </span>
-                          )}
-                        </span>
-                      </span>
-                      <span className="mt-1 block h-1 rounded-full bg-white/5">
-                        <span
-                          className={`block h-1 rounded-full ${STAGE_TONE[stage]}`}
-                          style={{ width: `${width}%` }}
-                        />
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              {night.slices.some((slice) => slice.share === null) ? (
-                <p className="mt-3 text-[10px] leading-relaxed text-slate-500">{t("sl.partial")}</p>
-              ) : null}
-              {night.unattributedMinutes === null ? null : (
-                <p className="mt-2 text-[10px] leading-relaxed text-amber-300/80">
-                  {t("sl.unattributed").replace("{minutes}", String(night.unattributedMinutes))}
-                </p>
-              )}
-            </>
+            <Stages night={night} />
           )}
         </>
       )}
