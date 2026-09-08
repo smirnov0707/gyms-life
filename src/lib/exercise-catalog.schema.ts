@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getExerciseMedia } from "./exercise-media";
+import { canonicalWorkoutEquipment } from "./workout-equipment.schema";
 import type { TrainingPlanData } from "./training-plan.schema";
 
 /**
@@ -105,18 +106,52 @@ type PlanCatalogConstraints = {
   location: string;
 };
 
+/** Below this, a pool cannot fill a workout day, so the constraint is dropped. */
+export const MINIMUM_COMPATIBLE_EXERCISES = 4;
+
+export type PlanCatalogSelection = {
+  readonly exercises: ExerciseCatalogItem[];
+  /**
+   * Whether `exercises` actually honours the athlete's equipment and location.
+   *
+   * False when too few matched and the whole catalog was handed over instead.
+   * This is the field that matters: the fallback is defensible as a *pool*
+   * decision — four exercises cannot fill a workout day, and a plan of four is
+   * worse than one with a barbell in it — but it is not defensible as a silent
+   * one. A caller that validates the model's output against a pool it does not
+   * know was widened is checking a constraint that was already abandoned, and
+   * every such check passes.
+   */
+  readonly equipmentConstrained: boolean;
+};
+
 /**
  * Keep the AI contract small and relevant: it may choose only exercises the
  * member can use in the selected setting. If a legacy catalog has no matching
- * entries, retain the validated catalog instead of fabricating substitutions.
+ * entries, retain the validated catalog instead of fabricating substitutions —
+ * and say so, so the caller can decide what to do about it rather than inherit
+ * a constraint that quietly stopped applying.
  */
 export function selectPlanExerciseCatalog(
   catalog: readonly ExerciseCatalogItem[],
   constraints: PlanCatalogConstraints,
-): ExerciseCatalogItem[] {
+): PlanCatalogSelection {
+  // One spelling table, not two. This used to fold `bands` into `band` by hand
+  // and nothing else, while `canonicalWorkoutEquipment` — the function the
+  // temporary-context path and the persisted schema already go through — also
+  // handles `dumbbells`, `resistance_band`, `pull_up_bar`, capitals, spaces and
+  // hyphens. Today's onboarding happens to emit values the hand-rolled version
+  // covers; an imported or older profile need not, and a spelling that fails to
+  // match shrinks the pool until the constraint is dropped entirely.
   const equipment = new Set(
-    constraints.equipment.map((item) => (item === "bands" ? "band" : item)),
+    constraints.equipment.flatMap((item) => {
+      const canonical = canonicalWorkoutEquipment(item);
+      return canonical === null ? [] : [canonical as string];
+    }),
   );
+  // Bodyweight needs nothing, so it is always available. An athlete who has
+  // recorded no equipment is therefore given bodyweight work rather than the
+  // whole catalog: "I own nothing" is an answer, not a missing one.
   equipment.add("bodyweight");
 
   const matching = catalog.filter(
@@ -127,5 +162,7 @@ export function selectPlanExerciseCatalog(
         exercise.location === constraints.location),
   );
 
-  return matching.length >= 4 ? matching : [...catalog];
+  return matching.length >= MINIMUM_COMPATIBLE_EXERCISES
+    ? { exercises: matching, equipmentConstrained: true }
+    : { exercises: [...catalog], equipmentConstrained: false };
 }

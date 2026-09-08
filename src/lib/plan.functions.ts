@@ -95,10 +95,16 @@ export const generatePlan = createServerFn({ method: "POST" })
         if (catalogError || catalogExercises.length === 0) {
           throw new Error("Exercise catalog is unavailable. Please try again shortly.");
         }
-        const compatibleCatalog = selectPlanExerciseCatalog(catalogExercises, {
+        // `exercises` is what the model may choose from, and what its answer
+        // is checked against. When the catalog could not honour the athlete's
+        // equipment the selection says so, and the pool it hands back is the
+        // whole catalog — validating against anything narrower would then
+        // reject a plan built from the very list the model was given.
+        const selection = selectPlanExerciseCatalog(catalogExercises, {
           equipment: data.equipment,
           location: data.location,
         });
+        const compatibleCatalog = selection.exercises;
         const catalog = formatExerciseCatalogForAi(compatibleCatalog);
         const catalogSlugs = compatibleCatalog.map((exercise) => exercise.slug);
         const langName = LANGUAGE_NAMES[data.lang];

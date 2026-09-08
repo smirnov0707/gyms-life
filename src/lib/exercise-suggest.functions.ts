@@ -6,6 +6,7 @@ import { serializeJson } from "./json.schema";
 import {
   formatExerciseCatalogForAi,
   parseDemonstratedExerciseCatalog,
+  selectPlanExerciseCatalog,
 } from "./exercise-catalog.schema";
 import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 import { parseStoredTrainingPlan } from "./training-plan.schema";
@@ -88,15 +89,18 @@ export const suggestExercisesForGoal = createServerFn({ method: "POST" })
     );
 
     const equipment = profile?.equipment ?? [];
-    const allowed = catalog.filter(
-      (e) =>
-        (!equipment.length || equipment.includes(e.equipment) || e.equipment === "bodyweight") &&
-        (!profile?.location ||
-          profile.location === "both" ||
-          e.location === "both" ||
-          e.location === profile.location),
-    );
-    const pool = (allowed.length >= 20 ? allowed : catalog).slice(0, 400);
+    // One answer to "what can this person actually do". There used to be a
+    // second, written inline here, and it disagreed with the canonical one in
+    // two ways that mattered: an athlete with no recorded equipment got the
+    // entire catalog instead of bodyweight work, and a pool of fewer than
+    // twenty was widened to everything — a much lower bar than the plan
+    // generator's, so the same profile got equipment-appropriate plans and
+    // equipment-inappropriate suggestions.
+    const selection = selectPlanExerciseCatalog(catalog, {
+      equipment,
+      location: profile?.location ?? "both",
+    });
+    const pool = selection.exercises.slice(0, 400);
 
     const { generateOrchestratedJson } = await import("./ai-orchestrator.server");
     const langName = LANGUAGE_NAMES[data.lang];
@@ -136,7 +140,12 @@ RETURN JSON: {"suggestions":[{"slug":"","name":"","reason":"","sets":3,"reps":"8
       throw new Error("AI could not build suggestions. Please try again.");
     }
 
-    const bySlug = new Map(catalog.map((e) => [e.slug, e]));
+    // The pool the model was actually given, not the whole catalog. Checking a
+    // returned slug against every exercise that exists makes the check pass
+    // for a barbell suggestion sent to somebody with a resistance band, and
+    // leaves the prompt line "Respect equipment, location and limitations" as
+    // the only thing standing in the way — which is the model policing itself.
+    const bySlug = new Map(pool.map((e) => [e.slug, e]));
     const seen = new Set<string>();
     const suggestions: ExerciseSuggestion[] = out.suggestions
       .filter(
