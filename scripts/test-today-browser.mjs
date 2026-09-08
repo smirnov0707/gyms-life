@@ -169,12 +169,16 @@ try {
   const open = async (query = "", options = {}) => {
     const opened = await openPanel(query, options);
     await expect(opened.page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
-    // The compact Today panels keep evidence behind real disclosure controls.
-    // Legacy evidence assertions inspect the same content after opening them.
-    for (const disclosure of await opened.page.locator("details.fl-disclosure > summary").all()) {
-      await disclosure.click();
-    }
     return opened;
+  };
+
+  const openEvidence = async (panel, label) => {
+    // Sources resolve asynchronously; wait for the actual disclosure instead
+    // of taking a one-time inventory before the data arrives.
+    const summary = panel.locator("details > summary").filter({ hasText: label });
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const details = summary.locator("..");
+    if ((await details.getAttribute("open")) === null) await summary.click();
   };
 
   const assertInteractiveTwin = async (canvas) => {
@@ -318,10 +322,16 @@ try {
   await expect(rail.getByRole("link", { name: "Connect a device" })).toBeVisible();
   record("an empty source shows as empty, with no invented figure and a way to fix it");
 
-  // 3. Every Future Lab panel with no evidence says so rather than showing a
-  //    number it does not have.
+  // 3. No recovery evidence means no projection curve; prediction evidence
+  //    shows a count of evaluated predictions, never a confidence percentage.
+  const emptyOutlook = first.page.getByRole("region", { name: "When it comes back" });
+  await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
+  await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
+  const emptyEvidence = first.page.getByRole("region", { name: "Prediction evidence" });
+  await expect(emptyEvidence.getByText("Evaluated predictions", { exact: true })).toBeVisible();
+  expect(await emptyEvidence.locator(".fl-evidence-count strong").innerText()).toBe("0");
+  expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
   const body = await first.page.locator("body").innerText();
-  expect(body).toContain("Not enough verified data yet.");
   await writeFile(path.join(artifacts, "today.txt"), body);
   await first.page.screenshot({
     path: path.join(artifacts, "today-desktop.png"),
@@ -433,15 +443,21 @@ try {
   // ledger is something an athlete might act on.
   const journal = await openPanel("?panel=journal");
   await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
-  const counters = journal.page.locator("p.font-mono.text-xl");
-  expect(await counters.count()).toBe(4);
-  expect(await counters.allInnerTexts()).toEqual(["—", "—", "—", "—"]);
+  await expect(
+    journal.page.getByText("Journal intelligence is temporarily unavailable."),
+  ).toBeVisible();
+  await expect(journal.page.locator(".fl-journal-stats")).toHaveCount(0);
   await journal.page.screenshot({
     path: path.join(artifacts, "screen-journal.png"),
     fullPage: true,
   });
   await journal.page.close();
-  record("an unread journal shows dashes, not four zeroes");
+  const emptyJournal = await openPanel("?panel=journal&scenario=empty");
+  const emptyCounters = emptyJournal.page.locator(".fl-journal-stats p.font-mono");
+  await expect(emptyCounters).toHaveCount(4);
+  expect(await emptyCounters.allInnerTexts()).toEqual(["0", "0", "0", "0"]);
+  await emptyJournal.page.close();
+  record("an unread journal reports an outage; only a readable empty ledger shows zero counters");
 
   // 8. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
@@ -637,17 +653,23 @@ try {
   //     a grey silhouette and print the reason only under `sm:hidden`, and the
   //     decision card spun forever on a source that answered "nothing".
   const bare = await open("");
-  const twinCard = bare.page.getByText("Your Twin is still learning").first();
-  await expect(twinCard).toBeVisible({ timeout: 30000 });
-  const stage = await bare.page
-    .getByText("Your body, as GYMS.LIFE understands it today")
-    .locator("xpath=ancestor::section[1]")
-    .boundingBox();
-  // Below the 620px floor the card used to reserve before it had anything to
-  // put there; it comes out around 540 with the figure scaled down.
-  expect(stage.height).toBeLessThan(620);
+  const bareTwin = bare.page.getByRole("region", { name: "Your Digital Twin", exact: true });
+  await expect(
+    bareTwin.getByText("Not enough logged training to estimate recovery.", { exact: false }),
+  ).toBeVisible({ timeout: 30000 });
+  // The body shares a grid row with the other panels. Measure the figure's
+  // actual stage, not the card stretched to a neighbouring panel's height.
+  const stage = await bareTwin.locator(".twin-cockpit-scene").boundingBox();
+  expect(stage).not.toBeNull();
+  expect(stage.height).toBeLessThanOrEqual(450);
+  await bareTwin.getByRole("combobox", { name: "Inspect a region" }).selectOption("chest");
+  const unknownReading = bareTwin.locator(".twin-cockpit-reading");
+  await expect(unknownReading.getByText("—", { exact: true })).toBeVisible();
+  await expect(unknownReading.getByText("Insufficient data", { exact: true })).toBeVisible();
 
-  await expect(bare.page.getByText("We couldn't load today's decision.")).toBeVisible();
+  await expect(
+    bare.page.getByText("We couldn't load today's decision.", { exact: false }),
+  ).toBeVisible();
   await expect(bare.page.getByRole("button", { name: "Try again" })).toBeVisible();
   await bare.page.screenshot({ path: path.join(artifacts, "today-bare.png"), fullPage: true });
   expect(bare.errors).toEqual([]);
@@ -947,12 +969,15 @@ try {
   const evidence = await open("?evidence=some");
   const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
   await expect(evidencePanel).toBeVisible({ timeout: 30000 });
+  await openEvidence(evidencePanel, "Evidence details");
   const evidenceText = await evidencePanel.innerText();
   expect(evidenceText).toContain("Moderate");
   expect(evidenceText).toContain("18 tested · 22 waiting");
   // Two targets nothing has ever predicted say so, rather than being omitted
   // or shown as insufficient evidence about the athlete.
-  expect(evidenceText.match(/Not predicted yet/g)?.length).toBe(2);
+  await expect(
+    evidencePanel.locator(".fl-evidence-targets").getByText("Not predicted yet", { exact: true }),
+  ).toHaveCount(2);
   // No blended percentage anywhere on the panel.
   expect(evidenceText).not.toMatch(/\d+\s*%/);
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
@@ -1021,6 +1046,7 @@ try {
   const ahead = await open("?twin=regions");
   const aheadPanel = ahead.page.getByRole("region", { name: "When it comes back" });
   await expect(aheadPanel).toBeVisible({ timeout: 30000 });
+  await openEvidence(aheadPanel, "Recovery estimates");
   const aheadText = await aheadPanel.innerText();
   // Back is at 55% and chest at 41%; with a 40-hour constant and an 80%
   // threshold that is 32 and 43 hours, soonest first.

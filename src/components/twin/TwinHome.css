@@ -11,6 +11,15 @@
   box-shadow: inset 0 1px 0 rgba(196, 222, 255, 0.04);
 }
 
+.twin-cockpit-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(156, 181, 226, 0.12);
+  color: #a9b6ce;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .twin-cockpit-header {
   position: absolute;
   width: 1px;

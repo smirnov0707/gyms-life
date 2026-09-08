@@ -268,6 +268,17 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           <h2>{copy.title}</h2>
           <span>{language === "lt" ? "Tempk ir tyrinėk 360°" : "Drag to explore 360°"}</span>
         </header>
+        {!snapshot.dataAvailable ? (
+          <p className="twin-cockpit-notice" role="status">
+            {copy.dataGapBanner}
+          </p>
+        ) : snapshot.regions.every((entry) => entry.recoveryPct === null) ? (
+          <p className="twin-cockpit-notice" role="status">
+            {language === "lt"
+              ? "Nepakanka užregistruotų treniruočių atsistatymui įvertinti. Pasirink sritį ir peržiūrėk jos duomenis."
+              : "Not enough logged training to estimate recovery. Select a region to inspect its evidence."}
+          </p>
+        ) : null}
         <TwinStage
           presentation="cockpit"
           snapshot={snapshot}

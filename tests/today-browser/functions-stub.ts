@@ -175,7 +175,11 @@ export const getBodyComposition = async () => {
   return { status: "single" as const, latest };
 };
 
-export const getLabOverview = async () => null;
+// An unread source rejects. The production contract returns a LabOverview
+// for a successful read, including an account with no observations.
+export const getLabOverview = async () => {
+  throw new Error("Synthetic unavailable Lab source");
+};
 export const getTwinTrendHistory = async () => null;
 /** `?plan=ready` puts a real session in front of the panel; the default is the
  *  account's actual state, which is no active programme. */

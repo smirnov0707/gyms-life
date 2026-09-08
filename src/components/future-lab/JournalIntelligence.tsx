@@ -16,6 +16,7 @@ import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "./lab-overview.query";
 import type { LabDecision } from "@/lib/lab.schema";
 import type { AthleteHypothesis } from "@/lib/athlete-hypothesis.schema";
+import "./journal-stats.css";
 
 const statements = {
   lt: {
@@ -235,19 +236,16 @@ export function JournalIntelligence() {
                   : "Dalis sprendimų istorijos nepasiekiama. Trūkstamos detalės nespėjamos."}
               </p>
             ) : null}
-            <div className="mt-4 grid grid-cols-4 gap-1.5 sm:gap-2">
+            <div className="fl-journal-stats mt-4">
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
-                  <div
-                    key={stat.label}
-                    className="rounded-xl border border-border bg-surface-2/65 p-2.5 sm:p-3"
-                  >
+                  <div key={stat.label} className="rounded-xl border border-border bg-surface-2/65">
                     <Icon className={`size-4 ${stat.tone}`} />
                     <p className="mt-2 font-mono text-xl text-foreground">
                       {stat.value === null ? "—" : stat.value}
                     </p>
-                    <p className="mt-1 text-[9px] uppercase tracking-wide text-muted-foreground">
+                    <p className="fl-journal-stat-label mt-1 uppercase text-muted-foreground">
                       {stat.label}
                     </p>
                   </div>
