@@ -333,6 +333,24 @@ try {
     "Today opens muscle evidence; status, impact and history survive URL navigation and reload",
   );
 
+  const offBody = await openPanel(
+    "?shell=1&screen=twin&scenario=reference&view=muscles&region=cardio&detail=status",
+    { locale: "en-US" },
+  );
+  const offBodyDetail = offBody.page.locator('[data-twin-muscle-detail="cardio"]');
+  await expect(offBodyDetail).toBeVisible({ timeout: 30000 });
+  await expect(
+    offBodyDetail.getByText("This training group is not a single anatomical region.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(offBodyDetail.locator(".twin-detail-stage")).toHaveCount(0);
+  expect(offBody.errors).toEqual([]);
+  await offBody.page.context().close();
+  record(
+    "off-body training groups keep their evidence route without pretending to be a muscle surface",
+  );
+
   for (const [scenario, expected] of [
     ["reference", "Received records refreshed."],
     ["empty", "Records checked. No readings have arrived yet."],

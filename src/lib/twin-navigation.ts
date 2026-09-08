@@ -1,4 +1,9 @@
 import { isAnatomicalRegion } from "@/components/twin/body-map.geometry";
+import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
+
+const KNOWN_GROUPS = new Set<string>(KNOWN_MUSCLE_GROUPS);
+export const isTwinDetailRegion = (region: string) =>
+  KNOWN_GROUPS.has(region) || isAnatomicalRegion(region);
 
 export const TWIN_VIEWS = ["overview", "muscles", "systems"] as const;
 export const TWIN_DETAIL_TABS = ["status", "history", "impact"] as const;
@@ -15,7 +20,7 @@ export function parseTwinNavigation(search: Record<string, unknown>): TwinNaviga
   const result: TwinNavigation = {};
   if (TWIN_VIEWS.some((view) => view === search["view"]))
     result.view = search["view"] as TwinViewId;
-  if (typeof search["region"] === "string" && isAnatomicalRegion(search["region"])) {
+  if (typeof search["region"] === "string" && isTwinDetailRegion(search["region"])) {
     result.region = search["region"];
     if (TWIN_DETAIL_TABS.some((tab) => tab === search["detail"])) {
       result.detail = search["detail"] as TwinDetailTab;

@@ -17,6 +17,13 @@ describe("Twin reference navigation", () => {
     ).toEqual({});
     expect(parseTwinNavigation({ region: ["chest"], detail: "status" })).toEqual({});
   });
+  it.each(["cardio", "mobility", "fullbody"])(
+    "retains evidence navigation for off-body group %s",
+    (region) => {
+      const input = { view: "muscles", region, detail: "history" };
+      expect(parseTwinNavigation(input)).toEqual(input);
+    },
+  );
   it("drops detached detail tabs and unrelated user data", () => {
     expect(parseTwinNavigation({ view: "systems", detail: "history", recovery: 72 })).toEqual({
       view: "systems",

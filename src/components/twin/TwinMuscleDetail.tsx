@@ -130,22 +130,30 @@ export function TwinMuscleDetail({
           </p>
         ) : (
           <>
-            <div className="twin-detail-stage">
-              <TwinStage
-                presentation="detail"
-                showLayerControls={false}
-                focusRegion={regionId}
-                snapshot={snapshot.data}
-                layer="recovery"
-                onLayerChange={() => {}}
-                selectedRegion={regionId}
-                onSelectRegion={onRegionChange}
-                view={view}
-                onViewChange={setView}
-                regionLabel={label}
-                language={language}
-              />
-            </div>
+            {isAnatomicalRegion(regionId) ? (
+              <div className="twin-detail-stage">
+                <TwinStage
+                  presentation="detail"
+                  showLayerControls={false}
+                  focusRegion={regionId}
+                  snapshot={snapshot.data}
+                  layer="recovery"
+                  onLayerChange={() => {}}
+                  selectedRegion={regionId}
+                  onSelectRegion={onRegionChange}
+                  view={view}
+                  onViewChange={setView}
+                  regionLabel={label}
+                  language={language}
+                />
+              </div>
+            ) : (
+              <p className="twin-detail-note">
+                {language === "lt"
+                  ? "Ši treniruočių grupė nėra viena anatominė sritis. Jos užregistruoti duomenys pateikti žemiau."
+                  : "This training group is not a single anatomical region. Its recorded evidence is shown below."}
+              </p>
+            )}
             <div className="twin-detail-readout">
               <div className="twin-detail-score">
                 <div>

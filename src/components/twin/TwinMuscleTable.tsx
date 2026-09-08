@@ -8,6 +8,7 @@ import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { TWIN_DISPLAY_COLORS } from "@/components/twin/twin-scene.model";
 import { twinCopyFor } from "@/components/TwinView";
 import type { TwinRegionState } from "@/lib/digital-twin.schema";
+import { isTwinDetailRegion } from "@/lib/twin-navigation";
 
 /**
  * Every region the Twin knows about, in one list, ordered least recovered
@@ -154,7 +155,9 @@ export function TwinMuscleTable({
                 key={region.region}
                 region={region}
                 label={label(region.region)}
-                {...(onSelectRegion ? { onSelect: () => onSelectRegion(region.region) } : {})}
+                {...(onSelectRegion && isTwinDetailRegion(region.region)
+                  ? { onSelect: () => onSelectRegion(region.region) }
+                  : {})}
               />
             ))}
           </ul>
