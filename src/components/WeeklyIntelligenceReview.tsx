@@ -61,6 +61,8 @@ function copyFor(lang: Lang): Copy {
       },
       gap: {
         training_data_unavailable: "Training data is temporarily unavailable.",
+        training_response_data_unavailable: "Workout-feeling data is temporarily unavailable.",
+        decision_feedback_data_unavailable: "Decision feedback is temporarily unavailable.",
         no_completed_workouts_28d: "There are no completed workouts in the last 28 days.",
         recovery_data_unavailable: "Recovery data is temporarily unavailable.",
         no_recovery_checkins_7d: "There are no readiness check-ins in the last 7 days.",
@@ -108,6 +110,9 @@ function copyFor(lang: Lang): Copy {
     },
     gap: {
       training_data_unavailable: "Treniruočių duomenys laikinai nepasiekiami.",
+      training_response_data_unavailable:
+        "Savijautos po treniruočių duomenys laikinai nepasiekiami.",
+      decision_feedback_data_unavailable: "Atsiliepimai apie sprendimus laikinai nepasiekiami.",
       no_completed_workouts_28d: "Per pastarąsias 28 dienas nėra baigtų treniruočių.",
       recovery_data_unavailable: "Atsistatymo duomenys laikinai nepasiekiami.",
       no_recovery_checkins_7d: "Per pastarąsias 7 dienas nėra pasiruošimo check-in'ų.",

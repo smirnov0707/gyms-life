@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Database } from "@/integrations/supabase/types";
-import type { DigitalAthleteSources } from "./digital-athlete.schema";
+import { DigitalAthleteSourcesSchema, type DigitalAthleteSources } from "./digital-athlete.schema";
 import { buildDigitalAthleteState, loadDigitalAthleteState } from "./digital-athlete.service";
 import {
   fingerprintDigitalAthleteState,
@@ -79,15 +79,7 @@ beforeEach(() => {
 });
 
 describe("source availability through snapshot and Today services", () => {
-  it.each([
-    "training",
-    "recovery",
-    "body",
-    "nutrition",
-    "context",
-    "trainingRhythm",
-    "muscleLoad",
-  ] satisfies Array<keyof DigitalAthleteSources["availability"]>)(
+  it.each(DigitalAthleteSourcesSchema.shape.availability.keyof().options)(
     "withholds snapshot, memory and Today persistence when %s is unreadable",
     async (domain) => {
       const state = buildDigitalAthleteState(

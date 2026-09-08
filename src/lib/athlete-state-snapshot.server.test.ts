@@ -87,12 +87,14 @@ describe("Digital Athlete snapshot persistence", () => {
 
   it.each([
     "training_data_unavailable",
+    "training_response_data_unavailable",
     "recovery_data_unavailable",
     "body_measurements_unavailable",
     "nutrition_data_unavailable",
     "muscle_load_data_unavailable",
     "current_context_unavailable",
     "training_rhythm_data_unavailable",
+    "decision_feedback_data_unavailable",
     "personalization_consent_required",
     "personalization_consent_unavailable",
   ] satisfies DigitalAthleteDataGap[])("does not retain incomplete state for %s", (gap) => {

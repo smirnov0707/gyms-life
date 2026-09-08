@@ -112,6 +112,7 @@ export function fingerprintDigitalAthleteState(
  */
 const DATA_GAP_KIND = {
   training_data_unavailable: "source_unavailable",
+  training_response_data_unavailable: "source_unavailable",
   no_completed_workouts_28d: "no_observations",
   recovery_data_unavailable: "source_unavailable",
   no_recovery_checkins_7d: "no_observations",
@@ -122,6 +123,7 @@ const DATA_GAP_KIND = {
   muscle_load_data_unavailable: "source_unavailable",
   current_context_unavailable: "source_unavailable",
   training_rhythm_data_unavailable: "source_unavailable",
+  decision_feedback_data_unavailable: "source_unavailable",
   personalization_consent_required: "personalization_restricted",
   personalization_consent_unavailable: "personalization_restricted",
 } satisfies Record<
