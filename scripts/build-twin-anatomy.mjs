@@ -205,7 +205,7 @@ const SKIN_CLEARANCE = 0.012;
  * extra skin — where culling a muscle by height would lose the muscle.
  */
 const FOOT_TOP = 0.065;
-const HAND_TOP = 0.5;
+const HAND_TOP = 0.465;
 const HAND_SPREAD = 0.55;
 
 /**
@@ -503,35 +503,10 @@ for (const [region, group] of merged) {
   const fullness = MUSCLE_FULLNESS[region];
   if (!fullness) continue;
   const positions = new Float32Array(group.positions);
-  const normals = computeNormals(positions, new Uint32Array(group.indices));
   const push = fullness * (maxY - minY);
-
-  // A region is several source meshes appended into one buffer, so the same
-  // point on the surface exists once per mesh that touches it, each with its
-  // own averaged normal. Moving those copies apart tears the region open along
-  // every seam — and a torn surface is one the simplifier will not collapse,
-  // which took the figure from 167k triangles to 251k before this. So
-  // coincident points are found, given one shared direction, and moved
-  // together.
-  const shared = new Map();
-  const key = (i) =>
-    `${Math.round(positions[i] * 10)},${Math.round(positions[i + 1] * 10)},${Math.round(positions[i + 2] * 10)}`;
-  for (let i = 0; i < positions.length; i += 3) {
-    const at = key(i);
-    const found = shared.get(at);
-    if (found) {
-      found[0] += normals[i];
-      found[1] += normals[i + 1];
-      found[2] += normals[i + 2];
-      found[3].push(i);
-    } else {
-      shared.set(at, [normals[i], normals[i + 1], normals[i + 2], [i]]);
-    }
-  }
-  for (const [nx, ny, nz, at] of shared.values()) {
-    const length = Math.hypot(nx, ny, nz) || 1;
-    for (const i of at) {
-      const scale = (push * fullnessAt(positions[i], positions[i + 1])) / length;
+  for (const [nx, ny, nz, offsets] of sharedNormals(positions, new Uint32Array(group.indices))) {
+    for (const i of offsets) {
+      const scale = push * fullnessAt(positions[i], positions[i + 1]);
       if (scale === 0) continue;
       group.positions[i] = positions[i] + nx * scale;
       group.positions[i + 1] = positions[i + 1] + ny * scale;
@@ -539,6 +514,118 @@ for (const [region, group] of merged) {
     }
   }
 }
+
+/**
+ * One outward direction per point on the surface, shared by every copy of it.
+ *
+ * A region is several source meshes appended into one buffer, so the same
+ * point exists once per mesh that touches it, each with its own averaged
+ * normal. Moving those copies along their own normals tears the region open
+ * along every seam — visibly, as a ragged line, and invisibly, because a torn
+ * surface is one the simplifier will not collapse. Both passes that move
+ * vertices use this instead.
+ *
+ * @param {Float32Array} positions
+ * @param {Uint32Array} indices
+ * @returns {Array<[number, number, number, number[]]>} direction and the
+ *   offsets into `positions` that share it
+ */
+function sharedNormals(positions, indices) {
+  const normals = computeNormals(positions, indices);
+  const shared = new Map();
+  for (let i = 0; i < positions.length; i += 3) {
+    const key = `${Math.round(positions[i] * 10)},${Math.round(positions[i + 1] * 10)},${Math.round(positions[i + 2] * 10)}`;
+    const found = shared.get(key);
+    if (found) {
+      found[0] += normals[i];
+      found[1] += normals[i + 1];
+      found[2] += normals[i + 2];
+      found[3].push(i);
+    } else {
+      shared.set(key, [normals[i], normals[i + 1], normals[i + 2], [i]]);
+    }
+  }
+  return [...shared.values()].map(([x, y, z, at]) => {
+    const length = Math.hypot(x, y, z) || 1;
+    return [x / length, y / length, z / length, at];
+  });
+}
+
+/**
+ * The rectus abdominis, cut into the abdominal wall.
+ *
+ * The atlas has no separate rectus: the whole front of the abdomen arrives as
+ * one smooth sheet named "muscle of anterior abdominal wall", so the figure's
+ * midriff was a flat plate where a trained body has the most recognisable
+ * relief it has. These are the grooves a real rectus is divided by — the linea
+ * alba down the middle and the tendinous intersections across it — pressed
+ * into that sheet at the heights anatomy puts them.
+ *
+ * It is relief on a real muscle rather than an invented one, and it says
+ * nothing about the athlete: the same grooves are there whatever the app has
+ * measured, and the region is coloured by the reading exactly as before.
+ *
+ * Heights are fractions of stature; widths are fractions of half the figure's
+ * width. The lowest intersection sits at the navel, which is the one an eye
+ * checks first.
+ */
+const RECTUS = {
+  low: 0.5,
+  high: 0.72,
+  halfWidth: 0.17,
+  /** How deep a groove is cut, as a fraction of stature. */
+  depth: 0.005,
+  /** Across the belly, at the navel and above it. */
+  intersections: [0.545, 0.6, 0.655],
+  /** How wide each groove is, in the same units as the axis it runs along. */
+  seam: 0.012,
+  crease: 0.009,
+};
+
+/**
+ * Cuts the rectus grooves into whichever group carries the abdominal wall.
+ *
+ * Front-facing surface only: the same sheet wraps round to the flank, and a
+ * groove pressed into the side of the body is a dent, not an abdominal.
+ */
+function carveRectus(group) {
+  const positions = new Float32Array(group.positions);
+  const height = maxY - minY;
+  const depth = RECTUS.depth * height;
+  // A valley: one at distance zero, nothing by two widths away.
+  const valley = (distance, width) => Math.exp(-(distance * distance) / (2 * width * width));
+  for (const [nx, ny, nz, offsets] of sharedNormals(positions, new Uint32Array(group.indices))) {
+    // Front-facing surface only: the same sheet wraps round to the flank, and
+    // a groove pressed into the side of the body is a dent, not an abdominal.
+    if (nz < 0.25) continue;
+    const i = offsets[0];
+    const fy = (positions[i + 1] - minY) / height;
+    if (fy < RECTUS.low || fy > RECTUS.high) continue;
+    const fx = (positions[i] - centreX) / halfWidth;
+    if (Math.abs(fx) > RECTUS.halfWidth) continue;
+    // The grooves fade out at the edges of the block rather than stopping at
+    // them, so the relief sits in the belly instead of ending on a step.
+    const inside = Math.min(
+      1,
+      Math.min(fy - RECTUS.low, RECTUS.high - fy) / ((RECTUS.high - RECTUS.low) * 0.18),
+    );
+    let cut = valley(fx, RECTUS.seam);
+    for (const at of RECTUS.intersections) {
+      cut = Math.max(cut, valley(fy - at, RECTUS.crease) * Math.min(1, Math.abs(fx) / 0.02 + 0.35));
+    }
+    const push = depth * cut * Math.max(0, Math.min(1, inside));
+    if (push === 0) continue;
+    // Straight back into the belly, not along the surface normal. The wall
+    // arrives as a left and a right half that meet at the midline, and their
+    // normals there point sideways — pushing along them slid the two halves
+    // apart and left the linea alba as a torn, jagged seam. Moving only in
+    // depth leaves every x and y where it was, so nothing can separate.
+    for (const offset of offsets) group.positions[offset + 2] = positions[offset + 2] - push;
+  }
+}
+
+const abdominal = merged.get("abs");
+if (abdominal) carveRectus(abdominal);
 
 const document = new Document();
 const buffer = document.createBuffer();

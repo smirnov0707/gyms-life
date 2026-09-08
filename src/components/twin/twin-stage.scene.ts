@@ -191,6 +191,65 @@ function backdrop(texture: CanvasTexture | null, size: number) {
 }
 
 /**
+ * The instrument's own axis: a thin line down the front of the figure with a
+ * few nodes on it.
+ *
+ * It carries no reading and never changes — it is drawn in the apparatus's own
+ * cyan, the colour of the platform and the grid, and never in one of the data
+ * colours, so it cannot be mistaken for a state. It sits a little in front of
+ * the chest rather than being drawn over everything, so turning the figure
+ * round hides it exactly as it hides the chest.
+ */
+function centreLine(bodyHeight: number, texture: CanvasTexture | null) {
+  const group = new Group();
+  const forward = bodyHeight * 0.115;
+  const from = bodyHeight * 0.47;
+  const to = bodyHeight * 0.8;
+  const geometry = new BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new BufferAttribute(new Float32Array([0, from, forward, 0, to, forward]), 3),
+  );
+  const line = new LineSegments(
+    geometry,
+    new LineBasicMaterial({
+      color: STAGE_COLOUR,
+      transparent: true,
+      opacity: 0.32,
+      blending: AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  group.add(line);
+  if (texture) {
+    const nodes = new BufferGeometry();
+    nodes.setAttribute(
+      "position",
+      new BufferAttribute(
+        new Float32Array([0.82, 0.66, 0.53].flatMap((at) => [0, bodyHeight * at, forward + 0.004])),
+        3,
+      ),
+    );
+    group.add(
+      new Points(
+        nodes,
+        new PointsMaterial({
+          map: texture,
+          color: STAGE_COLOUR,
+          size: 0.085,
+          sizeAttenuation: true,
+          transparent: true,
+          opacity: 0.85,
+          blending: AdditiveBlending,
+          depthWrite: false,
+        }),
+      ),
+    );
+  }
+  return group;
+}
+
+/**
  * Particles standing in the air around the figure.
  *
  * Placed with a fixed sequence rather than Math.random, so the stage is the
@@ -315,6 +374,14 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   keep(grid.geometry);
   keep(grid.material as LineBasicMaterial);
   group.add(grid);
+
+  const axis = centreLine(bodyHeight, spark);
+  for (const child of axis.children) {
+    const drawn = child as LineSegments | Points;
+    keep(drawn.geometry);
+    keep(drawn.material as LineBasicMaterial | PointsMaterial);
+  }
+  group.add(axis);
 
   const dust = particles(160, spark);
   keep(dust.geometry);

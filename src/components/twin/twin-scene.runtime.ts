@@ -170,8 +170,8 @@ export function mountTwinScene(
       // was tried for that first, and on a body made of a hundred overlapping
       // muscles each copy glows over its neighbours as well as over the stage —
       // the figure came out milky and lost every muscle boundary it had.
-      [[-1.6, 1.9, -3.0], 0x3fdcff, 2.2],
-      [[2.2, 1.4, -2.6], 0x8f6bff, 1.5],
+      [[-1.6, 1.9, -3.0], 0x3fdcff, 3.0],
+      [[2.2, 1.4, -2.6], 0x8f6bff, 2.1],
     ] as const) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);

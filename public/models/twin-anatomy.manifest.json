@@ -12,14 +12,14 @@
     "requirements": "Attribution required, and derivative works must be shared under the same licence."
   },
   "file": "models/twin-anatomy-v1.glb",
-  "bytes": 3914704,
-  "gzipBytes": 2446733,
+  "bytes": 3927120,
+  "gzipBytes": 2458588,
   "targetHeightMetres": 1.7,
   "regions": {
     "neutral": {
       "meshes": 1,
-      "sourceTriangles": 139873,
-      "triangles": 25999
+      "sourceTriangles": 132238,
+      "triangles": 26000
     },
     "chest": {
       "meshes": 8,
@@ -39,12 +39,12 @@
     "arms": {
       "meshes": 62,
       "sourceTriangles": 138500,
-      "triangles": 41939
+      "triangles": 42018
     },
     "abs": {
       "meshes": 2,
       "sourceTriangles": 223652,
-      "triangles": 20014
+      "triangles": 20476
     },
     "core": {
       "meshes": 2,
