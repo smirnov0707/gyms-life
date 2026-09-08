@@ -12,9 +12,14 @@ const document = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
 const binary = Buffer.from(bytes.subarray(28 + jsonLength));
 await MeshoptSimplifier.ready;
 function values(id, Constructor) {
-  const a = document.accessors[id], v = document.bufferViews[a.bufferView];
+  const a = document.accessors[id],
+    v = document.bufferViews[a.bufferView];
   const offset = (v.byteOffset ?? 0) + (a.byteOffset ?? 0);
-  return new Constructor(binary.buffer, binary.byteOffset + offset, a.count * (a.type === "VEC3" ? 3 : 1));
+  return new Constructor(
+    binary.buffer,
+    binary.byteOffset + offset,
+    a.count * (a.type === "VEC3" ? 3 : 1),
+  );
 }
 for (const mesh of document.meshes) {
   if (!mesh.name.startsWith("human-") && !mesh.name.startsWith("shorts-")) continue;
@@ -22,7 +27,9 @@ for (const mesh of document.meshes) {
   const indices = values(primitive.indices, Uint32Array);
   const positions = values(primitive.attributes.POSITION, Float32Array);
   const target = Math.floor((indices.length * 0.7) / 3) * 3;
-  const [result, error] = MeshoptSimplifier.simplify(indices, positions, 3, target, 0.0015, ["LockBorder"]);
+  const [result, error] = MeshoptSimplifier.simplify(indices, positions, 3, target, 0.0015, [
+    "LockBorder",
+  ]);
   indices.set(result);
   document.accessors[primitive.indices].count = result.length;
   mesh.extras = { simplificationError: error, regionBordersLocked: true };
@@ -52,6 +59,9 @@ manifest.triangles = manifest.meshes.reduce((n, m) => n + m.triangles, 0);
 manifest.bytes = result.length;
 manifest.sha256 = createHash("sha256").update(result).digest("hex");
 manifest.optimizer = "meshoptimizer 0.22.0; locked region borders; relative error bound 0.0015";
-if (manifest.triangles > 100000 || manifest.bytes > 8 * 1024 * 1024) throw new Error("Human asset exceeds the agreed budget");
+if (manifest.triangles > 100000 || manifest.bytes > 8 * 1024 * 1024)
+  throw new Error("Human asset exceeds the agreed budget");
 await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-console.log(JSON.stringify({ bytes: manifest.bytes, triangles: manifest.triangles, sha256: manifest.sha256 }));
+console.log(
+  JSON.stringify({ bytes: manifest.bytes, triangles: manifest.triangles, sha256: manifest.sha256 }),
+);
