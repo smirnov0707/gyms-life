@@ -1,0 +1,79 @@
+name: Build and review CC0 GYMS.LIFE digital human v9
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths:
+      - .github/workflows/human-cc0-build-v9.yml
+      - scripts/human/build-v9.py
+      - scripts/human/audit-authored-textures.py
+      - scripts/human/validate-glb.mjs
+      - scripts/human/render-review.mjs
+      - scripts/human/fixtures/v8-geometry-fingerprint.json
+      - scripts/human/toolchain/package*.json
+permissions:
+  contents: read
+concurrency:
+  group: human-v9-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-and-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            scripts/human/toolchain/package-lock.json
+      - name: Install pinned authoring and render dependencies
+        run: |
+          git init "$RUNNER_TEMP/makehuman-core"
+          git -C "$RUNNER_TEMP/makehuman-core" remote add origin https://github.com/vidya-hub/makehuman-core.git
+          git -C "$RUNNER_TEMP/makehuman-core" fetch --depth 1 origin 06e129ac920593f9f315e03d6d5b3f843504de7f
+          git -C "$RUNNER_TEMP/makehuman-core" checkout --detach FETCH_HEAD
+          python -m pip install pillow==12.3.0 numpy==2.3.5
+          npm ci --ignore-scripts
+          npm ci --prefix scripts/human/toolchain --ignore-scripts
+          npx playwright install --with-deps chromium
+      - name: Export first and transform the actual MTL diffuse
+        run: |
+          python scripts/human/build-v9.py --source "$RUNNER_TEMP/makehuman-core" --out "$RUNNER_TEMP/gyms-human-v9"
+          node scripts/human/toolchain/node_modules/obj2gltf/bin/obj2gltf.js -i "$RUNNER_TEMP/gyms-human-v9/gyms-digital-human-v9.obj" -o "$RUNNER_TEMP/gyms-human-v9/gyms-digital-human-v9.glb" -b --secure --checkTransparency
+      - name: Audit exact embedded texture and unchanged v8 geometry
+        run: |
+          DIFFUSE_SHA=$(python -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"gyms-human-v9/SOURCE_MANIFEST.json")))["texture_diagnostics"]["output_sha256"])')
+          python scripts/human/audit-authored-textures.py "$RUNNER_TEMP/gyms-human-v9/gyms-digital-human-v9.glb" --reference-fingerprint scripts/human/fixtures/v8-geometry-fingerprint.json --body-image-sha256 "$DIFFUSE_SHA" --report "$RUNNER_TEMP/gyms-human-v9/texture-geometry-audit.json"
+          node scripts/human/validate-glb.mjs "$RUNNER_TEMP/gyms-human-v9/gyms-digital-human-v9.glb" "$RUNNER_TEMP/gyms-human-v9/gltf-validation.json"
+      - name: Capture the eight canonical v8 angles and extra full-body mobile
+        run: |
+          node scripts/human/render-review.mjs "$RUNNER_TEMP/gyms-human-v9/gyms-digital-human-v9.glb" "$RUNNER_TEMP/human-renders-v9" --extra-full-body
+      - name: Save exact candidate and authoring diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v9-review
+          path: |
+            ${{ runner.temp }}/gyms-human-v9/*.glb
+            ${{ runner.temp }}/gyms-human-v9/*.json
+            ${{ runner.temp }}/gyms-human-v9/*.mtl
+            ${{ runner.temp }}/gyms-human-v9/*.mhm
+            ${{ runner.temp }}/gyms-human-v9/*.jpg
+            ${{ runner.temp }}/gyms-human-v9/*.png
+          retention-days: 30
+          if-no-files-found: error
+      - name: Save visual review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v9-renders
+          path: ${{ runner.temp }}/human-renders-v9
+          retention-days: 30
+          if-no-files-found: warn
