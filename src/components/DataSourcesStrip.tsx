@@ -2,53 +2,45 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { PencilLine, Watch } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getLiveSignals } from "@/lib/live-signals.functions";
-import type { LiveSignal, LiveSignalId } from "@/lib/live-signals.engine";
+import {
+  DEVICE_SIGNALS,
+  MANUAL_SIGNALS,
+  anythingReadable,
+  newestReading,
+  sourceState,
+  type SourceState,
+} from "@/lib/data-sources.engine";
 
 /**
  * Where the athlete's numbers come from, stated as plainly as the rail states
  * the numbers themselves.
  *
- * Two kinds of source and three states each: it has delivered, it has never
- * delivered, or we could not check. There is deliberately no "all systems
- * operational" here — that is a claim about machinery nobody looked at, and
- * the only honest version of it is the list of what has actually arrived.
+ * Two kinds of source and four states each: it is sending, it has gone quiet,
+ * it has never sent anything, or we could not check. There is deliberately no
+ * "all systems operational" here — that is a claim about machinery nobody
+ * looked at, and the only honest version of it is the list of what has
+ * actually arrived.
  *
  * It reads the signals the rail already loaded, so this costs no extra query
- * and — importantly — never touches the ingest key.
+ * and — importantly — never touches the ingest key. Which state a source is in
+ * is decided in `data-sources.engine`, where it can be tested.
  */
-
-const DEVICE_SIGNALS: LiveSignalId[] = ["sleep", "hrv", "restingHr", "steps", "activeKcal"];
-const MANUAL_SIGNALS: LiveSignalId[] = ["weight", "bodyFat"];
-
-type SourceState = "delivering" | "silent" | "unknown";
-
-function stateOf(signals: LiveSignal[], ids: LiveSignalId[]): SourceState {
-  const mine = signals.filter((signal) => ids.includes(signal.id));
-  if (mine.some((signal) => signal.state === "measured" || signal.state === "stale")) {
-    return "delivering";
-  }
-  // Unknown wins over silent: one source we could not read is not a source
-  // with nothing in it, and only one of those is worth acting on.
-  if (mine.some((signal) => signal.state === "unreadable")) return "unknown";
-  return mine.length ? "silent" : "unknown";
-}
-
-/** The most recent day any source produced, or null when none ever has. */
-function newestReading(signals: LiveSignal[]): string | null {
-  return signals.reduce<string | null>(
-    (newest, signal) =>
-      signal.recordedOn && (!newest || signal.recordedOn > newest) ? signal.recordedOn : newest,
-    null,
-  );
-}
 
 const DOT: Record<SourceState, string> = {
   delivering: "bg-primary",
+  quiet: "bg-amber-400/70",
   silent: "bg-muted-foreground/40",
   unknown: "bg-accent",
+};
+
+const WORD: Record<SourceState, TKey> = {
+  delivering: "ds.delivering",
+  quiet: "ds.quiet",
+  silent: "ds.silent",
+  unknown: "ds.unknown",
 };
 
 function Source({
@@ -61,8 +53,7 @@ function Source({
   state: SourceState;
 }) {
   const { t } = useI18n();
-  const word =
-    state === "delivering" ? "ds.delivering" : state === "silent" ? "ds.silent" : "ds.unknown";
+  const word = WORD[state];
   return (
     <span className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-surface-2 px-2.5 py-1.5">
       <Icon aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
@@ -89,11 +80,7 @@ export function DataSourcesStrip() {
 
   const signals = data ?? [];
   const newest = newestReading(signals);
-  // With nothing readable there is no "last reading" to be missing: saying
-  // "no readings at all" beside two chips that already say the sources could
-  // not be checked would be the strip contradicting itself, and the wrong
-  // half is the one that sounds like a fact about the athlete.
-  const anythingReadable = signals.some((signal) => signal.state !== "unreadable");
+  const readable = anythingReadable(signals);
 
   return (
     <section
@@ -103,12 +90,16 @@ export function DataSourcesStrip() {
       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
         {t("ds.title")}
       </span>
-      <Source icon={Watch} label={t("ds.device")} state={stateOf(signals, DEVICE_SIGNALS)} />
-      <Source icon={PencilLine} label={t("ds.manual")} state={stateOf(signals, MANUAL_SIGNALS)} />
+      <Source icon={Watch} label={t("ds.device")} state={sourceState(signals, DEVICE_SIGNALS)} />
+      <Source
+        icon={PencilLine}
+        label={t("ds.manual")}
+        state={sourceState(signals, MANUAL_SIGNALS)}
+      />
       <span className="ml-auto text-[11px] text-muted-foreground">
         {newest
           ? `${t("ds.lastReading")}: ${newest}`
-          : anythingReadable
+          : readable
             ? t("ds.noReadings")
             : t("ds.unknownReadings")}
       </span>

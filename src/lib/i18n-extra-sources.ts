@@ -40,6 +40,19 @@ export const extra_sources = {
     es: "Enviando",
     fr: "Transmet",
   },
+  // A source that has delivered before and has nothing recent. Worded as an
+  // observation rather than a diagnosis: we know the newest reading is old, we
+  // do not know that the device has stopped.
+  "ds.quiet": {
+    lt: "Nieko naujo",
+    en: "Nothing recent",
+    ru: "Ничего нового",
+    uk: "Нічого нового",
+    pl: "Nic nowego",
+    de: "Nichts Aktuelles",
+    es: "Nada reciente",
+    fr: "Rien de récent",
+  },
   "ds.silent": {
     lt: "Nieko negauta",
     en: "Nothing received",
