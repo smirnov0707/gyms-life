@@ -440,3 +440,13 @@
 .future-lab-app .text-display {
   font-family: var(--font-sans);
 }
+
+@media (max-width: 640px) {
+  /* The legacy iOS zoom guard applies 16px to every button. Zoom protection
+     belongs to text fields; compact app buttons keep their own type scale. */
+  .future-lab-app
+    :is(.fl-dashboard, .fl-future-page, .fl-lab-page, .fl-journal-page, .twin-screen)
+    button {
+    font-size: 11px !important;
+  }
+}
