@@ -1,0 +1,82 @@
+name: Verify reference UI evidence states
+on:
+  push:
+    branches: [audit/reference-ui-workspace-20260908]
+    paths:
+      - .github/workflows/reference-ui-evidence-states.yml
+      - scripts/apply-reference-ui-evidence-states.py
+permissions:
+  contents: write
+concurrency:
+  group: reference-ui-evidence-states-20260908
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tools
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: c3caf49a256beea5162a00fb734edf06151555d8
+          path: app
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply scoped changes against the verified current reference branch
+        working-directory: app
+        run: |
+          test "$(git ls-remote origin refs/heads/codex/future-lab-reference-ui | cut -f1)" = 'c3caf49a256beea5162a00fb734edf06151555d8'
+          python ../tools/scripts/apply-reference-ui-evidence-states.py "$PWD"
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci --ignore-scripts > "$RUNNER_TEMP/install.log" 2>&1 || { tail -80 "$RUNNER_TEMP/install.log"; exit 1; }
+      - name: Format, typecheck, full unit suite and lint
+        working-directory: app
+        run: |
+          xargs -d '\n' npx prettier --write < reference-patch-files.txt
+          npm run typecheck
+          npm run test > "$RUNNER_TEMP/unit.log" 2>&1 || { tail -100 "$RUNNER_TEMP/unit.log"; exit 1; }
+          tail -8 "$RUNNER_TEMP/unit.log"
+          npm run lint > "$RUNNER_TEMP/lint.log" 2>&1 || { tail -100 "$RUNNER_TEMP/lint.log"; exit 1; }
+          tail -4 "$RUNNER_TEMP/lint.log"
+      - name: Production build
+        working-directory: app
+        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { tail -80 "$RUNNER_TEMP/build.log"; exit 1; }
+      - name: Commit only reviewed source to an isolated candidate branch
+        working-directory: app
+        run: |
+          test "$(git ls-remote origin refs/heads/codex/future-lab-reference-ui | cut -f1)" = 'c3caf49a256beea5162a00fb734edf06151555d8'
+          git config user.name 'GYMS.LIFE reference UI review'
+          git config user.email '138158634+smirnov0707@users.noreply.github.com'
+          while IFS= read -r FILE; do git add -- "$FILE"; done < reference-patch-files.txt
+          git diff --cached --check
+          git commit -m 'Keep reference screen counters and Twin evidence honest on empty and failed reads'
+          git push origin HEAD:refs/heads/audit/reference-ui-evidence-states-20260908
+          git rev-parse HEAD | tee "$RUNNER_TEMP/REFERENCE_CANDIDATE_SHA.txt"
+      - name: Install browser
+        working-directory: app
+        run: npx playwright install --with-deps chromium > "$RUNNER_TEMP/browser-install.log" 2>&1 || { tail -60 "$RUNNER_TEMP/browser-install.log"; exit 1; }
+      - name: All reference screens and regression interactions
+        working-directory: app
+        run: node scripts/test-today-browser.mjs
+      - name: Preserve test proof and diagnostic output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-ui-evidence-states
+          path: |
+            app/test-results/today
+            app/reference-patch-files.txt
+            ${{ runner.temp }}/REFERENCE_CANDIDATE_SHA.txt
+            ${{ runner.temp }}/unit.log
+            ${{ runner.temp }}/lint.log
+            ${{ runner.temp }}/build.log
+          retention-days: 14
+          if-no-files-found: warn
