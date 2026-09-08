@@ -31,6 +31,30 @@ import {
 
 const UNIQUE_VIOLATION = "23505";
 
+/** The ledger's own format for an error code, enforced by a check constraint. */
+const ERROR_CODE = /^[A-Z][A-Z0-9_]{2,63}$/;
+
+/**
+ * A run declaring why it cannot continue, in a word the ledger will keep.
+ *
+ * Without this every fatal ending is `JOB_THREW`, which says only that
+ * something went wrong — and the whole reason for a ledger is that somebody
+ * reads it later and needs to know which thing. A job that could not read its
+ * own inputs and a job that crashed halfway through writing them are different
+ * nights and call for different responses.
+ */
+export class JobFailure extends Error {
+  readonly code: string;
+
+  constructor(code: string, message?: string) {
+    super(message ?? code);
+    this.name = "JobFailure";
+    // A code the constraint would reject would fail the closing write and
+    // leave the row `running`, turning a reported failure into a silent one.
+    this.code = ERROR_CODE.test(code) ? code : "JOB_THREW";
+  }
+}
+
 export type JobItemResult = { readonly ok: boolean };
 
 export type JobRunReport =
@@ -148,20 +172,24 @@ export async function runBackgroundJob(
   }
 
   let results: readonly JobItemResult[] = [];
-  let fatal = false;
+  let fatalCode: string | null = null;
 
   try {
     results = await work({ window, limit, runKey });
-  } catch {
+  } catch (cause) {
     // The run as a whole failed. The row is closed as failed rather than left
     // `running`, so the next period reads a finished night instead of waiting
     // out a lease on a container that is already gone.
-    fatal = true;
+    //
+    // A job that said why keeps its own word; anything else is `JOB_THREW`.
+    // The cause is not carried any further: it can name environment
+    // variables, and a ledger row is not the place for that.
+    fatalCode = cause instanceof JobFailure ? cause.code : "JOB_THREW";
   }
 
   const summary = summariseRun(results, limit);
   // A run that threw did not succeed, whatever its items managed first.
-  const outcome: JobOutcome = fatal ? { ...summary, status: "failed" } : summary;
+  const outcome: JobOutcome = fatalCode ? { ...summary, status: "failed" } : summary;
 
   // Closing the run is the write that matters most and the one easiest to
   // leave unchecked. If it fails the row stays `running`, so the next period
@@ -175,9 +203,7 @@ export async function runBackgroundJob(
       attempted: outcome.attempted,
       succeeded: outcome.succeeded,
       failed: outcome.failed,
-      ...(outcome.status === "failed"
-        ? { error_code: fatal ? "JOB_THREW" : "ALL_ITEMS_FAILED" }
-        : {}),
+      ...(outcome.status === "failed" ? { error_code: fatalCode ?? "ALL_ITEMS_FAILED" } : {}),
     })
     .eq("id", runId);
 

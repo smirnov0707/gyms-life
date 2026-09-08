@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { nightLabCandidates, type EvidenceSighting } from "./night-lab.engine";
+import {
+  gatherOutcome,
+  nightLabCandidates,
+  type EvidenceSighting,
+  type SourceRead,
+} from "./night-lab.engine";
 
 /**
  * A nightly run has a bound, so which athletes it spends that bound on is a
@@ -75,5 +80,39 @@ describe("who a nightly run looks at", () => {
   it("returns nothing when the bound leaves no room", () => {
     expect(nightLabCandidates([seen("a", "2026-09-07T10:00:00Z")], 0)).toEqual([]);
     expect(nightLabCandidates([seen("a", "2026-09-07T10:00:00Z")], -1)).toEqual([]);
+  });
+});
+
+describe("whether the run could see anything at all", () => {
+  const read = (readable: boolean): SourceRead => ({
+    readable,
+    sightings: readable ? [seen("a", "2026-09-07T10:00:00Z")] : [],
+  });
+
+  it("is blind when no source answered", () => {
+    // The failure this was written for. A run that cannot read anything finds
+    // no candidates, attempts nothing, and — because a night with no work is a
+    // successful night — would file itself as a quiet one. "Nobody produced
+    // anything" and "we could not look" would be the same green row.
+    expect(gatherOutcome([read(false), read(false), read(false)])).toBe("blind");
+  });
+
+  it("is partial when one source answered and another did not", () => {
+    // Still worth running: what it can see is real, and the next run finds the
+    // athletes behind the source that failed.
+    expect(gatherOutcome([read(true), read(false)])).toBe("partial");
+  });
+
+  it("is a clean read when every source answered", () => {
+    expect(gatherOutcome([read(true), read(true)])).toBe("read");
+  });
+
+  it("counts a source that answered with nothing as answered", () => {
+    // An empty source is a source that said "nobody". That is an answer.
+    expect(gatherOutcome([{ readable: true, sightings: [] }])).toBe("read");
+  });
+
+  it("is not blind when there were no sources to read", () => {
+    expect(gatherOutcome([])).toBe("read");
   });
 });

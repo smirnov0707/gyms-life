@@ -31,6 +31,35 @@ export type NightLabCandidate = {
   readonly newestEvidenceAt: string;
 };
 
+/** What one evidence source produced, and whether it could be read at all. */
+export type SourceRead = {
+  readonly readable: boolean;
+  readonly sightings: readonly EvidenceSighting[];
+};
+
+/**
+ * `read`    — every source answered.
+ * `partial` — some source could not be read. The run proceeds on what it has;
+ *             the athletes it misses are found by the next one.
+ * `blind`   — no source could be read at all.
+ *
+ * The last of those is the distinction this function exists for. A run that
+ * cannot read anything finds no candidates, attempts nothing, and — because a
+ * night with no work is a successful night — would file itself as a quiet one.
+ * "Nobody produced anything" and "we could not look" would then be the same
+ * green row in the ledger, and the panel built on that ledger would tell
+ * athletes their Twin was simply not due an update. It is the defect this
+ * audit has been closing everywhere else, one level down.
+ */
+export type GatherOutcome = "read" | "partial" | "blind";
+
+export function gatherOutcome(reads: readonly SourceRead[]): GatherOutcome {
+  // No sources configured is not a failed read; there was nothing to fail.
+  if (reads.length === 0) return "read";
+  if (reads.every((read) => !read.readable)) return "blind";
+  return reads.some((read) => !read.readable) ? "partial" : "read";
+}
+
 /**
  * Collapses sightings from several sources into one ordered, bounded list.
  *

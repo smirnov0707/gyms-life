@@ -1,7 +1,12 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
-import { runBackgroundJob, type JobItemResult, type JobRunReport } from "./background-job.server";
-import { nightLabCandidates, type EvidenceSighting } from "./night-lab.engine";
+import {
+  JobFailure,
+  runBackgroundJob,
+  type JobItemResult,
+  type JobRunReport,
+} from "./background-job.server";
+import { gatherOutcome, nightLabCandidates, type SourceRead } from "./night-lab.engine";
 import { recordPersonalTimelineEvent } from "./personal-timeline.server";
 import type { JobWindow } from "./background-job.engine";
 
@@ -57,10 +62,7 @@ const EVIDENCE_SOURCES: readonly EvidenceQuery[] = [
 /** Rows read per source. Generous against the job's own item bound. */
 const SIGHTINGS_PER_SOURCE = 500;
 
-async function sightingsFrom(
-  source: EvidenceQuery,
-  window: JobWindow,
-): Promise<EvidenceSighting[]> {
+async function sightingsFrom(source: EvidenceQuery, window: JobWindow): Promise<SourceRead> {
   const { data, error } = await supabaseAdmin
     .from(source.table)
     .select(`user_id, ${source.column}`)
@@ -69,15 +71,18 @@ async function sightingsFrom(
     .order(source.column, { ascending: false })
     .limit(SIGHTINGS_PER_SOURCE);
 
-  // One unreadable source must not cancel the night. The run proceeds on what
-  // it could read, and the athletes it misses are found by the next run.
-  if (error || !data) return [];
+  // One unreadable source must not cancel the night — the run proceeds on what
+  // it could read, and the athletes it misses are found by the next run — but
+  // it must not look like a source that answered "nobody". An empty list means
+  // both, so readability is carried alongside it rather than folded into it.
+  if (error || !data) return { readable: false, sightings: [] };
 
-  return (data as unknown as Record<string, unknown>[]).flatMap((row) => {
+  const sightings = (data as unknown as Record<string, unknown>[]).flatMap((row) => {
     const userId = row["user_id"];
     const at = row[source.column];
     return typeof userId === "string" && typeof at === "string" ? [{ userId, at }] : [];
   });
+  return { readable: true, sightings };
 }
 
 /**
@@ -114,10 +119,21 @@ export async function runNightLab(options?: { now?: Date }): Promise<JobRunRepor
   return runBackgroundJob(
     "night_lab",
     async ({ window, limit, runKey }) => {
-      const gathered = await Promise.all(
+      const reads = await Promise.all(
         EVIDENCE_SOURCES.map((source) => sightingsFrom(source, window)),
       );
-      const candidates = nightLabCandidates(gathered.flat(), limit);
+
+      // A run that could read nothing finds nobody, attempts nothing, and
+      // would otherwise file itself as a quiet night — the same green row as
+      // a night when genuinely nobody trained. It says which it was instead.
+      if (gatherOutcome(reads) === "blind") {
+        throw new JobFailure("EVIDENCE_UNREADABLE");
+      }
+
+      const candidates = nightLabCandidates(
+        reads.flatMap((read) => read.sightings),
+        limit,
+      );
 
       const results: JobItemResult[] = [];
       for (const candidate of candidates) {
