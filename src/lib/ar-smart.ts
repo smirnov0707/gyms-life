@@ -16,14 +16,55 @@ export type Base = "lt" | "en";
 
 export type PoseSample = { pose: Point[]; t: number };
 
-const midY = (pose: Point[], a: number, b: number) => ((pose[a]?.y ?? 0) + (pose[b]?.y ?? 0)) / 2;
-const midX = (pose: Point[], a: number, b: number) => ((pose[a]?.x ?? 0) + (pose[b]?.x ?? 0)) / 2;
+/**
+ * The midpoint of two landmarks along one axis, or the one that is visible,
+ * or null when neither is.
+ *
+ * These used to read `pose[a]?.y ?? 0`, which guards against a landmark the
+ * model left out — and the model never leaves one out. It returns all of them,
+ * every frame, each with a confidence score, so what actually arrived was a
+ * coordinate the model had no confidence in, used as though it were measured.
+ *
+ * That matters here more than it looks: every angle this module measures is a
+ * right-side angle, so it expects a right-side-on camera — the view in which
+ * the athlete's left shoulder, hip and ankle are precisely the ones behind
+ * their body. The frame-completeness gate below only ever checked the right
+ * side, so the far half of every reading was a guess.
+ */
+const midOf = (pose: Point[], a: number, b: number, axis: "x" | "y"): number | null => {
+  const first = pose[a];
+  const second = pose[b];
+  const left = landmarkVisible(first) ? first[axis] : null;
+  const right = landmarkVisible(second) ? second[axis] : null;
+  if (left !== null && right !== null) return (left + right) / 2;
+  return left ?? right;
+};
+
+/**
+ * The distance between two landmarks along one axis, or null when either is
+ * missing.
+ *
+ * No one-sided fallback, because there is no one-sided answer. A span is the
+ * one measurement that cannot be salvaged from a single side, and it was the
+ * one carrying the most weight: the gap between the feet is the entire
+ * evidence for calling a movement a lunge rather than a squat, and it was
+ * being read off an ankle the model had guessed at.
+ */
+const spanOf = (pose: Point[], a: number, b: number, axis: "x" | "y"): number | null => {
+  const first = pose[a];
+  const second = pose[b];
+  if (!landmarkVisible(first) || !landmarkVisible(second)) return null;
+  return Math.abs(first[axis] - second[axis]);
+};
 
 const range = (list: number[]) => (list.length ? Math.max(...list) - Math.min(...list) : 0);
 const mean = (list: number[]) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : 0);
 
 /** The frames where the joint could actually be measured. */
 const measured = (list: (number | null)[]) => list.filter((v): v is number => v !== null);
+
+/** How many frames of a window have to carry a measurement for it to count. */
+const enough = (poses: Point[][]) => poses.length / 2;
 
 const kneeAngle = (p: Point[], side: "l" | "r") =>
   side === "r"
@@ -57,13 +98,22 @@ export function detectExercise(samples: PoseSample[]): string | null {
   if (usable.length < 12) return null;
   const poses = usable.map((s) => s.pose);
 
-  const shoulderY = poses.map((p) => midY(p, LM.lShoulder, LM.rShoulder));
-  const hipY = poses.map((p) => midY(p, LM.lHip, LM.rHip));
-  const shoulderX = poses.map((p) => midX(p, LM.lShoulder, LM.rShoulder));
-  const hipX = poses.map((p) => midX(p, LM.lHip, LM.rHip));
+  // Shoulder and hip positions, from both sides when both are visible and from
+  // the right side alone otherwise — which `complete` guarantees. Whether the
+  // body is lying down is a question about the line from shoulder to hip, and
+  // one visible side answers it as well as two.
+  const trunk = poses.flatMap((p) => {
+    const shoulderY = midOf(p, LM.lShoulder, LM.rShoulder, "y");
+    const hipY = midOf(p, LM.lHip, LM.rHip, "y");
+    const shoulderX = midOf(p, LM.lShoulder, LM.rShoulder, "x");
+    const hipX = midOf(p, LM.lHip, LM.rHip, "x");
+    if (shoulderY === null || hipY === null || shoulderX === null || hipX === null) return [];
+    return [{ vertical: hipY - shoulderY, horizontal: hipX - shoulderX }];
+  });
+  if (trunk.length < enough(poses)) return null;
 
-  const vertical = mean(hipY.map((y, i) => y - shoulderY[i]!));
-  const horizontal = Math.abs(mean(hipX.map((x, i) => x - shoulderX[i]!)));
+  const vertical = mean(trunk.map((frame) => frame.vertical));
+  const horizontal = Math.abs(mean(trunk.map((frame) => frame.horizontal)));
   const lying = vertical < horizontal * 0.9;
 
   const knees = measured(poses.map((p) => kneeAngle(p, "r")));
@@ -72,11 +122,16 @@ export function detectExercise(samples: PoseSample[]): string | null {
   // Every branch below reads these three series, and `range` and `mean` of an
   // empty list are both zero — which would quietly satisfy the "everything is
   // still" test and report a plank. Ambiguous is the honest answer.
-  const enough = poses.length / 2;
-  if (knees.length < enough || elbows.length < enough || hips.length < enough) return null;
-  const wristAboveShoulder = mean(
-    poses.map((p) => ((p[LM.rWrist]?.y ?? 1) < (p[LM.rShoulder]?.y ?? 0) ? 1 : 0)),
-  );
+  if (
+    knees.length < enough(poses) ||
+    elbows.length < enough(poses) ||
+    hips.length < enough(poses)
+  ) {
+    return null;
+  }
+  // Both of these landmarks are on the right side, which `complete` has already
+  // established is visible in every frame here.
+  const wristAboveShoulder = mean(poses.map((p) => (p[LM.rWrist]!.y < p[LM.rShoulder]!.y ? 1 : 0)));
 
   if (lying) {
     // horizontal body: push-up when elbows travel, plank when everything is still
@@ -87,15 +142,26 @@ export function detectExercise(samples: PoseSample[]): string | null {
 
   if (wristAboveShoulder > 0.5 && range(elbows) > 25) return "overhead-press";
 
-  const ankleGap = mean(
-    poses.map((p) => Math.abs((p[LM.lAnkle]?.x ?? 0) - (p[LM.rAnkle]?.x ?? 0))),
-  );
-  const shoulderWidth = mean(
-    poses.map((p) => Math.abs((p[LM.lShoulder]?.x ?? 0) - (p[LM.rShoulder]?.x ?? 0))),
-  );
+  // Both of these are distances between the two sides of the body, so both are
+  // unavailable from a side-on view — and a side-on view is what this module
+  // is filmed from.
+  const ankleGaps = poses
+    .map((p) => spanOf(p, LM.lAnkle, LM.rAnkle, "x"))
+    .filter((value): value is number => value !== null);
+  const shoulderWidths = poses
+    .map((p) => spanOf(p, LM.lShoulder, LM.rShoulder, "x"))
+    .filter((value): value is number => value !== null);
 
   if (range(knees) > 22) {
-    if (ankleGap > Math.max(0.09, shoulderWidth * 1.6)) return "lunge";
+    // A lunge is a squat with the feet split, so the split is the whole
+    // evidence for calling it one. Without both ankles and both shoulders in
+    // view there is no split to measure, and the knee travel on its own says
+    // squat — which is the claim the evidence actually supports.
+    const splitMeasurable =
+      ankleGaps.length >= enough(poses) && shoulderWidths.length >= enough(poses);
+    if (splitMeasurable && mean(ankleGaps) > Math.max(0.09, mean(shoulderWidths) * 1.6)) {
+      return "lunge";
+    }
     return "squat";
   }
 
