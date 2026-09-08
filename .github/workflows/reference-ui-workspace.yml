@@ -1,0 +1,33 @@
+name: Reference UI offline review workspace
+on:
+  push:
+    branches: [audit/reference-ui-workspace-20260908]
+    paths: [.github/workflows/reference-ui-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Archive tracked source and installed dependencies only
+        run: |
+          mkdir -p "$RUNNER_TEMP/reference-workspace"
+          git archive --format=tar HEAD > "$RUNNER_TEMP/reference-workspace/source.tar"
+          tar -czf "$RUNNER_TEMP/reference-workspace/dependencies.tar.gz" node_modules
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/reference-workspace/SOURCE_COMMIT.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-ui-workspace
+          path: ${{ runner.temp }}/reference-workspace
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
