@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -60,6 +60,8 @@ const artifacts = path.join(
   root,
   candidate ? "test-results/today-candidate" : "test-results/today",
 );
+// A failed pose run must not leave clean-model screenshots beside pose metadata.
+if (candidate) await rm(artifacts, { recursive: true, force: true });
 await mkdir(artifacts, { recursive: true });
 const results = [];
 let server;
