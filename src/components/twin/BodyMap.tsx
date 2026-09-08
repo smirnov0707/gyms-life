@@ -20,7 +20,15 @@ import {
  * `hot` is always "most worth your attention".
  */
 export type BodyMapTone =
-  "cool" | "warm" | "hot" | "muted" | "volume_low" | "volume_medium" | "volume_high";
+  | "cool"
+  | "warm"
+  | "hot"
+  /** Measured, and pointing nowhere. Distinct from `muted`, which is unmeasured. */
+  | "neutral"
+  | "muted"
+  | "volume_low"
+  | "volume_medium"
+  | "volume_high";
 
 export type BodyMapRegion = {
   region: string;
@@ -35,6 +43,7 @@ const TONE_GRADIENT: Record<BodyMapTone, { top: string; bottom: string }> = {
   cool: { top: "#6ee7b7", bottom: "#059669" },
   warm: { top: "#fcd34d", bottom: "#d97706" },
   hot: { top: "#fb7185", bottom: "#be123c" },
+  neutral: { top: "#cbd5e1", bottom: "#94a3b8" },
   muted: { top: "#94a3b8", bottom: "#64748b" },
   volume_low: { top: "#6585a0", bottom: "#49657c" },
   volume_medium: { top: "#88bfdf", bottom: "#659fc3" },
@@ -53,6 +62,7 @@ const TONE_STROKE: Record<BodyMapTone, string> = {
   cool: "stroke-emerald-200/70",
   warm: "stroke-amber-200/70",
   hot: "stroke-rose-200/70",
+  neutral: "stroke-slate-200/70",
   muted: "stroke-muted-foreground/35",
   volume_low: "stroke-sky-200/40",
   volume_medium: "stroke-sky-200/60",
@@ -64,6 +74,10 @@ const TONE_OPACITY: Record<BodyMapTone, number> = {
   cool: 0.92,
   warm: 0.92,
   hot: 0.94,
+  // Full presence: this region was compared and it held, which is a finding
+  // rather than an absence. `muted` below is the one that means "nobody
+  // measured this", and the difference between the two is the whole point.
+  neutral: 0.88,
   muted: 0.3,
   volume_low: 0.85,
   volume_medium: 0.9,

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { BodyMap, type BodyMapRegion, type BodyMapTone } from "./BodyMap";
+import { BodyMap, type BodyMapRegion } from "./BodyMap";
+import { changeTone, regionChange } from "./change-map.model";
 import { isAnatomicalRegion, viewShowing, type BodyView } from "./body-map.geometry";
 import { baseLang, formatLocale, type Lang } from "@/lib/i18n";
 import {
@@ -17,7 +18,8 @@ const COPY = {
     front: "Priekis",
     back: "Nugara",
     positive: "Įvertis aukštesnis",
-    unchanged: "Įvertis nepakito / nežinomas",
+    unchanged: "Nepakito",
+    notCompared: "Nepalyginta",
     negative: "Įvertis žemesnis",
     recoveryChange: "Atsistatymo įverčio skirtumas",
     volumeChange: "Registruoto krūvio skirtumas",
@@ -34,7 +36,8 @@ const COPY = {
     front: "Front",
     back: "Back",
     positive: "Estimate higher",
-    unchanged: "Estimate unchanged / unknown",
+    unchanged: "Unchanged",
+    notCompared: "Not compared",
     negative: "Estimate lower",
     recoveryChange: "Recovery-estimate difference",
     volumeChange: "Logged-volume difference",
@@ -45,11 +48,6 @@ const COPY = {
     points: "pp",
   },
 };
-
-function toneFor(delta: number | null): BodyMapTone {
-  if (delta === null || delta === 0) return "muted";
-  return delta > 0 ? "cool" : "hot";
-}
 
 function signed(value: number | null, unit: string, locale: string): string {
   if (value === null) return "—";
@@ -92,14 +90,21 @@ export function TwinChangeMap({
 
   if (!deltas) return null;
 
-  const regions: BodyMapRegion[] = deltas.map((region) => ({
-    region: region.region,
-    tone: toneFor(region.recoveryPctDelta),
-    value:
-      region.recoveryPctDelta === null
-        ? null
-        : signed(region.recoveryPctDelta, copy.points, locale),
-  }));
+  // The colour and the number come from one call, so a difference too small to
+  // print can never still be a direction on the map.
+  const regions: BodyMapRegion[] = deltas.map((region) => {
+    const change = regionChange(region.recoveryPctDelta);
+    return {
+      region: region.region,
+      tone: changeTone(change),
+      value:
+        change.state === "changed"
+          ? signed(change.delta, copy.points, locale)
+          : change.state === "unchanged"
+            ? copy.unchanged
+            : null,
+    };
+  });
   const selected = deltas.find((region) => region.region === selectedRegion) ?? null;
 
   function selectRegion(region: string) {
@@ -145,15 +150,22 @@ export function TwinChangeMap({
         </div>
 
         <div className="min-w-0">
-          <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+          {/* Four entries, not three. "Unchanged" and "not compared" shared one
+              box and one colour, and the label said so out loud — a region we
+              held up against another state and found steady is a finding, and
+              a region we had nothing to compare is not. */}
+          <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground sm:grid-cols-4">
             <span className="rounded-lg border border-emerald-500/20 px-2 py-2 text-center">
               {copy.positive}
             </span>
-            <span className="rounded-lg border border-border px-2 py-2 text-center">
+            <span className="rounded-lg border border-slate-400/30 px-2 py-2 text-center">
               {copy.unchanged}
             </span>
             <span className="rounded-lg border border-rose-500/20 px-2 py-2 text-center">
               {copy.negative}
+            </span>
+            <span className="rounded-lg border border-border px-2 py-2 text-center opacity-60">
+              {copy.notCompared}
             </span>
           </div>
 
