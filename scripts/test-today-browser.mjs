@@ -18,8 +18,14 @@ import tailwindcss from "@tailwindcss/vite";
  * exist outside a running app.
  */
 const root = process.cwd();
-const candidate = process.env.TWIN_ANATOMY_CANDIDATE === "1";
-const candidatePath = "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
+if (!["", "1", "clean", "pose"].includes(candidateMode))
+  throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
+const candidate = candidateMode !== "";
+const candidatePath =
+  candidateMode === "pose"
+    ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+    : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
@@ -284,6 +290,39 @@ try {
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
         await expect(detail).toBeVisible();
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
+      }
+      if (viewport.name === "mobile" && ["twin", "muscle"].includes(screen)) {
+        const stage = shown.page.locator("[data-twin-stage]");
+        await expect(stage).toHaveAttribute("data-twin-mobile-compact", "true");
+        await expect(stage.locator("[data-twin-mobile-unit]")).toContainText("CALCULATED", {
+          ignoreCase: true,
+        });
+        const controls = stage.getByRole("button", { name: "View controls", exact: true });
+        await expect(controls).toHaveAttribute("aria-expanded", "false");
+        await expect(stage.getByRole("button", { name: "2D", exact: true })).toBeHidden();
+        await controls.focus();
+        await shown.page.keyboard.press("Enter");
+        await expect(controls).toHaveAttribute("aria-expanded", "true");
+        if (screen === "twin") {
+          await stage.getByRole("button", { name: "Logged volume", exact: true }).click();
+          await expect(stage).toHaveAttribute("data-twin-layer", "logged_volume");
+          await stage.getByRole("button", { name: "Recovery", exact: true }).click();
+          await expect(stage).toHaveAttribute("data-twin-layer", "recovery");
+        }
+        await stage.getByRole("button", { name: "2D", exact: true }).click();
+        await expect(stage).toHaveAttribute("data-twin-stage", "2d");
+        await expect(stage.locator("canvas")).toHaveCount(0);
+        await stage.getByRole("button", { name: "3D", exact: true }).click();
+        await assertInteractiveTwin(stage.locator("canvas[data-twin-frames]"));
+        await stage.getByRole("button", { name: "Front", exact: true }).focus();
+        await shown.page.keyboard.press("Escape");
+        await expect(controls).toHaveAttribute("aria-expanded", "false");
+        await expect(controls).toBeFocused();
+        const region = stage.getByRole("combobox", { name: "Inspect a region", exact: true });
+        await region.focus();
+        await expect(region).toBeFocused();
+        await expect(region).toBeEnabled();
+        record(`${screen} mobile controls retain keyboard access, layers and 3D/2D rendering`);
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
         await illustration.scrollIntoViewIfNeeded();

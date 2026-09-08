@@ -1,0 +1,417 @@
+{
+  "candidateOnly": true,
+  "visualGatePassed": false,
+  "productionIntegration": false,
+  "source": {
+    "file": "/Users/aleksandrsmirnov/Documents/Codex/2026-09-06/referenced-chatgpt-conversation-this-is-an/outputs/reference-ui-v2/anatomy-candidate/twin-anatomy-continuous-candidate.glb",
+    "sha256": "50c847e66c5cc37bced5104a3644128d726dcec8d7f76e07127f04cf91bc4adc",
+    "bytes": 1927728,
+    "topology": {
+      "vertices": 51523,
+      "triangles": 103042,
+      "edgeConnectedComponents": 1,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "degenerateTriangles": 0,
+      "eulerCharacteristic": 2
+    },
+    "pose": {
+      "ankleSliceMetres": [
+        0.105,
+        0.125
+      ],
+      "ankleMedianXMetres": [
+        -0.06926814466714859,
+        0.07160855829715729
+      ],
+      "ankleCentreProxySeparationMetres": 0.14087670296430588,
+      "minimumFootYMetres": [
+        0.000004547910066321492,
+        0
+      ]
+    }
+  },
+  "candidate": {
+    "file": "/Users/aleksandrsmirnov/Documents/Codex/2026-09-06/referenced-chatgpt-conversation-this-is-an/outputs/reference-ui-v2/anatomy-pose-candidate/twin-anatomy-pose-candidate.glb",
+    "sha256": "78f9290273242756b0f12299a5ae490f953e23788668b6dd8d4c11e557e9cba9",
+    "bytes": 2433160,
+    "topology": {
+      "vertices": 51523,
+      "triangles": 103042,
+      "edgeConnectedComponents": 1,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "degenerateTriangles": 0,
+      "eulerCharacteristic": 2
+    },
+    "pose": {
+      "ankleSliceMetres": [
+        0.105,
+        0.125
+      ],
+      "ankleMedianXMetres": [
+        -0.14272144436836243,
+        0.14433909952640533
+      ],
+      "ankleCentreProxySeparationMetres": 0.28706054389476776,
+      "minimumFootYMetres": [
+        0.000004547910066321492,
+        -2.7755575615628914e-17
+      ]
+    }
+  },
+  "parameters": {
+    "hipAngleDegrees": 8,
+    "kneeRelativeCounterrotationDegrees": -6,
+    "shinWorldAngleDegrees": 2,
+    "footWorldAngleDegrees": 0,
+    "rigs": [
+      {
+        "side": -1,
+        "hip": [
+          -0.0872319115,
+          0.882,
+          -0.03
+        ],
+        "knee": [
+          -0.0785319115,
+          0.445,
+          -0.03
+        ],
+        "ankle": [
+          -0.0725819115,
+          0.095,
+          -0.055
+        ],
+        "posedHip": [
+          -0.0872319115,
+          0.8789523934804822,
+          -0.03
+        ],
+        "posedKnee": [
+          -0.13943522442149692,
+          0.44499444146206335,
+          -0.03
+        ],
+        "posedAnkle": [
+          -0.14570367284660865,
+          0.09499999999999997,
+          -0.055
+        ],
+        "lowering": 0.003047606519517826
+      },
+      {
+        "side": 1,
+        "hip": [
+          0.0887680885,
+          0.882,
+          -0.03
+        ],
+        "knee": [
+          0.0800680885,
+          0.445,
+          -0.03
+        ],
+        "ankle": [
+          0.0741180885,
+          0.095,
+          -0.055
+        ],
+        "posedHip": [
+          0.0887680885,
+          0.8789523934804822,
+          -0.03
+        ],
+        "posedKnee": [
+          0.14097140142149694,
+          0.44499444146206335,
+          -0.03
+        ],
+        "posedAnkle": [
+          0.14723984984660868,
+          0.09499999999999997,
+          -0.055
+        ],
+        "lowering": 0.003047606519517826
+      }
+    ],
+    "landmarks": "Symmetric authoring landmarks informed by BP3D femur/tibia bounds; not clinically validated joint centres."
+  },
+  "deformation": {
+    "changedVertices": 21468,
+    "orientationConstraintIterations": [
+      1,
+      1,
+      0
+    ],
+    "maxOrientationConstraintCorrectionMetres": 0.0010138234221695437,
+    "maxDisplacementMetres": 0.07317410166269374,
+    "invertedTriangles": 0,
+    "maxNormalUnitError": 0.0016105193471889212,
+    "orientedTrianglePoolUnchanged": true,
+    "sourceTriangleHash": "0fbe2569cc35e3af2ef736c22240008b7f7ce2dfd20308c1502cc5360eed5abe",
+    "exportTriangleHash": "0fbe2569cc35e3af2ef736c22240008b7f7ce2dfd20308c1502cc5360eed5abe",
+    "degenerateTriangles": 0,
+    "headVerticesMoved": 0,
+    "handVerticesMoved": 0,
+    "changedTriangleAreaRatio": {
+      "min": 0.5308235584663616,
+      "p01": 0.9307802968306279,
+      "median": 1,
+      "p99": 1.627801433104443,
+      "max": 3.015325078031078
+    },
+    "changedTriangleNormalCosine": {
+      "min": 0.06898137070342508,
+      "p01": 0.8541541465962491,
+      "median": 0.9999258323422724,
+      "p99": 1.0000000000000002,
+      "max": 1.0000000000000007
+    }
+  },
+  "classification": {
+    "reclassifiedTriangles": 810,
+    "byRegion": {
+      "twin-region:abs": 191,
+      "twin-region:legs": 619
+    },
+    "geometryUnchangedByClassification": true,
+    "evidenceFile": "classification-evidence.json"
+  },
+  "regions": [
+    {
+      "name": "twin-region:neutral",
+      "triangles": 48490,
+      "indicesUnchanged": false,
+      "uvUnchanged": true,
+      "hasFiberUv": false
+    },
+    {
+      "name": "twin-region:chest",
+      "triangles": 3863,
+      "indicesUnchanged": true,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:shoulders",
+      "triangles": 4789,
+      "indicesUnchanged": true,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:back",
+      "triangles": 2579,
+      "indicesUnchanged": true,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:arms",
+      "triangles": 13341,
+      "indicesUnchanged": true,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:abs",
+      "triangles": 5248,
+      "indicesUnchanged": false,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:core",
+      "triangles": 473,
+      "indicesUnchanged": true,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:glutes",
+      "triangles": 5153,
+      "indicesUnchanged": true,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    },
+    {
+      "name": "twin-region:legs",
+      "triangles": 19106,
+      "indicesUnchanged": false,
+      "uvUnchanged": true,
+      "hasFiberUv": true
+    }
+  ],
+  "picking": [
+    {
+      "region": "twin-region:chest",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -0.1288173442721695,
+          0.5218983619988625,
+          1.8519918909924122
+        ],
+        "direction": [
+          -0.02125652156073201,
+          0.39104753089047145,
+          -0.9201249854642596
+        ],
+        "distance": 2.0000000000000004,
+        "materialName": "twin-region:chest"
+      }
+    },
+    {
+      "region": "twin-region:shoulders",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -1.9503936128872896,
+          1.412500315282342,
+          0.9727923906612552
+        ],
+        "direction": [
+          0.8649542012342942,
+          -0.06788788903434943,
+          -0.49723783473263966
+        ],
+        "distance": 2,
+        "materialName": "twin-region:shoulders"
+      }
+    },
+    {
+      "region": "twin-region:back",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -1.5698852019743474,
+          0.5480725376469133,
+          -1.317544175811287
+        ],
+        "direction": [
+          0.7163827159621493,
+          0.3474189237424613,
+          0.6050585886476816
+        ],
+        "distance": 1.9999999999999998,
+        "materialName": "twin-region:back"
+      }
+    },
+    {
+      "region": "twin-region:arms",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -1.292283454478115,
+          -0.33893994821594786,
+          -1.2774033325052392
+        ],
+        "direction": [
+          0.48750655300434936,
+          0.573432983624372,
+          0.6584162620025938
+        ],
+        "distance": 2,
+        "materialName": "twin-region:arms"
+      }
+    },
+    {
+      "region": "twin-region:abs",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -2.13074224235353,
+          0.9274485365510952,
+          0.10774492986837991
+        ],
+        "direction": [
+          0.9913543787684894,
+          0.1194251251240088,
+          -0.05435195659456138
+        ],
+        "distance": 1.9999999999999996,
+        "materialName": "twin-region:abs"
+      }
+    },
+    {
+      "region": "twin-region:core",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -0.6345046608818595,
+          -0.39889659709564795,
+          1.0778198317125158
+        ],
+        "direction": [
+          0.2403680408583594,
+          0.794916005069176,
+          -0.5570742767520108
+        ],
+        "distance": 2,
+        "materialName": "twin-region:core"
+      }
+    },
+    {
+      "region": "twin-region:glutes",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -1.260365950161864,
+          1.038205223882403,
+          -1.7049220801154394
+        ],
+        "direction": [
+          0.5875746034555881,
+          -0.003830928407215201,
+          0.8091609292109618
+        ],
+        "distance": 1.9999999999999993,
+        "materialName": "twin-region:glutes"
+      }
+    },
+    {
+      "region": "twin-region:legs",
+      "hit": true,
+      "proof": {
+        "origin": [
+          -2.0783346078373572,
+          1.2846083633021634,
+          0.4158742470256809
+        ],
+        "direction": [
+          0.9649968187797854,
+          -0.1640039777714074,
+          -0.20465540554808195
+        ],
+        "distance": 2,
+        "materialName": "twin-region:legs"
+      }
+    }
+  ],
+  "limits": [
+    "Visual gate pending; no 1:1 similarity approval.",
+    "No exhaustive self-intersection proof.",
+    "Linear blending near joints may soften local muscle volume; GPU close-up review required.",
+    "Generic presentation pose, not a personal body prediction."
+  ],
+  "gates": {
+    "topologyPreserved": true,
+    "orientedTrianglePoolAndExistingUvsPreserved": true,
+    "classificationPreservesTriangleCount": true,
+    "allCanonicalRegionsRayReachable": true,
+    "headHandsUnchanged": true,
+    "groundedFeet": true,
+    "normalsUnitLength": true,
+    "khronos": "passed_separate_report",
+    "gpuMultiAngle": "pending"
+  },
+  "khronosReport": {
+    "file": "anatomy-pose.khronos-validation.json",
+    "sha256": "78f9290273242756b0f12299a5ae490f953e23788668b6dd8d4c11e557e9cba9",
+    "numErrors": 0,
+    "numWarnings": 0
+  }
+}

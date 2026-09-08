@@ -118,7 +118,9 @@ export function TwinScreen({
             {active === "overview" ? (
               <>
                 <TwinView onInspectRegion={setDetailRegion} />
-                <BodyCompositionCard />
+                <div className="twin-body-composition">
+                  <BodyCompositionCard />
+                </div>
                 <TwinTimeline />
               </>
             ) : active === "muscles" ? (

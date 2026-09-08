@@ -374,6 +374,7 @@ export function TwinSnapshotView({
         <div className="relative grid min-w-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center lg:gap-4 lg:px-4 lg:pb-4">
           <div className="min-w-0 px-2">
             <TwinStage
+              compactMobileControls={Boolean(onInspectRegion)}
               snapshot={data}
               layer={layer}
               onLayerChange={setLayer}

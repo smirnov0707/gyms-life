@@ -42,6 +42,8 @@ export type BodySceneStageProps = {
   presentation?: "full" | "cockpit" | "detail";
   sidePanel?: ReactNode;
   focusRegion?: string | null;
+  /** Live mobile screens keep view/layer options in the existing disclosure. */
+  compactMobileControls?: boolean;
   /**
    * Attribution the figure's licence requires, shown verbatim under the scene.
    * Not translated: the licence asks for this exact sentence.
@@ -113,6 +115,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
     presentation = "full",
     sidePanel,
     focusRegion,
+    compactMobileControls = false,
     unitLabel,
     formatValue,
     formatRegion,
@@ -123,6 +126,16 @@ export function BodySceneStage(props: BodySceneStageProps) {
   const controlsId = useId();
   const controlToggle = useRef<HTMLButtonElement>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(false);
+  const mobileDisclosure = compactMobileControls && mobileViewport;
+  useEffect(() => {
+    if (!compactMobileControls) return;
+    const query = window.matchMedia("(max-width: 639px)");
+    const update = () => setMobileViewport(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, [compactMobileControls]);
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<TwinSceneHandle | null>(null);
   const latest = useRef(props);
@@ -262,13 +275,15 @@ export function BodySceneStage(props: BodySceneStageProps) {
       data-twin-stage={show3D ? "3d" : "2d"}
       data-twin-layer={state.layer}
       data-twin-presentation={presentation}
+      data-twin-mobile-compact={mobileDisclosure || undefined}
     >
-      {presentation !== "cockpit" && (
+      {presentation !== "cockpit" && !mobileDisclosure && (
         <>
           {layerControls}
           {rendererControls}
         </>
       )}
+      {mobileDisclosure ? <p data-twin-mobile-unit>{unitLabel}</p> : null}
       <div className={presentation === "cockpit" ? "twin-cockpit-scene" : "contents"}>
         <div
           data-twin-viewport
@@ -405,7 +420,8 @@ export function BodySceneStage(props: BodySceneStageProps) {
         }}
         className="mx-3 mb-3 rounded-2xl border border-white/10 bg-black/30 p-3"
       >
-        {presentation === "cockpit" && rendererControls}
+        {mobileDisclosure && layerControls}
+        {(presentation === "cockpit" || mobileDisclosure) && rendererControls}
         <p className="text-xs leading-relaxed text-neutral-300">{copy.hint}</p>
         <div className="flex flex-wrap justify-center gap-1 pt-2">
           {show3D &&

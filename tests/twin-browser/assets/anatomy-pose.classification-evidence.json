@@ -1,0 +1,5683 @@
+{
+  "method": "Decouple protected geometry from region labeling. Relabel neutral old-mask faces by nearest registered superficial muscle source in rest coordinates; no position changes.",
+  "oldMaskCandidateTriangles": 1049,
+  "narrowPubicTrianglesRetained": 232,
+  "reclassifiedTriangles": 810,
+  "byRegion": {
+    "twin-region:abs": 191,
+    "twin-region:legs": 619
+  },
+  "triangleCountPreserved": true,
+  "sourceEvidence": [
+    {
+      "sourceTriangle": 9511,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015442008621155237
+    },
+    {
+      "sourceTriangle": 9512,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01219791923217601
+    },
+    {
+      "sourceTriangle": 9513,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011243060835310995
+    },
+    {
+      "sourceTriangle": 9514,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010247116235028211
+    },
+    {
+      "sourceTriangle": 9564,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01793662864678849
+    },
+    {
+      "sourceTriangle": 9565,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015170739297063009
+    },
+    {
+      "sourceTriangle": 9566,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013748422617107339
+    },
+    {
+      "sourceTriangle": 9567,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012371366702131376
+    },
+    {
+      "sourceTriangle": 9568,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011303288532136777
+    },
+    {
+      "sourceTriangle": 9569,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.00662534522613579
+    },
+    {
+      "sourceTriangle": 9618,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.021910148239204893
+    },
+    {
+      "sourceTriangle": 9619,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.020683978037985516
+    },
+    {
+      "sourceTriangle": 9620,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01878895527002429
+    },
+    {
+      "sourceTriangle": 9621,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015571474858977483
+    },
+    {
+      "sourceTriangle": 9622,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01339680394339447
+    },
+    {
+      "sourceTriangle": 9623,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012160943828203237
+    },
+    {
+      "sourceTriangle": 9624,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010008534539489472
+    },
+    {
+      "sourceTriangle": 9625,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.007971373113532087
+    },
+    {
+      "sourceTriangle": 9675,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02764852550174746
+    },
+    {
+      "sourceTriangle": 9676,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.022982411239944957
+    },
+    {
+      "sourceTriangle": 9677,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.025356046209854183
+    },
+    {
+      "sourceTriangle": 9678,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02091160442132713
+    },
+    {
+      "sourceTriangle": 9679,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016641204987099856
+    },
+    {
+      "sourceTriangle": 9680,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014535638715171141
+    },
+    {
+      "sourceTriangle": 9681,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013190800929242935
+    },
+    {
+      "sourceTriangle": 9682,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010755028430424045
+    },
+    {
+      "sourceTriangle": 9683,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.009561617690081407
+    },
+    {
+      "sourceTriangle": 9737,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02398892994768966
+    },
+    {
+      "sourceTriangle": 9738,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0276633064310061
+    },
+    {
+      "sourceTriangle": 9739,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03149824722796423
+    },
+    {
+      "sourceTriangle": 9740,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.027068030080493563
+    },
+    {
+      "sourceTriangle": 9741,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.028270246496888054
+    },
+    {
+      "sourceTriangle": 9742,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.024646242453264036
+    },
+    {
+      "sourceTriangle": 9743,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0189255090491297
+    },
+    {
+      "sourceTriangle": 9744,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016583884252843656
+    },
+    {
+      "sourceTriangle": 9745,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014431348777788174
+    },
+    {
+      "sourceTriangle": 9746,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014324226943407911
+    },
+    {
+      "sourceTriangle": 9747,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012775046055403836
+    },
+    {
+      "sourceTriangle": 9748,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.009862767946204104
+    },
+    {
+      "sourceTriangle": 9803,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02319135358952434
+    },
+    {
+      "sourceTriangle": 9804,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.031080469036794133
+    },
+    {
+      "sourceTriangle": 9805,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03207099462281492
+    },
+    {
+      "sourceTriangle": 9806,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03224262239617258
+    },
+    {
+      "sourceTriangle": 9807,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.030592845179098858
+    },
+    {
+      "sourceTriangle": 9808,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.031400533909976575
+    },
+    {
+      "sourceTriangle": 9809,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.028017099075510983
+    },
+    {
+      "sourceTriangle": 9810,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.020110994661756126
+    },
+    {
+      "sourceTriangle": 9811,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015376177932864084
+    },
+    {
+      "sourceTriangle": 9812,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014034124697029983
+    },
+    {
+      "sourceTriangle": 9873,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03076484570620525
+    },
+    {
+      "sourceTriangle": 9874,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03076884753766987
+    },
+    {
+      "sourceTriangle": 9875,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0317988588111281
+    },
+    {
+      "sourceTriangle": 9876,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03239292039510169
+    },
+    {
+      "sourceTriangle": 9877,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03486430197371771
+    },
+    {
+      "sourceTriangle": 9878,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03336168625772203
+    },
+    {
+      "sourceTriangle": 9879,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.025130067975119727
+    },
+    {
+      "sourceTriangle": 9880,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.017776577754544904
+    },
+    {
+      "sourceTriangle": 9881,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012943768196354618
+    },
+    {
+      "sourceTriangle": 9945,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.027133934359795307
+    },
+    {
+      "sourceTriangle": 9946,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030688372424521417
+    },
+    {
+      "sourceTriangle": 9947,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030193920268085768
+    },
+    {
+      "sourceTriangle": 9948,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03204785999548069
+    },
+    {
+      "sourceTriangle": 9949,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03257331966074849
+    },
+    {
+      "sourceTriangle": 9950,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03622143724973094
+    },
+    {
+      "sourceTriangle": 9951,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0335372085522002
+    },
+    {
+      "sourceTriangle": 9952,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03666281668501914
+    },
+    {
+      "sourceTriangle": 9953,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.026538268547200813
+    },
+    {
+      "sourceTriangle": 9954,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0180055771667681
+    },
+    {
+      "sourceTriangle": 9955,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014993037041504516
+    },
+    {
+      "sourceTriangle": 10024,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03090518118416159
+    },
+    {
+      "sourceTriangle": 10025,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030011965322812712
+    },
+    {
+      "sourceTriangle": 10026,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.029198046581733816
+    },
+    {
+      "sourceTriangle": 10027,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032300073185149734
+    },
+    {
+      "sourceTriangle": 10028,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03221756708955529
+    },
+    {
+      "sourceTriangle": 10029,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03289234893766804
+    },
+    {
+      "sourceTriangle": 10030,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.036049041331287786
+    },
+    {
+      "sourceTriangle": 10031,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03371297298574892
+    },
+    {
+      "sourceTriangle": 10032,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03774561297443341
+    },
+    {
+      "sourceTriangle": 10033,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03569949171834976
+    },
+    {
+      "sourceTriangle": 10034,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.031141467021863718
+    },
+    {
+      "sourceTriangle": 10035,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.024260375055139633
+    },
+    {
+      "sourceTriangle": 10036,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02054737461095767
+    },
+    {
+      "sourceTriangle": 10113,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02980334466942096
+    },
+    {
+      "sourceTriangle": 10114,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02901357946919749
+    },
+    {
+      "sourceTriangle": 10115,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03204216586394591
+    },
+    {
+      "sourceTriangle": 10116,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033769023933853455
+    },
+    {
+      "sourceTriangle": 10117,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032803660797973956
+    },
+    {
+      "sourceTriangle": 10118,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03376269597193138
+    },
+    {
+      "sourceTriangle": 10119,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.034884352754176576
+    },
+    {
+      "sourceTriangle": 10120,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.034172197383095314
+    },
+    {
+      "sourceTriangle": 10121,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.038215162420209954
+    },
+    {
+      "sourceTriangle": 10122,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.040544582908163936
+    },
+    {
+      "sourceTriangle": 10123,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.031581092550421866
+    },
+    {
+      "sourceTriangle": 10124,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02765613808791985
+    },
+    {
+      "sourceTriangle": 10125,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.019188648617911853
+    },
+    {
+      "sourceTriangle": 10126,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016176686755736427
+    },
+    {
+      "sourceTriangle": 10209,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033287093816919945
+    },
+    {
+      "sourceTriangle": 10210,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033674532772931046
+    },
+    {
+      "sourceTriangle": 10211,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03388446494424798
+    },
+    {
+      "sourceTriangle": 10212,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03414464168498689
+    },
+    {
+      "sourceTriangle": 10213,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03681174153899503
+    },
+    {
+      "sourceTriangle": 10214,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04087745473801307
+    },
+    {
+      "sourceTriangle": 10215,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.04128887734404393
+    },
+    {
+      "sourceTriangle": 10216,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.036445373542409405
+    },
+    {
+      "sourceTriangle": 10217,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.025578268876329385
+    },
+    {
+      "sourceTriangle": 10218,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02068108347590603
+    },
+    {
+      "sourceTriangle": 10305,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03376159551593322
+    },
+    {
+      "sourceTriangle": 10306,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03465559534387692
+    },
+    {
+      "sourceTriangle": 10307,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03827199215309371
+    },
+    {
+      "sourceTriangle": 10308,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03581531390216189
+    },
+    {
+      "sourceTriangle": 10309,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04032363503195112
+    },
+    {
+      "sourceTriangle": 10310,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04342874197015725
+    },
+    {
+      "sourceTriangle": 10311,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03704971831335063
+    },
+    {
+      "sourceTriangle": 10312,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02620502205344359
+    },
+    {
+      "sourceTriangle": 10403,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03424327727690704
+    },
+    {
+      "sourceTriangle": 10404,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03457379948277649
+    },
+    {
+      "sourceTriangle": 10405,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03808759470982473
+    },
+    {
+      "sourceTriangle": 10406,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03560736726213125
+    },
+    {
+      "sourceTriangle": 10407,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.044848198768957966
+    },
+    {
+      "sourceTriangle": 10408,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.04164167362345497
+    },
+    {
+      "sourceTriangle": 10409,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03378149958501056
+    },
+    {
+      "sourceTriangle": 10410,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02989351268602241
+    },
+    {
+      "sourceTriangle": 10505,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03575339891532165
+    },
+    {
+      "sourceTriangle": 10506,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037253991107299635
+    },
+    {
+      "sourceTriangle": 10507,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03977645897386443
+    },
+    {
+      "sourceTriangle": 10508,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035565507290036415
+    },
+    {
+      "sourceTriangle": 10510,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04276473609277001
+    },
+    {
+      "sourceTriangle": 10511,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.04031169231726992
+    },
+    {
+      "sourceTriangle": 10512,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03620013680130675
+    },
+    {
+      "sourceTriangle": 10513,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02848520574743963
+    },
+    {
+      "sourceTriangle": 10605,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035899846243917406
+    },
+    {
+      "sourceTriangle": 10606,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.036222875485435464
+    },
+    {
+      "sourceTriangle": 10607,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03717621452553288
+    },
+    {
+      "sourceTriangle": 10608,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037003539917867805
+    },
+    {
+      "sourceTriangle": 10611,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04494016730106172
+    },
+    {
+      "sourceTriangle": 10612,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.032780165688424526
+    },
+    {
+      "sourceTriangle": 10621,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012798710959807297
+    },
+    {
+      "sourceTriangle": 10622,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010929987129229553
+    },
+    {
+      "sourceTriangle": 10718,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037384413923608924
+    },
+    {
+      "sourceTriangle": 10719,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037330759065419654
+    },
+    {
+      "sourceTriangle": 10720,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03738965336784872
+    },
+    {
+      "sourceTriangle": 10721,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03728977149719956
+    },
+    {
+      "sourceTriangle": 10722,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.038013926365944826
+    },
+    {
+      "sourceTriangle": 10724,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04379237663064705
+    },
+    {
+      "sourceTriangle": 10725,
+      "region": "abs",
+      "sourcePart": "FJ1452",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02971810941721732
+    },
+    {
+      "sourceTriangle": 10734,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.00861509225480355
+    },
+    {
+      "sourceTriangle": 10828,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03815346365636662
+    },
+    {
+      "sourceTriangle": 10829,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03637614939409888
+    },
+    {
+      "sourceTriangle": 10830,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.037922923529310114
+    },
+    {
+      "sourceTriangle": 10831,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035680809399024
+    },
+    {
+      "sourceTriangle": 10832,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0419675578869241
+    },
+    {
+      "sourceTriangle": 10833,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.037995541742350064
+    },
+    {
+      "sourceTriangle": 10834,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.042505364199425195
+    },
+    {
+      "sourceTriangle": 10839,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010618674221980094
+    },
+    {
+      "sourceTriangle": 10840,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011593088767406213
+    },
+    {
+      "sourceTriangle": 10843,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010054195255929845
+    },
+    {
+      "sourceTriangle": 10844,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.007605592856131632
+    },
+    {
+      "sourceTriangle": 10951,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03637068252933718
+    },
+    {
+      "sourceTriangle": 10952,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03598579502669007
+    },
+    {
+      "sourceTriangle": 10953,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03600079174665305
+    },
+    {
+      "sourceTriangle": 10954,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037061189863962785
+    },
+    {
+      "sourceTriangle": 10955,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04391918268604604
+    },
+    {
+      "sourceTriangle": 10956,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04161350022884923
+    },
+    {
+      "sourceTriangle": 10960,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0117512791824317
+    },
+    {
+      "sourceTriangle": 10961,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014234029114531793
+    },
+    {
+      "sourceTriangle": 10965,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.009977791584083863
+    },
+    {
+      "sourceTriangle": 11078,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03490170553003493
+    },
+    {
+      "sourceTriangle": 11079,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03452077973576179
+    },
+    {
+      "sourceTriangle": 11080,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03399081157390671
+    },
+    {
+      "sourceTriangle": 11081,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03503349349108449
+    },
+    {
+      "sourceTriangle": 11082,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03430503073200148
+    },
+    {
+      "sourceTriangle": 11083,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03753083654309125
+    },
+    {
+      "sourceTriangle": 11084,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.042468286676054186
+    },
+    {
+      "sourceTriangle": 11085,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.038734706333500894
+    },
+    {
+      "sourceTriangle": 11086,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04131064276409441
+    },
+    {
+      "sourceTriangle": 11090,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013151019302475933
+    },
+    {
+      "sourceTriangle": 11091,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016324555529907255
+    },
+    {
+      "sourceTriangle": 11092,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0142905678896161
+    },
+    {
+      "sourceTriangle": 11094,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014007621618407476
+    },
+    {
+      "sourceTriangle": 11098,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012601467418426174
+    },
+    {
+      "sourceTriangle": 11099,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.008438716360288109
+    },
+    {
+      "sourceTriangle": 11217,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03338053215104531
+    },
+    {
+      "sourceTriangle": 11218,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.033805647695603555
+    },
+    {
+      "sourceTriangle": 11219,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03426194033686471
+    },
+    {
+      "sourceTriangle": 11220,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.031524982788774
+    },
+    {
+      "sourceTriangle": 11221,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03284448360100789
+    },
+    {
+      "sourceTriangle": 11222,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03554073606345181
+    },
+    {
+      "sourceTriangle": 11223,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04146139353504654
+    },
+    {
+      "sourceTriangle": 11224,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03613607666694748
+    },
+    {
+      "sourceTriangle": 11225,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.041899768800605246
+    },
+    {
+      "sourceTriangle": 11229,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013060012134173017
+    },
+    {
+      "sourceTriangle": 11230,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.017204042075994627
+    },
+    {
+      "sourceTriangle": 11231,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01835266785655197
+    },
+    {
+      "sourceTriangle": 11232,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015301950556521275
+    },
+    {
+      "sourceTriangle": 11235,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015437154419951712
+    },
+    {
+      "sourceTriangle": 11240,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01135625660174189
+    },
+    {
+      "sourceTriangle": 11241,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010345879961097003
+    },
+    {
+      "sourceTriangle": 11362,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.033896223483930864
+    },
+    {
+      "sourceTriangle": 11363,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03231956959140979
+    },
+    {
+      "sourceTriangle": 11364,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.033108724135766765
+    },
+    {
+      "sourceTriangle": 11365,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030955434184351146
+    },
+    {
+      "sourceTriangle": 11366,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03063198443465767
+    },
+    {
+      "sourceTriangle": 11367,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.032744215770398724
+    },
+    {
+      "sourceTriangle": 11368,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03365345508850604
+    },
+    {
+      "sourceTriangle": 11369,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.040189193781930206
+    },
+    {
+      "sourceTriangle": 11370,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03418609234503371
+    },
+    {
+      "sourceTriangle": 11371,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04091487785342466
+    },
+    {
+      "sourceTriangle": 11376,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.012957750125931894
+    },
+    {
+      "sourceTriangle": 11377,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.021234896737972127
+    },
+    {
+      "sourceTriangle": 11378,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.017758470409833797
+    },
+    {
+      "sourceTriangle": 11379,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.021530429861734493
+    },
+    {
+      "sourceTriangle": 11380,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016403984035594635
+    },
+    {
+      "sourceTriangle": 11381,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01510824391892469
+    },
+    {
+      "sourceTriangle": 11384,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.017074295840883123
+    },
+    {
+      "sourceTriangle": 11388,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01204041680344616
+    },
+    {
+      "sourceTriangle": 11389,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010340827374289987
+    },
+    {
+      "sourceTriangle": 11520,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03270466205434373
+    },
+    {
+      "sourceTriangle": 11521,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03224380479086077
+    },
+    {
+      "sourceTriangle": 11522,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03112615331533047
+    },
+    {
+      "sourceTriangle": 11523,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029494862663759964
+    },
+    {
+      "sourceTriangle": 11524,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029439236080254047
+    },
+    {
+      "sourceTriangle": 11525,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030601575425517644
+    },
+    {
+      "sourceTriangle": 11526,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03091824917786984
+    },
+    {
+      "sourceTriangle": 11527,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03226398487370931
+    },
+    {
+      "sourceTriangle": 11528,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.039613962254264626
+    },
+    {
+      "sourceTriangle": 11529,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04009009105009608
+    },
+    {
+      "sourceTriangle": 11530,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032995984659603475
+    },
+    {
+      "sourceTriangle": 11531,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03494118433150204
+    },
+    {
+      "sourceTriangle": 11532,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.038883120239446456
+    },
+    {
+      "sourceTriangle": 11536,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013688301789116791
+    },
+    {
+      "sourceTriangle": 11537,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.023026514931234632
+    },
+    {
+      "sourceTriangle": 11538,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.023096818906070796
+    },
+    {
+      "sourceTriangle": 11539,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01933893187116749
+    },
+    {
+      "sourceTriangle": 11540,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02188991965850675
+    },
+    {
+      "sourceTriangle": 11541,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01621001685184527
+    },
+    {
+      "sourceTriangle": 11542,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014535793280184782
+    },
+    {
+      "sourceTriangle": 11545,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02038799072636992
+    },
+    {
+      "sourceTriangle": 11549,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011334542225169929
+    },
+    {
+      "sourceTriangle": 11550,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.009831802501270808
+    },
+    {
+      "sourceTriangle": 11685,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030859570951164417
+    },
+    {
+      "sourceTriangle": 11686,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.031378812393623126
+    },
+    {
+      "sourceTriangle": 11687,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030516967210277843
+    },
+    {
+      "sourceTriangle": 11688,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028870478388113095
+    },
+    {
+      "sourceTriangle": 11689,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027751609338052253
+    },
+    {
+      "sourceTriangle": 11690,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029517752576011518
+    },
+    {
+      "sourceTriangle": 11691,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029095009882971805
+    },
+    {
+      "sourceTriangle": 11692,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030464932157177722
+    },
+    {
+      "sourceTriangle": 11693,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03242550020740672
+    },
+    {
+      "sourceTriangle": 11694,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03890244583808833
+    },
+    {
+      "sourceTriangle": 11695,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.039852496144511355
+    },
+    {
+      "sourceTriangle": 11696,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032574926610162376
+    },
+    {
+      "sourceTriangle": 11697,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03287678757517472
+    },
+    {
+      "sourceTriangle": 11698,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03878786099121441
+    },
+    {
+      "sourceTriangle": 11701,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013377872652784714
+    },
+    {
+      "sourceTriangle": 11702,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.027163595903363345
+    },
+    {
+      "sourceTriangle": 11703,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02746049986293269
+    },
+    {
+      "sourceTriangle": 11704,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01900594776234583
+    },
+    {
+      "sourceTriangle": 11705,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.023678600517122127
+    },
+    {
+      "sourceTriangle": 11706,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01622266943257418
+    },
+    {
+      "sourceTriangle": 11707,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.015310364276086862
+    },
+    {
+      "sourceTriangle": 11709,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02121154217685043
+    },
+    {
+      "sourceTriangle": 11712,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011981982122032938
+    },
+    {
+      "sourceTriangle": 11713,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.010595486909122808
+    },
+    {
+      "sourceTriangle": 11860,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02991814909252642
+    },
+    {
+      "sourceTriangle": 11861,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028769579990962253
+    },
+    {
+      "sourceTriangle": 11862,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026665234011881943
+    },
+    {
+      "sourceTriangle": 11863,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028403339955462556
+    },
+    {
+      "sourceTriangle": 11864,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02927095908237949
+    },
+    {
+      "sourceTriangle": 11865,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029007331509340505
+    },
+    {
+      "sourceTriangle": 11866,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03134693338148204
+    },
+    {
+      "sourceTriangle": 11867,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.038728461508421956
+    },
+    {
+      "sourceTriangle": 11868,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03956901214691447
+    },
+    {
+      "sourceTriangle": 11870,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03110785809820241
+    },
+    {
+      "sourceTriangle": 11871,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03203955826613678
+    },
+    {
+      "sourceTriangle": 11872,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.038160729521683576
+    },
+    {
+      "sourceTriangle": 11874,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013615994131482586
+    },
+    {
+      "sourceTriangle": 11875,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.028417982260382373
+    },
+    {
+      "sourceTriangle": 11876,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.029570706885652307
+    },
+    {
+      "sourceTriangle": 11877,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.030307878089995063
+    },
+    {
+      "sourceTriangle": 11878,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.01742170873959703
+    },
+    {
+      "sourceTriangle": 11879,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.021404510574466518
+    },
+    {
+      "sourceTriangle": 11880,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02770638880094696
+    },
+    {
+      "sourceTriangle": 11881,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.014823314080103261
+    },
+    {
+      "sourceTriangle": 11882,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0193299164719766
+    },
+    {
+      "sourceTriangle": 11884,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.024996215996735887
+    },
+    {
+      "sourceTriangle": 11887,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011160935342023963
+    },
+    {
+      "sourceTriangle": 12044,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03004050343501919
+    },
+    {
+      "sourceTriangle": 12045,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029130321952016078
+    },
+    {
+      "sourceTriangle": 12046,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027409577665292825
+    },
+    {
+      "sourceTriangle": 12047,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02554070530251203
+    },
+    {
+      "sourceTriangle": 12048,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02678015406133989
+    },
+    {
+      "sourceTriangle": 12049,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02746380848073662
+    },
+    {
+      "sourceTriangle": 12050,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02842074000050398
+    },
+    {
+      "sourceTriangle": 12051,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03055063554615152
+    },
+    {
+      "sourceTriangle": 12052,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.0381854688502146
+    },
+    {
+      "sourceTriangle": 12054,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.029474652359113195
+    },
+    {
+      "sourceTriangle": 12055,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02952476471007549
+    },
+    {
+      "sourceTriangle": 12056,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.034163637533164065
+    },
+    {
+      "sourceTriangle": 12057,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03667736602214834
+    },
+    {
+      "sourceTriangle": 12060,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.013217983886552005
+    },
+    {
+      "sourceTriangle": 12061,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03198886684664357
+    },
+    {
+      "sourceTriangle": 12062,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.034744491459140374
+    },
+    {
+      "sourceTriangle": 12063,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.035095788651652235
+    },
+    {
+      "sourceTriangle": 12064,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016242965969500256
+    },
+    {
+      "sourceTriangle": 12065,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.020823939367719823
+    },
+    {
+      "sourceTriangle": 12066,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.029335258053135443
+    },
+    {
+      "sourceTriangle": 12069,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02391260843516192
+    },
+    {
+      "sourceTriangle": 12071,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.011413970653890281
+    },
+    {
+      "sourceTriangle": 12236,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030454106387072886
+    },
+    {
+      "sourceTriangle": 12237,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029516629656924406
+    },
+    {
+      "sourceTriangle": 12238,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02702015309809505
+    },
+    {
+      "sourceTriangle": 12239,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0247222547711955
+    },
+    {
+      "sourceTriangle": 12240,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026049048970814462
+    },
+    {
+      "sourceTriangle": 12241,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02720554807180067
+    },
+    {
+      "sourceTriangle": 12242,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027905761150766015
+    },
+    {
+      "sourceTriangle": 12243,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030595671287602825
+    },
+    {
+      "sourceTriangle": 12244,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03799801022772124
+    },
+    {
+      "sourceTriangle": 12246,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02985660900883555
+    },
+    {
+      "sourceTriangle": 12247,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028859752729858777
+    },
+    {
+      "sourceTriangle": 12248,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032961176248506134
+    },
+    {
+      "sourceTriangle": 12249,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03752261497748764
+    },
+    {
+      "sourceTriangle": 12252,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.0348041439247664
+    },
+    {
+      "sourceTriangle": 12253,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03557411297695197
+    },
+    {
+      "sourceTriangle": 12254,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03954030086092909
+    },
+    {
+      "sourceTriangle": 12255,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03805130150471305
+    },
+    {
+      "sourceTriangle": 12256,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.039111503183560575
+    },
+    {
+      "sourceTriangle": 12257,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.017406397722362504
+    },
+    {
+      "sourceTriangle": 12258,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.022612757959294186
+    },
+    {
+      "sourceTriangle": 12259,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03420280196348496
+    },
+    {
+      "sourceTriangle": 12260,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.026470798916563943
+    },
+    {
+      "sourceTriangle": 12262,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.025066646910019016
+    },
+    {
+      "sourceTriangle": 12433,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02882100214255125
+    },
+    {
+      "sourceTriangle": 12434,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026337051089074078
+    },
+    {
+      "sourceTriangle": 12435,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027888939411341535
+    },
+    {
+      "sourceTriangle": 12436,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024321736697693497
+    },
+    {
+      "sourceTriangle": 12437,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024415941655656356
+    },
+    {
+      "sourceTriangle": 12438,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025150734280781413
+    },
+    {
+      "sourceTriangle": 12439,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025515243992339426
+    },
+    {
+      "sourceTriangle": 12440,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026900613057270487
+    },
+    {
+      "sourceTriangle": 12441,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02899764288622888
+    },
+    {
+      "sourceTriangle": 12442,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.037220588671150766
+    },
+    {
+      "sourceTriangle": 12443,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027777996088773044
+    },
+    {
+      "sourceTriangle": 12444,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027476719085509825
+    },
+    {
+      "sourceTriangle": 12445,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030535360673578173
+    },
+    {
+      "sourceTriangle": 12446,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.034855883802494055
+    },
+    {
+      "sourceTriangle": 12447,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03620718464105112
+    },
+    {
+      "sourceTriangle": 12450,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03481453082320807
+    },
+    {
+      "sourceTriangle": 12451,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.038551142336791015
+    },
+    {
+      "sourceTriangle": 12452,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.041147585129877456
+    },
+    {
+      "sourceTriangle": 12453,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03596288699981733
+    },
+    {
+      "sourceTriangle": 12454,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03785952347296944
+    },
+    {
+      "sourceTriangle": 12455,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.016890354349205768
+    },
+    {
+      "sourceTriangle": 12456,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02022427462535035
+    },
+    {
+      "sourceTriangle": 12457,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03367261224061457
+    },
+    {
+      "sourceTriangle": 12458,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.027725414354252097
+    },
+    {
+      "sourceTriangle": 12461,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.028416742334673794
+    },
+    {
+      "sourceTriangle": 12635,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026157528482298603
+    },
+    {
+      "sourceTriangle": 12636,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025596815102924653
+    },
+    {
+      "sourceTriangle": 12637,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024117034835977623
+    },
+    {
+      "sourceTriangle": 12638,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02458473184217345
+    },
+    {
+      "sourceTriangle": 12639,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02411666601595177
+    },
+    {
+      "sourceTriangle": 12640,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025489933550504943
+    },
+    {
+      "sourceTriangle": 12641,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026657740851366633
+    },
+    {
+      "sourceTriangle": 12642,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027857339170643636
+    },
+    {
+      "sourceTriangle": 12643,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027838778402603015
+    },
+    {
+      "sourceTriangle": 12644,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03735467909007913
+    },
+    {
+      "sourceTriangle": 12645,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027171930263188388
+    },
+    {
+      "sourceTriangle": 12646,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026987231714662937
+    },
+    {
+      "sourceTriangle": 12647,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027172406239014724
+    },
+    {
+      "sourceTriangle": 12648,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02812785635339238
+    },
+    {
+      "sourceTriangle": 12649,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030586482228203697
+    },
+    {
+      "sourceTriangle": 12650,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03307608401720937
+    },
+    {
+      "sourceTriangle": 12651,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03551043297762295
+    },
+    {
+      "sourceTriangle": 12656,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03183444763236325
+    },
+    {
+      "sourceTriangle": 12657,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.037911201546205024
+    },
+    {
+      "sourceTriangle": 12658,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.04282159370661748
+    },
+    {
+      "sourceTriangle": 12659,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04329568810078974
+    },
+    {
+      "sourceTriangle": 12660,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037844212983763434
+    },
+    {
+      "sourceTriangle": 12661,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03472278468639407
+    },
+    {
+      "sourceTriangle": 12662,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.036192510173681594
+    },
+    {
+      "sourceTriangle": 12663,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.023495457561926555
+    },
+    {
+      "sourceTriangle": 12664,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032873324712622796
+    },
+    {
+      "sourceTriangle": 12665,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03194767667632544
+    },
+    {
+      "sourceTriangle": 12669,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.022675351654419654
+    },
+    {
+      "sourceTriangle": 12844,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02660692602717146
+    },
+    {
+      "sourceTriangle": 12845,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025943690450206423
+    },
+    {
+      "sourceTriangle": 12846,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024148839078966724
+    },
+    {
+      "sourceTriangle": 12847,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0235127240633685
+    },
+    {
+      "sourceTriangle": 12848,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02415564215096812
+    },
+    {
+      "sourceTriangle": 12849,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02472236587932424
+    },
+    {
+      "sourceTriangle": 12850,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02501416583930333
+    },
+    {
+      "sourceTriangle": 12851,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02578580504525975
+    },
+    {
+      "sourceTriangle": 12852,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0270646836569919
+    },
+    {
+      "sourceTriangle": 12853,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028483332876709577
+    },
+    {
+      "sourceTriangle": 12854,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03525671347240341
+    },
+    {
+      "sourceTriangle": 12855,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02634081473956619
+    },
+    {
+      "sourceTriangle": 12856,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02645369798114713
+    },
+    {
+      "sourceTriangle": 12857,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02513728741515624
+    },
+    {
+      "sourceTriangle": 12858,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02687796753591694
+    },
+    {
+      "sourceTriangle": 12859,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.033760922426357684
+    },
+    {
+      "sourceTriangle": 12860,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.0348379130089701
+    },
+    {
+      "sourceTriangle": 12861,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03296452658328572
+    },
+    {
+      "sourceTriangle": 12865,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.034912830803138034
+    },
+    {
+      "sourceTriangle": 12866,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.041454937620483676
+    },
+    {
+      "sourceTriangle": 12868,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0422718232358536
+    },
+    {
+      "sourceTriangle": 12869,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03735966703457013
+    },
+    {
+      "sourceTriangle": 12870,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.036176030960609326
+    },
+    {
+      "sourceTriangle": 12871,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03470145897952583
+    },
+    {
+      "sourceTriangle": 12872,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03374222456486038
+    },
+    {
+      "sourceTriangle": 12873,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03307060980099624
+    },
+    {
+      "sourceTriangle": 12874,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.031954970524660564
+    },
+    {
+      "sourceTriangle": 12875,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03229965386305736
+    },
+    {
+      "sourceTriangle": 12879,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02639867794256905
+    },
+    {
+      "sourceTriangle": 12880,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02151085400211097
+    },
+    {
+      "sourceTriangle": 13063,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02525843613115509
+    },
+    {
+      "sourceTriangle": 13064,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02459523027773422
+    },
+    {
+      "sourceTriangle": 13065,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.023347274515022148
+    },
+    {
+      "sourceTriangle": 13066,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02452928502863622
+    },
+    {
+      "sourceTriangle": 13067,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025195803201364834
+    },
+    {
+      "sourceTriangle": 13068,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026175333593443345
+    },
+    {
+      "sourceTriangle": 13069,
+      "region": "legs",
+      "sourcePart": "FJ1443",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.02698590972879885
+    },
+    {
+      "sourceTriangle": 13070,
+      "region": "legs",
+      "sourcePart": "FJ1443",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.02761895042830651
+    },
+    {
+      "sourceTriangle": 13071,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026356254509230938
+    },
+    {
+      "sourceTriangle": 13072,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.025275255306703038
+    },
+    {
+      "sourceTriangle": 13073,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024744860960674738
+    },
+    {
+      "sourceTriangle": 13074,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024108002221564805
+    },
+    {
+      "sourceTriangle": 13075,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024348446707357134
+    },
+    {
+      "sourceTriangle": 13076,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02911583593569188
+    },
+    {
+      "sourceTriangle": 13077,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03354374225789876
+    },
+    {
+      "sourceTriangle": 13078,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03454663303397184
+    },
+    {
+      "sourceTriangle": 13079,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03311820606177504
+    },
+    {
+      "sourceTriangle": 13080,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.029712718459267658
+    },
+    {
+      "sourceTriangle": 13081,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02847239725767008
+    },
+    {
+      "sourceTriangle": 13082,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.027742812947111513
+    },
+    {
+      "sourceTriangle": 13085,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03698832283831325
+    },
+    {
+      "sourceTriangle": 13086,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.04176106688058533
+    },
+    {
+      "sourceTriangle": 13087,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.044580270462578474
+    },
+    {
+      "sourceTriangle": 13088,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.044640278817564806
+    },
+    {
+      "sourceTriangle": 13089,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03911441938299397
+    },
+    {
+      "sourceTriangle": 13090,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.036167639289493694
+    },
+    {
+      "sourceTriangle": 13091,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035471194662143615
+    },
+    {
+      "sourceTriangle": 13092,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03407421765730036
+    },
+    {
+      "sourceTriangle": 13093,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033440207052272505
+    },
+    {
+      "sourceTriangle": 13094,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03311138024497851
+    },
+    {
+      "sourceTriangle": 13095,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032081957429821395
+    },
+    {
+      "sourceTriangle": 13096,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03189386521513523
+    },
+    {
+      "sourceTriangle": 13098,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03464670202122063
+    },
+    {
+      "sourceTriangle": 13102,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.029757570337926725
+    },
+    {
+      "sourceTriangle": 13103,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.024917058635039298
+    },
+    {
+      "sourceTriangle": 13287,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02451143875862711
+    },
+    {
+      "sourceTriangle": 13288,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.022507929319472743
+    },
+    {
+      "sourceTriangle": 13290,
+      "region": "legs",
+      "sourcePart": "FJ1443",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.02669415344092392
+    },
+    {
+      "sourceTriangle": 13291,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.025665439455638334
+    },
+    {
+      "sourceTriangle": 13292,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02492316736186951
+    },
+    {
+      "sourceTriangle": 13293,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02285486564139717
+    },
+    {
+      "sourceTriangle": 13294,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02283972877967078
+    },
+    {
+      "sourceTriangle": 13295,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027165670946472487
+    },
+    {
+      "sourceTriangle": 13296,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03238126805851315
+    },
+    {
+      "sourceTriangle": 13297,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028095607255886376
+    },
+    {
+      "sourceTriangle": 13298,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02311466074322867
+    },
+    {
+      "sourceTriangle": 13299,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02262261110281414
+    },
+    {
+      "sourceTriangle": 13300,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02287801883326176
+    },
+    {
+      "sourceTriangle": 13303,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03790396258254075
+    },
+    {
+      "sourceTriangle": 13304,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04200932277783079
+    },
+    {
+      "sourceTriangle": 13305,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.044797587884941356
+    },
+    {
+      "sourceTriangle": 13307,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03842536993471419
+    },
+    {
+      "sourceTriangle": 13308,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035341052361426546
+    },
+    {
+      "sourceTriangle": 13309,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03451464566341498
+    },
+    {
+      "sourceTriangle": 13310,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033964735853805016
+    },
+    {
+      "sourceTriangle": 13311,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033105140062587454
+    },
+    {
+      "sourceTriangle": 13312,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03208120120750085
+    },
+    {
+      "sourceTriangle": 13313,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03141059797778793
+    },
+    {
+      "sourceTriangle": 13315,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.03724987744666428
+    },
+    {
+      "sourceTriangle": 13318,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.030847338893010938
+    },
+    {
+      "sourceTriangle": 13319,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.028059211040238292
+    },
+    {
+      "sourceTriangle": 13320,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.022712482611069083
+    },
+    {
+      "sourceTriangle": 13515,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024214305429970853
+    },
+    {
+      "sourceTriangle": 13516,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0235134718782897
+    },
+    {
+      "sourceTriangle": 13518,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02362886130919879
+    },
+    {
+      "sourceTriangle": 13519,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.023218419366818437
+    },
+    {
+      "sourceTriangle": 13520,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02242789283396943
+    },
+    {
+      "sourceTriangle": 13521,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02165940975866084
+    },
+    {
+      "sourceTriangle": 13522,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0237425234907108
+    },
+    {
+      "sourceTriangle": 13523,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03045674227750913
+    },
+    {
+      "sourceTriangle": 13524,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02323366204220744
+    },
+    {
+      "sourceTriangle": 13525,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.016539639077884978
+    },
+    {
+      "sourceTriangle": 13526,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.021280968012084307
+    },
+    {
+      "sourceTriangle": 13527,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.019889365246422503
+    },
+    {
+      "sourceTriangle": 13528,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.019113230287444136
+    },
+    {
+      "sourceTriangle": 13529,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.014033509631167285
+    },
+    {
+      "sourceTriangle": 13530,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.012315917500529353
+    },
+    {
+      "sourceTriangle": 13532,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.0411118736471804
+    },
+    {
+      "sourceTriangle": 13533,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04325068736739186
+    },
+    {
+      "sourceTriangle": 13534,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.042435789409734706
+    },
+    {
+      "sourceTriangle": 13535,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03579282310925942
+    },
+    {
+      "sourceTriangle": 13536,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035662832599741935
+    },
+    {
+      "sourceTriangle": 13537,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03657767867345483
+    },
+    {
+      "sourceTriangle": 13538,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03518749306446369
+    },
+    {
+      "sourceTriangle": 13539,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03320592822253062
+    },
+    {
+      "sourceTriangle": 13540,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.031637075293312715
+    },
+    {
+      "sourceTriangle": 13541,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03311516636680213
+    },
+    {
+      "sourceTriangle": 13542,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030927981527366654
+    },
+    {
+      "sourceTriangle": 13543,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03134779431158001
+    },
+    {
+      "sourceTriangle": 13545,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04010004998819496
+    },
+    {
+      "sourceTriangle": 13549,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.02931742573655048
+    },
+    {
+      "sourceTriangle": 13550,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.027294748116741714
+    },
+    {
+      "sourceTriangle": 13736,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02304341171255768
+    },
+    {
+      "sourceTriangle": 13737,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022137874492968824
+    },
+    {
+      "sourceTriangle": 13738,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02204941671777929
+    },
+    {
+      "sourceTriangle": 13739,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02072117606782134
+    },
+    {
+      "sourceTriangle": 13740,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022121065435697886
+    },
+    {
+      "sourceTriangle": 13741,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.020430026861683614
+    },
+    {
+      "sourceTriangle": 13742,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.017969216185020908
+    },
+    {
+      "sourceTriangle": 13743,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.013454971879349067
+    },
+    {
+      "sourceTriangle": 13744,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01700554082407836
+    },
+    {
+      "sourceTriangle": 13745,
+      "region": "legs",
+      "sourcePart": "FJ1402",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.01790784609724369
+    },
+    {
+      "sourceTriangle": 13746,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.014307786728685174
+    },
+    {
+      "sourceTriangle": 13747,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.012633570129745099
+    },
+    {
+      "sourceTriangle": 13748,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.007318539572327097
+    },
+    {
+      "sourceTriangle": 13749,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04097935257664436
+    },
+    {
+      "sourceTriangle": 13750,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.04270681235368658
+    },
+    {
+      "sourceTriangle": 13752,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0360740382967899
+    },
+    {
+      "sourceTriangle": 13753,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035736733697857063
+    },
+    {
+      "sourceTriangle": 13754,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03726531949743552
+    },
+    {
+      "sourceTriangle": 13755,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03733169321000788
+    },
+    {
+      "sourceTriangle": 13756,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035156861894757384
+    },
+    {
+      "sourceTriangle": 13757,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0353406409448965
+    },
+    {
+      "sourceTriangle": 13758,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03324969514805139
+    },
+    {
+      "sourceTriangle": 13759,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.031215145177670017
+    },
+    {
+      "sourceTriangle": 13760,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03318496366312705
+    },
+    {
+      "sourceTriangle": 13761,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03339040675691591
+    },
+    {
+      "sourceTriangle": 13762,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030384498986665016
+    },
+    {
+      "sourceTriangle": 13763,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03070065307597767
+    },
+    {
+      "sourceTriangle": 13765,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03981228446518964
+    },
+    {
+      "sourceTriangle": 13770,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03021984634255822
+    },
+    {
+      "sourceTriangle": 13771,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.025093931664207543
+    },
+    {
+      "sourceTriangle": 13772,
+      "region": "abs",
+      "sourcePart": "FJ1452M",
+      "sourceName": "external oblique",
+      "distanceMetres": 0.028935671510960406
+    },
+    {
+      "sourceTriangle": 13949,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02294538760748127
+    },
+    {
+      "sourceTriangle": 13950,
+      "region": "legs",
+      "sourcePart": "FJ1433",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02119207676510834
+    },
+    {
+      "sourceTriangle": 13951,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02124533297049301
+    },
+    {
+      "sourceTriangle": 13952,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01978081577070655
+    },
+    {
+      "sourceTriangle": 13953,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.020106461028117452
+    },
+    {
+      "sourceTriangle": 13954,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.019113910518864276
+    },
+    {
+      "sourceTriangle": 13955,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.017476250467076775
+    },
+    {
+      "sourceTriangle": 13956,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.014423803801088386
+    },
+    {
+      "sourceTriangle": 13957,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.012384486338632034
+    },
+    {
+      "sourceTriangle": 13958,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01368148584603827
+    },
+    {
+      "sourceTriangle": 13959,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.017648008404177035
+    },
+    {
+      "sourceTriangle": 13960,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.010055956430696813
+    },
+    {
+      "sourceTriangle": 13961,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.009145845755050732
+    },
+    {
+      "sourceTriangle": 13962,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.04214888302248672
+    },
+    {
+      "sourceTriangle": 13963,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03768400577777407
+    },
+    {
+      "sourceTriangle": 13964,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03449969494328268
+    },
+    {
+      "sourceTriangle": 13965,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.035262387660817414
+    },
+    {
+      "sourceTriangle": 13966,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03591124240705698
+    },
+    {
+      "sourceTriangle": 13967,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03692400876262898
+    },
+    {
+      "sourceTriangle": 13968,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03569997540255056
+    },
+    {
+      "sourceTriangle": 13969,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0349326953840683
+    },
+    {
+      "sourceTriangle": 13970,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03389812533373231
+    },
+    {
+      "sourceTriangle": 13971,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03392596344754594
+    },
+    {
+      "sourceTriangle": 13972,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02964378550183694
+    },
+    {
+      "sourceTriangle": 13974,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03913413603942349
+    },
+    {
+      "sourceTriangle": 13975,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.040255754870687395
+    },
+    {
+      "sourceTriangle": 13980,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02972574437942014
+    },
+    {
+      "sourceTriangle": 13981,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.029260308534795294
+    },
+    {
+      "sourceTriangle": 14152,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.021552653940522838
+    },
+    {
+      "sourceTriangle": 14153,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.019101522982065414
+    },
+    {
+      "sourceTriangle": 14154,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01825904977301894
+    },
+    {
+      "sourceTriangle": 14155,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.017230858861490023
+    },
+    {
+      "sourceTriangle": 14156,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01218476209462971
+    },
+    {
+      "sourceTriangle": 14157,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.012233139340550467
+    },
+    {
+      "sourceTriangle": 14158,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.012415471674964445
+    },
+    {
+      "sourceTriangle": 14159,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.014970164113164696
+    },
+    {
+      "sourceTriangle": 14160,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.011046702409437182
+    },
+    {
+      "sourceTriangle": 14161,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.006241416579133503
+    },
+    {
+      "sourceTriangle": 14162,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.042404957972680846
+    },
+    {
+      "sourceTriangle": 14163,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03468381931325746
+    },
+    {
+      "sourceTriangle": 14164,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0350374487210119
+    },
+    {
+      "sourceTriangle": 14165,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03537371901786289
+    },
+    {
+      "sourceTriangle": 14166,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03428781721884646
+    },
+    {
+      "sourceTriangle": 14167,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.035054271773382585
+    },
+    {
+      "sourceTriangle": 14168,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.036825072539325925
+    },
+    {
+      "sourceTriangle": 14169,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03599494881715937
+    },
+    {
+      "sourceTriangle": 14170,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.034963812669539546
+    },
+    {
+      "sourceTriangle": 14171,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03455414098256426
+    },
+    {
+      "sourceTriangle": 14172,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028987140652773927
+    },
+    {
+      "sourceTriangle": 14174,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03940112533344238
+    },
+    {
+      "sourceTriangle": 14345,
+      "region": "legs",
+      "sourcePart": "FJ1434",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.018956997019720194
+    },
+    {
+      "sourceTriangle": 14347,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.009815875563751096
+    },
+    {
+      "sourceTriangle": 14348,
+      "region": "legs",
+      "sourcePart": "FJ1421",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.008852330610289222
+    },
+    {
+      "sourceTriangle": 14349,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.041355320203136404
+    },
+    {
+      "sourceTriangle": 14350,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03499942085052615
+    },
+    {
+      "sourceTriangle": 14351,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.035650713289269303
+    },
+    {
+      "sourceTriangle": 14352,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03528049498113306
+    },
+    {
+      "sourceTriangle": 14353,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03385038723058704
+    },
+    {
+      "sourceTriangle": 14354,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03412020636939231
+    },
+    {
+      "sourceTriangle": 14355,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03498352791780566
+    },
+    {
+      "sourceTriangle": 14356,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03944997858788974
+    },
+    {
+      "sourceTriangle": 14357,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03906817761342186
+    },
+    {
+      "sourceTriangle": 14541,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03931942874451683
+    },
+    {
+      "sourceTriangle": 14542,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.038862229062109364
+    },
+    {
+      "sourceTriangle": 14543,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.033477817856111064
+    },
+    {
+      "sourceTriangle": 14544,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.036364429354092134
+    },
+    {
+      "sourceTriangle": 14545,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.034374755783133495
+    },
+    {
+      "sourceTriangle": 14546,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03424963300037044
+    },
+    {
+      "sourceTriangle": 14547,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03407284901037441
+    },
+    {
+      "sourceTriangle": 14548,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.032231770678330815
+    },
+    {
+      "sourceTriangle": 14549,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.033802238868708784
+    },
+    {
+      "sourceTriangle": 14550,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.034655580794750486
+    },
+    {
+      "sourceTriangle": 14551,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.0389422838854337
+    },
+    {
+      "sourceTriangle": 14552,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03823231878604451
+    },
+    {
+      "sourceTriangle": 14553,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03665801525879268
+    },
+    {
+      "sourceTriangle": 14737,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03949578276890477
+    },
+    {
+      "sourceTriangle": 14738,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03322068318420777
+    },
+    {
+      "sourceTriangle": 14739,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03321525829923055
+    },
+    {
+      "sourceTriangle": 14740,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.034319733103745316
+    },
+    {
+      "sourceTriangle": 14741,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03143651330711474
+    },
+    {
+      "sourceTriangle": 14742,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.033287519350824094
+    },
+    {
+      "sourceTriangle": 14743,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0322636031362368
+    },
+    {
+      "sourceTriangle": 14744,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03229140022579265
+    },
+    {
+      "sourceTriangle": 14745,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0336671626313892
+    },
+    {
+      "sourceTriangle": 14746,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03722464013719876
+    },
+    {
+      "sourceTriangle": 14747,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03552419880451986
+    },
+    {
+      "sourceTriangle": 14748,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.035315120206709794
+    },
+    {
+      "sourceTriangle": 14936,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.038715211206702585
+    },
+    {
+      "sourceTriangle": 14937,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032229354331874085
+    },
+    {
+      "sourceTriangle": 14938,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.031511543232727555
+    },
+    {
+      "sourceTriangle": 14939,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.031392963074667594
+    },
+    {
+      "sourceTriangle": 14940,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030364899878757234
+    },
+    {
+      "sourceTriangle": 14941,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030613954971646134
+    },
+    {
+      "sourceTriangle": 14942,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030819983445745287
+    },
+    {
+      "sourceTriangle": 14943,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03278696184793246
+    },
+    {
+      "sourceTriangle": 14944,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0325282692226821
+    },
+    {
+      "sourceTriangle": 14945,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03729848841764823
+    },
+    {
+      "sourceTriangle": 14946,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03440712532778665
+    },
+    {
+      "sourceTriangle": 14947,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03263726047421945
+    },
+    {
+      "sourceTriangle": 15137,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.037032403975594874
+    },
+    {
+      "sourceTriangle": 15138,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03190017931340148
+    },
+    {
+      "sourceTriangle": 15139,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032662159444506046
+    },
+    {
+      "sourceTriangle": 15140,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03149259145551526
+    },
+    {
+      "sourceTriangle": 15141,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03152846379720001
+    },
+    {
+      "sourceTriangle": 15142,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03071514085342745
+    },
+    {
+      "sourceTriangle": 15143,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029205266827622364
+    },
+    {
+      "sourceTriangle": 15144,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029783529602662423
+    },
+    {
+      "sourceTriangle": 15145,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030776050699328462
+    },
+    {
+      "sourceTriangle": 15146,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.031928494141869365
+    },
+    {
+      "sourceTriangle": 15147,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03210926805881614
+    },
+    {
+      "sourceTriangle": 15148,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.03235215760801752
+    },
+    {
+      "sourceTriangle": 15149,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.032713184195381884
+    },
+    {
+      "sourceTriangle": 15150,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02974409330282593
+    },
+    {
+      "sourceTriangle": 15151,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02918373887624918
+    },
+    {
+      "sourceTriangle": 15153,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.024637676820570605
+    },
+    {
+      "sourceTriangle": 15337,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.029635968034241796
+    },
+    {
+      "sourceTriangle": 15338,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03165181239706065
+    },
+    {
+      "sourceTriangle": 15339,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030130553353043765
+    },
+    {
+      "sourceTriangle": 15340,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.032279805942090824
+    },
+    {
+      "sourceTriangle": 15341,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030660381117068796
+    },
+    {
+      "sourceTriangle": 15342,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029986131827329347
+    },
+    {
+      "sourceTriangle": 15343,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029182854084778352
+    },
+    {
+      "sourceTriangle": 15344,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028975609734247457
+    },
+    {
+      "sourceTriangle": 15345,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028722126834527392
+    },
+    {
+      "sourceTriangle": 15346,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030505340928397837
+    },
+    {
+      "sourceTriangle": 15347,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.03135560048033349
+    },
+    {
+      "sourceTriangle": 15348,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028944530144629513
+    },
+    {
+      "sourceTriangle": 15349,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.03023922714607913
+    },
+    {
+      "sourceTriangle": 15350,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028768404992164463
+    },
+    {
+      "sourceTriangle": 15351,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.02979966660295155
+    },
+    {
+      "sourceTriangle": 15352,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.027059574281548354
+    },
+    {
+      "sourceTriangle": 15353,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.026018078342330785
+    },
+    {
+      "sourceTriangle": 15354,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.025373509060287985
+    },
+    {
+      "sourceTriangle": 15355,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.022797202789746077
+    },
+    {
+      "sourceTriangle": 15356,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.01856214084605369
+    },
+    {
+      "sourceTriangle": 15550,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028711914904157875
+    },
+    {
+      "sourceTriangle": 15551,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030406210155588198
+    },
+    {
+      "sourceTriangle": 15552,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.031031130542047893
+    },
+    {
+      "sourceTriangle": 15553,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02870971288956902
+    },
+    {
+      "sourceTriangle": 15554,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028293178505832642
+    },
+    {
+      "sourceTriangle": 15555,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02791459598731807
+    },
+    {
+      "sourceTriangle": 15556,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027104716074832946
+    },
+    {
+      "sourceTriangle": 15557,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0291961613341813
+    },
+    {
+      "sourceTriangle": 15558,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030490801117106225
+    },
+    {
+      "sourceTriangle": 15559,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026888283020608972
+    },
+    {
+      "sourceTriangle": 15560,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026101269926158736
+    },
+    {
+      "sourceTriangle": 15561,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024916087281264918
+    },
+    {
+      "sourceTriangle": 15562,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.027380729386865255
+    },
+    {
+      "sourceTriangle": 15563,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.0256373474675397
+    },
+    {
+      "sourceTriangle": 15564,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.024781670535045434
+    },
+    {
+      "sourceTriangle": 15565,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.01999113073115945
+    },
+    {
+      "sourceTriangle": 15566,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.012972656247866103
+    },
+    {
+      "sourceTriangle": 15759,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.029313557074845835
+    },
+    {
+      "sourceTriangle": 15760,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.029478469633696543
+    },
+    {
+      "sourceTriangle": 15761,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.030732682866354503
+    },
+    {
+      "sourceTriangle": 15762,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02770662767561767
+    },
+    {
+      "sourceTriangle": 15763,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.029087108492187878
+    },
+    {
+      "sourceTriangle": 15764,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027955702893013974
+    },
+    {
+      "sourceTriangle": 15765,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027526672178284455
+    },
+    {
+      "sourceTriangle": 15766,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02685165566543667
+    },
+    {
+      "sourceTriangle": 15767,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02743637884289507
+    },
+    {
+      "sourceTriangle": 15768,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0293852190794927
+    },
+    {
+      "sourceTriangle": 15769,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026823972195040933
+    },
+    {
+      "sourceTriangle": 15770,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0244812573375544
+    },
+    {
+      "sourceTriangle": 15771,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024121264658485766
+    },
+    {
+      "sourceTriangle": 15772,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022259218590683985
+    },
+    {
+      "sourceTriangle": 15773,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02137231044221009
+    },
+    {
+      "sourceTriangle": 15774,
+      "region": "legs",
+      "sourcePart": "FJ1402M",
+      "sourceName": "adductor longus",
+      "distanceMetres": 0.019864411124947766
+    },
+    {
+      "sourceTriangle": 15775,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.016757181880521107
+    },
+    {
+      "sourceTriangle": 15776,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.011576003842508916
+    },
+    {
+      "sourceTriangle": 15777,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.00960781420046415
+    },
+    {
+      "sourceTriangle": 15981,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02728987261963475
+    },
+    {
+      "sourceTriangle": 15982,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028901586821877465
+    },
+    {
+      "sourceTriangle": 15983,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.030664568567059916
+    },
+    {
+      "sourceTriangle": 15984,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026700299810077037
+    },
+    {
+      "sourceTriangle": 15985,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028264802169563258
+    },
+    {
+      "sourceTriangle": 15986,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02714652019857332
+    },
+    {
+      "sourceTriangle": 15987,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02606434884138414
+    },
+    {
+      "sourceTriangle": 15988,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026180415067524047
+    },
+    {
+      "sourceTriangle": 15989,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.028572887132907083
+    },
+    {
+      "sourceTriangle": 15990,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.025699937944193174
+    },
+    {
+      "sourceTriangle": 15991,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022952613246915738
+    },
+    {
+      "sourceTriangle": 15992,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022448121892246254
+    },
+    {
+      "sourceTriangle": 15993,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.021156322336620386
+    },
+    {
+      "sourceTriangle": 15994,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.018400601516287876
+    },
+    {
+      "sourceTriangle": 15995,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.017479455627955835
+    },
+    {
+      "sourceTriangle": 15996,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.006987467946799539
+    },
+    {
+      "sourceTriangle": 15997,
+      "region": "legs",
+      "sourcePart": "FJ1421M",
+      "sourceName": "gracilis",
+      "distanceMetres": 0.012081636188345773
+    },
+    {
+      "sourceTriangle": 16194,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026506113557112368
+    },
+    {
+      "sourceTriangle": 16195,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028933449295947933
+    },
+    {
+      "sourceTriangle": 16196,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02585984740603026
+    },
+    {
+      "sourceTriangle": 16197,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02625640873151094
+    },
+    {
+      "sourceTriangle": 16198,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026452304780353385
+    },
+    {
+      "sourceTriangle": 16199,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02514022852626284
+    },
+    {
+      "sourceTriangle": 16200,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02566950236639283
+    },
+    {
+      "sourceTriangle": 16201,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026221589835830176
+    },
+    {
+      "sourceTriangle": 16202,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02626288418046237
+    },
+    {
+      "sourceTriangle": 16203,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024223166176301863
+    },
+    {
+      "sourceTriangle": 16204,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022676695779019134
+    },
+    {
+      "sourceTriangle": 16205,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.020516217698972255
+    },
+    {
+      "sourceTriangle": 16206,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01801560060749353
+    },
+    {
+      "sourceTriangle": 16207,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01963224185772541
+    },
+    {
+      "sourceTriangle": 16208,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01680421418399378
+    },
+    {
+      "sourceTriangle": 16209,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.014368082419165087
+    },
+    {
+      "sourceTriangle": 16406,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02621137741917108
+    },
+    {
+      "sourceTriangle": 16407,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.028697936215652236
+    },
+    {
+      "sourceTriangle": 16408,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025133647061204915
+    },
+    {
+      "sourceTriangle": 16409,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.0262044596194297
+    },
+    {
+      "sourceTriangle": 16410,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024701181631761594
+    },
+    {
+      "sourceTriangle": 16411,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02498481147530885
+    },
+    {
+      "sourceTriangle": 16412,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025887360483570102
+    },
+    {
+      "sourceTriangle": 16413,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026297480738144904
+    },
+    {
+      "sourceTriangle": 16414,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.025409461929563355
+    },
+    {
+      "sourceTriangle": 16415,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.023109501071086544
+    },
+    {
+      "sourceTriangle": 16416,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02527176684393305
+    },
+    {
+      "sourceTriangle": 16417,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.021577204595759326
+    },
+    {
+      "sourceTriangle": 16418,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01836452880043425
+    },
+    {
+      "sourceTriangle": 16419,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.01978905029872907
+    },
+    {
+      "sourceTriangle": 16614,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.026186939716840864
+    },
+    {
+      "sourceTriangle": 16615,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027046579968925222
+    },
+    {
+      "sourceTriangle": 16616,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.027978595326594555
+    },
+    {
+      "sourceTriangle": 16617,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027342318059767688
+    },
+    {
+      "sourceTriangle": 16618,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025425791339504164
+    },
+    {
+      "sourceTriangle": 16619,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024555765480815846
+    },
+    {
+      "sourceTriangle": 16620,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026587799312529886
+    },
+    {
+      "sourceTriangle": 16621,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024386876931406565
+    },
+    {
+      "sourceTriangle": 16622,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024945401321652037
+    },
+    {
+      "sourceTriangle": 16623,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02604283281059543
+    },
+    {
+      "sourceTriangle": 16624,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.025760409940131516
+    },
+    {
+      "sourceTriangle": 16625,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.023919545588551278
+    },
+    {
+      "sourceTriangle": 16626,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02547922633339301
+    },
+    {
+      "sourceTriangle": 16627,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02190922804561828
+    },
+    {
+      "sourceTriangle": 16812,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02664374366447712
+    },
+    {
+      "sourceTriangle": 16813,
+      "region": "legs",
+      "sourcePart": "FJ1443M",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.02709044708880151
+    },
+    {
+      "sourceTriangle": 16814,
+      "region": "legs",
+      "sourcePart": "FJ1443M",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.027988789641614425
+    },
+    {
+      "sourceTriangle": 16815,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027951488376934612
+    },
+    {
+      "sourceTriangle": 16816,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025464726761491665
+    },
+    {
+      "sourceTriangle": 16817,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02461156481963177
+    },
+    {
+      "sourceTriangle": 16818,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026482281077749522
+    },
+    {
+      "sourceTriangle": 16819,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024175799391880422
+    },
+    {
+      "sourceTriangle": 16820,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02425388022732462
+    },
+    {
+      "sourceTriangle": 16821,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024137661127952917
+    },
+    {
+      "sourceTriangle": 16822,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.0257959866157009
+    },
+    {
+      "sourceTriangle": 16823,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.023313750620030924
+    },
+    {
+      "sourceTriangle": 16824,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02519303289561778
+    },
+    {
+      "sourceTriangle": 16825,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.025750202263206106
+    },
+    {
+      "sourceTriangle": 16826,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02258117365747829
+    },
+    {
+      "sourceTriangle": 17012,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02586982905948743
+    },
+    {
+      "sourceTriangle": 17013,
+      "region": "legs",
+      "sourcePart": "FJ1443M",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.025932934477777832
+    },
+    {
+      "sourceTriangle": 17014,
+      "region": "legs",
+      "sourcePart": "FJ1443M",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.026252946834018454
+    },
+    {
+      "sourceTriangle": 17015,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.027209466079382866
+    },
+    {
+      "sourceTriangle": 17016,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026094797649619736
+    },
+    {
+      "sourceTriangle": 17017,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02523280450844899
+    },
+    {
+      "sourceTriangle": 17018,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.026559724280803165
+    },
+    {
+      "sourceTriangle": 17019,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02467482114780581
+    },
+    {
+      "sourceTriangle": 17020,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.023480889130810367
+    },
+    {
+      "sourceTriangle": 17021,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024942636652009142
+    },
+    {
+      "sourceTriangle": 17022,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.023558089233353383
+    },
+    {
+      "sourceTriangle": 17023,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024519549017033022
+    },
+    {
+      "sourceTriangle": 17024,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.024605690226543235
+    },
+    {
+      "sourceTriangle": 17219,
+      "region": "legs",
+      "sourcePart": "FJ1443M",
+      "sourceName": "vastus medialis",
+      "distanceMetres": 0.026094954656474097
+    },
+    {
+      "sourceTriangle": 17220,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025499389421825433
+    },
+    {
+      "sourceTriangle": 17221,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024621422330673267
+    },
+    {
+      "sourceTriangle": 17222,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.025870246080134038
+    },
+    {
+      "sourceTriangle": 17223,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024671775411867238
+    },
+    {
+      "sourceTriangle": 17224,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.024099587159153796
+    },
+    {
+      "sourceTriangle": 17225,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.023109660102760936
+    },
+    {
+      "sourceTriangle": 17226,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.02273000238177904
+    },
+    {
+      "sourceTriangle": 17227,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.02411801535386954
+    },
+    {
+      "sourceTriangle": 17228,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022271678199664854
+    },
+    {
+      "sourceTriangle": 17229,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.023668051626169365
+    },
+    {
+      "sourceTriangle": 17424,
+      "region": "legs",
+      "sourcePart": "FJ1433M",
+      "sourceName": "rectus femoris",
+      "distanceMetres": 0.022185109337069048
+    },
+    {
+      "sourceTriangle": 17425,
+      "region": "legs",
+      "sourcePart": "FJ1434M",
+      "sourceName": "sartorius",
+      "distanceMetres": 0.022647519705073133
+    }
+  ]
+}

@@ -26,6 +26,7 @@ export type TwinStageProps = {
   sidePanel?: ReactNode;
   focusRegion?: string | null;
   showLayerControls?: boolean;
+  compactMobileControls?: boolean;
 };
 /** Canonical Twin projection. Session replay never needs to manufacture a TwinSnapshot. */
 /**

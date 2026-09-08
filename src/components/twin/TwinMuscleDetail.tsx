@@ -133,6 +133,7 @@ export function TwinMuscleDetail({
             {isAnatomicalRegion(regionId) ? (
               <div className="twin-detail-stage">
                 <TwinStage
+                  compactMobileControls
                   presentation="detail"
                   showLayerControls={false}
                   focusRegion={regionId}

@@ -24,12 +24,15 @@ jobs:
       fail-fast: false
       matrix:
         suite: [twin, today]
+        candidate: [clean, pose]
     env:
-      TWIN_ANATOMY_CANDIDATE: "1"
+      TWIN_ANATOMY_CANDIDATE: ${{ matrix.candidate }}
     steps:
       - uses: actions/checkout@v4
       - name: Require the isolated candidate asset
-        run: test -s tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb
+        run: |
+          test -s tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb
+          test -s tests/twin-browser/assets/twin-anatomy-pose-candidate.glb
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,7 +44,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ${{ matrix.suite }}-candidate-browser-evidence
+          name: ${{ matrix.suite }}-${{ matrix.candidate }}-browser-evidence
           path: test-results/${{ matrix.suite }}-candidate
           retention-days: 14
           if-no-files-found: warn

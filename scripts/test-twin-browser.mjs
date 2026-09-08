@@ -7,8 +7,14 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 const root = process.cwd();
-const candidate = process.env.TWIN_ANATOMY_CANDIDATE === "1";
-const candidatePath = "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
+if (!["", "1", "clean", "pose"].includes(candidateMode))
+  throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
+const candidate = candidateMode !== "";
+const candidatePath =
+  candidateMode === "pose"
+    ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+    : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
