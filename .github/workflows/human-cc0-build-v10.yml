@@ -1,0 +1,86 @@
+name: Build and review CC0 GYMS.LIFE digital human v10
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths:
+      - .github/workflows/human-cc0-build-v10.yml
+      - scripts/human/build-v10.py
+      - scripts/human/test_build_v10.py
+      - scripts/human/render-material-review.mjs
+      - scripts/human/build-v9.py
+      - scripts/human/render-review.mjs
+      - scripts/human/audit-authored-textures.py
+      - scripts/human/validate-glb.mjs
+      - scripts/human/fixtures/v8-geometry-fingerprint.json
+      - scripts/human/toolchain/package*.json
+permissions:
+  contents: read
+concurrency:
+  group: human-v10-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-and-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      V9_REVIEW_DIR: ${{ runner.temp }}/gyms-human-v9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            scripts/human/toolchain/package-lock.json
+      - name: Install pinned authoring and browser dependencies
+        run: |
+          git init "$RUNNER_TEMP/makehuman-core"
+          git -C "$RUNNER_TEMP/makehuman-core" remote add origin https://github.com/vidya-hub/makehuman-core.git
+          git -C "$RUNNER_TEMP/makehuman-core" fetch --depth 1 origin 06e129ac920593f9f315e03d6d5b3f843504de7f
+          git -C "$RUNNER_TEMP/makehuman-core" checkout --detach FETCH_HEAD
+          python -m pip install pillow==12.3.0 numpy==2.3.5
+          npm ci --ignore-scripts
+          npm ci --prefix scripts/human/toolchain --ignore-scripts
+          npx playwright install --with-deps chromium
+      - name: Rebuild v9 baseline without depending on expiring artifacts
+        run: |
+          python scripts/human/build-v9.py --source "$RUNNER_TEMP/makehuman-core" --out "$V9_REVIEW_DIR"
+          node scripts/human/toolchain/node_modules/obj2gltf/bin/obj2gltf.js -i "$V9_REVIEW_DIR/gyms-digital-human-v9.obj" -o "$V9_REVIEW_DIR/gyms-digital-human-v9.glb" -b --secure --checkTransparency
+      - name: Test material invariants and explicit review modes
+        run: |
+          python scripts/human/test_build_v10.py
+          node scripts/human/render-material-review.mjs --self-test
+          npx prettier --check scripts/human/render-material-review.mjs
+      - name: Author v10 and independently audit the written GLB
+        run: |
+          python scripts/human/build-v10.py --v9 "$V9_REVIEW_DIR" --out "$RUNNER_TEMP/gyms-human-v10"
+          DIFFUSE_SHA=$(python -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"gyms-human-v10/SOURCE_MANIFEST.json")))["texture_sha256"]["gyms-v10-head-and-fabric.jpg"])')
+          python scripts/human/audit-authored-textures.py "$RUNNER_TEMP/gyms-human-v10/gyms-digital-human-v10.glb" --reference-fingerprint scripts/human/fixtures/v8-geometry-fingerprint.json --body-image-sha256 "$DIFFUSE_SHA" --report "$RUNNER_TEMP/gyms-human-v10/texture-geometry-audit.json"
+          node scripts/human/validate-glb.mjs "$RUNNER_TEMP/gyms-human-v10/gyms-digital-human-v10.glb" "$RUNNER_TEMP/gyms-human-v10/gltf-validation.json"
+      - name: Retain the legacy comparison and add like-for-like native material reviews
+        run: |
+          node scripts/human/render-review.mjs "$RUNNER_TEMP/gyms-human-v10/gyms-digital-human-v10.glb" "$RUNNER_TEMP/human-renders-v10/legacy-v10" --extra-full-body
+          node scripts/human/render-material-review.mjs "$V9_REVIEW_DIR/gyms-digital-human-v9.glb" "$RUNNER_TEMP/human-renders-v10/authored-v9"
+          node scripts/human/render-material-review.mjs "$RUNNER_TEMP/gyms-human-v10/gyms-digital-human-v10.glb" "$RUNNER_TEMP/human-renders-v10/authored-v10"
+      - name: Preserve exact candidate and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v10-review
+          path: ${{ runner.temp }}/gyms-human-v10
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Preserve all three visual comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v10-renders
+          path: ${{ runner.temp }}/human-renders-v10
+          retention-days: 30
+          if-no-files-found: warn
