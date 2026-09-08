@@ -166,3 +166,58 @@ export function summariseRun(
     boundReached: attempted >= limit,
   };
 }
+
+/**
+ * Postgres unique-violation, checked by code rather than by message so a
+ * locale or version change cannot turn a lost race into a crash.
+ */
+export const UNIQUE_VIOLATION = "23505";
+
+/**
+ * What a failed claim insert means.
+ *
+ * Losing the insert is the answer, not an error: the unique index is the whole
+ * locking scheme, and somebody else holding the period is exactly what it is
+ * there to tell us. Every other write failure is a ledger we could not write,
+ * and a job must not run past a ledger it cannot write — running blind risks
+ * doing the night twice, where not running costs one night and says so.
+ */
+export function claimInsertOutcome(errorCode: string | undefined): "skipped" | "unavailable" {
+  return errorCode === UNIQUE_VIOLATION ? "skipped" : "unavailable";
+}
+
+/** The row a finished run leaves behind. */
+export type ClosingLedgerUpdate = {
+  readonly status: "succeeded" | "failed";
+  readonly finished_at: string;
+  readonly attempted: number;
+  readonly succeeded: number;
+  readonly failed: number;
+  readonly error_code?: string;
+};
+
+/**
+ * The closing write, as a value rather than as an inline object.
+ *
+ * These are the fields the Night Lab panel and anybody debugging a quiet night
+ * read, and two invariants matter enough to be worth testing: a failed run
+ * always carries a code somebody can act on, and a succeeded one never carries
+ * one — a green row with an error code in it is a row nobody can interpret.
+ */
+export function closingLedgerUpdate(
+  outcome: JobOutcome,
+  fatalCode: string | null,
+  finishedAt: Date,
+): ClosingLedgerUpdate {
+  const status = fatalCode ? "failed" : outcome.status;
+  return {
+    status,
+    finished_at: finishedAt.toISOString(),
+    attempted: outcome.attempted,
+    succeeded: outcome.succeeded,
+    failed: outcome.failed,
+    // `ALL_ITEMS_FAILED` is the only way a run fails without throwing: it
+    // attempted work and every item of it failed.
+    ...(status === "failed" ? { error_code: fatalCode ?? "ALL_ITEMS_FAILED" } : {}),
+  };
+}

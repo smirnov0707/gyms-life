@@ -1,6 +1,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   claimDecision,
+  claimInsertOutcome,
+  closingLedgerUpdate,
   jobWindow,
   runKeyFor,
   summariseRun,
@@ -28,8 +30,6 @@ import {
  * Postgres unique-violation is `23505`; it is checked by code rather than by
  * message so a locale or version change cannot turn a lost race into a crash.
  */
-
-const UNIQUE_VIOLATION = "23505";
 
 /** The ledger's own format for an error code, enforced by a check constraint. */
 const ERROR_CODE = /^[A-Z][A-Z0-9_]{2,63}$/;
@@ -163,11 +163,7 @@ export async function runBackgroundJob(
 
     // Losing the insert race is the answer, not an error: somebody else has
     // this period.
-    if (error) {
-      return error.code === UNIQUE_VIOLATION
-        ? { status: "skipped", runKey }
-        : { status: "unavailable", runKey };
-    }
+    if (error) return { status: claimInsertOutcome(error.code), runKey };
     runId = data.id;
   }
 
@@ -197,14 +193,7 @@ export async function runBackgroundJob(
   // self-healing behaviour, and useless if nobody can see it happened.
   const { error: closeError } = await supabaseAdmin
     .from("background_job_runs")
-    .update({
-      status: outcome.status,
-      finished_at: new Date().toISOString(),
-      attempted: outcome.attempted,
-      succeeded: outcome.succeeded,
-      failed: outcome.failed,
-      ...(outcome.status === "failed" ? { error_code: fatalCode ?? "ALL_ITEMS_FAILED" } : {}),
-    })
+    .update(closingLedgerUpdate(outcome, fatalCode, new Date()))
     .eq("id", runId);
 
   return { status: "ran", runKey, window, outcome, recorded: !closeError };

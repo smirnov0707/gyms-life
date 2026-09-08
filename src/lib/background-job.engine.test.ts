@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   JOB_ITEM_LIMIT,
   JOB_LEASE_MINUTES,
+  UNIQUE_VIOLATION,
   claimDecision,
+  claimInsertOutcome,
+  closingLedgerUpdate,
   jobWindow,
   runKeyFor,
   summariseRun,
   type ExistingRun,
+  type JobOutcome,
 } from "./background-job.engine";
 
 /**
@@ -143,5 +147,81 @@ describe("what a run says about itself", () => {
     // number reaching it.
     const outcome = summariseRun([{ ok: true }, { ok: false }]);
     expect(outcome.succeeded + outcome.failed).toBeLessThanOrEqual(outcome.attempted);
+  });
+});
+
+describe("what a failed claim insert means", () => {
+  it("treats losing the unique race as somebody else holding the period", () => {
+    // The unique index is the whole locking scheme. Two containers firing at
+    // the same minute is the case it exists for, and the loser has its answer.
+    expect(claimInsertOutcome(UNIQUE_VIOLATION)).toBe("skipped");
+  });
+
+  it("treats every other write failure as a ledger it must not run past", () => {
+    // Running blind risks doing the night twice; not running costs one night
+    // and says so.
+    expect(claimInsertOutcome("42501")).toBe("unavailable");
+    expect(claimInsertOutcome(undefined)).toBe("unavailable");
+    expect(claimInsertOutcome("")).toBe("unavailable");
+  });
+});
+
+describe("the row a finished run leaves behind", () => {
+  const outcome = (over: Partial<JobOutcome> = {}): JobOutcome => ({
+    status: "succeeded",
+    attempted: 3,
+    succeeded: 3,
+    failed: 0,
+    boundReached: false,
+    ...over,
+  });
+  const finishedAt = new Date("2026-09-08T03:12:00.000Z");
+
+  it("carries no error code on a night that worked", () => {
+    // A green row with an error code in it is a row nobody can interpret.
+    const update = closingLedgerUpdate(outcome(), null, finishedAt);
+    expect(update).toEqual({
+      status: "succeeded",
+      finished_at: "2026-09-08T03:12:00.000Z",
+      attempted: 3,
+      succeeded: 3,
+      failed: 0,
+    });
+    expect(update.error_code).toBeUndefined();
+  });
+
+  it("always carries a code on a night that did not", () => {
+    expect(
+      closingLedgerUpdate(outcome({ status: "failed", succeeded: 0, failed: 3 }), null, finishedAt)
+        .error_code,
+    ).toBe("ALL_ITEMS_FAILED");
+    expect(closingLedgerUpdate(outcome(), "EVIDENCE_UNREADABLE", finishedAt).error_code).toBe(
+      "EVIDENCE_UNREADABLE",
+    );
+  });
+
+  it("keeps the job's own word over the generic one", () => {
+    // A job that could not read its inputs and one that crashed halfway
+    // through writing them are different nights.
+    expect(closingLedgerUpdate(outcome(), "JOB_THREW", finishedAt).error_code).toBe("JOB_THREW");
+  });
+
+  it("marks a run that threw as failed whatever its items managed first", () => {
+    const update = closingLedgerUpdate(
+      outcome({ succeeded: 2, failed: 0 }),
+      "JOB_THREW",
+      finishedAt,
+    );
+    expect(update.status).toBe("failed");
+    // The successes still happened and are still counted; the night did not.
+    expect(update.succeeded).toBe(2);
+  });
+
+  it("never reports more results than the run attempted", () => {
+    // The ledger's own check constraint enforces this too. A value that fails
+    // it makes the closing write fail, which leaves the row `running` and
+    // turns a reported failure into a silent one.
+    const update = closingLedgerUpdate(outcome({ succeeded: 1, failed: 2 }), null, finishedAt);
+    expect(update.succeeded + update.failed).toBeLessThanOrEqual(update.attempted);
   });
 });
