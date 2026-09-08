@@ -66,28 +66,61 @@ const measured = (list: (number | null)[]) => list.filter((v): v is number => v 
 /** How many frames of a window have to carry a measurement for it to count. */
 const enough = (poses: Point[][]) => poses.length / 2;
 
-const kneeAngle = (p: Point[], side: "l" | "r") =>
-  side === "r"
-    ? angleAt(p[LM.rHip]!, p[LM.rKnee]!, p[LM.rAnkle]!)
-    : angleAt(p[LM.lHip]!, p[LM.lKnee]!, p[LM.lAnkle]!);
-
-const elbowAngle = (p: Point[], side: "l" | "r") =>
-  side === "r"
-    ? angleAt(p[LM.rShoulder]!, p[LM.rElbow]!, p[LM.rWrist]!)
-    : angleAt(p[LM.lShoulder]!, p[LM.lElbow]!, p[LM.lWrist]!);
-
-const hipAngle = (p: Point[], side: "l" | "r") =>
-  side === "r"
-    ? angleAt(p[LM.rShoulder]!, p[LM.rHip]!, p[LM.rKnee]!)
-    : angleAt(p[LM.lShoulder]!, p[LM.lHip]!, p[LM.lKnee]!);
-
-// Visible, not merely present. A landmark the model returns with low
-// confidence is a guess about where a joint might be, and a whole exercise
-// used to be recognised from a frame made of them.
+/**
+ * Whether a frame carries the whole right side, which is what the exercise
+ * recogniser reads. It says nothing about the left: on a side-on view the far
+ * half of the body is behind the near half, and the recogniser is written to
+ * work from one side alone.
+ */
 const complete = (p: Point[]) =>
   [LM.rShoulder, LM.rHip, LM.rKnee, LM.rAnkle, LM.rElbow, LM.rWrist].every((i) =>
     landmarkVisible(p[i]),
   );
+
+/**
+ * The three landmarks each measured joint is built from, per side.
+ *
+ * Written down as data rather than left implicit in three near-identical
+ * functions, because something else needs to know them: whether an angle can
+ * be measured at all is a question about exactly these three points, and the
+ * only way to ask it correctly is to have the list.
+ */
+const JOINTS = {
+  knee: {
+    l: [LM.lHip, LM.lKnee, LM.lAnkle],
+    r: [LM.rHip, LM.rKnee, LM.rAnkle],
+  },
+  elbow: {
+    l: [LM.lShoulder, LM.lElbow, LM.lWrist],
+    r: [LM.rShoulder, LM.rElbow, LM.rWrist],
+  },
+  hip: {
+    l: [LM.lShoulder, LM.lHip, LM.lKnee],
+    r: [LM.rShoulder, LM.rHip, LM.rKnee],
+  },
+} as const satisfies Record<string, Record<"l" | "r", readonly [number, number, number]>>;
+
+export type ArJoint = keyof typeof JOINTS;
+
+/**
+ * The angle at one joint, or null when the camera could not see it.
+ *
+ * The visibility check lives here rather than at the call sites. It used to
+ * live at one of them, as a hand-written pair — `lKnee` and `lElbow` — while
+ * the joint being measured was chosen per exercise: a squat's symmetry needs
+ * the left hip, knee and ankle, a press's needs the left shoulder, elbow and
+ * wrist. Whichever exercise it was, the check tested one landmark the angle
+ * used and one it did not, and let two through unvalidated.
+ */
+const jointAngle = (pose: Point[], joint: ArJoint, side: "l" | "r"): number | null => {
+  const [a, b, c] = JOINTS[joint][side].map((index) => pose[index]);
+  if (!landmarkVisible(a) || !landmarkVisible(b) || !landmarkVisible(c)) return null;
+  return angleAt(a, b, c);
+};
+
+const kneeAngle = (p: Point[], side: "l" | "r") => jointAngle(p, "knee", side);
+const elbowAngle = (p: Point[], side: "l" | "r") => jointAngle(p, "elbow", side);
+const hipAngle = (p: Point[], side: "l" | "r") => jointAngle(p, "hip", side);
 
 /**
  * Guesses which of the tracked exercises the athlete is doing from a short
@@ -199,13 +232,14 @@ export type RepRecord = {
   fix: string;
 };
 
-const SYM_JOINTS: Record<string, (p: Point[], s: "l" | "r") => number | null> = {
-  squat: kneeAngle,
-  lunge: kneeAngle,
-  pushup: elbowAngle,
-  "overhead-press": elbowAngle,
-  deadlift: hipAngle,
-  plank: hipAngle,
+/** Which joint each exercise's left-against-right comparison is made at. */
+const SYM_JOINTS: Record<string, ArJoint> = {
+  squat: "knee",
+  lunge: "knee",
+  pushup: "elbow",
+  "overhead-press": "elbow",
+  deadlift: "hip",
+  plank: "hip",
 };
 
 /**
@@ -269,16 +303,12 @@ export class RepAnalyser {
         this.bottom = angle;
         this.bottomAt = now;
         const sym = SYM_JOINTS[ex.slug];
-        if (
-          sym &&
-          complete(pose) &&
-          landmarkVisible(pose[LM.lKnee]) &&
-          landmarkVisible(pose[LM.lElbow])
-        ) {
-          const left = sym(pose, "l");
-          const right = sym(pose, "r");
+        if (sym) {
+          const left = jointAngle(pose, sym, "l");
+          const right = jointAngle(pose, sym, "r");
           // Asymmetry is a claim about both sides. One measurable side is not
-          // half a claim, it is none.
+          // half a claim, it is none — and `jointAngle` is now the thing that
+          // decides whether a side was measured, so this reads as it says.
           if (left !== null && right !== null) this.asym = Math.abs(left - right);
         }
       }

@@ -185,3 +185,78 @@ describe("detectExercise from a side-on camera", () => {
     expect(detectExercise(lunging)).toBe("lunge");
   });
 });
+
+/**
+ * The asymmetry a rep reports is a comparison of two sides, so both sides have
+ * to have been seen. Which landmarks that means depends on the exercise — a
+ * squat compares knees, a press compares elbows — and the check used to be a
+ * hand-written pair, plus a whole-right-side gate, that matched neither.
+ */
+describe("RepAnalyser asymmetry", () => {
+  /** A squat pose with an explicit left side, bent to `leftDegrees`. */
+  function twoSided(rightDegrees: number, leftDegrees: number, leftVisibility: number): Point[] {
+    const pose = squatPose(rightDegrees);
+    const radians = (leftDegrees * Math.PI) / 180;
+    pose[LM.lHip] = at(0.4, 0.4, leftVisibility);
+    pose[LM.lKnee] = at(0.4, 0.7, leftVisibility);
+    pose[LM.lAnkle] = at(
+      0.4 + 0.3 * Math.sin(radians),
+      0.7 - 0.3 * Math.cos(radians),
+      leftVisibility,
+    );
+    pose[LM.lElbow] = at(0.4, 0.3, leftVisibility);
+    return pose;
+  }
+
+  const repThrough = (poses: Point[][]): RepRecord | null => {
+    const analyser = new RepAnalyser(squat);
+    let record: RepRecord | null = null;
+    poses.forEach((pose, index) => {
+      record = analyser.push(pose, "en", index * 100) ?? record;
+    });
+    return record as RepRecord | null;
+  };
+
+  /**
+   * A rep deep enough to have a bottom frame. Asymmetry is sampled on a frame
+   * that goes below the running lowest angle, so the descent needs two.
+   */
+  const rep = (leftVisibility: number, leftAtBottom: number) => [
+    twoSided(170, 170, leftVisibility),
+    twoSided(90, 90, leftVisibility),
+    twoSided(85, leftAtBottom, leftVisibility),
+    twoSided(170, 170, leftVisibility),
+  ];
+
+  it("reports the difference between two knees it could both see", () => {
+    // This is the one that fails against the old guard, and it fails by
+    // reporting nothing: the check demanded `complete(pose)`, which wants the
+    // right elbow and wrist — landmarks a squat's knee angle has no use for.
+    // So squat asymmetry was recorded only when the athlete's arms happened to
+    // be in frame too, and silently withheld the rest of the time.
+    expect(repThrough(rep(0.95, 55))?.asymmetry).toBeCloseTo(30, 0);
+  });
+
+  it("withholds it when the far knee was never in view", () => {
+    // The other half of the old guard's error. A squat's symmetry is measured
+    // at the knee, so it needs the left hip, knee and ankle; the check asked
+    // for the left knee and the left elbow — one landmark the angle uses and
+    // one it does not — and let the hip and the ankle through unvalidated.
+    // The old code refuses this case too, but for the unrelated reason above
+    // rather than because it noticed the far side was missing.
+    const record = repThrough(rep(0.1, 55));
+    expect(record).not.toBeNull();
+    expect(record?.asymmetry).toBeNull();
+  });
+
+  it("withholds it when only part of the far side was in view", () => {
+    // The left knee is visible and the left ankle is not — the shape the old
+    // pair-check had no question for: it asked about the knee, saw it, and
+    // never asked about the ankle the angle is built from.
+    const partial = rep(0.95, 55).map((pose) => {
+      pose[LM.lAnkle] = at(pose[LM.lAnkle]!.x, pose[LM.lAnkle]!.y, 0.1);
+      return pose;
+    });
+    expect(repThrough(partial)?.asymmetry).toBeNull();
+  });
+});
