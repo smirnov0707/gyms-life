@@ -23,9 +23,9 @@ export async function loadWeeklyIntelligenceReview(
   const memories =
     athlete.snapshot === null
       ? []
-      : await loadUserMemoryTransparency(supabase, userId).catch(
-          (): UserMemoryTransparencyItem[] => [],
-        );
+      : await loadUserMemoryTransparency(supabase, userId)
+          .then((page) => page.items)
+          .catch((): UserMemoryTransparencyItem[] => []);
 
   return buildWeeklyIntelligenceReview({
     state: athlete.state,

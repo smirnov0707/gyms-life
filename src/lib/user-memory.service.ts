@@ -12,6 +12,24 @@ import {
 
 const UserMemoryIdSchema = z.string().uuid();
 
+/**
+ * How many active memory entries the transparency page shows at once.
+ *
+ * The page's own heading is "what GYMS.LIFE currently knows", so a bound it
+ * does not mention is a page that quietly answers a different question. One
+ * row beyond the limit is fetched so the read can tell the difference between
+ * exactly fifty entries and more than fifty — the same idiom the personal
+ * timeline already uses.
+ */
+export const USER_MEMORY_TRANSPARENCY_LIMIT = 50;
+
+export type UserMemoryTransparencyPage = {
+  items: UserMemoryTransparencyItem[];
+  /** True when the athlete has more active memory than this page shows. */
+  hasMore: boolean;
+  limit: number;
+};
+
 function activeMemoryQuery(supabase: SupabaseClient<Database>, userId: string, now: Date) {
   return supabase
     .from("user_memory")
@@ -23,7 +41,7 @@ function activeMemoryQuery(supabase: SupabaseClient<Database>, userId: string, n
     .or(`expires_at.is.null,expires_at.gt.${now.toISOString()}`)
     .order("importance", { ascending: false })
     .order("last_confirmed_at", { ascending: false })
-    .limit(50);
+    .limit(USER_MEMORY_TRANSPARENCY_LIMIT + 1);
 }
 
 /** Lists only the user's live, validated memory entries for transparency. */
@@ -31,10 +49,15 @@ export async function loadUserMemoryTransparency(
   supabase: SupabaseClient<Database>,
   userId: string,
   now = new Date(),
-): Promise<UserMemoryTransparencyItem[]> {
+): Promise<UserMemoryTransparencyPage> {
   const { data, error } = await activeMemoryQuery(supabase, userId, now);
   if (error) throw new Error("Could not load user memory.");
-  return parseUserMemoryTransparencyItems(data);
+  const rows = parseUserMemoryTransparencyItems(data);
+  return {
+    items: rows.slice(0, USER_MEMORY_TRANSPARENCY_LIMIT),
+    hasMore: rows.length > USER_MEMORY_TRANSPARENCY_LIMIT,
+    limit: USER_MEMORY_TRANSPARENCY_LIMIT,
+  };
 }
 
 /**

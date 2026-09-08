@@ -113,6 +113,7 @@ type Copy = {
     forgotten: string;
     sharedWithAi: string;
     keptLocal: string;
+    truncated: (limit: number) => string;
     error: string;
   };
   bodyFacts: {
@@ -206,6 +207,8 @@ function copyFor(lang: Lang): Copy {
         forgotten: "This memory was permanently removed.",
         sharedWithAi: "Sent with AI requests",
         keptLocal: "Kept here, not sent",
+        truncated: (limit) =>
+          `Showing the ${limit} most important active facts. You have more than this; the rest are kept and can be reviewed after you correct or forget some of these.`,
         error: "Could not update this memory. Please try again.",
       },
       bodyFacts: {
@@ -300,6 +303,8 @@ function copyFor(lang: Lang): Copy {
       forgotten: "Šis įrašas pašalintas visam laikui.",
       sharedWithAi: "Perduodama AI užklausose",
       keptLocal: "Lieka čia, neperduodama",
+      truncated: (limit) =>
+        `Rodomi ${limit} svarbiausi aktyvūs faktai. Tavo jų yra daugiau; likusieji išsaugoti ir bus matomi, kai kuriuos iš šių pataisysi arba pamirši.`,
       error: "Nepavyko atnaujinti šio atminties įrašo. Bandyk dar kartą.",
     },
     bodyFacts: {
@@ -406,6 +411,8 @@ function AthleteModelPage() {
   const [loading, setLoading] = useState(true);
   const [memories, setMemories] = useState<UserMemoryTransparencyItem[]>([]);
   const [memoryLoading, setMemoryLoading] = useState(true);
+  const [memoryHasMore, setMemoryHasMore] = useState(false);
+  const [memoryLimit, setMemoryLimit] = useState(0);
   const [pendingMemoryAction, setPendingMemoryAction] = useState<string | null>(null);
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [correctedContent, setCorrectedContent] = useState("");
@@ -494,7 +501,10 @@ function AthleteModelPage() {
     setLoading(false);
 
     try {
-      setMemories(await loadMemory({}));
+      const page = await loadMemory({});
+      setMemories(page.items);
+      setMemoryHasMore(page.hasMore);
+      setMemoryLimit(page.limit);
     } catch {
       toast.error(copy.memory.error);
     }
@@ -795,188 +805,198 @@ function AthleteModelPage() {
         ) : memories.length === 0 ? (
           <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{copy.memory.empty}</p>
         ) : (
-          <div className="mt-5 divide-y divide-white/[0.06]">
-            {memories.map((memory) => {
-              // The page lists up to fifty entries; twelve of them travel with
-              // the athlete's context. Between those two numbers there was no
-              // way to tell which twelve, so the same selection the payload
-              // uses marks them here.
-              const sharedWithAi = aiSharedMemoryIds.has(memory.id);
-              const correctPending = pendingMemoryAction === `correct:${memory.id}`;
-              const incorrectPending = pendingMemoryAction === `incorrect:${memory.id}`;
-              const forgetPending = pendingMemoryAction === `forget:${memory.id}`;
-              const isEditing = editingMemoryId === memory.id;
-              const displayedContent = displayedMemoryContent(memory, lang);
-              const evidenceSummary = memoryEvidenceSummary(memory, lang);
-              const correctionInvalid =
-                correctedContent.trim().length === 0 || correctedContent.trim().length > 400;
+          <>
+            {/* The heading says "what GYMS.LIFE currently knows", so a bound
+                the page does not mention makes it answer a different question
+                than the one it asks. */}
+            {memoryHasMore ? (
+              <p className="mt-4 rounded-2xl border border-border bg-black/20 p-3 text-xs leading-relaxed text-muted-foreground">
+                {copy.memory.truncated(memoryLimit)}
+              </p>
+            ) : null}
+            <div className="mt-5 divide-y divide-white/[0.06]">
+              {memories.map((memory) => {
+                // The page lists up to fifty entries; twelve of them travel with
+                // the athlete's context. Between those two numbers there was no
+                // way to tell which twelve, so the same selection the payload
+                // uses marks them here.
+                const sharedWithAi = aiSharedMemoryIds.has(memory.id);
+                const correctPending = pendingMemoryAction === `correct:${memory.id}`;
+                const incorrectPending = pendingMemoryAction === `incorrect:${memory.id}`;
+                const forgetPending = pendingMemoryAction === `forget:${memory.id}`;
+                const isEditing = editingMemoryId === memory.id;
+                const displayedContent = displayedMemoryContent(memory, lang);
+                const evidenceSummary = memoryEvidenceSummary(memory, lang);
+                const correctionInvalid =
+                  correctedContent.trim().length === 0 || correctedContent.trim().length > 400;
 
-              return (
-                <details key={memory.id} className="group py-4">
-                  <summary className="cursor-pointer list-none">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400 light:text-emerald-700">
-                            {memoryTypeLabel(memory.type, lang)}
-                          </span>
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                            {copy.memory.evidenceStateLabel[memory.evidenceState]}
-                          </span>
-                          <span
-                            className={
-                              sharedWithAi
-                                ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300"
-                                : "rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
-                            }
-                          >
-                            {sharedWithAi ? copy.memory.sharedWithAi : copy.memory.keptLocal}
-                          </span>
+                return (
+                  <details key={memory.id} className="group py-4">
+                    <summary className="cursor-pointer list-none">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400 light:text-emerald-700">
+                              {memoryTypeLabel(memory.type, lang)}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                              {copy.memory.evidenceStateLabel[memory.evidenceState]}
+                            </span>
+                            <span
+                              className={
+                                sharedWithAi
+                                  ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300"
+                                  : "rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+                              }
+                            >
+                              {sharedWithAi ? copy.memory.sharedWithAi : copy.memory.keptLocal}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm font-medium leading-relaxed text-foreground">
+                            {displayedContent}
+                          </p>
                         </div>
-                        <p className="mt-2 text-sm font-medium leading-relaxed text-foreground">
-                          {displayedContent}
-                        </p>
+                        <span className="mt-1 shrink-0 text-[10px] uppercase tracking-[0.14em] text-muted-foreground group-open:text-muted-foreground">
+                          {ui.controls}
+                        </span>
                       </div>
-                      <span className="mt-1 shrink-0 text-[10px] uppercase tracking-[0.14em] text-muted-foreground group-open:text-muted-foreground">
-                        {ui.controls}
-                      </span>
-                    </div>
-                  </summary>
+                    </summary>
 
-                  <div className="mt-4 rounded-2xl border border-border bg-black/20 p-4">
-                    <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-                      <Info className="mt-0.5 size-3.5 shrink-0" />
-                      {evidenceSummary ?? copy.memory.evidence(memory.evidenceCount)}
-                    </p>
-                    <dl className="mt-4 grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2">
-                      <div>
-                        <dt className="text-muted-foreground">{copy.memory.source}</dt>
-                        <dd className="mt-0.5 text-foreground">
-                          {memorySourceLabel(memory.source, lang)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">{copy.memory.evidenceState}</dt>
-                        <dd className="mt-0.5 text-foreground">
-                          {copy.memory.evidenceStateLabel[memory.evidenceState]}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-muted-foreground">{copy.memory.lastConfirmed}</dt>
-                        <dd className="mt-0.5 text-foreground">
-                          {new Date(memory.lastConfirmedAt).toLocaleDateString(locale)}
-                        </dd>
-                      </div>
-                      {memory.expiresAt ? (
+                    <div className="mt-4 rounded-2xl border border-border bg-black/20 p-4">
+                      <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+                        <Info className="mt-0.5 size-3.5 shrink-0" />
+                        {evidenceSummary ?? copy.memory.evidence(memory.evidenceCount)}
+                      </p>
+                      <dl className="mt-4 grid gap-x-6 gap-y-3 text-xs sm:grid-cols-2">
                         <div>
-                          <dt className="text-muted-foreground">{copy.memory.expires}</dt>
+                          <dt className="text-muted-foreground">{copy.memory.source}</dt>
                           <dd className="mt-0.5 text-foreground">
-                            {new Date(memory.expiresAt).toLocaleString(locale)}
+                            {memorySourceLabel(memory.source, lang)}
                           </dd>
                         </div>
-                      ) : null}
-                    </dl>
-
-                    <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                      {memory.type === "current_context" ? (
-                        <Button asChild size="sm" variant="outline" className="rounded-full">
-                          <Link to="/">{copy.memory.updateContext}</Link>
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="rounded-full"
-                            disabled={pendingMemoryAction !== null}
-                            onClick={() => {
-                              setEditingMemoryId(isEditing ? null : memory.id);
-                              setCorrectedContent(isEditing ? "" : displayedContent);
-                            }}
-                          >
-                            <Pencil /> {copy.memory.correct}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            className="rounded-full"
-                            disabled={pendingMemoryAction !== null}
-                            onClick={() => void changeMemory(memory.id, "incorrect")}
-                          >
-                            {incorrectPending ? (
-                              <Loader2 className="animate-spin" />
-                            ) : (
-                              <ThumbsDown />
-                            )}
-                            {copy.memory.incorrect}
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="rounded-full text-muted-foreground hover:text-destructive"
-                        disabled={pendingMemoryAction !== null}
-                        onClick={() => void changeMemory(memory.id, "forget")}
-                      >
-                        {forgetPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                        {copy.memory.forget}
-                      </Button>
-                    </div>
-
-                    {isEditing ? (
-                      <div className="mt-4 border-t border-border pt-4">
-                        <label
-                          className="text-sm font-semibold text-foreground"
-                          htmlFor={`memory-correction-${memory.id}`}
-                        >
-                          {copy.memory.correctionLabel}
-                        </label>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                          {copy.memory.correctionHint}
-                        </p>
-                        <Input
-                          id={`memory-correction-${memory.id}`}
-                          value={correctedContent}
-                          maxLength={400}
-                          className="mt-3 border-border bg-foreground/[0.02]"
-                          onChange={(event) => setCorrectedContent(event.target.value)}
-                        />
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="rounded-full"
-                            disabled={pendingMemoryAction !== null || correctionInvalid}
-                            onClick={() => void submitMemoryCorrection(memory)}
-                          >
-                            {correctPending ? <Loader2 className="animate-spin" /> : <Pencil />}
-                            {copy.memory.saveCorrection}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="rounded-full"
-                            disabled={pendingMemoryAction !== null}
-                            onClick={() => {
-                              setEditingMemoryId(null);
-                              setCorrectedContent("");
-                            }}
-                          >
-                            {copy.memory.cancel}
-                          </Button>
+                        <div>
+                          <dt className="text-muted-foreground">{copy.memory.evidenceState}</dt>
+                          <dd className="mt-0.5 text-foreground">
+                            {copy.memory.evidenceStateLabel[memory.evidenceState]}
+                          </dd>
                         </div>
+                        <div>
+                          <dt className="text-muted-foreground">{copy.memory.lastConfirmed}</dt>
+                          <dd className="mt-0.5 text-foreground">
+                            {new Date(memory.lastConfirmedAt).toLocaleDateString(locale)}
+                          </dd>
+                        </div>
+                        {memory.expiresAt ? (
+                          <div>
+                            <dt className="text-muted-foreground">{copy.memory.expires}</dt>
+                            <dd className="mt-0.5 text-foreground">
+                              {new Date(memory.expiresAt).toLocaleString(locale)}
+                            </dd>
+                          </div>
+                        ) : null}
+                      </dl>
+
+                      <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
+                        {memory.type === "current_context" ? (
+                          <Button asChild size="sm" variant="outline" className="rounded-full">
+                            <Link to="/">{copy.memory.updateContext}</Link>
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-full"
+                              disabled={pendingMemoryAction !== null}
+                              onClick={() => {
+                                setEditingMemoryId(isEditing ? null : memory.id);
+                                setCorrectedContent(isEditing ? "" : displayedContent);
+                              }}
+                            >
+                              <Pencil /> {copy.memory.correct}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-full"
+                              disabled={pendingMemoryAction !== null}
+                              onClick={() => void changeMemory(memory.id, "incorrect")}
+                            >
+                              {incorrectPending ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <ThumbsDown />
+                              )}
+                              {copy.memory.incorrect}
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-full text-muted-foreground hover:text-destructive"
+                          disabled={pendingMemoryAction !== null}
+                          onClick={() => void changeMemory(memory.id, "forget")}
+                        >
+                          {forgetPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                          {copy.memory.forget}
+                        </Button>
                       </div>
-                    ) : null}
-                  </div>
-                </details>
-              );
-            })}
-          </div>
+
+                      {isEditing ? (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <label
+                            className="text-sm font-semibold text-foreground"
+                            htmlFor={`memory-correction-${memory.id}`}
+                          >
+                            {copy.memory.correctionLabel}
+                          </label>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            {copy.memory.correctionHint}
+                          </p>
+                          <Input
+                            id={`memory-correction-${memory.id}`}
+                            value={correctedContent}
+                            maxLength={400}
+                            className="mt-3 border-border bg-foreground/[0.02]"
+                            onChange={(event) => setCorrectedContent(event.target.value)}
+                          />
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="rounded-full"
+                              disabled={pendingMemoryAction !== null || correctionInvalid}
+                              onClick={() => void submitMemoryCorrection(memory)}
+                            >
+                              {correctPending ? <Loader2 className="animate-spin" /> : <Pencil />}
+                              {copy.memory.saveCorrection}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="rounded-full"
+                              disabled={pendingMemoryAction !== null}
+                              onClick={() => {
+                                setEditingMemoryId(null);
+                                setCorrectedContent("");
+                              }}
+                            >
+                              {copy.memory.cancel}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          </>
         )}
       </section>
 
