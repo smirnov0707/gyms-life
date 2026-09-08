@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TwinScreen } from "@/components/twin/TwinScreen";
+import { parseTwinNavigation } from "@/lib/twin-navigation";
 
 export const Route = createFileRoute("/_authenticated/twin")({
   head: () => ({
@@ -16,9 +17,19 @@ export const Route = createFileRoute("/_authenticated/twin")({
       },
     ],
   }),
+  validateSearch: parseTwinNavigation,
   component: TwinPage,
 });
 
 function TwinPage() {
-  return <TwinScreen />;
+  const navigation = Route.useSearch();
+  const navigate = Route.useNavigate();
+  return (
+    <TwinScreen
+      navigation={navigation}
+      onNavigate={(search) => {
+        void navigate({ search, resetScroll: false });
+      }}
+    />
+  );
 }

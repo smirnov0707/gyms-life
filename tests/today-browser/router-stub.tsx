@@ -9,7 +9,11 @@ const screens: Record<string, string> = {
   "/history": "journal",
 };
 const paths = Object.fromEntries(Object.entries(screens).map(([path, screen]) => [screen, path]));
-export function fixtureHref(to: string, params: Record<string, unknown> = {}) {
+export function fixtureHref(
+  to: string,
+  params: Record<string, unknown> = {},
+  search?: Record<string, unknown>,
+) {
   const resolved = to.replace(/\$([A-Za-z0-9_]+)/g, (token, key) =>
     params[key] == null ? token : encodeURIComponent(String(params[key])),
   );
@@ -17,21 +21,25 @@ export function fixtureHref(to: string, params: Record<string, unknown> = {}) {
   if (query.get("shell") !== "1") return "#";
   query.set("screen", screens[resolved] ?? "outside-fixture");
   query.set("route", resolved);
+  for (const key of ["view", "region", "detail"]) query.delete(key);
+  for (const [key, value] of Object.entries(search ?? {}))
+    if (value !== undefined) query.set(key, String(value));
   return `/index.html?${query}`;
 }
 type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   to?: string;
   params?: Record<string, unknown>;
+  search?: Record<string, unknown>;
   children?: ReactNode;
 };
-export function Link({ to = "/app", params, children, ...rest }: LinkProps) {
+export function Link({ to = "/app", params, search, children, ...rest }: LinkProps) {
   return (
-    <a href={fixtureHref(to, params)} {...rest}>
+    <a href={fixtureHref(to, params, search)} {...rest}>
       {children}
     </a>
   );
 }
-export const useLocation = () => {
+const fixtureLocation = () => {
   const query = new URLSearchParams(window.location.search);
   const screen = query.get("screen") ?? "today";
   return {
@@ -39,13 +47,32 @@ export const useLocation = () => {
     search: {},
   };
 };
-const navigate = (options: { to?: string; params?: Record<string, unknown> } | string) => {
-  const target = typeof options === "string" ? options : (options.to ?? "/app");
+export const useLocation = fixtureLocation;
+const navigate = (
+  options:
+    { to?: string; params?: Record<string, unknown>; search?: Record<string, unknown> } | string,
+) => {
+  const target = typeof options === "string" ? options : (options.to ?? fixtureLocation().pathname);
   window.location.assign(
-    fixtureHref(target, typeof options === "string" ? undefined : options.params),
+    fixtureHref(
+      target,
+      typeof options === "string" ? undefined : options.params,
+      typeof options === "string" ? undefined : options.search,
+    ),
   );
 };
 export const useNavigate = () => navigate;
 export const useRouter = () => ({ navigate, invalidate: async () => {} });
 export const createFileRoute =
-  () => (options: { component: ComponentType; [key: string]: unknown }) => ({ options });
+  () =>
+  (options: {
+    component: ComponentType;
+    validateSearch?: (search: Record<string, unknown>) => Record<string, unknown>;
+    [key: string]: unknown;
+  }) => ({
+    options,
+    useSearch: () =>
+      options.validateSearch?.(Object.fromEntries(new URLSearchParams(window.location.search))) ??
+      {},
+    useNavigate: () => navigate,
+  });

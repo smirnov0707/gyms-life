@@ -296,6 +296,64 @@ try {
   }
   record("full-shell empty data and source failures remain visibly distinct");
 
+  // Real UI controls, not direct calls to state setters. Search values survive
+  // page reload and browser history; the fixture still has no live backend.
+  const linked = await openPanel("?shell=1&screen=today&scenario=reference", {
+    viewport: { width: 390, height: 844 },
+    locale: "en-US",
+  });
+  await linked.page.getByRole("link", { name: "Explore muscles", exact: false }).click();
+  await expect(linked.page.getByRole("tab", { name: "Muscles", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await linked.page
+    .getByRole("button", { name: /^Chest(?:\s|$)/ })
+    .first()
+    .click();
+  await expect(linked.page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+  await linked.page.getByRole("button", { name: "Impact", exact: true }).click();
+  await expect(linked.page).toHaveURL(/detail=impact/);
+  await expect(linked.page.getByText("Latest completed session", { exact: true })).toBeVisible();
+  await linked.page.reload();
+  await expect(linked.page.getByRole("button", { name: "Impact", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await linked.page.goBack();
+  await expect(linked.page.getByRole("button", { name: "Status", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await linked.page.getByRole("button", { name: "History", exact: true }).click();
+  await expect(linked.page).toHaveURL(/detail=history/);
+  expect(linked.errors).toEqual([]);
+  await linked.page.context().close();
+  record(
+    "Today opens muscle evidence; status, impact and history survive URL navigation and reload",
+  );
+
+  for (const [scenario, expected] of [
+    ["reference", "Received records refreshed."],
+    ["empty", "Records checked. No readings have arrived yet."],
+    ["failure", "Records could not be refreshed. No successful sync is claimed."],
+  ]) {
+    const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
+      locale: "en-US",
+      viewport: { width: 390, height: 844 },
+    });
+    const button = checked.page.getByTestId("refresh-received-data");
+    await expect(button).toBeEnabled({ timeout: 30000 });
+    await button.click();
+    await expect(checked.page.getByTestId("received-data-refresh-status")).toHaveText(expected);
+    await expect(button).toBeEnabled();
+    expect(checked.errors).toEqual([]);
+    await checked.page.context().close();
+  }
+  record(
+    "manual data refresh distinguishes received, empty and failed records without claiming watch sync",
+  );
+
   // 1. The screen renders at all, with the signal rail and every signal in it.
   const first = await open();
   const rail = first.page.getByRole("region", { name: "Live signals" });
@@ -331,7 +389,15 @@ try {
   await expect(emptyEvidence.getByText("Evaluated predictions", { exact: true })).toBeVisible();
   expect(await emptyEvidence.locator(".fl-evidence-count strong").innerText()).toBe("0");
   expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
+  await expect(
+    first.page.getByText("No pattern has reached its evidence threshold yet.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    first.page.getByText("No hypothesis is awaiting more evidence.", { exact: true }),
+  ).toBeVisible();
   const body = await first.page.locator("body").innerText();
+  expect(body).not.toContain("Not enough verified data yet."); // obsolete copy must not mask a stuck loading state
+
   await writeFile(path.join(artifacts, "today.txt"), body);
   await first.page.screenshot({
     path: path.join(artifacts, "today-desktop.png"),
@@ -427,7 +493,7 @@ try {
   // A lab whose overview could not be read must not light ten modules green.
   // Absence of evidence is not evidence of readiness, which is the one claim
   // this deck makes about itself.
-  const lab = await openPanel("?panel=lab");
+  const lab = await openPanel("?panel=lab&scenario=failure");
   await expect(lab.page.getByRole("heading", { name: "Lab", exact: true })).toBeVisible({
     timeout: 30000,
   });
@@ -441,7 +507,7 @@ try {
   // The journal's four counters all come off one query. An unread ledger must
   // not report four zeros — "you have no hypotheses" is a claim, and an empty
   // ledger is something an athlete might act on.
-  const journal = await openPanel("?panel=journal");
+  const journal = await openPanel("?panel=journal&scenario=failure");
   await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
   await expect(
     journal.page.getByText("Journal intelligence is temporarily unavailable."),
