@@ -71,7 +71,7 @@ export async function generateMealPlan({ data }: { data: unknown }) {
   };
   const { persist } = await import("./state");
   persist();
-  return { id: ids.MEAL_ID, plan };
+  return { id: ids.MEAL_ID, plan, createdAt: ids.VERSION, updatedAt: ids.VERSION };
 }
 export async function adaptMealPlan({ data }: { data: unknown }) {
   count("adaptMealPlan");
@@ -127,3 +127,11 @@ export async function logMeal({ data }: { data: { description: string; timeZone:
   persist();
   return row;
 }
+
+export {
+  getTodaysWorkout,
+  startWorkout,
+  logWorkoutSet,
+  finishWorkout,
+  recordWorkoutReflection,
+} from "./workout-functions";

@@ -37,6 +37,17 @@ export const state: {
   fail: string | null;
   counts: Record<string, number>;
   last: Record<string, unknown>;
+  workoutSession: {
+    started: boolean;
+    finished: boolean;
+    logs: {
+      exercise_slug: string;
+      set_number: number;
+      done: boolean;
+      weight_kg: number | null;
+      reps: number | null;
+    }[];
+  };
 } = {
   profile: structuredClone(profile),
   meal:
@@ -79,7 +90,24 @@ export const state: {
   fail: new URLSearchParams(location.search).get("fail"),
   counts: {},
   last: {},
+  workoutSession: { started: false, finished: false, logs: [] },
 };
+if (scenario === "recipe-conflict" && state.meal)
+  state.meal.data.days[0]!.meals[0]!.ingredients.push("Peanut butter 20 g");
+if (scenario === "workout-gap") {
+  const slug = state.plan.days[0]!.exercises[0]!.slug;
+  state.workoutSession = {
+    started: true,
+    finished: false,
+    logs: [1, 3, 4].map((set_number) => ({
+      exercise_slug: slug,
+      set_number,
+      done: true,
+      weight_kg: 20,
+      reps: 8,
+    })),
+  };
+}
 const stored = sessionStorage.getItem("gyms-core-fixture");
 if (stored) {
   const parsed = JSON.parse(stored);

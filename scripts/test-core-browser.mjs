@@ -1,3 +1,4 @@
+import { verifyPlanIntegrity } from "./test-plan-integrity-browser.mjs";
 import { verifyCoreActions } from "./test-core-actions-browser.mjs";
 import path from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
@@ -199,7 +200,8 @@ try {
     );
   }
   await verifyCoreActions({ open, record });
-  for (const screen of ["meals", "nutrition", "training", "onboarding"])
+  await verifyPlanIntegrity({ open, record });
+  for (const screen of ["meals", "nutrition", "training", "onboarding", "workout"])
     for (const lang of ["lt", "en"])
       for (const width of [320, 390]) {
         const { page, context } = await open(`screen=${screen}&lang=${lang}`, {

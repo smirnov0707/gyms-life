@@ -1,3 +1,4 @@
+import { MealPlanReviewNotice } from "@/components/MealPlanReviewNotice";
 import { MealPlanInputSchema, mealPreferencesFromProfile } from "@/lib/meal-preferences.schema";
 import { refreshCoreData } from "@/lib/core-cache";
 import { browserTimeZone } from "@/lib/local-day";
@@ -191,13 +192,27 @@ function MealPlanPage() {
         id: res.id,
         data: serializeJson(res.plan),
         lang,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: res.createdAt,
+        updated_at: res.updatedAt,
       });
       setOpenDay(1);
       await refreshCoreData(qc, "meals");
     } catch (error) {
-      if (error instanceof Error && error.message.includes("MEAL_PROFILE_INCOMPLETE")) {
+      if (error instanceof Error && error.message.includes("MEAL_PROFILE_CHANGED")) {
+        toast.error(
+          en
+            ? "Your profile changed while the plan was being created. Refresh your preferences and try again; the previous plan is unchanged."
+            : "Kuriant planą pasikeitė profilis. Atnaujink pasirinkimus ir bandyk dar kartą; ankstesnis planas nepakeistas.",
+        );
+        initialized.current = null;
+        await refreshCoreData(qc, "meals");
+      } else if (error instanceof Error && error.message.includes("MEAL_RESTRICTION_CONFLICT")) {
+        toast.error(
+          en
+            ? "The recipe conflicts with a declared dietary restriction. It was not saved. Review the preferences and try again."
+            : "Recepte aptiktas neatitikimas mitybos apribojimui. Planas neišsaugotas. Patikrink pasirinkimus ir bandyk dar kartą.",
+        );
+      } else if (error instanceof Error && error.message.includes("MEAL_PROFILE_INCOMPLETE")) {
         toast.error(
           en
             ? "Complete your body details in Profile or choose a custom calorie target. We will not invent missing body data."
@@ -237,7 +252,13 @@ function MealPlanPage() {
       await refreshCoreData(qc, "meals");
       toast.success(t("mp.adapted"));
     } catch (error) {
-      toast.error(aiErrorMessage(error, t));
+      if (error instanceof Error && error.message.includes("MEAL_RESTRICTION_CONFLICT"))
+        toast.error(
+          en
+            ? "The adapted recipe conflicts with a current dietary restriction. Your previous plan was kept."
+            : "Pritaikytas receptas neatitinka dabartinio mitybos apribojimo. Ankstesnis planas išsaugotas.",
+        );
+      else toast.error(aiErrorMessage(error, t));
     } finally {
       actionLock.current = false;
       setAdaptBusy(false);
@@ -473,6 +494,12 @@ function MealPlanPage() {
           </Button>
         </div>
       </fieldset>
+      {plan && (
+        <MealPlanReviewNotice
+          plan={plan}
+          preferences={preferencesQuery.isError ? null : (preferencesQuery.data ?? null)}
+        />
+      )}
 
       {!plan && !loading && !savedQuery.isError && !invalidSaved ? (
         <div className="panel grid place-items-center gap-3 p-12 text-center text-sm text-muted-foreground">

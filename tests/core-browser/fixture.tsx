@@ -1,3 +1,4 @@
+import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";
 /* eslint-disable react-refresh/only-export-components -- isolated executable fixture */
 import { StrictMode } from "react";
@@ -27,6 +28,7 @@ function Panel() {
     nutrition: NutritionRoute.options.component,
     onboarding: OnboardingRoute.options.component,
     training: TrainingRoute.options.component,
+    workout: WorkoutRoute.options.component,
   };
   const Component = routes[selected as keyof typeof routes];
   if (Component) return <Component />;

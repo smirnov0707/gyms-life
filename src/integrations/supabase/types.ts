@@ -1432,6 +1432,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_generated_meal_plan: {
+        Args: { p_plan_id: string; p_profile_updated_at: string; p_plan: Json; p_preferences: Json; p_lang: string }
+        Returns: { plan_id: string; created_at: string; updated_at: string }[]
+      }
+
       apply_verified_paddle_subscription: {
         Args: {
           p_environment: string
