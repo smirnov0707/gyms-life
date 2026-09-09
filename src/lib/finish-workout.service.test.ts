@@ -12,7 +12,7 @@ const dependencies = vi.hoisted(() => ({
   decision: vi.fn(),
   timeline: vi.fn(),
 }));
-vi.mock("./active-plan.service", () => ({ getActivePlanData: dependencies.plan }));
+vi.mock("./session-plan.server", () => ({ loadSessionPlannedDay: dependencies.plan }));
 vi.mock("./workout-completion.engine", () => ({
   evaluateWorkoutCompletion: dependencies.completion,
 }));
@@ -121,10 +121,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-09-06T10:00:00Z"));
   vi.spyOn(console, "warn").mockImplementation(() => {});
-  dependencies.plan.mockResolvedValue({
-    status: "READY",
-    plan: { id: PLAN, data: { days: [{ day: 1 }] } },
-  });
+  dependencies.plan.mockResolvedValue({ day: 1 });
   dependencies.day.mockImplementation((_session, day) => day);
   dependencies.completion.mockReturnValue({
     canFinish: true,

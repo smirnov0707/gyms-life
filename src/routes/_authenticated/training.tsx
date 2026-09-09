@@ -1,3 +1,4 @@
+import { SavedTrainingPrograms } from "@/components/SavedTrainingPrograms";
 import { createFileRoute } from "@tanstack/react-router";
 import { ActivePlanLoader } from "@/components/ActivePlanLoader";
 
@@ -15,6 +16,7 @@ function TrainingPage() {
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
       <ActivePlanLoader />
+      <SavedTrainingPrograms />
     </main>
   );
 }
