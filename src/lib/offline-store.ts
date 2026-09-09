@@ -57,6 +57,30 @@ export type OfflineSyncResult = {
   remaining: number;
 };
 
+/**
+ * Why a set could not be added to this device's queue.
+ *
+ * The module used to throw one English sentence, which the workout screen then
+ * replaced with "Could not save the set" — so neither the reason nor the fact
+ * that the *earlier* sets are still safe reached the person holding the phone.
+ * A reason travels instead, and the screen that has the translations says it.
+ *
+ * Both reasons share one guarantee worth stating plainly to an athlete: the
+ * stored queue is untouched. `setItem` applies a write or throws; it does not
+ * half-apply one.
+ */
+export type OfflineQueueFailure = "queue_full" | "storage_rejected";
+
+export class OfflineQueueError extends Error {
+  readonly reason: OfflineQueueFailure;
+
+  constructor(reason: OfflineQueueFailure, message: string) {
+    super(message);
+    this.name = "OfflineQueueError";
+    this.reason = reason;
+  }
+}
+
 let activeWorkoutSetFlush: Promise<OfflineSyncResult> | null = null;
 
 function isBrowser(): boolean {
@@ -99,7 +123,18 @@ function persistOfflineQueue(queue: OfflinePayload[]): void {
   // key — free to overwrite a corrupt queue with an empty one, and that path
   // is worse: it destroys without even adding a set in exchange.
   if (!readOfflineQueue().readable) salvageUnreadableQueue();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+  } catch (error) {
+    // A full device, or a browser refusing storage outright. Either way this
+    // arrived at the athlete as an unexplained DOMException; it is now a reason
+    // the screen can put a sentence to. The queue itself is unchanged, which is
+    // the part they actually need to hear.
+    throw new OfflineQueueError(
+      "storage_rejected",
+      error instanceof Error ? error.message : "Local storage refused the write.",
+    );
+  }
   window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_EVENT));
 }
 
@@ -168,7 +203,10 @@ export function queueWorkoutSet(input: WorkoutSetSync): OfflinePayload {
   // with this one. `persistOfflineQueue` puts the unreadable value aside.
   const queue = getOfflineQueue();
   if (queue.length >= MAX_QUEUE_ITEMS) {
-    throw new Error("Offline workout queue is full. Reconnect to sync your saved sets.");
+    throw new OfflineQueueError(
+      "queue_full",
+      `The offline queue already holds ${MAX_QUEUE_ITEMS} sets.`,
+    );
   }
 
   const payload: OfflinePayload = {

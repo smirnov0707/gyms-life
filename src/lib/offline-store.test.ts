@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   flushOfflineWorkoutSets,
   getOfflineQueue,
   isNetworkUnavailable,
+  OfflineQueueError,
   queueWorkoutSet,
   retainUnacknowledgedWorkoutSets,
   syncPayload,
@@ -283,6 +284,91 @@ describe("a queue that cannot be read", () => {
     );
     expect(getOfflineQueue()).toHaveLength(1);
     expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
+  });
+});
+
+describe("why a set could not be queued", () => {
+  /** Storage that refuses the queue write, the way a full device does. */
+  function stubBrowser(options: { seed?: string; refuseWrite?: boolean } = {}) {
+    const store = new Map<string, string>();
+    if (options.seed !== undefined) store.set("gyms_life_offline_queue_v2", options.seed);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          if (options.refuseWrite && key === "gyms_life_offline_queue_v2") {
+            throw new Error("QuotaExceededError: exceeded the quota.");
+          }
+          store.set(key, value);
+        },
+      },
+      dispatchEvent: () => true,
+    });
+    vi.stubGlobal(
+      "localStorage",
+      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
+    );
+    return store;
+  }
+
+  const set: WorkoutSetSync = {
+    sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
+    exerciseSlug: "barbell-squat",
+    exerciseName: "Barbell Squat",
+    setNumber: 3,
+    reps: 5,
+    weightKg: 120,
+    rpe: 9,
+    done: true,
+    performedAt: "2026-09-08T19:00:00.000Z",
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("names a full queue, rather than throwing a sentence nothing displays", () => {
+    // The old throw carried an English sentence into a screen whose only job
+    // was to replace it, so the athlete read "Could not save the set" for a
+    // condition they could have acted on.
+    const full = Array.from({ length: 200 }, (_, index) => ({
+      id: `id-${index}`,
+      type: "workout_set" as const,
+      data: set,
+      timestamp: 1_764_000_000_000 + index,
+    }));
+    stubBrowser({ seed: JSON.stringify(full) });
+
+    expect(() => queueWorkoutSet(set)).toThrow(OfflineQueueError);
+    try {
+      queueWorkoutSet(set);
+    } catch (error) {
+      expect((error as OfflineQueueError).reason).toBe("queue_full");
+    }
+  });
+
+  it("names storage refusing the write, which used to surface as a bare DOMException", () => {
+    stubBrowser({ seed: "[]", refuseWrite: true });
+
+    try {
+      queueWorkoutSet(set);
+      expect.unreachable("the write was refused");
+    } catch (error) {
+      expect((error as OfflineQueueError).reason).toBe("storage_rejected");
+    }
+  });
+
+  it("leaves the sets already queued exactly where they were", () => {
+    // The fact the athlete most needs and was never told: a refused write is
+    // not a partial one. Everything logged earlier is still here.
+    const existing: OfflinePayload[] = [
+      { id: "a", type: "workout_set", data: { ...set, setNumber: 1 }, timestamp: 1 },
+      { id: "b", type: "workout_set", data: { ...set, setNumber: 2 }, timestamp: 2 },
+    ];
+    stubBrowser({ seed: JSON.stringify(existing), refuseWrite: true });
+
+    expect(() => queueWorkoutSet(set)).toThrow(OfflineQueueError);
+    expect(getOfflineQueue()).toHaveLength(2);
   });
 });
 
