@@ -28,3 +28,9 @@ A subsequent rolled-back staging transaction passed these behavioural assertions
 - Second account: cannot create or reparent a workout to the other account's plan, and cannot attach a set to the other account's session. Its own valid plan/session/set chain remains writable.
 
 All synthetic rows and account records in this validation transaction were rolled back. These database tests exercise real PostgreSQL policies, constraints and activation functions. They are not tests of OAuth email delivery, AI-provider quality, real payments, or browser authentication.
+
+## Production read-only preflight
+
+The production aggregate check found **zero** sessions referencing a different owner's plan and **zero** set-log rows referencing a different owner's session. This describes the rows observed in the preflight; it is not a claim that the old policy could never admit an invalid write. The policy migration still awaits production application.
+
+Supabase security advisors after the staging change report only the existing informational deny-by-default internal tables (`app_observability_events`, `background_job_runs`, `paddle_webhook_events`). Production additionally reports leaked-password protection disabled. No authentication setting was changed in this audit. Review the official setting at https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection before public release.

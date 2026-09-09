@@ -78,12 +78,13 @@ const record = (name) => {
 try {
   await server.listen();
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
-  const engine=process.env.CORE_BROWSER_ENGINE ?? "chromium";
-  if(!["chromium","webkit"].includes(engine)) throw new Error("Unknown core browser engine");
-  const browserType=engine === "webkit" ? webkit : chromium;
+  const engine = process.env.CORE_BROWSER_ENGINE ?? "chromium";
+  if (!["chromium", "webkit"].includes(engine)) throw new Error("Unknown core browser engine");
+  const browserType = engine === "webkit" ? webkit : chromium;
   browser = await browserType.launch({
     ...(engine === "chromium" && process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
-      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}),
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : {}),
   });
   const open = async (query, viewport = { width: 1280, height: 900 }) => {
     const context = await browser.newContext({
