@@ -14,10 +14,12 @@
     "typecheck": "tsc --noEmit",
     "test:browser": "node scripts/test-twin-browser.mjs",
     "test:browser:today": "node scripts/test-today-browser.mjs",
-    "build:staging": "DEPLOY_TARGET=cloudflare vite build"
+    "build:staging": "DEPLOY_TARGET=cloudflare vite build",
+    "test:toolchain": "node --test scripts/test-dependency-toolchain.mjs"
   },
   "overrides": {
-    "rolldown": "1.2.1"
+    "rolldown": "1.2.1",
+    "sharp": "0.35.4"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.58",
@@ -103,7 +105,6 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "meshoptimizer": "0.22.0",
-    "nitro": "3.0.260603-beta",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
