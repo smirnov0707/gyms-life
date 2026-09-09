@@ -1,22 +1,17 @@
+import { safeAuthNext } from "@/lib/auth-redirect";
+import { submitAuthForm } from "@/lib/auth-form.service";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { Logo, LangSwitch } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-/** Only same-origin relative paths are allowed as a post-login redirect. */
-function safeNext(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
-  return value;
-}
 
 function isAuthMode(value: unknown): value is "in" | "up" | "forgot" {
   return value === "in" || value === "up" || value === "forgot";
@@ -24,7 +19,7 @@ function isAuthMode(value: unknown): value is "in" | "up" | "forgot" {
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>) => {
-    const next = safeNext(s["next"]);
+    const next = safeAuthNext(s["next"]);
     const mode = s["mode"];
     return {
       ...(next ? { next } : {}),
@@ -72,7 +67,19 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 function AuthPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const copy =
+    baseLang(lang) === "lt"
+      ? {
+          confirmation:
+            "Patikrink el. paštą. Jei registraciją reikia patvirtinti, ten rasi nuorodą. Tik patvirtinus prisijunk prie aplikacijos.",
+          session: "Nepavyko patvirtinti prisijungimo sesijos. Bandyk prisijungti dar kartą.",
+        }
+      : {
+          confirmation:
+            "Check your email. If confirmation is required, follow the link there before signing in. You are not signed in yet.",
+          session: "Your sign-in session could not be confirmed. Please try signing in again.",
+        };
   const { user, loading, refresh } = useAuth();
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -83,9 +90,14 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [sent, setSent] = useState(false);
-  const next = safeNext(search.next);
+  const [confirmation, setConfirmation] = useState(false);
+  const actionLock = useRef(false);
+  const navigated = useRef(false);
+  const next = safeAuthNext(search.next);
 
   const goNext = () => {
+    if (navigated.current) return;
+    navigated.current = true;
     if (next) {
       window.location.href = next;
       return;
@@ -98,47 +110,60 @@ function AuthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, next]);
 
+  useEffect(() => {
+    if (!actionLock.current) {
+      setMode(search.mode ?? "in");
+      setSent(false);
+      setConfirmation(false);
+    }
+  }, [search.mode]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (actionLock.current) return;
+    actionLock.current = true;
     setBusy(true);
+    setConfirmation(false);
     try {
-      if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        });
-        if (error) throw error;
+      const result = await submitAuthForm(supabase.auth, {
+        mode,
+        email,
+        password,
+        name,
+        origin: window.location.origin,
+        next,
+      });
+      if (result === "reset-requested") {
         setSent(true);
         toast.success(t("auth.resetSent"));
         return;
       }
-      if (mode === "in") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}${next ?? "/app"}`,
-            data: { full_name: name },
-          },
-        });
-        if (error) throw error;
+      if (result === "confirm-email") {
+        setPassword("");
+        setConfirmation(true);
+        return;
       }
-      // Wait until the session is actually persisted AND published to the auth context
+      let ready = false;
       for (let i = 0; i < 30; i++) {
-        if (await refresh()) break;
-        await new Promise((r) => setTimeout(r, 100));
+        if (await refresh()) {
+          ready = true;
+          break;
+        }
+        if (navigated.current) return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      goNext();
+      if (ready) goNext();
+      else toast.error(copy.session);
     } catch (error) {
       toast.error(errorMessage(error, t("common.error")));
     } finally {
+      actionLock.current = false;
       setBusy(false);
     }
   };
-
   const google = async () => {
+    if (actionLock.current) return;
+    actionLock.current = true;
     setGoogleBusy(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -148,16 +173,11 @@ function AuthPage() {
         },
       });
       if (error) throw error;
-      return;
-      for (let i = 0; i < 30; i++) {
-        if (await refresh()) break;
-        await new Promise((r) => setTimeout(r, 100));
-      }
-      goNext();
+      // OAuth navigates away. A second attempt cannot start while leaving.
     } catch (error) {
-      toast.error(errorMessage(error, t("common.error")));
-    } finally {
+      actionLock.current = false;
       setGoogleBusy(false);
+      toast.error(errorMessage(error, t("common.error")));
     }
   };
 
@@ -182,16 +202,30 @@ function AuthPage() {
           </p>
         </div>
 
+        {confirmation && (
+          <p role="status" className="panel p-4 text-sm">
+            {copy.confirmation}
+          </p>
+        )}
         <form onSubmit={submit} className="panel grid gap-4 p-6">
           {mode === "up" && (
             <div className="grid gap-2">
               <Label htmlFor="name">{t("auth.name")}</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input
+                disabled={busy || googleBusy}
+                maxLength={120}
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
           )}
           <div className="grid gap-2">
             <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
+              disabled={busy || googleBusy}
+              maxLength={254}
               id="email"
               type="email"
               autoComplete="email"
@@ -204,6 +238,8 @@ function AuthPage() {
             <div className="grid gap-2">
               <Label htmlFor="password">{t("auth.password")}</Label>
               <Input
+                disabled={busy || googleBusy}
+                maxLength={1024}
                 id="password"
                 type="password"
                 autoComplete={mode === "in" ? "current-password" : "new-password"}
@@ -233,9 +269,11 @@ function AuthPage() {
               {sent && <p className="text-sm text-primary">{t("auth.resetSent")}</p>}
               <button
                 type="button"
+                disabled={busy || googleBusy}
                 onClick={() => {
                   setMode("in");
                   setSent(false);
+                  setConfirmation(false);
                 }}
                 className="text-sm text-primary underline-offset-4 hover:underline"
               >
@@ -267,7 +305,11 @@ function AuthPage() {
 
               <button
                 type="button"
-                onClick={() => setMode(mode === "in" ? "up" : "in")}
+                disabled={busy || googleBusy}
+                onClick={() => {
+                  setMode(mode === "in" ? "up" : "in");
+                  setConfirmation(false);
+                }}
                 className="text-sm text-primary underline-offset-4 hover:underline"
               >
                 {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
@@ -276,6 +318,7 @@ function AuthPage() {
               {mode === "in" && (
                 <button
                   type="button"
+                  disabled={busy || googleBusy}
                   onClick={() => setMode("forgot")}
                   className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
