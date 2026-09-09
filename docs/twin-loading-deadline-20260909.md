@@ -17,3 +17,17 @@ The Twin browser harness adds three real-component scenarios: a held model reque
 Local typecheck, 1,129 tests in 147 files, lint (zero errors, 27 existing warnings), and production build passed before submission. GPU/browser and full CI evidence must be inspected for the resulting commit; local unit results alone do not certify those checks.
 
 No production deployment, merge, Supabase change, physiological calculation, asset promotion or visual signoff is part of this change. PR #55 remains draft.
+
+## Completed verification at `85335248f33e74daf4ee4fdb84927c29402dca82`
+
+All five GitHub workflow groups completed successfully: CI (`34315790340`), Twin browser (`34315790319`), Today browser (`34315790369`), Body replay browser (`34315790305`), and anatomy candidates (`34315790315`). The candidate workflow includes its geometry job and all six Today/Twin × clean/pose/muscular jobs. The complete local Twin browser run also passed all 23 scenarios using an isolated Google Chrome session on the authorized iMac.
+
+The controlled browser regression reproduced the old stage's prematurely cleared deadline, then verified timeout, disposal, ignored late readiness, retry, and manual 2D with the fixed component. This controlled-scene result is separate from the actual WebGL suite. Initial browser-harness failures were fixed by freezing the clock before navigation and finishing held Playwright routes before removing interception; no product assertions were removed.
+
+### Helper-only changes must still trigger the GPU workflows
+
+The extracted `scripts/test-twin-loading-browser.mjs` exposed a path-filter gap: the workflows named only the entry script. Twin pull requests, Twin pushes to main, and candidate pull requests now match `scripts/test-twin-*.mjs`. Two regression checks pin all three path filters and fail against the previous configuration. Jobs, permissions, branch restrictions and production deployment settings are unchanged.
+
+### Remaining visual boundary
+
+Reviewed the native-candidate CI front and mobile side renders against the supplied anatomy reference. Head/feet are in frame in those views, but the colored arm/leg areas remain broad surface regions rather than the reference's individually sculpted muscle forms, and neutral torso detail is less pronounced. This remains an unapproved review candidate, not the shipped model. Successful functional tests do not grant 1:1 visual acceptance.

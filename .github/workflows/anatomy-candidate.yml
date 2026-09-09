@@ -7,7 +7,7 @@ on:
       - "tests/today-browser/**"
       - "src/components/twin/**"
       - "scripts/authoring/**"
-      - "scripts/test-twin-browser.mjs"
+      - "scripts/test-twin-*.mjs"
       - "scripts/test-today-browser.mjs"
       - "package*.json"
       - ".github/workflows/anatomy-candidate.yml"

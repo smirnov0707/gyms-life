@@ -8,7 +8,7 @@ on:
       - "src/lib/digital-twin*"
       - "src/styles.css"
       - "tests/twin-browser/**"
-      - "scripts/test-twin-browser.mjs"
+      - "scripts/test-twin-*.mjs"
       - "package*.json"
       - ".github/workflows/twin-browser.yml"
   push:
@@ -20,7 +20,7 @@ on:
       - "src/lib/digital-twin*"
       - "src/styles.css"
       - "tests/twin-browser/**"
-      - "scripts/test-twin-browser.mjs"
+      - "scripts/test-twin-*.mjs"
       - "package*.json"
       - ".github/workflows/twin-browser.yml"
 permissions:
