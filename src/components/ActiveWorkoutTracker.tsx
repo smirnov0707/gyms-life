@@ -1,3 +1,4 @@
+import type { VoiceSetDraft } from "@/lib/voice-log.schema";
 import React, { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw, Volume2, Check, Plus, Dumbbell } from "lucide-react";
 import { toast } from "sonner";
@@ -8,9 +9,9 @@ import { useI18n } from "@/lib/i18n";
 interface WorkoutSet {
   id: string;
   exercise: string;
-  weightKg: number;
-  reps: number;
-  rpe: number;
+  weightKg: number | null;
+  reps: number | null;
+  rpe: number | null;
 }
 
 export const ActiveWorkoutTracker: React.FC = () => {
@@ -61,16 +62,10 @@ export const ActiveWorkoutTracker: React.FC = () => {
     };
   }, [isResting, restSecondsLeft, lang]);
 
-  const handleVoiceSet = (data: {
-    exerciseName: string;
-    weightKg: number;
-    reps: number;
-    rpe: number;
-    suggestedRestSeconds: number;
-  }) => {
+  const handleVoiceSet = (data: VoiceSetDraft) => {
     const newSet: WorkoutSet = {
       id: Date.now().toString(),
-      exercise: data.exerciseName,
+      exercise: data.exerciseName ?? "—",
       weightKg: data.weightKg,
       reps: data.reps,
       rpe: data.rpe,
@@ -79,9 +74,9 @@ export const ActiveWorkoutTracker: React.FC = () => {
     setSets((prev) => [newSet, ...prev]);
 
     // Paleidžiame poilsio laikmatį
-    const rest = data.suggestedRestSeconds || 90;
+    const rest = data.suggestedRestSeconds;
     setRestSecondsLeft(rest);
-    setIsResting(true);
+    setIsResting(rest !== null && rest > 0);
   };
 
   const startCustomRest = (sec: number) => {
@@ -143,7 +138,7 @@ export const ActiveWorkoutTracker: React.FC = () => {
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Dumbbell className="w-4 h-4 text-emerald-400 light:text-emerald-700" />
-            {lang === "lt" ? "Šios treniruotės serijos" : "Session Sets"}
+            {lang === "lt" ? "Laikini juodraščiai (neišsaugota)" : "Temporary drafts (not saved)"}
           </h4>
           <span className="text-xs font-mono text-muted-foreground">
             {sets.length} {lang === "lt" ? "serijos" : "sets"}
@@ -170,13 +165,13 @@ export const ActiveWorkoutTracker: React.FC = () => {
                   <span className="font-bold text-foreground">{s.exercise}</span>
                 </div>
                 <div className="flex items-center gap-3 text-foreground">
-                  <span>{s.weightKg} kg</span>
+                  <span>{s.weightKg ?? "—"} kg</span>
                   <span>×</span>
                   <span className="text-emerald-400 light:text-emerald-700 font-bold">
-                    {s.reps} reps
+                    {s.reps ?? "—"} reps
                   </span>
                   <span className="px-1.5 py-0.5 rounded bg-foreground/[0.06] text-[10px] text-amber-400 light:text-amber-700 border border-amber-500/20">
-                    RPE {s.rpe}
+                    RPE {s.rpe ?? "—"}
                   </span>
                 </div>
               </div>

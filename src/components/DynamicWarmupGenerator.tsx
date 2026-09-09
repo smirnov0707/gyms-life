@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
 import React, { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Flame, Loader2, Play, RefreshCw, Sparkles } from "lucide-react";
@@ -5,8 +7,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ExerciseVideo } from "./ExerciseVideo";
 import { getSmartWarmup } from "@/lib/coach-session.functions";
-import type { SmartWarmup } from "@/lib/coach-session.functions";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { aiErrorMessage } from "@/lib/ai-error";
 
 export interface DynamicWarmupGeneratorProps {
@@ -21,32 +22,32 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
 }) => {
   const { t, lang } = useI18n();
   const build = useServerFn(getSmartWarmup);
-  const [data, setData] = useState<SmartWarmup | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const [done, setDone] = useState<string[]>([]);
   const [videoSlug, setVideoSlug] = useState<string | null>(null);
-
-  const key = `${lang}|${focus}|${exercises.join(",")}`;
-
-  const run = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await build({ data: { focus, exercises, lang } });
-      setData(res);
+  const warmup = useQuery({
+    queryKey: ["smart-warmup", user?.id, lang, focus, ...exercises],
+    enabled: false,
+    retry: false,
+    staleTime: Infinity,
+    queryFn: () => build({ data: { focus, exercises, lang } }),
+  });
+  const data = warmup.data,
+    loading = warmup.isFetching;
+  const error = warmup.isError ? aiErrorMessage(warmup.error, t) : null;
+  const run = async () => {
+    if (loading || !user) return;
+    const result = await warmup.refetch({ cancelRefetch: false });
+    if (result.isSuccess) {
       setDone([]);
-    } catch (err) {
-      setError(aiErrorMessage(err, t));
-    } finally {
-      setLoading(false);
+      setVideoSlug(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-
+  };
+  const exercisesKey = exercises.join(",");
   useEffect(() => {
-    void run();
-  }, [run]);
+    setDone([]);
+    setVideoSlug(null);
+  }, [lang, focus, exercisesKey]);
 
   const toggle = (slug: string) =>
     setDone((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
@@ -65,12 +66,24 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
               {t("wu.title")} <Sparkles className="size-4 text-accent" />
             </h3>
             <p className="text-xs text-muted-foreground">
-              {data ? data.headline : t("wu.building")}
+              {data
+                ? data.headline
+                : loading
+                  ? t("wu.building")
+                  : baseLang(lang) === "lt"
+                    ? "Paspausk, kad sukurtum apšilimą"
+                    : "Press to build a warm-up"}
               {data ? ` · ${data.minutes} min` : ""}
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => void run()} aria-label={t("wu.regen")}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => void run()}
+          aria-label={t("wu.regen")}
+          disabled={loading || !user}
+        >
           {loading ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
         </Button>
       </div>
@@ -82,7 +95,11 @@ export const DynamicWarmupGenerator: React.FC<DynamicWarmupGeneratorProps> = ({
         </p>
       )}
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
 
       {loading && !data && (
         <div className="grid gap-2">

@@ -1,3 +1,4 @@
+import { verifyAiUi } from "./test-ai-ui-browser.mjs";
 import { verifyPlanIntegrity } from "./test-plan-integrity-browser.mjs";
 import { verifyCoreActions } from "./test-core-actions-browser.mjs";
 import path from "node:path";
@@ -201,6 +202,7 @@ try {
   }
   await verifyCoreActions({ open, record });
   await verifyPlanIntegrity({ open, record });
+  await verifyAiUi({ open, record, artifacts });
   for (const screen of ["meals", "nutrition", "training", "onboarding", "workout"])
     for (const lang of ["lt", "en"])
       for (const width of [320, 390]) {

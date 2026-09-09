@@ -570,6 +570,11 @@ function consentFrom(value: unknown, querySucceeded: boolean): AiPersonalization
   });
 }
 
+const contextOwners = new WeakMap<CentralUserContext, string>();
+export function isContextForUser(context: CentralUserContext, userId: string): boolean {
+  return contextOwners.get(context) === userId;
+}
+
 /** Builds the one permission-aware data contract allowed beyond GYMS.LIFE. */
 export async function buildUserContext(
   supabase: SupabaseClient<Database>,
@@ -613,7 +618,7 @@ export async function buildUserContext(
     ]);
   }
 
-  return {
+  const context: CentralUserContext = {
     profile: profile ?? defaultProfilePreferences(),
     currentDay,
     aiPersonalization,
@@ -628,6 +633,8 @@ export async function buildUserContext(
       ...(consentGap === null ? [] : [consentGap]),
     ],
   };
+  contextOwners.set(context, userId);
+  return context;
 }
 
 /**

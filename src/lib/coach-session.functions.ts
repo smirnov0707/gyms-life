@@ -1,8 +1,11 @@
+import { loadPersistedProfileTimeZone } from "./user-context.server";
+import { dayInTimeZone } from "./local-day";
+import { rethrowSafeAiError } from "./ai-error";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateOrchestratedJson } from "./ai-orchestrator.server";
-import { LANGUAGE_NAMES, SupportedLanguageSchema, type SupportedLanguage } from "./language.schema";
+import { LANGUAGE_NAMES, SupportedLanguageSchema } from "./language.schema";
 
 export const WARMUP_SLUGS = ["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"];
 
@@ -18,7 +21,7 @@ const SmartWarmupRecommendationSchema = z.object({
   drills: z
     .array(
       z.object({
-        slug: z.string().trim().min(1).max(120),
+        slug: z.enum(["arm-circles", "bodyweight-squats", "band-pull-aparts", "plank"]),
         name: z.string().trim().min(1).max(160),
         dose: z.string().trim().min(1).max(80),
         focus: z.string().trim().min(1).max(160),
@@ -26,62 +29,30 @@ const SmartWarmupRecommendationSchema = z.object({
       }),
     )
     .min(2)
-    .max(6),
+    .max(4)
+    .refine(
+      (drills) => new Set(drills.map((drill) => drill.slug)).size === drills.length,
+      "Duplicate warm-up exercise",
+    ),
 });
 
 export type SmartWarmup = z.infer<typeof SmartWarmupRecommendationSchema> & {
   readiness: number | null;
 };
 
-function fallbackWarmup(lang: SupportedLanguage, readiness: number | null): SmartWarmup {
-  const lithuanian = lang === "lt";
-  return {
-    headline: lithuanian ? "Dinaminis apšilimas" : "Dynamic warm-up",
-    minutes: 6,
-    readiness,
-    drills: [
-      {
-        slug: "arm-circles",
-        name: lithuanian ? "Rankų ratai" : "Arm circles",
-        dose: "60s",
-        focus: lithuanian ? "Pečiai ir mentės" : "Shoulders and scapulae",
-        why: lithuanian
-          ? "Aktyvina pečių juostą prieš apkrovą."
-          : "Prepares the shoulder girdle for loading.",
-      },
-      {
-        slug: "bodyweight-squats",
-        name: lithuanian ? "Pritūpimai be svorio" : "Bodyweight squats",
-        dose: "12 reps",
-        focus: lithuanian ? "Klubai ir keliai" : "Hips and knees",
-        why: lithuanian
-          ? "Pakelia temperatūrą ir aktyvina apatinę kūno dalį."
-          : "Raises temperature and activates the lower body.",
-      },
-      {
-        slug: "plank",
-        name: lithuanian ? "Lenta" : "Plank",
-        dose: "30s",
-        focus: lithuanian ? "Šerdis" : "Core",
-        why: lithuanian
-          ? "Suteikia liemens stabilumą pagrindiniams judesiams."
-          : "Builds trunk stability for the main lifts.",
-      },
-    ],
-  };
-}
-
 export const getSmartWarmup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => SmartWarmupInput.parse(input))
   .handler(async ({ data, context }): Promise<SmartWarmup> => {
-    const { data: latestCheckin } = await context.supabase
+    const timeZone = await loadPersistedProfileTimeZone(context.supabase, context.userId);
+    const { data: latestCheckin, error: checkinError } = await context.supabase
       .from("daily_checkins")
       .select("readiness_score")
       .eq("user_id", context.userId)
-      .order("checkin_on", { ascending: false })
+      .eq("checkin_on", dayInTimeZone(new Date(), timeZone))
       .limit(1)
       .maybeSingle();
+    if (checkinError) throw new Error("AI_CONTEXT_UNAVAILABLE");
     const readiness = latestCheckin?.readiness_score ?? null;
     const focus = data.focus || data.exercises.join(", ") || "full body";
 
@@ -92,13 +63,13 @@ export const getSmartWarmup = createServerFn({ method: "POST" })
         userId: context.userId,
         system:
           "You are a strength coach. Build conservative dynamic warm-ups. Do not diagnose or treat injuries.",
-        prompt: `Write in ${LANGUAGE_NAMES[data.lang]}. Build a 3-6 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
+        prompt: `Write in ${LANGUAGE_NAMES[data.lang]}. Use only these demonstrated exercise slugs: ${WARMUP_SLUGS.join(", ")}. Build a 2-4 drill warm-up for: ${focus}. Exercises: ${data.exercises.join(", ") || "not specified"}.`,
         schema: SmartWarmupRecommendationSchema,
         maxOutputTokens: 1200,
       });
       return { ...recommendation, readiness };
     } catch (error) {
-      console.warn("Smart warm-up generation failed; using the deterministic fallback.", error);
-      return fallbackWarmup(data.lang, readiness);
+      rethrowSafeAiError(error);
+      throw new Error("AI_INVALID_RESPONSE");
     }
   });

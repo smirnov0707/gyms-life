@@ -135,3 +135,49 @@ export {
   finishWorkout,
   recordWorkoutReflection,
 } from "./workout-functions";
+
+// Controlled model-response boundaries. No microphone audio leaves this fixture.
+export async function getSmartWarmup() {
+  count("smartWarmup");
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  if (state.fail === "warmup") throw new Error("AI_PROVIDER_UNAVAILABLE");
+  return {
+    headline: "Synthetic user-requested warm-up",
+    minutes: 5,
+    readiness: null,
+    drills: [
+      {
+        slug: "arm-circles",
+        name: "Synthetic arm circles",
+        dose: "30 s",
+        focus: "Synthetic",
+        why: "Synthetic test response",
+      },
+      {
+        slug: "bodyweight-squats",
+        name: "Synthetic squats",
+        dose: "5 reps",
+        focus: "Synthetic",
+        why: "Synthetic test response",
+      },
+    ],
+  };
+}
+export async function parseVoiceWorkoutLog({ data }: { data: unknown }) {
+  count("voiceParse");
+  state.last["voiceParse"] = data;
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  if (state.fail === "voice") throw new Error("AI_PROVIDER_UNAVAILABLE");
+  return {
+    ok: true as const,
+    transcription: "Synthetic squat eight repetitions",
+    data: {
+      exerciseName: "Synthetic squat",
+      reps: 8,
+      weightKg: null,
+      rpe: null,
+      suggestedRestSeconds: null,
+      coachFeedback: "",
+    },
+  };
+}
