@@ -9,15 +9,17 @@ import { freezeTwinClock, verifyTwinLoadingLifecycle } from "./test-twin-loading
 
 const root = process.cwd();
 const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
-if (!["", "1", "clean", "pose", "muscular"].includes(candidateMode))
+if (!["", "1", "clean", "pose", "muscular", "sculpt"].includes(candidateMode))
   throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
 const candidate = candidateMode !== "";
 const candidatePath =
-  candidateMode === "muscular"
-    ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
-    : candidateMode === "pose"
-      ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
-      : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+  candidateMode === "sculpt"
+    ? "tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb"
+    : candidateMode === "muscular"
+      ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
+      : candidateMode === "pose"
+        ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+        : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
@@ -135,9 +137,12 @@ try {
   await loaded(page);
   await preset(page, "Front");
   await stopMotion(page);
-  const expectedSource = candidateMode === "muscular" ? "makehuman" : "bodyparts3d";
-  const expectedCredit =
-    candidateMode === "muscular" ? "MakeHuman graphical assets (CC0)" : "BodyParts3D";
+  const expectedSource = ["muscular", "sculpt"].includes(candidateMode)
+    ? "makehuman"
+    : "bodyparts3d";
+  const expectedCredit = ["muscular", "sculpt"].includes(candidateMode)
+    ? "MakeHuman graphical assets (CC0)"
+    : "BodyParts3D";
   const expectedBytes =
     candidateBytes ?? (await readFile(path.join(root, "public/models/twin-anatomy-v1.glb")));
   const expectedSha = createHash("sha256").update(expectedBytes).digest("hex");

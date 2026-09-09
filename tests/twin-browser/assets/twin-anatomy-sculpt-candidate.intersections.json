@@ -1,0 +1,19 @@
+{
+  "assetSha256": "21198a588a4a8f60fbebf2dc1e8e83110f1977bdcaad7cbe9390133e9c9a820a",
+  "bytes": 1711668,
+  "completed": true,
+  "vertices": 22902,
+  "triangles": 45800,
+  "nonincidentBroadPhasePairs": 26315,
+  "excludedIncidentPairs": 277318,
+  "intersectingPairs": 0,
+  "coplanarPairsRequiringReview": 0,
+  "duplicateTriangles": 0,
+  "degenerateTriangles": 0,
+  "intersectionExamples": [],
+  "coplanarExamples": [],
+  "passed": true,
+  "toleranceMetres": 1e-8,
+  "method": "Exact GLB world positions; exact-position seam welding; AABB BVH; six segment/triangle tests; coplanar ambiguity fails closed",
+  "scope": "Nonincident triangles only. Shared-vertex pairs are excluded, not proven intersection-free. No anatomical, clinical, or visual approval."
+}

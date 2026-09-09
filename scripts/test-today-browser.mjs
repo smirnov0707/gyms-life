@@ -25,15 +25,17 @@ if (!Number.isInteger(port) || port < 1024 || port > 65535)
   throw new Error("TODAY_BROWSER_PORT must be an integer between 1024 and 65535");
 const origin = `http://127.0.0.1:${port}`;
 const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
-if (!["", "1", "clean", "pose", "muscular"].includes(candidateMode))
+if (!["", "1", "clean", "pose", "muscular", "sculpt"].includes(candidateMode))
   throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
 const candidate = candidateMode !== "";
 const candidatePath =
-  candidateMode === "muscular"
-    ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
-    : candidateMode === "pose"
-      ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
-      : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+  candidateMode === "sculpt"
+    ? "tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb"
+    : candidateMode === "muscular"
+      ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
+      : candidateMode === "pose"
+        ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+        : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;

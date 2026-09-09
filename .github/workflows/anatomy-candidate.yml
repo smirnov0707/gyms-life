@@ -30,6 +30,8 @@ jobs:
       - run: node --test scripts/authoring/audit-native-glb.selftest.mjs
       - name: Audit the exact native GLB used by the browser
         run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/native-geometry/intersections.audit.json
+      - name: Audit the exact sculpt candidate used by the browser
+        run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/native-geometry/sculpt-intersections.audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -45,7 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         suite: [twin, today]
-        candidate: [clean, pose, muscular]
+        candidate: [clean, pose, muscular, sculpt]
     env:
       TWIN_ANATOMY_CANDIDATE: ${{ matrix.candidate }}
     steps:
@@ -55,6 +57,7 @@ jobs:
           test -s tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb
           test -s tests/twin-browser/assets/twin-anatomy-pose-candidate.glb
           test -s tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb
+          test -s tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -63,6 +66,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Run the full unchanged browser suite against the candidate
         run: node scripts/test-${{ matrix.suite }}-browser.mjs
+      - name: Render exact before/after sculpt turntables
+        if: matrix.suite == 'twin' && matrix.candidate == 'sculpt'
+        run: |
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/twin-candidate/baseline-review
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/twin-candidate/sculpt-review
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -16,6 +16,7 @@ const assets = [
   "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb",
   "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb",
   "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb",
+  "tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb",
 ];
 
 describe("actual-asset full-body camera framing", () => {

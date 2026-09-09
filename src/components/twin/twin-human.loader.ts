@@ -2,6 +2,7 @@ import { Group, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
+import { parseTwinSculptContours } from "./twin-sculpt.contours";
 import {
   MAX_TWIN_ASSET_BYTES,
   verifyTwinAsset,
@@ -136,6 +137,13 @@ function build(scene: Object3D, provenance: TwinBodyProvenance): TwinBodyModel {
     const preset = sourceName === "Eyes" ? EYE : isSkin ? SKIN : BODY;
     disposeMaterial(object);
     object.material = createTwinAnatomyMaterial(preset, {
+      ...(object.userData["twinSculptContours"] !== undefined &&
+      object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
+        ? {
+            contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
+            contourFan: region === "chest" || region === "abs",
+          }
+        : {}),
       regionMask:
         object.userData["twinRegionMask"] === true &&
         object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
