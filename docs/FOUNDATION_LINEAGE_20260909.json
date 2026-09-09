@@ -1,0 +1,20 @@
+{
+  "schema": "gyms-foundation-lineage.v1",
+  "sourceHeads": {
+    "reviewedAudit": "13d7411958d69e318892b2b6efc5db54ba24591e",
+    "productionMain": "6203140c9dbd1958ab8c6fb83fc0d641a4015306",
+    "availabilityGuard": "33e0a578456fbf73b16afcf59ed1b4896044e1e4"
+  },
+  "reviewedAlternative": "f4586e0dcb7ecaa7ed69d56679b59d85ccfee804",
+  "alternativeRetained": ["src/lib/meal-profile.guard.test.ts"],
+  "paymentsDeferred": true,
+  "productionDeployed": false,
+  "remainingReleaseGates": [
+    "production_core_schema",
+    "migration_history_reconciliation",
+    "offline_account_isolation",
+    "real_user_and_provider_acceptance",
+    "night_lab_observed_cycle",
+    "visual_acceptance"
+  ]
+}

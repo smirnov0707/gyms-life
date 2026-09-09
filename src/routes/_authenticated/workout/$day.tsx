@@ -86,6 +86,7 @@ type Copy = {
   offlineQueueFull: string;
   offlineStorageFull: string;
   reconnectBeforeFinish: string;
+  reconnectBeforeStart: string;
   finished: string;
   finishFailed: string;
   reflectionSaved: string;
@@ -179,6 +180,8 @@ function copyFor(lang: Lang): Copy {
       offlineStorageFull:
         "This device has no room left to store the set. Your earlier sets are safe — free some space or reconnect to send them.",
       reconnectBeforeFinish: "Reconnect so your sets are saved before finishing the workout.",
+      reconnectBeforeStart:
+        "Reconnect to start or resume your workout. A started workout can record sets on this device.",
       finished: "Workout complete!",
       finishFailed: "Could not finish the workout",
       reflectionSaved: "Your session rating is saved.",
@@ -280,6 +283,8 @@ function copyFor(lang: Lang): Copy {
       "Šiame įrenginyje nebėra vietos serijai išsaugoti. Ankstesnės serijos išsaugotos – atlaisvinkite vietos arba atkurkite ryšį, kad jos būtų persiųstos.",
     reconnectBeforeFinish:
       "Atkurkite ryšį, kad prieš užbaigiant treniruotę būtų išsaugotos serijos.",
+    reconnectBeforeStart:
+      "Atkurk ryšį, kad galėtum pradėti arba tęsti treniruotę. Pradėtoje treniruotėje serijos gali būti saugomos šiame įrenginyje.",
     finished: "Treniruotė užbaigta!",
     finishFailed: "Nepavyko užbaigti treniruotės",
     reflectionSaved: "Tavo treniruotės įvertinimas išsaugotas.",
@@ -469,7 +474,13 @@ function WorkoutPage() {
   }, [canonicalWorkoutDay, day, navigate, sessionId]);
 
   const startMutation = useMutation({
+    // A paused mutation is not a persisted offline action. Respond immediately
+    // rather than silently scheduling a start for a later identity/network state.
+    networkMode: "always",
+    retry: false,
     mutationFn: async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine)
+        throw new AthleteFacingError(copy.reconnectBeforeStart);
       if (canonicalWorkoutDay === null) {
         throw new AthleteFacingError(copy.noWorkoutToday);
       }
@@ -542,6 +553,10 @@ function WorkoutPage() {
   };
 
   const logMutation = useMutation({
+    // This operation owns a durable local-storage branch. Query's default
+    // online-only mode would pause it BEFORE that branch could save the set.
+    networkMode: "always",
+    retry: false,
     mutationFn: async () => {
       const input = buildSetInput();
       if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -596,7 +611,11 @@ function WorkoutPage() {
   });
 
   const finishMutation = useMutation({
+    networkMode: "always",
+    retry: false,
     mutationFn: async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine)
+        throw new AthleteFacingError(copy.reconnectBeforeFinish);
       if (!sessionId) throw new Error("Workout session is not started.");
       if (hasQueuedWorkoutSets(sessionId)) {
         await syncQueuedSets();
