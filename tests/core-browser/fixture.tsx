@@ -1,3 +1,4 @@
+import "./offline-fixture";
 import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";

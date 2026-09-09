@@ -1,5 +1,5 @@
 // Sets that were logged without a connection and are still sitting on this
-// device. Until they are delivered, nothing on the server knows about them.
+// device. An acknowledgement can be lost even when the server received the set.
 export const extra_offline = {
   "offline.pending": {
     lt: "Neišsiųsta serijų: {n}",
@@ -12,14 +12,14 @@ export const extra_offline = {
     fr: "Séries non envoyées : {n}",
   },
   "offline.pendingNote": {
-    lt: "Jos išsaugotos šiame įrenginyje. Kol neišsiųstos, dvynys, tendencijos ir treneris jų nemato.",
-    en: "They are saved on this device. Until they are sent, your Twin, your trends and your coach cannot see them.",
-    ru: "Они сохранены на этом устройстве. Пока они не отправлены, двойник, тренды и тренер их не видят.",
-    uk: "Вони збережені на цьому пристрої. Доки їх не надіслано, двійник, тренди й тренер їх не бачать.",
-    pl: "Są zapisane na tym urządzeniu. Dopóki nie zostaną wysłane, bliźniak, trendy i trener ich nie widzą.",
-    de: "Sie liegen auf diesem Gerät. Bis sie gesendet sind, sehen dein Twin, deine Trends und dein Coach sie nicht.",
-    es: "Están guardadas en este dispositivo. Hasta que se envíen, tu gemelo, tus tendencias y tu entrenador no las ven.",
-    fr: "Elles sont enregistrées sur cet appareil. Tant qu'elles ne sont pas envoyées, votre jumeau, vos tendances et votre coach ne les voient pas.",
+    lt: "Laukiama patvirtinto sinchronizavimo. Šie įrašai gali dar nebūti įtraukti į dvynį, tendencijas ar trenerio išvadas.",
+    en: "Waiting for confirmed synchronization. These records may not yet be reflected in your Twin, trends or coach's conclusions.",
+    ru: "Ожидается подтверждение синхронизации. Эти записи могут ещё не учитываться двойником, трендами и тренером.",
+    uk: "Очікується підтвердження синхронізації. Ці записи можуть ще не враховуватися двійником, трендами та тренером.",
+    pl: "Oczekiwanie na potwierdzenie synchronizacji. Te wpisy mogą nie być jeszcze uwzględnione przez bliźniaka, trendy i trenera.",
+    de: "Bestätigung der Synchronisierung steht aus. Diese Einträge sind möglicherweise noch nicht im Twin, in Trends oder beim Coach berücksichtigt.",
+    es: "Esperando confirmación de sincronización. Es posible que estos registros aún no se reflejen en tu gemelo, tendencias o entrenador.",
+    fr: "En attente de confirmation de synchronisation. Ces données ne sont peut-être pas encore prises en compte par le jumeau, les tendances ou le coach.",
   },
   "offline.oldest": {
     lt: "Seniausia: {date}",

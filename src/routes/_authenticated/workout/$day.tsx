@@ -1,3 +1,8 @@
+import { useAuth } from "@/lib/auth";
+import { offlineIdentity } from "@/lib/offline-identity";
+import { syncOfflineWorkoutSet, identifyOwnedOfflineSessions } from "@/lib/offline-sync.functions";
+import { inspectLegacyOffline, recoverLegacyOfflineSets } from "@/lib/offline-store";
+import { useOfflineQueue } from "@/lib/use-offline-queue";
 import { VoiceSetLogger } from "@/components/VoiceSetLogger";
 import { restoreWorkoutProgress, completedWorkoutSetNumbers } from "@/lib/workout-resume.progress";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -52,7 +57,9 @@ import { browserTimeZone } from "@/lib/local-day";
 import { notifyAdaptationChanged } from "@/lib/readiness-adapt";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
-export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
+export const Route = createFileRoute("/_authenticated/workout/$day")({
+  component: OwnedWorkoutPage,
+});
 
 type Copy = {
   mustBeNumber: (label: string) => string;
@@ -409,7 +416,12 @@ function workoutFeelingOptionsFor(copy: Copy) {
   return copy.feeling.map((label, index) => ({ value: index + 1, label }));
 }
 
-function WorkoutPage() {
+function OwnedWorkoutPage() {
+  const { user, loading } = useAuth();
+  if (loading || !user) return null;
+  return <WorkoutPage key={user.id} ownerId={user.id} />;
+}
+function WorkoutPage({ ownerId }: { ownerId: string }) {
   const { day } = Route.useParams();
   const { lang } = useI18n();
   // Memoised so `copy` is a stable dependency: rebuilt every render it would
@@ -419,6 +431,16 @@ function WorkoutPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const actionLock = useRef(false);
+  const scope = useMemo(() => offlineIdentity.capture(ownerId), [ownerId]);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const stillCurrent = () => mounted.current && scope.isCurrent();
+  const localQueue = useOfflineQueue(ownerId);
   const completedSets = useRef(new Map<string, Set<number>>());
   const runAction = (action: () => void) => {
     if (actionLock.current) return;
@@ -449,15 +471,18 @@ function WorkoutPage() {
   const [workoutFeeling, setWorkoutFeeling] = useState<number | null>(null);
 
   const syncQueuedSets = useCallback(async () => {
-    const result = await flushOfflineWorkoutSets((input) => logWorkoutSet({ data: input }));
-    if (result.synced > 0) {
+    scope.assertCurrent();
+    const result = await flushOfflineWorkoutSets(ownerId, (input) =>
+      syncOfflineWorkoutSet({ data: input }),
+    );
+    if (mounted.current && scope.isCurrent() && result.synced > 0) {
       toast.success(result.synced === 1 ? copy.syncedOne : copy.syncedMany(result.synced));
     }
     return result;
-  }, [copy]);
+  }, [copy, ownerId, scope]);
 
   const workoutQuery = useQuery({
-    queryKey: ["workout", "next"],
+    queryKey: ["workout", "next", ownerId],
     queryFn: () => getTodaysWorkout({ data: { timeZone: browserTimeZone() } }),
   });
 
@@ -484,15 +509,30 @@ function WorkoutPage() {
       if (canonicalWorkoutDay === null) {
         throw new AthleteFacingError(copy.noWorkoutToday);
       }
+      scope.assertCurrent();
+      // The athlete explicitly asked to start/resume. Recover only authenticated
+      // owned legacy sessions first; raw pre-upgrade records remain unchanged.
+      if (inspectLegacyOffline().status === "present")
+        await recoverLegacyOfflineSets(ownerId, (input) =>
+          identifyOwnedOfflineSessions({ data: input }),
+        );
+      scope.assertCurrent();
       await syncQueuedSets();
-      return startWorkout({ data: { day: canonicalWorkoutDay, timeZone: browserTimeZone() } });
+      scope.assertCurrent();
+      return startWorkout({
+        data: { ownerId, day: canonicalWorkoutDay, timeZone: browserTimeZone() },
+      });
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
+      if (!stillCurrent()) return;
+      const saved = await getOfflineQueue(ownerId);
+      if (!stillCurrent()) return;
+      if (saved.invalidCount) throw new AthleteFacingError(copy.offlineStorageFull);
+      const localQueue = saved.items;
       setSessionId(result.session.id);
       setActiveWorkout(result.workout);
       setWorkoutAdaptation(result.adaptation);
       setWorkoutGuidance(result.guidance);
-      const localQueue = getOfflineQueue();
       completedSets.current = new Map(
         result.workout.exercises.map((exercise) => [
           exercise.slug,
@@ -509,7 +549,9 @@ function WorkoutPage() {
       setSetNumber(progress.setNumber);
       if (result.resumed) toast.info(copy.resuming);
     },
-    onError: (error) => toast.error(errorMessage(error, copy.startFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.startFailed));
+    },
     onSettled: () => {
       actionLock.current = false;
     },
@@ -541,9 +583,10 @@ function WorkoutPage() {
   // about, and they arrived as "Could not save the set" — which reads like the
   // rest of the session is gone too. Both reasons mean the opposite: nothing
   // stored was touched, and that is the sentence they get.
-  const queueSetOnThisDevice = (input: WorkoutSetSync) => {
+  const queueSetOnThisDevice = async (input: WorkoutSetSync) => {
     try {
-      queueWorkoutSet(input);
+      scope.assertCurrent();
+      await queueWorkoutSet(input, ownerId);
     } catch (error) {
       if (!(error instanceof OfflineQueueError)) throw error;
       throw new AthleteFacingError(
@@ -558,22 +601,25 @@ function WorkoutPage() {
     networkMode: "always",
     retry: false,
     mutationFn: async () => {
+      scope.assertCurrent();
       const input = buildSetInput();
       if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueSetOnThisDevice(input);
+        await queueSetOnThisDevice(input);
         return { queued: true, recorded: input };
       }
 
       try {
-        const result = await logWorkoutSet({ data: input });
+        const result = await logWorkoutSet({ data: { ...input, ownerId } });
+        scope.assertCurrent();
         return { ...result, queued: false, recorded: input };
       } catch (error) {
         if (!isNetworkUnavailable(error)) throw error;
-        queueSetOnThisDevice(input);
+        await queueSetOnThisDevice(input);
         return { queued: true, recorded: input };
       }
     },
     onSuccess: (result) => {
+      if (!stillCurrent()) return;
       // Reps and weight carry into the next set: the set after this one is
       // almost always the same, and clearing them made every set of an
       // exercise cost the same two keyboard entries as the first.
@@ -604,7 +650,9 @@ function WorkoutPage() {
         toast.info(copy.queuedOffline);
       }
     },
-    onError: (error) => toast.error(errorMessage(error, copy.logFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.logFailed));
+    },
     onSettled: () => {
       actionLock.current = false;
     },
@@ -617,15 +665,19 @@ function WorkoutPage() {
       if (typeof navigator !== "undefined" && !navigator.onLine)
         throw new AthleteFacingError(copy.reconnectBeforeFinish);
       if (!sessionId) throw new Error("Workout session is not started.");
-      if (hasQueuedWorkoutSets(sessionId)) {
+      scope.assertCurrent();
+      if (await hasQueuedWorkoutSets(sessionId, ownerId)) {
         await syncQueuedSets();
-        if (hasQueuedWorkoutSets(sessionId)) {
+        scope.assertCurrent();
+        if (await hasQueuedWorkoutSets(sessionId, ownerId)) {
           throw new AthleteFacingError(copy.reconnectBeforeFinish);
         }
       }
-      return finishWorkout({ data: { sessionId, timeZone: browserTimeZone() } });
+      scope.assertCurrent();
+      return finishWorkout({ data: { ownerId, sessionId, timeZone: browserTimeZone() } });
     },
     onSuccess: async (result) => {
+      if (!stillCurrent()) return;
       setFinished(true);
       setSummary({
         duration: result.session.durationSeconds ?? 0,
@@ -643,9 +695,11 @@ function WorkoutPage() {
         qc.invalidateQueries({ queryKey: ["injury-risk"] }),
       ]);
       notifyAdaptationChanged();
-      toast.success(copy.finished);
+      if (stillCurrent()) toast.success(copy.finished);
     },
-    onError: (error) => toast.error(errorMessage(error, copy.finishFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.finishFailed));
+    },
     onSettled: () => {
       actionLock.current = false;
     },
@@ -657,6 +711,7 @@ function WorkoutPage() {
       return recordWorkoutReflection({ data: { sessionId, feeling } });
     },
     onSuccess: (reflection) => {
+      if (!stillCurrent()) return;
       setWorkoutFeeling(reflection.feeling);
       // Today recomputes its canonical athlete snapshot from this new,
       // user-reported signal. The decision engine still applies its own
@@ -664,7 +719,9 @@ function WorkoutPage() {
       notifyAdaptationChanged();
       toast.success(copy.reflectionSaved);
     },
-    onError: (error) => toast.error(errorMessage(error, copy.reflectionFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.reflectionFailed));
+    },
   });
 
   useEffect(() => {
@@ -674,11 +731,36 @@ function WorkoutPage() {
   }, [rest]);
 
   useEffect(() => {
-    void syncQueuedSets();
-    const onOnline = () => void syncQueuedSets();
+    void syncQueuedSets().catch(() => {});
+    const onOnline = () => {
+      void syncQueuedSets().catch(() => {});
+    };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, [syncQueuedSets]);
+
+  useEffect(() => {
+    if (
+      !sessionId ||
+      !activeWorkout ||
+      !localQueue.data ||
+      localQueue.data.ownerId !== ownerId ||
+      !scope.isCurrent()
+    )
+      return;
+    const exercise = activeWorkout.exercises[exerciseIndex];
+    if (!exercise) return;
+    const current = completedSets.current.get(exercise.slug) ?? new Set<number>();
+    for (const item of localQueue.data.items)
+      if (
+        item.data.sessionId === sessionId &&
+        item.data.exerciseSlug === exercise.slug &&
+        item.data.done
+      )
+        current.add(item.data.setNumber);
+    completedSets.current.set(exercise.slug, current);
+    if (!loggingExtra) setSetNumber(nextSetNumber(exercise.sets, current));
+  }, [localQueue.data, ownerId, sessionId, activeWorkout, exerciseIndex, loggingExtra, scope]);
 
   const workout = activeWorkout ?? canonicalWorkout;
   const exercise = workout?.exercises[exerciseIndex];

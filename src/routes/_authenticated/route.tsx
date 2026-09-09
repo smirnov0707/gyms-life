@@ -44,8 +44,8 @@ function AuthenticatedLayout() {
   return (
     <>
       <ProfileTimeZoneSync userId={user.id} />
-      <OfflineQueueSync />
-      <AppShell>
+      <OfflineQueueSync key={user.id} />
+      <AppShell key={user.id}>
         <AccessGate>
           <Outlet />
           <RelatedForRoute />

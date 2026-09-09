@@ -181,3 +181,31 @@ export async function parseVoiceWorkoutLog({ data }: { data: unknown }) {
     },
   };
 }
+
+export async function identifyOwnedOfflineSessions({
+  data,
+}: {
+  data: { ownerId: string; sessionIds: string[] };
+}) {
+  if (data.ownerId !== ids.USER) throw new Error("OFFLINE_IDENTITY_CHANGED");
+  return {
+    ownerId: ids.USER,
+    sessionIds: data.sessionIds.filter((id) => id === "55555555-5555-4555-8555-555555555555"),
+  };
+}
+export async function syncOfflineWorkoutSet({
+  data,
+}: {
+  data: import("../../src/lib/offline-contract").OfflineSyncRequest;
+}) {
+  if (data.ownerId !== ids.USER) throw new Error("OFFLINE_IDENTITY_CHANGED");
+  const { logWorkoutSet } = await import("./workout-functions");
+  await logWorkoutSet({ data: data.data });
+  return {
+    status: "acknowledged" as const,
+    ownerId: ids.USER,
+    clientId: data.clientId,
+    serverSetId: "77777777-7777-4777-8777-777777777777",
+    data: data.data,
+  };
+}

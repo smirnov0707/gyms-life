@@ -17,7 +17,9 @@ describe("integrated foundation source retention", () => {
   it("keeps the two critical workout merge behaviours together", () => {
     const source = readFileSync("src/routes/_authenticated/workout/$day.tsx", "utf8");
     expect(
-      source.match(/queueSetOnThisDevice\(input\);\s*return \{ queued: true, recorded: input \};/g),
+      source.match(
+        /await queueSetOnThisDevice\(input\);\s*return \{ queued: true, recorded: input \};/g,
+      ),
     ).toHaveLength(2);
     expect(source).toContain("new AthleteFacingError(copy.mustBeNumber(label))");
   });

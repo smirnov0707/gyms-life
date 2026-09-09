@@ -1,3 +1,4 @@
+import { offlineIdentity } from "./offline-identity";
 import {
   createContext,
   useCallback,
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       read: () => supabase.auth.getSession(),
       apply: (next) => {
         const nextId = next?.user.id ?? null;
+        offlineIdentity.set(nextId);
         // Clear identity-scoped cached views before publishing the new identity.
         if (identityChanged(knownUserId.current, nextId)) queryClient.clear();
         knownUserId.current = nextId;
@@ -60,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", sync);
     return () => {
       current.dispose();
+      offlineIdentity.set(null);
       sub.subscription.unsubscribe();
       if (controller.current === current) controller.current = null;
       window.removeEventListener("focus", sync);

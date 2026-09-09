@@ -27,10 +27,8 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
         },
       })),
     );
-    await page.evaluate(({ key, original }) => localStorage.setItem(key, original), {
-      key,
-      original,
-    });
+    await page.evaluate((rows) => window.__offlineFixture.seed(rows), JSON.parse(original));
+    const originalOwned = JSON.stringify(await page.evaluate(() => window.__offlineFixture.read()));
     await context.setOffline(true);
     await page.getByRole("button", { name: save, exact: true }).click();
     const message =
@@ -38,7 +36,9 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
         ? "This device is holding as many offline sets as it can. Your earlier sets are safe — reconnect to send them, then log this one."
         : "Šis įrenginys nebetalpina daugiau neprisijungus įrašytų serijų. Ankstesnės serijos išsaugotos – atkurkite ryšį, kad jos būtų persiųstos, ir tada įrašykite šią.";
     await expect(page.getByText(message, { exact: true })).toBeVisible();
-    expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe(original);
+    expect(JSON.stringify(await page.evaluate(() => window.__offlineFixture.read()))).toBe(
+      originalOwned,
+    );
     expect(await page.evaluate(() => window.__core.counts.logWorkoutSet ?? 0)).toBe(0);
     await context.close();
     record(
@@ -58,7 +58,7 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
     await expect(
       page.getByText("Set saved on this device and will sync when you reconnect.", { exact: true }),
     ).toBeVisible();
-    const queued = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "[]"), key);
+    const queued = await page.evaluate(() => window.__offlineFixture.read());
     expect(queued).toHaveLength(1);
     expect(queued[0].data).toMatchObject({ setNumber: 1, reps: 8, weightKg: 20, done: true });
     expect(await page.evaluate(() => window.__core.counts.logWorkoutSet ?? 0)).toBe(0);
@@ -96,14 +96,12 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
         },
       },
     ]);
+    await page.evaluate((rows) => window.__offlineFixture.seed(rows), JSON.parse(original));
+    const originalOwned = JSON.stringify(await page.evaluate(() => window.__offlineFixture.read()));
     await page.evaluate(
       ({ key, original }) => {
         localStorage.setItem(key, original);
-        const write = Storage.prototype.setItem;
-        Storage.prototype.setItem = function (name, value) {
-          if (name === key) throw new DOMException("Synthetic full storage", "QuotaExceededError");
-          return write.call(this, name, value);
-        };
+        window.__offlineFixture.rejectWrites();
       },
       { key, original },
     );
@@ -116,6 +114,9 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
       ),
     ).toBeVisible();
     expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe(original);
+    expect(JSON.stringify(await page.evaluate(() => window.__offlineFixture.read()))).toBe(
+      originalOwned,
+    );
     expect(await page.evaluate(() => window.__core.counts.logWorkoutSet ?? 0)).toBe(0);
     await expect(page.locator("#set-reps")).toHaveValue("8");
     await context.close();
@@ -132,7 +133,7 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
     await expect(
       page.getByText("Set saved on this device and will sync when you reconnect.", { exact: true }),
     ).toBeVisible();
-    const queued = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "[]"), key);
+    const queued = await page.evaluate(() => window.__offlineFixture.read());
     expect(queued).toHaveLength(1);
     expect(queued[0].data.setNumber).toBe(1);
     expect(await page.evaluate(() => window.__core.counts.logWorkoutSet)).toBe(1);

@@ -939,9 +939,7 @@ try {
 
   const seedQueue = async (query) => {
     const opened = await openPanel(query);
-    await opened.page.evaluate((rows) => {
-      localStorage.setItem("gyms_life_offline_queue_v2", JSON.stringify(rows));
-    }, queued);
+    await opened.page.evaluate((rows) => window.__offlineFixture.seed(rows), queued);
     await opened.page.reload();
     return opened;
   };
@@ -949,18 +947,21 @@ try {
   const stuck = await seedQueue("?panel=offline&sync=fail");
   const strip = stuck.page.getByText("Sets not sent yet: 2");
   await expect(strip).toBeVisible({ timeout: 30000 });
-  await expect(stuck.page.getByText("They are saved on this device")).toBeVisible();
+  await expect(
+    stuck.page.getByText("Only this account's records are shown.", { exact: false }),
+  ).toBeVisible();
   await stuck.page.screenshot({ path: path.join(artifacts, "offline-queue.png") });
   await stuck.page.close();
 
   // Delivered, the strip has nothing left to report and gets out of the way.
   const sent = await seedQueue("?panel=offline");
+  await expect
+    .poll(() => sent.page.evaluate(async () => (await window.__offlineFixture.read()).length), {
+      timeout: 30000,
+    })
+    .toBe(0);
   await expect(sent.page.getByText("Sets not sent yet: 2")).toHaveCount(0, { timeout: 30000 });
-  expect(
-    await sent.page.evaluate(() =>
-      JSON.parse(localStorage.getItem("gyms_life_offline_queue_v2") ?? "[]"),
-    ),
-  ).toEqual([]);
+  expect(await sent.page.evaluate(() => window.__offlineFixture.read())).toEqual([]);
   expect(sent.errors).toEqual([]);
   await sent.page.close();
   record("sets stuck on the device are reported until they are delivered");
@@ -984,9 +985,7 @@ try {
       query === "?panel=offline&sync=fail"
         ? await (async () => {
             const seeded = await openPanel(query, narrow);
-            await seeded.page.evaluate((rows) => {
-              localStorage.setItem("gyms_life_offline_queue_v2", JSON.stringify(rows));
-            }, queued);
+            await seeded.page.evaluate((rows) => window.__offlineFixture.seed(rows), queued);
             await seeded.page.reload();
             return seeded;
           })()

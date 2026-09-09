@@ -456,3 +456,26 @@ export const getSleepNight = async () => {
   }
   return { status: "absent" as const };
 };
+
+export async function identifyOwnedOfflineSessions({
+  data,
+}: {
+  data: { ownerId: string; sessionIds: string[] };
+}) {
+  return { ownerId: data.ownerId, sessionIds: data.sessionIds };
+}
+export async function syncOfflineWorkoutSet({
+  data,
+}: {
+  data: import("../../src/lib/offline-contract").OfflineSyncRequest;
+}) {
+  if (new URLSearchParams(location.search).get("sync") === "fail")
+    throw new Error("Synthetic failed delivery");
+  return {
+    status: "acknowledged" as const,
+    ownerId: data.ownerId,
+    clientId: data.clientId,
+    serverSetId: "77777777-7777-4777-8777-777777777777",
+    data: data.data,
+  };
+}

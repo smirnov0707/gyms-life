@@ -1,6 +1,8 @@
+import { offlineIdentity } from "../../src/lib/offline-identity";
 /* eslint-disable react-refresh/only-export-components -- isolated fixture adapter; not a hot-reloaded app module */
 import type { ReactNode } from "react";
 import { USER } from "./fixtures";
+offlineIdentity.set(USER);
 const fixtureUser = {
   id: USER,
   email: "core-fixture@example.invalid",

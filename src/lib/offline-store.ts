@@ -1,299 +1,116 @@
-import { z } from "zod";
-
-const STORAGE_KEY = "gyms_life_offline_queue_v2";
-
-/**
- * Where an unreadable queue is put before a new one takes its place.
- *
- * `getOfflineQueue` answers an unreadable store with an empty list, which is
- * fine for anything that only reads. It was not fine for `queueWorkoutSet`,
- * which builds the next queue from that answer: one corrupt blob, and the
- * following set overwrote every set the athlete had logged offline. PART LXXIX
- * says not to lose workout state, and that was the one place in the product
- * that could.
- *
- * Moving the raw value aside costs nothing and keeps it recoverable, so an
- * athlete can go on logging without their earlier sets being destroyed to do
- * it. Throwing instead would have cost them the set they were adding, and
- * refusing to write at all would have cost them the rest of the session.
- */
-const SALVAGE_KEY = "gyms_life_offline_queue_v2.unreadable";
-const MAX_QUEUE_ITEMS = 200;
-
-export const WorkoutSetSyncSchema = z.object({
-  sessionId: z.string().uuid(),
-  exerciseSlug: z.string().min(1).max(120),
-  exerciseName: z.string().min(1).max(200),
-  setNumber: z.number().int().positive(),
-  reps: z.number().int().positive().nullable(),
-  weightKg: z.number().nonnegative().nullable(),
-  rpe: z.number().min(0).max(10).nullable(),
-  done: z.boolean(),
-  /**
-   * When the set was performed. Carried in the payload rather than left to
-   * the server clock: a queued set may not reach the server for hours, and
-   * the Twin decays fatigue from this instant.
-   *
-   * Optional because a queue written by an earlier version of the app has no
-   * such field, and those are real sets someone performed. `syncPayload`
-   * recovers their instant from the payload's own `timestamp`.
-   */
-  performedAt: z.string().datetime().optional(),
-});
-
-export type WorkoutSetSync = z.infer<typeof WorkoutSetSyncSchema>;
-
-const OfflinePayloadSchema = z.object({
-  id: z.string().min(1),
-  type: z.literal("workout_set"),
-  data: WorkoutSetSyncSchema,
-  timestamp: z.number().int().nonnegative(),
-});
-
-export type OfflinePayload = z.infer<typeof OfflinePayloadSchema>;
-
-export type OfflineSyncResult = {
-  synced: number;
-  remaining: number;
-};
-
-/**
- * Why a set could not be added to this device's queue.
- *
- * The module used to throw one English sentence, which the workout screen then
- * replaced with "Could not save the set" — so neither the reason nor the fact
- * that the *earlier* sets are still safe reached the person holding the phone.
- * A reason travels instead, and the screen that has the translations says it.
- *
- * Both reasons share one guarantee worth stating plainly to an athlete: the
- * stored queue is untouched. `setItem` applies a write or throws; it does not
- * half-apply one.
- */
-export type OfflineQueueFailure = "queue_full" | "storage_rejected";
-
-export class OfflineQueueError extends Error {
-  readonly reason: OfflineQueueFailure;
-
-  constructor(reason: OfflineQueueFailure, message: string) {
-    super(message);
-    this.name = "OfflineQueueError";
-    this.reason = reason;
-  }
+import { offlineDatabase } from "./offline-database";
+import { offlineIdentity, type OfflineIdentityScope } from "./offline-identity";
+import {
+  OFFLINE_DB_NAME,
+  OfflineQueueError,
+  OwnerIdSchema,
+  type WorkoutSetSync,
+  type OwnedQueueView,
+  type OfflineSyncRequest,
+  type OfflineSyncResult,
+} from "./offline-contract";
+import { readLegacyOffline, type LegacyOfflineView } from "./offline-legacy";
+import { synchronizeOwnedOffline, recoverVerifiedLegacy } from "./offline-sync.engine";
+export {
+  WorkoutSetSyncSchema,
+  OfflinePayloadSchema,
+  OFFLINE_QUEUE_EVENT,
+  OfflineQueueError,
+  syncPayload,
+  type WorkoutSetSync,
+  type OfflinePayload,
+  type OwnedOfflineItem,
+  type OfflineSyncResult,
+} from "./offline-contract";
+const flushes = new Map<string, Promise<OfflineSyncResult>>();
+export async function getOfflineQueue(ownerId: string): Promise<OwnedQueueView> {
+  return offlineDatabase.read(offlineIdentity.capture(ownerId));
 }
-
-let activeWorkoutSetFlush: Promise<OfflineSyncResult> | null = null;
-
-function isBrowser(): boolean {
-  return typeof window !== "undefined";
+export async function queueWorkoutSet(input: WorkoutSetSync, ownerId: string) {
+  const item = await offlineDatabase.add(offlineIdentity.capture(ownerId), input);
+  if (!item) throw new OfflineQueueError("storage_rejected");
+  return item;
 }
-
-function createPayloadId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+export async function hasQueuedWorkoutSets(sessionId: string, ownerId: string): Promise<boolean> {
+  const queue = await getOfflineQueue(ownerId);
+  if (queue.invalidCount) throw new OfflineQueueError("storage_unavailable");
+  return queue.items.some((item) => item.data.sessionId === sessionId);
 }
-
-/**
- * Fired whenever the queue grows or shrinks.
- *
- * Sets waiting here are training that happened and that nothing on the server
- * knows about, so the screen that says so has to be able to notice them
- * arriving and leaving without polling local storage on a timer.
- */
-export const OFFLINE_QUEUE_EVENT = "gymslife:offline-queue";
-
-/** Keeps an unreadable queue where it can still be recovered by hand. */
-function salvageUnreadableQueue(): void {
-  if (!isBrowser()) return;
+export function inspectLegacyOffline(): LegacyOfflineView {
+  if (typeof window === "undefined")
+    return { status: "absent", items: [], invalidCount: 0, limited: false };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) localStorage.setItem(SALVAGE_KEY, raw);
+    return readLegacyOffline(localStorage);
   } catch {
-    // Nothing more can be done here, and failing the athlete's set over it
-    // would trade a recoverable loss for a certain one.
+    return { status: "unavailable", items: [], invalidCount: 0, limited: false };
   }
 }
-
-function persistOfflineQueue(queue: OfflinePayload[]): void {
-  if (!isBrowser()) return;
-  // Every write here replaces whatever is stored, so the check belongs here
-  // rather than at each caller. Guarding only `queueWorkoutSet` left the flush
-  // path — which persists `retainUnacknowledgedWorkoutSets(...)` over the same
-  // key — free to overwrite a corrupt queue with an empty one, and that path
-  // is worse: it destroys without even adding a set in exchange.
-  if (!readOfflineQueue().readable) salvageUnreadableQueue();
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-  } catch (error) {
-    // A full device, or a browser refusing storage outright. Either way this
-    // arrived at the athlete as an unexplained DOMException; it is now a reason
-    // the screen can put a sentence to. The queue itself is unchanged, which is
-    // the part they actually need to hear.
-    throw new OfflineQueueError(
-      "storage_rejected",
-      error instanceof Error ? error.message : "Local storage refused the write.",
-    );
-  }
-  window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_EVENT));
+export async function recoverLegacyOfflineSets(
+  ownerId: string,
+  verify: (input: { ownerId: string; sessionIds: string[] }) => Promise<unknown>,
+) {
+  const scope = offlineIdentity.capture(ownerId);
+  if (typeof navigator === "undefined" || !navigator.onLine)
+    throw new Error("OFFLINE_SYNC_UNAVAILABLE");
+  return recoverVerifiedLegacy(scope, inspectLegacyOffline(), offlineDatabase, verify);
 }
-
-/**
- * The instant a queued set was performed.
- *
- * A payload written before `performedAt` existed still recorded the moment it
- * was queued, which is the same instant. Recovering it there means upgrading
- * the app never silently re-dates work someone already did.
- */
-export function syncPayload(item: OfflinePayload): WorkoutSetSync {
-  if (item.data.performedAt !== undefined) return item.data;
-  return { ...item.data, performedAt: new Date(item.timestamp).toISOString() };
-}
-
-/**
- * Returns only validated records; malformed local storage never reaches the
- * server. Records are validated one at a time: a single unreadable entry used
- * to discard the whole queue, which meant losing every other set in it.
- */
-type OfflineQueueRead = {
-  items: OfflinePayload[];
-  /**
-   * False when something is stored under the queue key that could not be read
-   * as a queue. An empty queue is readable; a corrupt one is not, and only the
-   * second must stop a writer from overwriting it.
-   */
-  readable: boolean;
-};
-
-function readOfflineQueue(): OfflineQueueRead {
-  if (!isBrowser()) return { items: [], readable: true };
-
-  let raw: string | null;
-  try {
-    raw = localStorage.getItem(STORAGE_KEY);
-  } catch {
-    // Storage itself is unavailable, so nothing can be written over either.
-    return { items: [], readable: true };
-  }
-  if (!raw) return { items: [], readable: true };
-
-  try {
-    const rows: unknown = JSON.parse(raw);
-    if (!Array.isArray(rows)) return { items: [], readable: false };
-    return {
-      items: rows.flatMap((row) => {
-        const parsed = OfflinePayloadSchema.safeParse(row);
-        return parsed.success ? [parsed.data] : [];
-      }),
-      readable: true,
-    };
-  } catch {
-    return { items: [], readable: false };
-  }
-}
-
-export function getOfflineQueue(): OfflinePayload[] {
-  return readOfflineQueue().items;
-}
-
-export function queueWorkoutSet(input: WorkoutSetSync): OfflinePayload {
-  const data = WorkoutSetSyncSchema.parse(input);
-  // Never build the next queue on top of a queue we could not read: what is
-  // there is somebody's logged sets, and the write below replaces all of them
-  // with this one. `persistOfflineQueue` puts the unreadable value aside.
-  const queue = getOfflineQueue();
-  if (queue.length >= MAX_QUEUE_ITEMS) {
-    throw new OfflineQueueError(
-      "queue_full",
-      `The offline queue already holds ${MAX_QUEUE_ITEMS} sets.`,
-    );
-  }
-
-  const payload: OfflinePayload = {
-    id: createPayloadId(),
-    type: "workout_set",
-    data,
-    timestamp: Date.now(),
-  };
-  persistOfflineQueue([...queue, payload]);
-  return payload;
-}
-
-export function hasQueuedWorkoutSets(sessionId: string): boolean {
-  return getOfflineQueue().some((item) => item.data.sessionId === sessionId);
-}
-
-/**
- * Synchronizes in order and keeps only items that could not be delivered.
- * The server endpoint is idempotent, so a retry after a lost response is safe.
- */
-export async function synchronizeWorkoutSets(
-  queue: OfflinePayload[],
-  sync: (input: WorkoutSetSync) => Promise<unknown>,
-): Promise<{ synced: number; remaining: OfflinePayload[] }> {
-  const remaining: OfflinePayload[] = [];
-  let synced = 0;
-
-  for (const item of queue) {
-    try {
-      await sync(syncPayload(item));
-      synced += 1;
-    } catch {
-      remaining.push(item);
-    }
-  }
-
-  return { synced, remaining };
-}
-
-/**
- * Removes only records acknowledged from this synchronization snapshot. Records
- * appended while a flush was in flight are retained for the next flush.
- */
-export function retainUnacknowledgedWorkoutSets(
-  snapshot: OfflinePayload[],
-  failed: OfflinePayload[],
-  current: OfflinePayload[],
-): OfflinePayload[] {
-  const failedIds = new Set(failed.map((item) => item.id));
-  const acknowledgedIds = new Set(
-    snapshot.filter((item) => !failedIds.has(item.id)).map((item) => item.id),
-  );
-
-  return current.filter((item) => !acknowledgedIds.has(item.id));
-}
-
 export function flushOfflineWorkoutSets(
-  sync: (input: WorkoutSetSync) => Promise<unknown>,
+  ownerId: string,
+  send: (input: OfflineSyncRequest) => Promise<unknown>,
 ): Promise<OfflineSyncResult> {
-  if (!isBrowser() || !navigator.onLine) {
-    return Promise.resolve({ synced: 0, remaining: getOfflineQueue().length });
-  }
-  if (activeWorkoutSetFlush) return activeWorkoutSetFlush;
-
-  const snapshot = getOfflineQueue();
-  const flush = synchronizeWorkoutSets(snapshot, sync).then(({ synced, remaining }) => {
-    const queue = retainUnacknowledgedWorkoutSets(snapshot, remaining, getOfflineQueue());
-    persistOfflineQueue(queue);
-    return { synced, remaining: queue.length };
-  });
-
-  activeWorkoutSetFlush = flush;
-  void flush.then(
-    () => {
-      if (activeWorkoutSetFlush === flush) activeWorkoutSetFlush = null;
-    },
-    () => {
-      if (activeWorkoutSetFlush === flush) activeWorkoutSetFlush = null;
-    },
-  );
-  return flush;
+  const scope = offlineIdentity.capture(ownerId),
+    key = `${scope.ownerId}:${scope.epoch}`;
+  const current = flushes.get(key);
+  if (current) return current;
+  const execute = () =>
+    synchronizeOwnedOffline(
+      scope,
+      offlineDatabase,
+      send,
+      () => typeof navigator !== "undefined" && navigator.onLine,
+    );
+  const operation = async () => {
+    // A cross-tab lock reduces duplicate deliveries, but durability does not rely
+    // on its presence. Transactions plus server identity/idempotency checks remain authoritative.
+    if (typeof navigator !== "undefined" && navigator.locks) {
+      return navigator.locks.request(
+        `${OFFLINE_DB_NAME}:sync:${ownerId}`,
+        { ifAvailable: true },
+        async (lock) => {
+          scope.assertCurrent();
+          if (lock) return execute();
+          const view = await offlineDatabase.read(scope);
+          return {
+            ownerId,
+            synced: 0,
+            remaining: view.items.length,
+            invalidCount: view.invalidCount,
+            cancelled: false,
+            busy: true,
+          };
+        },
+      );
+    }
+    return execute();
+  };
+  const promise = operation();
+  flushes.set(key, promise);
+  const clear = () => {
+    if (flushes.get(key) === promise) flushes.delete(key);
+  };
+  void promise.then(clear, clear);
+  return promise;
 }
-
 export function isNetworkUnavailable(error: unknown): boolean {
-  if (isBrowser() && !navigator.onLine) return true;
+  if (
+    error instanceof OfflineQueueError ||
+    (error instanceof Error && error.message.startsWith("OFFLINE_IDENTITY"))
+  )
+    return false;
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
   if (error instanceof TypeError) return true;
-  if (!(error instanceof Error)) return false;
-
-  return /network|fetch failed|failed to fetch|connection|offline/i.test(error.message);
+  return (
+    error instanceof Error &&
+    /network|fetch failed|failed to fetch|connection|offline/i.test(error.message)
+  );
 }

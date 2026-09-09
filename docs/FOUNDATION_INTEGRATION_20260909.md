@@ -1,5 +1,7 @@
 # Future Lab foundation integration — first implementation block after the vision audit
 
+> Historical integration record at `760155e`. The subsequent owner-scoped offline storage and recovery implementation is documented in `OFFLINE_ACCOUNT_ISOLATION_20260909.md`. Its newer code replaces the unscoped queue described below; the production release gates remain separate.
+
 ## Scope and canonical lineage
 
 This is a **single integration candidate**, not a production deployment. It starts from the latest reviewed AI/plan chain, `13d7411958d69e318892b2b6efc5db54ba24591e`, and preserves the actual parent histories of:
