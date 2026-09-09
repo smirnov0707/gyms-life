@@ -1,3 +1,4 @@
+import { VoiceSetLogger } from "@/components/VoiceSetLogger";
 import { restoreWorkoutProgress, completedWorkoutSetNumbers } from "@/lib/workout-resume.progress";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -999,6 +1000,21 @@ function WorkoutPage() {
                       )}
                     </div>
                   )}
+                  <details className="mt-5 rounded-xl border border-border p-3">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      {baseLang(lang) === "lt"
+                        ? "Užpildyti serijos juodraštį balsu"
+                        : "Fill this set from a voice draft"}
+                    </summary>
+                    <VoiceSetLogger
+                      key={`${sessionId}:${exercise.slug}:${setNumber}`}
+                      onSetLogged={(draft) => {
+                        setReps(draft.reps === null ? "" : String(draft.reps));
+                        setWeight(draft.weightKg === null ? "" : String(draft.weightKg));
+                        setRpe(draft.rpe === null ? "" : String(draft.rpe));
+                      }}
+                    />
+                  </details>
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div>
                       <label

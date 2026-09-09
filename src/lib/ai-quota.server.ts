@@ -45,7 +45,8 @@ export async function reserveAiRequestWithRpc(userId: string, rpc: AiQuotaRpc): 
     throw new Error("AI_QUOTA_UNAVAILABLE");
   }
 
-  if (!allowed) {
+  if (allowed !== true && allowed !== false) throw new Error("AI_QUOTA_UNAVAILABLE");
+  if (allowed === false) {
     throw new AiQuotaExceededError();
   }
 }

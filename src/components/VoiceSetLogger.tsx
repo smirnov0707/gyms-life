@@ -1,195 +1,188 @@
-import React, { useState, useRef } from "react";
-import { Mic, MicOff, Loader2, Sparkles, CheckCircle2, Volume2, Radio } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { parseVoiceWorkoutLog } from "@/lib/voice-logger.functions";
-import { errorMessage } from "@/lib/error-message";
-
-interface VoiceSetLoggerProps {
-  onSetLogged?: (data: {
-    exerciseName: string;
-    weightKg: number;
-    reps: number;
-    rpe: number;
-    suggestedRestSeconds: number;
-  }) => void;
+import { chooseAudioRecordingType, type VoiceSetDraft } from "@/lib/voice-log.schema";
+import { aiErrorMessage } from "@/lib/ai-error";
+export interface VoiceSetLoggerProps {
+  onSetLogged?: (data: VoiceSetDraft) => void;
 }
-
-function readBlobAsDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
+const readAudio = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error("Nepavyko perskaityti garso įrašo."));
-      }
-    };
-    reader.onerror = () => reject(reader.error ?? new Error("Nepavyko perskaityti garso įrašo."));
-    reader.onabort = () => reject(new Error("Garso įrašo nuskaitymas buvo nutrauktas."));
+    reader.onload = () =>
+      typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("AI_INVALID_MEDIA"));
+    reader.onerror = () => reject(new Error("AI_INVALID_MEDIA"));
+    reader.onabort = reader.onerror;
     reader.readAsDataURL(blob);
   });
-}
-
-export const VoiceSetLogger: React.FC<VoiceSetLoggerProps> = ({ onSetLogged }) => {
-  const { lang } = useI18n();
-  const parseFn = useServerFn(parseVoiceWorkoutLog);
-
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
-  const startRecording = async () => {
-    audioChunksRef.current = [];
+/** Records a bounded audio clip and shows a reviewable draft; this component never saves a set. */
+export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
+  const { lang, t } = useI18n(),
+    lt = baseLang(lang) === "lt",
+    parse = useServerFn(parseVoiceWorkoutLog);
+  const [phase, setPhase] = useState<"idle" | "opening" | "recording" | "processing">("idle");
+  const [draft, setDraft] = useState<{ transcription: string; data: VoiceSetDraft } | null>(null);
+  const recorder = useRef<MediaRecorder | null>(null),
+    stream = useRef<MediaStream | null>(null),
+    active = useRef(true),
+    lock = useRef(false),
+    timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+      if (timer.current) clearTimeout(timer.current);
+      if (recorder.current) {
+        recorder.current.onstop = null;
+        if (recorder.current.state !== "inactive") recorder.current.stop();
+      }
+      stream.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+  const stop = () => {
+    if (recorder.current?.state === "recording") {
+      setPhase("processing");
+      recorder.current.stop();
+    }
+  };
+  const start = async () => {
+    if (lock.current) return;
+    lock.current = true;
+    setPhase("opening");
+    setDraft(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined")
+        throw new Error("MEDIA_UNAVAILABLE");
+      const mimeType = chooseAudioRecordingType((type) => MediaRecorder.isTypeSupported(type));
+      if (!mimeType) throw new Error("MEDIA_UNAVAILABLE");
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!active.current) {
+        audioStream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      stream.current = audioStream;
+      const current = new MediaRecorder(audioStream, { mimeType });
+      recorder.current = current;
+      const chunks: Blob[] = [];
+      let bytes = 0;
+      current.ondataavailable = (event) => {
+        if (event.data.size) {
+          chunks.push(event.data);
+          bytes += event.data.size;
+          if (bytes > 12_000_000) stop();
         }
       };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        stream.getTracks().forEach((track) => track.stop());
-        await processAudio(audioBlob);
+      current.onerror = () => {
+        current.onstop = null;
+        audioStream.getTracks().forEach((track) => track.stop());
+        if (timer.current) clearTimeout(timer.current);
+        lock.current = false;
+        if (active.current) {
+          setPhase("idle");
+          toast.error(lt ? "Įrašymas nepavyko." : "Recording failed.");
+        }
       };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      toast.info(
-        lang === "lt"
-          ? "Klausausi... Ištarkite pratimą, svorį ir pakartojimus"
-          : "Listening... Speak your set",
-      );
+      current.onstop = () => {
+        if (timer.current) clearTimeout(timer.current);
+        audioStream.getTracks().forEach((track) => track.stop());
+        if (!active.current) return;
+        setPhase("processing");
+        void (async () => {
+          const blob = new Blob(chunks, { type: current.mimeType || mimeType });
+          if (blob.size === 0 || blob.size > 12_000_000) throw new Error("AI_INVALID_MEDIA");
+          const audioBase64 = await readAudio(blob);
+          if (!active.current) return;
+          const result = await parse({ data: { audioBase64, mimeType: blob.type, lang } });
+          if (!active.current) return;
+          if (!result.ok) throw new Error("AI_INVALID_RESPONSE");
+          setDraft({ transcription: result.transcription, data: result.data });
+        })()
+          .catch((error) => {
+            if (active.current) toast.error(aiErrorMessage(error, t));
+          })
+          .finally(() => {
+            lock.current = false;
+            if (active.current) setPhase("idle");
+          });
+      };
+      current.start(250);
+      setPhase("recording");
+      timer.current = setTimeout(stop, 60_000);
     } catch {
-      toast.error(lang === "lt" ? "Nepavyko pasiekti mikrofono" : "Microphone access denied");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const processAudio = async (blob: Blob) => {
-    setIsProcessing(true);
-    try {
-      const base64String = await readBlobAsDataUrl(blob);
-      const res = await parseFn({
-        data: {
-          audioBase64: base64String,
-          mimeType: "audio/webm",
-          lang: lang || "lt",
-        },
-      });
-
-      if (res.ok) {
-        setLastTranscript(res.transcription);
-        toast.success(
-          lang === "lt"
-            ? `Užregistruota: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps} (RPE ${res.data.rpe})`
-            : `Logged: ${res.data.exerciseName} ${res.data.weightKg}kg × ${res.data.reps}`,
-        );
-        onSetLogged?.(res.data);
-      } else {
+      stream.current?.getTracks().forEach((track) => track.stop());
+      lock.current = false;
+      if (active.current) {
+        setPhase("idle");
         toast.error(
-          errorMessage(
-            res.reason,
-            lang === "lt"
-              ? "Nepavyko apdoroti balso įrašo"
-              : "Could not process the voice recording",
-          ),
+          lt
+            ? "Mikrofonas arba įrašymo formatas nepasiekiamas."
+            : "Microphone or recording format is unavailable.",
         );
       }
-    } catch (error: unknown) {
-      toast.error(errorMessage(error, "Apdorojimo klaida"));
-    } finally {
-      setIsProcessing(false);
     }
   };
-
   return (
-    <div className="glass-panel rounded-3xl p-5 space-y-4 relative overflow-hidden">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 light:text-red-700">
-            <Radio className="w-4 h-4 animate-pulse" />
-          </div>
-          <div>
-            <h4 className="text-sm font-black uppercase tracking-tight text-foreground">
-              {lang === "lt" ? "Balso serijų registratorius" : "Voice Set Logger"}
-            </h4>
-            {/* The provider and model are real — the request goes to Groq
-                with whisper-large-v3-turbo. The "<200ms" that used to sit
-                here was the vendor's figure for the transcription call
-                alone; the athlete waits for the upload, the transcription
-                and an LLM parse on top of it. */}
-            <p className="text-[11px] font-mono text-muted-foreground">Groq Whisper Turbo</p>
-          </div>
-        </div>
-
-        <span className="badge-tech text-red-400 light:text-red-700 border-red-500/20 bg-red-500/5">
-          VOICE TELEMETRY
-        </span>
-      </div>
-
-      <div>
-        {!isRecording ? (
-          <Button
-            type="button"
-            onClick={startRecording}
-            disabled={isProcessing}
-            className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl shadow-lg shadow-red-950/40 border border-red-400/20 transition-all hover:scale-[1.01]"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-xs font-mono">
-                  {lang === "lt" ? "Apdorojama..." : "Processing..."}
-                </span>
-              </>
-            ) : (
-              <>
-                <Mic className="w-4 h-4" />
-                <span className="text-xs">
-                  {lang === "lt" ? "Ištarti seriją balsu" : "Hold to Voice Log"}
-                </span>
-              </>
-            )}
-          </Button>
+    <section className="panel space-y-3 rounded-2xl p-4">
+      <h3 className="font-semibold">{lt ? "Serijos juodraštis balsu" : "Voice set draft"}</h3>
+      <p className="text-xs text-muted-foreground">
+        {lt
+          ? "Iki 60 sekundžių. AI gali suklysti. Peržiūrėk reikšmes — įrašas automatiškai neišsaugomas."
+          : "Up to 60 seconds. AI can be wrong. Review the values; no set is saved automatically."}
+      </p>
+      <Button
+        type="button"
+        onClick={phase === "recording" ? stop : () => void start()}
+        disabled={phase === "opening" || phase === "processing"}
+        className="h-auto min-h-11 w-full whitespace-normal"
+      >
+        {phase === "recording" ? (
+          <MicOff className="mr-2 size-4" />
+        ) : phase === "idle" ? (
+          <Mic className="mr-2 size-4" />
         ) : (
-          <Button
-            type="button"
-            onClick={stopRecording}
-            className="w-full bg-surface-2 text-red-400 light:text-red-700 border border-red-500/40 font-black uppercase tracking-wider gap-2.5 py-6 rounded-2xl animate-pulse shadow-lg shadow-red-950/40"
-          >
-            <MicOff className="w-4 h-4 text-red-400 light:text-red-700" />
-            <span className="text-xs">
-              {lang === "lt" ? "Baigti kalbėti (Spauskite)" : "Stop Recording"}
-            </span>
-          </Button>
+          <Loader2 className="mr-2 size-4 animate-spin" />
         )}
-      </div>
-
-      {lastTranscript && (
-        <div className="p-3 rounded-xl bg-surface border border-border flex items-center gap-2.5 text-xs text-foreground font-mono">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 light:text-emerald-700 shrink-0" />
-          <span className="truncate">„{lastTranscript}“</span>
+        {phase === "recording"
+          ? lt
+            ? "Baigti įrašą"
+            : "Stop recording"
+          : phase === "idle"
+            ? lt
+              ? "Įrašyti balsu"
+              : "Record a set"
+            : lt
+              ? "Apdorojama…"
+              : "Processing…"}
+      </Button>
+      {draft && (
+        <div role="status" className="space-y-2 text-sm">
+          <p className="break-words">{draft.transcription}</p>
+          <p>
+            {draft.data.exerciseName ?? "—"} · {draft.data.weightKg ?? "—"} kg ×{" "}
+            {draft.data.reps ?? "—"} · RPE {draft.data.rpe ?? "—"}
+          </p>
+          {onSetLogged && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto min-h-11 w-full whitespace-normal"
+              onClick={() => {
+                onSetLogged(draft.data);
+                setDraft(null);
+              }}
+            >
+              {lt ? "Perkelti į formą ir patikrinti" : "Use draft in the form and review"}
+            </Button>
+          )}
         </div>
       )}
-    </div>
+    </section>
   );
-};
-
+}
 export default VoiceSetLogger;

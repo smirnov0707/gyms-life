@@ -32,10 +32,17 @@ export default async function nightLab(): Promise<Response> {
     return new Response("not configured", { status: 500 });
   }
 
-  const response = await fetch(new URL("/api/internal/night-lab", base), {
-    method: "POST",
-    headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
-  });
+  let response: Response;
+  try {
+    response = await fetch(new URL("/api/internal/night-lab", base), {
+      method: "POST",
+      signal: AbortSignal.timeout(60_000),
+      headers: { authorization: `Bearer ${secret}`, "content-type": "application/json" },
+    });
+  } catch {
+    console.error("[NightLab] scheduler request unavailable");
+    return new Response("temporarily unavailable", { status: 503 });
+  }
 
   const body = await response.text();
   // The application's answer is the ledger's own account of the run, so this

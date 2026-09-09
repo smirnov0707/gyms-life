@@ -33,7 +33,6 @@ export const AI_TASK_CONTEXT_SCOPE = {
   "coach.ask": "personalized",
   "coach.warmup": "personalized",
   "daily-brief": "personalized",
-  "daily-readiness": "personalized",
   dineout: "personalized",
   "exercise-filter": "none",
   "exercise-suggestion": "personalized",
@@ -53,7 +52,6 @@ export const AI_TASK_CONTEXT_SCOPE = {
   "training-plan": "personalized",
   "voice-log-structuring": "none",
   "workout-request": "personalized",
-  "workout-structure": "personalized",
   biomechanics: "none",
 } as const satisfies Record<string, AiContextScope>;
 
@@ -67,7 +65,7 @@ export const PERSONALIZED_AI_TASKS: readonly ScopedAiTask[] = (
 /**
  * The tasks the privacy card names by their product feature.
  *
- * Coach and the daily brief are four tasks between them, which is why the card
+ * Coach and the daily brief are three executable tasks between them, which is why the card
  * cannot say "and N−2 others" and be right. The rest are counted rather than
  * listed: seventeen task ids in a privacy card is not a disclosure anybody
  * reads, and a number that comes from the table is truer than a sentence
@@ -77,7 +75,6 @@ export const NAMED_AI_TASKS = [
   "coach.ask",
   "coach.warmup",
   "daily-brief",
-  "daily-readiness",
 ] as const satisfies readonly ScopedAiTask[];
 
 /** Personalized tasks beyond the ones the card names outright. */

@@ -132,6 +132,7 @@ export async function runBackgroundJob(
   if (decision === "skip") return { status: "skipped", runKey };
 
   let runId: string;
+  const claimedAt = now.toISOString();
 
   if (decision === "reclaim") {
     const previous = existingRow as LedgerRow | null;
@@ -144,9 +145,11 @@ export async function runBackgroundJob(
       .update({ started_at: now.toISOString(), attempted: 0, succeeded: 0, failed: 0 })
       .eq("id", previous.id)
       .eq("status", "running")
+      .eq("started_at", previous.started_at)
       .select("id")
       .maybeSingle();
-    if (error || !data) return { status: "skipped", runKey };
+    if (error) return { status: "unavailable", runKey };
+    if (!data) return { status: "skipped", runKey };
     runId = data.id;
   } else {
     const { data, error } = await supabaseAdmin
@@ -164,6 +167,7 @@ export async function runBackgroundJob(
     // Losing the insert race is the answer, not an error: somebody else has
     // this period.
     if (error) return { status: claimInsertOutcome(error.code), runKey };
+    if (!data) return { status: "unavailable", runKey };
     runId = data.id;
   }
 
@@ -191,12 +195,16 @@ export async function runBackgroundJob(
   // leave unchecked. If it fails the row stays `running`, so the next period
   // waits out a lease and then does tonight's work again — which is the right
   // self-healing behaviour, and useless if nobody can see it happened.
-  const { error: closeError } = await supabaseAdmin
+  const { data: closed, error: closeError } = await supabaseAdmin
     .from("background_job_runs")
     .update(closingLedgerUpdate(outcome, fatalCode, new Date()))
-    .eq("id", runId);
+    .eq("id", runId)
+    .eq("status", "running")
+    .eq("started_at", claimedAt)
+    .select("id")
+    .maybeSingle();
 
-  return { status: "ran", runKey, window, outcome, recorded: !closeError };
+  return { status: "ran", runKey, window, outcome, recorded: !closeError && closed?.id === runId };
 }
 
 /**

@@ -1,3 +1,4 @@
+import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";
 /* eslint-disable react-refresh/only-export-components -- isolated executable fixture */
@@ -32,6 +33,8 @@ function Panel() {
   };
   const Component = routes[selected as keyof typeof routes];
   if (Component) return <Component />;
+  if (selected === "ai-warmup")
+    return <DynamicWarmupGenerator focus="Synthetic squat" exercises={["bodyweight-squats"]} />;
   if (selected === "activation")
     return (
       <>

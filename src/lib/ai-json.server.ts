@@ -1,5 +1,10 @@
 import type { LanguageModel, ModelMessage } from "ai";
 import type { z } from "zod";
+import {
+  aiSchemaInstruction,
+  requireCompleteAiText,
+  MAX_AI_TEXT_CHARS,
+} from "./ai-response.contract";
 import { reserveAiRequest } from "./ai-quota.server";
 
 const INSTRUCTION =
@@ -17,28 +22,35 @@ export async function generateJson<T>(
     messages?: ModelMessage[];
     schema: z.ZodType<T, unknown>;
     maxOutputTokens?: number;
+    abortSignal?: AbortSignal;
     /** The orchestrator reserves once before a provider fallback route. */
     reserveQuota?: boolean;
   },
 ): Promise<T> {
   const { generateText } = await import("ai");
 
-  const system = opts.system ? `${opts.system}\n\n${INSTRUCTION}` : INSTRUCTION;
+  const system = [opts.system, INSTRUCTION, aiSchemaInstruction(opts.schema)]
+    .filter(Boolean)
+    .join("\n\n");
 
   let text: string;
   try {
+    opts.abortSignal?.throwIfAborted();
     if (opts.reserveQuota !== false) await reserveAiRequest(opts.userId);
-    ({ text } = await generateText({
+    opts.abortSignal?.throwIfAborted();
+    const generated = await generateText({
       model,
       system,
       ...(opts.messages
         ? { messages: opts.messages }
         : { prompt: `${opts.prompt ?? ""}\n\n${INSTRUCTION}` }),
       maxOutputTokens: opts.maxOutputTokens ?? 16000,
-      maxRetries: 2,
+      maxRetries: 0,
+      ...(opts.abortSignal ? { abortSignal: opts.abortSignal } : {}),
       // Reasoning tokens count against the output budget and were truncating
       // JSON answers mid-object, so we ask the model to answer directly.
-    }));
+    });
+    text = requireCompleteAiText(generated.text, generated.finishReason);
   } catch (error) {
     throw normalizeAiError(error);
   }
@@ -48,7 +60,11 @@ export async function generateJson<T>(
 
 /** Validates raw provider output before it can enter a domain model. */
 export function parseAiJson<T>(text: string, schema: z.ZodType<T, unknown>): T {
-  return schema.parse(extractJson(text));
+  try {
+    return schema.parse(extractJson(text));
+  } catch {
+    throw new Error("AI_INVALID_RESPONSE");
+  }
 }
 
 export type AiFailureKind = "credits" | "rate_limit" | "provider_unavailable" | "other";
@@ -68,15 +84,26 @@ export class AiUnavailableError extends Error {
  * Translate them into a stable shape so callers can degrade gracefully.
  */
 export function normalizeAiError(error: unknown): Error {
+  if (error instanceof AiUnavailableError) return error;
+  if (error instanceof Error && /^(AI_[A-Z_]+)(?::|$)/.test(error.message)) {
+    const code = error.message.split(":")[0]!;
+    if (code === "AI_MODEL_UNAVAILABLE") return new AiUnavailableError("other", code);
+    if (code === "AI_TIMEOUT") return new AiUnavailableError("provider_unavailable", code);
+    return new Error(code);
+  }
+  if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError"))
+    return new AiUnavailableError("provider_unavailable", "AI_TIMEOUT");
+
   const status = numberProperty(error, "statusCode") ?? numberProperty(error, "status") ?? 0;
   const text =
     `${stringProperty(error, "message") ?? ""} ${stringProperty(error, "responseBody") ?? ""}`.toLowerCase();
 
+  if (status === 401 || status === 403)
+    return new AiUnavailableError("other", "AI_MODEL_UNAVAILABLE");
   if (
     status === 402 ||
     text.includes("payment required") ||
-    text.includes("insufficient") ||
-    text.includes("credit")
+    (status !== 0 && (text.includes("insufficient_quota") || text.includes("insufficient credits")))
   ) {
     return new AiUnavailableError("credits", "AI_CREDITS");
   }
@@ -114,9 +141,13 @@ export function isAiModelUnavailable(error: unknown): boolean {
 export function isAiProviderRecoverable(error: unknown): boolean {
   return (
     error instanceof AiUnavailableError &&
-    ["AI_MODEL_UNAVAILABLE", "AI_CREDITS", "AI_RATE_LIMIT", "AI_PROVIDER_UNAVAILABLE"].includes(
-      error.message,
-    )
+    [
+      "AI_MODEL_UNAVAILABLE",
+      "AI_CREDITS",
+      "AI_RATE_LIMIT",
+      "AI_PROVIDER_UNAVAILABLE",
+      "AI_TIMEOUT",
+    ].includes(error.message)
   );
 }
 
@@ -137,101 +168,19 @@ function stringProperty(value: unknown, key: string): string | undefined {
 }
 
 function extractJson(text: string): unknown {
-  let raw = text.trim();
-  const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence?.[1]) raw = fence[1].trim();
-
-  const start = raw.indexOf("{");
-  if (start === -1) throw new Error("AI response did not contain JSON.");
-
-  const end = raw.lastIndexOf("}");
-  const candidate = end > start ? raw.slice(start, end + 1) : raw.slice(start);
-
-  const attempts = [
-    candidate,
-    sanitizeJson(candidate),
-    repairJson(raw.slice(start)),
-    sanitizeJson(repairJson(sanitizeJson(raw.slice(start)))),
-  ];
-
-  let lastError: unknown;
-  for (const attempt of attempts) {
-    try {
-      return JSON.parse(attempt);
-    } catch (error) {
-      lastError = error;
-    }
+  if (typeof text !== "string" || text.length > MAX_AI_TEXT_CHARS)
+    throw new Error("AI_INVALID_RESPONSE");
+  const raw = text.trim();
+  const fences = [...raw.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)];
+  if (fences.length > 1) throw new Error("AI_INVALID_RESPONSE");
+  // Tolerate one complete presentation fence; never manufacture a missing tail,
+  // edit quotes inside food names, or choose one of multiple JSON objects.
+  const candidate = fences.length === 1 ? fences[0]![1]!.trim() : raw;
+  if (!candidate.startsWith("{") && !candidate.startsWith("["))
+    throw new Error("AI_INVALID_RESPONSE");
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    throw new Error("AI_INVALID_RESPONSE");
   }
-  throw lastError instanceof Error ? lastError : new Error("Invalid JSON from AI.");
-}
-
-/**
- * Models occasionally emit near-JSON: unquoted keys, single-quoted strings,
- * trailing commas or smart quotes. Normalise those before parsing.
- */
-function sanitizeJson(input: string): string {
-  let out = input
-    .replace(/[\u201c\u201d]/g, '"')
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/,(\s*[}\]])/g, "$1");
-
-  // single-quoted strings -> double-quoted (only outside double-quoted strings)
-  out = out.replace(/'([^'"\n]*)'(\s*[:,}\]])/g, '"$1"$2');
-
-  // bare object keys -> quoted keys
-  out = out.replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3');
-
-  return out;
-}
-
-/**
- * Long generations sometimes get cut off mid-array. We drop the unfinished
- * tail and close every open bracket so the usable part still parses.
- */
-function repairJson(input: string): string {
-  const stack: string[] = [];
-  let inString = false;
-  let escaped = false;
-  let lastSafe = -1;
-
-  for (let i = 0; i < input.length; i++) {
-    const ch = input[i]!;
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch === "\\") escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') inString = true;
-    else if (ch === "{" || ch === "[") stack.push(ch === "{" ? "}" : "]");
-    else if (ch === "}" || ch === "]") stack.pop();
-    // a completed value at depth >= 1 is a safe truncation point
-    if (!inString && (ch === "}" || ch === "]") && stack.length > 0) lastSafe = i;
-  }
-
-  let out = input;
-  if (inString || lastSafe === -1) {
-    out = input.slice(0, lastSafe + 1);
-  } else {
-    out = input.slice(0, lastSafe + 1);
-  }
-  out = out.replace(/,\s*$/, "");
-
-  // recompute open brackets for the trimmed string and close them
-  const open: string[] = [];
-  let str = false;
-  let esc = false;
-  for (const ch of out) {
-    if (str) {
-      if (esc) esc = false;
-      else if (ch === "\\") esc = true;
-      else if (ch === '"') str = false;
-      continue;
-    }
-    if (ch === '"') str = true;
-    else if (ch === "{") open.push("}");
-    else if (ch === "[") open.push("]");
-    else if (ch === "}" || ch === "]") open.pop();
-  }
-  return out + open.reverse().join("");
 }

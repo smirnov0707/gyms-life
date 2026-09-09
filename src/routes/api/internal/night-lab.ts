@@ -1,3 +1,4 @@
+import { nightLabHttpStatus } from "@/lib/night-lab.http";
 import { createFileRoute } from "@tanstack/react-router";
 import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
 
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/api/internal/night-lab")({
           // The response is the ledger's account of the run, so a failing
           // schedule is visible to whoever is looking at the scheduler as well
           // as to whoever is looking at the database.
-          return json(report, report.status === "unavailable" ? 503 : 200);
+          return json(report, nightLabHttpStatus(report));
         } catch {
           // A misconfigured deploy fails before the ledger can be written at
           // all — the service-role client is built on first use — and the

@@ -1,0 +1,307 @@
+{
+  "scope": "Source inventory, not evidence of live provider execution or autonomous agents",
+  "llmTaskCount": 24,
+  "transcriptionAdapters": 1,
+  "callsiteCount": 26,
+  "tasks": [
+    {
+      "task": "biomechanics",
+      "callsites": [
+        {
+          "task": "biomechanics",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/biomechanics.functions.ts",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "task": "body-scan",
+      "callsites": [
+        {
+          "task": "body-scan",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/body-scan.functions.ts",
+          "line": 83
+        }
+      ]
+    },
+    {
+      "task": "coach.ask",
+      "callsites": [
+        {
+          "task": "coach.ask",
+          "entryPoint": "generateOrchestratedText",
+          "file": "src/lib/plan.functions.ts",
+          "line": 177
+        }
+      ]
+    },
+    {
+      "task": "coach.warmup",
+      "callsites": [
+        {
+          "task": "coach.warmup",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/coach-session.functions.ts",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "task": "daily-brief",
+      "callsites": [
+        {
+          "task": "daily-brief",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/brief.functions.ts",
+          "line": 153
+        }
+      ]
+    },
+    {
+      "task": "dineout",
+      "callsites": [
+        {
+          "task": "dineout",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/dineout.functions.ts",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "task": "exercise-filter",
+      "callsites": [
+        {
+          "task": "exercise-filter",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/exercise-filter.functions.ts",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "task": "exercise-suggestion",
+      "callsites": [
+        {
+          "task": "exercise-suggestion",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/exercise-suggest.functions.ts",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "task": "food-vision",
+      "callsites": [
+        {
+          "task": "food-vision",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/food-vision.functions.ts",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "task": "form-analysis",
+      "callsites": [
+        {
+          "task": "form-analysis",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/smart.functions.ts",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "task": "fridge",
+      "callsites": [
+        {
+          "task": "fridge",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/fridge.functions.ts",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "task": "meal-adaptation",
+      "callsites": [
+        {
+          "task": "meal-adaptation",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/meal-adapt.functions.ts",
+          "line": 157
+        }
+      ]
+    },
+    {
+      "task": "meal-plan",
+      "callsites": [
+        {
+          "task": "meal-plan",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/meal.functions.ts",
+          "line": 147
+        },
+        {
+          "task": "meal-plan",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/meal.functions.ts",
+          "line": 160
+        }
+      ]
+    },
+    {
+      "task": "meal-translation",
+      "callsites": [
+        {
+          "task": "meal-translation",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/meal-i18n.server.ts",
+          "line": 102
+        }
+      ]
+    },
+    {
+      "task": "medical-report",
+      "callsites": [
+        {
+          "task": "medical-report",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/medical-report.functions.ts",
+          "line": 77
+        }
+      ]
+    },
+    {
+      "task": "micronutrients",
+      "callsites": [
+        {
+          "task": "micronutrients",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/micronutrient.functions.ts",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "task": "motivation",
+      "callsites": [
+        {
+          "task": "motivation",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/motivation.functions.ts",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "task": "nutrition-analysis",
+      "callsites": [
+        {
+          "task": "nutrition-analysis",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/nutrition.functions.ts",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "task": "plan-translation",
+      "callsites": [
+        {
+          "task": "plan-translation",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/plan-i18n.server.ts",
+          "line": 67
+        }
+      ]
+    },
+    {
+      "task": "supplement-cycle",
+      "callsites": [
+        {
+          "task": "supplement-cycle",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/supplement-cycle.functions.ts",
+          "line": 118
+        }
+      ]
+    },
+    {
+      "task": "supplement-vision",
+      "callsites": [
+        {
+          "task": "supplement-vision",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/supplement-vision.functions.ts",
+          "line": 74
+        }
+      ]
+    },
+    {
+      "task": "training-plan",
+      "callsites": [
+        {
+          "task": "training-plan",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/plan.functions.ts",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "task": "voice-log-structuring",
+      "callsites": [
+        {
+          "task": "voice-log-structuring",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/voice-logger.functions.ts",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "task": "voice.transcription",
+      "callsites": [
+        {
+          "task": "voice.transcription",
+          "entryPoint": "transcribeOrchestratedVoice",
+          "file": "src/lib/voice-logger.functions.ts",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "task": "workout-request",
+      "callsites": [
+        {
+          "task": "workout-request",
+          "entryPoint": "generateOrchestratedJson",
+          "file": "src/lib/workout-request.functions.ts",
+          "line": 91
+        }
+      ]
+    }
+  ],
+  "otherWorkers": [
+    {
+      "name": "night_lab",
+      "kind": "scheduled deterministic snapshot worker",
+      "source": "src/lib/night-lab.server.ts",
+      "liveExecutionVerified": false
+    },
+    {
+      "name": "AICoachWorker",
+      "kind": "provider-neutral contract extension; not a currently wired autonomous agent",
+      "source": "src/lib/ai-coach.worker.ts",
+      "liveExecutionVerified": false
+    }
+  ],
+  "retiredUnusedTaskLabels": [
+    "daily-readiness",
+    "workout-structure"
+  ]
+}
