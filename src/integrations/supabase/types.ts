@@ -743,6 +743,36 @@ export type Database = {
         }
         Relationships: []
       }
+      paddle_subscription_receipts: {
+        Row: {
+          environment: string
+          event_id: string
+          event_type: string
+          occurred_at: string
+          outcome: string
+          processed_at: string
+          subscription_id: string
+        }
+        Insert: {
+          environment: string
+          event_id: string
+          event_type: string
+          occurred_at: string
+          outcome: string
+          processed_at?: string
+          subscription_id: string
+        }
+        Update: {
+          environment?: string
+          event_id?: string
+          event_type?: string
+          occurred_at?: string
+          outcome?: string
+          processed_at?: string
+          subscription_id?: string
+        }
+        Relationships: []
+      }
       paddle_webhook_events: {
         Row: {
           environment: string
@@ -1027,6 +1057,8 @@ export type Database = {
           environment: string
           id: string
           paddle_customer_id: string
+          paddle_last_event_at: string | null
+          paddle_last_event_id: string | null
           paddle_subscription_id: string
           price_id: string
           product_id: string
@@ -1042,6 +1074,8 @@ export type Database = {
           environment?: string
           id?: string
           paddle_customer_id: string
+          paddle_last_event_at?: string | null
+          paddle_last_event_id?: string | null
           paddle_subscription_id: string
           price_id: string
           product_id: string
@@ -1057,6 +1091,8 @@ export type Database = {
           environment?: string
           id?: string
           paddle_customer_id?: string
+          paddle_last_event_at?: string | null
+          paddle_last_event_id?: string | null
           paddle_subscription_id?: string
           price_id?: string
           product_id?: string
@@ -1396,6 +1432,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_verified_paddle_subscription: {
+        Args: {
+          p_environment: string
+          p_event_id: string
+          p_event_type: string
+          p_occurred_at: string
+          p_subscription: Json
+        }
+        Returns: string
+      }
       activate_meal_plan: { Args: { p_meal_plan_id: string }; Returns: string }
       activate_training_plan: { Args: { p_plan_id: string }; Returns: string }
       consume_ai_quota: {

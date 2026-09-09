@@ -32,6 +32,7 @@ export async function gatewayFetch(
   const apiKey = getConnectionApiKey(env);
   const response = await fetch(`${getBaseUrl(env)}${path}`, {
     ...init,
+    signal: init?.signal ?? AbortSignal.timeout(15000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -39,8 +40,8 @@ export async function gatewayFetch(
     },
   });
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Paddle API ${response.status}: ${body.slice(0, 500)}`);
+    await response.body?.cancel();
+    throw new Error("PADDLE_API_UNAVAILABLE");
   }
   return response;
 }
@@ -53,9 +54,38 @@ export function getWebhookSecret(env: PaddleEnv): string {
 
 export async function verifyWebhook(req: Request, env: PaddleEnv) {
   const signature = req.headers.get("paddle-signature");
-  const body = await req.text();
+  const body = await readWebhookBody(req);
   const secret = getWebhookSecret(env);
   if (!signature || !body) throw new Error("Missing signature or body");
   const paddle = getPaddleClient(env);
   return await paddle.webhooks.unmarshal(body, secret, signature);
+}
+
+const WEBHOOK_BYTE_LIMIT = 1_048_576;
+async function readWebhookBody(request: Request): Promise<string> {
+  if (!request.body) throw new Error("PADDLE_EMPTY_BODY");
+  const reader = request.body.getReader(),
+    chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const item = await reader.read();
+      if (item.done) break;
+      size += item.value.byteLength;
+      if (size > WEBHOOK_BYTE_LIMIT) {
+        await reader.cancel();
+        throw new Error("PADDLE_BODY_LIMIT");
+      }
+      chunks.push(item.value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const joined = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(joined);
 }

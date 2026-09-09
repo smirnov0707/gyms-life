@@ -30,9 +30,7 @@ const ALLOWED = new Set([
   // Optional targets by design: absent targets are simply not mentioned to
   // the recipe model rather than invented.
   "components/SmartFridgeScanner.tsx",
-  // Session reads from local storage on focus/visibility; a failure here
-  // means no session, which is what the caller already assumes.
-  "lib/auth.tsx",
+  // The auth provider now checks errors through its ordered session controller.
   "integrations/supabase/auth-attacher.ts",
   // The goal is a visible, highlighted button the athlete can change on the
   // spot, so a default is corrected by looking at the screen.
