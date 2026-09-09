@@ -31,7 +31,7 @@ const server = await createServer({
           res.end(
             await vite.transformIndexHtml(
               req.url,
-              '<html><head><meta charset="utf-8"><style>body{margin:0;background:#060e17;color:#c7dbed;font:13px Arial}header{position:absolute;inset:18px 0 auto;display:flex;justify-content:space-around;font-weight:bold}footer{position:absolute;bottom:9px;left:20px;font-size:12px}</style></head><body><header><span>FRONT</span><span>SIDE</span><span>BACK</span></header><footer>GENERIC PRESENTATION CANDIDATE · SYNTHETIC COLOR REGIONS · NOT A PERSONAL SCAN · ' +
+              '<html><head><meta charset="utf-8"><link rel="icon" href="data:,"><style>body{margin:0;background:#060e17;color:#c7dbed;font:13px Arial}header{position:absolute;inset:18px 0 auto;display:flex;justify-content:space-around;font-weight:bold}footer{position:absolute;bottom:9px;left:20px;font-size:12px}</style></head><body><header><span>FRONT</span><span>SIDE</span><span>BACK</span></header><footer>GENERIC PRESENTATION CANDIDATE · SYNTHETIC COLOR REGIONS · NOT A PERSONAL SCAN · ' +
                 sha.slice(0, 16) +
                 '</footer><script type="module" src="/sculpt-review.ts"></script></body></html>',
             ),
@@ -56,19 +56,31 @@ try {
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
   const rows = [];
-  for (const mode of ["neutral", "regions"]) {
-    const page = await browser.newPage({ viewport: { width: 1500, height: 1000 } }),
+  for (const [mode, framing] of [
+    ["neutral", "full"],
+    ["regions", "full"],
+    ["neutral", "torso"],
+    ["regions", "torso"],
+  ]) {
+    const page = await browser.newPage({
+        viewport: { width: 1500, height: framing === "torso" ? 750 : 1000 },
+      }),
       errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
     });
-    await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/?mode=${mode}`);
+    await page.goto(
+      `http://127.0.0.1:${server.httpServer.address().port}/?mode=${mode}&framing=${framing}`,
+    );
     await expect(page.locator("html")).toHaveAttribute("data-ready", "true", { timeout: 30000 });
     assert.equal(errors.length, 0, errors.join("\n"));
-    await page.screenshot({ path: path.join(output, mode + ".png") });
+    await page.screenshot({
+      path: path.join(output, (framing === "torso" ? "torso-" : "") + mode + ".png"),
+    });
     rows.push({
       mode,
+      framing,
       triangles: Number(await page.locator("html").getAttribute("data-triangles")),
       height: Number(await page.locator("html").getAttribute("data-height")),
     });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ShaderLib } from "three";
-import { parseTwinSculptContours } from "./twin-sculpt.contours";
+import { parseTwinSculptContours, parseTwinSculptCompetition } from "./twin-sculpt.contours";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
 
 const guide = { centre: [0.1, 1.4, 0.13], radii: [0.09, 0.1, 0.07], angle: 0.2 };
@@ -61,5 +61,55 @@ describe("bounded presentation contour contract", () => {
     expect(shader.fragmentShader).not.toContain("twinContourCentres");
     expect(shader.fragmentShader).toContain("vTwinFiberUv.y * 32.0");
     material.dispose();
+  });
+});
+
+describe("presentation profile and contour competition limits", () => {
+  it("defaults an older contour to the elliptical shader exponent", () => {
+    const material = createTwinAnatomyMaterial(
+      {},
+      { regionMask: true, contours: parseTwinSculptContours([guide]) },
+    );
+    const shader = {
+      uniforms: {},
+      vertexShader: ShaderLib.standard.vertexShader,
+      fragmentShader: ShaderLib.standard.fragmentShader,
+    };
+    Reflect.apply(material.onBeforeCompile, material, [shader, null]);
+    expect(shader.uniforms).toHaveProperty("twinContourPowers.value", [2]);
+    material.dispose();
+  });
+  it.each([1, 4.1, Number.NaN, Infinity])(
+    "rejects out-of-bounds superellipse power %s",
+    (power) => {
+      expect(() => parseTwinSculptContours([{ ...guide, power }])).toThrow();
+    },
+  );
+  it("preserves an explicit rounded profile and bounded neighbor competition", () => {
+    const contours = parseTwinSculptContours([{ ...guide, power: 3.5 }]);
+    const competition = parseTwinSculptCompetition({ supportScale: 1.2, rivals: [guide] });
+    const material = createTwinAnatomyMaterial({}, { regionMask: true, contours, competition });
+    const independent = createTwinAnatomyMaterial({}, { regionMask: true, contours });
+    const shader = {
+      uniforms: {},
+      vertexShader: ShaderLib.standard.vertexShader,
+      fragmentShader: ShaderLib.standard.fragmentShader,
+    };
+    Reflect.apply(material.onBeforeCompile, material, [shader, null]);
+    expect(shader.uniforms).toHaveProperty("twinContourPowers.value", [3.5]);
+    expect(shader.uniforms).toHaveProperty("twinRivalPowers.value", [2]);
+    expect(shader.uniforms).toHaveProperty("twinSupportScale.value", 1.2);
+    expect(shader.fragmentShader).toContain("twinOwnSupport - twinRivalSupport");
+    expect(material.customProgramCacheKey()).not.toBe(independent.customProgramCacheKey());
+    material.dispose();
+    independent.dispose();
+  });
+  it.each([
+    { supportScale: 0, rivals: [] },
+    { supportScale: 2, rivals: [] },
+    { supportScale: 1.2, rivals: Array.from({ length: 17 }, () => guide) },
+    { supportScale: 1.2, rivals: [{ ...guide, radii: [0, 1, 1] }] },
+  ])("rejects invalid rival metadata %j", (value) => {
+    expect(() => parseTwinSculptCompetition(value)).toThrow();
   });
 });

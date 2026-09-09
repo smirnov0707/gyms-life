@@ -1,5 +1,7 @@
 # Bounded native muscle sculpt — review candidate, not production promotion
 
+> Historical first-sculpt record at `796ce5e`. The subsequent profile, material-support and seam update is documented in `twin-contour-transitions-20260909.md`. Current exact byte counts, triangle counts and SHA-256 are in `tests/twin-browser/assets/twin-anatomy-sculpt-candidate.audit.json`; the figures below describe the first version.
+
 Continues from `6528d589025e49584014435abeb50fe8fcbe0d92` on PR #55.
 
 ## Actual visual work

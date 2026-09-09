@@ -5,7 +5,7 @@ import {
   MeshStandardMaterial,
   type MeshStandardMaterialParameters,
 } from "three";
-import type { TwinSculptContour } from "./twin-sculpt.contours";
+import type { TwinSculptContour, TwinSculptCompetition } from "./twin-sculpt.contours";
 
 /**
  * A cool edge on the existing surface keeps the dark anatomical silhouette
@@ -20,11 +20,13 @@ export function createTwinAnatomyMaterial(
     regionMask = false,
     contours = [],
     contourFan = false,
+    competition,
   }: {
     fibers?: boolean;
     regionMask?: boolean;
     contours?: readonly TwinSculptContour[];
     contourFan?: boolean;
+    competition?: TwinSculptCompetition;
   } = {},
 ): MeshStandardMaterial {
   const material = new MeshStandardMaterial(parameters);
@@ -59,6 +61,7 @@ export function createTwinAnatomyMaterial(
         value: contours.map((c) => new Vector4(...c.centre, c.angle)),
       };
       shader.uniforms["twinContourRadii"] = { value: contours.map((c) => new Vector3(...c.radii)) };
+      shader.uniforms["twinContourPowers"] = { value: contours.map((c) => c.power ?? 2) };
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
@@ -70,9 +73,37 @@ export function createTwinAnatomyMaterial(
         );
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <common>",
-        `#include <common>\nvarying vec3 vTwinSculptPosition;\nuniform vec4 twinContourCentres[${contours.length}];\nuniform vec3 twinContourRadii[${contours.length}];`,
+        `#include <common>\nvarying vec3 vTwinSculptPosition;\nuniform vec4 twinContourCentres[${contours.length}];\nuniform vec3 twinContourRadii[${contours.length}];\nuniform float twinContourPowers[${contours.length}];`,
       );
+      const rivals = competition?.rivals ?? [];
+      if (competition) shader.uniforms["twinSupportScale"] = { value: competition.supportScale };
+      if (rivals.length) {
+        shader.uniforms["twinRivalCentres"] = {
+          value: rivals.map((c) => new Vector4(...c.centre, c.angle)),
+        };
+        shader.uniforms["twinRivalRadii"] = { value: rivals.map((c) => new Vector3(...c.radii)) };
+        shader.uniforms["twinRivalPowers"] = { value: rivals.map((c) => c.power ?? 2) };
+      }
+      if (competition)
+        shader.fragmentShader = shader.fragmentShader.replace(
+          "#include <common>",
+          `#include <common>\nuniform float twinSupportScale;\n${rivals.length ? `uniform vec4 twinRivalCentres[${rivals.length}];\nuniform vec3 twinRivalRadii[${rivals.length}];\nuniform float twinRivalPowers[${rivals.length}];` : ""}`,
+        );
+      const rivalry = rivals.length
+        ? `
+        float twinRivalSupport = 0.0;
+        for(int i=0; i<${rivals.length}; i++) {
+          vec3 delta = vec3(abs(vTwinSculptPosition.x), vTwinSculptPosition.yz) - twinRivalCentres[i].xyz;
+          float c = cos(twinRivalCentres[i].w), s = sin(twinRivalCentres[i].w);
+          vec3 q = vec3(c*delta.x+s*delta.y,-s*delta.x+c*delta.y,delta.z) / (twinRivalRadii[i]*twinSupportScale);
+          float power = twinRivalPowers[i];
+          twinRivalSupport = max(twinRivalSupport, max(0.0, 1.0-pow(abs(q.x),power)-pow(abs(q.y),power)-q.z*q.z));
+        }
+        twinContourMask *= smoothstep(0.0, .12, twinOwnSupport - twinRivalSupport);
+      `
+        : "";
       contourCode = `
+        float twinOwnSupport = 0.0;
         float twinLobe = 0.0;
         float twinContourPhase = 0.0;
         for(int i=0; i<${contours.length}; i++) {
@@ -80,13 +111,21 @@ export function createTwinAnatomyMaterial(
           float twinCos = cos(twinContourCentres[i].w), twinSin = sin(twinContourCentres[i].w);
           vec3 twinChart = vec3(twinCos*twinDelta.x + twinSin*twinDelta.y, -twinSin*twinDelta.x + twinCos*twinDelta.y, twinDelta.z);
           vec3 twinQ = twinChart / twinContourRadii[i];
-          float twinEnvelope = max(0.0, 1.0-dot(twinQ,twinQ));
+          float twinPower = twinContourPowers[i];
+          float twinEnvelope = max(0.0, 1.0 - pow(abs(twinQ.x), twinPower) - pow(abs(twinQ.y), twinPower) - twinQ.z*twinQ.z);
+          ${
+            competition
+              ? `vec3 supportQ = twinQ / twinSupportScale;
+          twinOwnSupport = max(twinOwnSupport, max(0.0, 1.0 - pow(abs(supportQ.x),twinPower)-pow(abs(supportQ.y),twinPower)-supportQ.z*supportQ.z));`
+              : ""
+          }
           if(twinEnvelope > twinLobe) {
             twinLobe = twinEnvelope;
             twinContourPhase = ${contourFan ? "(vTwinSculptPosition.y + .65*twinDelta.x*twinDelta.x)" : "twinChart.x"} * 3.2;
           }
         }
         float twinContourMask = smoothstep(.02,.32,twinLobe);
+        ${rivalry}
       `;
     }
     // Evaluate bounded lobe masks per fragment: their borders no longer follow
@@ -125,6 +164,6 @@ export function createTwinAnatomyMaterial(
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-rim-v5-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}`;
+    `twin-anatomy-rim-v6-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }

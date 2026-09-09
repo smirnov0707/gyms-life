@@ -8,6 +8,7 @@ const contourSchema = z
       centre: z.tuple([coordinate, coordinate, coordinate]),
       radii: z.tuple([radius, radius, radius]),
       angle: z.number().finite().min(-Math.PI).max(Math.PI),
+      power: z.number().finite().min(2).max(4).optional(),
     }),
   )
   .min(1)
@@ -17,4 +18,13 @@ export type TwinSculptContour = z.infer<typeof contourSchema>[number];
 /** Only explicitly marked, byte-verified candidates call this parser. */
 export function parseTwinSculptContours(value: unknown): TwinSculptContour[] {
   return contourSchema.parse(value);
+}
+
+const competitionSchema = z.object({
+  supportScale: z.number().finite().min(1.05).max(1.5),
+  rivals: z.array(contourSchema.element).max(16),
+});
+export type TwinSculptCompetition = z.infer<typeof competitionSchema>;
+export function parseTwinSculptCompetition(value: unknown): TwinSculptCompetition {
+  return competitionSchema.parse(value);
 }

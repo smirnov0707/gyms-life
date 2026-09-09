@@ -37,7 +37,7 @@ export const TWIN_REGISTERED_ASSETS = [
     path: "tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb",
     source: "makehuman",
     candidate: true,
-    sha256: "21198a588a4a8f60fbebf2dc1e8e83110f1977bdcaad7cbe9390133e9c9a820a",
+    sha256: "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
   },
 ] as const;
 

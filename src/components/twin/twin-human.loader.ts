@@ -2,7 +2,7 @@ import { Group, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
-import { parseTwinSculptContours } from "./twin-sculpt.contours";
+import { parseTwinSculptContours, parseTwinSculptCompetition } from "./twin-sculpt.contours";
 import {
   MAX_TWIN_ASSET_BYTES,
   verifyTwinAsset,
@@ -141,6 +141,11 @@ function build(scene: Object3D, provenance: TwinBodyProvenance): TwinBodyModel {
       object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
         ? {
             contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
+            ...(object.userData["twinSculptCompetition"]
+              ? {
+                  competition: parseTwinSculptCompetition(object.userData["twinSculptCompetition"]),
+                }
+              : {}),
             contourFan: region === "chest" || region === "abs",
           }
         : {}),

@@ -10,6 +10,10 @@ import {
   sculptAt,
   protection,
   SCULPT_MAX_DISPLACEMENT_M,
+  sculptSurfaceOwner,
+  sculptRivalGuides,
+  sampleLobe,
+  SCULPT_MATERIAL_SUPPORT_SCALE,
 } from "./authoring/sculpt-fields.mjs";
 
 const base = "tests/twin-browser/assets/twin-anatomy-sculpt-candidate";
@@ -99,6 +103,104 @@ describe("sculpt candidate evidence and bounded authoring", () => {
       "legs",
       "shoulders",
     ]);
+  });
+  it("keeps graphical ownership symmetric and protects areas outside authored fields", () => {
+    const regions = [
+      "neutral",
+      "shoulders",
+      "chest",
+      "core",
+      "arms",
+      "legs",
+      "back",
+      "glutes",
+      "abs",
+    ];
+    for (const guide of SCULPT_LOBES)
+      for (const region of regions) {
+        const p = guide.centre;
+        expect(sculptSurfaceOwner(p, region)).toBe(sculptSurfaceOwner([-p[0], p[1], p[2]], region));
+      }
+    for (const region of regions) {
+      expect(sculptSurfaceOwner([0.1, 1.7, 0.1], region)).toBe(region);
+      expect(sculptSurfaceOwner([2, 2, 2], region)).toBe(region);
+    }
+  });
+  it("assigns every exported face to its actual graphical field owner", async () => {
+    const doc = await new NodeIO().readBinary(bytes);
+    const clipped: Record<string, number> = {};
+    let checked = 0;
+    for (const mesh of doc.getRoot().listMeshes()) {
+      for (const prim of mesh.listPrimitives()) {
+        const region = prim.getMaterial()!.getName().replace("twin-region:", "");
+        const p = prim.getAttribute("_TWIN_SCULPT_POSITION")!.getArray()!;
+        const indices = prim.getIndices()!.getArray()!;
+        for (let i = 0; i < indices.length; i += 3) {
+          const centre = [0, 1, 2].map(
+            (k) =>
+              (p[indices[i]! * 3 + k]! +
+                p[indices[i + 1]! * 3 + k]! +
+                p[indices[i + 2]! * 3 + k]!) /
+              3,
+          );
+          const expected = sculptSurfaceOwner(centre, region);
+          if (expected !== region)
+            clipped[`${region}->${expected}`] = (clipped[`${region}->${expected}`] ?? 0) + 1;
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBe(audit.triangles);
+    expect(clipped).toEqual({});
+  });
+  it("keeps all shared material seam vertices neutral with identical positions and normals", async () => {
+    const doc = await new NodeIO().readBinary(bytes);
+    const seams = new Map<string, { normal: number[]; mask: number; regions: Set<string> }>();
+    let shared = 0;
+    for (const mesh of doc.getRoot().listMeshes())
+      for (const prim of mesh.listPrimitives()) {
+        const region = prim.getMaterial()!.getName(),
+          p = prim.getAttribute("POSITION")!.getArray()!,
+          n = prim.getAttribute("NORMAL")!.getArray()!,
+          mask = prim.getAttribute("_TWIN_MASK")!.getArray()!;
+        for (let i = 0; i < p.length; i += 3) {
+          const key = [p[i], p[i + 1], p[i + 2]].join(","),
+            normal = [n[i]!, n[i + 1]!, n[i + 2]!],
+            entry = seams.get(key);
+          if (!entry) seams.set(key, { normal, mask: mask[i / 3]!, regions: new Set([region]) });
+          else {
+            expect(normal).toEqual(entry.normal);
+            if (!entry.regions.has(region)) {
+              shared++;
+              expect(mask[i / 3]).toBe(0);
+              expect(entry.mask).toBe(0);
+            }
+            entry.regions.add(region);
+          }
+        }
+      }
+    expect(shared).toBeGreaterThan(100);
+    expect(audit.seamFeatherMetres).toBe(0.012);
+  });
+  it("does not cull a rival that could overlap a visible contour", () => {
+    const strength = (position: number[], guide: (typeof SCULPT_LOBES)[number]) =>
+      sampleLobe(position, {
+        ...guide,
+        radii: guide.radii.map((r: number) => r * SCULPT_MATERIAL_SUPPORT_SCALE),
+      }).envelope;
+    for (const own of SCULPT_LOBES) {
+      const rivals = sculptRivalGuides(own.region);
+      expect(rivals.length).toBeLessThanOrEqual(16);
+      for (let i = 0; i < 71; i++) {
+        const p = own.centre.map(
+          (v: number, k: number) => v + own.radii[k] * 1.15 * Math.sin(i * (k + 1.7)),
+        );
+        if (strength(p, own) === 0) continue;
+        const all = SCULPT_LOBES.filter((g) => g.region !== own.region).map((g) => strength(p, g));
+        const culled = rivals.map((g) => strength(p, g));
+        expect(Math.max(0, ...culled)).toBeCloseTo(Math.max(0, ...all), 12);
+      }
+    }
   });
   it("reproduces the same GLB from the pinned input without touching public assets", () => {
     const directory = mkdtempSync(join(tmpdir(), "gyms-sculpt-test-"));

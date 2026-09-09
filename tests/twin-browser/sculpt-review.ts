@@ -14,16 +14,21 @@ import {
   ACESFilmicToneMapping,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { parseTwinSculptContours } from "../../src/components/twin/twin-sculpt.contours";
+import {
+  parseTwinSculptContours,
+  parseTwinSculptCompetition,
+} from "../../src/components/twin/twin-sculpt.contours";
 import { createTwinAnatomyMaterial } from "../../src/components/twin/twin-anatomy.material";
 
 async function render() {
-  const mode = new URLSearchParams(location.search).get("mode");
+  const params = new URLSearchParams(location.search);
+  const mode = params.get("mode");
+  const torso = params.get("framing") === "torso";
   const loaded = await new GLTFLoader().loadAsync("/review-source.glb");
   const scene = new Scene();
   scene.background = new Color(0x060e17);
   const renderer = new WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-  renderer.setSize(1500, 1000);
+  renderer.setSize(1500, torso ? 750 : 1000);
   renderer.setPixelRatio(1);
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -71,6 +76,13 @@ async function render() {
             ...(object.userData["twinSculptContours"]
               ? {
                   contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
+                  ...(object.userData["twinSculptCompetition"]
+                    ? {
+                        competition: parseTwinSculptCompetition(
+                          object.userData["twinSculptCompetition"],
+                        ),
+                      }
+                    : {}),
                   contourFan: region === "chest" || region === "abs",
                 }
               : {}),
@@ -78,19 +90,40 @@ async function render() {
             regionMask: object.userData["twinRegionMask"] === true,
           });
   });
-  for (const [x, yaw] of [
-    [-1.02, 0],
-    [0, Math.PI / 2],
-    [1.02, Math.PI],
-  ]) {
-    const model = loaded.scene.clone(true);
-    model.position.x = x;
-    model.rotation.y = yaw;
+  let triangleCount = 0;
+  if (torso) {
+    // Deliberate close-ups: a separate equal viewport per angle, not a crop
+    // of a previously rendered screenshot or a claim of whole-body framing.
+    const closeup = new OrthographicCamera(-0.32, 0.32, 0.48, -0.48, 0.01, 20);
+    closeup.position.set(0, 1.31, 5);
+    closeup.lookAt(0, 1.31, 0);
+    const model = loaded.scene;
     scene.add(model);
+    renderer.setScissorTest(true);
+    [0, Math.PI / 2, Math.PI].forEach((yaw, column) => {
+      model.rotation.y = yaw;
+      renderer.setViewport(column * 500, 0, 500, 750);
+      renderer.setScissor(column * 500, 0, 500, 750);
+      renderer.render(scene, closeup);
+      triangleCount = renderer.info.render.triangles;
+    });
+  } else {
+    for (const [x, yaw] of [
+      [-1.02, 0],
+      [0, Math.PI / 2],
+      [1.02, Math.PI],
+    ]) {
+      const model = loaded.scene.clone(true);
+      model.position.x = x;
+      model.rotation.y = yaw;
+      scene.add(model);
+    }
+    renderer.render(scene, camera);
+    triangleCount = renderer.info.render.triangles / 3;
   }
-  renderer.render(scene, camera);
   document.documentElement.dataset["ready"] = "true";
-  document.documentElement.dataset["triangles"] = String(renderer.info.render.triangles / 3);
+  document.documentElement.dataset["triangles"] = String(triangleCount);
+  document.documentElement.dataset["framing"] = torso ? "torso" : "full";
   document.documentElement.dataset["height"] = String(size.y);
 }
 void render().catch((error) => {

@@ -1,11 +1,11 @@
 {
-  "assetSha256": "21198a588a4a8f60fbebf2dc1e8e83110f1977bdcaad7cbe9390133e9c9a820a",
+  "assetSha256": "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
   "validationPassed": true,
   "khronos": {
     "uri": "twin-anatomy-sculpt-candidate.glb",
     "mimeType": "model/gltf-binary",
     "validatorVersion": "2.0.0-dev.3.10",
-    "validatedAt": "2026-09-09T06:22:13.116Z",
+    "validatedAt": "2026-09-09T07:00:58.232Z",
     "issues": {
       "numErrors": 0,
       "numWarnings": 0,
@@ -77,7 +77,7 @@
           "pointer": "/buffers/0",
           "mimeType": "application/gltf-buffer",
           "storage": "glb",
-          "byteLength": 1693824
+          "byteLength": 1696848
         }
       ],
       "animationCount": 0,
@@ -87,8 +87,8 @@
       "hasTextures": false,
       "hasDefaultScene": true,
       "drawCallCount": 9,
-      "totalVertexCount": 23838,
-      "totalTriangleCount": 45800,
+      "totalVertexCount": 23903,
+      "totalTriangleCount": 45792,
       "maxUVs": 1,
       "maxInfluences": 0,
       "maxAttributes": 5

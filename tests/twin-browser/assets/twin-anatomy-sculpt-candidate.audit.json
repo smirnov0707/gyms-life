@@ -1,10 +1,45 @@
 {
-  "assetSha256": "21198a588a4a8f60fbebf2dc1e8e83110f1977bdcaad7cbe9390133e9c9a820a",
+  "assetSha256": "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
   "sourceSha256": "5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158",
-  "bytes": 1711668,
-  "vertices": 22902,
-  "triangles": 45800,
+  "bytes": 1725412,
+  "vertices": 22898,
+  "triangles": 45792,
   "connectedComponents": 1,
+  "relabelledFaces": 1679,
+  "addedMaterialSupport": {
+    "chest": 710,
+    "shoulders": 130,
+    "arms": 100,
+    "abs": 10,
+    "core": 133,
+    "back": 158,
+    "glutes": 14,
+    "legs": 424
+  },
+  "materialReassignments": {
+    "neutral->chest": 114,
+    "neutral->back": 24,
+    "neutral->core": 17,
+    "neutral->legs": 52,
+    "neutral->shoulders": 2,
+    "chest->core": 70,
+    "back->shoulders": 32,
+    "back->glutes": 12,
+    "shoulders->chest": 576,
+    "shoulders->back": 102,
+    "shoulders->arms": 100,
+    "arms->shoulders": 96,
+    "legs->glutes": 2,
+    "glutes->back": 32,
+    "glutes->legs": 372,
+    "core->chest": 8,
+    "core->abs": 10,
+    "abs->chest": 12,
+    "abs->core": 46
+  },
+  "contourSupportScale": 1.2,
+  "seamFeatherMetres": 0.012,
+  "seamFeatherMethod": "Smoothstep of shortest path distance on the actual shared surface graph",
   "boundaryEdges": 0,
   "nonManifoldEdges": 0,
   "inconsistentWinding": 0,
@@ -14,52 +49,52 @@
   "protectedVertices": 9094,
   "minimumTriangleNormalDot": 0.9399940227146306,
   "minimumAreaRatio": 0.8407835387388849,
-  "maximumAreaRatio": 1.3516557157856754,
+  "maximumAreaRatio": 1.3437044479630353,
   "regions": {
     "neutral": {
-      "triangles": 20544,
-      "vertices": 10523,
+      "triangles": 20327,
+      "vertices": 10385,
       "tintedVertices": 0
     },
     "chest": {
-      "triangles": 1152,
-      "vertices": 652,
-      "tintedVertices": 376
+      "triangles": 1792,
+      "vertices": 975,
+      "tintedVertices": 618
     },
     "back": {
-      "triangles": 2992,
-      "vertices": 1587,
-      "tintedVertices": 696
-    },
-    "shoulders": {
-      "triangles": 2976,
-      "vertices": 1612,
-      "tintedVertices": 730
-    },
-    "arms": {
-      "triangles": 4992,
-      "vertices": 2580,
-      "tintedVertices": 988
-    },
-    "legs": {
-      "triangles": 7976,
-      "vertices": 4082,
-      "tintedVertices": 1450
-    },
-    "glutes": {
-      "triangles": 2168,
-      "vertices": 1169,
-      "tintedVertices": 452
+      "triangles": 3106,
+      "vertices": 1659,
+      "tintedVertices": 728
     },
     "core": {
-      "triangles": 1272,
-      "vertices": 728,
-      "tintedVertices": 260
+      "triangles": 1387,
+      "vertices": 786,
+      "tintedVertices": 308
+    },
+    "legs": {
+      "triangles": 8398,
+      "vertices": 4304,
+      "tintedVertices": 1572
+    },
+    "shoulders": {
+      "triangles": 2328,
+      "vertices": 1312,
+      "tintedVertices": 730
+    },
+    "glutes": {
+      "triangles": 1778,
+      "vertices": 993,
+      "tintedVertices": 422
+    },
+    "arms": {
+      "triangles": 4996,
+      "vertices": 2596,
+      "tintedVertices": 1010
     },
     "abs": {
-      "triangles": 1728,
-      "vertices": 905,
-      "tintedVertices": 406
+      "triangles": 1680,
+      "vertices": 893,
+      "tintedVertices": 488
     }
   },
   "presentationGuides": [
@@ -67,17 +102,18 @@
       "name": "pectoral",
       "region": "chest",
       "centre": [
-        0.084,
-        1.412,
-        0.135
+        0.096,
+        1.409,
+        0.13
       ],
       "radii": [
-        0.093,
-        0.104,
-        0.075
+        0.096,
+        0.086,
+        0.085
       ],
       "lift": 0.008,
-      "angle": -0.15707963267948966
+      "power": 3.5,
+      "angle": 0
     },
     {
       "name": "anterior-deltoid",
@@ -93,6 +129,7 @@
         0.065
       ],
       "lift": 0.005,
+      "power": 2,
       "angle": 0.3316125578789226
     },
     {
@@ -109,6 +146,7 @@
         0.086
       ],
       "lift": 0.007,
+      "power": 2,
       "angle": 0.3316125578789226
     },
     {
@@ -125,6 +163,7 @@
         0.052
       ],
       "lift": 0.005,
+      "power": 2,
       "angle": 0.2792526803190927
     },
     {
@@ -141,6 +180,7 @@
         0.047
       ],
       "lift": 0.006,
+      "power": 2,
       "angle": 0.3665191429188092
     },
     {
@@ -157,6 +197,7 @@
         0.048
       ],
       "lift": 0.005,
+      "power": 2,
       "angle": 0.3490658503988659
     },
     {
@@ -173,6 +214,7 @@
         0.043
       ],
       "lift": 0.003,
+      "power": 2,
       "angle": 0.2617993877991494
     },
     {
@@ -189,6 +231,7 @@
         0.044
       ],
       "lift": 0.003,
+      "power": 2,
       "angle": 0.20943951023931953
     },
     {
@@ -205,6 +248,7 @@
         0.045
       ],
       "lift": 0.0045,
+      "power": 3,
       "angle": 0
     },
     {
@@ -221,6 +265,7 @@
         0.046
       ],
       "lift": 0.005,
+      "power": 3,
       "angle": 0
     },
     {
@@ -237,6 +282,7 @@
         0.047
       ],
       "lift": 0.004,
+      "power": 3,
       "angle": 0
     },
     {
@@ -253,6 +299,7 @@
         0.06
       ],
       "lift": 0.0035,
+      "power": 2,
       "angle": -0.24434609527920614
     },
     {
@@ -269,6 +316,7 @@
         0.06
       ],
       "lift": 0.003,
+      "power": 2,
       "angle": 0.41887902047863906
     },
     {
@@ -285,6 +333,7 @@
         0.041
       ],
       "lift": 0.004,
+      "power": 2,
       "angle": -0.4886921905584123
     },
     {
@@ -301,6 +350,7 @@
         0.045
       ],
       "lift": 0.005,
+      "power": 2,
       "angle": -0.24434609527920614
     },
     {
@@ -317,6 +367,7 @@
         0.044
       ],
       "lift": 0.003,
+      "power": 2,
       "angle": 0
     },
     {
@@ -333,6 +384,7 @@
         0.047
       ],
       "lift": 0.0035,
+      "power": 2,
       "angle": -0.08726646259971647
     },
     {
@@ -349,6 +401,7 @@
         0.069
       ],
       "lift": 0.008,
+      "power": 2,
       "angle": 0.08726646259971647
     },
     {
@@ -365,6 +418,7 @@
         0.085
       ],
       "lift": 0.008,
+      "power": 2,
       "angle": 0.15707963267948966
     },
     {
@@ -381,6 +435,7 @@
         0.063
       ],
       "lift": 0.006,
+      "power": 2,
       "angle": -0.20943951023931953
     },
     {
@@ -397,6 +452,7 @@
         0.044
       ],
       "lift": 0.006,
+      "power": 2,
       "angle": 0.10471975511965977
     },
     {
@@ -413,6 +469,7 @@
         0.044
       ],
       "lift": 0.0045,
+      "power": 2,
       "angle": 0.10471975511965977
     },
     {
@@ -429,6 +486,7 @@
         0.054
       ],
       "lift": 0.008,
+      "power": 2,
       "angle": -0.10471975511965977
     },
     {
@@ -445,6 +503,7 @@
         0.055
       ],
       "lift": 0.006,
+      "power": 2,
       "angle": 0.10471975511965977
     },
     {
@@ -461,6 +520,7 @@
         0.034
       ],
       "lift": 0.002,
+      "power": 2,
       "angle": -0.05235987755982988
     }
   ],

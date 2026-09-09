@@ -5,8 +5,17 @@ import { readFile, writeFile, mkdir, realpath } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { Document, NodeIO } from "@gltf-transform/core";
 import { Matrix3, Matrix4, Vector3 } from "three";
-import { sculptAt, protection, SCULPT_LOBES, SCULPT_MAX_DISPLACEMENT_M } from "./sculpt-fields.mjs";
+import {
+  sculptAt,
+  protection,
+  SCULPT_LOBES,
+  SCULPT_MAX_DISPLACEMENT_M,
+  sculptSurfaceOwner,
+  sculptRivalGuides,
+  SCULPT_MATERIAL_SUPPORT_SCALE,
+} from "./sculpt-fields.mjs";
 import { auditNativeGlb } from "./audit-native-glb.mjs";
+import { sculptSeamWeights, SCULPT_SEAM_WIDTH_M } from "./sculpt-seams.mjs";
 
 const PINNED_SOURCE = "5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158";
 const [inputArg, outputArg] = process.argv.slice(2);
@@ -174,6 +183,26 @@ for (const face of refined) {
 }
 assert(minNormalDot > 0.5, "Sculpt turns a triangle too far");
 assert(minAreaRatio > 0.2 && maxAreaRatio < 5, "Sculpt stretches a triangle too far");
+// Give the complete authored contours material support. The same expanded
+// field competition is evaluated per fragment, so adjacent regions fade to
+// neutral before an old/coarse triangle boundary can cut a colored lobe.
+// Only graphic face ownership changes here; no physiological values change.
+let relabelledFaces = 0;
+const addedMaterialSupport = Object.fromEntries(
+  [...new Set(SCULPT_LOBES.map((g) => g.region))].map((region) => [region, 0]),
+);
+const materialReassignments = {};
+for (const face of refined) {
+  const centre = [0, 1, 2].map((k) => face.ids.reduce((sum, i) => sum + positions[i][k], 0) / 3);
+  const owner = sculptSurfaceOwner(centre, face.region);
+  if (owner !== face.region) {
+    const transition = `${face.region}->${owner}`;
+    materialReassignments[transition] = (materialReassignments[transition] ?? 0) + 1;
+    relabelledFaces++;
+    addedMaterialSupport[owner]++;
+    face.region = owner;
+  }
+}
 const edges = new Map(),
   members = positions.map(() => new Set()),
   graph = positions.map(() => new Set());
@@ -206,13 +235,12 @@ while (todo.length) {
 }
 assert.equal(visited.size, positions.length, "Disconnected geometry");
 // One geometric seam, one normal. Tint vanishes on every shared material boundary.
-const seamWeight = members.map((m, i) => {
-  if (m.size > 1) return 0;
-  const distances = [...graph[i]]
-    .filter((j) => members[j].size > 1)
-    .map((j) => Math.hypot(...positions[i].map((v, k) => v - positions[j][k])));
-  return distances.length ? Math.min(1, Math.min(...distances) / 0.006) : 1;
-});
+const seamWeight = sculptSeamWeights(
+  sculpted,
+  graph,
+  members.flatMap((membership, id) => (membership.size > 1 ? [id] : [])),
+);
+
 const result = new Document(),
   buffer = result.createBuffer(),
   resultScene = result.createScene();
@@ -282,8 +310,17 @@ for (const region of regions) {
     candidateOnly: true,
     ...(region !== "neutral"
       ? {
+          twinSculptCompetition: {
+            supportScale: SCULPT_MATERIAL_SUPPORT_SCALE,
+            rivals: sculptRivalGuides(region).map(({ centre, radii, angle, power }) => ({
+              centre,
+              radii,
+              angle,
+              power,
+            })),
+          },
           twinSculptContours: SCULPT_LOBES.filter((g) => g.region === region).map(
-            ({ centre, radii, angle }) => ({ centre, radii, angle }),
+            ({ centre, radii, angle, power }) => ({ centre, radii, angle, power }),
           ),
         }
       : {}),
@@ -311,6 +348,12 @@ const audit = {
   vertices: positions.length,
   triangles: refined.length,
   connectedComponents: 1,
+  relabelledFaces,
+  addedMaterialSupport,
+  materialReassignments,
+  contourSupportScale: SCULPT_MATERIAL_SUPPORT_SCALE,
+  seamFeatherMetres: SCULPT_SEAM_WIDTH_M,
+  seamFeatherMethod: "Smoothstep of shortest path distance on the actual shared surface graph",
   boundaryEdges: 0,
   nonManifoldEdges: 0,
   inconsistentWinding: 0,
