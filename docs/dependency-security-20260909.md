@@ -47,10 +47,12 @@ A clean audit means **no currently reported npm advisories for that resolved tre
 - Sharp release: https://github.com/lovell/sharp/releases/tag/v0.35.4
 - Undici cache parser fixes: https://github.com/nodejs/undici/security/advisories/GHSA-4cwx-7wf7-3272
 
-## Remaining dependency-tree diagnostic
+## CI-version lockfile reconciliation
 
-`npm ls --all` is not claimed clean. Running it from the actual isolated installation root reports an existing optional peer-range mismatch: IPX's `unstorage` 1.17.5 accepts `@netlify/blobs` through major 10, while Netlify requires major 11. The baseline lockfile already contains the same range alongside Blobs 11.0.2; the patched Netlify packages use 11.0.3. The registry's current stable Unstorage remains 1.17.5 with that unchanged optional range.
+The first npm 11-generated lockfile passed the local fresh install and audits, but CI's npm 10.9.8 rejected it before tests: the optional IPX/Unstorage Blobs peer subtree was absent. The initial install-root `npm ls` diagnostic correctly identified that unresolved optional range. This failure was not waived.
 
-This block does not suppress the peer diagnostic, replace Unstorage with its alpha release, downgrade Netlify, or add an otherwise unused Blobs driver solely to satisfy the diagnostic. The used IPX filesystem path is exercised by the real toolchain test. A clean advisory audit and passing used-path checks are distinct from a completely reconciled optional peer tree. Raw `npm-ls-install-root.json` and `.stderr` are retained with the evidence. Running `npm ls` through the worktree's external `node_modules` symlink also produced misleading missing/extraneous paths; the actual install-root diagnostic above is the relevant one.
+The lockfile was reconciled using an isolated npm 10.9.8 toolchain matching CI. Its resolver adds a scoped Blobs 10.7.13 subtree for Unstorage while Netlify keeps its required Blobs 11.0.3. Existing resolved package versions are unchanged by this follow-up; it adds the 18 required nested lockfile entries rather than downgrading Netlify or suppressing peer checks. A fresh npm 10 `ci` and `npm ls --all` from the real installation directory both pass. No global npm configuration or original shared installation was changed.
 
-Local verification before commit: 1,118 tests across 146 files, 7 real toolchain smoke tests, TypeScript, staging build, production build, and 20 native-candidate Twin browser checks passed. Lint has zero errors and 27 pre-existing warnings. Both the full and production-only live npm audits report zero current findings. Final GitHub results must be recorded for the delivered commit separately.
+The follow-up uses `--ignore-scripts` for the isolated local installation; the actual native/build APIs are then tested, and unmodified CI `npm ci` remains the clean-install acceptance gate. The full audit still reports zero advisories after adding the optional subtree. Both initial failures and final results are retained in the evidence directory.
+
+Local verification of the security changes: 1,118 tests across 146 files, 7 real toolchain smoke tests, TypeScript, staging build, production build, and 20 native-candidate Twin browser checks passed. Lint has zero errors and 27 pre-existing warnings. Final GitHub results must be recorded for the delivered commit separately.
