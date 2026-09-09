@@ -1,76 +1,81 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
+import { createApplicationBuild } from "./scripts/application-environment.build";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import netlify from "@netlify/vite-plugin-tanstack-start";
 
-export default defineConfig(({ isSsrBuild }) => ({
-  plugins: [
-    tanstackStart({
-      server: { entry: "server" },
-      // A test beside its route is not a route. Without this the generator
-      // warns on every build and every `vitest run`.
-      router: { routeFileIgnorePattern: "\\.test\\.tsx?$" },
-    }),
-    react(),
-    tailwindcss(),
-    // The Netlify plugin owns the production build. The staging target skips
-    // it: the plain TanStack Start output is already a Workers module, so a
-    // second adapter would only get in the way. See STAGING.md.
-    ...(process.env["DEPLOY_TARGET"] === "cloudflare"
-      ? []
-      : [
-          netlify({
-            dev: {
-              edgeFunctions: {
-                enabled: false,
+export default defineConfig(({ isSsrBuild, mode }) => {
+  const build = createApplicationBuild({ ...loadEnv(mode, process.cwd(), ""), ...process.env });
+  return {
+    define: { "import.meta.env.VITE_GYMSLIFE_BUILD": JSON.stringify(JSON.stringify(build)) },
+    plugins: [
+      tanstackStart({
+        server: { entry: "server" },
+        // A test beside its route is not a route. Without this the generator
+        // warns on every build and every `vitest run`.
+        router: { routeFileIgnorePattern: "\\.test\\.tsx?$" },
+      }),
+      react(),
+      tailwindcss(),
+      // The Netlify plugin owns the production build. The staging target skips
+      // it: the plain TanStack Start output is already a Workers module, so a
+      // second adapter would only get in the way. See STAGING.md.
+      ...(process.env["DEPLOY_TARGET"] === "cloudflare"
+        ? []
+        : [
+            netlify({
+              dev: {
+                edgeFunctions: {
+                  enabled: false,
+                },
               },
-            },
-          }),
-        ]),
-  ],
-  resolve: {
-    tsconfigPaths: true,
-  },
-  optimizeDeps: {
-    include: [
-      "@supabase/supabase-js",
-      "@radix-ui/react-label",
-      "@radix-ui/react-dialog",
-      "@radix-ui/react-slot",
-      "cmdk",
-      "recharts",
-      "sonner",
-      "lucide-react",
+            }),
+          ]),
     ],
-  },
-  ...(isSsrBuild
-    ? {}
-    : {
-        build: {
-          rolldownOptions: {
-            output: {
-              codeSplitting: {
-                groups: [
-                  {
-                    name: "react-runtime",
-                    test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-                    priority: 4,
-                  },
-                  {
-                    name: "supabase-client",
-                    test: /node_modules[\\/]@supabase[\\/]/,
-                    priority: 3,
-                  },
-                  {
-                    name: "notifications",
-                    test: /node_modules[\\/]sonner[\\/]/,
-                    priority: 1,
-                  },
-                ],
+    resolve: {
+      tsconfigPaths: true,
+    },
+    optimizeDeps: {
+      include: [
+        "@supabase/supabase-js",
+        "@radix-ui/react-label",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-slot",
+        "cmdk",
+        "recharts",
+        "sonner",
+        "lucide-react",
+      ],
+    },
+    ...(isSsrBuild
+      ? {}
+      : {
+          build: {
+            rolldownOptions: {
+              output: {
+                codeSplitting: {
+                  groups: [
+                    {
+                      name: "react-runtime",
+                      test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                      priority: 4,
+                    },
+                    {
+                      name: "supabase-client",
+                      test: /node_modules[\\/]@supabase[\\/]/,
+                      priority: 3,
+                    },
+                    {
+                      name: "notifications",
+                      test: /node_modules[\\/]sonner[\\/]/,
+                      priority: 1,
+                    },
+                  ],
+                },
               },
             },
           },
-        },
-      }),
-}));
+        }),
+  };
+});

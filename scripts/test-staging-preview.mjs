@@ -7,6 +7,9 @@ const STAGE = "yywnpovsqifwujuxdxog",
 const base = process.env.STAGING_ORIGIN,
   key = process.env.STAGING_PUBLISHABLE_KEY;
 if (!base || !key) throw new Error("STAGING_PUBLIC_CONFIGURATION_REQUIRED");
+const expectedCommit = process.env.STAGING_EXPECTED_COMMIT;
+if (!/^[a-f0-9]{40}$/.test(expectedCommit ?? ""))
+  throw new Error("STAGING_EXPECTED_COMMIT_REQUIRED");
 const origin = new URL(base);
 if (
   origin.protocol !== "https:" ||
@@ -33,6 +36,7 @@ const errors = [],
   productionAttempts = [],
   sources = [];
 let outcome;
+let environmentReport = null;
 try {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -69,6 +73,22 @@ try {
         .catch(() => {}),
     );
   });
+  const metadata = await fetch(new URL("/api/public/environment", origin), {
+    redirect: "error",
+    signal: AbortSignal.timeout(15000),
+    headers: { "cache-control": "no-cache" },
+  });
+  expect(metadata.status).toBe(200);
+  environmentReport = await metadata.json();
+  expect(environmentReport).toMatchObject({
+    schema: "gyms-environment.v1",
+    status: "compatible",
+    target: "staging",
+    buildContext: "deploy-preview",
+    sourceCommit: expectedCommit,
+    issue: null,
+    scope: "deployment_identity_only_not_authentication_or_database_acceptance",
+  });
   const response = await page.goto(new URL("/auth", origin).href, {
     waitUntil: "networkidle",
     timeout: 60000,
@@ -97,6 +117,8 @@ try {
       "Real deployed unauthenticated login page, compiled DB target and public staging catalogue only; no account created or private data read",
     origin: origin.origin,
     engine,
+    environmentReport,
+    expectedCommit,
     loginHttpStatus: response.status(),
     stageTargetObserved: true,
     productionTargetObserved: false,
@@ -115,6 +137,8 @@ try {
     scope: "Unauthenticated preview preflight only",
     origin: origin.origin,
     engine,
+    environmentReport,
+    expectedCommit,
     reason: error instanceof Error ? error.message.slice(0, 600) : "preflight failed",
     errors,
     productionAttempts,

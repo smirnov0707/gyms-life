@@ -8,6 +8,8 @@ on:
       - "tests/offline-browser/client.ts"
       - "scripts/test-night-*.mjs"
       - "scripts/test-browser-locale.mjs"
+      - "scripts/test-application-environment.mjs"
+      - "scripts/application-environment.build.ts"
       - "scripts/browser-test-locale.mjs"
       - "package.json"
       - "package-lock.json"
@@ -23,6 +25,8 @@ on:
       - "tests/offline-browser/client.ts"
       - "scripts/test-night-*.mjs"
       - "scripts/test-browser-locale.mjs"
+      - "scripts/test-application-environment.mjs"
+      - "scripts/application-environment.build.ts"
       - "scripts/browser-test-locale.mjs"
       - "package.json"
       - "package-lock.json"
@@ -54,6 +58,9 @@ jobs:
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - run: npm run test:bundle:night-lab
+      - run: node scripts/test-application-environment.mjs
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
       - run: node scripts/test-browser-locale.mjs
         env:
           CORE_BROWSER_ENGINE: ${{ matrix.engine }}
@@ -68,6 +75,8 @@ jobs:
             test-results/night-review-browser
             test-results/night-worker-bundle/results.json
             test-results/browser-locale/results.json
+            test-results/application-environment/results.json
+            test-results/application-environment/*.png
             test-results/ci-browser-runtime.json
           retention-days: 14
           if-no-files-found: error

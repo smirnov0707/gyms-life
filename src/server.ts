@@ -1,3 +1,4 @@
+import { withApplicationEnvironment } from "./lib/application-environment.server";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -48,8 +49,10 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      const response = await withApplicationEnvironment(request, async () => {
+        const handler = await getServerEntry();
+        return handler.fetch(request, env, ctx);
+      });
       return applySecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
