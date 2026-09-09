@@ -5,7 +5,7 @@ import { chromium, expect } from "@playwright/test";
 import { createServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { verifyTwinLoadingLifecycle } from "./test-twin-loading-browser.mjs";
+import { freezeTwinClock, verifyTwinLoadingLifecycle } from "./test-twin-loading-browser.mjs";
 
 const root = process.cwd();
 const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
@@ -329,7 +329,7 @@ try {
   {
     const slow = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
     const waiting = await slow.newPage();
-    await waiting.clock.install();
+    await freezeTwinClock(waiting);
     let release = () => {};
     const held = new Promise((resolve) => {
       release = resolve;
@@ -343,10 +343,8 @@ try {
     await expect
       .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 20000 })
       .toBe("loading");
-    // Screenshot/font capture is not the scenario's simulated download time.
-    // Freeze after mounting so a slow capture cannot accidentally cross the
-    // separately tested 15-second deadline before this test releases the file.
-    await waiting.clock.pauseAt((await waiting.evaluate(() => Date.now())) + 1000);
+    // Screenshot/font capture is not simulated download time. The clock was
+    // frozen before navigation; the deadline scenarios advance it explicitly.
     await waiting.clock.runFor(800);
 
     // Nothing is drawn: every pixel of the frame is the transparent stage.

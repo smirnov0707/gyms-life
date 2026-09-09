@@ -1,6 +1,13 @@
 import path from "node:path";
 import { expect } from "@playwright/test";
 
+/** Freeze before the fixture creates any timers; startup cost is not simulated network delay. */
+export async function freezeTwinClock(page) {
+  const start = new Date("2026-09-09T00:00:00Z");
+  await page.clock.install({ time: start });
+  await page.clock.pauseAt(new Date(start.getTime() + 60_000));
+}
+
 /** Exercise real route components, clocks, cancellation and fresh retry scenes. */
 export async function verifyTwinLoadingLifecycle({
   browser,
@@ -19,7 +26,7 @@ export async function verifyTwinLoadingLifecycle({
     const pattern = scenario === "import-timeout" ? "**/twin-scene.runtime.ts*" : "**/*.glb";
     page.on("pageerror", (error) => errors.push(String(error)));
     // Install before application timers are created; never replace live timers.
-    await page.clock.install();
+    await freezeTwinClock(page);
     await page.route(pattern, (route) => {
       held.push(route);
     });
