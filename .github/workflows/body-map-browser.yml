@@ -1,0 +1,44 @@
+name: Body Map browser
+on:
+  pull_request:
+    paths:
+      - 'src/components/Overview.tsx'
+      - 'src/components/future-lab/FutureLabBodyMap.tsx'
+      - 'src/routes/_authenticated/body-map.tsx'
+      - 'src/components/twin/BodyMap.tsx'
+      - 'src/components/twin/body-map.geometry.ts'
+      - 'src/lib/digital-twin.schema.ts'
+      - 'src/styles.css'
+      - 'tests/body-map-browser/**'
+      - 'scripts/test-body-map-browser.mjs'
+      - '.github/workflows/body-map-browser.yml'
+      - 'package*.json'
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: body-map-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-body-map-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: body-map-browser-evidence
+          path: test-results/body-map
+          retention-days: 7
+          if-no-files-found: ignore

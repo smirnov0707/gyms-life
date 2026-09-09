@@ -20,6 +20,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAchievementsRouteImport } from './routes/_authenticated/achievements'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedBodyMapRouteImport } from './routes/_authenticated/body-map'
 import { Route as AuthenticatedArRouteImport } from './routes/_authenticated/ar'
 import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedCoachHistoryRouteImport } from './routes/_authenticated/coach-history'
@@ -96,6 +97,11 @@ const AuthenticatedAchievementsRoute =
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBodyMapRoute = AuthenticatedBodyMapRouteImport.update({
+  id: '/body-map',
+  path: '/body-map',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedArRoute = AuthenticatedArRouteImport.update({
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/app': typeof AuthenticatedAppRoute
+  '/body-map': typeof AuthenticatedBodyMapRoute
   '/ar': typeof AuthenticatedArRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/achievements': typeof AuthenticatedAchievementsRoute
   '/app': typeof AuthenticatedAppRoute
+  '/body-map': typeof AuthenticatedBodyMapRoute
   '/ar': typeof AuthenticatedArRoute
   '/coach': typeof AuthenticatedCoachRoute
   '/coach-history': typeof AuthenticatedCoachHistoryRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/achievements': typeof AuthenticatedAchievementsRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/_authenticated/body-map': typeof AuthenticatedBodyMapRoute
   '/_authenticated/ar': typeof AuthenticatedArRoute
   '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/coach-history': typeof AuthenticatedCoachHistoryRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/achievements'
     | '/app'
+    | '/body-map'
     | '/ar'
     | '/coach'
     | '/coach-history'
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/achievements'
     | '/app'
+    | '/body-map'
     | '/ar'
     | '/coach'
     | '/coach-history'
@@ -398,6 +409,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/achievements'
     | '/_authenticated/app'
+    | '/_authenticated/body-map'
     | '/_authenticated/ar'
     | '/_authenticated/coach'
     | '/_authenticated/coach-history'
@@ -516,6 +528,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AuthenticatedAppRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/body-map': {
+      id: '/_authenticated/body-map'
+      path: '/body-map'
+      fullPath: '/body-map'
+      preLoaderRoute: typeof AuthenticatedBodyMapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ar': {
@@ -678,6 +697,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAchievementsRoute: typeof AuthenticatedAchievementsRoute
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
+  AuthenticatedBodyMapRoute: typeof AuthenticatedBodyMapRoute
   AuthenticatedArRoute: typeof AuthenticatedArRoute
   AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedCoachHistoryRoute: typeof AuthenticatedCoachHistoryRoute
@@ -700,6 +720,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAchievementsRoute: AuthenticatedAchievementsRoute,
   AuthenticatedAppRoute: AuthenticatedAppRoute,
+  AuthenticatedBodyMapRoute: AuthenticatedBodyMapRoute,
   AuthenticatedArRoute: AuthenticatedArRoute,
   AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedCoachHistoryRoute: AuthenticatedCoachHistoryRoute,
