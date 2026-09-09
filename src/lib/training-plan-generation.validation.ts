@@ -10,6 +10,7 @@ export function validateGeneratedTrainingPlan(
   plan: TrainingPlanData,
   expectedDays: number,
   catalogSlugs: Iterable<string>,
+  sessionMinutes?: number,
 ): TrainingPlanData {
   const expectedDayNumbers = Array.from({ length: expectedDays }, (_, index) => index + 1);
   const receivedDayNumbers = plan.days.map((day) => day.day).sort((a, b) => a - b);
@@ -25,6 +26,17 @@ export function validateGeneratedTrainingPlan(
   }
 
   for (const day of plan.days) {
+    if (sessionMinutes !== undefined) {
+      const minimumRestSeconds = day.exercises.reduce(
+        (total, exercise) => total + Math.max(0, exercise.sets - 1) * exercise.rest_seconds,
+        0,
+      );
+      if (day.estimated_minutes > sessionMinutes || minimumRestSeconds >= sessionMinutes * 60)
+        throw new ObservedFailure(
+          "session_duration",
+          "Generated workout does not fit the requested session duration.",
+        );
+    }
     if (day.exercises.length < 4 || day.exercises.length > 6) {
       throw new ObservedFailure(
         "exercise_count",

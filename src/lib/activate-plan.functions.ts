@@ -1,3 +1,4 @@
+import { activateValidatedTrainingPlan } from "./training-activation.service";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -15,16 +16,11 @@ export const activatePlan = createServerFn({ method: "POST" })
         metadata: {},
       },
       async () => {
-        const { data: activatedPlanId, error } = await context.supabase.rpc(
-          "activate_training_plan",
-          {
-            p_plan_id: data.planId,
-          },
+        const activatedPlanId = await activateValidatedTrainingPlan(
+          context.supabase,
+          context.userId,
+          data.planId,
         );
-
-        if (error || !activatedPlanId) {
-          throw new Error(`Could not activate training plan: ${error?.message ?? "unknown error"}`);
-        }
 
         return { ok: true, planId: activatedPlanId };
       },

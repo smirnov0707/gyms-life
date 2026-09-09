@@ -1,7 +1,10 @@
+import { readDailyNutritionLogs } from "@/lib/nutrition-log.service";
+import { refreshCoreData } from "@/lib/core-cache";
+import { aiErrorMessage } from "@/lib/ai-error";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   ChevronDown,
@@ -21,7 +24,6 @@ import { QuickHydrationWidget } from "@/components/QuickHydrationWidget";
 import { SmartFridgeScanner } from "@/components/SmartFridgeScanner";
 import { VisionMealScanner } from "@/components/VisionMealScanner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
@@ -47,8 +49,6 @@ export const Route = createFileRoute("/_authenticated/nutrition")({
   component: NutritionPage,
 });
 
-type Row = Tables<"nutrition_logs">;
-
 type SurfaceCopy = {
   eyebrow: string;
   state: string;
@@ -69,10 +69,10 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
     return {
       eyebrow: "NUTRITION STATE",
       state: "Today's intake",
-      stateHint: "Measured from the meals you have actually logged today.",
+      stateHint: "Calculated from your food log. AI food estimates are not measurements.",
       logAction: "Log what you ate",
       history: "Inspect today's food log",
-      historyHint: "Every item currently contributing to today's measured intake.",
+      historyHint: "Every item currently contributing to today's logged intake.",
       tools: "Capture tools",
       toolsHint: "Use camera and context tools when typing is not the fastest option.",
       kcal: "Energy",
@@ -104,20 +104,22 @@ function Metric({
   label,
   unit,
 }: {
-  value: number;
+  value: number | null;
   target: number | null;
   label: string;
   unit: string;
 }) {
   const pct =
-    target === null ? null : Math.min(100, Math.round((value / Math.max(1, target)) * 100));
+    target === null || target <= 0 || value === null
+      ? null
+      : Math.min(100, Math.round((value / target) * 100));
 
   return (
     <div className="border-b border-white/[0.06] py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:py-0 sm:last:border-r-0">
       <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-neutral-600">{label}</p>
       <div className="mt-2 flex items-baseline gap-2">
         <p className="font-mono text-2xl text-white">
-          {Math.round(value)}
+          {value === null ? "—" : Math.round(value)}
           {unit}
         </p>
         {target === null ? null : (
@@ -163,10 +165,24 @@ function NutritionPage() {
   const [text, setText] = useState("");
   const call = useServerFn(logMeal);
   const timeZone = browserTimeZone();
-  const today = dayInTimeZone(new Date(), timeZone);
+  const [today, setToday] = useState(() => dayInTimeZone(new Date(), timeZone));
+  const mealLock = useRef(false);
+  useEffect(() => {
+    const update = () => setToday(dayInTimeZone(new Date(), timeZone));
+    const timer = window.setInterval(update, 30_000);
+    window.addEventListener("focus", update);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", update);
+    };
+  }, [timeZone]);
 
-  const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
+  const {
+    data: profile,
+    isError: profileReadFailed,
+    isPending: profilePending,
+  } = useQuery({
+    queryKey: ["nutrition-profile", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -185,7 +201,11 @@ function NutritionPage() {
   // down its estimate path — so the screen would state, with the plan's own
   // targets sitting unread in the database, that these figures came from the
   // athlete's body weight.
-  const { data: activePlan, isError: planTargetsReadFailed } = useQuery({
+  const {
+    data: activePlan,
+    isError: planTargetsReadFailed,
+    isPending: targetsPending,
+  } = useQuery({
     queryKey: ["meal-plan-targets", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -202,53 +222,80 @@ function NutritionPage() {
     enabled: !!user,
   });
 
-  const { data: logs } = useQuery({
-    queryKey: ["nutrition", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("nutrition_logs")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(80);
-      if (error) throw new Error(`Could not load nutrition logs: ${error.message}`);
-      return data ?? [];
-    },
+  const foodQuery = useQuery({
+    queryKey: ["nutrition", user?.id, today],
     enabled: !!user,
+    queryFn: () => readDailyNutritionLogs(supabase, user!.id, today),
   });
+  const logs = foodQuery.isError ? undefined : foodQuery.data;
 
   const add = useMutation({
-    mutationFn: async () => call({ data: { description: text, lang, timeZone } }),
-    onSuccess: () => {
-      setText("");
-      qc.invalidateQueries({ queryKey: ["nutrition", user?.id] });
+    mutationFn: async () => {
+      if (mealLock.current) return false;
+      mealLock.current = true;
+      try {
+        await call({ data: { description: text, lang, timeZone } });
+        return true;
+      } finally {
+        mealLock.current = false;
+      }
     },
-    onError: (error) => toast.error(errorMessage(error, t("common.error"))),
+    onSuccess: (saved) => {
+      if (!saved) return;
+      setText("");
+      void refreshCoreData(qc, "nutrition");
+    },
+    onError: (error) => toast.error(aiErrorMessage(error, t)),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("nutrition_logs").delete().eq("id", id);
-      if (error) throw new Error(`Could not delete meal log: ${error.message}`);
+      const { data: deleted, error } = await supabase
+        .from("nutrition_logs")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user!.id)
+        .select("id")
+        .maybeSingle();
+      if (error || !deleted) throw new Error("Could not confirm that the meal log was deleted.");
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["nutrition", user?.id] }),
+    onSuccess: () => refreshCoreData(qc, "nutrition"),
     onError: (error) => toast.error(errorMessage(error, t("common.error"))),
   });
 
   const todays = (logs ?? []).filter((log) => log.logged_on === today);
-  const sum = (key: keyof Row) => todays.reduce((total, log) => total + Number(log[key] ?? 0), 0);
+  const sum = (key: "calories" | "protein" | "carbs" | "fat") =>
+    logs === undefined ? null : todays.reduce((total, log) => total + log[key], 0);
 
+  const targetSourceUnavailable =
+    planTargetsReadFailed ||
+    targetsPending ||
+    (!activePlan && (profileReadFailed || profilePending));
   const targets = resolveNutritionTargets({
-    planKcal: activePlan?.kcal_target ?? null,
-    planProteinG: activePlan?.protein_target ?? null,
-    planFatG: activePlan?.fat_target ?? null,
-    planCarbsG: activePlan?.carbs_target ?? null,
-    bodyWeightKg: profile?.weight_kg == null ? null : Number(profile.weight_kg),
+    planKcal: targetSourceUnavailable ? null : (activePlan?.kcal_target ?? null),
+    planProteinG: targetSourceUnavailable ? null : (activePlan?.protein_target ?? null),
+    planFatG: targetSourceUnavailable ? null : (activePlan?.fat_target ?? null),
+    planCarbsG: targetSourceUnavailable ? null : (activePlan?.carbs_target ?? null),
+    bodyWeightKg:
+      targetSourceUnavailable || profile?.weight_kg == null ? null : Number(profile.weight_kg),
     goal: profile?.goal ?? null,
   });
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
+      {foodQuery.isPending && <p role="status">{t("common.loading")}</p>}
+      {foodQuery.isError && (
+        <section role="alert" className="panel border-destructive/30 p-4">
+          <p>
+            {baseLang(lang) === "en"
+              ? "Could not load today's food log. This does not mean you logged no meals."
+              : "Nepavyko įkelti šiandienos maisto įrašų. Tai nereiškia, kad jų nėra."}
+          </p>
+          <Button variant="outline" onClick={() => void foodQuery.refetch()}>
+            {baseLang(lang) === "en" ? "Retry" : "Bandyti dar kartą"}
+          </Button>
+        </section>
+      )}
       <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
         <div
           aria-hidden="true"
@@ -299,10 +346,20 @@ function NutritionPage() {
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <Input
             value={text}
+            disabled={add.isPending}
+            maxLength={400}
             onChange={(event) => setText(event.target.value)}
             placeholder={t("nut.ph")}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && text.trim().length > 1) add.mutate();
+              if (
+                event.key === "Enter" &&
+                !add.isPending &&
+                !mealLock.current &&
+                text.trim().length > 1
+              ) {
+                event.preventDefault();
+                add.mutate();
+              }
             }}
             className="h-12 flex-1 border-border bg-foreground/[0.02]"
           />
@@ -337,7 +394,15 @@ function NutritionPage() {
           </div>
         </summary>
         <div className="border-t border-border px-5 py-2 sm:px-6">
-          {todays.length === 0 ? (
+          {logs === undefined ? (
+            <p className="py-4 text-muted-foreground">
+              {foodQuery.isError
+                ? baseLang(lang) === "en"
+                  ? "Food log unavailable"
+                  : "Maisto įrašai nepasiekiami"
+                : t("common.loading")}
+            </p>
+          ) : todays.length === 0 ? (
             <p className="py-4 text-sm text-muted-foreground">{t("nut.empty")}</p>
           ) : (
             <ul className="divide-y divide-white/[0.06]">
@@ -375,6 +440,7 @@ function NutritionPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    disabled={remove.isPending}
                     onClick={() => remove.mutate(log.id)}
                     title={t("nut.delete")}
                     className="text-muted-foreground hover:text-destructive"

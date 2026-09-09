@@ -71,13 +71,19 @@ export function canonicalizeGeneratedPlanExercises(
   language: "lt" | "en",
 ): TrainingPlanData {
   const aliases = new Map<string, ExerciseCatalogItem>();
+  const ambiguous = new Set<string>();
+  const bySlug = new Map(catalog.map((exercise) => [exercise.slug, exercise]));
 
   for (const exercise of catalog) {
     for (const alias of [exercise.slug, exercise.name_en, exercise.name_lt]) {
       const key = exerciseLookupKey(alias);
+      if (ambiguous.has(key)) continue;
       const existing = aliases.get(key);
       if (existing === undefined) aliases.set(key, exercise);
-      else if (existing.slug !== exercise.slug) aliases.delete(key);
+      else if (existing.slug !== exercise.slug) {
+        aliases.delete(key);
+        ambiguous.add(key);
+      }
     }
   }
 
@@ -87,6 +93,7 @@ export function canonicalizeGeneratedPlanExercises(
       ...day,
       exercises: day.exercises.map((exercise) => {
         const canonical =
+          bySlug.get(exercise.slug) ??
           aliases.get(exerciseLookupKey(exercise.slug)) ??
           aliases.get(exerciseLookupKey(exercise.name));
         if (canonical === undefined) return exercise;
@@ -106,32 +113,14 @@ type PlanCatalogConstraints = {
   location: string;
 };
 
-/** Below this, a pool cannot fill a workout day, so the constraint is dropped. */
+/** Minimum pool needed by the multi-day programme contract. */
 export const MINIMUM_COMPATIBLE_EXERCISES = 4;
-
 export type PlanCatalogSelection = {
   readonly exercises: ExerciseCatalogItem[];
-  /**
-   * Whether `exercises` actually honours the athlete's equipment and location.
-   *
-   * False when too few matched and the whole catalog was handed over instead.
-   * This is the field that matters: the fallback is defensible as a *pool*
-   * decision — four exercises cannot fill a workout day, and a plan of four is
-   * worse than one with a barbell in it — but it is not defensible as a silent
-   * one. A caller that validates the model's output against a pool it does not
-   * know was widened is checking a constraint that was already abandoned, and
-   * every such check passes.
-   */
+  /** Always true: insufficient equipment is not permission to invent equipment. */
   readonly equipmentConstrained: boolean;
 };
-
-/**
- * Keep the AI contract small and relevant: it may choose only exercises the
- * member can use in the selected setting. If a legacy catalog has no matching
- * entries, retain the validated catalog instead of fabricating substitutions —
- * and say so, so the caller can decide what to do about it rather than inherit
- * a constraint that quietly stopped applying.
- */
+/** Callers decide whether the compatible pool is sufficient before using AI. */
 export function selectPlanExerciseCatalog(
   catalog: readonly ExerciseCatalogItem[],
   constraints: PlanCatalogConstraints,
@@ -156,13 +145,11 @@ export function selectPlanExerciseCatalog(
 
   const matching = catalog.filter(
     (exercise) =>
-      equipment.has(exercise.equipment) &&
+      equipment.has(canonicalWorkoutEquipment(exercise.equipment) ?? "") &&
       (constraints.location === "both" ||
         exercise.location === "both" ||
         exercise.location === constraints.location),
   );
 
-  return matching.length >= MINIMUM_COMPATIBLE_EXERCISES
-    ? { exercises: matching, equipmentConstrained: true }
-    : { exercises: [...catalog], equipmentConstrained: false };
+  return { exercises: matching, equipmentConstrained: true };
 }

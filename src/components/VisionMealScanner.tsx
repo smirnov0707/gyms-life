@@ -1,3 +1,4 @@
+import { refreshCoreData } from "@/lib/core-cache";
 import React, { useState, useRef } from "react";
 import { Camera, Upload, Loader2, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -141,7 +142,7 @@ export const VisionMealScanner: React.FC = () => {
       toast.success(
         lang === "lt" ? "Patiekalas išsaugotas į mitybos dienoraštį!" : "Meal saved to log!",
       );
-      queryClient.invalidateQueries({ queryKey: ["nutrition", user?.id] });
+      void refreshCoreData(queryClient, "nutrition");
       setImagePreview(null);
       setScanResult(null);
     } catch (error: unknown) {

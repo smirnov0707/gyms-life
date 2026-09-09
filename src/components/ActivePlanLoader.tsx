@@ -1,3 +1,4 @@
+import { useAuth } from "@/lib/auth";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, ChevronDown, Clock3, Target } from "lucide-react";
@@ -84,9 +85,11 @@ function copyFor(lang: Lang): Copy {
 
 export function ActivePlanLoader() {
   const { lang } = useI18n();
+  const { user } = useAuth();
   const copy = copyFor(lang);
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["active-plan"],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["active-plan", user?.id],
+    enabled: !!user,
     queryFn: () => getActivePlan(),
     staleTime: 60_000,
   });
@@ -104,7 +107,9 @@ export function ActivePlanLoader() {
     return (
       <section className="rounded-[2rem] border border-destructive/20 bg-destructive/[0.04] p-6">
         <p className="text-sm font-medium text-destructive">{copy.loadFailed}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{copy.tryAgain}</p>
+        <Button onClick={() => void refetch()} variant="outline" className="mt-3">
+          {copy.tryAgain}
+        </Button>
       </section>
     );
   }
@@ -170,6 +175,10 @@ export function ActivePlanLoader() {
             </div>
           ) : null}
 
+          <Button asChild variant="outline" className="mt-4">
+            <Link to="/onboarding">{copy.regenerate}</Link>
+          </Button>
+
           <div className="mt-7 grid grid-cols-3 gap-3 border-y border-white/[0.06] py-5">
             <div>
               <p className="font-mono text-xl text-white">{plan.weeks}</p>
@@ -197,7 +206,7 @@ export function ActivePlanLoader() {
               <p className="mt-1 text-sm leading-relaxed text-neutral-500">{copy.todayHint}</p>
             </div>
             <Button asChild size="lg" className="rounded-full px-6">
-              <Link to="/">
+              <Link to="/app">
                 {copy.openToday}
                 <ArrowRight className="size-4" />
               </Link>
