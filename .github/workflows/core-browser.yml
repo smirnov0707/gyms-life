@@ -1,0 +1,55 @@
+name: Core workflows browser
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/core-browser/**"
+      - "scripts/test-core-*.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/core-browser.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/core-browser/**"
+      - "scripts/test-core-*.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/core-browser.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Test real core routes with isolated synthetic service boundaries
+        run: npm run test:browser:core
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-workflows-${{ matrix.engine }}-evidence
+          path: test-results/core-browser
+          retention-days: 14
+          if-no-files-found: error

@@ -1,6 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { refreshCoreData } from "@/lib/core-cache";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Loader2,
   ArrowLeft,
@@ -21,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { TrainingPlanData } from "@/lib/training-plan.schema";
-import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
+import { TrainingIntakeSchema, optionalFormNumber } from "@/lib/training-intake.schema";
 import { aiErrorMessage } from "@/lib/ai-error";
 import { ProgramActivationActions } from "@/components/ProgramActivationActions";
 
@@ -75,44 +80,10 @@ const genders: Choice[] = [
 ];
 
 type StepId =
-  | "scan"
-  | "goal"
-  | "experience"
-  | "place"
-  | "schedule"
-  | "body"
-  | "limits"
-  | "quickTrain"
-  | "quickBody";
+  "goal" | "experience" | "place" | "schedule" | "body" | "limits" | "quickTrain" | "quickBody";
 
-const QUICK_STEPS: StepId[] = ["scan", "goal", "quickTrain", "quickBody"];
-const FULL_STEPS: StepId[] = ["scan", "goal", "experience", "place", "schedule", "body", "limits"];
-
-const SCAN_COPY = {
-  lt: {
-    title: "1. Nuskenuok kūną (nebūtina)",
-    sub: "Pradėk nuo 3D kūno kompozicijos skenerio — riebalų %, apimtys ir svoris bus automatiškai perkelti į anketą, o tikslas pasiūlytas pagal realius duomenis.",
-    skip: "Praleisti ir rinktis tikslą",
-    done: "Duomenys perkelti į anketą",
-    recommend: "Rekomenduojamas tikslas pagal skenavimą",
-  },
-  en: {
-    title: "1. Scan your body (optional)",
-    sub: "Start with the 3D body composition scan — body-fat %, circumferences and weight are copied into the form and the goal is recommended from real data.",
-    skip: "Skip and pick a goal",
-    done: "Data copied into the form",
-    recommend: "Recommended goal from your scan",
-  },
-} as const;
-
-function recommendGoal(bodyFat: number | null, sex: string): string {
-  if (bodyFat == null) return "build_muscle";
-  const high = sex === "female" ? 30 : 22;
-  const low = sex === "female" ? 22 : 14;
-  if (bodyFat >= high) return "lose_fat";
-  if (bodyFat <= low) return "strength";
-  return "build_muscle";
-}
+const QUICK_STEPS: StepId[] = ["goal", "quickTrain", "quickBody"];
+const FULL_STEPS: StepId[] = ["goal", "experience", "place", "schedule", "body", "limits"];
 
 function OptionButton({
   active,
@@ -126,6 +97,7 @@ function OptionButton({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
         "rounded-xl border p-4 text-left text-sm font-semibold transition-all",
@@ -142,6 +114,9 @@ function OptionButton({
 function Onboarding() {
   const { t, lang } = useI18n();
   const run = useServerFn(generatePlan);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const initializedUser = useRef<string | null>(null);
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -156,14 +131,48 @@ function Onboarding() {
   const [days, setDays] = useState(3);
   const [minutes, setMinutes] = useState(60);
   const [age, setAge] = useState("");
-  const [gender, setGender] = useState("male");
+  const [gender, setGender] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [target, setTarget] = useState("");
   const [limits, setLimits] = useState("");
-  const [scanBodyFat, setScanBodyFat] = useState<number | null>(null);
-  const [recommended, setRecommended] = useState<string | null>(null);
-  const sc = SCAN_COPY[lang === "lt" ? "lt" : "en"];
+  const submitLock = useRef(false);
+  const profileQuery = useQuery({
+    queryKey: ["training-intake", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(
+          "goal,experience,location,equipment,days_per_week,session_minutes,birth_year,gender,height_cm,weight_kg,target_weight_kg,limitations",
+        )
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw new Error("Training profile unavailable");
+      return data;
+    },
+  });
+  useEffect(() => {
+    if (!user || profileQuery.data === undefined || initializedUser.current === user.id) return;
+    const p = profileQuery.data;
+    if (p) {
+      if (p.goal)
+        setGoal(p.goal === "lose" ? "lose_fat" : p.goal === "muscle" ? "build_muscle" : p.goal);
+      if (p.experience) setExperience(p.experience);
+      if (p.location) setLocation(p.location);
+      if (p.equipment)
+        setEquipment(p.equipment.map((value) => (value === "band" ? "bands" : value)));
+      if (p.days_per_week != null) setDays(p.days_per_week);
+      if (p.session_minutes != null) setMinutes(p.session_minutes);
+      if (p.birth_year != null) setAge(String(new Date().getUTCFullYear() - p.birth_year));
+      if (p.gender) setGender(p.gender);
+      if (p.height_cm != null) setHeight(String(p.height_cm));
+      if (p.weight_kg != null) setWeight(String(p.weight_kg));
+      if (p.target_weight_kg != null) setTarget(String(p.target_weight_kg));
+      setLimits(p.limitations ?? "");
+    }
+    initializedUser.current = user.id;
+  }, [user, profileQuery.data]);
 
   const stepIds = mode === "quick" ? QUICK_STEPS : FULL_STEPS;
   const steps = stepIds.length;
@@ -183,35 +192,60 @@ function Onboarding() {
     setEquipment((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
   const submit = async () => {
+    if (submitLock.current || profileQuery.isPending || profileQuery.isError) return;
+    submitLock.current = true;
     setBusy(true);
     try {
-      const res = await run({
-        data: {
-          goal,
-          experience,
-          location,
-          equipment,
-          daysPerWeek: days,
-          sessionMinutes: minutes,
-          age: age ? Number(age) : null,
-          gender,
-          heightCm: height ? Number(height) : null,
-          weightKg: weight ? Number(weight) : null,
-          targetWeightKg: target ? Number(target) : null,
-          limitations: limits || null,
-          lang,
-        },
+      const intake = TrainingIntakeSchema.safeParse({
+        goal,
+        experience,
+        location,
+        equipment,
+        daysPerWeek: days,
+        sessionMinutes: minutes,
+        age: optionalFormNumber(age),
+        gender: gender || null,
+        heightCm: optionalFormNumber(height),
+        weightKg: optionalFormNumber(weight),
+        targetWeightKg: optionalFormNumber(target),
+        limitations: limits || null,
+        lang,
       });
+      if (!intake.success) {
+        toast.error(
+          lang === "lt"
+            ? "Patikrink skaičius ir pasirinkimus anketoje. Svorį galima įvesti su kableliu."
+            : "Check the numbers and choices in the form. Decimal commas are accepted.",
+        );
+        return;
+      }
+      const res = await run({ data: intake.data });
       if (!res.planId) throw new Error("Generated plan could not be saved.");
       setGeneratedPlanId(res.planId);
       setResult(res.plan);
+      await refreshCoreData(queryClient, "training");
     } catch (err) {
       toast.error(aiErrorMessage(err, t));
     } finally {
+      submitLock.current = false;
       setBusy(false);
     }
   };
 
+  if (profileQuery.isPending) return <p role="status">{t("common.loading")}</p>;
+  if (profileQuery.isError)
+    return (
+      <section role="alert" className="panel p-6">
+        <p>
+          {lang === "lt"
+            ? "Nepavyko įkelti tavo profilio. Esami pasirinkimai nebus pakeisti."
+            : "Could not load your profile. Your existing choices will not be overwritten."}
+        </p>
+        <Button onClick={() => void profileQuery.refetch()}>
+          {lang === "lt" ? "Bandyti dar kartą" : "Retry"}
+        </Button>
+      </section>
+    );
   if (busy) {
     return (
       <div className="grid min-h-[60vh] place-items-center text-center">
@@ -356,40 +390,9 @@ function Onboarding() {
       <p className="mt-2 text-sm text-muted-foreground">{t("ob.sub")}</p>
 
       <div className="mt-8 panel p-6">
-        {current === "scan" && (
-          <>
-            <h2 className="text-2xl">{sc.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{sc.sub}</p>
-            <div className="mt-4">
-              <BodyCompositionScanner
-                onResult={(r) => {
-                  setScanBodyFat(r.bodyFat);
-                  setHeight(String(Math.round(r.heightCm)));
-                  if (r.weightKg) setWeight(String(Math.round(r.weightKg)));
-                  if (r.age) setAge(String(r.age));
-                  if (r.sex === "male" || r.sex === "female") setGender(r.sex);
-                  const rec = recommendGoal(r.bodyFat, r.sex);
-                  setRecommended(rec);
-                  setGoal(rec);
-                  toast.success(sc.done);
-                }}
-              />
-            </div>
-            <Button variant="ghost" className="mt-4 w-full" onClick={() => setStep((s) => s + 1)}>
-              {sc.skip} <ArrowRight className="ml-1 size-4" />
-            </Button>
-          </>
-        )}
-
         {current === "goal" && (
           <>
             <h2 className="text-2xl">{t("qo.q1")}</h2>
-            {recommended && (
-              <p className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-primary">
-                {sc.recommend}: {t(goals.find((g) => g.value === recommended)!.key)}
-                {scanBodyFat != null ? ` · ${scanBodyFat}%` : ""}
-              </p>
-            )}
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {goals.map((g) => (
                 <OptionButton
@@ -471,7 +474,8 @@ function Onboarding() {
                   ))}
                 </div>
               </>
-            ) : (
+            ) : null}
+            {
               <>
                 <h2 className="mt-8 text-2xl">{t("ob.q.equipment")}</h2>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -486,7 +490,7 @@ function Onboarding() {
                   ))}
                 </div>
               </>
-            )}
+            }
           </>
         )}
 

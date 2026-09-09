@@ -80,6 +80,10 @@ export const buildRequestedWorkout = createServerFn({ method: "POST" })
       equipment: profile?.equipment ?? [],
       location: profile?.location ?? "both",
     });
+    if (selection.exercises.length === 0)
+      throw new Error(
+        "No demonstrated exercises match your equipment. Review your equipment choices.",
+      );
     const catalog = formatExerciseCatalogForAi(selection.exercises);
     const limitations = profile?.limitations?.trim() ?? "";
 
@@ -97,14 +101,7 @@ Safety rules:
 - Return a practical single-session workout that fits the requested duration.
 - Use ONLY exercise slugs copied exactly from the catalog below.`,
       prompt: `Exercise catalog (slug | English / Lithuanian | muscle | equipment | location | difficulty).
-${
-  // Only claim the narrowing when it actually happened. Too few compatible
-  // exercises means the whole catalog was handed over, and telling the model
-  // it has been filtered when it has not is the same lie one level up.
-  selection.equipmentConstrained
-    ? "This catalog has already been narrowed to what this person can use; nothing outside it is available:"
-    : `Too few exercises match this person's equipment, so this is the full catalog. Their equipment: ${profile?.equipment?.join(", ") || "none recorded"}. Prefer what they can actually use:`
-}
+This catalog contains only equipment this person can use. Do not add exercises outside it.
 ${catalog}
 
 Reported limitations or injuries: ${limitations || "none reported"}

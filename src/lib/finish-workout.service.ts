@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { getActivePlanData } from "./active-plan.service";
+import { loadSessionPlannedDay } from "./session-plan.server";
 import { evaluateWorkoutCompletion } from "./workout-completion.engine";
-import { resolveWorkoutSessionDay } from "./workout-session-plan.engine";
 import {
   parseCompletedWorkoutSession,
   parseWorkoutSession,
@@ -39,16 +38,11 @@ export async function finishWorkoutSession(
       ...(await loadCompletedSessionReplay(supabase, userId, session.id)),
     };
   }
-  if (session.planId === null || session.dayIndex === null) {
+  if (session.dayIndex === null) {
     throw new Error("Workout session is missing active plan metadata.");
   }
   const dayIndex = session.dayIndex;
-  const plan = await getActivePlanData(supabase, userId);
-  if (plan.status !== "READY" || plan.plan.id !== session.planId) {
-    throw new Error("The workout session is not linked to the current active program.");
-  }
-  const basePlannedDay = plan.plan.data.days.find((day) => day.day === dayIndex + 1);
-  const plannedDay = resolveWorkoutSessionDay(session, basePlannedDay ?? null);
+  const plannedDay = await loadSessionPlannedDay(supabase, userId, session);
   if (!plannedDay) throw new Error("The planned workout day could not be found.");
 
   const { data: logs, error: logsError } = await supabase

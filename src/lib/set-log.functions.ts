@@ -1,10 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getActivePlanData } from "./active-plan.service";
+import { loadSessionPlannedDay } from "./session-plan.server";
 import { validateWorkoutSetAgainstPlan } from "./workout-set.engine";
 import { resolvePerformedAt } from "./performed-at.engine";
-import { resolveWorkoutSessionDay } from "./workout-session-plan.engine";
 import { parseWorkoutSession, WORKOUT_SESSION_SELECT } from "./workout-session.schema";
 
 const Input = z.object({
@@ -46,17 +45,11 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       throw new Error("Workout session is already finished.");
     }
     const sessionDayIndex = session.dayIndex;
-    if (session.planId === null || sessionDayIndex === null) {
+    if (sessionDayIndex === null) {
       throw new Error("Workout session is missing active plan metadata.");
     }
 
-    const activePlan = await getActivePlanData(supabase, userId);
-    if (activePlan.status !== "READY" || activePlan.plan.id !== session.planId) {
-      throw new Error("Workout plan is no longer available for this session.");
-    }
-
-    const legacyPlanDay = activePlan.plan.data.days.find((day) => day.day === sessionDayIndex + 1);
-    const plannedDay = resolveWorkoutSessionDay(session, legacyPlanDay ?? null);
+    const plannedDay = await loadSessionPlannedDay(supabase, userId, session);
     if (!plannedDay) {
       throw new Error("The planned workout day could not be found for this session.");
     }
@@ -66,6 +59,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
       .from("set_logs")
       .select(setLogSelect)
       .eq("session_id", session.id)
+      .eq("user_id", userId)
       .eq("exercise_slug", data.exerciseSlug)
       .eq("set_number", data.setNumber)
       .maybeSingle();
@@ -105,6 +99,7 @@ export const logWorkoutSet = createServerFn({ method: "POST" })
         .from("set_logs")
         .select(setLogSelect)
         .eq("session_id", session.id)
+        .eq("user_id", userId)
         .eq("exercise_slug", data.exerciseSlug)
         .eq("set_number", data.setNumber)
         .maybeSingle();

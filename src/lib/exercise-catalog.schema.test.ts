@@ -93,12 +93,7 @@ describe("demonstrated exercise catalog", () => {
     expect(selected.equipmentConstrained).toBe(true);
   });
 
-  it("says when it gave up on the equipment constraint", () => {
-    // The fallback is defensible as a pool decision — three exercises cannot
-    // fill a workout day. It is not defensible as a silent one: a caller that
-    // validates the model's answer against a pool it does not know was widened
-    // is checking a constraint that had already been abandoned, and every such
-    // check passes.
+  it("retains only compatible exercises even when fewer than four match", () => {
     const bandRows = [
       { ...catalogRow, slug: "band-row", equipment: "band", location: "home" },
       { ...catalogRow, slug: "band-curl", equipment: "band", location: "home" },
@@ -107,11 +102,13 @@ describe("demonstrated exercise catalog", () => {
       equipment: ["band"],
       location: "home",
     });
-
-    expect(selected.equipmentConstrained).toBe(false);
-    // And the pool really is everything, so validating against it is honest
-    // rather than a check that rejects the very list the model was handed.
-    expect(selected.exercises).toHaveLength(3);
+    expect(selected.equipmentConstrained).toBe(true);
+    expect(selected.exercises).toEqual(bandRows);
+  });
+  it("returns an empty pool rather than equipment the athlete does not own", () => {
+    expect(
+      selectPlanExerciseCatalog([catalogRow], { equipment: [], location: "home" }).exercises,
+    ).toEqual([]);
   });
 
   it("treats no recorded equipment as bodyweight, not as no constraint", () => {
