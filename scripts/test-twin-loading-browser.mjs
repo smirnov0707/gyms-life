@@ -53,8 +53,10 @@ export async function verifyTwinLoadingLifecycle({
       await page.clock.fastForward(25_000);
       await expect(page.locator("canvas")).toHaveCount(0);
       await page.screenshot({ path: path.join(artifacts, `${scenario}.png`), fullPage: true });
-      await page.unroute(pattern);
+      // Removing interception first auto-handles pending routes in Playwright.
+      // Finish the held routes before unregistering them; never handle one twice.
       await Promise.all(held.map((route) => route.continue()));
+      await page.unroute(pattern);
       // Let the released module/fetch promise settle before a fresh attempt.
       await page.waitForTimeout(300);
       await expect(page.locator("canvas")).toHaveCount(0);
