@@ -32,9 +32,22 @@ function prepare(answers: Answer[]) {
 const ok = (data: unknown) => ({ data, error: null });
 beforeEach(() => vi.clearAllMocks());
 describe("background worker ownership and acknowledgement", () => {
+  it("cannot fabricate an evidence window when a legacy claim row cannot be decoded", async () => {
+    prepare([ok({ id: ID, status: "running", started_at: old })]);
+    const work = vi.fn();
+    expect((await runBackgroundJob("night_lab", work, { now })).status).toBe("unavailable");
+    expect(work).not.toHaveBeenCalled();
+  });
+
   it("reclaims only the exact expired lease, and closes only its own lease", async () => {
     const calls = prepare([
-      ok({ id: ID, status: "running", started_at: old }),
+      ok({
+        id: ID,
+        status: "running",
+        started_at: old,
+        window_start: "2026-09-01T12:00:00.000Z",
+        window_end: "2026-09-08T12:00:00.000Z",
+      }),
       ok({ id: ID }),
       ok({ id: ID }),
     ]);
@@ -45,16 +58,38 @@ describe("background worker ownership and acknowledgement", () => {
     expect(calls[2]?.operations).toContainEqual(["eq", ["status", "running"]]);
     expect(report).toMatchObject({ status: "ran", recorded: true, outcome: { succeeded: 1 } });
     expect(nightLabHttpStatus(report)).toBe(200);
+    expect(work).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: ID,
+        claimedAt: now.toISOString(),
+        window: { start: "2026-09-01T12:00:00.000Z", end: "2026-09-08T12:00:00.000Z" },
+      }),
+    );
   });
   it("a worker that loses the compare-and-swap reclaim never executes the job", async () => {
-    prepare([ok({ id: ID, status: "running", started_at: old }), ok(null)]);
+    prepare([
+      ok({
+        id: ID,
+        status: "running",
+        started_at: old,
+        window_start: "2026-09-01T12:00:00.000Z",
+        window_end: "2026-09-08T12:00:00.000Z",
+      }),
+      ok(null),
+    ]);
     const work = vi.fn();
     expect(await runBackgroundJob("night_lab", work, { now })).toMatchObject({ status: "skipped" });
     expect(work).not.toHaveBeenCalled();
   });
   it("a reclaim read/write error is unavailable, not another worker's success", async () => {
     prepare([
-      ok({ id: ID, status: "running", started_at: old }),
+      ok({
+        id: ID,
+        status: "running",
+        started_at: old,
+        window_start: "2026-09-01T12:00:00.000Z",
+        window_end: "2026-09-08T12:00:00.000Z",
+      }),
       { data: null, error: { code: "synthetic" } },
     ]);
     const work = vi.fn();
@@ -83,7 +118,15 @@ describe("background worker ownership and acknowledgement", () => {
     expect(nightLabHttpStatus(report)).toBe(503);
   });
   it("completed duplicate runs are a harmless skip", async () => {
-    prepare([ok({ id: ID, status: "succeeded", started_at: old })]);
+    prepare([
+      ok({
+        id: ID,
+        status: "succeeded",
+        started_at: old,
+        window_start: "2026-09-01T12:00:00.000Z",
+        window_end: "2026-09-08T12:00:00.000Z",
+      }),
+    ]);
     const work = vi.fn();
     const report = await runBackgroundJob("night_lab", work, { now });
     expect(report.status).toBe("skipped");

@@ -698,6 +698,15 @@ export type Database = {
         }
         Relationships: []
       }
+      night_lab_reviews: {
+        Row: { id: string; run_id: string; user_id: string; run_key: string; review_on: string; time_zone: string; reviewed_at: string; snapshot_id: string | null; report: Json; created_at: string }
+        Insert: { id?: string; run_id: string; user_id: string; run_key: string; review_on: string; time_zone: string; reviewed_at: string; snapshot_id?: string | null; report: Json; created_at?: string }
+        Update: { id?: string; run_id?: string; user_id?: string; run_key?: string; review_on?: string; time_zone?: string; reviewed_at?: string; snapshot_id?: string | null; report?: Json; created_at?: string }
+        Relationships: [
+          { foreignKeyName: "night_lab_reviews_run_id_fkey"; columns: ["run_id"]; isOneToOne: false; referencedRelation: "background_job_runs"; referencedColumns: ["id"] },
+          { foreignKeyName: "night_lab_reviews_snapshot_id_fkey"; columns: ["snapshot_id"]; isOneToOne: false; referencedRelation: "athlete_state_snapshots"; referencedColumns: ["id"] }
+        ]
+      }
       nutrition_logs: {
         Row: {
           calories: number
@@ -1432,6 +1441,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_night_lab_review: {
+        Args: { p_run_id: string; p_claimed_at: string; p_user_id: string; p_report: Json }
+        Returns: string
+      }
+
       commit_generated_meal_plan: {
         Args: { p_plan_id: string; p_profile_updated_at: string; p_plan: Json; p_preferences: Json; p_lang: string }
         Returns: { plan_id: string; created_at: string; updated_at: string }[]

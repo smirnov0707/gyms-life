@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   claimDecision,
@@ -82,6 +83,8 @@ type LedgerRow = {
   id: string;
   status: string;
   started_at: string;
+  window_start?: string;
+  window_end?: string;
 };
 
 function asExistingRun(row: LedgerRow | null) {
@@ -108,17 +111,19 @@ export async function runBackgroundJob(
     window: JobWindow;
     limit: number;
     runKey: string;
+    runId: string;
+    claimedAt: string;
   }) => Promise<readonly JobItemResult[]>,
   options?: { now?: Date; limit?: number },
 ): Promise<JobRunReport> {
   const now = options?.now ?? new Date();
   const limit = options?.limit ?? JOB_ITEM_LIMIT;
   const runKey = runKeyFor(now);
-  const window = jobWindow(now);
+  let window = jobWindow(now);
 
   const { data: existingRow, error: readError } = await supabaseAdmin
     .from("background_job_runs")
-    .select("id, status, started_at")
+    .select("id, status, started_at, window_start, window_end")
     .eq("job_name", jobName)
     .eq("run_key", runKey)
     .maybeSingle();
@@ -137,6 +142,22 @@ export async function runBackgroundJob(
   if (decision === "reclaim") {
     const previous = existingRow as LedgerRow | null;
     if (!previous) return { status: "unavailable", runKey };
+    const frozen = z
+      .object({
+        window_start: z.string().datetime({ offset: true }),
+        window_end: z.string().datetime({ offset: true }),
+      })
+      .safeParse(previous);
+    if (
+      !frozen.success ||
+      Date.parse(frozen.data.window_start) > Date.parse(frozen.data.window_end) ||
+      Date.parse(frozen.data.window_end) > now.getTime()
+    )
+      return { status: "unavailable", runKey };
+    // The lease changes, not the original evidence cutoff. Existing receipts
+    // and a replayed worker must continue to refer to the same job window.
+    window = { start: frozen.data.window_start, end: frozen.data.window_end };
+
     // Take the abandoned claim over by moving its start forward. The
     // `eq("status", "running")` is what makes this safe against a second
     // container reclaiming at the same moment: only one update matches.
@@ -175,7 +196,7 @@ export async function runBackgroundJob(
   let fatalCode: string | null = null;
 
   try {
-    results = await work({ window, limit, runKey });
+    results = await work({ window, limit, runKey, runId, claimedAt });
   } catch (cause) {
     // The run as a whole failed. The row is closed as failed rather than left
     // `running`, so the next period reads a finished night instead of waiting

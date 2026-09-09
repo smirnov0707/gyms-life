@@ -1,104 +1,74 @@
+import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import {
   JobFailure,
   runBackgroundJob,
   type JobItemResult,
   type JobRunReport,
 } from "./background-job.server";
-import { gatherOutcome, nightLabCandidates, type SourceRead } from "./night-lab.engine";
+import { nightLabCandidates, type SourceRead } from "./night-lab.engine";
 import { recordPersonalTimelineEvent } from "./personal-timeline.server";
 import type { JobWindow } from "./background-job.engine";
-
-/**
- * The Night Lab, version one: the Digital Twin is brought up to date for every
- * athlete who produced new evidence, while nobody is looking.
- *
- * What this is not, deliberately. The constitution's Night Lab eventually
- * evaluates predictions, updates hypotheses, hunts anomalies and prepares a
- * Morning Brief. None of that is here. Every one of those needs longitudinal
- * data this system does not yet have, and writing them now would produce
- * exactly the fake overnight analysis PART LXXV forbids.
- *
- * What is here is real and was previously impossible: until tonight, an
- * athlete's state was only ever recomputed because they opened a screen. A
- * snapshot written at 03:00 from a workout finished at 22:00 is the first thing
- * this product has ever learned without being asked to.
- *
- * Three properties are worth stating because they are easy to lose later:
- *
- * The run touches only athletes with new evidence. Refreshing a state that
- * nothing has changed learns nothing and makes the run's own counts a lie.
- *
- * One athlete's failure is one athlete's failure. Every refresh is caught
- * individually, so a single broken profile cannot cost everybody else their
- * night. The failures are counted in the ledger rather than swallowed.
- *
- * The athlete's own time zone is used, because the state calculation asks what
- * happened "today" and there is no single today for people in different places.
- */
-
-/** How far back a sighting counts as new evidence. Kept to the job's window. */
-type EvidenceQuery = {
-  table: "workout_sessions" | "health_samples" | "daily_checkins";
+import { IanaTimeZoneSchema } from "./local-day";
+import { runAthleteNightReview } from "./night-review.server";
+import { AthletePredictionSchema } from "./prediction.schema";
+const LIMIT = 500;
+type EvidenceSource = {
+  table:
+    "workout_sessions" | "health_samples" | "daily_checkins" | "body_metrics" | "nutrition_logs";
   column: string;
 };
-
-/**
- * The sources that count as an athlete having produced something new.
- *
- * A finished session, a health sample from a device, and a readiness check-in.
- * Body measurements and nutrition are deliberately not here in v1: they change
- * the Twin, but they are entered by hand while the app is open, which means the
- * state was already recomputed in that request. A source belongs on this list
- * when it can arrive while nobody is looking.
- */
-const EVIDENCE_SOURCES: readonly EvidenceQuery[] = [
+const SOURCES: readonly EvidenceSource[] = [
   { table: "workout_sessions", column: "finished_at" },
   { table: "health_samples", column: "updated_at" },
   { table: "daily_checkins", column: "updated_at" },
+  { table: "body_metrics", column: "created_at" },
+  { table: "nutrition_logs", column: "created_at" },
 ];
-
-/** Rows read per source. Generous against the job's own item bound. */
-const SIGHTINGS_PER_SOURCE = 500;
-
-async function sightingsFrom(source: EvidenceQuery, window: JobWindow): Promise<SourceRead> {
+async function readSightings(source: EvidenceSource, window: JobWindow): Promise<SourceRead> {
   const { data, error } = await supabaseAdmin
     .from(source.table)
-    .select(`user_id, ${source.column}`)
+    .select(`user_id,${source.column}`)
     .gte(source.column, window.start)
     .lte(source.column, window.end)
     .order(source.column, { ascending: false })
-    .limit(SIGHTINGS_PER_SOURCE);
-
-  // One unreadable source must not cancel the night — the run proceeds on what
-  // it could read, and the athletes it misses are found by the next run — but
-  // it must not look like a source that answered "nobody". An empty list means
-  // both, so readability is carried alongside it rather than folded into it.
-  if (error || !data) return { readable: false, sightings: [] };
-
-  const sightings = (data as unknown as Record<string, unknown>[]).flatMap((row) => {
-    const userId = row["user_id"];
-    const at = row[source.column];
-    return typeof userId === "string" && typeof at === "string" ? [{ userId, at }] : [];
-  });
+    .limit(LIMIT + 1);
+  if (error || data === null || data.length > LIMIT) return { readable: false, sightings: [] };
+  const parsed = z.array(z.record(z.string(), z.unknown())).safeParse(data);
+  if (!parsed.success) return { readable: false, sightings: [] };
+  const sightings = [];
+  for (const row of parsed.data) {
+    const id = z.string().uuid().safeParse(row["user_id"]),
+      at = z.string().datetime({ offset: true }).safeParse(row[source.column]);
+    if (!id.success || !at.success) return { readable: false, sightings: [] };
+    sightings.push({ userId: id.data, at: at.data });
+  }
   return { readable: true, sightings };
 }
-
-/**
- * The athlete's own time zone, or null when it could not be established.
- *
- * Null rather than a UTC fallback, and the difference matters: the state
- * calculation asks what happened "today", and today starts at a different
- * instant for everyone. Defaulting a Vilnius athlete to UTC moves their day
- * boundary by three hours, which silently puts an evening workout on the wrong
- * day in the snapshot this run exists to write. A night we cannot place is a
- * night we skip, counted as a failure rather than computed wrongly.
- *
- * A missing profile row is treated the same way. An athlete with new evidence
- * and no profile is a data-integrity problem, and it belongs in the failed
- * count where it can be seen.
- */
+async function duePredictions(window: JobWindow): Promise<SourceRead> {
+  const { data, error } = await supabaseAdmin
+    .from("decision_records")
+    .select("user_id,prediction")
+    .contains("prediction", {
+      target: "workout_completion",
+      maturity: "shadow",
+      actual: null,
+      evaluatedAt: null,
+    })
+    .order("decision_on", { ascending: true })
+    .limit(LIMIT + 1);
+  if (error || data === null || data.length > LIMIT) return { readable: false, sightings: [] };
+  const parsed = z
+    .array(z.object({ user_id: z.string().uuid(), prediction: AthletePredictionSchema }))
+    .safeParse(data);
+  if (!parsed.success) return { readable: false, sightings: [] };
+  return {
+    readable: true,
+    sightings: parsed.data
+      .filter((row) => Date.parse(row.prediction.horizonEndsAt) <= Date.parse(window.end))
+      .map((row) => ({ userId: row.user_id, at: window.end })),
+  };
+}
 async function timeZoneFor(userId: string): Promise<string | null> {
   const { data, error } = await supabaseAdmin
     .from("profiles")
@@ -106,67 +76,61 @@ async function timeZoneFor(userId: string): Promise<string | null> {
     .eq("id", userId)
     .maybeSingle();
   if (error || !data) return null;
-  return data.time_zone;
+  const zone = IanaTimeZoneSchema.safeParse(data.time_zone);
+  return zone.success ? zone.data : null;
 }
-
-/**
- * Runs tonight's Night Lab, at most once for the period.
- *
- * Returns the ledger's own account of what happened, so a caller can report it
- * rather than assume it.
- */
+/** One canonical bounded worker: records confirmed stages, not the fact an attempt was made. */
 export async function runNightLab(options?: { now?: Date }): Promise<JobRunReport> {
   return runBackgroundJob(
     "night_lab",
-    async ({ window, limit, runKey }) => {
-      const reads = await Promise.all(
-        EVIDENCE_SOURCES.map((source) => sightingsFrom(source, window)),
-      );
-
-      // A run that could read nothing finds nobody, attempts nothing, and
-      // would otherwise file itself as a quiet night — the same green row as
-      // a night when genuinely nobody trained. It says which it was instead.
-      if (gatherOutcome(reads) === "blind") {
-        throw new JobFailure("EVIDENCE_UNREADABLE");
-      }
-
+    async ({ window, limit, runKey, runId, claimedAt }) => {
+      const reads = await Promise.all([
+        ...SOURCES.map((source) => readSightings(source, window)),
+        duePredictions(window),
+      ]);
+      // A partial or truncated source scan cannot claim it found all eligible athletes.
+      if (reads.some((read) => !read.readable))
+        throw new JobFailure("EVIDENCE_UNREADABLE_OR_TRUNCATED");
       const candidates = nightLabCandidates(
         reads.flatMap((read) => read.sightings),
         limit,
       );
-
       const results: JobItemResult[] = [];
+      const deadline = Date.now() + 10 * 60_000;
       for (const candidate of candidates) {
+        if (Date.now() >= deadline) throw new JobFailure("NIGHT_REVIEW_TIME_BUDGET");
         try {
           const timeZone = await timeZoneFor(candidate.userId);
-          if (timeZone === null) {
+          if (!timeZone) {
             results.push({ ok: false });
             continue;
           }
-          await refreshAthleteStateSnapshot(supabaseAdmin, candidate.userId, timeZone);
-          // The refresh either ran or it threw. A state too thin to persist
-          // returns without a snapshot, and that is a success: the calculation
-          // ran and correctly declined to store something it could not stand
-          // behind. Counting it as a failure would mark every new athlete's
-          // first night red.
-          await recordPersonalTimelineEvent(candidate.userId, {
-            eventType: "twin_recalculated",
-            occurredAt: window.end,
+          const saved = await runAthleteNightReview(supabaseAdmin, {
+            userId: candidate.userId,
+            runId,
+            runKey,
+            claimedAt,
+            evidenceThrough: window.end,
             timeZone,
-            provenance: "calculated",
-            sourceSystem: "gymslife",
-            sourceTable: "background_job_runs",
-            // The run's own key, so this row and the ledger row point at each
-            // other. It is also what makes the write idempotent: a reclaimed
-            // run writing the same period again upserts rather than duplicates.
-            sourceReference: runKey,
-            summary: { job: "night_lab" },
           });
-          results.push({ ok: true });
+          if (saved.review.snapshot.status === "confirmed")
+            await recordPersonalTimelineEvent(candidate.userId, {
+              eventType: "twin_recalculated",
+              occurredAt: saved.review.reviewedAt,
+              timeZone,
+              provenance: "calculated",
+              sourceSystem: "gymslife",
+              sourceTable: "background_job_runs",
+              sourceReference: runKey,
+              summary: {
+                job: "night_lab",
+                reviewId: saved.id,
+                snapshotId: saved.review.snapshot.id,
+                reviewStatus: saved.review.status,
+              },
+            });
+          results.push({ ok: saved.review.status === "completed" });
         } catch {
-          // Never let one athlete's broken data end the night for everyone
-          // else. The count is the record; the error itself may carry personal
-          // data and is not logged.
           results.push({ ok: false });
         }
       }

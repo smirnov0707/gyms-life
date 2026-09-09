@@ -12,6 +12,7 @@ export default tseslint.config(
       ".output",
       ".vinxi",
       ".netlify",
+      "test-results/night-worker-bundle/**", // Generated esbuild output; source entries remain linted.
       "src/integrations/supabase/types.ts",
       "src/lib/i18n-locales.ts",
     ],

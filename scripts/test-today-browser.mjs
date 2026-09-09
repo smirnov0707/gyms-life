@@ -112,20 +112,9 @@ function serverFunctionStub() {
           : null,
     async load(id) {
       if (id === BRIEF_SCHEMA_STUB) {
-        // The brief schema currently lives beside a server function. Reuse its
-        // exact declaration block without importing any auth/provider runtime.
-        const source = readFileSync(path.join(root, "src/lib/brief.functions.ts"), "utf8");
-        const begin = source.indexOf("export const BRIEF_ROUTES");
-        const end = source.indexOf("\nfunction isBriefRoute(");
-        if (begin < 0 || end <= begin)
-          throw new Error("Brief schema boundary changed; update the fixture adapter.");
-        return (
-          await transformWithEsbuild(
-            `import { z } from "zod";\n${source.slice(begin, end)}`,
-            "fixture-brief-schema.ts",
-            { loader: "ts" },
-          )
-        ).code;
+        const source = readFileSync(path.join(root, "src/lib/brief.schema.ts"), "utf8");
+        return (await transformWithEsbuild(source, "fixture-brief-schema.ts", { loader: "ts" }))
+          .code;
       }
       if (id !== SERVER_FUNCTION_STUB) return null;
       const overrides = JSON.stringify(stubs("functions-stub.ts"));

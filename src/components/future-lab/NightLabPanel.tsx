@@ -1,3 +1,4 @@
+import { MorningLabReview } from "./MorningLabReview";
 import { useQuery } from "@tanstack/react-query";
 import { MoonStar } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -80,6 +81,9 @@ export function NightLabPanel() {
       )}
 
       <p className="mt-3 text-[10px] leading-relaxed text-slate-500">{t("nl.scope")}</p>
+      <div className="mt-3">
+        <MorningLabReview />
+      </div>
     </section>
   );
 }

@@ -479,3 +479,7 @@ export async function syncOfflineWorkoutSet({
     data: data.data,
   };
 }
+
+export async function getMorningNightReview() {
+  return { state: "not_run" as const };
+}

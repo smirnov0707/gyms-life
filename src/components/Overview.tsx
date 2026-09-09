@@ -1,3 +1,4 @@
+import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -199,7 +200,8 @@ export function Overview() {
               </div>
             )}
           </div>
-          <div className="fl-brief">
+          <div className="fl-brief space-y-3">
+            <MorningLabReview compact />
             <SmartBrief compact />
           </div>
           <div className="fl-decision">

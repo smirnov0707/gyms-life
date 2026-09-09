@@ -18,7 +18,9 @@
     "test:toolchain": "node --test scripts/test-dependency-toolchain.mjs",
     "test:browser:core": "node scripts/test-core-browser.mjs",
     "test:browser:auth": "node scripts/test-auth-browser.mjs",
-    "test:browser:offline": "node scripts/test-offline-browser.mjs"
+    "test:browser:offline": "node scripts/test-offline-browser.mjs",
+    "test:bundle:night-lab": "node scripts/test-night-lab-bundle.mjs",
+    "test:browser:night-review": "node scripts/test-night-review-browser.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1",

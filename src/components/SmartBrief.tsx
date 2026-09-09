@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
 import {
   Activity,
   Apple,
@@ -20,12 +21,8 @@ import {
   TriangleAlert,
   User,
 } from "lucide-react";
-import {
-  getDailyBrief,
-  DailyBriefSchema,
-  type DailyBrief,
-  type BriefRoute,
-} from "@/lib/brief.functions";
+import { getDailyBrief } from "@/lib/brief.functions";
+import { DailyBriefSchema, type BriefRoute } from "@/lib/brief.schema";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { GlowCard } from "@/components/GlowCard";
@@ -48,9 +45,6 @@ const ROUTE_ICON: Record<BriefRoute, typeof Sparkles> = {
   "/reminders": Flame,
 };
 
-const cacheKey = (lang: string, timeZone: string) =>
-  `gl_brief_${lang}_${timeZone}_${dayInTimeZone(new Date(), timeZone)}`;
-
 /**
  * An evidence-led interpretation layer. Training entry stays in TodayDecision
  * so an AI-produced action card can never skip a deterministic safety check.
@@ -59,42 +53,26 @@ export function SmartBrief({ compact = false }: { compact?: boolean }) {
   const { t, lang } = useI18n();
   const timeZone = browserTimeZone();
   const fetchBrief = useServerFn(getDailyBrief);
-  const [brief, setBrief] = useState<DailyBrief | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
-
-  const load = useCallback(
-    async (force: boolean) => {
-      const key = cacheKey(lang, timeZone);
-      if (!force) {
-        const cached = window.localStorage.getItem(key);
-        if (cached) {
-          try {
-            setBrief(DailyBriefSchema.parse(JSON.parse(cached)));
-            return;
-          } catch {
-            window.localStorage.removeItem(key);
-          }
-        }
-      }
-      setBusy(true);
-      setFailed(null);
-      try {
-        const res = await fetchBrief({ data: { lang, timeZone } });
-        setBrief(res);
-        window.localStorage.setItem(key, JSON.stringify(res));
-      } catch (err) {
-        setFailed(aiErrorMessage(err, t));
-      } finally {
-        setBusy(false);
-      }
+  const { user } = useAuth();
+  const query = useQuery({
+    queryKey: ["daily-brief", user?.id, lang, timeZone, dayInTimeZone(new Date(), timeZone)],
+    enabled: !!user,
+    retry: false,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      if (!user) throw new Error("Authentication required");
+      return DailyBriefSchema.parse(
+        await fetchBrief({ data: { ownerId: user.id, lang, timeZone } }),
+      );
     },
-    [fetchBrief, lang, t, timeZone],
-  );
-
-  useEffect(() => {
-    void load(false);
-  }, [load]);
+  });
+  const brief = query.data ?? null,
+    busy = query.isFetching,
+    failed = query.isError ? aiErrorMessage(query.error, t) : null;
+  const load = async (_force: boolean) => {
+    if (user && !query.isFetching) await query.refetch({ cancelRefetch: false });
+  };
+  if (!user) return null;
 
   if (compact) {
     return (
