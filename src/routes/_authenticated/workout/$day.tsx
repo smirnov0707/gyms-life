@@ -38,6 +38,7 @@ import {
   getOfflineQueue,
   hasQueuedWorkoutSets,
   isNetworkUnavailable,
+  OfflineQueueError,
   queueWorkoutSet,
   type WorkoutSetSync,
 } from "@/lib/offline-store";
@@ -46,7 +47,7 @@ import type { TrainingPlanDay } from "@/lib/training-plan.schema";
 import type { ExerciseTrainingGuidance } from "@/lib/training-guidance.engine";
 import type { WorkoutTrainingGuidance } from "@/lib/training-guidance.service";
 import type { WorkoutExecutionAdaptation } from "@/lib/workout-execution.schema";
-import { errorMessage } from "@/lib/error-message";
+import { AthleteFacingError, errorMessage } from "@/lib/error-message";
 import { browserTimeZone } from "@/lib/local-day";
 import { notifyAdaptationChanged } from "@/lib/readiness-adapt";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
@@ -82,6 +83,8 @@ type Copy = {
   startFailed: string;
   queuedOffline: string;
   logFailed: string;
+  offlineQueueFull: string;
+  offlineStorageFull: string;
   reconnectBeforeFinish: string;
   finished: string;
   finishFailed: string;
@@ -171,6 +174,10 @@ function copyFor(lang: Lang): Copy {
       startFailed: "Could not start the workout",
       queuedOffline: "Set saved on this device and will sync when you reconnect.",
       logFailed: "Could not save the set",
+      offlineQueueFull:
+        "This device is holding as many offline sets as it can. Your earlier sets are safe — reconnect to send them, then log this one.",
+      offlineStorageFull:
+        "This device has no room left to store the set. Your earlier sets are safe — free some space or reconnect to send them.",
       reconnectBeforeFinish: "Reconnect so your sets are saved before finishing the workout.",
       finished: "Workout complete!",
       finishFailed: "Could not finish the workout",
@@ -267,6 +274,10 @@ function copyFor(lang: Lang): Copy {
     startFailed: "Nepavyko pradėti treniruotės",
     queuedOffline: "Serija išsaugota šiame įrenginyje ir bus persiųsta atkūrus ryšį.",
     logFailed: "Nepavyko išsaugoti seto",
+    offlineQueueFull:
+      "Šis įrenginys nebetalpina daugiau neprisijungus įrašytų serijų. Ankstesnės serijos išsaugotos – atkurkite ryšį, kad jos būtų persiųstos, ir tada įrašykite šią.",
+    offlineStorageFull:
+      "Šiame įrenginyje nebėra vietos serijai išsaugoti. Ankstesnės serijos išsaugotos – atlaisvinkite vietos arba atkurkite ryšį, kad jos būtų persiųstos.",
     reconnectBeforeFinish:
       "Atkurkite ryšį, kad prieš užbaigiant treniruotę būtų išsaugotos serijos.",
     finished: "Treniruotė užbaigta!",
@@ -334,7 +345,7 @@ function parseOptionalWorkoutNumber(value: string, label: string, copy: Copy): n
   const normalized = value.trim().replace(",", ".");
   if (!normalized) return null;
   const parsed = Number(normalized);
-  if (!Number.isFinite(parsed)) throw new Error(copy.mustBeNumber(label));
+  if (!Number.isFinite(parsed)) throw new AthleteFacingError(copy.mustBeNumber(label));
   return parsed;
 }
 
@@ -460,7 +471,7 @@ function WorkoutPage() {
   const startMutation = useMutation({
     mutationFn: async () => {
       if (canonicalWorkoutDay === null) {
-        throw new Error(copy.noWorkoutToday);
+        throw new AthleteFacingError(copy.noWorkoutToday);
       }
       await syncQueuedSets();
       return startWorkout({ data: { day: canonicalWorkoutDay, timeZone: browserTimeZone() } });
@@ -515,11 +526,26 @@ function WorkoutPage() {
     };
   };
 
+  // The queue's refusals are the ones an athlete can actually do something
+  // about, and they arrived as "Could not save the set" — which reads like the
+  // rest of the session is gone too. Both reasons mean the opposite: nothing
+  // stored was touched, and that is the sentence they get.
+  const queueSetOnThisDevice = (input: WorkoutSetSync) => {
+    try {
+      queueWorkoutSet(input);
+    } catch (error) {
+      if (!(error instanceof OfflineQueueError)) throw error;
+      throw new AthleteFacingError(
+        error.reason === "queue_full" ? copy.offlineQueueFull : copy.offlineStorageFull,
+      );
+    }
+  };
+
   const logMutation = useMutation({
     mutationFn: async () => {
       const input = buildSetInput();
       if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueWorkoutSet(input);
+        queueSetOnThisDevice(input);
         return { queued: true, recorded: input };
       }
 
@@ -528,7 +554,7 @@ function WorkoutPage() {
         return { ...result, queued: false, recorded: input };
       } catch (error) {
         if (!isNetworkUnavailable(error)) throw error;
-        queueWorkoutSet(input);
+        queueSetOnThisDevice(input);
         return { queued: true, recorded: input };
       }
     },
@@ -575,7 +601,7 @@ function WorkoutPage() {
       if (hasQueuedWorkoutSets(sessionId)) {
         await syncQueuedSets();
         if (hasQueuedWorkoutSets(sessionId)) {
-          throw new Error(copy.reconnectBeforeFinish);
+          throw new AthleteFacingError(copy.reconnectBeforeFinish);
         }
       }
       return finishWorkout({ data: { sessionId, timeZone: browserTimeZone() } });
