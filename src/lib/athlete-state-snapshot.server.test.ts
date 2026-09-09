@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DigitalAthleteStateSchema } from "./digital-athlete.schema";
+import { DigitalAthleteStateSchema, type DigitalAthleteDataGap } from "./digital-athlete.schema";
 import {
   canPersistDigitalAthleteState,
   fingerprintDigitalAthleteState,
@@ -85,14 +85,39 @@ describe("Digital Athlete snapshot persistence", () => {
     );
   });
 
-  it("does not retain a snapshot when a source query was unavailable", () => {
-    const unavailableState = DigitalAthleteStateSchema.parse({
+  it.each([
+    "training_data_unavailable",
+    "training_response_data_unavailable",
+    "recovery_data_unavailable",
+    "body_measurements_unavailable",
+    "nutrition_data_unavailable",
+    "muscle_load_data_unavailable",
+    "current_context_unavailable",
+    "training_rhythm_data_unavailable",
+    "decision_feedback_data_unavailable",
+    "personalization_consent_required",
+    "personalization_consent_unavailable",
+  ] satisfies DigitalAthleteDataGap[])("does not retain incomplete state for %s", (gap) => {
+    const state = DigitalAthleteStateSchema.parse({
       ...informedState,
-      dataGaps: ["nutrition_data_unavailable"],
+      dataGaps: ["no_nutrition_logs_14d", gap],
     });
 
+    expect(canPersistDigitalAthleteState(state)).toBe(false);
+  });
+
+  it("allows readable sources with no observations, individually and together", () => {
+    const gaps: DigitalAthleteDataGap[] = [
+      "no_completed_workouts_28d",
+      "no_recovery_checkins_7d",
+      "no_body_measurements_30d",
+      "no_nutrition_logs_14d",
+    ];
+    for (const dataGaps of [...gaps.map((gap) => [gap]), gaps]) {
+      const state = DigitalAthleteStateSchema.parse({ ...informedState, dataGaps });
+      expect(canPersistDigitalAthleteState(state)).toBe(true);
+    }
     expect(canPersistDigitalAthleteState(informedState)).toBe(true);
-    expect(canPersistDigitalAthleteState(unavailableState)).toBe(false);
   });
 });
 

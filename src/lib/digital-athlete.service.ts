@@ -37,6 +37,21 @@ import { LOW_WORKOUT_FEELING_THRESHOLD } from "./training-response.schema";
 
 const DAY_MS = 86_400_000;
 
+/** Every source flag must survive aggregation as an explicit unavailable gap. */
+const SOURCE_UNAVAILABLE_GAPS = {
+  training: "training_data_unavailable",
+  trainingResponse: "training_response_data_unavailable",
+  recovery: "recovery_data_unavailable",
+  body: "body_measurements_unavailable",
+  nutrition: "nutrition_data_unavailable",
+  decisionFeedback: "decision_feedback_data_unavailable",
+  context: "current_context_unavailable",
+  trainingRhythm: "training_rhythm_data_unavailable",
+  muscleLoad: "muscle_load_data_unavailable",
+} satisfies Record<keyof DigitalAthleteSources["availability"], DigitalAthleteDataGap>;
+
+const SOURCE_AVAILABILITY_DOMAINS = DigitalAthleteSourcesSchema.shape.availability.keyof().options;
+
 /**
  * Identifies the deterministic calculation logic that produced a Digital
  * Athlete state, independent of `DigitalAthleteStateSchema.schemaVersion`
@@ -357,22 +372,18 @@ export function buildDigitalAthleteState(
     latestWeight !== null && earliestWeight !== null && weights.length >= 2
       ? roundToOneDecimal(latestWeight - earliestWeight)
       : null;
-  const dataGaps: DigitalAthleteDataGap[] = [];
+  const dataGaps: DigitalAthleteDataGap[] = SOURCE_AVAILABILITY_DOMAINS.flatMap((domain) =>
+    sources.availability[domain] ? [] : [SOURCE_UNAVAILABLE_GAPS[domain]],
+  );
 
-  if (!sources.availability.training) dataGaps.push("training_data_unavailable");
-  else if (workoutsLast28Days.length === 0) dataGaps.push("no_completed_workouts_28d");
-  if (!sources.availability.recovery) dataGaps.push("recovery_data_unavailable");
-  else if (checkinsLast7Days.length === 0) dataGaps.push("no_recovery_checkins_7d");
-  if (!sources.availability.body) dataGaps.push("body_measurements_unavailable");
-  else if (bodyMetricsLast30Days.length === 0) dataGaps.push("no_body_measurements_30d");
-  if (!sources.availability.nutrition) dataGaps.push("nutrition_data_unavailable");
-  else if (nutritionLogsLast14Days.length === 0) dataGaps.push("no_nutrition_logs_14d");
-  // Unlike the domains above, an empty result here is not its own gap: it is
-  // the same underlying fact as no_completed_workouts_28d, not new evidence
-  // of a missing source.
-  if (!sources.availability.muscleLoad) dataGaps.push("muscle_load_data_unavailable");
-  if (!sources.availability.context) dataGaps.push("current_context_unavailable");
-  if (!sources.availability.trainingRhythm) dataGaps.push("training_rhythm_data_unavailable");
+  if (sources.availability.training && workoutsLast28Days.length === 0)
+    dataGaps.push("no_completed_workouts_28d");
+  if (sources.availability.recovery && checkinsLast7Days.length === 0)
+    dataGaps.push("no_recovery_checkins_7d");
+  if (sources.availability.body && bodyMetricsLast30Days.length === 0)
+    dataGaps.push("no_body_measurements_30d");
+  if (sources.availability.nutrition && nutritionLogsLast14Days.length === 0)
+    dataGaps.push("no_nutrition_logs_14d");
 
   const muscleLoad = sources.availability.muscleLoad
     ? calculateMuscleGroupLoad(sources.setLogs, sources.exerciseMuscleGroups, now)
@@ -584,8 +595,9 @@ export async function loadDigitalAthleteState(
       availability: {
         training: workoutsResult.error === null && workouts.valid,
         // Training-response parsing is intentionally isolated from the
-        // completed-workout source: malformed historical ratings never erase
-        // valid training evidence or block a Today decision.
+        // completed-workout source: unreadable ratings do not erase valid
+        // training evidence, but their gap prevents persistence and Today from
+        // treating a missing safety signal as an observed absence.
         trainingResponse: workoutResponsesResult.error === null && workoutResponses.valid,
         recovery: checkinsResult.error === null && checkins.valid,
         body: bodyMetricsResult.error === null && bodyMetrics.valid,

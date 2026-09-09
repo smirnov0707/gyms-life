@@ -134,6 +134,7 @@ export type DigitalAthleteSources = z.infer<typeof DigitalAthleteSourcesSchema>;
 
 export const DigitalAthleteDataGapSchema = z.enum([
   "training_data_unavailable",
+  "training_response_data_unavailable",
   "no_completed_workouts_28d",
   "recovery_data_unavailable",
   "no_recovery_checkins_7d",
@@ -144,6 +145,7 @@ export const DigitalAthleteDataGapSchema = z.enum([
   "muscle_load_data_unavailable",
   "current_context_unavailable",
   "training_rhythm_data_unavailable",
+  "decision_feedback_data_unavailable",
   "personalization_consent_required",
   "personalization_consent_unavailable",
 ]);

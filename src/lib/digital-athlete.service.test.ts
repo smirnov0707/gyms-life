@@ -169,8 +169,10 @@ describe("buildDigitalAthleteState", () => {
       "recovery_data_unavailable",
       "body_measurements_unavailable",
       "nutrition_data_unavailable",
+      "decision_feedback_data_unavailable",
       "current_context_unavailable",
       "training_rhythm_data_unavailable",
+      "training_response_data_unavailable",
     ]);
   });
 

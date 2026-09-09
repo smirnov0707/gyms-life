@@ -3,7 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 import type { AthleteModelResponse } from "./athlete-model.contract";
-import { DigitalAthleteStateSchema, type DigitalAthleteState } from "./digital-athlete.schema";
+import {
+  DigitalAthleteStateSchema,
+  type DigitalAthleteDataGap,
+  type DigitalAthleteState,
+} from "./digital-athlete.schema";
 import {
   DIGITAL_ATHLETE_CALCULATION_VERSION,
   DIGITAL_ATHLETE_MAX_LOOKBACK_DAYS,
@@ -100,9 +104,40 @@ export function fingerprintDigitalAthleteState(
   return createHash("sha256").update(stableJson({ calculationVersion, state })).digest("hex");
 }
 
-/** Do not turn a transient source-query failure into permanent user history. */
+/**
+ * Every gap requires an explicit persistence decision. Naming conventions are
+ * not an availability contract: body and life-context failures do not contain
+ * `_data_`, and missing life context can hide a current safety limitation.
+ * `satisfies` makes adding a new gap without classifying it a compile error.
+ */
+const DATA_GAP_KIND = {
+  training_data_unavailable: "source_unavailable",
+  training_response_data_unavailable: "source_unavailable",
+  no_completed_workouts_28d: "no_observations",
+  recovery_data_unavailable: "source_unavailable",
+  no_recovery_checkins_7d: "no_observations",
+  body_measurements_unavailable: "source_unavailable",
+  no_body_measurements_30d: "no_observations",
+  nutrition_data_unavailable: "source_unavailable",
+  no_nutrition_logs_14d: "no_observations",
+  muscle_load_data_unavailable: "source_unavailable",
+  current_context_unavailable: "source_unavailable",
+  training_rhythm_data_unavailable: "source_unavailable",
+  decision_feedback_data_unavailable: "source_unavailable",
+  personalization_consent_required: "personalization_restricted",
+  personalization_consent_unavailable: "personalization_restricted",
+} satisfies Record<
+  DigitalAthleteDataGap,
+  "source_unavailable" | "no_observations" | "personalization_restricted"
+>;
+
+/**
+ * Empty but readable sources are valid history, including a new athlete's
+ * first snapshot. Unreadable or consent-filtered state is not canonical history
+ * and must not unlock a persisted Today decision.
+ */
 export function canPersistDigitalAthleteState(state: DigitalAthleteState): boolean {
-  return !state.dataGaps.some((gap) => gap.endsWith("_data_unavailable"));
+  return state.dataGaps.every((gap) => DATA_GAP_KIND[gap] === "no_observations");
 }
 
 function toPublicSnapshot(snapshot: AthleteStateSnapshot) {
