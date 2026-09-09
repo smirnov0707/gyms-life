@@ -12,6 +12,7 @@ import {
   type TwinCameraCommand,
 } from "./twin-scene.model";
 import type { TwinSceneHandle } from "./twin-scene.runtime";
+import { createTwinSceneAttempt } from "./twin-scene.attempt";
 import type { TwinBodyProvenance } from "./twin-body.provenance";
 import type { TwinBodyVariant } from "@/lib/digital-twin.schema";
 
@@ -53,6 +54,7 @@ const COPY = {
     hint: "Drag to rotate 360° · Pinch or scroll to zoom",
     loading: "Preparing 3D… 2D remains available.",
     fallback: "3D is unavailable on this device. Your evidence is still available in 2D.",
+    timeout: "The 3D model took too long to load. Your evidence is still available in 2D.",
     retry: "Try 3D again",
     front: "Front",
     back: "Back",
@@ -78,6 +80,7 @@ const COPY = {
     hint: "Tempk ir suk 360° · Mastelį keisk dviem pirštais",
     loading: "Ruošiamas 3D… 2D vaizdas lieka pasiekiamas.",
     fallback: "3D šiame įrenginyje nepasiekiamas. Tavo duomenys lieka pasiekiami 2D vaizde.",
+    timeout: "3D modelio įkėlimas užtruko per ilgai. Tavo duomenys lieka pasiekiami 2D vaizde.",
     retry: "Bandyti 3D dar kartą",
     front: "Priekis",
     back: "Nugara",
@@ -142,6 +145,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
   const [ready, setReady] = useState(false);
   const [provenance, setProvenance] = useState<TwinBodyProvenance | null>(null);
   const [failed, setFailed] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [motion, setMotion] = useState(true);
   useEffect(() => {
@@ -149,65 +153,50 @@ export function BodySceneStage(props: BodySceneStageProps) {
   });
   useEffect(() => {
     if (mode !== "3d" || !host.current) return;
-    let cancelled = false;
-    let invalidated = false;
-    let owned: TwinSceneHandle | null = null;
     const target = host.current;
     setReady(false);
     setProvenance(null);
     setFailed(false);
-    const fail = () => {
-      if (cancelled) return;
-      invalidated = true;
-      owned?.dispose();
-      if (scene.current === owned) scene.current = null;
-      setFailed(true);
-      setReady(false);
-      setProvenance(null);
-    };
-    const timeout = window.setTimeout(fail, 15000);
+    setTimedOut(false);
+    const loading = createTwinSceneAttempt<TwinSceneHandle>({
+      onReady: (loadedProvenance) => {
+        setProvenance(loadedProvenance);
+        setReady(true);
+      },
+      onFailure: (reason) => {
+        setTimedOut(reason === "timeout");
+        setFailed(true);
+        setReady(false);
+        setProvenance(null);
+      },
+      onRelease: (handle) => {
+        if (scene.current === handle) scene.current = null;
+      },
+    });
     void import("./twin-scene.runtime")
       .then(({ mountTwinScene }) => {
-        if (cancelled || invalidated) return;
+        if (!loading.active()) return;
         const current = latest.current;
         const handle = mountTwinScene(target, {
           state: current.state,
           selectedRegion: current.selectedRegion,
           label: COPY[current.language].scene,
           onSelect: (region) => latest.current.onSelectRegion(region),
-          onFailure: fail,
+          onFailure: loading.fail,
           // The stage is not ready when the renderer mounts, it is ready when
           // there is a body in it. Between the two the scene is empty, and
           // showing an empty stage — or the mannequin that used to fill it —
           // is worse than keeping the 2D map, which is the same data.
-          onBodyReady: (_kind, loadedProvenance) => {
-            if (!cancelled && !invalidated) {
-              setProvenance(loadedProvenance);
-              setReady(true);
-            }
-          },
+          onBodyReady: (_kind, loadedProvenance) => loading.ready(loadedProvenance),
           ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
         });
-        window.clearTimeout(timeout);
-        if (cancelled || invalidated) {
-          handle.dispose();
-          return;
-        }
-        owned = handle;
+        if (!loading.attach(handle)) return;
         scene.current = handle;
         // The two-view preference seeds orientation only; updates preserve free orbit.
         handle.command(current.view);
       })
-      .catch(() => {
-        window.clearTimeout(timeout);
-        fail();
-      });
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeout);
-      owned?.dispose();
-      if (scene.current === owned) scene.current = null;
-    };
+      .catch(loading.fail);
+    return () => loading.dispose();
   }, [mode, attempt, bodyVariant]);
   useEffect(() => {
     scene.current?.setState(state);
@@ -375,7 +364,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           role="status"
           className="mx-3 rounded-xl border border-amber-300/25 p-3 text-xs text-amber-200"
         >
-          <p>{copy.fallback}</p>
+          <p>{timedOut ? copy.timeout : copy.fallback}</p>
           <button
             type="button"
             style={controlStyle}

@@ -5,6 +5,7 @@ import { chromium, expect } from "@playwright/test";
 import { createServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { verifyTwinLoadingLifecycle } from "./test-twin-loading-browser.mjs";
 
 const root = process.cwd();
 const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
@@ -328,6 +329,7 @@ try {
   {
     const slow = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
     const waiting = await slow.newPage();
+    await waiting.clock.install();
     let release = () => {};
     const held = new Promise((resolve) => {
       release = resolve;
@@ -341,7 +343,11 @@ try {
     await expect
       .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 20000 })
       .toBe("loading");
-    await waiting.waitForTimeout(800);
+    // Screenshot/font capture is not the scenario's simulated download time.
+    // Freeze after mounting so a slow capture cannot accidentally cross the
+    // separately tested 15-second deadline before this test releases the file.
+    await waiting.clock.pauseAt((await waiting.evaluate(() => Date.now())) + 1000);
+    await waiting.clock.runFor(800);
 
     // Nothing is drawn: every pixel of the frame is the transparent stage.
     const painted = await waiting.evaluate(() => {
@@ -367,6 +373,7 @@ try {
     await waiting.screenshot({ path: path.join(artifacts, "loading-placeholder.png") });
 
     release();
+    await waiting.clock.resume();
     await expect
       .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 30000 })
       .toBe("human");
@@ -416,6 +423,14 @@ try {
     await unavailable.close();
   }
   record("unverifiable model uses an explicit fallback; retry restores the actual source");
+  await verifyTwinLoadingLifecycle({
+    browser,
+    artifacts,
+    expectedSource,
+    expectedCredit,
+    expectedSha,
+    record,
+  });
   await context.close();
 
   const mobile = await browser.newContext({
