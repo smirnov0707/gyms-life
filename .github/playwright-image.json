@@ -1,0 +1,6 @@
+{
+  "schema": "gyms-ci-browser-image.v1",
+  "playwrightVersion": "1.57.0",
+  "image": "mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd",
+  "source": "https://playwright.dev/docs/docker"
+}

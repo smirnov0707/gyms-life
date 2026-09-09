@@ -11,6 +11,8 @@ on:
       - "scripts/test-today-browser.mjs"
       - "package*.json"
       - ".github/workflows/anatomy-candidate.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
 permissions:
   contents: read
 concurrency:
@@ -42,6 +44,9 @@ jobs:
   browser:
     needs: geometry
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -63,7 +68,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-ci-browser-runtime.mjs
       - name: Run the full unchanged browser suite against the candidate
         run: node scripts/test-${{ matrix.suite }}-browser.mjs
       - name: Render exact before/after sculpt turntables

@@ -25,6 +25,8 @@ on:
       - "scripts/test-today-browser.mjs"
       - "package*.json"
       - ".github/workflows/today-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
   push:
     branches: [main]
     paths: *paths
@@ -36,6 +38,9 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +49,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-today-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()

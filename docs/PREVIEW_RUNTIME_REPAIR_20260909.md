@@ -43,3 +43,13 @@ Run `npm run typecheck`, `npm run test`, `npm run lint`, `npm run build`, and `n
 `STAGING_ORIGIN`, `STAGING_PUBLISHABLE_KEY` and an optional `CORE_BROWSER_ENGINE` run `node scripts/test-staging-preview.mjs` against a known immutable preview. Only the staging public key belongs in that preflight process. Never provide a service-role key, never invoke a live worker as a substitute for configuration checks, and keep keys out of source and artifacts.
 
 Primary runtime contracts: https://docs.netlify.com/build/functions/api/ and https://docs.netlify.com/build/functions/environment-variables/ .
+
+## CI environment follow-up
+
+On the first `5908f0e` attempt, browser jobs failed before executing application tests: the hosted runner's unrelated Google Chrome APT repository served a package index that did not match its declared hash. Unchanged-code targeted retries failed at dependency installation as well. Package signature/hash verification was not disabled or ignored, and those attempts are not counted as passed tests.
+
+Browser jobs now use the official Microsoft Playwright image for the **existing locked Playwright version**, pinned to a verified registry manifest digest in `.github/playwright-image.json`. The manifest response body was hashed locally and compared with the registry's content-digest header. Its preinstalled browser libraries remove the dependency on the generic runner's additional APT repositories. `npm ci`, test commands, matrices, assertions and artifact handling remain; only the browser runtime provision step changes. Non-browser CI and geometry jobs keep their original runner setup.
+
+A version check must match all three locked Playwright packages to the image and find the expected preinstalled Chromium/WebKit executables; mismatch is a failure, not an installation fallback. The image/version agreement has regression tests. Container approval does not itself count as application-test success: each existing suite must still execute and pass in that environment.
+
+Primary supported container guidance: https://playwright.dev/docs/docker and https://playwright.dev/docs/ci .

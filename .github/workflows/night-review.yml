@@ -12,6 +12,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/night-review.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
   push:
     branches: [main]
     paths:
@@ -25,6 +27,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/night-review.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
 permissions:
   contents: read
 concurrency:
@@ -33,6 +37,9 @@ concurrency:
 jobs:
   review:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -45,7 +52,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - run: node scripts/verify-ci-browser-runtime.mjs
       - run: npm run test:bundle:night-lab
       - run: node scripts/test-browser-locale.mjs
         env:
@@ -61,5 +68,6 @@ jobs:
             test-results/night-review-browser
             test-results/night-worker-bundle/results.json
             test-results/browser-locale/results.json
+            test-results/ci-browser-runtime.json
           retention-days: 14
           if-no-files-found: error
