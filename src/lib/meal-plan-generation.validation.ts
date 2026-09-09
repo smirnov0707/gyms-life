@@ -1,3 +1,4 @@
+import { assertMealRecipeIntegrity, assertMealTargetIntegrity } from "./meal-recipe.integrity";
 import { ObservedFailure } from "./observability.server";
 import {
   MEAL_PLAN_MAX_DAILY_KCAL,
@@ -8,6 +9,7 @@ import {
 type MealPlanGenerationRequirements = {
   mealsPerDay: number;
   fixedKcalTarget: number | null | undefined;
+  requireQuantities?: boolean;
 };
 
 const isCloseTo = (actual: number, expected: number, relativeTolerance: number) =>
@@ -123,6 +125,9 @@ export function validateGeneratedMealPlan(
       );
     }
   }
+
+  assertMealTargetIntegrity(plan);
+  assertMealRecipeIntegrity(plan.days, requirements.requireQuantities ?? false);
 
   const sum = (values: number[]) =>
     Math.round(values.reduce((total, value) => total + value, 0) * 10) / 10;

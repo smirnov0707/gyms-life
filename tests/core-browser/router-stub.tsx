@@ -45,4 +45,5 @@ export const createFileRoute =
   () => (options: { component: ComponentType; [key: string]: unknown }) => ({
     options,
     useSearch: () => ({}),
+    useParams: () => ({ day: new URLSearchParams(location.search).get("day") ?? "1" }),
   });

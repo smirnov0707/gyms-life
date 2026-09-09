@@ -1,7 +1,12 @@
+import {
+  assertTranslationStrings,
+  assertMealTranslationStructure,
+} from "./meal-translation.integrity";
+import { assertKnownRecipeRestrictions } from "./meal-restrictions.validation";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { translateMealPlan } from "./meal-i18n.server";
+import { translateMealPlan, collectMealStrings } from "./meal-i18n.server";
 import { serializeJson } from "./json.schema";
 import { GeneratedMealPlanSchema, MealPlanTranslationCacheSchema } from "./meal-plan.schema";
 import { SupportedLanguageSchema } from "./language.schema";
@@ -21,7 +26,7 @@ export const localizeMealPlan = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
       .from("meal_plans")
-      .select("id, data, lang, i18n, updated_at")
+      .select("id, data, lang, i18n, updated_at, diet, allergies")
       .eq("id", data.planId)
       .eq("user_id", userId)
       .maybeSingle();
@@ -38,9 +43,25 @@ export const localizeMealPlan = createServerFn({ method: "POST" })
     const cache = MealPlanTranslationCacheSchema.safeParse(row.i18n);
     const translations = cache.success ? cache.data : {};
     const cached = translations[data.lang];
-    if (cached) return { plan: cached, updatedAt: row.updated_at };
+    if (cached) {
+      try {
+        assertMealTranslationStructure(base.data, cached);
+        assertTranslationStrings(collectMealStrings(base.data), collectMealStrings(cached));
+        assertKnownRecipeRestrictions(cached.days, {
+          diet: row.diet ?? "any",
+          allergies: row.allergies ?? "",
+        });
+        return { plan: cached, updatedAt: row.updated_at };
+      } catch {
+        /* Retain old stored data, but never serve an invalid translation as checked. */
+      }
+    }
 
     const translated = await translateMealPlan(base.data, data.lang, userId);
+    assertKnownRecipeRestrictions(translated.days, {
+      diet: row.diet ?? "any",
+      allergies: row.allergies ?? "",
+    });
     const { data: cachedRow, error: cacheError } = await supabase
       .from("meal_plans")
       .update({ i18n: serializeJson({ ...translations, [data.lang]: translated }) })
