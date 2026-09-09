@@ -1,14 +1,23 @@
-/** Deployment-owned origin only. A scheduler receipt is not proof that analysis finished. */
+/** A validated explicit target, not a build/environment URL. Queued is not completed. */
 export async function dispatchNightLab(
-  env: Record<string, string | undefined> = process.env,
+  input: { origin?: string; secret?: string | undefined },
   transport: typeof fetch = fetch,
 ): Promise<{ status: "queued" } | { status: "unavailable" }> {
-  const secret = env["GYMSLIFE_CRON_SECRET"],
-    base = env["URL"];
-  if (!secret?.trim() || !base) return { status: "unavailable" };
+  const { origin, secret } = input;
+  if (!secret || /[\s,]/.test(secret) || !origin) return { status: "unavailable" };
   try {
+    const base = new URL(origin);
+    if (
+      base.protocol !== "https:" ||
+      base.username ||
+      base.password ||
+      base.port ||
+      base.pathname !== "/" ||
+      base.search ||
+      base.hash
+    )
+      return { status: "unavailable" };
     const url = new URL("/.netlify/functions/night-lab-worker-background", base);
-    if (url.protocol !== "https:" || url.username || url.password) return { status: "unavailable" };
     const response = await transport(url, {
       method: "POST",
       headers: { authorization: `Bearer ${secret}` },

@@ -7,6 +7,8 @@ on:
       - "tests/night-review-browser/**"
       - "tests/offline-browser/client.ts"
       - "scripts/test-night-*.mjs"
+      - "scripts/test-browser-locale.mjs"
+      - "scripts/browser-test-locale.mjs"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/night-review.yml"
@@ -18,6 +20,8 @@ on:
       - "tests/night-review-browser/**"
       - "tests/offline-browser/client.ts"
       - "scripts/test-night-*.mjs"
+      - "scripts/test-browser-locale.mjs"
+      - "scripts/browser-test-locale.mjs"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/night-review.yml"
@@ -43,6 +47,9 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps ${{ matrix.engine }}
       - run: npm run test:bundle:night-lab
+      - run: node scripts/test-browser-locale.mjs
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
       - run: npm run test:browser:night-review
         env:
           CORE_BROWSER_ENGINE: ${{ matrix.engine }}
@@ -53,5 +60,6 @@ jobs:
           path: |
             test-results/night-review-browser
             test-results/night-worker-bundle/results.json
+            test-results/browser-locale/results.json
           retention-days: 14
           if-no-files-found: error

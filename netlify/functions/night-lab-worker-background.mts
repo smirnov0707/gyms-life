@@ -1,7 +1,11 @@
-import type { Config } from "@netlify/functions";
+import { currentNightLabTarget } from "../../src/lib/night-lab.dispatch.server";
+import type { Config, Context } from "@netlify/functions";
 import { authenticateCronRequest } from "../../src/integrations/supabase/cron-auth";
 /** Same domain modules as the application, bundled once for a longer-lived worker. */
-export default async function nightLabWorker(request: Request): Promise<Response> {
+export default async function nightLabWorker(
+  request: Request,
+  context: Context,
+): Promise<Response> {
   const rejection = await authenticateCronRequest(request);
   if (rejection) {
     console.error("NIGHT_LAB_WORKER_AUTH_REJECTED", rejection.status);
@@ -9,6 +13,7 @@ export default async function nightLabWorker(request: Request): Promise<Response
     return rejection;
   }
   if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+  if (!currentNightLabTarget(() => context)) throw new Error("NIGHT_LAB_ENVIRONMENT_UNSAFE");
   const { runNightLab } = await import("../../src/lib/night-lab.server");
   const report = await runNightLab();
   if (

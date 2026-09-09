@@ -16,8 +16,8 @@ export const Route = createFileRoute("/api/internal/night-lab")({
         const rejection = await authenticateCronRequest(request);
         if (rejection) return rejection;
 
-        const { dispatchNightLab } = await import("@/lib/night-lab.dispatch");
-        const result = await dispatchNightLab();
+        const { dispatchCurrentNightLab } = await import("@/lib/night-lab.dispatch.server");
+        const result = await dispatchCurrentNightLab();
         return json(result, result.status === "queued" ? 202 : 503);
       },
     },

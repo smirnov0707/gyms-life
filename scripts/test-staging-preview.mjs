@@ -1,3 +1,4 @@
+import { initializePageLocale } from "./browser-test-locale.mjs";
 import { chromium, webkit, expect } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -14,7 +15,8 @@ if (
   origin.search ||
   origin.hash ||
   origin.pathname !== "/" ||
-  !origin.hostname.endsWith("--singular-vacherin-57448d.netlify.app")
+  Boolean(origin.port) ||
+  !/^([a-f0-9]{24})--singular-vacherin-57448d\.netlify\.app$/.test(origin.hostname)
 )
   throw new Error("NOT_AN_AUTHORIZED_PREVIEW_ORIGIN");
 if (!key.startsWith("sb_publishable_")) throw new Error("EXPECTED_STAGING_PUBLIC_KEY");
@@ -36,7 +38,7 @@ try {
     viewport: { width: 390, height: 844 },
     timezoneId: "Europe/Vilnius",
   });
-  await context.addInitScript(() => localStorage.setItem("forma_lang", "en"));
+  await context.addInitScript(initializePageLocale, { origin: origin.origin, language: "en" });
   await context.route("**/*", (route) => {
     const url = new URL(route.request().url());
     if (url.hostname === `${PRODUCTION}.supabase.co` || url.hostname === "gyms.life") {

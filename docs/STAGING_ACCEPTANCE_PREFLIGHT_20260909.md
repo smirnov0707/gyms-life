@@ -1,5 +1,7 @@
 # Staging acceptance: deployment isolation before test-account writes
 
+> Historical record at `380e40c`. The subsequent initializer diagnosis, corrected preflight and trusted runtime dispatch implementation are documented in `PREVIEW_RUNTIME_REPAIR_20260909.md`. The missing secure configuration and genuine authenticated acceptance gates remain separate.
+
 ## Starting revision and completed checks
 
 This continues PR #61 from `fa64637d04e25cc3c58e67a4c7dc13b057cb1407`. The two previously unfinished workflow groups were cancelled while installing Chromium, before their browser tests ran. Only those cancelled jobs were retried. Both finished successfully, so all nine workflow groups on `fa64637` are now successful. Earlier core, offline and Night Lab evidence remains retained.

@@ -142,7 +142,7 @@ describe("short schedule dispatch, never completion", () => {
     const transport = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
     expect(
       await dispatchNightLab(
-        { URL: "https://synthetic.example", GYMSLIFE_CRON_SECRET: "synthetic" },
+        { origin: "https://synthetic.example", secret: "synthetic" },
         transport,
       ),
     ).toEqual({ status: "queued" });
@@ -156,16 +156,16 @@ describe("short schedule dispatch, never completion", () => {
   it.each([200, 401, 500, 503])("HTTP %s cannot masquerade as queued work", async (status) => {
     expect(
       await dispatchNightLab(
-        { URL: "https://synthetic.example", GYMSLIFE_CRON_SECRET: "synthetic" },
+        { origin: "https://synthetic.example", secret: "synthetic" },
         vi.fn().mockResolvedValue(new Response(null, { status })),
       ),
     ).toEqual({ status: "unavailable" });
   });
   it.each([
     {},
-    { URL: "https://synthetic.example" },
-    { URL: "http://synthetic.example", GYMSLIFE_CRON_SECRET: "synthetic" },
-    { URL: "https://user:secret@synthetic.example", GYMSLIFE_CRON_SECRET: "synthetic" },
+    { origin: "https://synthetic.example" },
+    { origin: "http://synthetic.example", secret: "synthetic" },
+    { origin: "https://user:secret@synthetic.example", secret: "synthetic" },
   ])("rejects missing/unsafe dispatcher configuration %j", async (env) => {
     const transport = vi.fn();
     expect(await dispatchNightLab(env, transport)).toEqual({ status: "unavailable" });
@@ -174,7 +174,7 @@ describe("short schedule dispatch, never completion", () => {
   it("a transport failure remains unavailable without leaking endpoint details", async () => {
     expect(
       await dispatchNightLab(
-        { URL: "https://synthetic.example", GYMSLIFE_CRON_SECRET: "synthetic" },
+        { origin: "https://synthetic.example", secret: "synthetic" },
         vi.fn().mockRejectedValue(new Error("private")),
       ),
     ).toEqual({ status: "unavailable" });
