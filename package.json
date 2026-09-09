@@ -15,7 +15,8 @@
     "test:browser": "node scripts/test-twin-browser.mjs",
     "test:browser:today": "node scripts/test-today-browser.mjs",
     "build:staging": "DEPLOY_TARGET=cloudflare vite build",
-    "test:toolchain": "node --test scripts/test-dependency-toolchain.mjs"
+    "test:toolchain": "node --test scripts/test-dependency-toolchain.mjs",
+    "test:browser:core": "node scripts/test-core-browser.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1",

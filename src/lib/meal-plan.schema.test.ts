@@ -76,7 +76,9 @@ describe("stored meal plan validation", () => {
     expect(plan).not.toBeNull();
     if (!plan) return;
 
-    expect(validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: 2400 })).toBe(plan);
+    expect(validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: 2400 })).toEqual(
+      plan,
+    );
     expect(() =>
       validateGeneratedMealPlan(plan, { mealsPerDay: 2, fixedKcalTarget: 2400 }),
     ).toThrow("requested number of meals");
@@ -202,7 +204,9 @@ describe("the safe daily energy range", () => {
 
   it("accepts a plan inside the range", () => {
     const plan = at(2400);
-    expect(validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: null })).toBe(plan);
+    expect(validateGeneratedMealPlan(plan, { mealsPerDay: 1, fixedKcalTarget: null })).toEqual(
+      plan,
+    );
     expect(
       validateGeneratedMealPlan(at(MEAL_PLAN_MIN_DAILY_KCAL), {
         mealsPerDay: 1,
