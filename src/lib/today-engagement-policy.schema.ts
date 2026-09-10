@@ -18,10 +18,7 @@ export const TodayEngagementPolicyComparisonSchema = z.enum([
   "counterfactual_unobserved",
 ]);
 
-export const TodayEngagementDecisionActionSchema = z.enum([
-  "train_as_planned",
-  "train_adapted",
-]);
+export const TodayEngagementDecisionActionSchema = z.enum(["train_as_planned", "train_adapted"]);
 
 export const TodayEngagementPolicyShadowSchema = z
   .object({

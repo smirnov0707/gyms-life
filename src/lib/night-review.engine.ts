@@ -4,6 +4,7 @@ import type {
   PersonalCompletionLearningState,
   PersonalCompletionPredictionReview,
 } from "./personal-completion-model.schema";
+import type { TodayEngagementPolicyCanaryReview } from "./today-engagement-policy-canary.schema";
 import { dayInTimeZone, IanaTimeZoneSchema, IsoDaySchema } from "./local-day";
 import {
   NightReviewSchema,
@@ -27,6 +28,7 @@ export async function buildNightReview(
           predictionReview: PersonalCompletionPredictionReview;
         }
     >;
+    policyCanary?: () => Promise<TodayEngagementPolicyCanaryReview>;
     now?: () => Date;
   },
 ): Promise<NightReview> {
@@ -38,7 +40,10 @@ export async function buildNightReview(
   let predictions: NightReview["predictions"] = { status: "not_run" },
     hypotheses: NightReview["hypotheses"] = { status: "not_run" },
     modelLearning: NonNullable<NightReview["modelLearning"]> | undefined =
-      dependencies.modelLearning ? { status: "not_run" } : undefined;
+      dependencies.modelLearning ? { status: "not_run" } : undefined,
+    policyCanary: NonNullable<NightReview["policyCanary"]> | undefined = dependencies.policyCanary
+      ? { status: "not_run" }
+      : undefined;
   let model: AthleteModelResponse | null = null;
   try {
     model = await dependencies.snapshot();
@@ -84,6 +89,13 @@ export async function buildNightReview(
         modelLearning = { status: "unavailable" };
       }
     }
+    if (dependencies.policyCanary) {
+      try {
+        policyCanary = { status: "completed", result: await dependencies.policyCanary() };
+      } catch {
+        policyCanary = { status: "unavailable" };
+      }
+    }
   }
   return NightReviewSchema.parse({
     version: "1.0",
@@ -99,13 +111,16 @@ export async function buildNightReview(
             !predictions.result.limited &&
             hypotheses.status === "completed" &&
             (modelLearning === undefined ||
-              (modelLearning.status === "completed" && !modelLearning.predictionReview?.limited))
+              (modelLearning.status === "completed" && !modelLearning.predictionReview?.limited)) &&
+            (policyCanary === undefined ||
+              (policyCanary.status === "completed" && !policyCanary.result.outcomeReview.limited))
           ? "completed"
           : "partial",
     snapshot,
     predictions,
     hypotheses,
     ...(modelLearning ? { modelLearning } : {}),
+    ...(policyCanary ? { policyCanary } : {}),
     modelChanged: false,
     planChanged: false,
   });
