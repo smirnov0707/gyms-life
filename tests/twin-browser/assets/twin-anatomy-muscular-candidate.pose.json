@@ -1,0 +1,20 @@
+{
+  "boneRotations": {
+    "upperarm01.L": -20.0,
+    "lowerarm01.L": {
+      "worldXDegrees": 48
+    },
+    "upperleg01.L": {
+      "worldZDegrees": -3.5
+    },
+    "upperarm01.R": 20.0,
+    "lowerarm01.R": {
+      "worldXDegrees": 48
+    },
+    "upperleg01.R": {
+      "worldZDegrees": 3.5
+    }
+  },
+  "method": "Native animation.Pose and proxy skinning",
+  "coordinateUnit": "decimetres"
+}

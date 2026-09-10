@@ -1,0 +1,605 @@
+{
+  "scope": "File routes and exported server actions. Reading source is not a full authenticated/provider/device execution test. Acceptance gates are recorded separately.",
+  "routeCount": 33,
+  "serverFunctionModuleCount": 62,
+  "declaredServerFunctionCount": 93,
+  "routes": [
+    {
+      "path": "/",
+      "file": "src/routes/_authenticated/route.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/AppShell",
+        "@/components/AccessGate",
+        "@/components/RelatedLinks",
+        "@/components/OfflineQueueSync",
+        "@/components/ProfileTimeZoneSync",
+        "@/lib/nav-map",
+        "@/lib/auth"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/",
+      "file": "src/routes/index.tsx",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/lib/motivation.functions",
+        "@/lib/hero-images",
+        "@/lib/landing-quotes",
+        "@/assets/screens/app.png",
+        "@/assets/screens/workout.png",
+        "@/assets/screens/exercises.png",
+        "@/assets/screens/coach.png",
+        "@/assets/screens/progress.png",
+        "@/assets/screens/nutrition.png",
+        "@/integrations/supabase/client",
+        "@/components/ui/alert-dialog",
+        "@/components/AppShell",
+        "@/components/GlowCard",
+        "@/components/Reveal",
+        "@/components/ThemeToggle",
+        "@/components/ui/button",
+        "@/lib/error-message",
+        "@/lib/i18n",
+        "@/lib/auth",
+        "@/lib/tactile",
+        "@/components/AppShell",
+        "@/components/Overview"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/achievements",
+      "file": "src/routes/_authenticated/achievements.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/i18n",
+        "@/lib/local-day",
+        "@/lib/utils"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/api/internal/night-lab",
+      "file": "src/routes/api/internal/night-lab.ts",
+      "authenticatedLayout": false,
+      "localImports": ["@/integrations/supabase/cron-auth"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/api/public/health-ingest",
+      "file": "src/routes/api/public/health-ingest.ts",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/lib/health-metrics",
+        "@/lib/health-normalize",
+        "@/lib/health-sample-source",
+        "@/lib/local-day"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/api/public/payments/webhook",
+      "file": "src/routes/api/public/payments/webhook.ts",
+      "authenticatedLayout": false,
+      "localImports": ["@/integrations/supabase/types", "@/lib/paddle.server"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/app",
+      "file": "src/routes/_authenticated/app.tsx",
+      "authenticatedLayout": true,
+      "localImports": ["@/components/Overview"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/ar",
+      "file": "src/routes/_authenticated/ar.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/utils",
+        "@/lib/ar-calibration",
+        "@/lib/i18n",
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/error-message",
+        "@/components/ui/button",
+        "@/lib/ar-angles",
+        "@/lib/ar-smart",
+        "@/lib/ar-voice-coach",
+        "@/components/ui/input",
+        "@/lib/ar-workout.functions",
+        "@/components/FormScanner"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/auth",
+      "file": "src/routes/auth.tsx",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/i18n",
+        "@/lib/error-message",
+        "@/components/AppShell",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/label"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/coach",
+      "file": "src/routes/_authenticated/coach.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/ai-personalization-consent.functions",
+        "@/lib/ai-task-context",
+        "@/lib/user-memory.schema",
+        "@/lib/coach-message.schema",
+        "@/lib/plan.functions",
+        "@/lib/i18n",
+        "@/lib/ai-error",
+        "@/lib/error-message",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/lib/utils"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/coach-history",
+      "file": "src/routes/_authenticated/coach-history.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/plan.functions",
+        "@/lib/i18n",
+        "@/lib/error-message",
+        "@/components/ui/button",
+        "@/lib/utils"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/exercises/",
+      "file": "src/routes/exercises.index.tsx",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/integrations/supabase/client",
+        "@/lib/exercise-filter.functions",
+        "@/lib/i18n",
+        "@/components/WorkoutRequestBuilder",
+        "@/components/AppShell",
+        "@/components/ui/input",
+        "@/components/ui/button",
+        "@/components/ui/dialog",
+        "@/lib/utils",
+        "@/lib/exercise-media",
+        "@/components/ExerciseVideo"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/exercises/$slug",
+      "file": "src/routes/exercises.$slug.tsx",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/integrations/supabase/client",
+        "@/lib/i18n",
+        "@/components/AppShell",
+        "@/components/ExerciseVideo",
+        "@/components/MuscleTargetVisualizer",
+        "@/lib/exercise-media"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/form",
+      "file": "src/routes/_authenticated/form.tsx",
+      "authenticatedLayout": true,
+      "localImports": ["@/components/BiomechanicsScanner", "@/lib/i18n"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/history",
+      "file": "src/routes/_authenticated/history.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/GlowCard",
+        "@/components/future-lab/JournalIntelligence",
+        "@/lib/workout-history.functions",
+        "@/lib/auth",
+        "@/lib/i18n"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/lab",
+      "file": "src/routes/_authenticated/lab.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/HypothesisRetrospective",
+        "@/components/LabView",
+        "@/components/future-lab/LabCommandDeck",
+        "@/components/future-lab/NightLabPanel",
+        "@/lib/i18n"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/me",
+      "file": "src/routes/_authenticated/me.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/ConnectHealthSource",
+        "@/lib/error-message",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/TrainingRhythmCard",
+        "@/lib/athlete-model.functions",
+        "@/lib/athlete-model.contract",
+        "@/lib/i18n",
+        "@/lib/local-day",
+        "@/lib/user-memory.functions",
+        "@/lib/memory-evidence.schema",
+        "@/lib/user-memory.schema",
+        "@/lib/user-memory.presentation",
+        "@/lib/profile-body.functions"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/meal-plan",
+      "file": "src/routes/_authenticated/meal-plan.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/meal-preferences.schema",
+        "@/lib/core-cache",
+        "@/lib/local-day",
+        "@/lib/json.schema",
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/i18n",
+        "@/lib/ai-error",
+        "@/lib/error-message",
+        "@/lib/meal.functions",
+        "@/lib/meal-adapt.functions",
+        "@/lib/shopping-pdf",
+        "@/lib/shopping-print",
+        "@/lib/shopping-build",
+        "@/lib/use-localized-meal-plan",
+        "@/lib/meal-plan.schema",
+        "@/components/ui/button"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/nutrition",
+      "file": "src/routes/_authenticated/nutrition.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/nutrition-log.service",
+        "@/lib/core-cache",
+        "@/lib/ai-error",
+        "@/components/ui/button",
+        "@/components/DineOutMenuScanner",
+        "@/components/ui/input",
+        "@/components/QuickHydrationWidget",
+        "@/components/SmartFridgeScanner",
+        "@/components/VisionMealScanner",
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/error-message",
+        "@/lib/i18n",
+        "@/lib/local-day",
+        "@/lib/nutrition.functions",
+        "@/lib/nutrition-targets.engine"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/onboarding",
+      "file": "src/routes/_authenticated/onboarding.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/core-cache",
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/plan.functions",
+        "@/lib/i18n",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/label",
+        "@/components/ui/textarea",
+        "@/lib/utils",
+        "@/lib/training-plan.schema",
+        "@/lib/training-intake.schema",
+        "@/lib/ai-error",
+        "@/components/ProgramActivationActions"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/pricing",
+      "file": "src/routes/pricing.tsx",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/lib/auth",
+        "@/lib/i18n",
+        "@/lib/access",
+        "@/hooks/usePaddleCheckout",
+        "@/lib/payments.functions",
+        "@/components/AppShell",
+        "@/components/PaymentTestModeBanner",
+        "@/lib/utils",
+        "@/components/TransformationCalculator",
+        "@/lib/billing"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/privacy",
+      "file": "src/routes/privacy.tsx",
+      "authenticatedLayout": false,
+      "localImports": ["@/components/AppShell", "@/lib/i18n"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/progress",
+      "file": "src/routes/_authenticated/progress.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/BodyCompositionScanner",
+        "@/components/BodyMetricsPanel",
+        "@/components/InjuryRiskRadar",
+        "@/components/PerformanceProgressPanel",
+        "@/components/WeeklyIntelligenceReview",
+        "@/components/WorkoutReportExporter",
+        "@/components/future-lab/FutureMeSimulationDeck",
+        "@/components/future-lab/FutureMeSummary",
+        "@/integrations/supabase/client",
+        "@/lib/auth",
+        "@/lib/i18n"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/readiness",
+      "file": "src/routes/_authenticated/readiness.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/ui/button",
+        "@/components/ui/slider",
+        "@/integrations/supabase/client",
+        "@/lib/readiness-adapt",
+        "@/lib/auth",
+        "@/lib/error-message",
+        "@/lib/i18n",
+        "@/lib/local-day",
+        "@/lib/smart.functions"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/refund",
+      "file": "src/routes/refund.tsx",
+      "authenticatedLayout": false,
+      "localImports": ["@/components/AppShell", "@/lib/i18n"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/reminders",
+      "file": "src/routes/_authenticated/reminders.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/i18n",
+        "@/lib/auth",
+        "@/lib/hydration.functions",
+        "@/lib/local-day",
+        "@/components/ui/button",
+        "@/lib/reminders"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/reset-password",
+      "file": "src/routes/reset-password.tsx",
+      "authenticatedLayout": false,
+      "localImports": [
+        "@/integrations/supabase/client",
+        "@/lib/i18n",
+        "@/lib/error-message",
+        "@/components/AppShell",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/ui/label"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/sitemap.xml",
+      "file": "src/routes/sitemap[.]xml.ts",
+      "authenticatedLayout": false,
+      "localImports": [],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/supplements",
+      "file": "src/routes/_authenticated/supplements.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/lib/auth",
+        "@/lib/i18n",
+        "@/lib/error-message",
+        "@/lib/supplements",
+        "@/lib/supplements.functions",
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/Reveal",
+        "@/lib/tactile",
+        "@/components/MicronutrientDeficiencyScanner",
+        "@/components/SupplementCycleAdvisor",
+        "@/components/SupplementPhotoScanner"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/terms",
+      "file": "src/routes/terms.tsx",
+      "authenticatedLayout": false,
+      "localImports": ["@/components/AppShell", "@/lib/i18n"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/training",
+      "file": "src/routes/_authenticated/training.tsx",
+      "authenticatedLayout": true,
+      "localImports": ["@/components/SavedTrainingPrograms", "@/components/ActivePlanLoader"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/twin",
+      "file": "src/routes/_authenticated/twin.tsx",
+      "authenticatedLayout": true,
+      "localImports": ["@/components/twin/TwinScreen", "@/lib/twin-navigation"],
+      "scope": "Static route inventory, not execution proof"
+    },
+    {
+      "path": "/workout/$day",
+      "file": "src/routes/_authenticated/workout/$day.tsx",
+      "authenticatedLayout": true,
+      "localImports": [
+        "@/components/ui/button",
+        "@/components/ui/input",
+        "@/components/twin/BodyReplay",
+        "@/lib/session-muscle-breakdown",
+        "@/lib/workout-set-prefill",
+        "@/components/GlowCard",
+        "@/lib/todays-workout.functions",
+        "@/lib/start-workout.functions",
+        "@/lib/set-log.functions",
+        "@/lib/finish-workout.functions",
+        "@/lib/workout-reflection.functions",
+        "@/lib/offline-store",
+        "@/lib/training-plan.schema",
+        "@/lib/training-guidance.engine",
+        "@/lib/training-guidance.service",
+        "@/lib/workout-execution.schema",
+        "@/lib/error-message",
+        "@/lib/local-day",
+        "@/lib/readiness-adapt",
+        "@/lib/i18n"
+      ],
+      "scope": "Static route inventory, not execution proof"
+    }
+  ],
+  "serverModules": {
+    "src/lib/activate-plan.functions.ts": ["activatePlan"],
+    "src/lib/active-plan.functions.ts": ["getActivePlan"],
+    "src/lib/ai-personalization-consent.functions.ts": [
+      "getAiPersonalizationConsent",
+      "recordAiPersonalizationConsent"
+    ],
+    "src/lib/ar-workout.functions.ts": ["recordArWorkout"],
+    "src/lib/athlete-model.functions.ts": ["getAthleteModel"],
+    "src/lib/biomechanics.functions.ts": ["analyzeExerciseForm"],
+    "src/lib/body-metrics.functions.ts": ["getBodyMetrics", "recordManualBodyMetric"],
+    "src/lib/body-scan.functions.ts": ["analyzeBodyScan"],
+    "src/lib/body-trend.functions.ts": ["getBodyComposition"],
+    "src/lib/brief.functions.ts": ["getDailyBrief"],
+    "src/lib/coach-session.functions.ts": ["getSmartWarmup"],
+    "src/lib/digital-twin.functions.ts": ["getTwinSnapshot"],
+    "src/lib/dineout.functions.ts": ["searchRestaurantDishes"],
+    "src/lib/evidence-level.functions.ts": ["getEvidenceReport"],
+    "src/lib/exercise-filter.functions.ts": ["smartExerciseFilter"],
+    "src/lib/exercise-suggest.functions.ts": ["suggestExercisesForGoal", "addExerciseToActivePlan"],
+    "src/lib/finish-workout.functions.ts": ["finishWorkout"],
+    "src/lib/food-vision.functions.ts": ["analyzeMealPhoto", "savePhotoMeal"],
+    "src/lib/forecast.functions.ts": ["forecastProgress"],
+    "src/lib/fridge.functions.ts": ["generateFridgeRecipe"],
+    "src/lib/health-source.functions.ts": ["getHealthSource", "rotateHealthToken"],
+    "src/lib/hydration.functions.ts": [
+      "getHydrationTarget",
+      "getHydrationIntake",
+      "logHydration",
+      "clearHydrationToday"
+    ],
+    "src/lib/lab.functions.ts": ["getLabOverview"],
+    "src/lib/last-session.functions.ts": ["getLastSessionEffect"],
+    "src/lib/life-context.functions.ts": [
+      "getActiveLifeContexts",
+      "setActiveLifeContext",
+      "dismissActiveLifeContext"
+    ],
+    "src/lib/live-signals.functions.ts": ["getLiveSignals"],
+    "src/lib/meal-adapt.functions.ts": ["adaptMealPlan"],
+    "src/lib/meal-i18n.functions.ts": ["localizeMealPlan"],
+    "src/lib/meal.functions.ts": ["generateMealPlan"],
+    "src/lib/medical-report.functions.ts": ["getMedicalReport"],
+    "src/lib/micronutrient.functions.ts": ["scanMicronutrients"],
+    "src/lib/motivation.functions.ts": ["generateMotivation"],
+    "src/lib/night-lab.functions.ts": ["getOvernightWork"],
+    "src/lib/nutrition.functions.ts": ["logMeal"],
+    "src/lib/payments.functions.ts": [
+      "resolvePaddlePrice",
+      "getPortalUrl",
+      "cancelSubscription",
+      "resumeSubscription",
+      "changePlan"
+    ],
+    "src/lib/performance.functions.ts": [
+      "getPerformanceOverview",
+      "getVolumeTrend",
+      "getStrengthTrend"
+    ],
+    "src/lib/personal-timeline.functions.ts": ["getPersonalTimeline"],
+    "src/lib/plan-i18n.functions.ts": ["localizePlan"],
+    "src/lib/plan.functions.ts": [
+      "generatePlan",
+      "askCoach",
+      "listCoachMessages",
+      "clearCoachMessages"
+    ],
+    "src/lib/profile-body.functions.ts": ["getProfileBody", "saveProfileBody"],
+    "src/lib/profile-time-zone.functions.ts": ["syncProfileTimeZone"],
+    "src/lib/set-log.functions.ts": ["logWorkoutSet"],
+    "src/lib/sleep-stages.functions.ts": ["getSleepNight"],
+    "src/lib/smart.functions.ts": ["analyzeForm", "submitCheckin", "saveReadinessAdjustment"],
+    "src/lib/start-workout.functions.ts": ["startWorkout"],
+    "src/lib/supplement-cycle.functions.ts": ["analyzeSupplementCycles"],
+    "src/lib/supplement-vision.functions.ts": ["analyzeSupplementPhoto"],
+    "src/lib/supplements.functions.ts": [
+      "getSupplements",
+      "addSupplements",
+      "setSupplementActive",
+      "removeSupplement"
+    ],
+    "src/lib/today-decision.functions.ts": ["getTodayDecision", "recordTodayDecisionOutcome"],
+    "src/lib/todays-targets.functions.ts": ["getTodaysTargets"],
+    "src/lib/todays-workout.functions.ts": ["getTodaysWorkout"],
+    "src/lib/training-load.functions.ts": ["getTrainingLoad"],
+    "src/lib/training-rhythm.functions.ts": [
+      "getTrainingRhythm",
+      "setTrainingRhythm",
+      "clearTrainingRhythm"
+    ],
+    "src/lib/twin-evidence-window.functions.ts": ["getTwinEvidenceWindow"],
+    "src/lib/twin-rewind.functions.ts": ["getTwinRewindHistory"],
+    "src/lib/twin-trend.functions.ts": ["getTwinTrendHistory"],
+    "src/lib/user-memory.functions.ts": [
+      "getUserMemoryTransparency",
+      "markMemoryIncorrect",
+      "correctMemory",
+      "forgetMemory"
+    ],
+    "src/lib/voice-logger.functions.ts": ["parseVoiceWorkoutLog"],
+    "src/lib/weekly-intelligence.functions.ts": ["getWeeklyIntelligenceReview"],
+    "src/lib/workout-history.functions.ts": ["getWorkoutHistory"],
+    "src/lib/workout-reflection.functions.ts": ["recordWorkoutReflection"],
+    "src/lib/workout-request.functions.ts": ["buildRequestedWorkout"]
+  }
+}

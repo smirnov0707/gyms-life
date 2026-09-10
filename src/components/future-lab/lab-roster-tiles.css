@@ -1,0 +1,44 @@
+.fl-lab-roster-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.fl-lab-roster-tiles > li {
+  padding: 5px 3px;
+  border-color: transparent;
+  border-radius: 0;
+  background: none;
+}
+
+.fl-lab-roster-tiles .fl-role-icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+}
+
+.fl-lab-roster-tiles .fl-role-name {
+  font-size: 9px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.fl-lab-roster-tiles .fl-role-status {
+  margin-top: 3px;
+  font-size: 8px;
+  line-height: 1.2;
+}
+
+@media (min-width: 360px) {
+  .fl-lab-roster-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .fl-lab-roster-tiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+}

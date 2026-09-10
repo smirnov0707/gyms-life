@@ -31,14 +31,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit all installed dependencies
+        run: |
+          mkdir -p test-results/dependency-security
+          npm audit --audit-level=moderate --json > test-results/dependency-security/audit-all.json
+
+      - name: Audit production dependencies separately
+        run: npm audit --omit=dev --audit-level=moderate --json > test-results/dependency-security/audit-production.json
+
       - name: Typecheck
         run: npm run typecheck
 
       - name: Test
         run: npm run test
 
+      - name: Verify the patched build toolchain with synthetic fixtures
+        run: npm run test:toolchain
+
       - name: Lint
         run: npm run lint
 
+      - name: Build staging without deploying
+        run: npm run build:staging
+
       - name: Build
         run: npm run build
+
+      - name: Retain security evidence, including failed audits
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-security-evidence
+          path: test-results/dependency-security
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,467 @@
+/* A scoped Future Lab palette; other public pages retain their own theme. */
+.future-lab-app,
+.future-lab-drawer {
+  --fl-background: #030810;
+  --fl-border: #152235;
+  --background: var(--fl-background);
+  --foreground: #edf0fa;
+  --surface: #07111c;
+  --surface-2: #0c1725;
+  --card: #07111c;
+  --card-foreground: #edf0fa;
+  --popover: #0a1421;
+  --popover-foreground: #edf0fa;
+  --border: var(--fl-border);
+  --input: #24314a;
+  --primary: #9873f4;
+  --primary-foreground: #fff;
+  --primary-dim: rgb(141 96 237 / 18%);
+  --primary-glow: rgb(141 96 237 / 23%);
+  --accent: #4ccbe5;
+  --accent-foreground: #06101c;
+  --muted: #0e1927;
+  --muted-foreground: #8895ad;
+  --secondary: #111d2e;
+  --secondary-foreground: #e1e7f4;
+  --ring: #9873f4;
+  --fl-header: rgb(3 8 16 / 94%);
+  --fl-active: linear-gradient(115deg, rgb(105 60 204 / 20%), rgb(45 29 91 / 8%));
+  --fl-active-border: #3c2a67;
+}
+
+.light .future-lab-app,
+.light .future-lab-drawer {
+  --fl-background: #f3f5fb;
+  --fl-border: #dce2ed;
+  --foreground: #19243a;
+  --surface: #fff;
+  --surface-2: #edf0f8;
+  --card: #fff;
+  --card-foreground: #19243a;
+  --popover: #fff;
+  --popover-foreground: #19243a;
+  --input: #cbd4e4;
+  --primary: #7144cf;
+  --primary-dim: rgb(113 68 207 / 12%);
+  --primary-glow: rgb(113 68 207 / 16%);
+  --accent: #137e98;
+  --accent-foreground: #fff;
+  --muted: #e9edf5;
+  --muted-foreground: #62718a;
+  --secondary: #e8eaf5;
+  --secondary-foreground: #24324a;
+  --ring: #7144cf;
+  --fl-header: rgb(250 251 255 / 95%);
+  --fl-active: linear-gradient(115deg, rgb(119 76 212 / 10%), rgb(119 76 212 / 3%));
+  --fl-active-border: #c9b6ef;
+}
+
+.future-lab-app {
+  min-height: 100dvh;
+  color: var(--foreground);
+  background: var(--background);
+}
+.future-lab-app ::selection {
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+.fl-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: var(--sat, 0px);
+  border-bottom: 1px solid var(--border);
+  background: var(--fl-header);
+  backdrop-filter: blur(20px);
+}
+.fl-shell-header-inner {
+  display: flex;
+  height: 60px;
+  max-width: 1800px;
+  margin: 0 auto;
+  align-items: center;
+  gap: 22px;
+  padding: 0 18px;
+}
+.fl-brand {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 9px;
+  color: var(--foreground, #edf0fa);
+  text-decoration: none;
+}
+.fl-brand-mark {
+  width: 33px;
+  height: 33px;
+  filter: drop-shadow(0 0 8px rgb(123 78 232 / 18%));
+}
+.fl-brand-mark-frame {
+  fill: rgb(113 68 207 / 8%);
+  stroke: rgb(151 120 225 / 20%);
+}
+.fl-brand-wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fl-brand-wordmark > span {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0.035em;
+  line-height: 1;
+}
+.fl-brand-wordmark small {
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+.fl-desktop-navigation {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  height: 100%;
+  margin-left: 12px;
+}
+.fl-desktop-navigation a {
+  display: flex;
+  min-height: 34px;
+  padding: 0 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 550;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  transition:
+    color 150ms,
+    border-color 150ms,
+    background 150ms;
+}
+.fl-desktop-navigation a:hover {
+  color: var(--foreground);
+  background: var(--surface);
+}
+.fl-desktop-navigation a[aria-current="page"] {
+  color: var(--foreground);
+  border-color: var(--fl-active-border);
+  background: var(--fl-active);
+  box-shadow:
+    inset 0 0 12px rgb(111 65 204 / 5%),
+    0 0 14px rgb(99 60 188 / 5%);
+}
+.fl-shell-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.fl-shell-icon-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.fl-shell-icon-button:hover {
+  color: var(--foreground);
+  border-color: var(--primary);
+}
+.fl-language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.fl-language-switch button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.fl-language-switch button[aria-pressed="true"] {
+  color: var(--primary);
+  background: var(--primary-dim);
+}
+.fl-language-switch button:hover {
+  color: var(--foreground);
+}
+.fl-night-status {
+  position: relative;
+  display: flex;
+  min-height: 36px;
+  padding: 0 11px;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.fl-night-icon {
+  display: none;
+  color: var(--primary);
+}
+.fl-night-dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+.fl-night-status[data-state="ran"] .fl-night-dot {
+  background: var(--accent);
+  box-shadow: 0 0 7px var(--primary-dim);
+}
+.fl-night-status[data-state="unreadable"] .fl-night-dot {
+  background: #c79556;
+}
+.fl-night-copy {
+  display: flex;
+  min-width: 72px;
+  flex-direction: column;
+  gap: 2px;
+}
+.fl-night-copy strong {
+  font-size: 8px;
+  font-weight: 550;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+.fl-night-copy small {
+  color: var(--muted-foreground);
+  font-size: 7px;
+  line-height: 1.2;
+}
+.fl-night-status[data-state="ran"] small {
+  color: var(--accent);
+}
+.fl-night-chevron {
+  color: var(--muted-foreground);
+  margin-left: 9px;
+}
+.fl-profile-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.fl-profile-avatar {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid var(--fl-active-border);
+  border-radius: 50%;
+  color: var(--primary);
+  background: var(--primary-dim);
+}
+.fl-profile-copy {
+  font-size: 9px;
+  white-space: nowrap;
+}
+.fl-profile-chevron {
+  color: var(--muted-foreground);
+  margin-left: 4px;
+}
+.fl-shell-main {
+  position: relative;
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 10px 14px 24px;
+}
+
+@media (min-width: 1200px) {
+  .fl-shell-header-inner {
+    height: 59px;
+  }
+
+  .fl-shell-main {
+    padding: 8px 12px 6px;
+  }
+}
+.fl-mobile-navigation {
+  display: none;
+}
+.future-lab-app a:focus-visible,
+.future-lab-app button:focus-visible,
+.future-lab-drawer a:focus-visible,
+.future-lab-drawer button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.future-lab-drawer [role="group"] button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 1399px) {
+  .fl-shell-header-inner {
+    gap: 15px;
+  }
+  .fl-desktop-navigation {
+    margin-left: 0;
+    gap: 2px;
+  }
+  .fl-desktop-navigation a {
+    padding: 0 16px;
+  }
+  .fl-profile-copy,
+  .fl-profile-chevron,
+  .fl-header-language {
+    display: none;
+  }
+}
+@media (max-width: 1099px) {
+  .fl-desktop-navigation a {
+    padding: 0 13px;
+  }
+  .fl-night-copy,
+  .fl-night-chevron,
+  .fl-night-status > .fl-night-dot {
+    display: none;
+  }
+  .fl-night-icon {
+    display: block;
+  }
+  .fl-night-status {
+    justify-content: center;
+    width: 36px;
+    padding: 0;
+  }
+}
+@media (max-width: 959px) {
+  .fl-shell-header-inner {
+    height: 56px;
+    padding: 0 14px;
+    gap: 10px;
+  }
+  .fl-brand-mark {
+    width: 31px;
+    height: 31px;
+  }
+  .fl-brand-wordmark > span {
+    font-size: 15px;
+  }
+  .fl-brand-wordmark small {
+    font-size: 7px;
+    letter-spacing: 0.11em;
+  }
+  .fl-desktop-navigation {
+    display: none;
+  }
+  .fl-shell-actions {
+    gap: 5px;
+  }
+  .fl-shell-icon-button,
+  .fl-night-status,
+  .fl-profile-control {
+    min-height: 40px;
+    height: 40px;
+    width: 36px;
+    border-color: transparent;
+    background: transparent;
+  }
+  .fl-profile-control {
+    padding: 0;
+    justify-content: center;
+  }
+  .fl-night-status > .fl-night-dot {
+    display: block;
+    position: absolute;
+    right: 3px;
+    top: 8px;
+    width: 4px;
+    height: 4px;
+  }
+  .fl-shell-main {
+    padding: 12px 12px calc(76px + var(--sab, 0px));
+  }
+  .fl-mobile-navigation {
+    display: grid;
+    position: fixed;
+    z-index: 40;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 5px max(8px, var(--sal, 0px)) calc(5px + var(--sab, 0px));
+    border-top: 1px solid var(--border);
+    background: var(--fl-header);
+    backdrop-filter: blur(24px);
+  }
+  .fl-mobile-navigation a {
+    display: flex;
+    position: relative;
+    min-height: 49px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: var(--muted-foreground);
+  }
+  .fl-mobile-navigation a > span {
+    font-size: 7px;
+    line-height: 1.2;
+    font-weight: 550;
+    letter-spacing: 0.045em;
+  }
+  .fl-mobile-navigation a[aria-current="page"] {
+    color: var(--primary);
+  }
+  .fl-mobile-navigation a[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    top: 1px;
+    width: 36px;
+    height: 35px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--primary-dim), transparent 70%);
+    pointer-events: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl-desktop-navigation a {
+    transition: none;
+  }
+}
+
+/* Match the reference's restrained sans-serif typography across app routes. */
+.future-lab-app h1,
+.future-lab-app h2,
+.future-lab-app h3,
+.future-lab-app h4,
+.future-lab-app .font-display,
+.future-lab-app .text-display {
+  font-family: var(--font-sans);
+}
+
+@media (max-width: 640px) {
+  /* The legacy iOS zoom guard applies 16px to every button. Zoom protection
+     belongs to text fields; compact app buttons keep their own type scale. */
+  .future-lab-app
+    :is(.fl-dashboard, .fl-future-page, .fl-lab-page, .fl-journal-page, .twin-screen)
+    button {
+    font-size: 11px !important;
+  }
+}

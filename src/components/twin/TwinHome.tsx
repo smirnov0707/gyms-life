@@ -9,7 +9,13 @@ import { getTwinSnapshot } from "@/lib/digital-twin.functions";
 import { getTodaysTargets } from "@/lib/todays-targets.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { targetsRegion, type TodaysTargets } from "@/lib/todays-targets.engine";
-import { TWIN_DISPLAY_COLORS, type TwinLayer } from "@/components/twin/twin-scene.model";
+import {
+  TWIN_DISPLAY_COLORS,
+  mapTwinScene,
+  type TwinDisplayTone,
+  type TwinLayer,
+} from "@/components/twin/twin-scene.model";
+import { formatTwinValue, twinLayerCopy } from "@/components/twin/twin-layer.copy";
 import { TwinStage } from "@/components/twin/TwinStage";
 import { TrainingLoadPanel } from "@/components/TrainingLoadPanel";
 import { RecentWorkoutEffect } from "@/components/RecentWorkoutEffect";
@@ -20,6 +26,7 @@ import {
   type BodyView,
 } from "@/components/twin/body-map.geometry";
 import type { TwinRegionState, TwinSnapshot } from "@/lib/digital-twin.schema";
+import "./TwinHome.css";
 
 /**
  * The Twin as the screen, not as a card on it.
@@ -144,7 +151,43 @@ function TodayPanel({
   );
 }
 
-export function TwinHome() {
+const LEGEND_TONES: Record<TwinLayer, readonly TwinDisplayTone[]> = {
+  recovery: ["fresh", "moderate", "fatigued", "unknown"],
+  logged_volume: ["volume_high", "volume_medium", "volume_low", "unknown"],
+  todays_session: ["in_session", "not_in_session", "unknown"],
+};
+
+function CockpitLegend({ layer, language }: { layer: TwinLayer; language: "lt" | "en" }) {
+  const copy = twinLayerCopy(language);
+  return (
+    <section className="twin-cockpit-legend" aria-label={copy.label[layer]}>
+      <h2>{language === "lt" ? "Kūno žemėlapis" : "Body map"}</h2>
+      <p className="twin-cockpit-legend-title">{copy.label[layer]}</p>
+      <ul>
+        {LEGEND_TONES[layer].map((tone) => (
+          <li key={tone}>
+            <span
+              aria-hidden="true"
+              className={tone === "unknown" || tone === "not_in_session" ? "is-unlit" : ""}
+              style={{ backgroundColor: TWIN_DISPLAY_COLORS[tone] }}
+            />
+            {copy.band[tone]}
+          </li>
+        ))}
+      </ul>
+      <p className="twin-cockpit-source">{copy.unit[layer]}</p>
+      <Link
+        to="/twin"
+        search={{ view: "muscles" }}
+        className="fl-text-link inline-flex min-h-11 items-center"
+      >
+        {language === "lt" ? "Tyrinėti raumenis" : "Explore muscles"} →
+      </Link>
+    </section>
+  );
+}
+
+export function TwinHome({ presentation = "full" }: { presentation?: "full" | "cockpit" }) {
   const { lang, t } = useI18n();
   const { user } = useAuth();
   const timeZone = browserTimeZone();
@@ -179,7 +222,8 @@ export function TwinHome() {
     : targetsQuery.data;
 
   const hasSession = targets?.status === "session";
-  const shownLayer: TwinLayer = layer ?? (hasSession ? "todays_session" : "recovery");
+  const shownLayer: TwinLayer =
+    layer ?? (presentation === "full" && hasSession ? "todays_session" : "recovery");
 
   const selectRegion = (region: string) => {
     setSelected(region);
@@ -188,7 +232,9 @@ export function TwinHome() {
 
   if (snapshotQuery.isLoading) {
     return (
-      <section className="grid min-h-[60svh] place-items-center">
+      <section
+        className={`grid place-items-center ${presentation === "cockpit" ? "twin-cockpit-loading" : "min-h-[60svh]"}`}
+      >
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 aria-hidden="true" className="size-4 animate-spin text-primary" /> {copy.loading}
         </p>
@@ -208,6 +254,76 @@ export function TwinHome() {
   const region = selected
     ? (snapshot.regions.find((entry) => entry.region === selected) ?? null)
     : null;
+
+  if (presentation === "cockpit") {
+    const layerCopy = twinLayerCopy(language);
+    const reading = mapTwinScene(
+      snapshot,
+      shownLayer,
+      targets?.status === "session" ? targets : null,
+    ).regions.find((entry) => entry.id === selected);
+    const readingValue = reading
+      ? shownLayer === "todays_session" && reading.display.value !== null
+        ? `${reading.display.value} ${language === "lt" ? "pratimai" : "exercises"}`
+        : formatTwinValue(reading.display.value, shownLayer, language)
+      : null;
+
+    return (
+      <section aria-label={copy.title} data-twin-home className="twin-home--cockpit">
+        <header className="twin-cockpit-header">
+          <p>{language === "lt" ? "Skaitmeninis kūnas" : "Digital human"}</p>
+          <h2>{copy.title}</h2>
+          <span>{language === "lt" ? "Tempk ir tyrinėk 360°" : "Drag to explore 360°"}</span>
+        </header>
+        {!snapshot.dataAvailable ? (
+          <p className="twin-cockpit-notice" role="status">
+            {copy.dataGapBanner}
+          </p>
+        ) : snapshot.regions.every((entry) => entry.recoveryPct === null) ? (
+          <p className="twin-cockpit-notice" role="status">
+            {language === "lt"
+              ? "Nepakanka užregistruotų treniruočių atsistatymui įvertinti. Pasirink sritį ir peržiūrėk jos duomenis."
+              : "Not enough logged training to estimate recovery. Select a region to inspect its evidence."}
+          </p>
+        ) : null}
+        <TwinStage
+          presentation="cockpit"
+          snapshot={snapshot}
+          layer={shownLayer}
+          onLayerChange={setLayer}
+          session={targets?.status === "session" ? targets : null}
+          selectedRegion={selected}
+          onSelectRegion={selectRegion}
+          view={view}
+          onViewChange={setView}
+          regionLabel={label}
+          language={language}
+          sidePanel={
+            <aside className="twin-cockpit-side">
+              <CockpitLegend layer={shownLayer} language={language} />
+              <div className="twin-cockpit-load">
+                <TrainingLoadPanel compact />
+              </div>
+              {reading ? (
+                <div className="twin-cockpit-reading" role="status">
+                  <p>{label(reading.id)}</p>
+                  <strong>{readingValue}</strong>
+                  <span>{layerCopy.band[reading.display.tone]}</span>
+                  <Link
+                    to="/twin"
+                    search={{ view: "muscles", region: reading.id, detail: "status" }}
+                    className="fl-text-link inline-flex min-h-11 items-center"
+                  >
+                    {language === "lt" ? "Peržiūrėti detales" : "View details"} →
+                  </Link>
+                </div>
+              ) : null}
+            </aside>
+          }
+        />
+      </section>
+    );
+  }
 
   return (
     <section

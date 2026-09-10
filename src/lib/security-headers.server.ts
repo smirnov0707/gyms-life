@@ -28,7 +28,11 @@ const SECURITY_HEADERS = {
 export function applySecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    headers.set(name, value);
+    // Multiple CSP policies are intersected by the browser. Preserve a stricter
+    // route-specific policy rather than overwriting it with the baseline.
+    if (name === "content-security-policy" && headers.has(name) && headers.get(name) !== value)
+      headers.append(name, value);
+    else headers.set(name, value);
   }
 
   return new Response(response.body, {

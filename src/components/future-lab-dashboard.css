@@ -1,0 +1,1019 @@
+/* Photo 3 is the desktop composition; Photo 4 defines the mobile hierarchy.
+   This sheet belongs to Overview and never changes public-page tokens. */
+.fl-dashboard {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  font-family: var(--font-sans);
+}
+.fl-dashboard h1,
+.fl-dashboard h2,
+.fl-dashboard h3,
+.fl-dashboard h4 {
+  font-family: var(--font-sans);
+  letter-spacing: 0;
+}
+.fl-cockpit {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1fr) minmax(155px, 0.85fr) minmax(260px, 1.7fr) minmax(170px, 0.95fr)
+    minmax(205px, 1.1fr);
+  grid-template-areas: "rail daily body lab predictions";
+  gap: 8px;
+  align-items: start;
+}
+.fl-cockpit > * {
+  min-width: 0;
+}
+.fl-left-rail {
+  grid-area: rail;
+  display: grid;
+  gap: 8px;
+}
+.fl-daily-column {
+  grid-area: daily;
+  display: grid;
+  gap: 8px;
+}
+.fl-greeting {
+  padding: 13px 6px 10px;
+}
+.fl-body {
+  grid-area: body;
+  height: 100%;
+}
+.fl-laboratory {
+  grid-area: lab;
+}
+.fl-predictions {
+  grid-area: predictions;
+  display: grid;
+  gap: 8px;
+}
+.fl-greeting h1 {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+.fl-greeting > p:last-child {
+  margin-top: 9px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.fl-mobile-page-name {
+  display: none;
+}
+.fl-eyebrow {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  font-weight: 550;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+}
+.fl-surface,
+.fl-dashboard .fl-live-signals,
+.fl-dashboard .fl-todays-plan,
+.fl-dashboard .fl-sleep-analysis,
+.fl-dashboard .fl-evidence,
+.fl-dashboard .fl-outlook {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: linear-gradient(
+    140deg,
+    var(--surface),
+    color-mix(in srgb, var(--surface) 78%, var(--background))
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 1.5%);
+}
+.fl-dashboard .fl-live-signals,
+.fl-dashboard .fl-todays-plan {
+  padding: 0;
+}
+.fl-dashboard .fl-live-signals header,
+.fl-dashboard .fl-todays-plan header {
+  padding: 11px 11px 8px;
+}
+.fl-dashboard .fl-live-signals h2,
+.fl-dashboard .fl-todays-plan h2 {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  font-weight: 550;
+}
+.fl-dashboard .fl-live-signals header p {
+  font-size: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.fl-live-signals li {
+  gap: 7px;
+  padding: 8px 9px;
+  min-height: 45px;
+}
+.fl-live-signals li > span:first-child {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+}
+.fl-live-signals li > span:nth-child(2) > span:first-child {
+  font-size: 9px;
+}
+.fl-live-signals li > span:nth-child(2) > span:last-child {
+  font-size: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.fl-live-signals li > svg {
+  width: 25px;
+  height: 18px;
+  color: #23c8b3;
+}
+.fl-live-signals li > span:last-child > span:first-child {
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.fl-live-signals li > span:last-child > span:first-child > span {
+  font-size: 8px;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 2px;
+}
+.fl-live-signals li:nth-child(1) > span:first-child {
+  color: #9d83ff;
+  background: #36266433;
+}
+.fl-live-signals li:nth-child(2) > span:first-child,
+.fl-live-signals li:nth-child(3) > span:first-child {
+  color: #f176a0;
+  background: #56243d33;
+}
+.fl-live-signals li:nth-child(4) > span:first-child,
+.fl-live-signals li:nth-child(6) > span:first-child,
+.fl-live-signals li:nth-child(7) > span:first-child {
+  color: #40bae9;
+  background: #15375155;
+}
+.fl-live-signals li:nth-child(5) > span:first-child {
+  color: #ef965d;
+  background: #57342233;
+}
+.fl-live-signals > div:last-child > p {
+  font-size: 10px;
+}
+.fl-live-signals a,
+.fl-todays-plan a {
+  border-radius: 5px;
+  font-size: 9px;
+  padding-inline: 9px;
+  letter-spacing: 0.035em;
+}
+.fl-todays-plan > div > p:first-child {
+  font-size: 11px;
+  color: var(--primary);
+}
+.fl-todays-plan li {
+  padding-block: 5px;
+  gap: 8px;
+}
+.fl-todays-plan li span {
+  font-family: var(--font-sans);
+}
+.fl-todays-plan li > span:first-child > span:first-child {
+  font-size: 10px;
+  font-weight: 450;
+}
+.fl-todays-plan li > span:first-child > span:last-child {
+  font-size: 8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.fl-todays-plan li > span:last-child {
+  font-size: 10px;
+}
+.fl-todays-plan .fl-plan-start,
+.fl-dashboard .fl-action {
+  min-height: 34px;
+  height: auto;
+  border: 1px solid #865bea80;
+  border-radius: 5px;
+  color: #efebff;
+  background: linear-gradient(115deg, #472393, #372174);
+  box-shadow:
+    inset 0 1px 0 #c6a9ff20,
+    0 0 16px #6b3cbd12;
+  font-size: 9px;
+  line-height: 1.5;
+  white-space: normal;
+  padding: 6px 9px;
+}
+.fl-readiness-summary {
+  flex-direction: row-reverse;
+  gap: 8px;
+}
+.fl-readiness-summary > div:last-child {
+  text-align: left;
+}
+.fl-readiness-summary > div:last-child > p:first-child {
+  font-size: 9px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 450;
+}
+.fl-readiness-summary > div:last-child > p:last-child {
+  font-size: 15px;
+  font-weight: 500;
+  margin-top: 5px;
+}
+.fl-readiness-summary > div:first-child {
+  flex-shrink: 0;
+}
+.fl-readiness-summary svg {
+  color: #26cfb7;
+}
+.fl-readiness-card > button {
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 9px;
+  border-radius: 5px;
+  margin-top: 3px;
+  color: var(--muted-foreground);
+}
+.fl-readiness-card > p {
+  font-size: 9px;
+  line-height: 1.5;
+}
+.fl-readiness-empty > p:nth-child(2) {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.fl-text-link {
+  display: inline-flex;
+  gap: 5px;
+  padding-block: 8px;
+  color: var(--primary);
+  font-size: 10px;
+}
+.fl-smart-brief header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fl-brief-refresh {
+  display: grid;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.fl-smart-brief h3 {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  margin-top: 5px;
+}
+.fl-smart-brief p,
+.fl-decision-summary {
+  margin-top: 7px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.65;
+}
+.fl-smart-brief .fl-brief-warning {
+  color: #d8a65c;
+}
+.fl-brief-action {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+.fl-today-decision h2 {
+  margin-top: 7px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+.fl-today-decision > .fl-action {
+  width: 100%;
+  margin-top: 12px;
+}
+.fl-today-decision button {
+  white-space: normal;
+  height: auto;
+}
+.fl-today-decision > div p {
+  font-size: 11px;
+}
+.fl-disclosure {
+  margin-top: 10px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.fl-disclosure > summary {
+  cursor: pointer;
+  padding: 5px 0;
+  color: var(--primary);
+  font-size: 9px;
+}
+.fl-disclosure ul {
+  display: grid;
+  gap: 6px;
+  padding-block: 7px;
+}
+.fl-disclosure button {
+  font-size: 10px;
+  margin-top: 6px;
+}
+.fl-dashboard .fl-lab-roster {
+  border-radius: 9px;
+  padding: 11px;
+}
+.fl-lab-roster li {
+  gap: 7px;
+  padding-block: 9px;
+}
+.fl-lab-roster li > span:first-child {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+.fl-lab-roster li > span:nth-child(2) > span:first-child {
+  font-size: 10px;
+  line-height: 1.35;
+}
+.fl-lab-roster li > span:nth-child(2) > span:last-child {
+  font-size: 8px;
+}
+.fl-dashboard .fl-sleep-analysis > p:first-child,
+.fl-dashboard .fl-evidence > p:first-child,
+.fl-dashboard .fl-outlook > p:first-child {
+  color: var(--foreground);
+  letter-spacing: 0.04em;
+}
+.fl-dashboard .fl-sleep-analysis p,
+.fl-dashboard .fl-outlook p {
+  color: var(--muted-foreground);
+}
+.fl-dashboard .fl-sleep-analysis ul {
+  margin-top: 9px;
+}
+.fl-sleep-analysis li {
+  font-size: 10px;
+}
+.fl-sleep-analysis li span {
+  color: var(--muted-foreground);
+}
+.fl-sleep-analysis li span span {
+  color: var(--foreground);
+}
+.fl-evidence-overview {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+}
+.fl-evidence-count {
+  display: flex;
+  width: 76px;
+  height: 76px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+}
+.fl-evidence-count strong {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+}
+.fl-evidence-count span {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 8px;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+}
+.fl-evidence-targets {
+  display: grid;
+  gap: 7px;
+}
+.fl-evidence-targets li {
+  display: grid;
+  gap: 2px;
+  font-size: 9px;
+}
+.fl-evidence-targets li > span:last-child {
+  font-size: 8px;
+  color: var(--accent);
+}
+.fl-outlook-chart {
+  width: 100%;
+  height: 95px;
+  margin-top: 8px;
+  overflow: visible;
+}
+.fl-outlook-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: var(--muted-foreground);
+}
+.fl-outlook-legend {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 8px;
+  margin-top: 8px;
+}
+.fl-outlook-legend > span {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.fl-outlook-legend i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+.fl-dashboard .fl-data-sources {
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 9px;
+}
+.fl-data-sources > span,
+.fl-data-sources > a {
+  font-size: 9px;
+}
+.fl-data-sources > span:first-child {
+  letter-spacing: 0;
+  font-weight: 500;
+  text-transform: none;
+}
+.fl-data-sources > span > span {
+  font-size: 8px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.fl-data-sources > span {
+  border-radius: 5px;
+}
+.fl-data-sources > a {
+  border-radius: 5px;
+  min-height: 30px;
+  color: var(--primary);
+}
+.fl-context-disclosure {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.fl-context-disclosure > summary {
+  cursor: pointer;
+  padding: 12px 0;
+}
+.fl-context-disclosure > div {
+  margin-bottom: 12px;
+}
+.fl-dashboard .fl-bottom-deck {
+  gap: 8px;
+}
+.fl-dashboard .fl-bottom-deck > .fl-panel {
+  border-radius: 9px;
+}
+.fl-dashboard details[open] {
+  position: relative;
+  z-index: 2;
+}
+@media (min-width: 1200px) {
+  .fl-dashboard .fl-body .twin-home--cockpit {
+    min-height: 100%;
+  }
+}
+@media (max-width: 1199px) and (min-width: 760px) {
+  .fl-cockpit {
+    grid-template-columns: minmax(190px, 1fr) minmax(300px, 1.8fr) minmax(200px, 1fr);
+    grid-template-areas: "daily body predictions" "rail rail lab";
+  }
+  .fl-laboratory {
+    height: 100%;
+  }
+  .fl-live-signals li {
+    min-height: 48px;
+  }
+}
+@media (max-width: 759px) {
+  .fl-dashboard {
+    gap: 12px;
+  }
+  .fl-cockpit {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: "greeting" "readiness" "plan" "decision" "brief" "body" "signals" "predictions" "lab";
+    gap: 12px;
+  }
+  .fl-left-rail,
+  .fl-daily-column {
+    display: contents;
+  }
+  .fl-signal-rail {
+    grid-area: signals;
+  }
+  .fl-greeting {
+    grid-area: greeting;
+  }
+  .fl-readiness {
+    grid-area: readiness;
+  }
+  .fl-plan {
+    grid-area: plan;
+  }
+  .fl-decision {
+    grid-area: decision;
+  }
+  .fl-brief {
+    grid-area: brief;
+  }
+  .fl-mobile-page-name {
+    display: block;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .fl-greeting {
+    padding: 4px 2px;
+  }
+  .fl-greeting h1 {
+    font-size: 20px;
+  }
+  .fl-greeting > p:last-child {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .fl-surface,
+  .fl-dashboard .fl-sleep-analysis,
+  .fl-dashboard .fl-evidence,
+  .fl-dashboard .fl-outlook {
+    padding: 16px;
+    border-radius: 11px;
+  }
+  .fl-eyebrow {
+    font-size: 10px;
+  }
+  .fl-readiness-summary {
+    justify-content: space-between;
+  }
+  .fl-readiness-summary > div:first-child {
+    width: 64px;
+    height: 64px;
+  }
+  .fl-readiness-summary > div:first-child svg {
+    width: 64px;
+    height: 64px;
+  }
+  .fl-readiness-card > button {
+    min-height: 36px;
+    font-size: 11px;
+  }
+  .fl-readiness-card > p {
+    font-size: 11px;
+  }
+  .fl-live-signals li {
+    min-height: 51px;
+    padding-inline: 14px;
+    gap: 12px;
+  }
+  .fl-live-signals li > svg {
+    width: 55px;
+    height: 22px;
+  }
+  .fl-live-signals li > span:nth-child(2) > span:first-child {
+    font-size: 11px;
+  }
+  .fl-live-signals li > span:last-child > span:first-child {
+    font-size: 15px;
+  }
+  .fl-todays-plan > div > p:first-child {
+    font-size: 16px;
+  }
+  .fl-todays-plan li {
+    padding-block: 9px;
+  }
+  .fl-todays-plan li > span:first-child > span:first-child {
+    font-size: 12px;
+  }
+  .fl-todays-plan li > span:last-child {
+    font-size: 12px;
+  }
+  .fl-todays-plan .fl-plan-start,
+  .fl-dashboard .fl-action {
+    min-height: 44px;
+    font-size: 11px;
+  }
+  .fl-today-decision h2 {
+    font-size: 18px;
+  }
+  .fl-smart-brief h3 {
+    font-size: 14px;
+  }
+  .fl-smart-brief p,
+  .fl-decision-summary {
+    font-size: 12px;
+  }
+  .fl-disclosure > summary {
+    min-height: 36px;
+    font-size: 11px;
+  }
+  .fl-disclosure {
+    font-size: 12px;
+  }
+  .fl-dashboard .fl-lab-roster {
+    padding: 16px;
+  }
+  .fl-lab-roster li {
+    padding-block: 11px;
+    gap: 10px;
+  }
+  .fl-lab-roster li > span:nth-child(2) > span:first-child {
+    font-size: 12px;
+  }
+  .fl-lab-roster li > span:nth-child(2) > span:last-child {
+    font-size: 10px;
+  }
+  .fl-data-sources {
+    gap: 8px;
+  }
+  .fl-data-sources > span {
+    margin-left: 0;
+  }
+  .fl-data-sources > a {
+    min-height: 44px;
+  }
+  .fl-brief-refresh {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.fl-dashboard .fl-brief-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fl-dashboard .fl-bottom-deck a {
+  border-radius: 5px;
+  min-height: 34px;
+}
+.fl-dashboard .twin-home--cockpit {
+  border-radius: 9px;
+  background: radial-gradient(ellipse at 40% 45%, rgb(10 44 69 / 22%), transparent 65%), #030914;
+}
+@media (max-width: 759px) {
+  .fl-dashboard .fl-bottom-deck a {
+    min-height: 44px;
+  }
+}
+
+.fl-dashboard-footer {
+  display: grid;
+  gap: inherit;
+  min-width: 0;
+}
+.fl-context-label-short {
+  display: none;
+}
+
+/* Desktop reference composition. Expanded explanations may grow the page;
+   the resting cockpit fits the reference without clipping evidence or actions. */
+@media (min-width: 1200px) {
+  .fl-dashboard {
+    --fl-cockpit-height: clamp(500px, calc(100svh - 326px), 600px);
+    --fl-deck-height: clamp(188px, 22.5svh, 218px);
+    gap: 8px;
+  }
+  .fl-dashboard .fl-cockpit {
+    grid-template-columns:
+      minmax(0, 1.05fr) minmax(0, 0.98fr) minmax(0, 1.43fr)
+      minmax(0, 0.94fr) minmax(0, 1.18fr);
+    min-height: var(--fl-cockpit-height);
+    gap: 8px;
+  }
+  .fl-dashboard .fl-left-rail,
+  .fl-dashboard .fl-daily-column,
+  .fl-dashboard .fl-predictions {
+    gap: 7px;
+  }
+  .fl-dashboard .fl-greeting {
+    padding: 15px 10px 10px;
+  }
+  .fl-dashboard .fl-greeting h1 {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .fl-greeting > p:last-child {
+    margin-top: 8px;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .fl-dashboard .fl-surface,
+  .fl-dashboard .fl-sleep-analysis,
+  .fl-dashboard .fl-evidence,
+  .fl-dashboard .fl-outlook {
+    padding: 9px 10px;
+    border-radius: 8px;
+  }
+  .fl-dashboard .fl-live-signals header,
+  .fl-dashboard .fl-todays-plan header {
+    padding: 8px 10px 6px;
+  }
+  .fl-dashboard .fl-live-signals li {
+    min-height: 40px;
+    padding: 5px 9px;
+    gap: 6px;
+  }
+  .fl-dashboard .fl-live-signals li > span:first-child {
+    width: 27px;
+    height: 27px;
+  }
+  .fl-dashboard .fl-live-signals li > span:last-child > span:first-child {
+    font-size: 11px;
+  }
+  .fl-dashboard .fl-todays-plan > div {
+    padding-inline: 10px;
+  }
+  .fl-dashboard .fl-todays-plan > div > p:first-child {
+    font-size: 10px;
+  }
+  .fl-dashboard .fl-todays-plan > div > p:last-child {
+    font-size: 8px;
+    letter-spacing: 0.04em;
+  }
+  .fl-dashboard .fl-todays-plan > ul {
+    margin-top: 4px;
+    padding-inline: 10px;
+  }
+  .fl-dashboard .fl-todays-plan .fl-plan-exercise {
+    min-height: 22px;
+    gap: 7px;
+    padding-block: 4px;
+  }
+  .fl-dashboard .fl-plan-exercise > span:first-child {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .fl-dashboard .fl-plan-exercise .fl-plan-exercise-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-plan-exercise .fl-plan-exercise-rest {
+    flex-shrink: 0;
+    font-size: 7px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .fl-dashboard .fl-todays-plan li > span:last-child {
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-todays-plan > div:last-child {
+    padding-top: 6px;
+    padding-bottom: 9px;
+  }
+  .fl-dashboard .fl-plan-start,
+  .fl-dashboard .fl-action {
+    min-height: 27px;
+    padding-block: 4px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-readiness-summary > div:first-child,
+  .fl-dashboard .fl-readiness-summary > div:first-child svg {
+    width: 44px;
+    height: 44px;
+  }
+  .fl-dashboard .fl-readiness-summary > div:first-child > span {
+    font-size: 15px;
+  }
+  .fl-dashboard .fl-readiness-summary > div:last-child > p:last-child {
+    font-size: 13px;
+    margin-top: 3px;
+  }
+  .fl-dashboard .fl-readiness-card > button {
+    min-height: 21px;
+    height: 21px;
+    margin-top: 0;
+  }
+  .fl-dashboard .fl-smart-brief h3 {
+    margin-top: 3px;
+    font-size: 11px;
+  }
+  .fl-dashboard .fl-smart-brief p,
+  .fl-dashboard .fl-decision-summary {
+    margin-top: 5px;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .fl-dashboard .fl-brief-refresh {
+    width: 20px;
+    height: 20px;
+  }
+  .fl-dashboard .fl-disclosure {
+    margin-top: 5px;
+    line-height: 1.45;
+  }
+  .fl-dashboard .fl-disclosure > summary {
+    padding-block: 4px;
+  }
+  .fl-dashboard .fl-today-decision h2 {
+    margin-top: 5px;
+    font-size: 13px;
+  }
+  .fl-dashboard .fl-today-decision > .fl-action {
+    margin-top: 7px;
+  }
+  .fl-dashboard .fl-lab-roster {
+    padding: 9px 10px;
+  }
+  .fl-dashboard .fl-lab-roster li {
+    padding-block: 7px;
+    gap: 7px;
+  }
+  .fl-dashboard .fl-lab-roster li > span:first-child {
+    width: 21px;
+    height: 21px;
+  }
+  .fl-dashboard .fl-lab-roster li > span:nth-child(2) > span:first-child {
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-lab-roster > a {
+    min-height: 27px;
+    margin-top: 5px;
+    padding-block: 3px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-evidence-overview {
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .fl-dashboard .fl-evidence-count {
+    width: 70px;
+    height: 70px;
+  }
+  .fl-dashboard .fl-evidence-count strong {
+    font-size: 23px;
+  }
+  .fl-dashboard .fl-evidence-targets {
+    gap: 5px;
+  }
+  .fl-dashboard .fl-evidence-targets li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-evidence-targets li > span:last-child {
+    text-align: right;
+    font-size: 7px;
+  }
+  .fl-dashboard .fl-outlook-chart {
+    height: 74px;
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-outlook-legend {
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-sleep-analysis > p:nth-child(2) {
+    margin-top: 6px;
+  }
+  .fl-dashboard .fl-sleep-analysis > p:nth-child(2) > span:first-child {
+    font-size: 12px;
+  }
+  .fl-dashboard .fl-sleep-analysis ul {
+    margin-top: 6px;
+  }
+  .fl-dashboard .fl-sleep-analysis li {
+    font-size: 9px;
+    margin-block: 0;
+  }
+  .fl-dashboard .fl-sleep-analysis li + li {
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-bottom-deck {
+    grid-template-columns: 1.28fr 1.7fr 0.88fr 0.94fr;
+    min-height: var(--fl-deck-height);
+    gap: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck > .fl-panel {
+    padding: 9px;
+    border-radius: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck > .fl-panel > div:last-child {
+    margin-top: 6px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-card-action {
+    min-height: 26px;
+    padding: 4px 7px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-recent-effect {
+    gap: 6px;
+  }
+  .fl-dashboard .fl-recent-effect section > p {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .fl-recent-effect section > p:last-child {
+    margin-top: 5px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-recent-effect ul {
+    margin-top: 5px;
+  }
+  .fl-dashboard .fl-recent-effect li {
+    margin-block: 0;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .fl-recent-effect li + li {
+    margin-top: 3px;
+  }
+  .fl-dashboard .fl-bottom-deck [aria-label] > button {
+    min-height: 24px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-illustrative-athlete img {
+    height: 66px;
+  }
+  .fl-dashboard .fl-bottom-deck .fl-illustrative-athlete figcaption {
+    margin-top: 3px;
+    font-size: 7px;
+  }
+  .fl-dashboard .fl-bottom-deck .mb-3 {
+    margin-bottom: 4px;
+  }
+  .fl-dashboard .fl-bottom-deck dl {
+    margin-top: 6px;
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-bottom-deck dl > div {
+    margin-block: 0;
+  }
+  .fl-dashboard .fl-bottom-deck dl > div + div {
+    margin-top: 4px;
+  }
+  .fl-dashboard .fl-bottom-deck dl + p {
+    margin-top: 5px;
+    padding-top: 5px;
+  }
+  .fl-dashboard .fl-bottom-deck p {
+    line-height: 1.4;
+  }
+  .fl-dashboard .fl-bottom-deck .mt-4 {
+    margin-top: 9px;
+  }
+  .fl-dashboard .fl-bottom-deck h2 {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  .fl-dashboard .fl-dashboard-footer {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+  .fl-dashboard .fl-dashboard-footer:has(> details[open]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-dashboard .fl-dashboard-footer .fl-data-sources {
+    gap: 7px;
+    padding: 2px 8px;
+    min-height: 32px;
+  }
+  .fl-dashboard .fl-data-sources > button,
+  .fl-dashboard .fl-data-sources > a {
+    min-height: 26px;
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-data-sources > span {
+    font-size: 8px;
+  }
+  .fl-dashboard .fl-context-disclosure > summary {
+    padding: 10px 4px;
+    font-size: 9px;
+  }
+  .fl-dashboard .fl-context-label-full {
+    display: none;
+  }
+  .fl-dashboard .fl-context-label-short {
+    display: inline;
+  }
+}

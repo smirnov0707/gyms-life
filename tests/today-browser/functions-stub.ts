@@ -3,9 +3,8 @@ import { z } from "zod";
 /**
  * Stands in for every `*.functions` module the Today tree imports.
  *
- * The default is "the source answered, and it had nothing", because that is
- * this account's real database: no health samples, no nutrition rows, one
- * logged set. `?signals=fail` makes the signal read throw instead, so the
+ * The default is a synthetic "the source answered, and it had nothing" case.
+ * `?signals=fail` makes the signal read throw instead, so the
  * screen can be checked in the state where nobody could look — a case that
  * renders identically to "no data" unless the component keeps them apart.
  *
@@ -83,7 +82,7 @@ export const getLiveSignals = async () => {
 
 /** `?twin=regions` gives the snapshot three regions: two calculated and one
  *  with no evidence at all, which is the pair the region list has to keep
- *  apart. The default stays empty, because that is this account's state. */
+ *  apart. The default is the synthetic empty-evidence case. */
 export const getTwinSnapshot = async () => ({
   calculationVersion: "TEST-FIXTURE-NOT-USER-DATA",
   bodyVariant: "male" as const,
@@ -176,7 +175,8 @@ export const getBodyComposition = async () => {
   return { status: "single" as const, latest };
 };
 
-export const getLabOverview = async () => null;
+// Use schema-valid empty data by default; scenario=failure rejects the read.
+export const getLabOverview = async () => (await import("./reference-functions")).getLabOverview();
 export const getTwinTrendHistory = async () => null;
 /** `?plan=ready` puts a real session in front of the panel; the default is the
  *  account's actual state, which is no active programme. */
@@ -238,7 +238,8 @@ export const getActiveLifeContexts = async () => [];
 export const setActiveLifeContext = async () => null;
 export const dismissActiveLifeContext = async () => null;
 export const getDailyBrief = async () => null;
-export const forecastProgress = async () => null;
+export const forecastProgress = async () =>
+  (await import("./reference-functions")).forecastProgress();
 
 export const BRIEF = { version: 1 };
 /** Loose on purpose: the fixture never feeds it a cached brief. */
@@ -455,3 +456,30 @@ export const getSleepNight = async () => {
   }
   return { status: "absent" as const };
 };
+
+export async function identifyOwnedOfflineSessions({
+  data,
+}: {
+  data: { ownerId: string; sessionIds: string[] };
+}) {
+  return { ownerId: data.ownerId, sessionIds: data.sessionIds };
+}
+export async function syncOfflineWorkoutSet({
+  data,
+}: {
+  data: import("../../src/lib/offline-contract").OfflineSyncRequest;
+}) {
+  if (new URLSearchParams(location.search).get("sync") === "fail")
+    throw new Error("Synthetic failed delivery");
+  return {
+    status: "acknowledged" as const,
+    ownerId: data.ownerId,
+    clientId: data.clientId,
+    serverSetId: "77777777-7777-4777-8777-777777777777",
+    data: data.data,
+  };
+}
+
+export async function getMorningNightReview() {
+  return { state: "not_run" as const };
+}

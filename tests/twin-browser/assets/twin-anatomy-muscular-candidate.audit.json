@@ -1,0 +1,37 @@
+{
+  "assetSha256": "5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158",
+  "bytes": 827436,
+  "vertices": 13290,
+  "triangles": 26576,
+  "components": [
+    13290
+  ],
+  "boundaryEdges": 0,
+  "nonManifoldEdges": 0,
+  "inconsistentWinding": 0,
+  "degenerateTriangles": 0,
+  "eulerCharacteristic": 2,
+  "signedVolumeMetres3": 0.07009679799916214,
+  "garmentMeshes": 0,
+  "overlaidSurfaces": 0,
+  "regions": {
+    "neutral": 20262,
+    "chest": 288,
+    "back": 748,
+    "shoulders": 744,
+    "arms": 1248,
+    "legs": 1994,
+    "glutes": 542,
+    "core": 318,
+    "abs": 432
+  },
+  "maskFeatherMetres": 0.013,
+  "sharedPositionsAndNormals": true,
+  "visualGatePassed": false,
+  "productionIntegration": false,
+  "limitations": [
+    "Generic authored regions, not medical segmentation",
+    "Topology does not prove absence of nonadjacent intersections",
+    "GPU visual review required"
+  ]
+}

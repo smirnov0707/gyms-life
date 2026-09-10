@@ -1,3 +1,4 @@
+import { assertMealRecipeIntegrity, assertMealTargetIntegrity } from "./meal-recipe.integrity";
 import { ObservedFailure } from "./observability.server";
 import {
   MEAL_PLAN_MAX_DAILY_KCAL,
@@ -8,6 +9,7 @@ import {
 type MealPlanGenerationRequirements = {
   mealsPerDay: number;
   fixedKcalTarget: number | null | undefined;
+  requireQuantities?: boolean;
 };
 
 const isCloseTo = (actual: number, expected: number, relativeTolerance: number) =>
@@ -124,5 +126,26 @@ export function validateGeneratedMealPlan(
     }
   }
 
-  return plan;
+  assertMealTargetIntegrity(plan);
+  assertMealRecipeIntegrity(plan.days, requirements.requireQuantities ?? false);
+
+  const sum = (values: number[]) =>
+    Math.round(values.reduce((total, value) => total + value, 0) * 10) / 10;
+  const days = plan.days.map((day) => ({
+    ...day,
+    total_kcal: sum(day.meals.map((meal) => meal.kcal)),
+    total_protein: sum(day.meals.map((meal) => meal.protein)),
+    total_carbs: sum(day.meals.map((meal) => meal.carbs)),
+    total_fat: sum(day.meals.map((meal) => meal.fat)),
+  }));
+  for (const day of days) {
+    if (day.total_kcal < MEAL_PLAN_MIN_DAILY_KCAL || day.total_kcal > MEAL_PLAN_MAX_DAILY_KCAL)
+      throw new ObservedFailure(
+        "unsafe_energy_range",
+        "Actual meal totals are outside the permitted range.",
+      );
+    if (fixedKcalTarget != null && !isCloseTo(day.total_kcal, fixedKcalTarget, 0.1))
+      throw new ObservedFailure("day_off_target", "Actual meals do not match the chosen target.");
+  }
+  return { ...plan, days };
 }

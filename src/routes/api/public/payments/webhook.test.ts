@@ -1,166 +1,101 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-/**
- * The payments webhook, where a dropped error is a lost subscription.
- *
- * Paddle stops retrying an event it was told arrived, so `{received: true}`
- * is a promise that the row was written. Two of these cases pin failures
- * that used to answer with exactly that promise and write nothing: a
- * Supabase error the handler never looked at, and the idempotency row —
- * taken before the work — that made every later retry look like a duplicate.
- */
-
-type Answer = { error?: { code?: string; message?: string } | null };
-
-/** Each `table.op` answers in call order; anything unscripted succeeds. */
-let script: Record<string, Answer[]>;
-let calls: string[];
-
-function thenable(key: string) {
-  const settle = () => {
-    calls.push(key);
-    const next = script[key]?.shift();
-    return Promise.resolve({ data: null, error: next?.error ?? null });
-  };
-  const chain: Record<string, unknown> = {
-    eq: () => chain,
-    then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
-      settle().then(resolve, reject),
-  };
-  return chain;
-}
-
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({
-    from: (table: string) => ({
-      insert: () => thenable(`${table}.insert`),
-      upsert: () => thenable(`${table}.upsert`),
-      update: () => thenable(`${table}.update`),
-      delete: () => thenable(`${table}.delete`),
-    }),
-  }),
-}));
-
-let nextEvent: unknown;
-vi.mock("@/lib/paddle.server", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/paddle.server")>();
-  return { ...actual, verifyWebhook: async () => nextEvent };
-});
-
-const USER = "11111111-2222-4333-8444-555555555555";
-
-function subscriptionCreated(eventId = "evt_1") {
-  return {
-    eventId,
-    eventType: "subscription.created",
-    data: {
-      id: "sub_1",
-      customerId: "ctm_1",
-      status: "active",
-      currentBillingPeriod: { startsAt: "2026-09-01T00:00:00Z", endsAt: "2026-10-01T00:00:00Z" },
-      customData: { userId: USER },
-      items: [
-        {
-          price: { id: "pri_1", importMeta: { externalId: "price-external" } },
-          product: { id: "pro_1", importMeta: { externalId: "product-external" } },
-        },
-      ],
-    },
-  };
-}
-
-async function post(url = "https://gyms.life/api/public/payments/webhook?env=live") {
+import { event } from "../../../../../tests/billing/fixtures";
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), verify: vi.fn(), authorize: vi.fn() }));
+vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({ rpc: mocks.rpc }) }));
+vi.mock("@/lib/paddle.server", () => ({ verifyWebhook: mocks.verify }));
+vi.mock("@/lib/paddle-config.server", () => ({ authorizeWebhookPrice: mocks.authorize }));
+async function post(url = "https://example.invalid/api/public/payments/webhook?env=sandbox") {
   const { Route } = await import("./webhook");
   const handlers = (
     Route as unknown as {
       options: {
-        server: { handlers: { POST: (input: { request: Request }) => Promise<Response> } };
+        server: { handlers: { POST: ({ request }: { request: Request }) => Promise<Response> } };
       };
     }
   ).options.server.handlers;
-  const response = await handlers.POST({
-    request: new Request(url, { method: "POST", body: "{}" }),
+  return handlers.POST({
+    request: new Request(url, { method: "POST", body: "synthetic signed input" }),
   });
-  return { status: response.status, text: await response.text() };
 }
-
-describe("Paddle webhook", () => {
+describe("Paddle signed event transaction boundary", () => {
   beforeEach(() => {
     vi.resetModules();
-    script = {};
-    calls = [];
-    process.env["SUPABASE_URL"] = "https://example.supabase.co";
-    process.env["SUPABASE_SERVICE_ROLE_KEY"] = "service-role-key-for-tests";
-    nextEvent = subscriptionCreated();
+    vi.clearAllMocks();
+    vi.stubEnv("SUPABASE_URL", "https://synthetic.supabase.co");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-test-only");
+    mocks.verify.mockResolvedValue(event());
+    mocks.authorize.mockImplementation(() => {});
+    mocks.rpc.mockResolvedValue({ data: "applied", error: null });
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
-
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
-
-  it("claims the event, writes the subscription and acknowledges", async () => {
-    const { status, text } = await post();
-    expect(status).toBe(200);
-    expect(text).toContain("received");
-    expect(calls).toEqual(["paddle_webhook_events.insert", "subscriptions.upsert"]);
+  it("writes state and receipt with one RPC before acknowledging", async () => {
+    const response = await post();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ received: true, outcome: "applied" });
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("apply_verified_paddle_subscription");
+    expect(mocks.rpc.mock.calls[0]![1]).toMatchObject({
+      p_environment: "sandbox",
+      p_event_type: "subscription.created",
+      p_occurred_at: "2026-09-09T09:00:00Z",
+    });
   });
-
-  it("skips an event it has already processed", async () => {
-    script = { "paddle_webhook_events.insert": [{ error: { code: "23505" } }] };
-    const { status } = await post();
-    expect(status).toBe(200);
-    // Claimed by an earlier delivery: nothing is written a second time.
-    expect(calls).toEqual(["paddle_webhook_events.insert"]);
+  it.each(["duplicate", "stale"])(
+    "acknowledges database-confirmed %s without another write protocol",
+    async (outcome) => {
+      mocks.rpc.mockResolvedValue({ data: outcome, error: null });
+      expect((await post()).status).toBe(200);
+      expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    },
+  );
+  it("returns retryable failure when the transaction fails", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: "private connection detail" } });
+    const response = await post();
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain("private");
+    expect(console.error).toHaveBeenCalledWith("PADDLE_WEBHOOK_PERSISTENCE_FAILED");
   });
-
-  it("does not acknowledge a subscription write that failed", async () => {
-    // Paddle only retries what it was not told arrived, so a 200 here would
-    // have ended this subscription's chances permanently.
-    script = { "subscriptions.upsert": [{ error: { code: "42501", message: "denied" } }] };
-    const { status } = await post();
-    expect(status).toBe(400);
+  it("does not manufacture success for an empty or unfamiliar transaction result", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
+    expect((await post()).status).toBe(503);
   });
-
-  it("gives the event back when the write failed, so the retry can work", async () => {
-    script = { "subscriptions.upsert": [{ error: { code: "42501", message: "denied" } }] };
-    await post();
-    expect(calls).toEqual([
-      "paddle_webhook_events.insert",
-      "subscriptions.upsert",
-      // Without this delete the claim doubled as a receipt and every retry
-      // was skipped as a duplicate.
-      "paddle_webhook_events.delete",
-    ]);
+  it("does not access persistence for invalid signatures", async () => {
+    mocks.verify.mockRejectedValue(new Error("signature invalid"));
+    expect((await post()).status).toBe(400);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
-
-  it("keeps the claim when the work succeeded", async () => {
-    await post();
-    expect(calls).not.toContain("paddle_webhook_events.delete");
+  it("rejects malformed recognized events rather than permanently claiming them", async () => {
+    mocks.verify.mockResolvedValue({ ...event(), data: {} });
+    expect((await post()).status).toBe(422);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
-
-  it("returns the original failure even when the release also fails", async () => {
-    script = {
-      "subscriptions.upsert": [{ error: { code: "42501", message: "denied" } }],
-      "paddle_webhook_events.delete": [{ error: { code: "42501", message: "denied too" } }],
-    };
-    const { status } = await post();
-    expect(status).toBe(400);
+  it("does not grant access for another product in the Paddle account", async () => {
+    mocks.authorize.mockImplementation(() => {
+      throw new Error("unknown price");
+    });
+    expect((await post()).status).toBe(422);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
-
-  it("refuses an environment it does not recognise", async () => {
-    const { status } = await post("https://gyms.life/api/public/payments/webhook?env=staging");
-    expect(status).toBe(400);
-    expect(calls).toEqual([]);
+  it("validates the requested environment before reading the signed body", async () => {
+    expect(
+      (await post("https://example.invalid/api/public/payments/webhook?env=evil")).status,
+    ).toBe(400);
+    expect(mocks.verify).not.toHaveBeenCalled();
   });
-
-  it("does not write a subscription for an event with no user id", async () => {
-    const event = subscriptionCreated();
-    event.data.customData = { userId: "not-a-uuid" };
-    nextEvent = event;
-    const { status } = await post();
-    // Claimed and acknowledged: this event is not ours and retrying will not
-    // make it ours, but nothing is written under a guessed account.
-    expect(status).toBe(200);
-    expect(calls).toEqual(["paddle_webhook_events.insert"]);
+  it("can ignore a signed unrelated notification without a false subscription receipt", async () => {
+    mocks.verify.mockResolvedValue({ ...event(), eventType: "transaction.created" });
+    expect(await (await post()).json()).toEqual({ received: true, ignored: true });
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("a rejected transaction can be retried and committed", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: null, error: { message: "transient" } })
+      .mockResolvedValueOnce({ data: "applied", error: null });
+    expect((await post()).status).toBe(503);
+    expect((await post()).status).toBe(200);
   });
 });

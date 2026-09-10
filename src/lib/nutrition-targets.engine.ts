@@ -30,7 +30,9 @@ export type NutritionTargets = z.infer<typeof NutritionTargetsSchema>;
 /** Calories per kilogram of body weight, by training goal. */
 export const KCAL_PER_KG_BY_GOAL: Record<string, number> = {
   lose: 28,
+  lose_fat: 28,
   muscle: 38,
+  build_muscle: 38,
   recomp: 34,
   strength: 36,
 };

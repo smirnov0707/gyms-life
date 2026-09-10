@@ -1,0 +1,68 @@
+name: Core workflows browser
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/core-browser/**"
+      - "scripts/test-core-*.mjs"
+      - "scripts/test-ai-ui-browser.mjs"
+      - "scripts/test-foundation-browser.mjs"
+      - "scripts/test-plan-integrity-browser.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/core-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/core-browser/**"
+      - "scripts/test-core-*.mjs"
+      - "scripts/test-ai-ui-browser.mjs"
+      - "scripts/test-foundation-browser.mjs"
+      - "scripts/test-plan-integrity-browser.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/core-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Test real core routes with isolated synthetic service boundaries
+        run: npm run test:browser:core
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-workflows-${{ matrix.engine }}-evidence
+          path: test-results/core-browser
+          retention-days: 14
+          if-no-files-found: error

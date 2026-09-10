@@ -1,3 +1,4 @@
+import { parseIngredientQuantity, isToTasteIngredient } from "./ingredient-quantity";
 import type { GeneratedMealPlan, ShoppingGroup } from "./meal-types";
 
 /**
@@ -6,77 +7,10 @@ import type { GeneratedMealPlan, ShoppingGroup } from "./meal-types";
  * skipped items). Quantities with the same unit are summed together.
  */
 
-type Parsed = { qty: number | null; unit: string; name: string };
-
-const UNIT_ALIASES: Record<string, string> = {
-  g: "g",
-  gr: "g",
-  gram: "g",
-  grams: "g",
-  gramai: "g",
-  gramų: "g",
-  kg: "kg",
-  ml: "ml",
-  l: "l",
-  ltr: "l",
-  vnt: "vnt.",
-  "vnt.": "vnt.",
-  pcs: "pcs",
-  pc: "pcs",
-  piece: "pcs",
-  pieces: "pcs",
-  šaukštai: "šaukštai",
-  šaukštas: "šaukštai",
-  šaukšto: "šaukštai",
-  šaukšteliai: "šaukšteliai",
-  šaukštelis: "šaukšteliai",
-  tbsp: "tbsp",
-  tsp: "tsp",
-  cup: "cup",
-  cups: "cup",
-  sk: "sk.",
-  skiltelės: "sk.",
-};
-
-const NUM = "(\\d+(?:[.,]\\d+)?)";
-const UNIT = "([a-zA-Zžčęėįšųūā.]+\\.?)";
-
-function parseIngredient(raw: string): Parsed {
-  const line = raw.replace(/\s+/g, " ").trim();
-  if (!line) return { qty: null, unit: "", name: "" };
-
-  // "150 g vištienos" | "vištienos 150 g" | "2 vnt. kiaušinių"
-  const lead = line.match(new RegExp(`^${NUM}\\s*${UNIT}?\\s*(.*)$`));
-  const trail = line.match(new RegExp(`^(.*?)[\\s,–-]*${NUM}\\s*${UNIT}?$`));
-
-  const norm = (u?: string) => {
-    if (!u) return "";
-    const key = u.toLowerCase().replace(/[.,]$/, "");
-    return UNIT_ALIASES[key] ?? UNIT_ALIASES[`${key}.`] ?? "";
-  };
-
-  if (lead) {
-    const unit = norm(lead[2]);
-    const rest = unit ? lead[3] : [lead[2], lead[3]].filter(Boolean).join(" ");
-    if (rest?.trim()) {
-      return { qty: Number(lead[1]!.replace(",", ".")), unit, name: rest.trim() };
-    }
-  }
-  if (trail && trail[1]?.trim()) {
-    return {
-      qty: Number(trail[2]!.replace(",", ".")),
-      unit: norm(trail[3]),
-      name: trail[1].trim(),
-    };
-  }
-  return { qty: null, unit: "", name: line };
-}
-
 const cleanName = (n: string) =>
   n
     .replace(/^[-•*]\s*/, "")
-    .replace(/[(),.]+$/, "")
-    .replace(/\s*\([^)]*\)\s*$/, "")
+    .replace(/[,.]+$/, "")
     .trim();
 
 const CATEGORIES: { key: string; words: string[] }[] = [
@@ -305,13 +239,19 @@ function formatAmount(key: string, value: number): string {
 export function buildShoppingList(plan: GeneratedMealPlan, lang: string): ShoppingGroup[] {
   const bucket = new Map<
     string,
-    { name: string; category: string; units: Map<string, number>; freeform: number }
+    {
+      name: string;
+      category: string;
+      units: Map<string, number>;
+      freeform: number;
+      toTaste: boolean;
+    }
   >();
 
   for (const day of plan.days ?? []) {
     for (const meal of day.meals ?? []) {
       for (const raw of meal.ingredients ?? []) {
-        const parsed = parseIngredient(String(raw));
+        const parsed = parseIngredientQuantity(String(raw));
         const name = cleanName(parsed.name || String(raw));
         if (!name || name.length < 2) continue;
         const key = name.toLowerCase();
@@ -320,6 +260,7 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
           category: categoryOf(name),
           units: new Map<string, number>(),
           freeform: 0,
+          toTaste: true,
         };
         if (parsed.qty != null && Number.isFinite(parsed.qty)) {
           const unit = parsed.unit || "vnt.";
@@ -330,6 +271,7 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
           entry.units.set(key, (entry.units.get(key) ?? 0) + parsed.qty * inBase);
         } else {
           entry.freeform += 1;
+          entry.toTaste = entry.toTaste && isToTasteIngredient(String(raw));
         }
         bucket.set(key, entry);
       }
@@ -348,7 +290,16 @@ export function buildShoppingList(plan: GeneratedMealPlan, lang: string): Shoppi
     // used to append a bare count, so salt came out as "150 g + +1" — a
     // doubled plus and a number nobody can buy. What those mentions actually
     // say is "and some, to taste", so that is what they say.
-    if (entry.freeform) parts.push(lang === "lt" ? "pagal skonį" : "to taste");
+    if (entry.freeform)
+      parts.push(
+        entry.toTaste
+          ? lang === "lt"
+            ? "pagal skonį"
+            : "to taste"
+          : lang === "lt"
+            ? "kiekis nenurodytas — patikrink receptą"
+            : "quantity unspecified — check recipe",
+      );
 
     const label = (CATEGORY_LABELS[entry.category] ?? CATEGORY_LABELS["other"]!)[
       lang === "lt" ? "lt" : "en"

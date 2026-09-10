@@ -8,6 +8,11 @@ describe("Twin layer labels", () => {
     expect(formatTwinValue(0, "logged_volume", "en")).toBe("0 kg × reps");
     expect(formatTwinValue(55, "recovery", "en")).toBe("55%");
   });
+  it("labels programme counts as exercises, not logged weight", () => {
+    expect(formatTwinValue(3, "todays_session", "en")).toBe("3 exercises");
+    expect(formatTwinValue(3, "todays_session", "lt")).toBe("3 pratimai");
+    expect(formatTwinValue(null, "todays_session", "en")).toBe("—");
+  });
   it.each(["lt", "en"] as const)("labels every layer and tone in %s", (language) => {
     const copy = twinLayerCopy(language);
     for (const layer of TWIN_LAYERS) expect(copy.label[layer].length).toBeGreaterThan(0);

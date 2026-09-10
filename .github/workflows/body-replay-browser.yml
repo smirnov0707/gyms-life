@@ -2,17 +2,19 @@ name: Body replay browser
 on:
   pull_request:
     paths:
-      - 'src/components/AppShell.tsx'
-      - 'src/components/twin/**'
-      - 'src/lib/session-muscle-breakdown*'
-      - 'src/lib/finish-workout*'
-      - 'src/lib/session-replay*'
-      - 'src/routes/_authenticated/workout/**'
-      - 'src/styles.css'
-      - 'tests/body-replay-browser/**'
-      - 'scripts/test-body-replay-browser.mjs'
-      - '.github/workflows/body-replay-browser.yml'
-      - 'package*.json'
+      - "src/components/AppShell.tsx"
+      - "src/components/twin/**"
+      - "src/lib/session-muscle-breakdown*"
+      - "src/lib/finish-workout*"
+      - "src/lib/session-replay*"
+      - "src/routes/_authenticated/workout/**"
+      - "src/styles.css"
+      - "tests/body-replay-browser/**"
+      - "scripts/test-body-replay-browser.mjs"
+      - ".github/workflows/body-replay-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
+      - "package*.json"
   push:
     branches: [main]
 permissions:
@@ -23,6 +25,9 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +38,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-body-replay-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()

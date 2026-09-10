@@ -1,18 +1,23 @@
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   ArrowUpRight,
+  ChevronDown,
   FlaskConical,
   History,
   Menu,
+  MoonStar,
   PersonStanding,
   Rocket,
   UserRound,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { baseLang, formatLocale, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { NAV_GROUPS, byRoute, type NavItem } from "@/lib/nav-map";
+import { getOvernightWork } from "@/lib/night-lab.functions";
 import {
   Drawer,
   DrawerClose,
@@ -22,13 +27,14 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import "./future-lab-shell.css";
 
 const futureNavItems = [
-  { to: "/app", icon: Activity, lt: "TODAY", en: "TODAY" },
-  { to: "/twin", icon: PersonStanding, lt: "MY TWIN", en: "MY TWIN" },
-  { to: "/lab", icon: FlaskConical, lt: "LAB", en: "LAB" },
-  { to: "/progress", icon: Rocket, lt: "FUTURE ME", en: "FUTURE ME" },
-  { to: "/history", icon: History, lt: "JOURNAL", en: "JOURNAL" },
+  { to: "/app", icon: Activity, label: "TODAY" },
+  { to: "/twin", icon: PersonStanding, label: "MY TWIN" },
+  { to: "/lab", icon: FlaskConical, label: "LAB" },
+  { to: "/progress", icon: Rocket, label: "FUTURE ME" },
+  { to: "/history", icon: History, label: "JOURNAL" },
 ] as const;
 
 function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
@@ -41,7 +47,7 @@ function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
   }));
 }
 
-function MoreNavigation({ className = "", dock = false }: { className?: string; dock?: boolean }) {
+function MoreNavigation() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const groups = groupedToolNavigation();
@@ -49,78 +55,70 @@ function MoreNavigation({ className = "", dock = false }: { className?: string; 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <button
-          type="button"
-          aria-label={t("nav.more")}
-          className={
-            dock
-              ? `grid min-h-11 min-w-11 place-items-center rounded-xl border border-[#1a2941] bg-[#091321] text-slate-400 ${className}`
-              : `inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#1a2941] bg-[#091321] px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 transition-colors hover:border-violet-400/40 hover:text-white ${className}`
-          }
-        >
-          <Menu className="size-4" />
-          {dock ? null : t("nav.more")}
+        <button type="button" aria-label={t("nav.more")} className="fl-shell-icon-button">
+          <Menu aria-hidden="true" size={17} />
         </button>
       </DrawerTrigger>
-      <DrawerContent className="max-h-[85vh] overflow-y-auto rounded-t-[1.75rem] border-border bg-surface px-4 pb-[max(1.5rem,var(--sab))] text-foreground sm:mx-auto sm:max-w-2xl">
-        <DrawerHeader className="px-1 pb-4 pt-5 text-left">
-          <DrawerTitle className="text-display text-2xl text-foreground">
-            {t("nav.more")}
-          </DrawerTitle>
-          <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
-            {t("nav.moreDescription")}
-          </DrawerDescription>
-        </DrawerHeader>
-        <div className="grid gap-5">
-          {groups.map((group) => (
-            <section key={group.key}>
-              <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {t(group.key)}
-              </h2>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <DrawerClose key={item.to} asChild>
-                      <Link
-                        to={item.to}
-                        className="group flex min-h-20 flex-col justify-between rounded-2xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
-                      >
-                        <Icon className="size-4 text-primary" />
-                        <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
-                          <span className="leading-tight">{t(item.key)}</span>
-                          <ArrowUpRight className="size-3 shrink-0 text-muted-foreground group-hover:text-primary" />
-                        </span>
-                      </Link>
-                    </DrawerClose>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-          <DrawerClose asChild>
-            <Link
-              to="/me"
-              className="group flex items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.08] px-4 py-3.5"
-            >
-              <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">
-                <UserRound className="size-4" />
-              </span>
-              <span className="flex-1">
-                <span className="block text-sm font-bold text-foreground">{t("nav.athlete")}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {t("nav.athleteDescription")}
+      <DrawerContent className="future-lab-drawer max-h-[85vh] rounded-t-2xl border-border bg-surface px-4 text-foreground sm:mx-auto sm:max-w-2xl">
+        <div className="min-h-0 overflow-y-auto pb-[max(1.5rem,var(--sab))]" data-vaul-no-drag>
+          <DrawerHeader className="px-1 pb-4 pt-5 text-left">
+            <DrawerTitle className="text-lg font-semibold text-foreground">
+              {t("nav.more")}
+            </DrawerTitle>
+            <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              {t("nav.moreDescription")}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="grid gap-5">
+            {groups.map((group) => (
+              <section key={group.key}>
+                <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                  {t(group.key)}
+                </h2>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DrawerClose key={item.to} asChild>
+                        <Link
+                          to={item.to}
+                          className="group flex min-h-20 flex-col justify-between rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
+                        >
+                          <Icon aria-hidden="true" className="size-4 text-primary" />
+                          <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
+                            <span className="leading-tight">{t(item.key)}</span>
+                            <ArrowUpRight
+                              aria-hidden="true"
+                              className="size-3 shrink-0 text-muted-foreground group-hover:text-primary"
+                            />
+                          </span>
+                        </Link>
+                      </DrawerClose>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+            <DrawerClose asChild>
+              <Link
+                to="/me"
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3"
+              >
+                <UserRound aria-hidden="true" className="size-5 text-primary" />
+                <span className="flex-1">
+                  <span className="block text-sm font-bold">{t("nav.athlete")}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {t("nav.athleteDescription")}
+                  </span>
                 </span>
-              </span>
-              <ArrowUpRight className="size-4 text-primary" />
-            </Link>
-          </DrawerClose>
-          <section className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
-            <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {t("theme.label")}
-            </span>
-            <ThemeToggle />
-          </section>
+                <ArrowUpRight aria-hidden="true" className="size-4 text-primary" />
+              </Link>
+            </DrawerClose>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-3 py-2">
+              <LangSwitch />
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
@@ -134,22 +132,39 @@ export function headerName(name?: string | null): string {
 export const Logo: React.FC<{ className?: string; href?: string }> = ({
   className = "",
   href = "/app",
-}) => (
-  <Link to={href} className={`group flex items-center gap-2.5 ${className}`}>
-    <div className="relative grid size-9 place-items-center rounded-xl border border-violet-400/35 bg-gradient-to-br from-violet-600/35 to-cyan-500/15 shadow-[0_0_25px_rgba(124,58,237,.24)]">
-      <span className="font-mono text-sm font-black text-violet-200">G</span>
-      <span aria-hidden="true" className="absolute inset-1 rounded-lg border border-cyan-300/10" />
-    </div>
-    <div className="flex flex-col text-left">
-      <span className="font-mono text-base font-black uppercase leading-none tracking-[0.08em] text-white">
-        GYMS.LIFE
+}) => {
+  const gradientId = useId();
+  return (
+    <Link to={href} className={`fl-brand ${className}`} aria-label="GYMS.LIFE Future Lab">
+      <svg className="fl-brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient
+            id={gradientId}
+            x1="5"
+            y1="4"
+            x2="34"
+            y2="36"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#bea3ff" />
+            <stop offset=".56" stopColor="#8251ee" />
+            <stop offset="1" stopColor="#5ecaf0" />
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="38" height="38" rx="9" className="fl-brand-mark-frame" />
+        <path
+          d="M27 10H15L9 16V28L14 32H27L32 27V19H22V23H27V26L25 28H16L13 25V18L17 14H25L28 17L31 14L27 10Z"
+          fill={`url(#${gradientId})`}
+        />
+        <path d="M19 19H16V24H19V19Z" fill="#86c7ff" fillOpacity=".85" />
+      </svg>
+      <span className="fl-brand-wordmark">
+        <span>GYMS.LIFE</span>
+        <small>FUTURE LAB</small>
       </span>
-      <span className="mt-1 font-mono text-[8px] uppercase tracking-[0.2em] text-violet-300">
-        FUTURE LAB
-      </span>
-    </div>
-  </Link>
-);
+    </Link>
+  );
+};
 
 export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" }) => {
   const { lang, setLang } = useI18n();
@@ -159,14 +174,16 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
   ] satisfies ReadonlyArray<{ code: Lang; label: string }>;
   return (
     <div
-      className={`flex min-h-10 items-center gap-1 rounded-xl border border-[#1a2941] bg-[#091321] p-1 ${className}`}
+      className={`fl-language-switch ${className}`}
+      role="group"
+      aria-label={baseLang(lang) === "en" ? "Language" : "Kalba"}
     >
       {languages.map((item) => (
         <button
           key={item.code}
           type="button"
           onClick={() => setLang(item.code)}
-          className={`min-h-8 min-w-8 rounded-lg px-2 font-mono text-[9px] font-bold ${lang === item.code ? "bg-violet-500/25 text-violet-100" : "text-slate-500 hover:text-white"}`}
+          aria-pressed={lang === item.code}
         >
           {item.label}
         </button>
@@ -175,9 +192,67 @@ export const LangSwitch: React.FC<{ className?: string }> = ({ className = "" })
   );
 };
 
-export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+function NightLabStatus() {
+  const { user } = useAuth();
   const { lang, t } = useI18n();
-  const locale = baseLang(lang);
+  const english = baseLang(lang) === "en";
+  const { data, isError } = useQuery({
+    queryKey: ["overnight-work", user?.id],
+    queryFn: () => getOvernightWork(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const work = isError ? { state: "unreadable" as const } : data;
+  const status = !work
+    ? english
+      ? "Checking"
+      : "Tikrinama"
+    : work.state === "unreadable"
+      ? english
+        ? "Unavailable"
+        : "Nepasiekiama"
+      : work.state === "never"
+        ? english
+          ? "No run yet"
+          : "Dar nevykdyta"
+        : work.nightsAgo <= 1
+          ? english
+            ? "Twin updated"
+            : "Dvynys atnaujintas"
+          : english
+            ? `${work.nightsAgo} days ago`
+            : `Prieš ${work.nightsAgo} d.`;
+  const when =
+    work?.state === "ran"
+      ? new Date(work.at).toLocaleString(formatLocale(lang), {
+          day: "numeric",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : undefined;
+  const label = `${t("nl.title")}: ${status}${when ? ` · ${when}` : ""}`;
+  return (
+    <Link
+      to="/lab"
+      className="fl-night-status"
+      data-state={work?.state ?? "loading"}
+      aria-label={label}
+      title={label}
+    >
+      <MoonStar className="fl-night-icon" aria-hidden="true" size={15} />
+      <span className="fl-night-dot" aria-hidden="true" />
+      <span className="fl-night-copy">
+        <strong>NIGHT LAB</strong>
+        <small>{status}</small>
+      </span>
+      <ChevronDown className="fl-night-chevron" aria-hidden="true" size={12} />
+    </Link>
+  );
+}
+
+export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t, lang } = useI18n();
   const location = useLocation();
   const isActive = (to: string) =>
     location.pathname === to || location.pathname.startsWith(`${to}/`);
@@ -187,91 +262,60 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     if (to === "/progress") return t("pr.title");
     return undefined;
   };
+  const profileLabel = baseLang(lang) === "en" ? "My profile" : "Mano profilis";
 
   return (
-    <div className="min-h-screen bg-[#02060c] text-foreground selection:bg-violet-500/35 selection:text-white">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_-10%,rgba(40,82,160,.12),transparent_35%),radial-gradient(circle_at_10%_40%,rgba(109,40,217,.06),transparent_28%)]"
-      />
-      <header className="sticky top-0 z-40 border-b border-[#142239] bg-[#02060c]/92 pt-[var(--sat)] backdrop-blur-2xl">
-        <div className="mx-auto flex h-[68px] max-w-[1680px] items-center gap-4 px-4 sm:px-6 xl:px-8">
-          <Logo className="shrink-0" />
-          <nav className="mx-auto hidden h-full items-center gap-1 lg:flex" aria-label="Future Lab">
-            {futureNavItems.map((item) => {
-              const active = isActive(item.to);
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  title={navTitle(item.to)}
-                  aria-current={active ? "page" : undefined}
-                  className={`relative flex min-h-10 items-center rounded-xl px-4 text-[10px] font-bold uppercase tracking-[0.13em] transition-all ${active ? "border border-violet-400/30 bg-violet-500/12 text-white shadow-[0_0_25px_rgba(124,58,237,.08)]" : "border border-transparent text-slate-400 hover:bg-white/[0.03] hover:text-white"}`}
-                >
-                  {item[locale]}
-                  {active ? (
-                    <span
-                      aria-hidden="true"
-                      className="absolute inset-x-3 -bottom-[15px] h-px bg-gradient-to-r from-transparent via-violet-400 to-transparent"
-                    />
-                  ) : null}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="hidden min-h-10 items-center gap-2 rounded-xl border border-[#1a2941] bg-[#07111d] px-3 xl:flex">
-              <span className="size-1.5 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,.8)]" />
-              <div>
-                <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-200">
-                  FUTURE LAB
-                </p>
-                <p className="text-[7px] uppercase tracking-[0.12em] text-slate-600">
-                  {locale === "en" ? "REAL DATA" : "REALŪS DUOMENYS"}
-                </p>
-              </div>
-            </div>
-            <LangSwitch className="hidden sm:flex" />
-            <MoreNavigation />
-            <Link
-              to="/me"
-              aria-label="Profile"
-              className="grid size-10 place-items-center rounded-xl border border-[#1a2941] bg-[#091321] text-slate-400 transition-colors hover:border-violet-400/40 hover:text-white"
-            >
-              <UserRound className="size-4" />
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="relative mx-auto w-full max-w-[1680px] px-3 py-4 pb-[calc(7.5rem+var(--sab))] sm:px-5 md:py-5 lg:px-6 lg:pb-10 xl:px-8">
-        {children}
-      </main>
-
-      <nav
-        aria-label="Future Lab"
-        className="fixed bottom-[max(.65rem,var(--sab))] left-[max(.6rem,var(--sal))] right-[max(.6rem,var(--sar))] z-50 lg:hidden"
-      >
-        <div className="mx-auto grid max-w-xl grid-cols-5 rounded-[1.4rem] border border-[#1a2941] bg-[#030914]/94 px-1 py-1.5 shadow-[0_18px_60px_rgba(0,0,0,.7)] backdrop-blur-2xl">
-          {futureNavItems.map((item) => {
-            const active = isActive(item.to);
-            const Icon = item.icon;
-            return (
+    <div className="future-lab-app">
+      <header className="fl-shell-header">
+        <div className="fl-shell-header-inner">
+          <Logo />
+          <nav className="fl-desktop-navigation" aria-label="Future Lab">
+            {futureNavItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 title={navTitle(item.to)}
-                aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-1 text-center transition-colors ${active ? "bg-violet-500/12 text-violet-200" : "text-slate-500 hover:text-slate-200"}`}
+                aria-current={isActive(item.to) ? "page" : undefined}
               >
-                <Icon className="size-[17px]" />
-                <span className="mt-1 text-[7px] font-bold uppercase tracking-[0.08em]">
-                  {item[locale]}
-                </span>
+                {item.label}
               </Link>
-            );
-          })}
+            ))}
+          </nav>
+          <div className="fl-shell-actions">
+            <NightLabStatus />
+            <LangSwitch className="fl-header-language" />
+            <MoreNavigation />
+            <Link
+              to="/me"
+              aria-label={profileLabel}
+              title={profileLabel}
+              className="fl-profile-control"
+            >
+              <span className="fl-profile-avatar">
+                <UserRound aria-hidden="true" size={16} />
+              </span>
+              <span className="fl-profile-copy">{profileLabel}</span>
+              <ChevronDown className="fl-profile-chevron" aria-hidden="true" size={12} />
+            </Link>
+          </div>
         </div>
+      </header>
+      <main className="fl-shell-main">{children}</main>
+      <nav className="fl-mobile-navigation" aria-label="Future Lab">
+        {futureNavItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              title={navTitle(item.to)}
+              aria-current={isActive(item.to) ? "page" : undefined}
+            >
+              <Icon aria-hidden="true" size={18} strokeWidth={1.7} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );

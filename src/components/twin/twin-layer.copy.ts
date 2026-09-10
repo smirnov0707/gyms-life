@@ -104,5 +104,7 @@ export function formatTwinValue(value: number | null, layer: TwinLayer, language
   }).format(value);
   return layer === "recovery"
     ? `${number}%`
-    : `${number} ${language === "lt" ? "kg × kart." : "kg × reps"}`;
+    : layer === "todays_session"
+      ? `${number} ${language === "lt" ? "pratimai" : "exercises"}`
+      : `${number} ${language === "lt" ? "kg × kart." : "kg × reps"}`;
 }

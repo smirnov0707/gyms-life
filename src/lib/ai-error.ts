@@ -3,6 +3,18 @@ import type { TKey } from "@/lib/i18n";
 /** Application-owned AI states that are safe to carry across a server boundary. */
 export const SAFE_AI_ERROR_CODES = [
   "AI_DISABLED",
+  "AI_TIMEOUT",
+  "AI_CANCELLED",
+  "AI_INVALID_RESPONSE",
+  "AI_RESPONSE_TRUNCATED",
+  "AI_RESPONSE_REFUSED",
+  "AI_INVALID_MEDIA",
+  "AI_CONTEXT_MISMATCH",
+  "AI_CONTEXT_UNAVAILABLE",
+  "AI_INVALID_REQUEST",
+  "AI_SCHEMA_UNAVAILABLE",
+  "AI_UNSUPPORTED_MODALITY",
+  "AI_REQUEST_FAILED",
   "AI_CREDITS",
   "AI_DAILY_LIMIT",
   "AI_RATE_LIMIT",

@@ -1,0 +1,535 @@
+{
+  "assetSha256": "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
+  "sourceSha256": "5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158",
+  "bytes": 1725412,
+  "vertices": 22898,
+  "triangles": 45792,
+  "connectedComponents": 1,
+  "relabelledFaces": 1679,
+  "addedMaterialSupport": {
+    "chest": 710,
+    "shoulders": 130,
+    "arms": 100,
+    "abs": 10,
+    "core": 133,
+    "back": 158,
+    "glutes": 14,
+    "legs": 424
+  },
+  "materialReassignments": {
+    "neutral->chest": 114,
+    "neutral->back": 24,
+    "neutral->core": 17,
+    "neutral->legs": 52,
+    "neutral->shoulders": 2,
+    "chest->core": 70,
+    "back->shoulders": 32,
+    "back->glutes": 12,
+    "shoulders->chest": 576,
+    "shoulders->back": 102,
+    "shoulders->arms": 100,
+    "arms->shoulders": 96,
+    "legs->glutes": 2,
+    "glutes->back": 32,
+    "glutes->legs": 372,
+    "core->chest": 8,
+    "core->abs": 10,
+    "abs->chest": 12,
+    "abs->core": 46
+  },
+  "contourSupportScale": 1.2,
+  "seamFeatherMetres": 0.012,
+  "seamFeatherMethod": "Smoothstep of shortest path distance on the actual shared surface graph",
+  "boundaryEdges": 0,
+  "nonManifoldEdges": 0,
+  "inconsistentWinding": 0,
+  "eulerCharacteristic": 2,
+  "maximumDisplacementMetres": 0.0074817763807773115,
+  "allowedDisplacementMetres": 0.012,
+  "protectedVertices": 9094,
+  "minimumTriangleNormalDot": 0.9399940227146306,
+  "minimumAreaRatio": 0.8407835387388849,
+  "maximumAreaRatio": 1.3437044479630353,
+  "regions": {
+    "neutral": {
+      "triangles": 20327,
+      "vertices": 10385,
+      "tintedVertices": 0
+    },
+    "chest": {
+      "triangles": 1792,
+      "vertices": 975,
+      "tintedVertices": 618
+    },
+    "back": {
+      "triangles": 3106,
+      "vertices": 1659,
+      "tintedVertices": 728
+    },
+    "core": {
+      "triangles": 1387,
+      "vertices": 786,
+      "tintedVertices": 308
+    },
+    "legs": {
+      "triangles": 8398,
+      "vertices": 4304,
+      "tintedVertices": 1572
+    },
+    "shoulders": {
+      "triangles": 2328,
+      "vertices": 1312,
+      "tintedVertices": 730
+    },
+    "glutes": {
+      "triangles": 1778,
+      "vertices": 993,
+      "tintedVertices": 422
+    },
+    "arms": {
+      "triangles": 4996,
+      "vertices": 2596,
+      "tintedVertices": 1010
+    },
+    "abs": {
+      "triangles": 1680,
+      "vertices": 893,
+      "tintedVertices": 488
+    }
+  },
+  "presentationGuides": [
+    {
+      "name": "pectoral",
+      "region": "chest",
+      "centre": [
+        0.096,
+        1.409,
+        0.13
+      ],
+      "radii": [
+        0.096,
+        0.086,
+        0.085
+      ],
+      "lift": 0.008,
+      "power": 3.5,
+      "angle": 0
+    },
+    {
+      "name": "anterior-deltoid",
+      "region": "shoulders",
+      "centre": [
+        0.201,
+        1.467,
+        0.105
+      ],
+      "radii": [
+        0.043,
+        0.092,
+        0.065
+      ],
+      "lift": 0.005,
+      "power": 2,
+      "angle": 0.3316125578789226
+    },
+    {
+      "name": "lateral-deltoid",
+      "region": "shoulders",
+      "centre": [
+        0.242,
+        1.459,
+        0.033
+      ],
+      "radii": [
+        0.04,
+        0.097,
+        0.086
+      ],
+      "lift": 0.007,
+      "power": 2,
+      "angle": 0.3316125578789226
+    },
+    {
+      "name": "posterior-deltoid",
+      "region": "shoulders",
+      "centre": [
+        0.207,
+        1.466,
+        -0.039
+      ],
+      "radii": [
+        0.052,
+        0.087,
+        0.052
+      ],
+      "lift": 0.005,
+      "power": 2,
+      "angle": 0.2792526803190927
+    },
+    {
+      "name": "biceps",
+      "region": "arms",
+      "centre": [
+        0.259,
+        1.299,
+        0.064
+      ],
+      "radii": [
+        0.042,
+        0.126,
+        0.047
+      ],
+      "lift": 0.006,
+      "power": 2,
+      "angle": 0.3665191429188092
+    },
+    {
+      "name": "triceps",
+      "region": "arms",
+      "centre": [
+        0.257,
+        1.298,
+        -0.022
+      ],
+      "radii": [
+        0.041,
+        0.133,
+        0.048
+      ],
+      "lift": 0.005,
+      "power": 2,
+      "angle": 0.3490658503988659
+    },
+    {
+      "name": "forearm-flexors",
+      "region": "arms",
+      "centre": [
+        0.296,
+        1.105,
+        0.055
+      ],
+      "radii": [
+        0.023,
+        0.127,
+        0.043
+      ],
+      "lift": 0.003,
+      "power": 2,
+      "angle": 0.2617993877991494
+    },
+    {
+      "name": "forearm-extensors",
+      "region": "arms",
+      "centre": [
+        0.33,
+        1.098,
+        0.015
+      ],
+      "radii": [
+        0.025,
+        0.131,
+        0.044
+      ],
+      "lift": 0.003,
+      "power": 2,
+      "angle": 0.20943951023931953
+    },
+    {
+      "name": "rectus-upper",
+      "region": "abs",
+      "centre": [
+        0.037,
+        1.281,
+        0.134
+      ],
+      "radii": [
+        0.034,
+        0.036,
+        0.045
+      ],
+      "lift": 0.0045,
+      "power": 3,
+      "angle": 0
+    },
+    {
+      "name": "rectus-middle",
+      "region": "abs",
+      "centre": [
+        0.037,
+        1.203,
+        0.136
+      ],
+      "radii": [
+        0.035,
+        0.035,
+        0.046
+      ],
+      "lift": 0.005,
+      "power": 3,
+      "angle": 0
+    },
+    {
+      "name": "rectus-lower",
+      "region": "abs",
+      "centre": [
+        0.037,
+        1.126,
+        0.127
+      ],
+      "radii": [
+        0.033,
+        0.035,
+        0.047
+      ],
+      "lift": 0.004,
+      "power": 3,
+      "angle": 0
+    },
+    {
+      "name": "oblique",
+      "region": "core",
+      "centre": [
+        0.109,
+        1.184,
+        0.095
+      ],
+      "radii": [
+        0.039,
+        0.132,
+        0.06
+      ],
+      "lift": 0.0035,
+      "power": 2,
+      "angle": -0.24434609527920614
+    },
+    {
+      "name": "serratus",
+      "region": "core",
+      "centre": [
+        0.139,
+        1.307,
+        0.075
+      ],
+      "radii": [
+        0.032,
+        0.065,
+        0.06
+      ],
+      "lift": 0.003,
+      "power": 2,
+      "angle": 0.41887902047863906
+    },
+    {
+      "name": "trapezius",
+      "region": "back",
+      "centre": [
+        0.066,
+        1.473,
+        -0.054
+      ],
+      "radii": [
+        0.068,
+        0.076,
+        0.041
+      ],
+      "lift": 0.004,
+      "power": 2,
+      "angle": -0.4886921905584123
+    },
+    {
+      "name": "latissimus",
+      "region": "back",
+      "centre": [
+        0.121,
+        1.302,
+        -0.062
+      ],
+      "radii": [
+        0.061,
+        0.159,
+        0.045
+      ],
+      "lift": 0.005,
+      "power": 2,
+      "angle": -0.24434609527920614
+    },
+    {
+      "name": "erector",
+      "region": "back",
+      "centre": [
+        0.042,
+        1.223,
+        -0.063
+      ],
+      "radii": [
+        0.028,
+        0.129,
+        0.044
+      ],
+      "lift": 0.003,
+      "power": 2,
+      "angle": 0
+    },
+    {
+      "name": "gluteal",
+      "region": "glutes",
+      "centre": [
+        0.1,
+        0.984,
+        -0.068
+      ],
+      "radii": [
+        0.069,
+        0.113,
+        0.047
+      ],
+      "lift": 0.0035,
+      "power": 2,
+      "angle": -0.08726646259971647
+    },
+    {
+      "name": "rectus-femoris",
+      "region": "legs",
+      "centre": [
+        0.12,
+        0.802,
+        0.106
+      ],
+      "radii": [
+        0.038,
+        0.196,
+        0.069
+      ],
+      "lift": 0.008,
+      "power": 2,
+      "angle": 0.08726646259971647
+    },
+    {
+      "name": "vastus-lateralis",
+      "region": "legs",
+      "centre": [
+        0.175,
+        0.804,
+        0.045
+      ],
+      "radii": [
+        0.039,
+        0.215,
+        0.085
+      ],
+      "lift": 0.008,
+      "power": 2,
+      "angle": 0.15707963267948966
+    },
+    {
+      "name": "vastus-medialis",
+      "region": "legs",
+      "centre": [
+        0.073,
+        0.663,
+        0.069
+      ],
+      "radii": [
+        0.036,
+        0.114,
+        0.063
+      ],
+      "lift": 0.006,
+      "power": 2,
+      "angle": -0.20943951023931953
+    },
+    {
+      "name": "hamstring-lateral",
+      "region": "legs",
+      "centre": [
+        0.158,
+        0.78,
+        -0.035
+      ],
+      "radii": [
+        0.041,
+        0.197,
+        0.044
+      ],
+      "lift": 0.006,
+      "power": 2,
+      "angle": 0.10471975511965977
+    },
+    {
+      "name": "hamstring-medial",
+      "region": "legs",
+      "centre": [
+        0.08,
+        0.786,
+        -0.024
+      ],
+      "radii": [
+        0.037,
+        0.174,
+        0.044
+      ],
+      "lift": 0.0045,
+      "power": 2,
+      "angle": 0.10471975511965977
+    },
+    {
+      "name": "calf-medial",
+      "region": "legs",
+      "centre": [
+        0.122,
+        0.376,
+        -0.045
+      ],
+      "radii": [
+        0.038,
+        0.155,
+        0.054
+      ],
+      "lift": 0.008,
+      "power": 2,
+      "angle": -0.10471975511965977
+    },
+    {
+      "name": "calf-lateral",
+      "region": "legs",
+      "centre": [
+        0.178,
+        0.358,
+        -0.025
+      ],
+      "radii": [
+        0.033,
+        0.153,
+        0.055
+      ],
+      "lift": 0.006,
+      "power": 2,
+      "angle": 0.10471975511965977
+    },
+    {
+      "name": "tibialis",
+      "region": "legs",
+      "centre": [
+        0.164,
+        0.333,
+        0.04
+      ],
+      "radii": [
+        0.023,
+        0.169,
+        0.034
+      ],
+      "lift": 0.002,
+      "power": 2,
+      "angle": -0.05235987755982988
+    }
+  ],
+  "visualGatePassed": false,
+  "productionIntegration": false,
+  "limitations": [
+    "Generic authored presentation, not a measured body or medical segmentation",
+    "Fibers are art-directed procedural coordinates, not measured muscle fiber directions",
+    "The exact GLB intersection audit excludes shared-vertex triangle pairs",
+    "Visual comparison and integration checks required before promotion"
+  ]
+}

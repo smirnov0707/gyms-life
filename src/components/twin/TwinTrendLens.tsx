@@ -253,13 +253,16 @@ function SeriesCard({
   );
 }
 
-export function TwinTrendLens() {
+export function TwinTrendLens({
+  initialRegion = null,
+  initiallyExpanded = false,
+}: { initialRegion?: string | null; initiallyExpanded?: boolean } = {}) {
   const { user, loading: authLoading } = useAuth();
   const { lang, t } = useI18n();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const [metric, setMetric] = useState<TwinTrendMetricKey>("readiness");
   const [regionMetric, setRegionMetric] = useState<"recoveryPct" | "volumeKg">("recoveryPct");
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(initialRegion);
   const contentId = useId();
   const headingId = useId();
   const copy = COPY[baseLang(lang)];
@@ -283,8 +286,9 @@ export function TwinTrendLens() {
         : [],
     [query.data],
   );
-  const activeRegion =
-    selectedRegion && regions.includes(selectedRegion) ? selectedRegion : (regions[0] ?? null);
+  // A requested region with no observations must stay that region; choosing
+  // the first available one would show another muscle's history in its detail.
+  const activeRegion = selectedRegion ?? regions[0] ?? null;
 
   if (!user || authLoading) return null;
 
@@ -350,23 +354,25 @@ export function TwinTrendLens() {
               <p className="text-sm text-muted-foreground">{copy.empty}</p>
             ) : (
               <>
-                <div>
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">{copy.global}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {TWIN_TREND_METRIC_KEYS.map((key) => (
-                      <button
-                        key={key}
-                        type="button"
-                        aria-pressed={metric === key}
-                        onClick={() => setMetric(key)}
-                        className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                      >
-                        {copy.metrics[key]}
-                      </button>
-                    ))}
+                {!initialRegion ? (
+                  <div>
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">{copy.global}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {TWIN_TREND_METRIC_KEYS.map((key) => (
+                        <button
+                          key={key}
+                          type="button"
+                          aria-pressed={metric === key}
+                          onClick={() => setMetric(key)}
+                          className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                        >
+                          {copy.metrics[key]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                {metricSeries ? (
+                ) : null}
+                {!initialRegion && metricSeries ? (
                   <SeriesCard
                     series={metricSeries}
                     label={copy.metrics[metric]}
@@ -381,19 +387,21 @@ export function TwinTrendLens() {
                     <p className="mb-2 text-xs font-medium text-muted-foreground">
                       {copy.regional}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {regions.map((region) => (
-                        <button
-                          key={region}
-                          type="button"
-                          aria-pressed={activeRegion === region}
-                          onClick={() => setSelectedRegion(region)}
-                          className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                        >
-                          {regionLabelFor(region, t)}
-                        </button>
-                      ))}
-                    </div>
+                    {!initialRegion ? (
+                      <div className="flex flex-wrap gap-2">
+                        {regions.map((region) => (
+                          <button
+                            key={region}
+                            type="button"
+                            aria-pressed={activeRegion === region}
+                            onClick={() => setSelectedRegion(region)}
+                            className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                          >
+                            {regionLabelFor(region, t)}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     <div className="mt-3 flex gap-2">
                       <button
                         type="button"

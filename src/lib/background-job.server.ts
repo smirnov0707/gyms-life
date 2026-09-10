@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   claimDecision,
@@ -82,6 +83,8 @@ type LedgerRow = {
   id: string;
   status: string;
   started_at: string;
+  window_start?: string;
+  window_end?: string;
 };
 
 function asExistingRun(row: LedgerRow | null) {
@@ -108,17 +111,19 @@ export async function runBackgroundJob(
     window: JobWindow;
     limit: number;
     runKey: string;
+    runId: string;
+    claimedAt: string;
   }) => Promise<readonly JobItemResult[]>,
   options?: { now?: Date; limit?: number },
 ): Promise<JobRunReport> {
   const now = options?.now ?? new Date();
   const limit = options?.limit ?? JOB_ITEM_LIMIT;
   const runKey = runKeyFor(now);
-  const window = jobWindow(now);
+  let window = jobWindow(now);
 
   const { data: existingRow, error: readError } = await supabaseAdmin
     .from("background_job_runs")
-    .select("id, status, started_at")
+    .select("id, status, started_at, window_start, window_end")
     .eq("job_name", jobName)
     .eq("run_key", runKey)
     .maybeSingle();
@@ -132,10 +137,27 @@ export async function runBackgroundJob(
   if (decision === "skip") return { status: "skipped", runKey };
 
   let runId: string;
+  const claimedAt = now.toISOString();
 
   if (decision === "reclaim") {
     const previous = existingRow as LedgerRow | null;
     if (!previous) return { status: "unavailable", runKey };
+    const frozen = z
+      .object({
+        window_start: z.string().datetime({ offset: true }),
+        window_end: z.string().datetime({ offset: true }),
+      })
+      .safeParse(previous);
+    if (
+      !frozen.success ||
+      Date.parse(frozen.data.window_start) > Date.parse(frozen.data.window_end) ||
+      Date.parse(frozen.data.window_end) > now.getTime()
+    )
+      return { status: "unavailable", runKey };
+    // The lease changes, not the original evidence cutoff. Existing receipts
+    // and a replayed worker must continue to refer to the same job window.
+    window = { start: frozen.data.window_start, end: frozen.data.window_end };
+
     // Take the abandoned claim over by moving its start forward. The
     // `eq("status", "running")` is what makes this safe against a second
     // container reclaiming at the same moment: only one update matches.
@@ -144,9 +166,11 @@ export async function runBackgroundJob(
       .update({ started_at: now.toISOString(), attempted: 0, succeeded: 0, failed: 0 })
       .eq("id", previous.id)
       .eq("status", "running")
+      .eq("started_at", previous.started_at)
       .select("id")
       .maybeSingle();
-    if (error || !data) return { status: "skipped", runKey };
+    if (error) return { status: "unavailable", runKey };
+    if (!data) return { status: "skipped", runKey };
     runId = data.id;
   } else {
     const { data, error } = await supabaseAdmin
@@ -164,6 +188,7 @@ export async function runBackgroundJob(
     // Losing the insert race is the answer, not an error: somebody else has
     // this period.
     if (error) return { status: claimInsertOutcome(error.code), runKey };
+    if (!data) return { status: "unavailable", runKey };
     runId = data.id;
   }
 
@@ -171,7 +196,7 @@ export async function runBackgroundJob(
   let fatalCode: string | null = null;
 
   try {
-    results = await work({ window, limit, runKey });
+    results = await work({ window, limit, runKey, runId, claimedAt });
   } catch (cause) {
     // The run as a whole failed. The row is closed as failed rather than left
     // `running`, so the next period reads a finished night instead of waiting
@@ -191,12 +216,16 @@ export async function runBackgroundJob(
   // leave unchecked. If it fails the row stays `running`, so the next period
   // waits out a lease and then does tonight's work again — which is the right
   // self-healing behaviour, and useless if nobody can see it happened.
-  const { error: closeError } = await supabaseAdmin
+  const { data: closed, error: closeError } = await supabaseAdmin
     .from("background_job_runs")
     .update(closingLedgerUpdate(outcome, fatalCode, new Date()))
-    .eq("id", runId);
+    .eq("id", runId)
+    .eq("status", "running")
+    .eq("started_at", claimedAt)
+    .select("id")
+    .maybeSingle();
 
-  return { status: "ran", runKey, window, outcome, recorded: !closeError };
+  return { status: "ran", runKey, window, outcome, recorded: !closeError && closed?.id === runId };
 }
 
 /**

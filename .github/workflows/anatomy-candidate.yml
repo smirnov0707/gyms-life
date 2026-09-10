@@ -1,0 +1,85 @@
+name: Anatomy candidate browser
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tests/twin-browser/**"
+      - "tests/today-browser/**"
+      - "src/components/twin/**"
+      - "scripts/authoring/**"
+      - "scripts/test-twin-*.mjs"
+      - "scripts/test-today-browser.mjs"
+      - "package*.json"
+      - ".github/workflows/anatomy-candidate.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
+permissions:
+  contents: read
+concurrency:
+  group: anatomy-candidate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test scripts/authoring/audit-native-glb.selftest.mjs
+      - name: Audit the exact native GLB used by the browser
+        run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/native-geometry/intersections.audit.json
+      - name: Audit the exact sculpt candidate used by the browser
+        run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/native-geometry/sculpt-intersections.audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-geometry-evidence
+          path: test-results/native-geometry
+          retention-days: 14
+          if-no-files-found: warn
+  browser:
+    needs: geometry
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [twin, today]
+        candidate: [clean, pose, muscular, sculpt]
+    env:
+      TWIN_ANATOMY_CANDIDATE: ${{ matrix.candidate }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require the isolated candidate asset
+        run: |
+          test -s tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb
+          test -s tests/twin-browser/assets/twin-anatomy-pose-candidate.glb
+          test -s tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb
+          test -s tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Run the full unchanged browser suite against the candidate
+        run: node scripts/test-${{ matrix.suite }}-browser.mjs
+      - name: Render exact before/after sculpt turntables
+        if: matrix.suite == 'twin' && matrix.candidate == 'sculpt'
+        run: |
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/twin-candidate/baseline-review
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/twin-candidate/sculpt-review
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.suite }}-${{ matrix.candidate }}-browser-evidence
+          path: test-results/${{ matrix.suite }}-candidate
+          retention-days: 14
+          if-no-files-found: warn

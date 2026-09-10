@@ -157,7 +157,7 @@ function floorGrid(step: number, reach: number) {
     new LineBasicMaterial({
       vertexColors: true,
       transparent: true,
-      opacity: 0.24,
+      opacity: 0.12,
       blending: AdditiveBlending,
       depthWrite: false,
     }),
@@ -313,10 +313,12 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   // The platform: a bright rim, a dimmer one outside it, and a flat pool of
   // light on the floor inside both.
   for (const ring of [
-    platformRing(PLATFORM_INNER, PLATFORM_INNER + 0.018, STAGE_COLOUR, 1),
+    platformRing(PLATFORM_INNER, PLATFORM_INNER + 0.01, 0xb2f5ff, 1),
+    platformRing(PLATFORM_INNER + 0.01, PLATFORM_INNER + 0.022, STAGE_COLOUR, 0.8),
     platformRing(PLATFORM_INNER - 0.03, PLATFORM_INNER, STAGE_COLOUR, 0.45),
     platformRing(PLATFORM_INNER + 0.018, PLATFORM_INNER + 0.055, STAGE_COLOUR, 0.35),
-    platformRing(PLATFORM_OUTER + 0.12, PLATFORM_OUTER + 0.136, STAGE_COLOUR, 0.6),
+    platformRing(PLATFORM_OUTER + 0.025, PLATFORM_OUTER + 0.03, STAGE_COLOUR, 0.65),
+    platformRing(PLATFORM_OUTER + 0.045, PLATFORM_OUTER + 0.051, STAGE_COLOUR, 0.4),
   ]) {
     ring.position.y = 0.004;
     keep(ring.geometry);
@@ -330,7 +332,7 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
         map: halo,
         color: STAGE_DEEP,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.8,
         blending: AdditiveBlending,
         depthWrite: false,
       }),
@@ -345,9 +347,9 @@ export function createTwinStageDecor(bodyHeight: number): TwinStageDecor {
   // The dashed rings behind the figure, standing upright and centred on the
   // chest, which is where the screen they come from puts them.
   for (const [radius, steps, gapFraction, opacity] of [
-    [0.44, 56, 0.5, 0.75],
-    [0.62, 76, 0.55, 0.45],
-    [0.86, 100, 0.6, 0.22],
+    [0.44, 56, 0.5, 0.32],
+    [0.62, 76, 0.55, 0.22],
+    [0.86, 100, 0.6, 0.11],
   ] as const) {
     const circle = dashedCircle(
       radius * (bodyHeight / 1.7),

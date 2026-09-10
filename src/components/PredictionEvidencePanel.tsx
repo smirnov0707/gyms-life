@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Gauge } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { getEvidenceReport } from "@/lib/evidence-level.functions";
 import type { EvidenceLevel, EvidenceReport, TargetEvidence } from "@/lib/evidence-level.engine";
 import { evidenceSteps, type StepFill } from "./evidence-steps.model";
@@ -51,8 +51,9 @@ function Steps({ entry }: { entry: TargetEvidence }) {
   );
 }
 
-export function PredictionEvidencePanel() {
-  const { t } = useI18n();
+export function PredictionEvidencePanel({ compact = false }: { compact?: boolean }) {
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   const { user } = useAuth();
 
   const { data, isError } = useQuery({
@@ -63,6 +64,60 @@ export function PredictionEvidencePanel() {
   });
 
   const report: EvidenceReport | undefined = isError ? { status: "unreadable" } : data;
+
+  if (compact) {
+    return (
+      <section aria-label={t("ev.title")} className="fl-evidence">
+        <p className="fl-eyebrow uppercase">{t("ev.title")}</p>
+        <p className="mt-1 text-[9px] text-muted-foreground">{t("ev.subtitle")}</p>
+        {!report ? (
+          <p className="mt-3 text-xs text-muted-foreground">{t("common.loading")}</p>
+        ) : report.status === "unreadable" ? (
+          <p className="mt-3 text-xs text-muted-foreground">{t("ev.unreadable")}</p>
+        ) : (
+          <>
+            <div className="fl-evidence-overview">
+              <div className="fl-evidence-count">
+                <strong>
+                  {report.targets.reduce((total, entry) => total + entry.evaluated, 0)}
+                </strong>
+                <span>{english ? "Evaluated predictions" : "Įvertintos prognozės"}</span>
+              </div>
+              <ul className="fl-evidence-targets">
+                {report.targets.map((entry) => (
+                  <li key={entry.target}>
+                    <span>{t(`ev.target.${entry.target}` as TKey)}</span>
+                    <span>
+                      {entry.modelled ? t(`ev.level.${entry.level}` as TKey) : t("ev.never")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <details className="fl-disclosure">
+              <summary>{english ? "Evidence details" : "Duomenų pagrindas"}</summary>
+              <ul>
+                {report.targets.map((entry) => (
+                  <li key={entry.target}>
+                    <strong>{t(`ev.target.${entry.target}` as TKey)}</strong>
+                    <p>
+                      {entry.modelled
+                        ? t("ev.counts")
+                            .replace("{evaluated}", String(entry.evaluated))
+                            .replace("{pending}", String(entry.pending))
+                        : t("ev.never")}
+                    </p>
+                    <Steps entry={entry} />
+                  </li>
+                ))}
+              </ul>
+              <p>{t("ev.note")}</p>
+            </details>
+          </>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section

@@ -1,15 +1,16 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
-import { createServer } from "vite";
+import { createServer, transformWithEsbuild } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 /**
  * Today is the one screen two people are always editing at once, and its whole
  * job is to be honest when there is nothing to show. These checks run it
- * against sources that answer with nothing — this account's real state — and
+ * against explicit synthetic empty-source fixtures and
  * against a source that fails, and assert the screen tells those apart.
  *
  * It renders the real Overview component. Only the server functions, the
@@ -17,7 +18,60 @@ import tailwindcss from "@tailwindcss/vite";
  * exist outside a running app.
  */
 const root = process.cwd();
-const artifacts = path.join(root, "test-results/today");
+// A local --serve-only preview must not prevent an independent test run.
+// Keep a strict port so the browser can never hit somebody else's fixture.
+const port = Number(process.env.TODAY_BROWSER_PORT ?? "4183");
+if (!Number.isInteger(port) || port < 1024 || port > 65535)
+  throw new Error("TODAY_BROWSER_PORT must be an integer between 1024 and 65535");
+const origin = `http://127.0.0.1:${port}`;
+const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
+if (!["", "1", "clean", "pose", "muscular", "sculpt"].includes(candidateMode))
+  throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
+const candidate = candidateMode !== "";
+const candidatePath =
+  candidateMode === "sculpt"
+    ? "tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb"
+    : candidateMode === "muscular"
+      ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
+      : candidateMode === "pose"
+        ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+        : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+// Read before starting Vite or Chromium. A missing candidate must fail instead
+// of silently rendering the production asset and passing the visual gate.
+const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
+if (
+  candidateBytes &&
+  (candidateBytes.length < 12 ||
+    candidateBytes.toString("ascii", 0, 4) !== "glTF" ||
+    candidateBytes.readUInt32LE(4) !== 2 ||
+    candidateBytes.readUInt32LE(8) !== candidateBytes.length)
+)
+  throw new Error(`Invalid candidate GLB: ${candidatePath}`);
+let candidateRequests = 0;
+const candidatePlugin = {
+  name: "test-only-anatomy-candidate",
+  configureServer(vite) {
+    vite.middlewares.use((request, response, next) => {
+      if (
+        !candidateBytes ||
+        !["GET", "HEAD"].includes(request.method) ||
+        new URL(request.url, "http://localhost").pathname !== "/models/twin-anatomy-v1.glb"
+      )
+        return next();
+      response.setHeader("Content-Type", "model/gltf-binary");
+      response.setHeader("Content-Length", candidateBytes.length);
+      response.setHeader("Cache-Control", "no-store");
+      if (request.method === "GET") candidateRequests++;
+      response.end(request.method === "HEAD" ? undefined : candidateBytes);
+    });
+  },
+};
+const artifacts = path.join(
+  root,
+  candidate ? "test-results/today-candidate" : "test-results/today",
+);
+// A failed pose run must not leave clean-model screenshots beside pose metadata.
+if (candidate) await rm(artifacts, { recursive: true, force: true });
 await mkdir(artifacts, { recursive: true });
 const results = [];
 let server;
@@ -39,6 +93,7 @@ const stubs = (name) => path.join(root, "tests/today-browser", name);
  * of the harness, not of the screen it is meant to be checking.
  */
 const SERVER_FUNCTION_STUB = "\0today-server-functions";
+const BRIEF_SCHEMA_STUB = "\0fixture-brief-schema";
 function serverFunctionStub() {
   const names = new Set();
   for (const file of readdirSync(path.join(root, "src/lib"))) {
@@ -49,17 +104,31 @@ function serverFunctionStub() {
   return {
     name: "today-server-function-stub",
     enforce: "pre",
-    resolveId: (source) => (/\.functions(\.tsx?)?$/.test(source) ? SERVER_FUNCTION_STUB : null),
-    load(id) {
+    resolveId: (source) =>
+      source === "virtual:fixture-brief-schema"
+        ? BRIEF_SCHEMA_STUB
+        : /\.functions(\.tsx?)?$/.test(source)
+          ? SERVER_FUNCTION_STUB
+          : null,
+    async load(id) {
+      if (id === BRIEF_SCHEMA_STUB) {
+        const source = readFileSync(path.join(root, "src/lib/brief.schema.ts"), "utf8");
+        return (await transformWithEsbuild(source, "fixture-brief-schema.ts", { loader: "ts" }))
+          .code;
+      }
       if (id !== SERVER_FUNCTION_STUB) return null;
       const overrides = JSON.stringify(stubs("functions-stub.ts"));
+      const reference = JSON.stringify(stubs("reference-functions.ts"));
       return (
-        `import * as answers from ${overrides};\n` +
+        `import * as answers from ${overrides};\nimport * as reference from ${reference};\nimport * as briefSchemas from "virtual:fixture-brief-schema";\n` +
         [...names]
-          .map(
-            (name) =>
-              `export const ${name} = ${JSON.stringify(name)} in answers` +
-              ` ? answers[${JSON.stringify(name)}] : async () => null;`,
+          .map((name) =>
+            ["DailyBriefSchema", "BRIEF_ROUTES"].includes(name)
+              ? `export const ${name} = briefSchemas.${name};`
+              : `export const ${name} = typeof answers[${JSON.stringify(name)}] !== "function" && ${JSON.stringify(name)} in answers` +
+                ` ? answers[${JSON.stringify(name)}] : (...args) => {` +
+                ` const fn = new URLSearchParams(window.location.search).has("scenario") && ${JSON.stringify(name)} in reference ? reference[${JSON.stringify(name)}] : answers[${JSON.stringify(name)}];` +
+                ` return typeof fn === "function" ? fn(...args) : Promise.resolve(null); };`,
           )
           .join("\n")
       );
@@ -75,7 +144,12 @@ try {
     // than falling back to the generated surface and making the evidence
     // screenshots show a body the athlete never sees.
     publicDir: path.join(root, "public"),
-    plugins: [serverFunctionStub(), react(), tailwindcss()],
+    plugins: [
+      ...(candidate ? [candidatePlugin] : []),
+      serverFunctionStub(),
+      react(),
+      tailwindcss(),
+    ],
     resolve: {
       alias: [
         { find: "@/lib/auth", replacement: stubs("auth-stub.ts") },
@@ -97,11 +171,28 @@ try {
         "zod",
         "lucide-react",
         "sonner",
+        // These route trees include Recharts. Prebundle its CommonJS graph even
+        // when node_modules is shared through a worktree symlink.
+        "recharts",
+        "lodash",
       ],
     },
-    server: { host: "127.0.0.1", port: 4183, strictPort: true, fs: { allow: [root] } },
+    server: { host: "127.0.0.1", port, strictPort: true, fs: { allow: [root] } },
   });
   await server.listen();
+
+  if (process.argv.includes("--serve-only")) {
+    console.log(
+      `Reference UI fixture ready: ${origin}/index.html?shell=1&screen=today&scenario=reference`,
+    );
+    console.log("Local serving only; no Playwright browser is launched.");
+    await new Promise((resolve) => {
+      process.once("SIGINT", resolve);
+      process.once("SIGTERM", resolve);
+    });
+    await server.close();
+    process.exit(0);
+  }
 
   browser = await chromium.launch({
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
@@ -113,12 +204,13 @@ try {
   const openPanel = async (query = "", options = {}) => {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1100 },
+      colorScheme: "dark",
       ...options,
     });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
-    await page.goto(`http://127.0.0.1:4183/index.html${query}`);
+    await page.goto(`${origin}/index.html${query}`);
     return { page, errors };
   };
 
@@ -127,6 +219,286 @@ try {
     await expect(opened.page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
     return opened;
   };
+
+  const openEvidence = async (panel, label) => {
+    // Sources resolve asynchronously; wait for the actual disclosure instead
+    // of taking a one-time inventory before the data arrives.
+    const summary = panel.locator("details > summary").filter({ hasText: label });
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const details = summary.locator("..");
+    if ((await details.getAttribute("open")) === null) await summary.click();
+  };
+
+  const assertInteractiveTwin = async (canvas) => {
+    await expect(canvas).toBeVisible({ timeout: 30000 });
+    // Playwright's visible state includes below-fold elements. The renderer
+    // deliberately stops offscreen and when ambient motion is disabled; one
+    // frame is valid. Bring it into view, then prove a real input is repainted.
+    await canvas.scrollIntoViewIfNeeded();
+    await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
+    if (candidate) expect(candidateRequests).toBeGreaterThan(0);
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+      .toBeGreaterThanOrEqual(1);
+    const beforeFrames = Number(await canvas.getAttribute("data-twin-frames"));
+    const beforeYaw = Number(await canvas.getAttribute("data-twin-yaw"));
+    await canvas.press("ArrowRight");
+    await expect
+      .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+      .toBeGreaterThan(beforeFrames);
+    await expect
+      .poll(async () => Math.abs(Number(await canvas.getAttribute("data-twin-yaw")) - beforeYaw))
+      .toBeGreaterThan(0.05);
+    await canvas.press("ArrowLeft");
+    await expect
+      .poll(async () => Math.abs(Number(await canvas.getAttribute("data-twin-yaw")) - beforeYaw))
+      .toBeLessThan(0.01);
+    await canvas.evaluate((element) => element.blur());
+  };
+
+  // Capture the real route trees inside the real shell before legacy checks,
+  // so downloadable design evidence survives a later regression failure.
+  const references = [];
+  for (const viewport of [
+    { name: "reference", width: 1280, height: 853 },
+    { name: "desktop", width: 1440, height: 1000 },
+    { name: "mobile", width: 390, height: 844 },
+  ]) {
+    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal"]) {
+      if (viewport.name === "reference" && screen !== "today") continue;
+      const shown = await openPanel(`?shell=1&screen=${screen}&scenario=reference`, {
+        viewport: { width: viewport.width, height: viewport.height },
+        locale: "en-US",
+      });
+      await expect(shown.page.getByTestId("fixture-watermark")).toBeVisible({ timeout: 30000 });
+      await expect(shown.page.locator(".fl-shell-header")).toBeVisible();
+      await expect(
+        shown.page.locator(
+          viewport.name === "mobile" ? ".fl-mobile-navigation" : ".fl-desktop-navigation",
+        ),
+      ).toBeVisible();
+      const canvas = shown.page.locator("canvas[data-twin-frames]").first();
+      if (["today", "twin", "muscle"].includes(screen)) {
+        await assertInteractiveTwin(canvas);
+      }
+      if (screen === "muscle") {
+        // Exercise the real UI. There is deliberately no invented detail route.
+        await shown.page.getByRole("tab", { name: "Muscles", exact: true }).click();
+        await shown.page
+          .getByRole("button", { name: /^Chest(?:\s|$)/ })
+          .first()
+          .click();
+        const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
+        await expect(detail).toBeVisible();
+        await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
+      }
+      if (viewport.name === "mobile" && ["twin", "muscle"].includes(screen)) {
+        const stage = shown.page.locator("[data-twin-stage]");
+        await expect(stage).toHaveAttribute("data-twin-mobile-compact", "true");
+        await expect(stage.locator("[data-twin-mobile-unit]")).toContainText("CALCULATED", {
+          ignoreCase: true,
+        });
+        const controls = stage.getByRole("button", { name: "View controls", exact: true });
+        await expect(controls).toHaveAttribute("aria-expanded", "false");
+        await expect(stage.getByRole("button", { name: "2D", exact: true })).toBeHidden();
+        await controls.focus();
+        await shown.page.keyboard.press("Enter");
+        await expect(controls).toHaveAttribute("aria-expanded", "true");
+        if (screen === "twin") {
+          await stage.getByRole("button", { name: "Logged volume", exact: true }).click();
+          await expect(stage).toHaveAttribute("data-twin-layer", "logged_volume");
+          await stage.getByRole("button", { name: "Recovery", exact: true }).click();
+          await expect(stage).toHaveAttribute("data-twin-layer", "recovery");
+        }
+        await stage.getByRole("button", { name: "2D", exact: true }).click();
+        await expect(stage).toHaveAttribute("data-twin-stage", "2d");
+        await expect(stage.locator("canvas")).toHaveCount(0);
+        await stage.getByRole("button", { name: "3D", exact: true }).click();
+        await assertInteractiveTwin(stage.locator("canvas[data-twin-frames]"));
+        await stage.getByRole("button", { name: "Front", exact: true }).focus();
+        await shown.page.keyboard.press("Escape");
+        await expect(controls).toHaveAttribute("aria-expanded", "false");
+        await expect(controls).toBeFocused();
+        const region = stage.getByRole("combobox", { name: "Inspect a region", exact: true });
+        await region.focus();
+        await expect(region).toBeFocused();
+        await expect(region).toBeEnabled();
+        record(`${screen} mobile controls retain keyboard access, layers and 3D/2D rendering`);
+      }
+      for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
+        await illustration.scrollIntoViewIfNeeded();
+        await expect
+          .poll(async () =>
+            illustration.evaluate((image) => image.complete && image.naturalWidth > 0),
+          )
+          .toBe(true);
+      }
+      await shown.page.evaluate(() => window.scrollTo(0, 0));
+      await shown.page.waitForTimeout(700);
+      const overflow = await shown.page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `${screen} ${viewport.name} overflows`).toBeLessThanOrEqual(1);
+      expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
+      const filename = `reference-${screen}-${viewport.name}.png`;
+      await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
+      if (viewport.name === "reference") {
+        await shown.page.screenshot({
+          path: path.join(artifacts, "reference-today-1280x853.png"),
+          fullPage: false,
+        });
+        const layout = await shown.page.evaluate(() =>
+          [".fl-cockpit", ".fl-bottom-deck", ".fl-dashboard-footer"].map((selector) => {
+            const rect = document.querySelector(selector)?.getBoundingClientRect();
+            return { selector, ...(rect?.toJSON() ?? {}) };
+          }),
+        );
+        await writeFile(
+          path.join(artifacts, "reference-layout.json"),
+          JSON.stringify(layout, null, 2),
+        );
+      }
+      await writeFile(
+        path.join(artifacts, `reference-${screen}-${viewport.name}.txt`),
+        await shown.page.locator("body").innerText(),
+      );
+      references.push({
+        screen,
+        viewport,
+        filename,
+        scenario: "synthetic-reference",
+        url: shown.page.url(),
+      });
+      await shown.page.context().close();
+    }
+  }
+  await writeFile(
+    path.join(artifacts, "reference-screens.json"),
+    JSON.stringify(references, null, 2),
+  );
+  record("all six actual route/detail views render inside the shell at 1440px and 390px");
+
+  for (const scenario of ["empty", "failure"]) {
+    const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
+      viewport: { width: 390, height: 844 },
+      locale: "en-US",
+    });
+    const rail = checked.page.getByRole("region", { name: "Live signals" });
+    await expect(rail).toBeVisible({ timeout: 30000 });
+    const label = scenario === "failure" ? "Could not be read" : "Not recorded yet";
+    expect(await rail.getByText(label, { exact: false }).count()).toBe(7);
+    expect(checked.errors).toEqual([]);
+    await checked.page.screenshot({
+      path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),
+      fullPage: true,
+    });
+    await checked.page.context().close();
+  }
+  record("full-shell empty data and source failures remain visibly distinct");
+
+  const menu = await openPanel("?shell=1&screen=twin&scenario=reference&view=muscles", {
+    viewport: { width: 320, height: 720 },
+    locale: "en-US",
+  });
+  await menu.page.getByRole("button", { name: "More", exact: true }).click();
+  const drawer = menu.page.getByRole("dialog");
+  await drawer.getByRole("button", { name: "LT", exact: true }).click();
+  await expect(drawer.getByRole("button", { name: "LT", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await menu.page.screenshot({
+    path: path.join(artifacts, "mobile-menu-language.png"),
+    fullPage: false,
+  });
+  await drawer.press("Escape");
+  await expect(menu.page.getByRole("tab", { name: "Raumenys", exact: true })).toBeVisible();
+  await menu.page.getByRole("button", { name: "Daugiau", exact: true }).click();
+  await menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }).click();
+  await expect(
+    menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(menu.errors).toEqual([]);
+  await menu.page.context().close();
+  record(
+    "the scrolled mobile tools menu keeps language controls clickable and updates the actual page",
+  );
+
+  // Real UI controls, not direct calls to state setters. Search values survive
+  // page reload and browser history; the fixture still has no live backend.
+  const linked = await openPanel("?shell=1&screen=today&scenario=reference", {
+    viewport: { width: 390, height: 844 },
+    locale: "en-US",
+  });
+  await linked.page.getByRole("link", { name: "Explore muscles", exact: false }).click();
+  await expect(linked.page.getByRole("tab", { name: "Muscles", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await linked.page
+    .getByRole("button", { name: /^Chest(?:\s|$)/ })
+    .first()
+    .click();
+  await expect(linked.page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+  await linked.page.getByRole("button", { name: "Impact", exact: true }).click();
+  await expect(linked.page).toHaveURL(/detail=impact/);
+  await expect(linked.page.getByText("Latest completed session", { exact: true })).toBeVisible();
+  await linked.page.reload();
+  await expect(linked.page.getByRole("button", { name: "Impact", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await linked.page.goBack();
+  await expect(linked.page.getByRole("button", { name: "Status", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await linked.page.getByRole("button", { name: "History", exact: true }).click();
+  await expect(linked.page).toHaveURL(/detail=history/);
+  expect(linked.errors).toEqual([]);
+  await linked.page.context().close();
+  record(
+    "Today opens muscle evidence; status, impact and history survive URL navigation and reload",
+  );
+
+  const offBody = await openPanel(
+    "?shell=1&screen=twin&scenario=reference&view=muscles&region=cardio&detail=status",
+    { locale: "en-US" },
+  );
+  const offBodyDetail = offBody.page.locator('[data-twin-muscle-detail="cardio"]');
+  await expect(offBodyDetail).toBeVisible({ timeout: 30000 });
+  await expect(
+    offBodyDetail.getByText("This training group is not a single anatomical region.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(offBodyDetail.locator(".twin-detail-stage")).toHaveCount(0);
+  expect(offBody.errors).toEqual([]);
+  await offBody.page.context().close();
+  record(
+    "off-body training groups keep their evidence route without pretending to be a muscle surface",
+  );
+
+  for (const [scenario, expected] of [
+    ["reference", "Received records refreshed."],
+    ["empty", "Records checked. No readings have arrived yet."],
+    ["failure", "Records could not be refreshed. No successful sync is claimed."],
+  ]) {
+    const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
+      locale: "en-US",
+      viewport: { width: 390, height: 844 },
+    });
+    const button = checked.page.getByTestId("refresh-received-data");
+    await expect(button).toBeEnabled({ timeout: 30000 });
+    await button.click();
+    await expect(checked.page.getByTestId("received-data-refresh-status")).toHaveText(expected);
+    await expect(button).toBeEnabled();
+    expect(checked.errors).toEqual([]);
+    await checked.page.context().close();
+  }
+  record(
+    "manual data refresh distinguishes received, empty and failed records without claiming watch sync",
+  );
 
   // 1. The screen renders at all, with the signal rail and every signal in it.
   const first = await open();
@@ -154,10 +526,24 @@ try {
   await expect(rail.getByRole("link", { name: "Connect a device" })).toBeVisible();
   record("an empty source shows as empty, with no invented figure and a way to fix it");
 
-  // 3. Every Future Lab panel with no evidence says so rather than showing a
-  //    number it does not have.
+  // 3. No recovery evidence means no projection curve; prediction evidence
+  //    shows a count of evaluated predictions, never a confidence percentage.
+  const emptyOutlook = first.page.getByRole("region", { name: "When it comes back" });
+  await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
+  await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
+  const emptyEvidence = first.page.getByRole("region", { name: "Prediction evidence" });
+  await expect(emptyEvidence.getByText("Evaluated predictions", { exact: true })).toBeVisible();
+  expect(await emptyEvidence.locator(".fl-evidence-count strong").innerText()).toBe("0");
+  expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
+  await expect(
+    first.page.getByText("No pattern has reached its evidence threshold yet.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    first.page.getByText("No hypothesis is awaiting more evidence.", { exact: true }),
+  ).toBeVisible();
   const body = await first.page.locator("body").innerText();
-  expect(body).toContain("Not enough verified data yet.");
+  expect(body).not.toContain("Not enough verified data yet."); // obsolete copy must not mask a stuck loading state
+
   await writeFile(path.join(artifacts, "today.txt"), body);
   await first.page.screenshot({
     path: path.join(artifacts, "today-desktop.png"),
@@ -253,12 +639,13 @@ try {
   // A lab whose overview could not be read must not light ten modules green.
   // Absence of evidence is not evidence of readiness, which is the one claim
   // this deck makes about itself.
-  const lab = await openPanel("?panel=lab");
-  await expect(lab.page.getByText("LAB STATUS")).toBeVisible({ timeout: 30000 });
-  const readyDots = lab.page.locator('[title="Evidence path available"]');
-  const unknownDots = lab.page.locator('[title="Evidence status unknown"]');
-  expect(await readyDots.count()).toBe(0);
-  expect(await unknownDots.count()).toBeGreaterThan(0);
+  const lab = await openPanel("?panel=lab&scenario=failure");
+  await expect(lab.page.getByRole("heading", { name: "Lab", exact: true })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(lab.page.getByText("Source available", { exact: true })).toHaveCount(0);
+  await expect(lab.page.getByText("Rules defined", { exact: true })).toHaveCount(0);
+  await expect(lab.page.getByText("Unknown", { exact: true })).toHaveCount(10);
   await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");
@@ -266,17 +653,23 @@ try {
   // The journal's four counters all come off one query. An unread ledger must
   // not report four zeros — "you have no hypotheses" is a claim, and an empty
   // ledger is something an athlete might act on.
-  const journal = await openPanel("?panel=journal");
+  const journal = await openPanel("?panel=journal&scenario=failure");
   await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
-  const counters = journal.page.locator("p.font-mono.text-2xl");
-  expect(await counters.count()).toBe(4);
-  expect(await counters.allInnerTexts()).toEqual(["—", "—", "—", "—"]);
+  await expect(
+    journal.page.getByText("Journal intelligence is temporarily unavailable."),
+  ).toBeVisible();
+  await expect(journal.page.locator(".fl-journal-stats")).toHaveCount(0);
   await journal.page.screenshot({
     path: path.join(artifacts, "screen-journal.png"),
     fullPage: true,
   });
   await journal.page.close();
-  record("an unread journal shows dashes, not four zeroes");
+  const emptyJournal = await openPanel("?panel=journal&scenario=empty");
+  const emptyCounters = emptyJournal.page.locator(".fl-journal-stats p.font-mono");
+  await expect(emptyCounters).toHaveCount(4);
+  expect(await emptyCounters.allInnerTexts()).toEqual(["0", "0", "0", "0"]);
+  await emptyJournal.page.close();
+  record("an unread journal reports an outage; only a readable empty ledger shows zero counters");
 
   // 8. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
@@ -472,17 +865,23 @@ try {
   //     a grey silhouette and print the reason only under `sm:hidden`, and the
   //     decision card spun forever on a source that answered "nothing".
   const bare = await open("");
-  const twinCard = bare.page.getByText("Your Twin is still learning").first();
-  await expect(twinCard).toBeVisible({ timeout: 30000 });
-  const stage = await bare.page
-    .getByText("Your body, as GYMS.LIFE understands it today")
-    .locator("xpath=ancestor::section[1]")
-    .boundingBox();
-  // Below the 620px floor the card used to reserve before it had anything to
-  // put there; it comes out around 540 with the figure scaled down.
-  expect(stage.height).toBeLessThan(620);
+  const bareTwin = bare.page.getByRole("region", { name: "Your Digital Twin", exact: true });
+  await expect(
+    bareTwin.getByText("Not enough logged training to estimate recovery.", { exact: false }),
+  ).toBeVisible({ timeout: 30000 });
+  // The body shares a grid row with the other panels. Measure the figure's
+  // actual stage, not the card stretched to a neighbouring panel's height.
+  const stage = await bareTwin.locator(".twin-cockpit-scene").boundingBox();
+  expect(stage).not.toBeNull();
+  expect(stage.height).toBeLessThanOrEqual(450);
+  await bareTwin.getByRole("combobox", { name: "Inspect a region" }).selectOption("chest");
+  const unknownReading = bareTwin.locator(".twin-cockpit-reading");
+  await expect(unknownReading.getByText("—", { exact: true })).toBeVisible();
+  await expect(unknownReading.getByText("Insufficient data", { exact: true })).toBeVisible();
 
-  await expect(bare.page.getByText("We couldn't load today's decision.")).toBeVisible();
+  await expect(
+    bare.page.getByText("We couldn't load today's decision.", { exact: false }),
+  ).toBeVisible();
   await expect(bare.page.getByRole("button", { name: "Try again" })).toBeVisible();
   await bare.page.screenshot({ path: path.join(artifacts, "today-bare.png"), fullPage: true });
   expect(bare.errors).toEqual([]);
@@ -529,9 +928,7 @@ try {
 
   const seedQueue = async (query) => {
     const opened = await openPanel(query);
-    await opened.page.evaluate((rows) => {
-      localStorage.setItem("gyms_life_offline_queue_v2", JSON.stringify(rows));
-    }, queued);
+    await opened.page.evaluate((rows) => window.__offlineFixture.seed(rows), queued);
     await opened.page.reload();
     return opened;
   };
@@ -539,18 +936,21 @@ try {
   const stuck = await seedQueue("?panel=offline&sync=fail");
   const strip = stuck.page.getByText("Sets not sent yet: 2");
   await expect(strip).toBeVisible({ timeout: 30000 });
-  await expect(stuck.page.getByText("They are saved on this device")).toBeVisible();
+  await expect(
+    stuck.page.getByText("Only this account's records are shown.", { exact: false }),
+  ).toBeVisible();
   await stuck.page.screenshot({ path: path.join(artifacts, "offline-queue.png") });
   await stuck.page.close();
 
   // Delivered, the strip has nothing left to report and gets out of the way.
   const sent = await seedQueue("?panel=offline");
+  await expect
+    .poll(() => sent.page.evaluate(async () => (await window.__offlineFixture.read()).length), {
+      timeout: 30000,
+    })
+    .toBe(0);
   await expect(sent.page.getByText("Sets not sent yet: 2")).toHaveCount(0, { timeout: 30000 });
-  expect(
-    await sent.page.evaluate(() =>
-      JSON.parse(localStorage.getItem("gyms_life_offline_queue_v2") ?? "[]"),
-    ),
-  ).toEqual([]);
+  expect(await sent.page.evaluate(() => window.__offlineFixture.read())).toEqual([]);
   expect(sent.errors).toEqual([]);
   await sent.page.close();
   record("sets stuck on the device are reported until they are delivered");
@@ -574,9 +974,7 @@ try {
       query === "?panel=offline&sync=fail"
         ? await (async () => {
             const seeded = await openPanel(query, narrow);
-            await seeded.page.evaluate((rows) => {
-              localStorage.setItem("gyms_life_offline_queue_v2", JSON.stringify(rows));
-            }, queued);
+            await seeded.page.evaluate((rows) => window.__offlineFixture.seed(rows), queued);
             await seeded.page.reload();
             return seeded;
           })()
@@ -782,12 +1180,15 @@ try {
   const evidence = await open("?evidence=some");
   const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
   await expect(evidencePanel).toBeVisible({ timeout: 30000 });
+  await openEvidence(evidencePanel, "Evidence details");
   const evidenceText = await evidencePanel.innerText();
   expect(evidenceText).toContain("Moderate");
   expect(evidenceText).toContain("18 tested · 22 waiting");
   // Two targets nothing has ever predicted say so, rather than being omitted
   // or shown as insufficient evidence about the athlete.
-  expect(evidenceText.match(/Not predicted yet/g)?.length).toBe(2);
+  await expect(
+    evidencePanel.locator(".fl-evidence-targets").getByText("Not predicted yet", { exact: true }),
+  ).toHaveCount(2);
   // No blended percentage anywhere on the panel.
   expect(evidenceText).not.toMatch(/\d+\s*%/);
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
@@ -856,6 +1257,7 @@ try {
   const ahead = await open("?twin=regions");
   const aheadPanel = ahead.page.getByRole("region", { name: "When it comes back" });
   await expect(aheadPanel).toBeVisible({ timeout: 30000 });
+  await openEvidence(aheadPanel, "Recovery estimates");
   const aheadText = await aheadPanel.innerText();
   // Back is at 55% and chest at 41%; with a 40-hour constant and an 80%
   // threshold that is 32 and 43 hours, soonest first.
@@ -873,6 +1275,20 @@ try {
   await ahead.page.screenshot({ path: path.join(artifacts, "recovery-outlook.png") });
   await ahead.page.close();
 
+  // Empty evidence must not claim every region is recovered, in either view.
+  for (const query of ["?twin=empty", "?panel=recovery&twin=empty"]) {
+    const unknown = await openPanel(query);
+    const outlook = unknown.page.getByRole("region", { name: "When it comes back" });
+    await expect(
+      outlook.getByText("Not enough data to estimate recovery.", { exact: true }),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(
+      outlook.getByText("No region is waiting to recover", { exact: false }),
+    ).toHaveCount(0);
+    await unknown.page.close();
+  }
+  record("unknown recovery remains unknown in compact and full outlooks");
+
   // A source that failed must never render as a body with nothing to recover.
   const noTwin = await open("?twin=unreadable");
   await expect(
@@ -883,6 +1299,21 @@ try {
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
+  if (candidateBytes)
+    await writeFile(
+      path.join(artifacts, "anatomy-asset.json"),
+      JSON.stringify(
+        {
+          path: candidatePath,
+          sha256: createHash("sha256").update(candidateBytes).digest("hex"),
+          bytes: candidateBytes.length,
+          requests: candidateRequests,
+          servedAs: "/models/twin-anatomy-v1.glb",
+        },
+        null,
+        2,
+      ),
+    );
   await browser?.close();
   await server?.close();
 }

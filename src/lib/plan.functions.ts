@@ -1,3 +1,4 @@
+import { TrainingIntakeSchema } from "./training-intake.schema";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -18,66 +19,12 @@ import { TrainingPlanDataSchema } from "./training-plan.schema";
 // Draft/activation lifecycle: generation never changes the user's active program.
 // Activation is handled separately by activate-plan.functions.ts.
 
-const IntakeSchema = z.object({
-  goal: z.string(),
-  experience: z.string(),
-  location: z.string(),
-  equipment: z.array(z.string()),
-  daysPerWeek: z.number().min(1).max(7),
-  sessionMinutes: z.number().min(15).max(120),
-  age: z.number().nullable().optional(),
-  gender: z.string().nullable().optional(),
-  heightCm: z.number().nullable().optional(),
-  weightKg: z.number().nullable().optional(),
-  targetWeightKg: z.number().nullable().optional(),
-  limitations: z.string().nullable().optional(),
-  lang: SupportedLanguageSchema.default("lt"),
-});
-export type Intake = z.infer<typeof IntakeSchema>;
-const text = (fallback = "") =>
-  z.preprocess(
-    (v) => (Array.isArray(v) ? v.join(" • ") : typeof v === "number" ? String(v) : v),
-    z.string().default(fallback),
-  );
-const num = (fallback: number) =>
-  z.preprocess(
-    (v) => (v === undefined || v === null || v === "" ? fallback : v),
-    z.coerce.number().default(fallback),
-  );
-const PlanExercise = z.object({
-  slug: text("exercise"),
-  name: text("Pratimas"),
-  sets: num(3),
-  reps: text("8-12"),
-  rest_seconds: num(90),
-  notes: text(""),
-});
-const PlanDay = z.object({
-  day: num(1),
-  title: text("Treniruotė"),
-  focus: text("Pagrindinės raumenų grupės"),
-  warmup: text("Dinaminis apšilimas 5-7 min"),
-  cooldown: text("Lengvas tempimas ir kvėpavimas"),
-  estimated_minutes: num(45),
-  exercises: z.array(PlanExercise).default([]),
-});
-const PlanSchema = z.object({
-  title: text("GYMS.LIFE INDIVIDUALUS PLANAS"),
-  summary: text("Moksliškai subalansuota programa jūsų tikslams pasiekti."),
-  weeks: num(8),
-  progression: text(
-    "Kas savaitę didinkite darbinį svorį arba pakartojimų skaičių išlaikant RPE 7-9.",
-  ),
-  nutrition: text(
-    "Išlaikykite 1.8-2.2g/kg baltymų normą ir gerkite bent 2.5-3L vandens per dieną.",
-  ),
-  days: z.array(PlanDay),
-});
-export type GeneratedPlan = z.infer<typeof PlanSchema>;
+export type { Intake } from "./training-intake.schema";
+export type GeneratedPlan = z.infer<typeof TrainingPlanDataSchema>;
 
 export const generatePlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => IntakeSchema.parse(input))
+  .validator((input: unknown) => TrainingIntakeSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     return observeServerAction(
@@ -98,26 +45,34 @@ export const generatePlan = createServerFn({ method: "POST" })
             "Exercise catalog is unavailable. Please try again shortly.",
           );
         }
-        // `exercises` is what the model may choose from, and what its answer
-        // is checked against. When the catalog could not honour the athlete's
-        // equipment the selection says so, and the pool it hands back is the
-        // whole catalog — validating against anything narrower would then
-        // reject a plan built from the very list the model was given.
         const selection = selectPlanExerciseCatalog(catalogExercises, {
           equipment: data.equipment,
           location: data.location,
         });
         const compatibleCatalog = selection.exercises;
+        if (compatibleCatalog.length < 4) {
+          throw new ObservedFailure(
+            "insufficient_equipment_catalog",
+            "Not enough demonstrated exercises match your equipment. Review your equipment choices.",
+          );
+        }
         const catalog = formatExerciseCatalogForAi(compatibleCatalog);
         const catalogSlugs = compatibleCatalog.map((exercise) => exercise.slug);
         const langName = LANGUAGE_NAMES[data.lang];
-        const prompt = `Tu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Kiekvieno pratimo \`slug\` privalo būti pažodžiui nukopijuotas iš pirmo KATALOGAS eilutės lauko. Niekada nekurk naujo slug ir nekeisk jo tarpo, didžiosiomis raidėmis ar vertimu.\n- \`name\` turi atitikti to paties katalogo pratimo pavadinimą ${langName} kalba.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
+        const bodyDetails = JSON.stringify({
+          age: data.age ?? null,
+          gender: data.gender ?? null,
+          height_cm: data.heightCm ?? null,
+          weight_kg: data.weightKg ?? null,
+          target_weight_kg: data.targetWeightKg ?? null,
+        });
+        const prompt = `Deklaruoti kūno duomenys (null reiškia nežinoma): ${bodyDetails}\nTu esi GYMS.LIFE elitinis jėgos ir biomechanikos treneris.\nSukurk profesionalią, moksliškai pagrįstą treniruočių programą šiam vartotojui:\n\n- Tikslas: ${data.goal}\n- Patirtis: ${data.experience}\n- Lokacija: ${data.location}\n- Įranga: ${data.equipment.join(", ") || "Kūno svoris"}\n- Dienų per savaitę: ${data.daysPerWeek}\n- Trukmė per sesiją: ${data.sessionMinutes} min\n- Apribojimai / traumos: ${data.limitations || "nėra"}\n\nKATALOGAS:\n${catalog}\n\nREIKALAVIMAI:\n- Sukurk TIKSLIAI ${data.daysPerWeek} treniruočių dienas (day: 1..${data.daysPerWeek}).\n- Kiekvienai dienai parink 4-6 efektyvius pratimus.\n- Kiekvieno pratimo \`slug\` privalo būti pažodžiui nukopijuotas iš pirmo KATALOGAS eilutės lauko. Niekada nekurk naujo slug ir nekeisk jo tarpo, didžiosiomis raidėmis ar vertimu.\n- \`name\` turi atitikti to paties katalogo pratimo pavadinimą ${langName} kalba.\n- Visą tekstą (pavadinimus, apšilimą, patarimus) rašyk ${langName} kalba.\n\nAtsakyk TIK TIKSLIU JSON:\n{\n  "title": "8 Savaičių Progresyvi Programa",\n  "summary": "Programos santrauka ${langName} kalba",\n  "weeks": 8,\n  "progression": "Progresyvaus perkrovimo taisyklės",\n  "nutrition": "Mitybos gairės ir baltymų normos",\n  "days": []\n}`;
         const generated = await generateOrchestratedJson({
           task: "training-plan",
           supabase,
           userId,
           prompt,
-          schema: PlanSchema,
+          schema: TrainingPlanDataSchema,
         });
         const plan = TrainingPlanDataSchema.safeParse(generated);
         if (!plan.success) {
@@ -133,7 +88,12 @@ export const generatePlan = createServerFn({ method: "POST" })
           compatibleCatalog,
           data.lang === "lt" ? "lt" : "en",
         );
-        validateGeneratedTrainingPlan(canonicalPlan, data.daysPerWeek, catalogSlugs);
+        validateGeneratedTrainingPlan(
+          canonicalPlan,
+          data.daysPerWeek,
+          catalogSlugs,
+          data.sessionMinutes,
+        );
 
         const { data: inserted, error } = await supabase
           .from("plans")

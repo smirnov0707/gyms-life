@@ -24,7 +24,11 @@ import { IanaTimeZoneSchema } from "./local-day";
 import { evaluateWorkoutStartGate, type WorkoutStartRejection } from "./workout-start.gate";
 
 const Input = z
-  .object({ day: z.coerce.number().int().min(1), timeZone: IanaTimeZoneSchema })
+  .object({
+    ownerId: z.string().uuid().optional(),
+    day: z.coerce.number().int().min(1),
+    timeZone: IanaTimeZoneSchema,
+  })
   .strict();
 const setSelect =
   "id, session_id, exercise_slug, exercise_name, set_number, reps, weight_kg, rpe, done, created_at";
@@ -44,6 +48,8 @@ export const startWorkout = createServerFn({ method: "POST" })
   .validator((input: unknown) => Input.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    if (data.ownerId !== undefined && data.ownerId !== context.userId)
+      throw new Error("OFFLINE_IDENTITY_CHANGED");
     const workout = await getTodaysWorkoutData(supabase, userId, undefined, data.timeZone);
 
     if (workout.status !== "READY") {

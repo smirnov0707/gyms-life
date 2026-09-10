@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Hourglass } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinSnapshot } from "@/lib/digital-twin.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
@@ -28,8 +28,9 @@ import {
 
 const KNOWN_MUSCLE_GROUP_SET = new Set<string>(KNOWN_MUSCLE_GROUPS);
 
-export function RecoveryOutlook() {
-  const { t } = useI18n();
+export function RecoveryOutlook({ compact = false }: { compact?: boolean }) {
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   const { user } = useAuth();
   const timeZone = browserTimeZone();
 
@@ -54,6 +55,128 @@ export function RecoveryOutlook() {
       ? t(`mg.${region}` as TKey)
       : region.charAt(0).toUpperCase() + region.slice(1).replaceAll("_", " ");
 
+  if (compact) {
+    const entries = outlook?.status === "projected" ? outlook.recovering.slice(0, 3) : [];
+    const colors = ["#39c4db", "#a16bf5", "#5378e8"];
+    return (
+      <section aria-label={t("ro.title")} className="fl-outlook">
+        <p className="fl-eyebrow uppercase">{t("ro.title")}</p>
+        <p className="mt-1 text-[9px]">
+          {english
+            ? "Calculated recovery · without more training."
+            : "Skaičiuojamas atsistatymas · be naujų treniruočių."}
+        </p>
+        {!outlook ? (
+          <p className="mt-3 text-xs">{t("common.loading")}</p>
+        ) : outlook.status === "unreadable" ? (
+          <p className="mt-3 text-xs">{t("ro.unreadable")}</p>
+        ) : (
+          <>
+            {entries.length > 0 ? (
+              <>
+                <svg
+                  role="img"
+                  aria-label={t("ro.title")}
+                  viewBox="0 0 240 110"
+                  className="fl-outlook-chart"
+                >
+                  {[0, 25, 50, 75, 100].map((value) => (
+                    <g key={value}>
+                      <line
+                        x1="22"
+                        x2="236"
+                        y1={100 - value * 0.9}
+                        y2={100 - value * 0.9}
+                        stroke="var(--border)"
+                        strokeWidth=".7"
+                      />
+                      <text x="0" y={103 - value * 0.9} fontSize="8" fill="var(--muted-foreground)">
+                        {value}
+                      </text>
+                    </g>
+                  ))}
+                  {entries.map((entry, index) => (
+                    <g key={entry.region}>
+                      <polyline
+                        fill="none"
+                        stroke={colors[index]}
+                        strokeWidth="1.5"
+                        points={Array.from(
+                          { length: 13 },
+                          (_, step) =>
+                            `${22 + (step / 12) * 214},${100 - projectRecovery(entry.recoveryPct, (step * outlook.horizonHours) / 12) * 0.9}`,
+                        ).join(" ")}
+                      />
+                      {[0, 24, 48, 72].map((hours) => (
+                        <circle
+                          key={hours}
+                          cx={22 + (hours / outlook.horizonHours) * 214}
+                          cy={100 - projectRecovery(entry.recoveryPct, hours) * 0.9}
+                          r="2"
+                          fill={colors[index]}
+                        />
+                      ))}
+                    </g>
+                  ))}
+                </svg>
+                <div className="fl-outlook-axis">
+                  <span>0 h</span>
+                  <span>24 h</span>
+                  <span>48 h</span>
+                  <span>{outlook.horizonHours} h</span>
+                </div>
+                <div className="fl-outlook-legend">
+                  {entries.map((entry, index) => (
+                    <span key={entry.region}>
+                      <i style={{ backgroundColor: colors[index] }} />
+                      {label(entry.region)}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="mt-3 text-xs">
+                {outlook.readyCount > 0
+                  ? t("ro.allReady")
+                  : english
+                    ? "Not enough data to estimate recovery."
+                    : "Nepakanka duomenų atsistatymui įvertinti."}
+              </p>
+            )}
+            {outlook.unknownCount > 0 ? (
+              <p className="mt-2 text-[9px]">
+                {t("ro.unknownCount").replace("{count}", String(outlook.unknownCount))}
+              </p>
+            ) : null}
+            <details className="fl-disclosure">
+              <summary>{english ? "Recovery estimates" : "Atsistatymo įverčiai"}</summary>
+              <ul>
+                {outlook.recovering.map((entry) => (
+                  <li key={entry.region}>
+                    {label(entry.region)} ·{" "}
+                    {t("ro.now").replace("{pct}", String(entry.recoveryPct))}
+                    <p>
+                      {entry.hoursToReady === null
+                        ? t("ro.beyond").replace("{hours}", String(outlook.horizonHours))
+                        : t("ro.ready")
+                            .replace("{hours}", String(entry.hoursToReady))
+                            .replace("{pct}", String(outlook.readyPct))}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              {outlook.readyCount > 0 ? (
+                <p>{t("ro.readyCount").replace("{count}", String(outlook.readyCount))}</p>
+              ) : null}
+              <p>{t("ro.assumption")}</p>
+              <p>{t("ro.noCalendar")}</p>
+            </details>
+          </>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section
       aria-label={t("ro.title")}
@@ -69,7 +192,13 @@ export function RecoveryOutlook() {
       ) : (
         <>
           {outlook.recovering.length === 0 ? (
-            <p className="mt-3 text-xs leading-relaxed text-slate-300">{t("ro.allReady")}</p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-300">
+              {outlook.readyCount > 0
+                ? t("ro.allReady")
+                : english
+                  ? "Not enough data to estimate recovery."
+                  : "Nepakanka duomenų atsistatymui įvertinti."}
+            </p>
           ) : (
             <ul className="mt-3 space-y-2.5">
               {outlook.recovering.map((entry) => (

@@ -1,3 +1,7 @@
+import {
+  assertTranslationStrings,
+  assertMealTranslationStructure,
+} from "./meal-translation.integrity";
 import { z } from "zod";
 import { LANGUAGE_NAMES, type SupportedLanguage } from "./language.schema";
 import type { GeneratedMealPlan } from "./meal-types";
@@ -24,6 +28,7 @@ export function collectMealStrings(plan: GeneratedMealPlan): string[] {
 
 /** Rebuilds a meal plan from translated strings produced in collectMealStrings order. */
 export function applyMealStrings(plan: GeneratedMealPlan, values: string[]): GeneratedMealPlan {
+  assertTranslationStrings(collectMealStrings(plan), values);
   let i = 0;
   const next = (fallback: string) => {
     const v = values[i++];
@@ -100,9 +105,11 @@ RETURN EXACTLY: {"items":["translated string", ...]}`;
       prompt,
       schema: Translated,
     });
-    const items = res.items.length === slice.length ? res.items : slice;
-    translated.push(...items);
+    assertTranslationStrings(slice, res.items);
+    translated.push(...res.items);
   }
 
-  return applyMealStrings(plan, translated);
+  const result = applyMealStrings(plan, translated);
+  assertMealTranslationStructure(plan, result);
+  return result;
 }

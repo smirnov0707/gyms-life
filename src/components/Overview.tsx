@@ -1,11 +1,14 @@
+import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { Button } from "@/components/ui/button";
-import { TwinTodayCard } from "@/components/twin/TwinTodayCard";
+import { TwinHome } from "@/components/twin/TwinHome";
+import { FutureLabRoster } from "@/components/future-lab/FutureLabRoster";
+import { baseLang } from "@/lib/i18n";
+import "./future-lab-dashboard.css";
 import { SmartBrief } from "@/components/SmartBrief";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
@@ -26,10 +29,15 @@ function ReadinessRing({ score }: { score: number }) {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(100, Math.max(0, score)) / 100);
-  const tone = score >= 80 ? "text-primary" : score >= 55 ? "text-accent" : "text-destructive";
+  const tone =
+    score >= 80
+      ? "text-emerald-400 light:text-emerald-700"
+      : score >= 55
+        ? "text-teal-400 light:text-teal-700"
+        : "text-destructive";
   return (
     <div className="relative grid size-14 place-items-center">
-      <svg className="absolute inset-0 size-14 -rotate-90" aria-hidden="true">
+      <svg viewBox="0 0 56 56" className="absolute inset-0 size-14 -rotate-90" aria-hidden="true">
         <circle
           cx="28"
           cy="28"
@@ -42,6 +50,7 @@ function ReadinessRing({ score }: { score: number }) {
           cx="28"
           cy="28"
           r={radius}
+          stroke="currentColor"
           className={`${tone} transition-all duration-700 motion-reduce:transition-none`}
           strokeWidth="4"
           fill="transparent"
@@ -50,18 +59,17 @@ function ReadinessRing({ score }: { score: number }) {
           strokeLinecap="round"
         />
       </svg>
-      <span className="text-display text-sm font-bold">{score}</span>
+      <span className="text-sm font-semibold">{score}</span>
     </div>
   );
 }
 
 export function Overview() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   const { user } = useAuth();
   const timeZone = browserTimeZone();
   const localDay = dayInTimeZone(new Date(), timeZone);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -76,11 +84,7 @@ export function Overview() {
     },
     enabled: !!user,
   });
-  const {
-    data: plan,
-    isLoading,
-    isError: planReadFailed,
-  } = useQuery({
+  const { data: plan, isError: planReadFailed } = useQuery({
     queryKey: ["active-plan", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -150,107 +154,93 @@ export function Overview() {
     [readinessScore, t],
   );
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
-  const anim = (delay: string) =>
-    `transition-all duration-700 motion-reduce:transition-none ${delay} ${mounted ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"}`;
-
-  if (isLoading) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
-
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-[#142239] bg-[#030914]/72 p-3 shadow-[0_35px_120px_rgba(0,0,0,.28)] sm:p-4 lg:p-5">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(37,99,235,.10),transparent_31%),radial-gradient(circle_at_72%_5%,rgba(124,58,237,.10),transparent_24%)]"
-      />
-      <div className="relative grid gap-3 lg:grid-cols-12">
-        <section
-          className={`flex items-end justify-between gap-4 border-b border-[#17243b] pb-4 lg:col-span-12 ${anim("")}`}
-        >
-          <div className="min-w-0">
-            <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-cyan-300/75">
-              GYMS.LIFE FUTURE LAB · {t("nav.today")}
-            </p>
-            <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-white sm:text-4xl">
+    <div className="fl-dashboard">
+      <div className="fl-cockpit">
+        <div className="fl-left-rail">
+          <aside className="fl-signal-rail">
+            <LiveSignals />
+          </aside>
+          <div className="fl-plan">
+            <TodaysPlanPanel />
+          </div>
+        </div>
+        <div className="fl-daily-column">
+          <header className="fl-greeting">
+            <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
+            <h1>
               {greeting}
-              {firstName ? `, ${firstName}` : ""} 👋
+              {firstName ? `, ${firstName}` : ""} <span aria-hidden="true">👋</span>
             </h1>
-            <p className="mt-1.5 text-xs text-slate-400">
+            <p>
               {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
             </p>
+          </header>
+          <div className="fl-readiness">
+            {readinessScore != null && Number.isFinite(readinessScore) ? (
+              <ReadinessCard
+                compact
+                score={readinessScore}
+                state={recoveryState}
+                ring={<ReadinessRing score={readinessScore} />}
+              />
+            ) : (
+              <div className="fl-surface fl-readiness-empty">
+                <p className="fl-eyebrow">{english ? "Readiness" : "Pasiruošimas"}</p>
+                <p>
+                  {readinessReadFailed
+                    ? t("ov.readinessReadFailed")
+                    : english
+                      ? "How are you feeling today?"
+                      : "Kaip šiandien jautiesi?"}
+                </p>
+                <Link to="/readiness" className="fl-text-link">
+                  {english ? "Check in" : "Įvertinti savijautą"} →
+                </Link>
+              </div>
+            )}
           </div>
-          {planData ? (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="hidden shrink-0 rounded-xl border border-[#1a2941] bg-[#08111e] text-xs text-slate-400 sm:inline-flex"
-            >
-              <Link to="/onboarding">{t("dash.regenerate")}</Link>
-            </Button>
-          ) : null}
-        </section>
-
-        <aside className={`grid content-start gap-3 lg:col-span-3 ${anim("delay-75")}`}>
-          <LiveSignals />
-          {/* Beside readiness rather than beside the training panels: the
-              night is what readiness is largely made of. */}
+          <div className="fl-brief space-y-3">
+            <MorningLabReview compact />
+            <SmartBrief compact />
+          </div>
+          <div className="fl-decision">
+            <TodayDecision compact workoutDay={today?.day ?? null} />
+          </div>
+        </div>
+        <div className="fl-body">
+          <TwinHome presentation="cockpit" />
+        </div>
+        <aside className="fl-laboratory">
+          <FutureLabRoster />
+        </aside>
+        <aside className="fl-predictions">
+          <PredictionEvidencePanel compact />
+          <RecoveryOutlook compact />
           <SleepAnalysis />
-          <TodaysPlanPanel />
-          {readinessScore != null ? (
-            <ReadinessCard
-              score={readinessScore}
-              state={recoveryState}
-              ring={<ReadinessRing score={readinessScore} />}
-            />
-          ) : readinessReadFailed ? (
-            <p className="rounded-2xl border border-[#1a2941] bg-[#08111e] p-4 text-sm text-slate-400">
-              {t("ov.readinessReadFailed")}
-            </p>
-          ) : null}
-          {/* Readiness is now; this is the same estimate read forward. Where
-              the template puts a seven-day performance forecast. */}
-          <RecoveryOutlook />
         </aside>
-
-        <div
-          className={`grid content-start gap-3 lg:col-span-6 ${anim("delay-100")}`}
-          aria-label={t("nav.today")}
-        >
-          <TwinTodayCard />
-          <div className="grid gap-3 xl:grid-cols-2">
-            <TodayDecision workoutDay={today?.day ?? null} />
-            <TodayLifeContext />
-          </div>
-        </div>
-
-        <aside className={`grid content-start gap-3 lg:col-span-3 ${anim("delay-150")}`}>
-          <SmartBrief />
-          <div className="rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4">
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
-              {t("ls.status")}
-            </p>
-            <p className="mt-2 text-sm font-semibold text-white">{t("nav.lab")}</p>
-            <p className="mt-2 text-xs leading-relaxed text-slate-400">{t("ls.body")}</p>
-            <Link
-              to="/lab"
-              className="mt-4 inline-flex min-h-10 items-center rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 text-[10px] font-bold uppercase tracking-wider text-violet-200"
-            >
-              {t("ls.open")}
+      </div>
+      <FutureLabTodayIntelligence />
+      <div className="fl-dashboard-footer">
+        <DataSourcesStrip />
+        <details className="fl-context-disclosure">
+          <summary>
+            <span className="fl-context-label-full">
+              {english
+                ? "Daily context & programme settings"
+                : "Dienos kontekstas ir programos nustatymai"}
+            </span>
+            <span className="fl-context-label-short">
+              {english ? "Context & settings" : "Kontekstas ir nustatymai"}
+            </span>
+          </summary>
+          <TodayLifeContext />
+          {planData ? (
+            <Link to="/onboarding" className="fl-text-link">
+              {t("dash.regenerate")} →
             </Link>
-          </div>
-          {/* Where the template puts a blended confidence percentage. Ours
-              says how much each prediction has actually been tested. */}
-          <PredictionEvidencePanel />
-        </aside>
-
-        <div className={`lg:col-span-12 ${anim("delay-200")}`}>
-          <FutureLabTodayIntelligence />
-        </div>
-
-        {/* The template closes on a row of data sources. Ours says which kinds
-            have actually delivered rather than declaring all systems green. */}
-        <div className={`lg:col-span-12 ${anim("delay-300")}`}>
-          <DataSourcesStrip />
-        </div>
+          ) : null}
+        </details>
       </div>
     </div>
   );

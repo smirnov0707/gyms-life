@@ -1,415 +1,354 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createOfflineIdentity } from "./offline-identity";
+import { readLegacyOffline, legacyOfflineDigest } from "./offline-legacy";
 import {
-  flushOfflineWorkoutSets,
-  getOfflineQueue,
-  isNetworkUnavailable,
   OfflineQueueError,
-  queueWorkoutSet,
-  retainUnacknowledgedWorkoutSets,
+  OfflinePayloadSchema,
   syncPayload,
-  synchronizeWorkoutSets,
-  type OfflinePayload,
-  type WorkoutSetSync,
-} from "./offline-store";
-
-const firstSet: WorkoutSetSync = {
-  sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
-  exerciseSlug: "barbell-squat",
-  exerciseName: "Barbell Squat",
-  setNumber: 1,
-  reps: 8,
-  weightKg: 100,
-  rpe: 8,
-  done: true,
-  performedAt: "2026-09-04T19:00:00.000Z",
-};
-
-describe("synchronizeWorkoutSets", () => {
-  it("removes acknowledged sets and preserves only failed deliveries for a later retry", async () => {
-    const secondSet = { ...firstSet, setNumber: 2 };
-    const queue: OfflinePayload[] = [
-      { id: "one", type: "workout_set", data: firstSet, timestamp: 1 },
-      { id: "two", type: "workout_set", data: secondSet, timestamp: 2 },
-    ];
-    const sync = vi.fn(async (input: WorkoutSetSync) => {
-      if (input.setNumber === 2) throw new Error("network unavailable");
-    });
-
-    const result = await synchronizeWorkoutSets(queue, sync);
-
-    expect(result.synced).toBe(1);
-    expect(result.remaining).toEqual([queue[1]]);
-    expect(sync).toHaveBeenCalledTimes(2);
-  });
-
-  it("keeps records queued during a flush while removing only acknowledged records", () => {
-    const secondSet = { ...firstSet, setNumber: 2 };
-    const thirdSet = { ...firstSet, setNumber: 3 };
-    const acknowledgedPayload: OfflinePayload = {
-      id: "one",
-      type: "workout_set",
-      data: firstSet,
-      timestamp: 1,
-    };
-    const failedPayload: OfflinePayload = {
-      id: "two",
-      type: "workout_set",
-      data: secondSet,
-      timestamp: 2,
-    };
-    const snapshot = [acknowledgedPayload, failedPayload];
-    const queuedDuringFlush: OfflinePayload = {
-      id: "three",
-      type: "workout_set",
-      data: thirdSet,
-      timestamp: 3,
-    };
-
-    const next = retainUnacknowledgedWorkoutSets(
-      snapshot,
-      [failedPayload],
-      [...snapshot, queuedDuringFlush],
-    );
-
-    expect(next).toEqual([failedPayload, queuedDuringFlush]);
-  });
-});
-
-describe("isNetworkUnavailable", () => {
-  it("queues failed writes only for transient connectivity failures", () => {
-    expect(isNetworkUnavailable(new TypeError("Failed to fetch"))).toBe(true);
-    expect(isNetworkUnavailable(new Error("Workout session is already finished."))).toBe(false);
-  });
-});
-
-describe("syncPayload", () => {
-  it("sends the instant the set was performed", () => {
-    const item: OfflinePayload = {
-      id: "one",
-      type: "workout_set",
-      data: firstSet,
-      timestamp: Date.parse("2026-09-05T08:00:00.000Z"),
-    };
-    expect(syncPayload(item).performedAt).toBe("2026-09-04T19:00:00.000Z");
-  });
-
-  it("recovers the instant from a queue written before the field existed", () => {
-    // Upgrading the app must never silently re-date work already done. An
-    // older payload has no performedAt, but its own queue timestamp is that
-    // same moment.
-    const { performedAt: _dropped, ...legacy } = firstSet;
-    const item = {
-      id: "one",
-      type: "workout_set" as const,
-      data: legacy,
-      timestamp: Date.parse("2026-09-04T19:00:00.000Z"),
-    };
-    expect(syncPayload(item).performedAt).toBe("2026-09-04T19:00:00.000Z");
-  });
-});
-
-describe("flushOfflineWorkoutSets", () => {
-  let dispatched: string[] = [];
-
-  /** A minimal localStorage, since these paths are browser-only. */
-  function stubBrowser(seed: OfflinePayload[]) {
-    const store = new Map<string, string>([["gyms_life_offline_queue_v2", JSON.stringify(seed)]]);
-    dispatched = [];
-    vi.stubGlobal("window", {
-      localStorage: {
-        getItem: (key: string) => store.get(key) ?? null,
-        setItem: (key: string, value: string) => store.set(key, value),
-      },
-      // The queue announces every change so the strip that reports undelivered
-      // sets can react to one instead of polling local storage.
-      dispatchEvent: (event: Event) => {
-        dispatched.push(event.type);
-        return true;
-      },
-    });
-    vi.stubGlobal(
-      "localStorage",
-      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
-    );
-    vi.stubGlobal("navigator", { onLine: true });
-    return store;
-  }
-
-  it("delivers each queued set once when two screens flush at the same time", async () => {
-    // The workout screen has always flushed on `online`. `OfflineQueueSync`
-    // now does too, from the authenticated layout, so sets logged in a
-    // basement gym still arrive if the athlete never reopens that screen.
-    // Two callers must not mean two deliveries.
-    const store = stubBrowser([
-      { id: "a", type: "workout_set", data: firstSet, timestamp: 1_764_000_000_000 },
-      {
-        id: "b",
-        type: "workout_set",
-        data: { ...firstSet, setNumber: 2 },
-        timestamp: 1_764_000_060_000,
-      },
-    ]);
-
-    const delivered: string[] = [];
-    const sync = vi.fn(async (input: WorkoutSetSync) => {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      delivered.push(`${input.exerciseSlug}#${input.setNumber}`);
-    });
-
-    const { flushOfflineWorkoutSets } = await import("./offline-store");
-    const [first, second] = await Promise.all([
-      flushOfflineWorkoutSets(sync),
-      flushOfflineWorkoutSets(sync),
-    ]);
-
-    expect(sync).toHaveBeenCalledTimes(2);
-    expect(delivered).toHaveLength(2);
-    // Both callers observe the same finished flush.
-    expect(first).toEqual(second);
-    expect(first.remaining).toBe(0);
-    expect(JSON.parse(store.get("gyms_life_offline_queue_v2") ?? "[]")).toEqual([]);
-
-    vi.unstubAllGlobals();
-  });
-
-  it("keeps a set queued when delivery fails, so a reconnect retries it", async () => {
-    const store = stubBrowser([
-      { id: "a", type: "workout_set", data: firstSet, timestamp: 1_764_000_000_000 },
-    ]);
-    const { flushOfflineWorkoutSets } = await import("./offline-store");
-
-    const result = await flushOfflineWorkoutSets(async () => {
-      throw new Error("Failed to fetch");
-    });
-
-    expect(result).toEqual({ synced: 0, remaining: 1 });
-    expect(JSON.parse(store.get("gyms_life_offline_queue_v2") ?? "[]")).toHaveLength(1);
-
-    vi.unstubAllGlobals();
-  });
-
-  it("announces every change, so the strip reporting undelivered sets can follow", async () => {
-    // Sets waiting here are training that happened; every screen in the app
-    // reads their absence as training that did not. The strip that says so
-    // has to learn when the queue empties without polling local storage.
-    stubBrowser([{ id: "a", type: "workout_set", data: firstSet, timestamp: 1_764_000_000_000 }]);
-    const { flushOfflineWorkoutSets, OFFLINE_QUEUE_EVENT } = await import("./offline-store");
-
-    await flushOfflineWorkoutSets(async () => undefined);
-
-    expect(dispatched).toContain(OFFLINE_QUEUE_EVENT);
-    vi.unstubAllGlobals();
-  });
-});
-
-describe("a queue that cannot be read", () => {
-  /** The same minimal storage, seeded with a raw string rather than a queue. */
-  function stubBrowser(raw: string) {
-    const store = new Map<string, string>([["gyms_life_offline_queue_v2", raw]]);
-    vi.stubGlobal("window", {
-      localStorage: {
-        getItem: (key: string) => store.get(key) ?? null,
-        setItem: (key: string, value: string) => store.set(key, value),
-      },
-      dispatchEvent: () => true,
-    });
-    vi.stubGlobal(
-      "localStorage",
-      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
-    );
-    return store;
-  }
-
-  const set: WorkoutSetSync = {
-    sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
-    exerciseSlug: "barbell-squat",
-    exerciseName: "Barbell Squat",
-    setNumber: 9,
-    reps: 5,
-    weightKg: 120,
-    rpe: 9,
+  validOfflineAcknowledgement,
+  sameOfflineExecution,
+  type OwnedOfflineItem,
+  type OfflineSyncRequest,
+} from "./offline-contract";
+import {
+  synchronizeOwnedOffline,
+  recoverVerifiedLegacy,
+  type OfflineRepository,
+} from "./offline-sync.engine";
+const A = "11111111-1111-4111-8111-111111111111",
+  B = "22222222-2222-4222-8222-222222222222",
+  SESSION = "33333333-3333-4333-8333-333333333333";
+const ID = "44444444-4444-4444-8444-444444444444",
+  AT = "2026-09-09T14:00:00.000Z";
+const item = (n = 1, ownerId = A): OwnedOfflineItem => ({
+  id: ID.slice(0, -2) + String(n).padStart(2, "0"),
+  version: 3,
+  ownerId,
+  type: "workout_set",
+  timestamp: Date.parse(AT),
+  data: {
+    sessionId: SESSION,
+    exerciseSlug: "squat",
+    exerciseName: "Synthetic squat",
+    setNumber: n,
+    reps: 8,
+    weightKg: 20,
+    rpe: null,
     done: true,
-    performedAt: "2026-09-08T19:00:00.000Z",
+    performedAt: AT,
+  },
+});
+const ack = (input: OfflineSyncRequest) => ({
+  status: "acknowledged" as const,
+  ownerId: input.ownerId,
+  clientId: input.clientId,
+  data: input.data,
+  serverSetId: "55555555-5555-4555-8555-555555555555",
+});
+const request = (row: OwnedOfflineItem): OfflineSyncRequest => ({
+  ownerId: row.ownerId,
+  clientId: row.id,
+  data: syncPayload(row),
+});
+function repository(initial: OwnedOfflineItem[]) {
+  const rows = structuredClone(initial),
+    imports = new Set<string>();
+  const repo: OfflineRepository = {
+    read: vi.fn(async (scope) => {
+      scope.assertCurrent();
+      return {
+        ownerId: scope.ownerId,
+        items: structuredClone(rows.filter((r) => r.ownerId === scope.ownerId)),
+        invalidCount: 0,
+      };
+    }),
+    add: vi.fn(async (scope, data, opts) => {
+      scope.assertCurrent();
+      if (opts?.legacy && imports.has(opts.legacy.digest)) return null;
+      const next = { ...item(rows.length + 1, scope.ownerId), data };
+      rows.push(next);
+      if (opts?.legacy) imports.add(opts.legacy.digest);
+      return next;
+    }),
+    acknowledge: vi.fn(async (scope, row, response) => {
+      scope.assertCurrent();
+      if (!validOfflineAcknowledgement(row, response)) return false;
+      const index = rows.findIndex(
+        (r) =>
+          r.ownerId === scope.ownerId &&
+          r.id === row.id &&
+          sameOfflineExecution(syncPayload(r), syncPayload(row)),
+      );
+      if (index < 0) return false;
+      rows.splice(index, 1);
+      return true;
+    }),
+    retain: vi.fn(async (scope, row, reason) => {
+      scope.assertCurrent();
+      const current = rows.find((r) => r.ownerId === scope.ownerId && r.id === row.id);
+      if (current) current.lastFailure = reason;
+    }),
   };
-
-  it("keeps the unreadable value instead of writing over it", () => {
-    // The defect. `getOfflineQueue` answered a corrupt store with `[]`, and
-    // `queueWorkoutSet` built the next queue from that answer — so one bad
-    // blob and the next set replaced every set the athlete had logged offline.
-    const store = stubBrowser("{ this is not a queue");
-    queueWorkoutSet(set);
-
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBe("{ this is not a queue");
-    // And the athlete can keep logging: the new set is queued, not refused.
-    expect(getOfflineQueue()).toHaveLength(1);
+  return { repo, rows };
+}
+function identity() {
+  const auth = createOfflineIdentity();
+  auth.set(A);
+  return { auth, scope: auth.capture(A) };
+}
+afterEach(() => vi.useRealTimers());
+describe("offline identity epochs", () => {
+  it("requires a known signed-in owner before reading or saving", () => {
+    const auth = createOfflineIdentity();
+    expect(() => auth.capture(A)).toThrow("OFFLINE_IDENTITY_CHANGED");
+    auth.set(A);
+    expect(() => auth.capture(B)).toThrow();
   });
-
-  it("treats a stored value that is not a list as unreadable too", () => {
-    const store = stubBrowser(JSON.stringify({ not: "an array" }));
-    queueWorkoutSet(set);
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeDefined();
+  it("invalidates old work even if A signs out and back in before it settles", () => {
+    const { auth, scope } = identity();
+    auth.set(null);
+    auth.set(B);
+    auth.set(A);
+    expect(scope.isCurrent()).toBe(false);
+    expect(auth.capture(A).isCurrent()).toBe(true);
   });
-
-  it("appends normally to a queue it could read", () => {
-    const existing: OfflinePayload[] = [
-      {
-        id: "a",
-        type: "workout_set",
-        data: { ...set, setNumber: 1 },
-        timestamp: 1_764_000_000_000,
-      },
-    ];
-    const store = stubBrowser(JSON.stringify(existing));
-    queueWorkoutSet(set);
-
-    expect(getOfflineQueue()).toHaveLength(2);
-    // Nothing was salvaged, because nothing was in danger.
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
-  });
-
-  it("treats an empty store as readable, not as damaged", () => {
-    const store = stubBrowser("[]");
-    queueWorkoutSet(set);
-    expect(getOfflineQueue()).toHaveLength(1);
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
-  });
-
-  it("still drops a single malformed entry without losing its neighbours", () => {
-    // The behaviour the file's own comment was written for, unchanged.
-    const store = stubBrowser(
-      JSON.stringify([
-        { id: "a", type: "workout_set", data: set, timestamp: 1_764_000_000_000 },
-        { id: "b", nonsense: true },
-      ]),
-    );
-    expect(getOfflineQueue()).toHaveLength(1);
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
+  it("a token refresh for the same identity does not discard its work", () => {
+    const { auth, scope } = identity();
+    auth.set(A);
+    expect(scope.isCurrent()).toBe(true);
   });
 });
-
-describe("why a set could not be queued", () => {
-  /** Storage that refuses the queue write, the way a full device does. */
-  function stubBrowser(options: { seed?: string; refuseWrite?: boolean } = {}) {
-    const store = new Map<string, string>();
-    if (options.seed !== undefined) store.set("gyms_life_offline_queue_v2", options.seed);
-    vi.stubGlobal("window", {
-      localStorage: {
-        getItem: (key: string) => store.get(key) ?? null,
-        setItem: (key: string, value: string) => {
-          if (options.refuseWrite && key === "gyms_life_offline_queue_v2") {
-            throw new Error("QuotaExceededError: exceeded the quota.");
-          }
-          store.set(key, value);
+describe("non-destructive earlier-version records", () => {
+  const legacy = (rows: unknown) => ({
+    getItem: vi.fn((key: string) => (key.endsWith(".unreadable") ? null : JSON.stringify(rows))),
+  });
+  it("reads empty, corrupt and unavailable storage as distinct states", () => {
+    expect(readLegacyOffline({ getItem: () => null }).status).toBe("absent");
+    expect(readLegacyOffline({ getItem: () => "not-json" })).toMatchObject({
+      status: "present",
+      items: [],
+      invalidCount: 2,
+    });
+    expect(
+      readLegacyOffline({
+        getItem: () => {
+          throw new Error("denied");
         },
-      },
-      dispatchEvent: () => true,
-    });
-    vi.stubGlobal(
-      "localStorage",
-      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
+      }).status,
+    ).toBe("unavailable");
+  });
+  it("preserves good rows beside a malformed row, without rewriting either", () => {
+    const data = legacy([item(), { broken: true }, item(2)]);
+    const result = readLegacyOffline(data);
+    expect(result.items).toHaveLength(2);
+    expect(result.invalidCount).toBe(1);
+    expect(data).not.toHaveProperty("setItem");
+  });
+  it("does not salvage by overwriting the old unreadable backup", () => {
+    const raw = {
+      getItem: (key: string) =>
+        key.endsWith(".unreadable") ? JSON.stringify([item(2)]) : "broken",
+    };
+    const result = readLegacyOffline(raw);
+    expect(result.items).toHaveLength(1);
+    expect(result.invalidCount).toBe(1);
+  });
+  it("reads only bounded legacy input and marks truncation instead of claiming full recovery", () => {
+    const report = readLegacyOffline(
+      legacy(Array.from({ length: 201 }, (_, i) => ({ ...item(), id: String(i) }))),
     );
-    return store;
-  }
-
-  const set: WorkoutSetSync = {
-    sessionId: "7d1c57b8-0df2-4e87-a7a2-e9a2adf0f6aa",
-    exerciseSlug: "barbell-squat",
-    exerciseName: "Barbell Squat",
-    setNumber: 3,
-    reps: 5,
-    weightKg: 120,
-    rpe: 9,
-    done: true,
-    performedAt: "2026-09-08T19:00:00.000Z",
-  };
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
+    expect(report.items).toHaveLength(200);
+    expect(report.limited).toBe(true);
+    expect(readLegacyOffline({ getItem: () => "x".repeat(2_000_001) }).limited).toBe(true);
   });
-
-  it("names a full queue, rather than throwing a sentence nothing displays", () => {
-    // The old throw carried an English sentence into a screen whose only job
-    // was to replace it, so the athlete read "Could not save the set" for a
-    // condition they could have acted on.
-    const full = Array.from({ length: 200 }, (_, index) => ({
-      id: `id-${index}`,
-      type: "workout_set" as const,
-      data: set,
-      timestamp: 1_764_000_000_000 + index,
-    }));
-    stubBrowser({ seed: JSON.stringify(full) });
-
-    expect(() => queueWorkoutSet(set)).toThrow(OfflineQueueError);
-    try {
-      queueWorkoutSet(set);
-    } catch (error) {
-      expect((error as OfflineQueueError).reason).toBe("queue_full");
-    }
+  it("retains the original performed time for old rows without a time field", () => {
+    const row = item();
+    delete row.data.performedAt;
+    expect(syncPayload(row).performedAt).toBe(AT);
+    expect(() => syncPayload({ ...row, timestamp: Infinity })).toThrow();
   });
-
-  it("names storage refusing the write, which used to surface as a bare DOMException", () => {
-    stubBrowser({ seed: "[]", refuseWrite: true });
-
-    try {
-      queueWorkoutSet(set);
-      expect.unreachable("the write was refused");
-    } catch (error) {
-      expect((error as OfflineQueueError).reason).toBe("storage_rejected");
-    }
+  it("does not infer or coerce corrupted numeric facts", () => {
+    expect(
+      OfflinePayloadSchema.safeParse({ ...item(), data: { ...item().data, weightKg: "20" } })
+        .success,
+    ).toBe(false);
+    expect(OfflinePayloadSchema.safeParse({ ...item(), timestamp: 9e20 }).success).toBe(false);
   });
-
-  it("leaves the sets already queued exactly where they were", () => {
-    // The fact the athlete most needs and was never told: a refused write is
-    // not a partial one. Everything logged earlier is still here.
-    const existing: OfflinePayload[] = [
-      { id: "a", type: "workout_set", data: { ...set, setNumber: 1 }, timestamp: 1 },
-      { id: "b", type: "workout_set", data: { ...set, setNumber: 2 }, timestamp: 2 },
-    ];
-    stubBrowser({ seed: JSON.stringify(existing), refuseWrite: true });
-
-    expect(() => queueWorkoutSet(set)).toThrow(OfflineQueueError);
-    expect(getOfflineQueue()).toHaveLength(2);
+  it("legacy fingerprint binds the values as well as their reused row ID", async () => {
+    const one = item(),
+      two = { ...one, data: { ...one.data, reps: 12 } };
+    expect(await legacyOfflineDigest(one)).not.toBe(await legacyOfflineDigest(two));
   });
 });
-
-describe("flushing over a queue that cannot be read", () => {
-  function stubBrowser(raw: string) {
-    const store = new Map<string, string>([["gyms_life_offline_queue_v2", raw]]);
-    vi.stubGlobal("window", {
-      localStorage: {
-        getItem: (key: string) => store.get(key) ?? null,
-        setItem: (key: string, value: string) => store.set(key, value),
-      },
-      dispatchEvent: () => true,
+describe("acknowledged-only identity-bound outbox delivery", () => {
+  it("reads/sends/removes only A records while preserving B byte-for-byte", async () => {
+    const { scope } = identity(),
+      db = repository([item(), item(2, B)]),
+      before = JSON.stringify(db.rows[1]);
+    const send = vi.fn(async (input) => ack(input));
+    const result = await synchronizeOwnedOffline(scope, db.repo, send);
+    expect(result).toMatchObject({ synced: 1, remaining: 0, cancelled: false });
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(db.rows[0])).toBe(before);
+  });
+  it.each([
+    undefined,
+    null,
+    { ok: true },
+    { status: "acknowledged" },
+    { ...ack(request(item())), ownerId: B },
+    { ...ack(request(item())), clientId: item(2).id },
+    { ...ack(request(item())), data: { ...item().data, reps: 9 } },
+  ])(
+    "never treats an empty, wrong-owner or conflicting response as saved: %j",
+    async (response) => {
+      const { scope } = identity(),
+        db = repository([item()]);
+      const report = await synchronizeOwnedOffline(scope, db.repo, async () => response);
+      expect(report.synced).toBe(0);
+      expect(db.rows).toHaveLength(1);
+      expect(db.repo.acknowledge).not.toHaveBeenCalled();
+    },
+  );
+  it("retains explicit server conflicts and completed-session refusals", async () => {
+    const { scope } = identity(),
+      db = repository([item()]);
+    await synchronizeOwnedOffline(scope, db.repo, async (input) => ({
+      status: "retained",
+      ownerId: A,
+      clientId: input.clientId,
+      reason: "conflict",
+    }));
+    expect(db.rows[0]!.lastFailure).toBe("conflict");
+    expect(db.rows[0]!.data.weightKg).toBe(20);
+  });
+  it("does not delete or send the next A record after account B takes over mid-request", async () => {
+    const { auth, scope } = identity(),
+      db = repository([item(), item(2), item(3, B)]);
+    const send = vi.fn(async (input) => {
+      auth.set(B);
+      return ack(input);
     });
-    vi.stubGlobal(
-      "localStorage",
-      (globalThis as { window: { localStorage: Storage } }).window.localStorage,
-    );
-    vi.stubGlobal("navigator", { onLine: true });
-    return store;
-  }
-
-  it("does not overwrite a corrupt queue with an empty one", async () => {
-    // The worse of the two write paths. A corrupt store reads as `[]`, so the
-    // snapshot is empty, nothing syncs, and the flush then persists `[]` over
-    // the only copy of the athlete's sets — destroying them without even
-    // adding a set in exchange.
-    const store = stubBrowser('[{"id":"a","type":"workout_set"');
-    const sync = vi.fn();
-
-    const result = await flushOfflineWorkoutSets(sync);
-
-    expect(sync).not.toHaveBeenCalled();
+    const report = await synchronizeOwnedOffline(scope, db.repo, send);
+    expect(report.cancelled).toBe(true);
+    expect(db.rows).toHaveLength(3);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(db.repo.acknowledge).not.toHaveBeenCalled();
+  });
+  it("retains the old owner rows when a sign-out/sign-in epoch changes back to A", async () => {
+    const { auth, scope } = identity(),
+      db = repository([item()]);
+    await synchronizeOwnedOffline(scope, db.repo, async (input) => {
+      auth.set(null);
+      auth.set(A);
+      return ack(input);
+    });
+    expect(db.rows).toHaveLength(1);
+  });
+  it("preserves records appended while the earlier snapshot was in flight", async () => {
+    const { scope } = identity(),
+      db = repository([item()]);
+    await synchronizeOwnedOffline(scope, db.repo, async (input) => {
+      db.rows.push(item(2));
+      return ack(input);
+    });
+    expect(db.rows.map((row) => row.data.setNumber)).toEqual([2]);
+  });
+  it("a failed local acknowledgement transaction is not counted as synchronization", async () => {
+    const { scope } = identity(),
+      db = repository([item()]);
+    vi.mocked(db.repo.acknowledge).mockRejectedValue(new OfflineQueueError("storage_rejected"));
+    const result = await synchronizeOwnedOffline(scope, db.repo, async (input) => ack(input));
     expect(result.synced).toBe(0);
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBe(
-      '[{"id":"a","type":"workout_set"',
+    expect(db.rows).toHaveLength(1);
+  });
+  it("bounds a hung network request and ignores a late successful response", async () => {
+    vi.useFakeTimers();
+    const { scope } = identity(),
+      db = repository([item()]);
+    let resolve!: (value: unknown) => void;
+    const pending = new Promise((r) => {
+      resolve = r;
+    });
+    const sent = synchronizeOwnedOffline(scope, db.repo, () => pending);
+    await vi.advanceTimersByTimeAsync(20_001);
+    expect((await sent).synced).toBe(0);
+    resolve(ack(request(item())));
+    await Promise.resolve();
+    expect(db.rows).toHaveLength(1);
+    expect(db.repo.acknowledge).not.toHaveBeenCalled();
+  });
+  it("offline delivery makes no server call, and storage unavailability is not an empty queue", async () => {
+    const { scope } = identity(),
+      db = repository([item()]),
+      send = vi.fn();
+    expect((await synchronizeOwnedOffline(scope, db.repo, send, () => false)).remaining).toBe(1);
+    expect(send).not.toHaveBeenCalled();
+    vi.mocked(db.repo.read).mockRejectedValue(new OfflineQueueError("storage_unavailable"));
+    await expect(synchronizeOwnedOffline(scope, db.repo, send)).rejects.toThrow(
+      "OFFLINE_STORAGE_UNAVAILABLE",
     );
   });
-
-  it("leaves a readable queue alone when there is nothing to deliver", async () => {
-    const store = stubBrowser("[]");
-    await flushOfflineWorkoutSets(vi.fn());
-    expect(store.get("gyms_life_offline_queue_v2.unreadable")).toBeUndefined();
+});
+describe("verified legacy adoption", () => {
+  const view = {
+    status: "present" as const,
+    items: [
+      item(),
+      { ...item(2), data: { ...item(2).data, sessionId: "66666666-6666-4666-8666-666666666666" } },
+    ],
+    invalidCount: 1,
+    limited: false,
+  };
+  it("imports only sessions verified for this account and keeps malformed/unowned records untouched", async () => {
+    const before = JSON.stringify(view),
+      { scope } = identity(),
+      db = repository([]);
+    const report = await recoverVerifiedLegacy(scope, view, db.repo, async (input) => ({
+      ownerId: input.ownerId,
+      sessionIds: [SESSION],
+    }));
+    expect(report).toMatchObject({ recovered: 1, unverified: 1, invalidCount: 1 });
+    expect(JSON.stringify(view)).toBe(before);
+    expect(db.rows[0]!.data.performedAt).toBe(AT);
+  });
+  it("a failed ownership read performs no import", async () => {
+    const { scope } = identity(),
+      db = repository([]);
+    await expect(
+      recoverVerifiedLegacy(scope, view, db.repo, async () => {
+        throw new Error("unavailable");
+      }),
+    ).rejects.toThrow();
+    expect(db.repo.add).not.toHaveBeenCalled();
+  });
+  it.each([
+    { ownerId: B, sessionIds: [SESSION] },
+    { ownerId: A, sessionIds: ["77777777-7777-4777-8777-777777777777"] },
+  ])("refuses a mismatched or unsolicited verification response %j", async (response) => {
+    const { scope } = identity(),
+      db = repository([]);
+    await expect(
+      recoverVerifiedLegacy(scope, view, db.repo, async () => response),
+    ).rejects.toThrow();
+    expect(db.repo.add).not.toHaveBeenCalled();
+  });
+  it("does not reimport a row already accounted for in the atomic recovery ledger", async () => {
+    const { scope } = identity(),
+      db = repository([]),
+      verify = async () => ({ ownerId: A, sessionIds: [SESSION] });
+    expect((await recoverVerifiedLegacy(scope, view, db.repo, verify)).recovered).toBe(1);
+    expect((await recoverVerifiedLegacy(scope, view, db.repo, verify)).recovered).toBe(0);
+  });
+  it("rejects verification completing after an identity change without adopting rows", async () => {
+    const { auth, scope } = identity(),
+      db = repository([]);
+    await expect(
+      recoverVerifiedLegacy(scope, view, db.repo, async () => {
+        auth.set(B);
+        return { ownerId: A, sessionIds: [SESSION] };
+      }),
+    ).rejects.toThrow("OFFLINE_IDENTITY_CHANGED");
+    expect(db.repo.add).not.toHaveBeenCalled();
   });
 });

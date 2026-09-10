@@ -1,7 +1,12 @@
+import { MealPlanReviewNotice } from "@/components/MealPlanReviewNotice";
+import { MealPlanInputSchema, mealPreferencesFromProfile } from "@/lib/meal-preferences.schema";
+import { refreshCoreData } from "@/lib/core-cache";
+import { browserTimeZone } from "@/lib/local-day";
+import { serializeJson } from "@/lib/json.schema";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChefHat,
   ClipboardList,
@@ -16,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { aiErrorMessage } from "@/lib/ai-error";
 import { errorMessage } from "@/lib/error-message";
 import { generateMealPlan } from "@/lib/meal.functions";
@@ -25,10 +30,12 @@ import { downloadShoppingListPdf } from "@/lib/shopping-pdf";
 import { printShoppingList } from "@/lib/shopping-print";
 import { withCompleteShoppingList } from "@/lib/shopping-build";
 import { useLocalizedMealPlan } from "@/lib/use-localized-meal-plan";
-import { parseStoredMealPlan, type GeneratedMealPlan } from "@/lib/meal-plan.schema";
+import {
+  parseStoredMealPlan,
+  MEAL_PLAN_MIN_DAILY_KCAL,
+  MEAL_PLAN_MAX_DAILY_KCAL,
+} from "@/lib/meal-plan.schema";
 import { Button } from "@/components/ui/button";
-import { DynamicTDEECalculator } from "@/components/DynamicTDEECalculator";
-import { SmartFastingWindow } from "@/components/SmartFastingWindow";
 
 export const Route = createFileRoute("/_authenticated/meal-plan")({
   head: () => ({
@@ -76,6 +83,10 @@ const COOKING: { value: string; key: TKey }[] = [
 function MealPlanPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
+  const qc = useQueryClient();
+  const actionLock = useRef(false);
+  const initialized = useRef<string | null>(null);
+  const en = baseLang(lang) === "en";
   const run = useServerFn(generateMealPlan);
   const adapt = useServerFn(adaptMealPlan);
 
@@ -94,14 +105,13 @@ function MealPlanPage() {
   const [adaptFrom, setAdaptFrom] = useState(1);
   const [adaptNote, setAdaptNote] = useState("");
   const [openDay, setOpenDay] = useState(1);
-  const [fresh, setFresh] = useState<GeneratedMealPlan | null>(null);
 
-  const { data: saved, refetch } = useQuery({
+  const savedQuery = useQuery({
     queryKey: ["meal-plan", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meal_plans")
-        .select("id, data, lang, created_at")
+        .select("id, data, lang, created_at, updated_at")
         .eq("user_id", user!.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
@@ -113,57 +123,144 @@ function MealPlanPage() {
     enabled: !!user,
   });
 
+  const preferencesQuery = useQuery({
+    queryKey: ["meal-preferences", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("diet, allergies, dislikes, meals_per_day")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw new Error("Meal preferences unavailable");
+      return mealPreferencesFromProfile(data);
+    },
+  });
+  useEffect(() => {
+    if (!user || !preferencesQuery.data || initialized.current === user.id) return;
+    const prefs = preferencesQuery.data;
+    setDiet(prefs.diet);
+    setAllergies(prefs.allergies);
+    setDislikes(prefs.dislikes);
+    setMealsPerDay(prefs.mealsPerDay);
+    initialized.current = user.id;
+  }, [user, preferencesQuery.data]);
+  const saved = savedQuery.isError ? null : savedQuery.data;
   const savedPlan = saved ? parseStoredMealPlan(saved.data) : null;
-  const { plan: localizedSaved, translating } = useLocalizedMealPlan(
-    saved?.id,
-    savedPlan,
-    saved?.lang ?? "lt",
-  );
+  const invalidSaved = !!saved && !savedPlan;
+  const loading = savedQuery.isPending || preferencesQuery.isPending;
+  const canMutate =
+    !!user && !loading && !savedQuery.isError && !preferencesQuery.isError && !busy && !adaptBusy;
 
-  const rawPlan = fresh ?? localizedSaved ?? null;
+  const {
+    plan: localizedSaved,
+    translating,
+    translationFailed,
+  } = useLocalizedMealPlan(saved?.id, savedPlan, saved?.lang ?? "lt", saved?.updated_at);
+
+  const rawPlan = savedQuery.isError ? null : localizedSaved;
   const plan = useMemo(
     () => (rawPlan ? withCompleteShoppingList(rawPlan, lang) : null),
     [rawPlan, lang],
   );
 
   const generate = async () => {
+    if (!canMutate || actionLock.current) return;
+    actionLock.current = true;
     setBusy(true);
     try {
-      const res = await run({
-        data: {
-          diet,
-          allergies,
-          dislikes,
-          mealsPerDay,
-          budget,
-          cookingLevel,
-          kcalTarget: kcalMode === "custom" ? kcalCustom : null,
-          lang,
-        },
+      const request = MealPlanInputSchema.safeParse({
+        diet,
+        allergies,
+        dislikes,
+        mealsPerDay,
+        budget,
+        cookingLevel,
+        kcalTarget: kcalMode === "custom" ? kcalCustom : null,
+        lang,
       });
-
-      setFresh(res.plan);
+      if (!request.success) {
+        toast.error(
+          en
+            ? "Check your meal preferences and calorie target."
+            : "Patikrink mitybos pasirinkimus ir kalorijų tikslą.",
+        );
+        return;
+      }
+      const res = await run({ data: request.data });
+      qc.setQueryData(["meal-plan", user!.id], {
+        id: res.id,
+        data: serializeJson(res.plan),
+        lang,
+        created_at: res.createdAt,
+        updated_at: res.updatedAt,
+      });
       setOpenDay(1);
-      refetch();
+      await refreshCoreData(qc, "meals");
     } catch (error) {
-      toast.error(aiErrorMessage(error, t));
+      if (error instanceof Error && error.message.includes("MEAL_PROFILE_CHANGED")) {
+        toast.error(
+          en
+            ? "Your profile changed while the plan was being created. Refresh your preferences and try again; the previous plan is unchanged."
+            : "Kuriant planą pasikeitė profilis. Atnaujink pasirinkimus ir bandyk dar kartą; ankstesnis planas nepakeistas.",
+        );
+        initialized.current = null;
+        await refreshCoreData(qc, "meals");
+      } else if (error instanceof Error && error.message.includes("MEAL_RESTRICTION_CONFLICT")) {
+        toast.error(
+          en
+            ? "The recipe conflicts with a declared dietary restriction. It was not saved. Review the preferences and try again."
+            : "Recepte aptiktas neatitikimas mitybos apribojimui. Planas neišsaugotas. Patikrink pasirinkimus ir bandyk dar kartą.",
+        );
+      } else if (error instanceof Error && error.message.includes("MEAL_PROFILE_INCOMPLETE")) {
+        toast.error(
+          en
+            ? "Complete your body details in Profile or choose a custom calorie target. We will not invent missing body data."
+            : "Papildyk kūno duomenis profilyje arba pasirink kalorijų tikslą. Trūkstamų kūno duomenų neišgalvosime.",
+        );
+      } else toast.error(aiErrorMessage(error, t));
     } finally {
+      actionLock.current = false;
       setBusy(false);
     }
   };
 
   const runAdapt = async () => {
+    if (!canMutate || actionLock.current || !saved || !savedPlan) return;
+    actionLock.current = true;
     setAdaptBusy(true);
     try {
-      const res = await adapt({ data: { fromDay: adaptFrom, notes: adaptNote, lang } });
-      setFresh(res.plan);
+      const res = await adapt({
+        data: {
+          planId: saved.id,
+          version: saved.updated_at,
+          timeZone: browserTimeZone(),
+          fromDay: adaptFrom,
+          notes: adaptNote,
+          lang,
+        },
+      });
+      qc.setQueryData(["meal-plan", user!.id], {
+        ...saved,
+        id: res.id,
+        data: serializeJson(res.plan),
+        lang: res.lang,
+        updated_at: res.updatedAt,
+      });
       setOpenDay(adaptFrom);
       setAdaptNote("");
-      refetch();
+      await refreshCoreData(qc, "meals");
       toast.success(t("mp.adapted"));
     } catch (error) {
-      toast.error(aiErrorMessage(error, t));
+      if (error instanceof Error && error.message.includes("MEAL_RESTRICTION_CONFLICT"))
+        toast.error(
+          en
+            ? "The adapted recipe conflicts with a current dietary restriction. Your previous plan was kept."
+            : "Pritaikytas receptas neatitinka dabartinio mitybos apribojimo. Ankstesnis planas išsaugotas.",
+        );
+      else toast.error(aiErrorMessage(error, t));
     } finally {
+      actionLock.current = false;
       setAdaptBusy(false);
     }
   };
@@ -237,14 +334,42 @@ function MealPlanPage() {
           </p>
         )}
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("mp.sub")}</p>
+        {translationFailed && (
+          <p role="status" className="mt-2 text-sm text-muted-foreground">
+            {en
+              ? "Translation is unavailable. Showing the original saved plan."
+              : "Vertimas nepasiekiamas. Rodomas originalus išsaugotas planas."}
+          </p>
+        )}
       </div>
 
-      <DynamicTDEECalculator />
-      <div className="mt-4">
-        <SmartFastingWindow />
-      </div>
-
-      <div className="panel grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-3">
+      {loading && <p role="status">{t("common.loading")}</p>}
+      {(savedQuery.isError || preferencesQuery.isError || invalidSaved) && (
+        <section role="alert" className="panel border-destructive/30 p-4">
+          <p>
+            {invalidSaved
+              ? en
+                ? "Your stored meal plan could not be read. You can generate a replacement without deleting it."
+                : "Išsaugoto mitybos plano nepavyko perskaityti. Gali sukurti naują, neištrinant esamo."
+              : en
+                ? "Could not load your saved meal plan or preferences. Your data has not been cleared."
+                : "Nepavyko įkelti išsaugoto plano arba pasirinkimų. Tavo duomenys neištrinti."}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void savedQuery.refetch();
+              void preferencesQuery.refetch();
+            }}
+          >
+            {en ? "Retry" : "Bandyti dar kartą"}
+          </Button>
+        </section>
+      )}
+      <fieldset
+        disabled={!canMutate}
+        className="panel grid gap-4 p-6 md:grid-cols-2 lg:grid-cols-3"
+      >
         <label className="grid gap-1.5 text-sm">
           <span className="font-semibold">{t("mp.diet")}</span>
           <select
@@ -336,8 +461,8 @@ function MealPlanPage() {
             <div className="flex items-center gap-3">
               <input
                 type="range"
-                min={1200}
-                max={4500}
+                min={MEAL_PLAN_MIN_DAILY_KCAL}
+                max={MEAL_PLAN_MAX_DAILY_KCAL}
                 step={50}
                 value={kcalCustom}
                 onChange={(e) => setKcalCustom(Number(e.target.value))}
@@ -345,8 +470,8 @@ function MealPlanPage() {
               />
               <input
                 type="number"
-                min={1200}
-                max={4500}
+                min={MEAL_PLAN_MIN_DAILY_KCAL}
+                max={MEAL_PLAN_MAX_DAILY_KCAL}
                 step={50}
                 value={kcalCustom}
                 onChange={(e) => setKcalCustom(Number(e.target.value))}
@@ -359,7 +484,7 @@ function MealPlanPage() {
         )}
 
         <div className="md:col-span-2 lg:col-span-3">
-          <Button onClick={generate} disabled={busy} className="font-bold glow-ring">
+          <Button onClick={generate} disabled={!canMutate} className="font-bold glow-ring">
             {busy ? (
               <Loader2 className="mr-1 size-4 animate-spin" />
             ) : (
@@ -368,14 +493,20 @@ function MealPlanPage() {
             {busy ? t("mp.generating") : plan ? t("mp.regenerate") : t("mp.generate")}
           </Button>
         </div>
-      </div>
+      </fieldset>
+      {plan && (
+        <MealPlanReviewNotice
+          plan={plan}
+          preferences={preferencesQuery.isError ? null : (preferencesQuery.data ?? null)}
+        />
+      )}
 
-      {!plan ? (
+      {!plan && !loading && !savedQuery.isError && !invalidSaved ? (
         <div className="panel grid place-items-center gap-3 p-12 text-center text-sm text-muted-foreground">
           <Utensils className="size-7 text-primary" />
           {t("mp.none")}
         </div>
-      ) : (
+      ) : plan ? (
         <>
           <div className="panel grid gap-4 p-6 md:grid-cols-[2fr_3fr]">
             <div>
@@ -472,7 +603,7 @@ function MealPlanPage() {
                 </label>
               </div>
             </div>
-            <Button onClick={runAdapt} disabled={adaptBusy} className="font-bold glow-ring">
+            <Button onClick={runAdapt} disabled={!canMutate} className="font-bold glow-ring">
               {adaptBusy ? (
                 <Loader2 className="mr-1 size-4 animate-spin" />
               ) : (
@@ -623,7 +754,7 @@ function MealPlanPage() {
             </div>
           )}
         </>
-      )}
+      ) : null}
     </div>
   );
 }

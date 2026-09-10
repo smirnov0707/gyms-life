@@ -1,6 +1,13 @@
+import { useAuth } from "@/lib/auth";
+import { offlineIdentity } from "@/lib/offline-identity";
+import { syncOfflineWorkoutSet, identifyOwnedOfflineSessions } from "@/lib/offline-sync.functions";
+import { inspectLegacyOffline, recoverLegacyOfflineSets } from "@/lib/offline-store";
+import { useOfflineQueue } from "@/lib/use-offline-queue";
+import { VoiceSetLogger } from "@/components/VoiceSetLogger";
+import { restoreWorkoutProgress, completedWorkoutSetNumbers } from "@/lib/workout-resume.progress";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -18,9 +25,9 @@ import { Input } from "@/components/ui/input";
 import { BodyReplay } from "@/components/twin/BodyReplay";
 import type { SessionMuscleContribution } from "@/lib/session-muscle-breakdown";
 import {
+  nextSetNumber,
   REPS_STEP,
   WEIGHT_STEP_KG,
-  nextSetNumber,
   plannedRepsPrefill,
   stepValue,
   suggestedWeightPrefill,
@@ -33,6 +40,7 @@ import { finishWorkout } from "@/lib/finish-workout.functions";
 import { recordWorkoutReflection } from "@/lib/workout-reflection.functions";
 import {
   flushOfflineWorkoutSets,
+  getOfflineQueue,
   hasQueuedWorkoutSets,
   isNetworkUnavailable,
   OfflineQueueError,
@@ -49,7 +57,9 @@ import { browserTimeZone } from "@/lib/local-day";
 import { notifyAdaptationChanged } from "@/lib/readiness-adapt";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
-export const Route = createFileRoute("/_authenticated/workout/$day")({ component: WorkoutPage });
+export const Route = createFileRoute("/_authenticated/workout/$day")({
+  component: OwnedWorkoutPage,
+});
 
 type Copy = {
   mustBeNumber: (label: string) => string;
@@ -83,6 +93,7 @@ type Copy = {
   offlineQueueFull: string;
   offlineStorageFull: string;
   reconnectBeforeFinish: string;
+  reconnectBeforeStart: string;
   finished: string;
   finishFailed: string;
   reflectionSaved: string;
@@ -176,6 +187,8 @@ function copyFor(lang: Lang): Copy {
       offlineStorageFull:
         "This device has no room left to store the set. Your earlier sets are safe — free some space or reconnect to send them.",
       reconnectBeforeFinish: "Reconnect so your sets are saved before finishing the workout.",
+      reconnectBeforeStart:
+        "Reconnect to start or resume your workout. A started workout can record sets on this device.",
       finished: "Workout complete!",
       finishFailed: "Could not finish the workout",
       reflectionSaved: "Your session rating is saved.",
@@ -277,6 +290,8 @@ function copyFor(lang: Lang): Copy {
       "Šiame įrenginyje nebėra vietos serijai išsaugoti. Ankstesnės serijos išsaugotos – atlaisvinkite vietos arba atkurkite ryšį, kad jos būtų persiųstos.",
     reconnectBeforeFinish:
       "Atkurkite ryšį, kad prieš užbaigiant treniruotę būtų išsaugotos serijos.",
+    reconnectBeforeStart:
+      "Atkurk ryšį, kad galėtum pradėti arba tęsti treniruotę. Pradėtoje treniruotėje serijos gali būti saugomos šiame įrenginyje.",
     finished: "Treniruotė užbaigta!",
     finishFailed: "Nepavyko užbaigti treniruotės",
     reflectionSaved: "Tavo treniruotės įvertinimas išsaugotas.",
@@ -401,7 +416,12 @@ function workoutFeelingOptionsFor(copy: Copy) {
   return copy.feeling.map((label, index) => ({ value: index + 1, label }));
 }
 
-function WorkoutPage() {
+function OwnedWorkoutPage() {
+  const { user, loading } = useAuth();
+  if (loading || !user) return null;
+  return <WorkoutPage key={user.id} ownerId={user.id} />;
+}
+function WorkoutPage({ ownerId }: { ownerId: string }) {
   const { day } = Route.useParams();
   const { lang } = useI18n();
   // Memoised so `copy` is a stable dependency: rebuilt every render it would
@@ -410,6 +430,23 @@ function WorkoutPage() {
   const copy = useMemo(() => copyFor(lang), [lang]);
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const actionLock = useRef(false);
+  const scope = useMemo(() => offlineIdentity.capture(ownerId), [ownerId]);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const stillCurrent = () => mounted.current && scope.isCurrent();
+  const localQueue = useOfflineQueue(ownerId);
+  const completedSets = useRef(new Map<string, Set<number>>());
+  const runAction = (action: () => void) => {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    action();
+  };
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<TrainingPlanDay | null>(null);
   const [workoutAdaptation, setWorkoutAdaptation] = useState<WorkoutExecutionAdaptation | null>(
@@ -434,15 +471,18 @@ function WorkoutPage() {
   const [workoutFeeling, setWorkoutFeeling] = useState<number | null>(null);
 
   const syncQueuedSets = useCallback(async () => {
-    const result = await flushOfflineWorkoutSets((input) => logWorkoutSet({ data: input }));
-    if (result.synced > 0) {
+    scope.assertCurrent();
+    const result = await flushOfflineWorkoutSets(ownerId, (input) =>
+      syncOfflineWorkoutSet({ data: input }),
+    );
+    if (mounted.current && scope.isCurrent() && result.synced > 0) {
       toast.success(result.synced === 1 ? copy.syncedOne : copy.syncedMany(result.synced));
     }
     return result;
-  }, [copy]);
+  }, [copy, ownerId, scope]);
 
   const workoutQuery = useQuery({
-    queryKey: ["workout", "next"],
+    queryKey: ["workout", "next", ownerId],
     queryFn: () => getTodaysWorkout({ data: { timeZone: browserTimeZone() } }),
   });
 
@@ -450,46 +490,71 @@ function WorkoutPage() {
   const canonicalWorkoutDay = canonicalWorkout?.day ?? null;
 
   useEffect(() => {
-    if (canonicalWorkoutDay === null || day === String(canonicalWorkoutDay)) return;
+    if (sessionId || canonicalWorkoutDay === null || day === String(canonicalWorkoutDay)) return;
     navigate({
       to: "/workout/$day",
       params: { day: String(canonicalWorkoutDay) },
       replace: true,
     });
-  }, [canonicalWorkoutDay, day, navigate]);
+  }, [canonicalWorkoutDay, day, navigate, sessionId]);
 
   const startMutation = useMutation({
+    // A paused mutation is not a persisted offline action. Respond immediately
+    // rather than silently scheduling a start for a later identity/network state.
+    networkMode: "always",
+    retry: false,
     mutationFn: async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine)
+        throw new AthleteFacingError(copy.reconnectBeforeStart);
       if (canonicalWorkoutDay === null) {
         throw new AthleteFacingError(copy.noWorkoutToday);
       }
+      scope.assertCurrent();
+      // The athlete explicitly asked to start/resume. Recover only authenticated
+      // owned legacy sessions first; raw pre-upgrade records remain unchanged.
+      if (inspectLegacyOffline().status === "present")
+        await recoverLegacyOfflineSets(ownerId, (input) =>
+          identifyOwnedOfflineSessions({ data: input }),
+        );
+      scope.assertCurrent();
       await syncQueuedSets();
-      return startWorkout({ data: { day: canonicalWorkoutDay, timeZone: browserTimeZone() } });
+      scope.assertCurrent();
+      return startWorkout({
+        data: { ownerId, day: canonicalWorkoutDay, timeZone: browserTimeZone() },
+      });
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
+      if (!stillCurrent()) return;
+      const saved = await getOfflineQueue(ownerId);
+      if (!stillCurrent()) return;
+      if (saved.invalidCount) throw new AthleteFacingError(copy.offlineStorageFull);
+      const localQueue = saved.items;
       setSessionId(result.session.id);
       setActiveWorkout(result.workout);
       setWorkoutAdaptation(result.adaptation);
       setWorkoutGuidance(result.guidance);
-      const firstIncomplete = result.workout.exercises.findIndex((exercise) => {
-        const completed = result.logs.filter(
-          (log) => log.exercise_slug === exercise.slug && log.done,
-        ).length;
-        return completed < exercise.sets;
-      });
-      const nextIndex =
-        firstIncomplete === -1 ? result.workout.exercises.length - 1 : firstIncomplete;
-      const exercise = result.workout.exercises[nextIndex];
-      const completedSetNumbers = new Set(
-        result.logs
-          .filter((log) => log.exercise_slug === exercise?.slug && log.done)
-          .map((log) => log.set_number),
+      completedSets.current = new Map(
+        result.workout.exercises.map((exercise) => [
+          exercise.slug,
+          completedWorkoutSetNumbers(result.session.id, exercise.slug, result.logs, localQueue),
+        ]),
       );
-      setExerciseIndex(Math.max(0, nextIndex));
-      setSetNumber(nextSetNumber(exercise?.sets ?? 1, completedSetNumbers));
+      const progress = restoreWorkoutProgress(
+        result.workout,
+        result.session.id,
+        result.logs,
+        localQueue,
+      );
+      setExerciseIndex(progress.exerciseIndex);
+      setSetNumber(progress.setNumber);
       if (result.resumed) toast.info(copy.resuming);
     },
-    onError: (error) => toast.error(errorMessage(error, copy.startFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.startFailed));
+    },
+    onSettled: () => {
+      actionLock.current = false;
+    },
   });
 
   const buildSetInput = (): WorkoutSetSync => {
@@ -518,9 +583,10 @@ function WorkoutPage() {
   // about, and they arrived as "Could not save the set" — which reads like the
   // rest of the session is gone too. Both reasons mean the opposite: nothing
   // stored was touched, and that is the sentence they get.
-  const queueSetOnThisDevice = (input: WorkoutSetSync) => {
+  const queueSetOnThisDevice = async (input: WorkoutSetSync) => {
     try {
-      queueWorkoutSet(input);
+      scope.assertCurrent();
+      await queueWorkoutSet(input, ownerId);
     } catch (error) {
       if (!(error instanceof OfflineQueueError)) throw error;
       throw new AthleteFacingError(
@@ -530,23 +596,30 @@ function WorkoutPage() {
   };
 
   const logMutation = useMutation({
+    // This operation owns a durable local-storage branch. Query's default
+    // online-only mode would pause it BEFORE that branch could save the set.
+    networkMode: "always",
+    retry: false,
     mutationFn: async () => {
+      scope.assertCurrent();
       const input = buildSetInput();
       if (typeof navigator !== "undefined" && !navigator.onLine) {
-        queueSetOnThisDevice(input);
-        return { queued: true };
+        await queueSetOnThisDevice(input);
+        return { queued: true, recorded: input };
       }
 
       try {
-        const result = await logWorkoutSet({ data: input });
-        return { ...result, queued: false };
+        const result = await logWorkoutSet({ data: { ...input, ownerId } });
+        scope.assertCurrent();
+        return { ...result, queued: false, recorded: input };
       } catch (error) {
         if (!isNetworkUnavailable(error)) throw error;
-        queueSetOnThisDevice(input);
-        return { queued: true };
+        await queueSetOnThisDevice(input);
+        return { queued: true, recorded: input };
       }
     },
     onSuccess: (result) => {
+      if (!stillCurrent()) return;
       // Reps and weight carry into the next set: the set after this one is
       // almost always the same, and clearing them made every set of an
       // exercise cost the same two keyboard entries as the first.
@@ -561,7 +634,14 @@ function WorkoutPage() {
           (workoutQuery.data?.status === "READY" ? workoutQuery.data.workout : null)
         )?.exercises[exerciseIndex]?.rest_seconds ?? 0,
       );
-      setSetNumber((n) => n + 1);
+      const recorded = result.recorded;
+      const completed = completedSets.current.get(recorded.exerciseSlug) ?? new Set<number>();
+      completed.add(recorded.setNumber);
+      completedSets.current.set(recorded.exerciseSlug, completed);
+      const prescription =
+        activeWorkout?.exercises.find((item) => item.slug === recorded.exerciseSlug) ??
+        canonicalWorkout?.exercises.find((item) => item.slug === recorded.exerciseSlug);
+      setSetNumber(nextSetNumber(prescription?.sets ?? recorded.setNumber, completed));
       // Back to the finished-exercise panel after each extra set, so moving
       // on stays one tap away rather than leaving the form as the only
       // thing on screen with no route to the next exercise.
@@ -570,21 +650,34 @@ function WorkoutPage() {
         toast.info(copy.queuedOffline);
       }
     },
-    onError: (error) => toast.error(errorMessage(error, copy.logFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.logFailed));
+    },
+    onSettled: () => {
+      actionLock.current = false;
+    },
   });
 
   const finishMutation = useMutation({
+    networkMode: "always",
+    retry: false,
     mutationFn: async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine)
+        throw new AthleteFacingError(copy.reconnectBeforeFinish);
       if (!sessionId) throw new Error("Workout session is not started.");
-      if (hasQueuedWorkoutSets(sessionId)) {
+      scope.assertCurrent();
+      if (await hasQueuedWorkoutSets(sessionId, ownerId)) {
         await syncQueuedSets();
-        if (hasQueuedWorkoutSets(sessionId)) {
+        scope.assertCurrent();
+        if (await hasQueuedWorkoutSets(sessionId, ownerId)) {
           throw new AthleteFacingError(copy.reconnectBeforeFinish);
         }
       }
-      return finishWorkout({ data: { sessionId, timeZone: browserTimeZone() } });
+      scope.assertCurrent();
+      return finishWorkout({ data: { ownerId, sessionId, timeZone: browserTimeZone() } });
     },
     onSuccess: async (result) => {
+      if (!stillCurrent()) return;
       setFinished(true);
       setSummary({
         duration: result.session.durationSeconds ?? 0,
@@ -602,9 +695,14 @@ function WorkoutPage() {
         qc.invalidateQueries({ queryKey: ["injury-risk"] }),
       ]);
       notifyAdaptationChanged();
-      toast.success(copy.finished);
+      if (stillCurrent()) toast.success(copy.finished);
     },
-    onError: (error) => toast.error(errorMessage(error, copy.finishFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.finishFailed));
+    },
+    onSettled: () => {
+      actionLock.current = false;
+    },
   });
 
   const reflectionMutation = useMutation({
@@ -613,6 +711,7 @@ function WorkoutPage() {
       return recordWorkoutReflection({ data: { sessionId, feeling } });
     },
     onSuccess: (reflection) => {
+      if (!stillCurrent()) return;
       setWorkoutFeeling(reflection.feeling);
       // Today recomputes its canonical athlete snapshot from this new,
       // user-reported signal. The decision engine still applies its own
@@ -620,7 +719,9 @@ function WorkoutPage() {
       notifyAdaptationChanged();
       toast.success(copy.reflectionSaved);
     },
-    onError: (error) => toast.error(errorMessage(error, copy.reflectionFailed)),
+    onError: (error) => {
+      if (stillCurrent()) toast.error(errorMessage(error, copy.reflectionFailed));
+    },
   });
 
   useEffect(() => {
@@ -630,11 +731,36 @@ function WorkoutPage() {
   }, [rest]);
 
   useEffect(() => {
-    void syncQueuedSets();
-    const onOnline = () => void syncQueuedSets();
+    void syncQueuedSets().catch(() => {});
+    const onOnline = () => {
+      void syncQueuedSets().catch(() => {});
+    };
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, [syncQueuedSets]);
+
+  useEffect(() => {
+    if (
+      !sessionId ||
+      !activeWorkout ||
+      !localQueue.data ||
+      localQueue.data.ownerId !== ownerId ||
+      !scope.isCurrent()
+    )
+      return;
+    const exercise = activeWorkout.exercises[exerciseIndex];
+    if (!exercise) return;
+    const current = completedSets.current.get(exercise.slug) ?? new Set<number>();
+    for (const item of localQueue.data.items)
+      if (
+        item.data.sessionId === sessionId &&
+        item.data.exerciseSlug === exercise.slug &&
+        item.data.done
+      )
+        current.add(item.data.setNumber);
+    completedSets.current.set(exercise.slug, current);
+    if (!loggingExtra) setSetNumber(nextSetNumber(exercise.sets, current));
+  }, [localQueue.data, ownerId, sessionId, activeWorkout, exerciseIndex, loggingExtra, scope]);
 
   const workout = activeWorkout ?? canonicalWorkout;
   const exercise = workout?.exercises[exerciseIndex];
@@ -649,7 +775,9 @@ function WorkoutPage() {
   // single tap; it used to cost two keyboard entries even when nothing had
   // changed from the plan.
   const prefilledFor = useRef<string | null>(null);
-  useEffect(() => {
+  // Initialize before paint so a late passive effect cannot erase the next
+  // exercise's freshly entered rep count.
+  useLayoutEffect(() => {
     if (!exercise) return;
     const key = `${exercise.slug}:${suggestedWeight}`;
     if (prefilledFor.current === key) return;
@@ -677,13 +805,13 @@ function WorkoutPage() {
     [workout, exerciseIndex, plannedSetsDone, setNumber, totalSets],
   );
 
-  if (workoutQuery.isLoading)
+  if (workoutQuery.isLoading && !activeWorkout)
     return (
       <main className="mx-auto grid min-h-[70vh] max-w-3xl place-items-center">
         <Loader2 className="size-8 animate-spin text-primary" />
       </main>
     );
-  if (workoutQuery.isError || !workout) {
+  if ((workoutQuery.isError && !activeWorkout) || !workout) {
     const unavailableMessage =
       workoutQuery.data?.status === "WEEKLY_TARGET_REACHED"
         ? copy.weeklyTargetReached
@@ -738,7 +866,7 @@ function WorkoutPage() {
           <BodyReplay
             contributions={replay}
             unavailable={replayStatus === "unavailable"}
-            onRetry={() => finishMutation.mutate()}
+            onRetry={() => runAction(() => finishMutation.mutate())}
             retrying={finishMutation.isPending}
           />
           <section
@@ -834,7 +962,7 @@ function WorkoutPage() {
             <Button
               size="lg"
               className="mt-5 min-h-12 w-full rounded-none font-bold hard-shadow"
-              onClick={() => startMutation.mutate()}
+              onClick={() => runAction(() => startMutation.mutate())}
               disabled={startMutation.isPending}
             >
               {startMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
@@ -893,6 +1021,7 @@ function WorkoutPage() {
                   <Button
                     variant="outline"
                     className="mt-4 min-h-12 w-full rounded-xl font-semibold"
+                    disabled={logMutation.isPending || finishMutation.isPending}
                     onClick={() => setLoggingExtra(true)}
                   >
                     <Plus className="mr-2 size-4" />
@@ -914,7 +1043,7 @@ function WorkoutPage() {
                       <Button
                         size="lg"
                         className="mt-5 min-h-12 w-full rounded-none font-bold hard-shadow"
-                        onClick={() => finishMutation.mutate()}
+                        onClick={() => runAction(() => finishMutation.mutate())}
                         disabled={finishMutation.isPending}
                       >
                         {finishMutation.isPending ? (
@@ -928,9 +1057,29 @@ function WorkoutPage() {
                   ) : (
                     <Button
                       className="mt-5 min-h-12 w-full font-bold"
+                      disabled={logMutation.isPending || finishMutation.isPending}
                       onClick={() => {
-                        setExerciseIndex((i) => i + 1);
-                        setSetNumber(1);
+                        let next = exerciseIndex + 1;
+                        while (next < workout.exercises.length - 1) {
+                          const candidate = workout.exercises[next]!;
+                          if (
+                            nextSetNumber(
+                              candidate.sets,
+                              completedSets.current.get(candidate.slug) ?? new Set(),
+                            ) <= candidate.sets
+                          )
+                            break;
+                          next++;
+                        }
+                        const candidate = workout.exercises[next];
+                        if (!candidate) return;
+                        setExerciseIndex(next);
+                        setSetNumber(
+                          nextSetNumber(
+                            candidate.sets,
+                            completedSets.current.get(candidate.slug) ?? new Set(),
+                          ),
+                        );
                         setLoggingExtra(false);
                         setRest(0);
                       }}
@@ -950,6 +1099,7 @@ function WorkoutPage() {
                       <button
                         type="button"
                         className="font-semibold text-primary underline underline-offset-2"
+                        disabled={logMutation.isPending}
                         onClick={() => setLoggingExtra(false)}
                       >
                         {copy.cancel}
@@ -977,6 +1127,21 @@ function WorkoutPage() {
                       )}
                     </div>
                   )}
+                  <details className="mt-5 rounded-xl border border-border p-3">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      {baseLang(lang) === "lt"
+                        ? "Užpildyti serijos juodraštį balsu"
+                        : "Fill this set from a voice draft"}
+                    </summary>
+                    <VoiceSetLogger
+                      key={`${sessionId}:${exercise.slug}:${setNumber}`}
+                      onSetLogged={(draft) => {
+                        setReps(draft.reps === null ? "" : String(draft.reps));
+                        setWeight(draft.weightKg === null ? "" : String(draft.weightKg));
+                        setRpe(draft.rpe === null ? "" : String(draft.rpe));
+                      }}
+                    />
+                  </details>
                   <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div>
                       <label
@@ -1099,7 +1264,7 @@ function WorkoutPage() {
                   <Button
                     className="mt-5 min-h-12 w-full rounded-none font-bold"
                     disabled={logMutation.isPending || !reps}
-                    onClick={() => logMutation.mutate()}
+                    onClick={() => runAction(() => logMutation.mutate())}
                   >
                     {logMutation.isPending ? (
                       <Loader2 className="mr-2 size-4 animate-spin" />

@@ -39,7 +39,7 @@ export const SmartFridgeScanner: React.FC = () => {
   const stale = !!recipeResult && recipeFor !== signature;
 
   const { data: profile } = useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: ["fridge-profile", user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")

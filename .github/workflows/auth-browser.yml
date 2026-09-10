@@ -1,0 +1,57 @@
+name: Authentication browser
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/auth-browser/**"
+      - "scripts/test-auth-*.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/auth-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/auth-browser/**"
+      - "scripts/test-auth-*.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/auth-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
+permissions:
+  contents: read
+concurrency:
+  group: auth-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: npm run test:browser:auth
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auth-${{ matrix.engine }}-evidence
+          path: test-results/auth-browser
+          retention-days: 14
+          if-no-files-found: error

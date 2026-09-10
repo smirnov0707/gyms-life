@@ -1,3 +1,4 @@
+import { offlineIdentity } from "./offline-identity";
 import {
   createContext,
   useCallback,
@@ -11,6 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { createAuthSessionController } from "./auth-session.controller";
 import { identityChanged } from "./auth-cache";
 
 type AuthState = {
@@ -33,56 +35,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
   const knownUserId = useRef<string | null | undefined>(undefined);
-
-  // One place, rather than a user id appended to twenty query keys — because
-  // the key that gets forgotten is the one that leaks. Every cached answer is
-  // dropped the moment the signed-in person changes, so the next screen is
-  // painted from a read taken as whoever is signed in now.
-  const userId = session?.user.id ?? null;
-  useEffect(() => {
-    if (loading) return;
-    if (identityChanged(knownUserId.current, userId)) queryClient.clear();
-    knownUserId.current = userId;
-  }, [loading, userId, queryClient]);
+  const controller = useRef<ReturnType<typeof createAuthSessionController> | null>(null);
 
   useEffect(() => {
-    let sawEvent = false;
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
-      sawEvent = true;
-      setSession(next);
-      setLoading(false);
+    const current = createAuthSessionController({
+      read: () => supabase.auth.getSession(),
+      apply: (next) => {
+        const nextId = next?.user.id ?? null;
+        offlineIdentity.set(nextId);
+        // Clear identity-scoped cached views before publishing the new identity.
+        if (identityChanged(knownUserId.current, nextId)) queryClient.clear();
+        knownUserId.current = nextId;
+        setSession(next);
+        setLoading(false);
+      },
+      // A temporary network/storage error must not invent a sign-out.
+      failed: () => setLoading(false),
     });
-    supabase.auth.getSession().then(({ data }) => {
-      // Never let a stale getSession result overwrite a live auth event.
-      if (!sawEvent) setSession(data.session);
-      setLoading(false);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  // Sessions written by another tab/window (or the OAuth popup) never fire an
-  // auth event here — pick them up when the tab becomes visible again.
-  useEffect(() => {
-    const sync = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession((prev) =>
-        prev?.access_token === data.session?.access_token ? prev : data.session,
-      );
+    controller.current = current;
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => current.event(next));
+    void current.refresh();
+    const sync = () => {
+      if (document.visibilityState !== "hidden") void current.refresh();
     };
     window.addEventListener("focus", sync);
     document.addEventListener("visibilitychange", sync);
     return () => {
+      current.dispose();
+      offlineIdentity.set(null);
+      sub.subscription.unsubscribe();
+      if (controller.current === current) controller.current = null;
       window.removeEventListener("focus", sync);
       document.removeEventListener("visibilitychange", sync);
     };
-  }, []);
-
-  const refresh = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
-    setLoading(false);
-    return Boolean(data.session);
-  }, []);
+  }, [queryClient]);
+  const refresh = useCallback(() => controller.current?.refresh() ?? Promise.resolve(false), []);
 
   const value = useMemo(
     () => ({ session, user: session?.user ?? null, loading, refresh }),

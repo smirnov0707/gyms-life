@@ -1,12 +1,58 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { createServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { freezeTwinClock, verifyTwinLoadingLifecycle } from "./test-twin-loading-browser.mjs";
 
 const root = process.cwd();
-const artifacts = path.join(root, "test-results/twin");
+const candidateMode = process.env.TWIN_ANATOMY_CANDIDATE ?? "";
+if (!["", "1", "clean", "pose", "muscular", "sculpt"].includes(candidateMode))
+  throw new Error(`Unknown anatomy candidate: ${candidateMode}`);
+const candidate = candidateMode !== "";
+const candidatePath =
+  candidateMode === "sculpt"
+    ? "tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb"
+    : candidateMode === "muscular"
+      ? "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb"
+      : candidateMode === "pose"
+        ? "tests/twin-browser/assets/twin-anatomy-pose-candidate.glb"
+        : "tests/twin-browser/assets/twin-anatomy-continuous-candidate.glb";
+// Read before starting Vite or Chromium. A missing candidate must fail instead
+// of silently rendering the production asset and passing the visual gate.
+const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
+if (
+  candidateBytes &&
+  (candidateBytes.length < 12 ||
+    candidateBytes.toString("ascii", 0, 4) !== "glTF" ||
+    candidateBytes.readUInt32LE(4) !== 2 ||
+    candidateBytes.readUInt32LE(8) !== candidateBytes.length)
+)
+  throw new Error(`Invalid candidate GLB: ${candidatePath}`);
+let candidateRequests = 0;
+const candidatePlugin = {
+  name: "test-only-anatomy-candidate",
+  configureServer(vite) {
+    vite.middlewares.use((request, response, next) => {
+      if (
+        !candidateBytes ||
+        !["GET", "HEAD"].includes(request.method) ||
+        new URL(request.url, "http://localhost").pathname !== "/models/twin-anatomy-v1.glb"
+      )
+        return next();
+      response.setHeader("Content-Type", "model/gltf-binary");
+      response.setHeader("Content-Length", candidateBytes.length);
+      response.setHeader("Cache-Control", "no-store");
+      if (request.method === "GET") candidateRequests++;
+      response.end(request.method === "HEAD" ? undefined : candidateBytes);
+    });
+  },
+};
+const artifacts = path.join(root, candidate ? "test-results/twin-candidate" : "test-results/twin");
+// A failed pose run must not leave clean-model screenshots beside pose metadata.
+if (candidate) await rm(artifacts, { recursive: true, force: true });
 await mkdir(artifacts, { recursive: true });
 const results = [];
 let server;
@@ -36,6 +82,7 @@ const loaded = async (target) => {
   await expect
     .poll(async () => Number(await target.locator("canvas").getAttribute("data-twin-frames")))
     .toBeGreaterThan(0);
+  if (candidate) expect(candidateRequests).toBeGreaterThan(0);
 };
 const record = (name) => {
   results.push({ name, status: "passed" });
@@ -46,7 +93,7 @@ try {
     configFile: false,
     root: path.join(root, "tests/twin-browser"),
     publicDir: path.join(root, "public"),
-    plugins: [react(), tailwindcss()],
+    plugins: [...(candidate ? [candidatePlugin] : []), react(), tailwindcss()],
     resolve: {
       alias: [
         {
@@ -90,6 +137,23 @@ try {
   await loaded(page);
   await preset(page, "Front");
   await stopMotion(page);
+  const expectedSource = ["muscular", "sculpt"].includes(candidateMode)
+    ? "makehuman"
+    : "bodyparts3d";
+  const expectedCredit = ["muscular", "sculpt"].includes(candidateMode)
+    ? "MakeHuman graphical assets (CC0)"
+    : "BodyParts3D";
+  const expectedBytes =
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-anatomy-v1.glb")));
+  const expectedSha = createHash("sha256").update(expectedBytes).digest("hex");
+  await expect(page.locator("canvas")).toHaveAttribute("data-twin-asset-sha256", expectedSha);
+  await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
+    "data-twin-source",
+    expectedSource,
+  );
+  await expect(page.locator("[data-twin-credit]")).toContainText(expectedCredit);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
+  record("visible model source and review status match the exact downloaded GLB");
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(artifacts, "desktop-front.png"), fullPage: true });
   const canvas = page.locator("canvas");
@@ -250,6 +314,8 @@ try {
   await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
   await page.getByRole("button", { name: "2D", exact: true }).click();
   await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.locator("[data-twin-credit]")).toHaveCount(0);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(0);
   record("real WebGL context loss, retry and manual 2D fallback");
   await page.getByRole("button", { name: "3D", exact: true }).click();
   await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible();
@@ -268,6 +334,7 @@ try {
   {
     const slow = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
     const waiting = await slow.newPage();
+    await freezeTwinClock(waiting);
     let release = () => {};
     const held = new Promise((resolve) => {
       release = resolve;
@@ -281,7 +348,9 @@ try {
     await expect
       .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 20000 })
       .toBe("loading");
-    await waiting.waitForTimeout(800);
+    // Screenshot/font capture is not simulated download time. The clock was
+    // frozen before navigation; the deadline scenarios advance it explicitly.
+    await waiting.clock.runFor(800);
 
     // Nothing is drawn: every pixel of the frame is the transparent stage.
     const painted = await waiting.evaluate(() => {
@@ -303,9 +372,11 @@ try {
     // wait costs them the figure, not their data.
     await expect(waiting.locator("[data-twin-stage]")).toHaveAttribute("data-twin-stage", "2d");
     await expect(waiting.getByRole("status").filter({ hasText: "Preparing 3D" })).toBeVisible();
+    await expect(waiting.locator("[data-twin-credit]")).toHaveCount(0);
     await waiting.screenshot({ path: path.join(artifacts, "loading-placeholder.png") });
 
     release();
+    await waiting.clock.resume();
     await expect
       .poll(async () => await stage.getAttribute("data-twin-body"), { timeout: 30000 })
       .toBe("human");
@@ -314,6 +385,55 @@ try {
     await slow.close();
   }
   record("no stand-in body while the figure loads; the 2D map holds the stage");
+  {
+    const unavailable = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const recovering = await unavailable.newPage();
+    await recovering.route("**/*.glb", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><p>Unavailable model</p>",
+      }),
+    );
+    await recovering.goto("http://127.0.0.1:4179/index.html");
+    await expect(recovering.locator("[data-twin-stage]")).toHaveAttribute(
+      "data-twin-source",
+      "generated",
+      { timeout: 30000 },
+    );
+    await expect(recovering.locator("[data-twin-model-fallback]")).toBeVisible();
+    await expect(recovering.locator("canvas")).toHaveAttribute(
+      "data-twin-body-height",
+      /^[0-9]+\.[0-9]+$/,
+    );
+    await expect(recovering.locator("[data-twin-credit]")).toHaveCount(0);
+    await expect(recovering.locator("[data-twin-candidate-status]")).toHaveCount(0);
+    await recovering.screenshot({
+      path: path.join(artifacts, "asset-unavailable.png"),
+      fullPage: true,
+    });
+    await recovering.getByRole("button", { name: "2D", exact: true }).click();
+    await expect(recovering.locator("[data-twin-model-fallback]")).toHaveCount(0);
+    await recovering.unroute("**/*.glb");
+    await recovering.getByRole("button", { name: "3D", exact: true }).click();
+    await expect(recovering.locator("[data-twin-stage]")).toHaveAttribute(
+      "data-twin-source",
+      expectedSource,
+      { timeout: 30000 },
+    );
+    await expect(recovering.locator("[data-twin-credit]")).toContainText(expectedCredit);
+    await expect(recovering.locator("[data-twin-model-fallback]")).toHaveCount(0);
+    await unavailable.close();
+  }
+  record("unverifiable model uses an explicit fallback; retry restores the actual source");
+  await verifyTwinLoadingLifecycle({
+    browser,
+    artifacts,
+    expectedSource,
+    expectedCredit,
+    expectedSha,
+    record,
+  });
   await context.close();
 
   const mobile = await browser.newContext({
@@ -326,7 +446,7 @@ try {
   await loaded(page);
   await preset(page, "Front");
   await stopMotion(page);
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
   const regionHeading = page.locator("[data-twin-inspector] h2");
   const regionBox = await regionHeading.boundingBox();
   expect(regionBox.y + regionBox.height).toBeLessThan(844 - 96);
@@ -341,7 +461,18 @@ try {
     "mobile selected region is visible above a reserved 96px dock and controls have touch targets",
   );
   const mobileCanvas = page.locator("canvas");
-  await mobileCanvas.scrollIntoViewIfNeeded();
+  await expect(mobileCanvas).toHaveAttribute("data-twin-body", "human", { timeout: 30000 });
+  // The app enables smooth scrolling. Finish test positioning before sampling
+  // touch coordinates, then wait for an actual visible paint with motion off.
+  await mobileCanvas.evaluate((element) =>
+    element.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" }),
+  );
+  const framesBeforeReset = Number(await mobileCanvas.getAttribute("data-twin-frames"));
+  await mobileCanvas.press("Home");
+  await expect
+    .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-frames")))
+    .toBeGreaterThan(framesBeforeReset);
+  await page.screenshot({ path: path.join(artifacts, "mobile-before-pinch.png") });
   const mobileBox = await mobileCanvas.boundingBox();
   const center = {
     x: mobileBox.x + mobileBox.width / 2,
@@ -349,24 +480,70 @@ try {
   };
   const client = await mobile.newCDPSession(page);
   const distanceBeforePinch = Number(await mobileCanvas.getAttribute("data-twin-distance"));
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [
-      { x: center.x - 30, y: center.y, id: 1 },
-      { x: center.x + 30, y: center.y, id: 2 },
-    ],
+  const framesBeforePinch = Number(await mobileCanvas.getAttribute("data-twin-frames"));
+  const viewportScale = await page.evaluate(() => window.visualViewport.scale);
+  await mobileCanvas.evaluate((element) => {
+    const events = [];
+    const record = (event) => {
+      events.push({
+        type: event.type,
+        pointerType: event.pointerType,
+        pointerId: event.pointerId,
+        trusted: event.isTrusted,
+        x: event.clientX,
+        y: event.clientY,
+        time: event.timeStamp,
+      });
+    };
+    element.__twinPinchCapture = { events, record };
+    for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel"])
+      element.addEventListener(type, record, { capture: true, passive: true });
   });
-  await client.send("Input.dispatchTouchEvent", {
-    type: "touchMove",
-    touchPoints: [
-      { x: center.x - 55, y: center.y, id: 1 },
-      { x: center.x + 55, y: center.y, id: 2 },
-    ],
-  });
-  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  await expect
-    .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-distance")))
-    .toBeLessThan(distanceBeforePinch);
+  try {
+    // CDP synthesizes a time-based series of real touch events. A single
+    // start/move/end burst can finish before Chromium delivers a useful move
+    // while a software GPU is busy. This still exercises OrbitControls' two
+    // pointer path; it never invokes the runtime's zoom command directly.
+    await client.send("Input.synthesizePinchGesture", {
+      ...center,
+      scaleFactor: 1.8,
+      relativeSpeed: 120,
+      gestureSourceType: "touch",
+    });
+    await expect
+      .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-distance")))
+      .toBeLessThan(distanceBeforePinch);
+    await expect
+      .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-frames")))
+      .toBeGreaterThan(framesBeforePinch);
+    expect(await page.evaluate(() => window.visualViewport.scale)).toBe(viewportScale);
+  } finally {
+    const touchEvents = await mobileCanvas.evaluate((element) => {
+      const { events, record } = element.__twinPinchCapture;
+      for (const type of ["pointerdown", "pointermove", "pointerup", "pointercancel"])
+        element.removeEventListener(type, record, true);
+      delete element.__twinPinchCapture;
+      return events;
+    });
+    await writeFile(
+      path.join(artifacts, "mobile-pinch.json"),
+      JSON.stringify(
+        {
+          center,
+          mobileBox,
+          distanceBeforePinch,
+          distanceAfterPinch: Number(await mobileCanvas.getAttribute("data-twin-distance")),
+          framesBeforePinch,
+          framesAfterPinch: Number(await mobileCanvas.getAttribute("data-twin-frames")),
+          viewportScale,
+          touchEvents,
+        },
+        null,
+        2,
+      ),
+    );
+    await client.detach();
+  }
   await preset(page, "Reset view");
   await page.screenshot({ path: path.join(artifacts, "mobile-front.png"), fullPage: true });
   await preset(page, "Back");
@@ -529,6 +706,21 @@ try {
   });
   throw error;
 } finally {
+  if (candidateBytes)
+    await writeFile(
+      path.join(artifacts, "anatomy-asset.json"),
+      JSON.stringify(
+        {
+          path: candidatePath,
+          sha256: createHash("sha256").update(candidateBytes).digest("hex"),
+          bytes: candidateBytes.length,
+          requests: candidateRequests,
+          servedAs: "/models/twin-anatomy-v1.glb",
+        },
+        null,
+        2,
+      ),
+    );
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
   await browser?.close();
   await server?.close();

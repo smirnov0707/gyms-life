@@ -3,11 +3,21 @@ on:
   pull_request:
     paths: &paths
       - "src/components/Overview.tsx"
+      - "src/components/AppShell.tsx"
+      - "src/components/future-lab-shell.css"
+      - "src/components/future-lab-dashboard.css"
+      - "src/components/twin/**"
+      - "src/routes/_authenticated/app.tsx"
+      - "src/routes/_authenticated/twin.tsx"
+      - "src/routes/_authenticated/lab.tsx"
+      - "src/routes/_authenticated/progress.tsx"
+      - "src/routes/_authenticated/history.tsx"
       - "src/components/LiveSignals.tsx"
       - "src/components/SmartBrief.tsx"
       - "src/components/TodayDecision.tsx"
       - "src/components/TodayLifeContext.tsx"
       - "src/components/future-lab/**"
+      - "public/assets/future-lab/**"
       - "src/components/twin/TwinTodayCard.tsx"
       - "src/lib/live-signals*"
       - "src/styles.css"
@@ -15,6 +25,8 @@ on:
       - "scripts/test-today-browser.mjs"
       - "package*.json"
       - ".github/workflows/today-browser.yml"
+      - ".github/playwright-image.json"
+      - "scripts/verify-ci-browser-runtime.mjs"
   push:
     branches: [main]
     paths: *paths
@@ -26,6 +38,9 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -34,12 +49,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-today-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: today-browser-evidence
           path: test-results/today
-          retention-days: 7
+          retention-days: 14
           if-no-files-found: ignore

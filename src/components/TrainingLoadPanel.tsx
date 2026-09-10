@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTrainingLoad } from "@/lib/training-load.functions";
 import type { TrainingLoad } from "@/lib/training-load.engine";
@@ -37,7 +37,7 @@ function Bars({ days, label }: { days: { day: string; volumeKg: number }[]; labe
   );
 }
 
-export function TrainingLoadPanel() {
+export function TrainingLoadPanel({ compact = false }: { compact?: boolean }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const timeZone = browserTimeZone();
@@ -99,9 +99,21 @@ export function TrainingLoadPanel() {
           <Bars days={load.days} label={t("tl.axis")} />
 
           {load.uncountedSets > 0 ? (
-            <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
-              {t("tl.uncounted").replace("{n}", String(load.uncountedSets))}
-            </p>
+            compact ? (
+              <details className="mt-2 text-[9px] leading-relaxed text-neutral-400">
+                <summary className="cursor-pointer">
+                  {baseLang(lang) === "lt" ? "Neįskaičiuotos serijos" : "Excluded sets"}:{" "}
+                  {load.uncountedSets}
+                </summary>
+                <p className="mt-1">
+                  {t("tl.uncounted").replace("{n}", String(load.uncountedSets))}
+                </p>
+              </details>
+            ) : (
+              <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                {t("tl.uncounted").replace("{n}", String(load.uncountedSets))}
+              </p>
+            )
           ) : null}
         </>
       )}
