@@ -112,7 +112,10 @@ function copyFor(lang: Lang): Copy {
             ? `Current plan target in 7 days: ${value} sessions completed.`
             : `Completed sessions in the last 7 days: ${value}.`,
         load_modifier: (value) => `Validated session load: ${Math.round(Number(value) * 100)}%.`,
-        model_data_quality: (value) => `Model data quality: ${value.replace("_", " ")}.`,
+        model_data_quality: (value) =>
+          value === "building"
+            ? "The model is still learning from your training history."
+            : `Model data quality: ${value.replace("_", " ")}.`,
         active_life_context: (value) =>
           `Current context considered: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
         training_rhythm: (value) =>
@@ -205,7 +208,10 @@ function copyFor(lang: Lang): Copy {
           : `Baigtos treniruotės per 7 dienas: ${value}.`,
       load_modifier: (value) =>
         `Patikrintas treniruotės krūvis: ${Math.round(Number(value) * 100)}%.`,
-      model_data_quality: (value) => `Modelio duomenų kokybė: ${value.replace("_", " ")}.`,
+      model_data_quality: (value) =>
+        value === "building"
+          ? "Modelis dar mokosi iš tavo treniruočių istorijos."
+          : `Modelio duomenų kokybė: ${value.replace("_", " ")}.`,
       active_life_context: (value) =>
         `Atsižvelgta į dabartinį kontekstą: ${value.replaceAll("_", " ").replaceAll(",", ", ")}.`,
       training_rhythm: (value) =>
@@ -227,9 +233,11 @@ function copyFor(lang: Lang): Copy {
 export function TodayDecision({
   workoutDay,
   compact = false,
+  primaryTrainingActionHandled = false,
 }: {
   workoutDay?: number | null;
   compact?: boolean;
+  primaryTrainingActionHandled?: boolean;
 }) {
   const { lang } = useI18n();
   const copy = copyFor(lang);
@@ -369,11 +377,16 @@ export function TodayDecision({
         <p className="fl-eyebrow">{copy.eyebrow}</p>
         <h2>{action.title}</h2>
         <p className="fl-decision-summary">{action.summary}</p>
-        <Button className="fl-action" disabled={acting} onClick={() => void continueToAction()}>
-          {acting ? <Loader2 className="size-3 animate-spin" /> : null}
-          {action.cta}
-          <ArrowRight className="size-3" />
-        </Button>
+        {!(
+          primaryTrainingActionHandled &&
+          (decision.action === "train_as_planned" || decision.action === "train_adapted")
+        ) ? (
+          <Button className="fl-action" disabled={acting} onClick={() => void continueToAction()}>
+            {acting ? <Loader2 className="size-3 animate-spin" /> : null}
+            {action.cta}
+            <ArrowRight className="size-3" />
+          </Button>
+        ) : null}
         <details className="fl-disclosure">
           <summary>{copy.evidence}</summary>
           <ul>
