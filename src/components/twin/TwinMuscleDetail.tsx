@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
-import { getTwinSnapshot } from "@/lib/digital-twin.functions";
+import { getTwinExperience } from "@/lib/digital-twin.functions";
 import { getLastSessionEffect } from "@/lib/last-session.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { twinCopyFor } from "@/components/TwinView";
@@ -77,7 +77,7 @@ export function TwinMuscleDetail({
   const snapshot = useQuery({
     queryKey: ["twin-snapshot", user?.id, timeZone],
     enabled: Boolean(user),
-    queryFn: () => getTwinSnapshot({ data: timeZone }),
+    queryFn: () => getTwinExperience({ data: timeZone }),
     staleTime: 60_000,
   });
   const session = useQuery({
@@ -92,10 +92,13 @@ export function TwinMuscleDetail({
       : region.charAt(0).toUpperCase() + region.slice(1).replaceAll("_", " ");
   const number = (value: number) =>
     new Intl.NumberFormat(formatLocale(lang), { maximumFractionDigits: 0 }).format(value);
-  const source = snapshot.data?.regions.find((region) => region.region === regionId);
-  const reading = snapshot.data ? getTwinRegionDisplay(snapshot.data, regionId, "recovery") : null;
-  const volume = snapshot.data
-    ? getTwinRegionDisplay(snapshot.data, regionId, "logged_volume")
+  const twinSnapshot = snapshot.data?.snapshot;
+  const intelligence = snapshot.data?.intelligence;
+  const source = twinSnapshot?.regions.find((region) => region.region === regionId);
+  const priority = intelligence?.focusRegions.find((region) => region.region === regionId) ?? null;
+  const reading = twinSnapshot ? getTwinRegionDisplay(twinSnapshot, regionId, "recovery") : null;
+  const volume = twinSnapshot
+    ? getTwinRegionDisplay(twinSnapshot, regionId, "logged_volume")
     : null;
   const effect = session.data?.status === "session" ? session.data : null;
   const row = effect?.breakdown.find((item) => item.muscleGroup === regionId);
@@ -122,9 +125,9 @@ export function TwinMuscleDetail({
         ))}
       </div>
       {tab === "status" ? (
-        snapshot.isError || snapshot.data?.dataAvailable === false ? (
+        snapshot.isError || snapshot.data?.snapshot.dataAvailable === false ? (
           <p className="twin-detail-message">{twin.unavailable}</p>
-        ) : !snapshot.data ? (
+        ) : !twinSnapshot ? (
           <p className="twin-detail-message" role="status">
             <Loader2 className="animate-spin" size={16} /> {twin.loading}
           </p>
@@ -137,7 +140,7 @@ export function TwinMuscleDetail({
                   presentation="detail"
                   showLayerControls={false}
                   focusRegion={regionId}
-                  snapshot={snapshot.data}
+                  snapshot={twinSnapshot}
                   layer="recovery"
                   onLayerChange={() => {}}
                   selectedRegion={regionId}
@@ -196,6 +199,26 @@ export function TwinMuscleDetail({
                   <dd>{formatTwinValue(volume?.value ?? null, "logged_volume", language)}</dd>
                 </div>
                 <div>
+                  <dt>{language === "lt" ? "Twin prioritetas" : "Twin priority"}</dt>
+                  <dd>
+                    {priority
+                      ? priority.attention === "recovery_attention"
+                        ? language === "lt"
+                          ? "Atsistatymo dėmesys"
+                          : "Recovery attention"
+                        : priority.attention === "recent_load"
+                          ? language === "lt"
+                            ? "Naujausia apkrova"
+                            : "Recent load"
+                          : language === "lt"
+                            ? "Subalansuota"
+                            : "Balanced"
+                      : language === "lt"
+                        ? "Ne prioritetinė zona"
+                        : "Not a priority region"}
+                  </dd>
+                </div>
+                <div>
                   <dt>{language === "lt" ? "Augimo signalas" : "Growth signal"}</dt>
                   <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
                 </div>
@@ -224,7 +247,7 @@ export function TwinMuscleDetail({
                 <p>
                   {twin.estimateNote} {twin.sourceNote}
                 </p>
-                <p>{twin.evidenceWindow(snapshot.data.evidenceWindowDays)}</p>
+                <p>{twin.evidenceWindow(twinSnapshot.evidenceWindowDays)}</p>
               </details>
             </div>
           </>
