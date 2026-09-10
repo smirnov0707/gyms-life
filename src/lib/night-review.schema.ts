@@ -6,7 +6,10 @@ import {
   PersonalCompletionLearningStateSchema,
   PersonalCompletionPredictionReviewSchema,
 } from "./personal-completion-model.schema";
+import { TodayEngagementPolicyCanaryReviewSchema } from "./today-engagement-policy.schema";
+
 const stamp = z.string().datetime({ offset: true });
+
 export const PredictionReviewSchema = z
   .object({
     checked: z.number().int().min(0).max(64),
@@ -21,6 +24,7 @@ export const PredictionReviewSchema = z
     "Invalid prediction review counts",
   );
 export type PredictionReview = z.infer<typeof PredictionReviewSchema>;
+
 export const HypothesisReviewSchema = z
   .object({
     current: z.array(AthleteHypothesisSchema).max(16),
@@ -28,6 +32,7 @@ export const HypothesisReviewSchema = z
   })
   .strict();
 export type HypothesisReview = z.infer<typeof HypothesisReviewSchema>;
+
 export const NightReviewSchema = z
   .object({
     version: z.literal("1.0"),
@@ -67,6 +72,17 @@ export const NightReviewSchema = z
         z.object({ status: z.enum(["unavailable", "not_run"]) }).strict(),
       ])
       .optional(),
+    policyCanary: z
+      .discriminatedUnion("status", [
+        z
+          .object({
+            status: z.literal("completed"),
+            result: TodayEngagementPolicyCanaryReviewSchema,
+          })
+          .strict(),
+        z.object({ status: z.enum(["unavailable", "not_run"]) }).strict(),
+      ])
+      .optional(),
     modelChanged: z.literal(false),
     planChanged: z.literal(false),
   })
@@ -78,22 +94,29 @@ export const NightReviewSchema = z
       !v.predictions.result.limited &&
       v.hypotheses.status === "completed" &&
       (v.modelLearning === undefined ||
-        (v.modelLearning.status === "completed" && !v.modelLearning.predictionReview?.limited));
+        (v.modelLearning.status === "completed" && !v.modelLearning.predictionReview?.limited)) &&
+      (v.policyCanary === undefined ||
+        (v.policyCanary.status === "completed" && !v.policyCanary.result.outcomeReview.limited));
     const expected =
       v.snapshot.status !== "confirmed" ? "blocked" : completed ? "completed" : "partial";
-    if (v.status !== expected)
+    if (v.status !== expected) {
       ctx.addIssue({ code: "custom", message: "Review status does not match confirmed stages" });
+    }
     if (
       v.snapshot.status !== "confirmed" &&
       (v.predictions.status !== "not_run" ||
         v.hypotheses.status !== "not_run" ||
-        (v.modelLearning !== undefined && v.modelLearning.status !== "not_run"))
-    )
+        (v.modelLearning !== undefined && v.modelLearning.status !== "not_run") ||
+        (v.policyCanary !== undefined && v.policyCanary.status !== "not_run"))
+    ) {
       ctx.addIssue({ code: "custom", message: "Untrusted snapshot cannot feed learning stages" });
-    if (Date.parse(v.reviewedAt) < Date.parse(v.evidenceThrough))
+    }
+    if (Date.parse(v.reviewedAt) < Date.parse(v.evidenceThrough)) {
       ctx.addIssue({ code: "custom", message: "Review predates its evidence cutoff" });
+    }
   });
 export type NightReview = z.infer<typeof NightReviewSchema>;
+
 export const NightReviewReadSchema = z.discriminatedUnion("state", [
   z.object({ state: z.literal("not_run") }).strict(),
   z.object({ state: z.literal("unavailable") }).strict(),
