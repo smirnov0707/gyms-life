@@ -39,7 +39,9 @@ const candidatePlugin = {
       if (
         !candidateBytes ||
         !["GET", "HEAD"].includes(request.method) ||
-        new URL(request.url, "http://localhost").pathname !== "/models/twin-anatomy-v1.glb"
+        !["/models/twin-body-v2.glb", "/models/twin-anatomy-v1.glb"].includes(
+          new URL(request.url, "http://localhost").pathname,
+        )
       )
         return next();
       response.setHeader("Content-Type", "model/gltf-binary");
