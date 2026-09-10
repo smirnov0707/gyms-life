@@ -314,6 +314,7 @@ export function TwinSnapshotView({
   onInspectRegion?: (region: string) => void;
 }) {
   const [layer, setLayer] = useState<TwinLayer>("recovery");
+  const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("realistic");
   const language = baseLang(lang);
   const layerCopy = twinLayerCopy(language);
   const display = (id: string) => getTwinRegionDisplay(data, id, layer);
@@ -344,6 +345,32 @@ export function TwinSnapshotView({
     onInspectRegion?.(region);
   };
 
+  const appearanceSelector = (mobile = false) => (
+    <div
+      role="group"
+      aria-label={language === "lt" ? "Dvynio vaizdas" : "Twin appearance"}
+      className={`${mobile ? "flex w-full" : "hidden sm:inline-flex"} rounded-full border border-white/10 bg-black/25 p-1`}
+    >
+      {(["realistic", "analysis"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={visualAppearance === option}
+          onClick={() => setVisualAppearance(option)}
+          className={`min-h-10 ${mobile ? "flex-1" : ""} rounded-full px-4 text-xs font-semibold transition ${visualAppearance === option ? "bg-white/12 text-white" : "text-neutral-400 hover:text-white"}`}
+        >
+          {option === "realistic"
+            ? language === "lt"
+              ? "Kūnas"
+              : "Body"
+            : language === "lt"
+              ? "Raumenys"
+              : "Muscles"}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {!data.dataAvailable ? (
@@ -370,10 +397,13 @@ export function TwinSnapshotView({
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{copy.title}</h1>
           <p className="mt-1 text-xs text-neutral-400">{copy.visualNote}</p>
+          {appearanceSelector()}
         </header>
         <div className="relative grid min-w-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center lg:gap-4 lg:px-4 lg:pb-4">
           <div className="min-w-0 px-2">
             <TwinStage
+              visualAppearance={visualAppearance}
+              appearanceControls={appearanceSelector(true)}
               compactMobileControls={Boolean(onInspectRegion)}
               snapshot={data}
               layer={layer}

@@ -216,6 +216,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
   const [layer, setLayer] = useState<TwinLayer | null>(null);
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
+  const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("realistic");
 
   const experience = snapshotQuery.data;
   const snapshot = experience?.snapshot;
@@ -277,6 +278,29 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           <p>{language === "lt" ? "Skaitmeninis kūnas" : "Digital human"}</p>
           <h2>{copy.title}</h2>
           <span>{language === "lt" ? "Tempk ir tyrinėk 360°" : "Drag to explore 360°"}</span>
+          <div
+            role="group"
+            aria-label={language === "lt" ? "Dvynio vaizdas" : "Twin appearance"}
+            className="mt-2 inline-flex rounded-full border border-white/10 bg-black/25 p-1"
+          >
+            {(["realistic", "analysis"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={visualAppearance === option}
+                onClick={() => setVisualAppearance(option)}
+                className={`min-h-9 rounded-full px-3 text-[10px] font-semibold transition ${visualAppearance === option ? "bg-white/12 text-white" : "text-neutral-400"}`}
+              >
+                {option === "realistic"
+                  ? language === "lt"
+                    ? "Kūnas"
+                    : "Body"
+                  : language === "lt"
+                    ? "Raumenys"
+                    : "Muscles"}
+              </button>
+            ))}
+          </div>
         </header>
         {!snapshot.dataAvailable ? (
           <p className="twin-cockpit-notice" role="status">
@@ -291,6 +315,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
         ) : null}
         <TwinStage
           presentation="cockpit"
+          visualAppearance={visualAppearance}
           snapshot={snapshot}
           layer={shownLayer}
           onLayerChange={setLayer}
@@ -359,6 +384,29 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             {targets?.status === "session" ? targets.title : copy.title}
           </h1>
           <p className="mt-1 text-xs text-neutral-400">{t("th.tapHint")}</p>
+          <div
+            role="group"
+            aria-label={language === "lt" ? "Dvynio vaizdas" : "Twin appearance"}
+            className="mt-3 inline-flex rounded-full border border-white/10 bg-black/25 p-1"
+          >
+            {(["realistic", "analysis"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={visualAppearance === option}
+                onClick={() => setVisualAppearance(option)}
+                className={`min-h-10 rounded-full px-4 text-xs font-semibold transition ${visualAppearance === option ? "bg-white/12 text-white" : "text-neutral-400 hover:text-white"}`}
+              >
+                {option === "realistic"
+                  ? language === "lt"
+                    ? "Kūnas"
+                    : "Body"
+                  : language === "lt"
+                    ? "Raumenys"
+                    : "Muscles"}
+              </button>
+            ))}
+          </div>
         </header>
 
         {/* Stretched, not centred: the stage fills the row so the figure is as
@@ -366,6 +414,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
         <div className="grid min-h-0 min-w-0 px-1 sm:px-3">
           <TwinStage
             fill
+            visualAppearance={visualAppearance}
             snapshot={snapshot}
             layer={shownLayer}
             onLayerChange={setLayer}
