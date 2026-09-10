@@ -122,6 +122,48 @@ export const getTwinSnapshot = async () => ({
       : [],
 });
 
+export const getTwinExperience = async () => {
+  const snapshot = await getTwinSnapshot();
+  const focusRegions = snapshot.regions.slice(0, 6).map((region) => ({
+    region: region.region,
+    recoveryPct: region.recoveryPct,
+    volumeKg: region.volumeKg,
+    lastTrainedHoursAgo: region.lastTrainedHoursAgo,
+    attention:
+      region.recoveryPct === null
+        ? ("unknown" as const)
+        : region.recoveryPct < 55
+          ? ("recovery_attention" as const)
+          : region.lastTrainedHoursAgo !== null && region.lastTrainedHoursAgo < 48
+            ? ("recent_load" as const)
+            : ("balanced" as const),
+  }));
+  return {
+    snapshot,
+    intelligence: {
+      version: "1.0" as const,
+      computedAt: snapshot.computedAt,
+      mode: focusRegions.some((region) => region.attention === "recovery_attention")
+        ? ("recovery_attention" as const)
+        : ("insufficient_evidence" as const),
+      dataQuality: "building" as const,
+      readiness: 76,
+      averageReadiness7d: 72,
+      averageSleepHours7d: 7.4,
+      sessions7d: 3,
+      sessions28d: 10,
+      trainingVolume28d: 12500,
+      weightKg: 82,
+      weightChangeKg30d: -0.8,
+      bodyFatPercent: 18,
+      hasSafetyConstraint: false,
+      focusRegions,
+      knownFacts: 8,
+      unknownSignals: [],
+    },
+  };
+};
+
 /** A key shaped like the real ones, so masking can be checked against it. */
 export const PREVIEW_HEALTH_TOKEN = "11111111-2222-4333-8444-555555555555";
 export const getHealthSource = async () => ({

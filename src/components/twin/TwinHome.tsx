@@ -197,7 +197,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
   const label = (region: string) => regionLabelFor(region, t);
 
   const snapshotQuery = useQuery({
-    queryKey: ["twin-snapshot", user?.id, timeZone],
+    queryKey: ["twin-experience", user?.id, timeZone],
     enabled: Boolean(user),
     queryFn: () => getTwinExperience({ data: timeZone }),
     staleTime: 60_000,
