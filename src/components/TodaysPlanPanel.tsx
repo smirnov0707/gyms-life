@@ -105,6 +105,12 @@ export function TodaysPlanPanel() {
         <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
           {t("tp.title")}
         </h2>
+        <Link
+          to="/training"
+          className="ml-auto text-[10px] font-semibold text-primary hover:underline"
+        >
+          {t("nav.training")}
+        </Link>
       </header>
 
       {isLoading ? (

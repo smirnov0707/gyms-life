@@ -130,6 +130,7 @@ function Onboarding() {
   const [equipment, setEquipment] = useState<string[]>(["bodyweight"]);
   const [days, setDays] = useState(3);
   const [minutes, setMinutes] = useState(60);
+  const [planWeeks, setPlanWeeks] = useState(8);
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [height, setHeight] = useState("");
@@ -203,6 +204,7 @@ function Onboarding() {
         equipment,
         daysPerWeek: days,
         sessionMinutes: minutes,
+        planWeeks,
         age: optionalFormNumber(age),
         gender: gender || null,
         heightCm: optionalFormNumber(height),
@@ -473,6 +475,18 @@ function Onboarding() {
                     </OptionButton>
                   ))}
                 </div>
+                <h2 className="mt-8 text-2xl">
+                  {lang === "lt" ? "Plano trukmė" : "Plan duration"}
+                </h2>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {[4, 8, 12].map((w) => (
+                    <OptionButton key={w} active={planWeeks === w} onClick={() => setPlanWeeks(w)}>
+                      <span className="block text-center text-lg">
+                        {w} {lang === "lt" ? "sav." : "wk"}
+                      </span>
+                    </OptionButton>
+                  ))}
+                </div>
               </>
             ) : null}
             {
@@ -509,6 +523,16 @@ function Onboarding() {
               {[30, 45, 60, 90].map((m) => (
                 <OptionButton key={m} active={minutes === m} onClick={() => setMinutes(m)}>
                   <span className="block text-center text-lg">{m}</span>
+                </OptionButton>
+              ))}
+            </div>
+            <h2 className="mt-8 text-2xl">{lang === "lt" ? "Plano trukmė" : "Plan duration"}</h2>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {[4, 8, 12].map((w) => (
+                <OptionButton key={w} active={planWeeks === w} onClick={() => setPlanWeeks(w)}>
+                  <span className="block text-center text-lg">
+                    {w} {lang === "lt" ? "sav." : "wk"}
+                  </span>
                 </OptionButton>
               ))}
             </div>
