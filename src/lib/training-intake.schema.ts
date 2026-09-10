@@ -13,6 +13,7 @@ export const TrainingIntakeSchema = z.object({
     .transform((values) => [...new Set(values)]),
   daysPerWeek: z.number().finite().int().min(1).max(7),
   sessionMinutes: z.number().finite().int().min(15).max(120),
+  planWeeks: z.number().finite().int().min(4).max(24).default(8),
   age: z.number().finite().int().min(10).max(100).nullable().optional(),
   gender: z.enum(["male", "female", "other"]).nullable().optional(),
   heightCm: z.number().finite().min(120).max(230).nullable().optional(),
