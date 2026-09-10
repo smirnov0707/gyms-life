@@ -6,6 +6,8 @@ import {
   type PolicyShadowOutcomeReview,
 } from "./today-engagement-policy-canary.schema";
 import { summarizeTodayEngagementPolicyEvidence } from "./today-engagement-policy-evidence.engine";
+import { evaluateTodayEngagementPolicyHealth } from "./today-engagement-policy-health.engine";
+import type { TodayEngagementPolicyHealth } from "./today-engagement-policy-health.schema";
 import type { TodayEngagementPolicyEvidence } from "./today-engagement-policy-evidence.schema";
 import { evaluateTodayEngagementProtocolReadiness } from "./today-engagement-policy-protocol.engine";
 import type { TodayEngagementProtocolReadiness } from "./today-engagement-policy-protocol.schema";
@@ -83,6 +85,28 @@ export async function loadTodayEngagementPolicyEvidence(
       observedCompletion: row.observed_completion,
     })),
   );
+}
+
+export async function loadTodayEngagementPolicyHealth(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<TodayEngagementPolicyHealth> {
+  z.string().uuid().parse(userId);
+  const { data, error } = await client
+    .from("policy_shadow_records")
+    .select("decision_on,observed_completion")
+    .eq("user_id", userId)
+    .not("reviewed_at", "is", null)
+    .not("observed_completion", "is", null)
+    .order("decision_on", { ascending: false })
+    .limit(28);
+  if (error || data === null) throw new Error("POLICY_HEALTH_UNAVAILABLE");
+  const rows = z
+    .array(z.object({ decision_on: z.string(), observed_completion: z.boolean() }))
+    .parse(data);
+  const recent = rows.slice(0, 14).map((row) => row.observed_completion);
+  const prior = rows.slice(14, 28).map((row) => row.observed_completion);
+  return evaluateTodayEngagementPolicyHealth({ recentOutcomes: recent, priorOutcomes: prior });
 }
 
 export async function loadTodayEngagementProtocolReadiness(

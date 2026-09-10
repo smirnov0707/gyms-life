@@ -100,6 +100,7 @@ export async function runAthleteNightReview(
     policyCanary: async () => {
       const {
         loadTodayEngagementPolicyEvidence,
+        loadTodayEngagementPolicyHealth,
         loadTodayEngagementProtocolReadiness,
         reviewPendingTodayEngagementPolicyOutcomes,
       } = await import("./today-engagement-policy-review.server");
@@ -110,11 +111,12 @@ export async function runAthleteNightReview(
         input.userId,
         cutoff,
       );
-      const [evidence, protocol] = await Promise.all([
+      const [evidence, health, protocol] = await Promise.all([
         loadTodayEngagementPolicyEvidence(client, input.userId),
+        loadTodayEngagementPolicyHealth(client, input.userId),
         loadTodayEngagementProtocolReadiness(client, input.userId, cutoff),
       ]);
-      return buildTodayEngagementPolicyCanaryReview(outcomeReview, evidence, protocol);
+      return buildTodayEngagementPolicyCanaryReview(outcomeReview, evidence, health, protocol);
     },
   });
   const { data: id, error } = await client.rpc("commit_night_lab_review", {

@@ -17,6 +17,18 @@ const protocol = {
   promotionEligible: false as const,
 };
 
+const health = {
+  state: "insufficient_evidence" as const,
+  recent: { reviewedDays: 0, completionRate: null },
+  prior: { reviewedDays: 0, completionRate: null },
+  absoluteCompletionRateDrift: null,
+  canonicalFallback: "standard_train_cta" as const,
+  rollbackPrepared: true as const,
+  activationAllowed: false as const,
+  causalEvidence: false as const,
+  promotionEligible: false as const,
+};
+
 const evidence = {
   equivalent: { reviewedDays: 8, completedDays: 5, completionRate: 0.625 },
   counterfactual: { reviewedDays: 4, completedDays: 3, completionRate: 0.75 },
@@ -31,11 +43,13 @@ describe("today engagement policy canary guard", () => {
       buildTodayEngagementPolicyCanaryReview(
         { checked: 12, evaluated: 10, limited: false },
         evidence,
+        health,
         protocol,
       ),
     ).toEqual({
       outcomeReview: { checked: 12, evaluated: 10, limited: false },
       evidence,
+      health,
       protocol,
       readiness: {
         randomizedExposures: 0,
@@ -50,6 +64,7 @@ describe("today engagement policy canary guard", () => {
       buildTodayEngagementPolicyCanaryReview(
         { checked: 2, evaluated: 3, limited: false },
         evidence,
+        health,
         protocol,
       ),
     ).toThrow();
@@ -59,6 +74,7 @@ describe("today engagement policy canary guard", () => {
     const review = buildTodayEngagementPolicyCanaryReview(
       { checked: 20, evaluated: 20, limited: false },
       evidence,
+      health,
       protocol,
     );
     expect(

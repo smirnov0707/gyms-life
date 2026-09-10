@@ -34,6 +34,17 @@ const input = {
   timeZone: "Europe/Vilnius",
 };
 const prediction = { checked: 0, evaluated: 0, independentDays: 0, pending: 0, limited: false };
+const policyHealth = {
+  state: "insufficient_evidence" as const,
+  recent: { reviewedDays: 0, completionRate: null },
+  prior: { reviewedDays: 0, completionRate: null },
+  absoluteCompletionRateDrift: null,
+  canonicalFallback: "standard_train_cta" as const,
+  rollbackPrepared: true as const,
+  activationAllowed: false as const,
+  causalEvidence: false as const,
+  promotionEligible: false as const,
+};
 const policyReview = buildTodayEngagementPolicyCanaryReview(
   { checked: 0, evaluated: 0, limited: false },
   {
@@ -43,6 +54,7 @@ const policyReview = buildTodayEngagementPolicyCanaryReview(
     causalEvidence: false,
     promotionEligible: false,
   },
+  policyHealth,
   {
     protocolVersion: "0.1.0",
     state: "blocked",
@@ -118,6 +130,7 @@ describe("confirmed overnight stage orchestration", () => {
           buildTodayEngagementPolicyCanaryReview(
             { checked: 64, evaluated: 64, limited: true },
             policyReview.evidence,
+            policyReview.health,
             policyReview.protocol,
           ),
         ),
