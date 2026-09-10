@@ -4,6 +4,7 @@ import type { BodyView } from "./body-map.geometry";
 import { BodySceneStage } from "./BodySceneStage";
 import { TWIN_LAYERS, mapTwinScene, type TwinLayer } from "./twin-scene.model";
 import { twinLayerCopy, formatTwinValue } from "./twin-layer.copy";
+import type { TwinVisualAppearance } from "./twin-human.loader";
 export type TwinStageProps = {
   snapshot: TwinSnapshot;
   layer: TwinLayer;
@@ -27,6 +28,10 @@ export type TwinStageProps = {
   focusRegion?: string | null;
   showLayerControls?: boolean;
   compactMobileControls?: boolean;
+  /** Visual treatment only; never changes Twin evidence or picking regions. */
+  visualAppearance?: TwinVisualAppearance;
+  /** Optional mobile control rendered inside the shared view disclosure. */
+  appearanceControls?: ReactNode;
 };
 /** Canonical Twin projection. Model provenance belongs to the shared renderer. */
 

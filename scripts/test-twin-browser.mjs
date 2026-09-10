@@ -39,7 +39,9 @@ const candidatePlugin = {
       if (
         !candidateBytes ||
         !["GET", "HEAD"].includes(request.method) ||
-        new URL(request.url, "http://localhost").pathname !== "/models/twin-anatomy-v1.glb"
+        !["/models/twin-body-v2.glb", "/models/twin-anatomy-v1.glb"].includes(
+          new URL(request.url, "http://localhost").pathname,
+        )
       )
         return next();
       response.setHeader("Content-Type", "model/gltf-binary");
@@ -143,10 +145,10 @@ try {
   const expectedCredit = ["muscular", "sculpt"].includes(candidateMode)
     ? "MakeHuman graphical assets (CC0)"
     : "BodyParts3D";
-  const expectedBytes =
-    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-anatomy-v1.glb")));
-  const expectedSha = createHash("sha256").update(expectedBytes).digest("hex");
-  await expect(page.locator("canvas")).toHaveAttribute("data-twin-asset-sha256", expectedSha);
+  const expectedBodyBytes =
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-body-v2.glb")));
+  const expectedBodySha = createHash("sha256").update(expectedBodyBytes).digest("hex");
+  await expect(page.locator("canvas")).toHaveAttribute("data-twin-asset-sha256", expectedBodySha);
   await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
     "data-twin-source",
     expectedSource,
@@ -154,6 +156,26 @@ try {
   await expect(page.locator("[data-twin-credit]")).toContainText(expectedCredit);
   await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
   record("visible model source and review status match the exact downloaded GLB");
+
+  const stage = page.locator("[data-twin-stage]").first();
+  await expect(stage).toHaveAttribute("data-twin-appearance", "realistic");
+  await page.getByRole("button", { name: "Muscles", exact: true }).click();
+  await expect(stage).toHaveAttribute("data-twin-appearance", "analysis");
+  await expect(stage).toHaveAttribute("data-twin-stage", "3d");
+  if (!candidate) {
+    const expectedAnalysisBytes = await readFile(
+      path.join(root, "public/models/twin-anatomy-v1.glb"),
+    );
+    const expectedAnalysisSha = createHash("sha256").update(expectedAnalysisBytes).digest("hex");
+    await expect(page.locator("canvas")).toHaveAttribute(
+      "data-twin-asset-sha256",
+      expectedAnalysisSha,
+    );
+  }
+  await page.getByRole("button", { name: "Body", exact: true }).click();
+  await expect(stage).toHaveAttribute("data-twin-appearance", "realistic");
+  await expect(stage).toHaveAttribute("data-twin-stage", "3d");
+  record("Body and Muscles appearances switch without replacing the Twin renderer");
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(artifacts, "desktop-front.png"), fullPage: true });
   const canvas = page.locator("canvas");
@@ -431,7 +453,7 @@ try {
     artifacts,
     expectedSource,
     expectedCredit,
-    expectedSha,
+    expectedSha: expectedBodySha,
     record,
   });
   await context.close();

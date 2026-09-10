@@ -30,6 +30,7 @@ import {
   twinHumanUrl,
   type TwinBodyModel,
   type TwinHumanVariant,
+  type TwinVisualAppearance,
 } from "./twin-human.loader";
 import {
   TWIN_CAMERA,
@@ -92,6 +93,7 @@ export function mountTwinScene(
     /** Off switches the anatomical figure back to the generated surface. */
     human?: boolean;
     humanVariant?: TwinHumanVariant;
+    visualAppearance?: TwinVisualAppearance;
     /**
      * Fires once there is a body in the scene, and says which one. Until then
      * the stage has nothing to show and keeps its 2D map up.
@@ -125,7 +127,8 @@ export function mountTwinScene(
     // strong, and at neutral exposure the figure came out pastel — every
     // muscle the same washed lilac rather than the deep violet the screen is
     // drawn in. Pulling the exposure down puts the range back into the colour.
-    renderer.toneMappingExposure = 0.86;
+    const appearance = options.visualAppearance ?? "analysis";
+    renderer.toneMappingExposure = appearance === "realistic" ? 1.02 : 0.86;
     renderer.setClearColor(0x040a14, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     const canvas = renderer.domElement;
@@ -163,21 +166,34 @@ export function mountTwinScene(
     // two rims — one cyan behind and one violet from the side — that draw the
     // silhouette out of the stage. It was warm and bright while the figure was
     // skin-coloured; a warm key on a near-black body just makes it grey.
-    scene.add(new HemisphereLight(0xadc3d1, 0x101722, 0.58));
-    for (const [position, color, intensity] of [
-      // The key, high and slightly to the front, which is what models a muscle
-      // belly. Kept modest: the data colour is emissive, so a bright key on top
-      // of it flattens the very thing it is there to shape.
-      [[1.8, 2.8, 2.6], 0xdeebf4, 1.7],
-      [[-2.6, 1.0, 1.6], 0x9cadc1, 0.65],
-      // The rim, hard behind and to each side. This is where the figure gets
-      // its edge against the stage. A scaled-up inside-out copy of every mesh
-      // was tried for that first, and on a body made of a hundred overlapping
-      // muscles each copy glows over its neighbours as well as over the stage —
-      // the figure came out milky and lost every muscle boundary it had.
-      [[-1.6, 1.9, -3.0], 0x9adceb, 1.4],
-      [[2.2, 1.4, -2.6], 0x98acd8, 1.0],
-    ] as const) {
+    scene.add(
+      appearance === "realistic"
+        ? new HemisphereLight(0xffeadf, 0x18202a, 0.9)
+        : new HemisphereLight(0xadc3d1, 0x101722, 0.58),
+    );
+    const lights =
+      appearance === "realistic"
+        ? ([
+            [[1.8, 2.8, 2.6], 0xffe5d5, 2.1],
+            [[-2.4, 1.25, 1.8], 0xc7d9ed, 0.75],
+            [[-1.8, 1.9, -3.0], 0xaedcf4, 0.8],
+            [[2.2, 1.4, -2.6], 0xd4bff5, 0.55],
+          ] as const)
+        : ([
+            // The key, high and slightly to the front, which is what models a muscle
+            // belly. Kept modest: the data colour is emissive, so a bright key on top
+            // of it flattens the very thing it is there to shape.
+            [[1.8, 2.8, 2.6], 0xdeebf4, 1.7],
+            [[-2.6, 1.0, 1.6], 0x9cadc1, 0.65],
+            // The rim, hard behind and to each side. This is where the figure gets
+            // its edge against the stage. A scaled-up inside-out copy of every mesh
+            // was tried for that first, and on a body made of a hundred overlapping
+            // muscles each copy glows over its neighbours as well as over the stage —
+            // the figure came out milky and lost every muscle boundary it had.
+            [[-1.6, 1.9, -3.0], 0x9adceb, 1.4],
+            [[2.2, 1.4, -2.6], 0x98acd8, 1.0],
+          ] as const);
+    for (const [position, color, intensity] of lights) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
@@ -247,6 +263,7 @@ export function mountTwinScene(
       showStage();
     }
     canvas.dataset["twinBody"] = humanPending ? "loading" : "surface";
+    canvas.dataset["twinAppearance"] = appearance;
     const useSurface = () => {
       // An aborted fetch may reject after unmount. Never revive a disposed scene.
       if (destroyed || !humanPending) return;
@@ -272,7 +289,11 @@ export function mountTwinScene(
     });
 
     if (options.human !== false) {
-      void loadTwinHuman(twinHumanUrl(options.humanVariant ?? "male"), humanLoad.signal)
+      void loadTwinHuman(
+        twinHumanUrl(options.humanVariant ?? "male", appearance),
+        humanLoad.signal,
+        appearance,
+      )
         .then((human) => {
           if (destroyed || humanLoad.signal.aborted) {
             human.dispose();
@@ -394,20 +415,27 @@ export function mountTwinScene(
             // panels. A muscle belly reads because it is shaded, so the data
             // colour goes into the albedo and the light does its work on it.
             const lit = glow > 0;
-            material.color.set(bodyColour).lerp(tone, lit ? 0.8 : 0);
+            const tintStrength = appearance === "realistic" ? (selected ? 0.38 : 0) : lit ? 0.8 : 0;
+            material.color.set(bodyColour).lerp(tone, tintStrength);
             material.emissive.copy(tone);
             // Enough to lift a region off the stage and to keep the states in
             // order against each other, not enough to bleach the shading.
             // Divided by the tone's own brightness, so how much a region lights
             // up is set by what it means rather than by how pale its colour
             // happens to be.
-            material.emissiveIntensity = lit
-              ? ((selected ? 0.22 : 0.12) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
-              : 0;
-            // A broad highlight describes the muscle belly without turning
-            // every small atlas triangle into a bright metallic glint.
-            material.roughness = selected ? 0.56 : 0.6;
-            material.metalness = 0.12;
+            material.emissiveIntensity =
+              appearance === "realistic"
+                ? selected
+                  ? (0.08 * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
+                  : 0
+                : lit
+                  ? ((selected ? 0.22 : 0.12) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
+                  : 0;
+            // Realistic mode keeps skin-like broad highlights while analysis
+            // mode preserves the stronger instrument contrast.
+            material.roughness =
+              appearance === "realistic" ? (selected ? 0.62 : 0.68) : selected ? 0.56 : 0.6;
+            material.metalness = appearance === "realistic" ? 0.02 : 0.12;
           } else {
             material.color.copy(new Color("#48565d").lerp(tone, 0.55));
             material.emissive.set(selected ? "#bcefe3" : "#000000");

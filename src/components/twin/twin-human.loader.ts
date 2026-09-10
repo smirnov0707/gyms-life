@@ -40,6 +40,7 @@ const REGION_MATERIAL_PREFIX = "twin-region:";
  * missing body.
  */
 const BODY = { color: 0x243746, roughness: 0.6, metalness: 0.12 };
+const REALISTIC_BODY = { color: 0xb9856d, roughness: 0.7, metalness: 0.01 };
 
 /**
  * The skin, over the parts of the figure that have no muscle.
@@ -51,9 +52,11 @@ const BODY = { color: 0x243746, roughness: 0.6, metalness: 0.12 };
  * on it.
  */
 const SKIN = { color: 0x354956, roughness: 0.55, metalness: 0.1 };
+const REALISTIC_SKIN = { color: 0xb9856d, roughness: 0.7, metalness: 0.01 };
 
 /** Darker than the body, so the face reads as a face at a glance. */
 const EYE = { color: 0x15222c, roughness: 0.4, metalness: 0.08 };
+const REALISTIC_EYE = { color: 0x241814, roughness: 0.38, metalness: 0.0 };
 
 export type TwinBodyModel = {
   provenance: TwinBodyProvenance;
@@ -67,6 +70,7 @@ export type TwinBodyModel = {
 };
 
 export type TwinHumanVariant = "male" | "female";
+export type TwinVisualAppearance = "analysis" | "realistic";
 
 /**
  * The anatomical figure, which is one body rather than two.
@@ -76,15 +80,22 @@ export type TwinHumanVariant = "male" | "female";
  * one to offer — so the variant is accepted and ignored rather than the call
  * sites all being changed to stop passing it.
  */
-export function twinHumanUrl(_variant: TwinHumanVariant): string {
-  return "/models/twin-anatomy-v1.glb";
+export function twinHumanUrl(
+  _variant: TwinHumanVariant,
+  appearance: TwinVisualAppearance = "analysis",
+): string {
+  return appearance === "realistic" ? "/models/twin-body-v2.glb" : "/models/twin-anatomy-v1.glb";
 }
 
 /**
  * Resolves with the model, or rejects. Callers keep the surface they already
  * have on rejection — a missing or corrupt asset must never blank the scene.
  */
-export async function loadTwinHuman(url: string, signal?: AbortSignal): Promise<TwinBodyModel> {
+export async function loadTwinHuman(
+  url: string,
+  signal?: AbortSignal,
+  appearance: TwinVisualAppearance = "analysis",
+): Promise<TwinBodyModel> {
   signal?.throwIfAborted();
   const response = await fetch(url, { signal: signal ?? null });
   if (!response.ok) throw new Error(`Twin asset request failed (${response.status})`);
@@ -100,14 +111,18 @@ export async function loadTwinHuman(url: string, signal?: AbortSignal): Promise<
   const gltf = await new GLTFLoader().parseAsync(bytes, "");
   try {
     signal?.throwIfAborted();
-    return build(gltf.scene, provenance);
+    return build(gltf.scene, provenance, appearance);
   } catch (error) {
     disposeObject(gltf.scene);
     throw error;
   }
 }
 
-function build(scene: Object3D, provenance: TwinBodyProvenance): TwinBodyModel {
+function build(
+  scene: Object3D,
+  provenance: TwinBodyProvenance,
+  appearance: TwinVisualAppearance,
+): TwinBodyModel {
   const body = new Group();
   body.name = "twin-human";
   body.add(scene);
@@ -134,30 +149,48 @@ function build(scene: Object3D, provenance: TwinBodyProvenance): TwinBodyModel {
     // The kept skin is the one mesh that is not a region: it carries no
     // reading, so it is the silhouette rather than a data surface.
     const isSkin = region === "neutral";
-    const preset = sourceName === "Eyes" ? EYE : isSkin ? SKIN : BODY;
+    const preset =
+      appearance === "realistic"
+        ? sourceName === "Eyes"
+          ? REALISTIC_EYE
+          : isSkin
+            ? REALISTIC_SKIN
+            : REALISTIC_BODY
+        : sourceName === "Eyes"
+          ? EYE
+          : isSkin
+            ? SKIN
+            : BODY;
     disposeMaterial(object);
-    object.material = createTwinAnatomyMaterial(preset, {
-      ...(object.userData["twinSculptContours"] !== undefined &&
-      object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
-        ? {
-            contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
-            ...(object.userData["twinSculptCompetition"]
+    object.material = createTwinAnatomyMaterial(
+      preset,
+      appearance === "realistic"
+        ? {}
+        : {
+            ...(object.userData["twinSculptContours"] !== undefined &&
+            object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
               ? {
-                  competition: parseTwinSculptCompetition(object.userData["twinSculptCompetition"]),
+                  contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
+                  ...(object.userData["twinSculptCompetition"]
+                    ? {
+                        competition: parseTwinSculptCompetition(
+                          object.userData["twinSculptCompetition"],
+                        ),
+                      }
+                    : {}),
+                  contourFan: region === "chest" || region === "abs",
                 }
               : {}),
-            contourFan: region === "chest" || region === "abs",
-          }
-        : {}),
-      regionMask:
-        object.userData["twinRegionMask"] === true &&
-        object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
-      fibers:
-        object.userData["twinFiberUV"] === true &&
-        object.geometry.getAttribute("uv")?.itemSize === 2 &&
-        region !== null &&
-        isTwinBodyRegion(region),
-    });
+            regionMask:
+              object.userData["twinRegionMask"] === true &&
+              object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
+            fibers:
+              object.userData["twinFiberUV"] === true &&
+              object.geometry.getAttribute("uv")?.itemSize === 2 &&
+              region !== null &&
+              isTwinBodyRegion(region),
+          },
+    );
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 

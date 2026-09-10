@@ -15,6 +15,7 @@ import type { TwinSceneHandle } from "./twin-scene.runtime";
 import { createTwinSceneAttempt } from "./twin-scene.attempt";
 import type { TwinBodyProvenance } from "./twin-body.provenance";
 import type { TwinBodyVariant } from "@/lib/digital-twin.schema";
+import type { TwinVisualAppearance } from "./twin-human.loader";
 
 export type BodySceneStageProps = {
   state: TwinSceneState;
@@ -46,6 +47,10 @@ export type BodySceneStageProps = {
   focusRegion?: string | null;
   /** Live mobile screens keep view/layer options in the existing disclosure. */
   compactMobileControls?: boolean;
+  /** Skin-forward or analysis-forward rendering; evidence remains identical. */
+  visualAppearance?: TwinVisualAppearance;
+  /** Optional appearance selector; shown inside compact mobile controls. */
+  appearanceControls?: ReactNode;
 };
 const COPY = {
   en: {
@@ -123,6 +128,8 @@ export function BodySceneStage(props: BodySceneStageProps) {
     formatRegion,
     extraNote,
     bodyVariant,
+    visualAppearance = "analysis",
+    appearanceControls,
   } = props;
   const copy = COPY[language];
   const controlsId = useId();
@@ -189,6 +196,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           // is worse than keeping the 2D map, which is the same data.
           onBodyReady: (_kind, loadedProvenance) => loading.ready(loadedProvenance),
           ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
+          visualAppearance: current.visualAppearance ?? "analysis",
         });
         if (!loading.attach(handle)) return;
         scene.current = handle;
@@ -197,7 +205,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       })
       .catch(loading.fail);
     return () => loading.dispose();
-  }, [mode, attempt, bodyVariant]);
+  }, [mode, attempt, bodyVariant, visualAppearance]);
   useEffect(() => {
     scene.current?.setState(state);
   }, [state, ready]);
@@ -270,6 +278,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       data-twin-source={show3D ? (provenance?.source ?? "generated") : "2d"}
       data-twin-layer={state.layer}
       data-twin-presentation={presentation}
+      data-twin-appearance={visualAppearance}
       data-twin-mobile-compact={mobileDisclosure || undefined}
     >
       {presentation !== "cockpit" && !mobileDisclosure && (
@@ -430,6 +439,9 @@ export function BodySceneStage(props: BodySceneStageProps) {
         }}
         className="mx-3 mb-3 rounded-2xl border border-white/10 bg-black/30 p-3"
       >
+        {mobileDisclosure && appearanceControls ? (
+          <div className="mb-2">{appearanceControls}</div>
+        ) : null}
         {mobileDisclosure && layerControls}
         {(presentation === "cockpit" || mobileDisclosure) && rendererControls}
         <p className="text-xs leading-relaxed text-neutral-300">{copy.hint}</p>

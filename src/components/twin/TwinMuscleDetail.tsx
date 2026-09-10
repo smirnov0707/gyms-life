@@ -138,6 +138,7 @@ export function TwinMuscleDetail({
                 <TwinStage
                   compactMobileControls
                   presentation="detail"
+                  visualAppearance="analysis"
                   showLayerControls={false}
                   focusRegion={regionId}
                   snapshot={twinSnapshot}
