@@ -5,7 +5,8 @@ import { Dumbbell, Flame, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
-import { getTwinSnapshot } from "@/lib/digital-twin.functions";
+import { getTwinExperience } from "@/lib/digital-twin.functions";
+import { TwinIntelligencePanel } from "@/components/twin/TwinIntelligencePanel";
 import { getTodaysTargets } from "@/lib/todays-targets.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { targetsRegion, type TodaysTargets } from "@/lib/todays-targets.engine";
@@ -198,7 +199,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
   const snapshotQuery = useQuery({
     queryKey: ["twin-snapshot", user?.id, timeZone],
     enabled: Boolean(user),
-    queryFn: () => getTwinSnapshot({ data: timeZone }),
+    queryFn: () => getTwinExperience({ data: timeZone }),
     staleTime: 60_000,
   });
   const targetsQuery = useQuery({
@@ -216,7 +217,9 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
 
-  const snapshot = snapshotQuery.data;
+  const experience = snapshotQuery.data;
+  const snapshot = experience?.snapshot;
+  const intelligence = experience?.intelligence;
   const targets: TodaysTargets | undefined = targetsQuery.isError
     ? { status: "unreadable" }
     : targetsQuery.data;
@@ -301,6 +304,14 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           sidePanel={
             <aside className="twin-cockpit-side">
               <CockpitLegend layer={shownLayer} language={language} />
+              {intelligence ? (
+                <TwinIntelligencePanel
+                  compact
+                  intelligence={intelligence}
+                  selectedRegion={selected}
+                  onSelectRegion={selectRegion}
+                />
+              ) : null}
               <div className="twin-cockpit-load">
                 <TrainingLoadPanel compact />
               </div>
@@ -429,6 +440,13 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             ) : null}
           </div>
 
+          {intelligence ? (
+            <TwinIntelligencePanel
+              intelligence={intelligence}
+              selectedRegion={selected}
+              onSelectRegion={selectRegion}
+            />
+          ) : null}
           <TrainingLoadPanel />
           <RecentWorkoutEffect />
         </div>

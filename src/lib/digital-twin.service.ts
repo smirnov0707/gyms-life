@@ -3,28 +3,45 @@ import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
 import { mapDigitalAthleteStateToTwinSnapshot, twinBodyVariantFor } from "./digital-twin.mapper";
 import type { TwinSnapshot } from "./digital-twin.schema";
+import { buildTwinIntelligence } from "./twin-intelligence.engine";
+import type { TwinIntelligence } from "./twin-intelligence.schema";
+
+export type TwinExperience = {
+  snapshot: TwinSnapshot;
+  intelligence: TwinIntelligence;
+};
 
 /**
- * Refreshes the canonical athlete state (same as Today/Lab) and maps it to
- * the Twin-renderer contract. No separate computation path: the Twin can
- * never show a different muscle-load number than the rest of the app.
+ * One canonical refresh feeds both the renderer and intelligence layer.
+ * This prevents the visible body and its explanation from drifting apart.
  */
+export async function loadTwinExperience(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  timeZone = "UTC",
+  now = new Date(),
+): Promise<TwinExperience> {
+  const [athlete, profile] = await Promise.all([
+    refreshAthleteStateSnapshot(supabase, userId, timeZone, now),
+    supabase.from("profiles").select("gender").eq("id", userId).maybeSingle(),
+  ]);
+  const snapshot = mapDigitalAthleteStateToTwinSnapshot(
+    athlete.state,
+    now,
+    twinBodyVariantFor(profile.error ? null : profile.data?.gender),
+  );
+  return {
+    snapshot,
+    intelligence: buildTwinIntelligence(athlete.state, now),
+  };
+}
+
+/** Existing callers keep the renderer-only contract. */
 export async function loadTwinSnapshot(
   supabase: SupabaseClient<Database>,
   userId: string,
   timeZone = "UTC",
   now = new Date(),
 ): Promise<TwinSnapshot> {
-  const [athlete, profile] = await Promise.all([
-    refreshAthleteStateSnapshot(supabase, userId, timeZone, now),
-    // Which figure to draw, and nothing else. A failed or empty read is not a
-    // reason to withhold the Twin — it falls back to the default body, which
-    // the stage already labels as generic rather than as the athlete's own.
-    supabase.from("profiles").select("gender").eq("id", userId).maybeSingle(),
-  ]);
-  return mapDigitalAthleteStateToTwinSnapshot(
-    athlete.state,
-    now,
-    twinBodyVariantFor(profile.error ? null : profile.data?.gender),
-  );
+  return (await loadTwinExperience(supabase, userId, timeZone, now)).snapshot;
 }
