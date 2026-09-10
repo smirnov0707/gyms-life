@@ -8,6 +8,9 @@ const io = vi.hoisted(() => ({
   snapshot: vi.fn(),
   personalReview: vi.fn(),
   personalLearning: vi.fn(),
+  policyOutcomeReview: vi.fn(),
+  policyProtocolReadiness: vi.fn(),
+  policyEvidence: vi.fn(),
 }));
 vi.mock("./athlete-state-snapshot.server", () => ({ refreshAthleteStateSnapshot: io.snapshot }));
 vi.mock("./personal-completion-prediction.server", () => ({
@@ -15,6 +18,11 @@ vi.mock("./personal-completion-prediction.server", () => ({
 }));
 vi.mock("./personal-completion-model.server", () => ({
   ensurePersonalCompletionLearning: io.personalLearning,
+}));
+vi.mock("./today-engagement-policy-review.server", () => ({
+  reviewPendingTodayEngagementPolicyOutcomes: io.policyOutcomeReview,
+  loadTodayEngagementProtocolReadiness: io.policyProtocolReadiness,
+  loadTodayEngagementPolicyEvidence: io.policyEvidence,
 }));
 import { runAthleteNightReview, loadMorningNightReview } from "./night-review.server";
 import { NightReviewSchema } from "./night-review.schema";
@@ -167,6 +175,31 @@ beforeEach(() => {
     state: "insufficient_history",
     evaluatedDays: 1,
     minimumTrainingDays: 12,
+  });
+  io.policyOutcomeReview
+    .mockReset()
+    .mockResolvedValue({ checked: 0, evaluated: 0, limited: false });
+  io.policyEvidence.mockReset().mockResolvedValue({
+    equivalent: { reviewedDays: 0, completedDays: 0, completionRate: null },
+    counterfactual: { reviewedDays: 0, completedDays: 0, completionRate: null },
+    observationalDelta: null,
+    causalEvidence: false,
+    promotionEligible: false,
+  });
+  io.policyProtocolReadiness.mockReset().mockResolvedValue({
+    protocolVersion: "0.1.0",
+    state: "blocked",
+    reviewedShadowDays: 0,
+    counterfactualDays: 0,
+    blockers: [
+      "personal_model_not_qualified",
+      "insufficient_reviewed_shadow_days",
+      "insufficient_counterfactual_days",
+    ],
+    randomizationConfigured: false,
+    activationAllowed: false,
+    causalEvidence: false,
+    promotionEligible: false,
   });
 });
 describe("snapshot → actual result → hypothesis ledger → receipt → morning reader", () => {
