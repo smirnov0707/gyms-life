@@ -97,6 +97,27 @@ export async function runAthleteNightReview(
       );
       return { learning, predictionReview };
     },
+    policyCanary: async () => {
+      const {
+        loadTodayEngagementPolicyEvidence,
+        loadTodayEngagementPolicyHealth,
+        loadTodayEngagementProtocolReadiness,
+        reviewPendingTodayEngagementPolicyOutcomes,
+      } = await import("./today-engagement-policy-review.server");
+      const { buildTodayEngagementPolicyCanaryReview } =
+        await import("./today-engagement-policy-canary.engine");
+      const outcomeReview = await reviewPendingTodayEngagementPolicyOutcomes(
+        client,
+        input.userId,
+        cutoff,
+      );
+      const [evidence, health, protocol] = await Promise.all([
+        loadTodayEngagementPolicyEvidence(client, input.userId),
+        loadTodayEngagementPolicyHealth(client, input.userId),
+        loadTodayEngagementProtocolReadiness(client, input.userId, cutoff),
+      ]);
+      return buildTodayEngagementPolicyCanaryReview(outcomeReview, evidence, health, protocol);
+    },
   });
   const { data: id, error } = await client.rpc("commit_night_lab_review", {
     p_run_id: input.runId,

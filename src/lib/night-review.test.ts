@@ -3,6 +3,7 @@ import { DigitalAthleteSourcesSchema } from "./digital-athlete.schema";
 import { buildDigitalAthleteState } from "./digital-athlete.service";
 import { buildNightReview } from "./night-review.engine";
 import { NightReviewSchema } from "./night-review.schema";
+import { buildTodayEngagementPolicyCanaryReview } from "./today-engagement-policy-canary.engine";
 import { dispatchNightLab } from "./night-lab.dispatch";
 const NOW = new Date("2026-09-09T06:00:00Z"),
   SNAP = "11111111-1111-4111-8111-111111111111";
@@ -33,6 +34,43 @@ const input = {
   timeZone: "Europe/Vilnius",
 };
 const prediction = { checked: 0, evaluated: 0, independentDays: 0, pending: 0, limited: false };
+const policyHealth = {
+  state: "insufficient_evidence" as const,
+  recent: { reviewedDays: 0, completionRate: null },
+  prior: { reviewedDays: 0, completionRate: null },
+  absoluteCompletionRateDrift: null,
+  canonicalFallback: "standard_train_cta" as const,
+  rollbackPrepared: true as const,
+  activationAllowed: false as const,
+  causalEvidence: false as const,
+  promotionEligible: false as const,
+};
+const policyReview = buildTodayEngagementPolicyCanaryReview(
+  { checked: 0, evaluated: 0, limited: false },
+  {
+    equivalent: { reviewedDays: 0, completedDays: 0, completionRate: null },
+    counterfactual: { reviewedDays: 0, completedDays: 0, completionRate: null },
+    observationalDelta: null,
+    causalEvidence: false,
+    promotionEligible: false,
+  },
+  policyHealth,
+  {
+    protocolVersion: "0.1.0",
+    state: "blocked",
+    reviewedShadowDays: 0,
+    counterfactualDays: 0,
+    blockers: [
+      "personal_model_not_qualified",
+      "insufficient_reviewed_shadow_days",
+      "insufficient_counterfactual_days",
+    ],
+    randomizationConfigured: false,
+    activationAllowed: false,
+    causalEvidence: false,
+    promotionEligible: false,
+  },
+);
 function services() {
   return {
     snapshot: vi.fn().mockResolvedValue({
@@ -46,6 +84,63 @@ function services() {
   };
 }
 describe("confirmed overnight stage orchestration", () => {
+  it("keeps policy canary as a non-exposed review guard", async () => {
+    const report = await buildNightReview(input, {
+      ...services(),
+      policyCanary: vi.fn().mockResolvedValue(policyReview),
+    });
+    expect(report.status).toBe("completed");
+    expect(report.policyCanary).toEqual({ status: "completed", result: policyReview });
+    expect(
+      report.policyCanary?.status === "completed" && report.policyCanary.result.readiness,
+    ).toEqual({
+      randomizedExposures: 0,
+      causalEvidence: false,
+      promotionEligible: false,
+    });
+  });
+
+  it("treats an unavailable policy canary review as partial", async () => {
+    const report = await buildNightReview(input, {
+      ...services(),
+      policyCanary: vi.fn().mockRejectedValue(new Error("private")),
+    });
+    expect(report.status).toBe("partial");
+    expect(report.policyCanary).toEqual({ status: "unavailable" });
+  });
+
+  it("does not call policy canary review when the snapshot is blocked", async () => {
+    const policyCanary = vi.fn();
+    const deps = { ...services(), policyCanary };
+    deps.snapshot.mockResolvedValue({
+      state: { ...nightReviewTestState(), dataGaps: ["current_context_unavailable"] },
+      snapshot: null,
+    });
+    const report = await buildNightReview(input, deps);
+    expect(report.policyCanary).toEqual({ status: "not_run" });
+    expect(policyCanary).not.toHaveBeenCalled();
+  });
+
+  it("bounded policy outcome backlog makes the night partial", async () => {
+    const report = await buildNightReview(input, {
+      ...services(),
+      policyCanary: vi
+        .fn()
+        .mockResolvedValue(
+          buildTodayEngagementPolicyCanaryReview(
+            { checked: 64, evaluated: 64, limited: true },
+            policyReview.evidence,
+            policyReview.health,
+            policyReview.protocol,
+          ),
+        ),
+    });
+    expect(report.status).toBe("partial");
+    expect(report.policyCanary).toMatchObject({
+      status: "completed",
+      result: { outcomeReview: { checked: 64, evaluated: 64, limited: true } },
+    });
+  });
   it("treats an unavailable personal-learning stage as partial while keeping other confirmed stages", async () => {
     const deps = {
       ...services(),

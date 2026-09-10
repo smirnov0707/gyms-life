@@ -1,9 +1,12 @@
 import { useAuth } from "@/lib/auth";
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, ChevronDown, Clock3, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getActivePlan } from "@/lib/active-plan.functions";
+import { deactivateActivePlan, getActivePlan } from "@/lib/active-plan.functions";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
 
 type Copy = {
@@ -27,6 +30,9 @@ type Copy = {
   inspectPlanHint: string;
   day: string;
   minutes: string;
+  removePlan: string;
+  removeConfirm: string;
+  removed: string;
 };
 
 function copyFor(lang: Lang): Copy {
@@ -54,6 +60,9 @@ function copyFor(lang: Lang): Copy {
       inspectPlanHint: "Program structure, session focus and prescribed exercise volume.",
       day: "Day",
       minutes: "min",
+      removePlan: "Remove active program",
+      removeConfirm: "Remove the active program? Training history will be kept.",
+      removed: "Active program removed. Your training history is unchanged.",
     };
   }
 
@@ -80,12 +89,17 @@ function copyFor(lang: Lang): Copy {
     inspectPlanHint: "Programos struktūra, treniruočių fokusas ir numatytas pratimų tūris.",
     day: "Diena",
     minutes: "min",
+    removePlan: "Pašalinti aktyvų planą",
+    removeConfirm: "Pašalinti aktyvų planą? Treniruočių istorija bus išsaugota.",
+    removed: "Aktyvus planas pašalintas. Treniruočių istorija nepakeista.",
   };
 }
 
 export function ActivePlanLoader() {
   const { lang } = useI18n();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const deactivate = useServerFn(deactivateActivePlan);
   const copy = copyFor(lang);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["active-plan", user?.id],
@@ -175,9 +189,28 @@ export function ActivePlanLoader() {
             </div>
           ) : null}
 
-          <Button asChild variant="outline" className="mt-4">
-            <Link to="/onboarding">{copy.regenerate}</Link>
-          </Button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/onboarding">{copy.regenerate}</Link>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={async () => {
+                if (!window.confirm(copy.removeConfirm)) return;
+                try {
+                  await deactivate();
+                  await queryClient.invalidateQueries({ queryKey: ["active-plan", user?.id] });
+                  await queryClient.invalidateQueries({ queryKey: ["todays-workout"] });
+                  toast.success(copy.removed);
+                } catch {
+                  toast.error(copy.loadFailed);
+                }
+              }}
+            >
+              {copy.removePlan}
+            </Button>
+          </div>
 
           <div className="mt-7 grid grid-cols-3 gap-3 border-y border-white/[0.06] py-5">
             <div>

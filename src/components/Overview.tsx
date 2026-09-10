@@ -205,7 +205,11 @@ export function Overview() {
             <SmartBrief compact />
           </div>
           <div className="fl-decision">
-            <TodayDecision compact workoutDay={today?.day ?? null} />
+            <TodayDecision
+              compact
+              workoutDay={today?.day ?? null}
+              primaryTrainingActionHandled={Boolean(today)}
+            />
           </div>
         </div>
         <div className="fl-body">

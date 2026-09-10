@@ -922,6 +922,41 @@ export type Database = {
           },
         ]
       }
+      policy_shadow_records: {
+        Row: {
+          id: string
+          user_id: string
+          decision_id: string
+          model_artifact_id: string
+          policy_id: string
+          policy_version: string
+          source_prediction_id: string
+          baseline_probability: number
+          qualified_probability: number
+          baseline_strategy: string
+          candidate_strategy: string
+          comparison: string
+          safety_envelope: string
+          mode: string
+          assignment: string | null
+          delivered_strategy: string | null
+          exposure_at: string | null
+          created_at: string
+          decision_action: string
+          athlete_state_snapshot_id: string
+          generated_at: string
+          horizon_ends_at: string
+          exposure_state: string
+          decision_authority: boolean
+          decision_on: string
+          observed_completion: boolean | null
+          outcome_observed_at: string | null
+          reviewed_at: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       personal_timeline_events: {
         Row: {
           created_at: string
@@ -1560,6 +1595,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_today_engagement_policy_shadow: {
+        Args: { p_user_id: string; p_decision_id: string; p_artifact_id: string; p_proposal: Json }
+        Returns: string
+      }
+      evaluate_today_engagement_policy_shadow: {
+        Args: { p_user_id: string; p_record_id: string; p_reviewed_at: string }
+        Returns: boolean
+      }
       commit_night_lab_review: {
         Args: { p_run_id: string; p_claimed_at: string; p_user_id: string; p_report: Json }
         Returns: string

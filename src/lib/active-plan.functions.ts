@@ -12,3 +12,15 @@ export {
 export const getActivePlan = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => getActivePlanData(context.supabase, context.userId));
+
+export const deactivateActivePlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase
+      .from("plans")
+      .update({ is_active: false })
+      .eq("user_id", context.userId)
+      .eq("is_active", true);
+    if (error) throw new Error("ACTIVE_PLAN_DEACTIVATE_FAILED");
+    return { ok: true as const };
+  });

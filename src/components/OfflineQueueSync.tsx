@@ -1,7 +1,7 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CloudOff, Loader2 } from "lucide-react";
+import { CloudOff, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -30,7 +30,12 @@ function OwnedQueueStatus({ ownerId }: { ownerId: string }) {
   const refetchQueue = queue.refetch;
   const [sending, setSending] = useState(false),
     [recovering, setRecovering] = useState(false),
-    [legacy, setLegacy] = useState(() => inspectLegacyOffline().status);
+    [legacy, setLegacy] = useState(() => inspectLegacyOffline().status),
+    [legacyDismissed, setLegacyDismissed] = useState(() =>
+      typeof window !== "undefined"
+        ? localStorage.getItem(`gymslife:legacy-banner-dismissed:${ownerId}`) === "1"
+        : false,
+    );
   const mounted = useRef(false),
     busy = useRef(false);
   useEffect(() => {
@@ -104,6 +109,8 @@ function OwnedQueueStatus({ ownerId }: { ownerId: string }) {
             : "No additional verified records for this account. Earlier records are unchanged.",
       );
       await refetchQueue();
+      localStorage.setItem(`gymslife:legacy-banner-dismissed:${ownerId}`, "1");
+      setLegacyDismissed(true);
     } catch {
       if (mounted.current && scope.isCurrent())
         toast.error(
@@ -120,7 +127,13 @@ function OwnedQueueStatus({ ownerId }: { ownerId: string }) {
   const count = data?.items.length ?? 0,
     needsReview =
       data?.items.filter((item) => item.lastFailure && item.lastFailure !== "unavailable") ?? [];
-  if (!queue.isPending && !queue.isError && !data?.invalidCount && !count && legacy === "absent")
+  if (
+    !queue.isPending &&
+    !queue.isError &&
+    !data?.invalidCount &&
+    !count &&
+    (legacy === "absent" || legacyDismissed)
+  )
     return null;
   const unavailable = queue.isError || Boolean(data?.invalidCount);
   return (
@@ -143,6 +156,19 @@ function OwnedQueueStatus({ ownerId }: { ownerId: string }) {
                   ? "Ankstesnės versijos įrašams reikia paskyros patikros."
                   : "Earlier device records need an account check."}
         </p>
+        {!count && !unavailable && legacy !== "absent" ? (
+          <button
+            type="button"
+            aria-label={lt ? "Paslėpti pranešimą" : "Dismiss notice"}
+            className="ml-auto grid size-10 place-items-center rounded-full text-muted-foreground hover:bg-surface hover:text-foreground"
+            onClick={() => {
+              localStorage.setItem(`gymslife:legacy-banner-dismissed:${ownerId}`, "1");
+              setLegacyDismissed(true);
+            }}
+          >
+            <X aria-hidden="true" className="size-4" />
+          </button>
+        ) : null}
         {(count > 0 || unavailable) && (
           <button
             type="button"

@@ -6,6 +6,7 @@ import {
   PersonalCompletionLearningStateSchema,
   PersonalCompletionPredictionReviewSchema,
 } from "./personal-completion-model.schema";
+import { TodayEngagementPolicyCanaryReviewSchema } from "./today-engagement-policy-canary.schema";
 const stamp = z.string().datetime({ offset: true });
 export const PredictionReviewSchema = z
   .object({
@@ -67,6 +68,17 @@ export const NightReviewSchema = z
         z.object({ status: z.enum(["unavailable", "not_run"]) }).strict(),
       ])
       .optional(),
+    policyCanary: z
+      .discriminatedUnion("status", [
+        z
+          .object({
+            status: z.literal("completed"),
+            result: TodayEngagementPolicyCanaryReviewSchema,
+          })
+          .strict(),
+        z.object({ status: z.enum(["unavailable", "not_run"]) }).strict(),
+      ])
+      .optional(),
     modelChanged: z.literal(false),
     planChanged: z.literal(false),
   })
@@ -78,7 +90,9 @@ export const NightReviewSchema = z
       !v.predictions.result.limited &&
       v.hypotheses.status === "completed" &&
       (v.modelLearning === undefined ||
-        (v.modelLearning.status === "completed" && !v.modelLearning.predictionReview?.limited));
+        (v.modelLearning.status === "completed" && !v.modelLearning.predictionReview?.limited)) &&
+      (v.policyCanary === undefined ||
+        (v.policyCanary.status === "completed" && !v.policyCanary.result.outcomeReview.limited));
     const expected =
       v.snapshot.status !== "confirmed" ? "blocked" : completed ? "completed" : "partial";
     if (v.status !== expected)
@@ -87,7 +101,8 @@ export const NightReviewSchema = z
       v.snapshot.status !== "confirmed" &&
       (v.predictions.status !== "not_run" ||
         v.hypotheses.status !== "not_run" ||
-        (v.modelLearning !== undefined && v.modelLearning.status !== "not_run"))
+        (v.modelLearning !== undefined && v.modelLearning.status !== "not_run") ||
+        (v.policyCanary !== undefined && v.policyCanary.status !== "not_run"))
     )
       ctx.addIssue({ code: "custom", message: "Untrusted snapshot cannot feed learning stages" });
     if (Date.parse(v.reviewedAt) < Date.parse(v.evidenceThrough))
