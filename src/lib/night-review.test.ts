@@ -34,11 +34,24 @@ const input = {
   timeZone: "Europe/Vilnius",
 };
 const prediction = { checked: 0, evaluated: 0, independentDays: 0, pending: 0, limited: false };
-const policyReview = buildTodayEngagementPolicyCanaryReview({
-  checked: 0,
-  evaluated: 0,
-  limited: false,
-});
+const policyReview = buildTodayEngagementPolicyCanaryReview(
+  { checked: 0, evaluated: 0, limited: false },
+  {
+    protocolVersion: "0.1.0",
+    state: "blocked",
+    reviewedShadowDays: 0,
+    counterfactualDays: 0,
+    blockers: [
+      "personal_model_not_qualified",
+      "insufficient_reviewed_shadow_days",
+      "insufficient_counterfactual_days",
+    ],
+    randomizationConfigured: false,
+    activationAllowed: false,
+    causalEvidence: false,
+    promotionEligible: false,
+  },
+);
 function services() {
   return {
     snapshot: vi.fn().mockResolvedValue({
@@ -95,7 +108,10 @@ describe("confirmed overnight stage orchestration", () => {
       policyCanary: vi
         .fn()
         .mockResolvedValue(
-          buildTodayEngagementPolicyCanaryReview({ checked: 64, evaluated: 64, limited: true }),
+          buildTodayEngagementPolicyCanaryReview(
+            { checked: 64, evaluated: 64, limited: true },
+            policyReview.protocol,
+          ),
         ),
     });
     expect(report.status).toBe("partial");

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TodayEngagementProtocolReadinessSchema } from "./today-engagement-policy-protocol.schema";
 
 export const PolicyShadowOutcomeReviewSchema = z
   .object({
@@ -22,6 +23,7 @@ export const PolicyCanaryReadinessSchema = z
 export const TodayEngagementPolicyCanaryReviewSchema = z
   .object({
     outcomeReview: PolicyShadowOutcomeReviewSchema,
+    protocol: TodayEngagementProtocolReadinessSchema,
     readiness: PolicyCanaryReadinessSchema,
   })
   .strict();
