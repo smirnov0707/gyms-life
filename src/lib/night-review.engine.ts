@@ -1,5 +1,9 @@
 import type { AthleteModelResponse } from "./athlete-model.contract";
 import type { DigitalAthleteState } from "./digital-athlete.schema";
+import type {
+  PersonalCompletionLearningState,
+  PersonalCompletionPredictionReview,
+} from "./personal-completion-model.schema";
 import { dayInTimeZone, IanaTimeZoneSchema, IsoDaySchema } from "./local-day";
 import {
   NightReviewSchema,
@@ -16,6 +20,13 @@ export async function buildNightReview(
     snapshot: () => Promise<AthleteModelResponse>;
     predictions: () => Promise<PredictionReview>;
     hypotheses: (state: DigitalAthleteState, snapshotId: string) => Promise<HypothesisReview>;
+    modelLearning?: () => Promise<
+      | PersonalCompletionLearningState
+      | {
+          learning: PersonalCompletionLearningState;
+          predictionReview: PersonalCompletionPredictionReview;
+        }
+    >;
     now?: () => Date;
   },
 ): Promise<NightReview> {
@@ -25,7 +36,9 @@ export async function buildNightReview(
   if (!Number.isFinite(cutoff.getTime())) throw new Error("NIGHT_REVIEW_INVALID_CUTOFF");
   let snapshot: NightReview["snapshot"] = { status: "unavailable" };
   let predictions: NightReview["predictions"] = { status: "not_run" },
-    hypotheses: NightReview["hypotheses"] = { status: "not_run" };
+    hypotheses: NightReview["hypotheses"] = { status: "not_run" },
+    modelLearning: NonNullable<NightReview["modelLearning"]> | undefined =
+      dependencies.modelLearning ? { status: "not_run" } : undefined;
   let model: AthleteModelResponse | null = null;
   try {
     model = await dependencies.snapshot();
@@ -54,6 +67,23 @@ export async function buildNightReview(
     } catch {
       hypotheses = { status: "unavailable" };
     }
+    if (dependencies.modelLearning) {
+      try {
+        const raw = await dependencies.modelLearning();
+        const learning = "learning" in raw ? raw.learning : raw;
+        const predictionReview = "learning" in raw ? raw.predictionReview : undefined;
+        modelLearning =
+          learning.state === "unavailable"
+            ? { status: "unavailable" }
+            : {
+                status: "completed",
+                result: learning,
+                ...(predictionReview ? { predictionReview } : {}),
+              };
+      } catch {
+        modelLearning = { status: "unavailable" };
+      }
+    }
   }
   return NightReviewSchema.parse({
     version: "1.0",
@@ -67,12 +97,15 @@ export async function buildNightReview(
         ? "blocked"
         : predictions.status === "completed" &&
             !predictions.result.limited &&
-            hypotheses.status === "completed"
+            hypotheses.status === "completed" &&
+            (modelLearning === undefined ||
+              (modelLearning.status === "completed" && !modelLearning.predictionReview?.limited))
           ? "completed"
           : "partial",
     snapshot,
     predictions,
     hypotheses,
+    ...(modelLearning ? { modelLearning } : {}),
     modelChanged: false,
     planChanged: false,
   });

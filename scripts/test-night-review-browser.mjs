@@ -85,6 +85,7 @@ try {
     ["unavailable", "The review record is unavailable"],
     ["blocked", "An unconfirmed athlete state was not used"],
     ["partial", "Prediction review is unconfirmed"],
+    ["model-unavailable", "personal-model learning stage is unconfirmed"],
     ["invalid", "The review record is unavailable"],
     ["stale", "Earlier day's record"],
   ]) {
@@ -99,17 +100,74 @@ try {
     );
   }
   {
+    const { page, context } = await open("mode=model-unavailable");
+    await expect(page.getByText("Prediction records evaluated", { exact: false })).toBeVisible();
+    await expect(
+      page.getByText("personal-model learning stage is unconfirmed", { exact: false }),
+    ).toBeVisible();
+    await context.close();
+    record(
+      "a failed personal-learning stage preserves separately confirmed prediction evidence and reports only learning as unavailable",
+    );
+  }
+  {
     const { page, context } = await open("mode=ready");
     await expect(page.getByText("Prediction records evaluated", { exact: false })).toContainText(
       "distinct days: 1",
     );
     await expect(
-      page.getByText("Model weights and the training plan were not changed", { exact: false }),
+      page.getByText("The model driving today's decision and the training plan were not changed", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("A new personal shadow candidate was trained on 20 earlier days", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("does not change today's decision", { exact: false }),
     ).toBeVisible();
     await page.screenshot({ path: path.join(out, "confirmed.png"), fullPage: true });
     await context.close();
     record(
       "confirmed receipt separates two evaluated records from one independent day and explicitly states unchanged model/plan",
+    );
+  }
+  {
+    const { page, context } = await open("mode=learning");
+    await expect(
+      page.getByText("checked only on later days: 7/20", { exact: false }),
+    ).toBeVisible();
+    await expect(page.getByText("passed the predeclared", { exact: false })).toHaveCount(0);
+    await context.close();
+    record(
+      "personal shadow learning reports forward-only holdout progress without claiming improvement",
+    );
+  }
+  {
+    const { page, context } = await open("mode=learning-backlog");
+    await expect(
+      page.getByText("checked the oldest 64 personal-model predictions", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("overall night review is marked partial", { exact: false }),
+    ).toBeVisible();
+    await expect(page.locator('[data-review-status="partial"]')).toBeVisible();
+    await context.close();
+    record(
+      "bounded personal-model backlog is explicit, retained for another cycle and never reported as a complete night",
+    );
+  }
+  {
+    const { page, context } = await open("mode=qualified");
+    await expect(
+      page.getByText("passed the predeclared forward-outcome check (20 days)", { exact: false }),
+    ).toBeVisible();
+    await expect(page.getByText("still does not change decisions", { exact: false })).toBeVisible();
+    await context.close();
+    record(
+      "qualified personal shadow model is explicit about forward evidence and still has no decision authority",
     );
   }
   {

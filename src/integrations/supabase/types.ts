@@ -803,6 +803,125 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_model_artifacts: {
+        Row: {
+          algorithm_version: string
+          created_at: string
+          evidence_fingerprint: string
+          id: string
+          model_id: string
+          negative_days: number
+          parameters: Json
+          positive_days: number
+          qualification: Json | null
+          retired_at: string | null
+          source_model_id: string
+          source_model_version: string
+          status: string
+          trained_through: string
+          training_days: number
+          training_start_on: string
+          user_id: string
+        }
+        Insert: {
+          algorithm_version: string
+          created_at?: string
+          evidence_fingerprint: string
+          id?: string
+          model_id: string
+          negative_days: number
+          parameters: Json
+          positive_days: number
+          qualification?: Json | null
+          retired_at?: string | null
+          source_model_id: string
+          source_model_version: string
+          status: string
+          trained_through: string
+          training_days: number
+          training_start_on: string
+          user_id: string
+        }
+        Update: {
+          algorithm_version?: string
+          created_at?: string
+          evidence_fingerprint?: string
+          id?: string
+          model_id?: string
+          negative_days?: number
+          parameters?: Json
+          positive_days?: number
+          qualification?: Json | null
+          retired_at?: string | null
+          source_model_id?: string
+          source_model_version?: string
+          status?: string
+          trained_through?: string
+          training_days?: number
+          training_start_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      personal_model_predictions: {
+        Row: {
+          artifact_id: string
+          created_at: string
+          decision_id: string
+          decision_on: string
+          id: string
+          prediction: Json
+          user_id: string
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string
+          decision_id: string
+          decision_on: string
+          id: string
+          prediction: Json
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string
+          decision_id?: string
+          decision_on?: string
+          id?: string
+          prediction?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_model_predictions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "personal_model_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_model_predictions_artifact_owner_fkey"
+            columns: ["artifact_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "personal_model_artifacts"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "personal_model_predictions_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decision_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_model_predictions_decision_owner_fkey"
+            columns: ["decision_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "decision_records"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       personal_timeline_events: {
         Row: {
           created_at: string
@@ -1466,6 +1585,28 @@ export type Database = {
       consume_ai_quota: {
         Args: { p_limit: number; p_user_id: string }
         Returns: boolean
+      }
+      commit_personal_model_prediction: {
+        Args: {
+          p_artifact_id: string
+          p_decision_id: string
+          p_decision_on: string
+          p_prediction: Json
+          p_user_id: string
+        }
+        Returns: string
+      }
+      qualify_personal_completion_artifact: {
+        Args: { p_artifact_id: string; p_qualification: Json; p_user_id: string }
+        Returns: boolean
+      }
+      read_personal_completion_training_observations: {
+        Args: { p_limit_days?: number; p_through_on: string; p_user_id: string }
+        Returns: { decision_on: string; prediction: Json }[]
+      }
+      rotate_personal_completion_artifact: {
+        Args: { p_artifact: Json; p_previous_artifact_id: string; p_user_id: string }
+        Returns: string
       }
       correct_user_memory: {
         Args: { p_content: string; p_memory_id: string; p_user_id: string }

@@ -46,6 +46,45 @@ function services() {
   };
 }
 describe("confirmed overnight stage orchestration", () => {
+  it("treats an unavailable personal-learning stage as partial while keeping other confirmed stages", async () => {
+    const deps = {
+      ...services(),
+      modelLearning: vi.fn().mockResolvedValue({ state: "unavailable" }),
+    };
+    const report = await buildNightReview(input, deps);
+    expect(report.status).toBe("partial");
+    expect(report.modelLearning).toEqual({ status: "unavailable" });
+    expect(report.predictions.status).toBe("completed");
+  });
+
+  it("does not run personal learning when the athlete snapshot is blocked", async () => {
+    const learning = vi.fn();
+    const deps = { ...services(), modelLearning: learning };
+    deps.snapshot.mockResolvedValue({
+      state: { ...nightReviewTestState(), dataGaps: ["current_context_unavailable"] },
+      snapshot: null,
+    });
+    const report = await buildNightReview(input, deps);
+    expect(report.modelLearning).toEqual({ status: "not_run" });
+    expect(learning).not.toHaveBeenCalled();
+  });
+
+  it("bounded personal challenger backlog is preserved as evidence and makes the night partial", async () => {
+    const deps = {
+      ...services(),
+      modelLearning: vi.fn().mockResolvedValue({
+        learning: { state: "insufficient_history", evaluatedDays: 5, minimumTrainingDays: 12 },
+        predictionReview: { checked: 64, evaluated: 64, limited: true },
+      }),
+    };
+    const report = await buildNightReview(input, deps);
+    expect(report.status).toBe("partial");
+    expect(report.modelLearning).toMatchObject({
+      status: "completed",
+      predictionReview: { checked: 64, evaluated: 64, limited: true },
+    });
+  });
+
   it("bounded partial prediction coverage is not called a complete historical review", async () => {
     const deps = services();
     deps.predictions.mockResolvedValue({

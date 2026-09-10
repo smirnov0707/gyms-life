@@ -8,6 +8,24 @@ Object.assign(window, { __nightCalls: calls });
 function expected(data: { ownerId: string }) {
   if (data.ownerId !== currentOwner()) throw new Error("Synthetic identity mismatch");
 }
+function syntheticArtifact(status: "shadow" | "qualified" = "shadow") {
+  return {
+    id: "77777777-7777-4777-8777-777777777777",
+    modelId: "workout-completion-personal-logit-offset",
+    algorithmVersion: "0.1.0",
+    sourceModelId: "workout-completion-usual-day-baseline",
+    sourceModelVersion: "0.1.0",
+    status,
+    trainingStartOn: "2026-07-01",
+    trainedThrough: "2026-08-20",
+    trainingDays: 20,
+    positiveDays: 15,
+    negativeDays: 5,
+    evidenceFingerprint: "a".repeat(64),
+    parameters: { kind: "logit_offset_v1", logOddsOffset: 0.2, ridgePenalty: 4 },
+    createdAt: "2026-08-20T23:00:00Z",
+  };
+}
 export async function getMorningNightReview({ data }: { data: { ownerId: string } }) {
   calls.review++;
   expected(data);
@@ -24,7 +42,12 @@ export async function getMorningNightReview({ data }: { data: { ownerId: string 
     timeZone,
     evidenceThrough: at.toISOString(),
     reviewedAt: at.toISOString(),
-    status: mode === "partial" ? "partial" : mode === "blocked" ? "blocked" : "completed",
+    status:
+      mode === "partial" || mode === "model-unavailable" || mode === "learning-backlog"
+        ? "partial"
+        : mode === "blocked"
+          ? "blocked"
+          : "completed",
     snapshot:
       mode === "blocked"
         ? { status: "blocked", reasons: ["personalization_consent_required"] }
@@ -42,6 +65,65 @@ export async function getMorningNightReview({ data }: { data: { ownerId: string 
       mode === "blocked"
         ? { status: "not_run" }
         : { status: "completed", result: { current: [], transitions: [] } },
+    modelLearning:
+      mode === "blocked"
+        ? { status: "not_run" }
+        : mode === "model-unavailable"
+          ? { status: "unavailable" }
+          : mode === "learning" || mode === "learning-backlog"
+            ? {
+                status: "completed",
+                result: {
+                  state: "shadow_learning",
+                  artifact: syntheticArtifact(),
+                  holdout: {
+                    pairedDays: 7,
+                    positiveDays: 5,
+                    negativeDays: 2,
+                    baselineBrier: null,
+                    challengerBrier: null,
+                    meanBrierImprovement: null,
+                    improvementCi95Low: null,
+                    baselineLogLoss: null,
+                    challengerLogLoss: null,
+                    baselineCalibrationGap: null,
+                    challengerCalibrationGap: null,
+                    minimumHoldoutDays: 20,
+                    promotionEligible: false,
+                  },
+                },
+                predictionReview:
+                  mode === "learning-backlog"
+                    ? { checked: 64, evaluated: 64, limited: true }
+                    : { checked: 7, evaluated: 7, limited: false },
+              }
+            : mode === "qualified"
+              ? {
+                  status: "completed",
+                  result: {
+                    state: "qualified_shadow",
+                    artifact: syntheticArtifact("qualified"),
+                    holdout: {
+                      pairedDays: 20,
+                      positiveDays: 15,
+                      negativeDays: 5,
+                      baselineBrier: 0.25,
+                      challengerBrier: 0.08,
+                      meanBrierImprovement: 0.17,
+                      improvementCi95Low: 0.08,
+                      baselineLogLoss: 0.693,
+                      challengerLogLoss: 0.31,
+                      baselineCalibrationGap: 0.25,
+                      challengerCalibrationGap: 0.03,
+                      minimumHoldoutDays: 20,
+                      promotionEligible: true,
+                    },
+                  },
+                }
+              : {
+                  status: "completed",
+                  result: { state: "trained_shadow", artifact: syntheticArtifact() },
+                },
     modelChanged: false,
     planChanged: false,
   });

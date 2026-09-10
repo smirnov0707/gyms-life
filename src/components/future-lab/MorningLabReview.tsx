@@ -5,6 +5,50 @@ import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
 import { getMorningNightReview } from "@/lib/night-lab.functions";
 import { NightReviewReadSchema } from "@/lib/night-review.schema";
 import { dayInTimeZone } from "@/lib/local-day";
+function learningCopy(
+  review: import("@/lib/night-review.schema").NightReview,
+  lt: boolean,
+): string | null {
+  const stage = review.modelLearning;
+  if (!stage)
+    return lt
+      ? "Šis senesnis įrašas dar neturėjo asmeninio modelio mokymosi etapo."
+      : "This older receipt predates the personal-model learning stage.";
+  if (stage.status !== "completed") {
+    if (stage.status === "unavailable")
+      return lt
+        ? "Asmeninio modelio mokymosi etapas nepatvirtintas."
+        : "The personal-model learning stage is unconfirmed.";
+    return null;
+  }
+  const result = stage.result;
+  if (result.state === "insufficient_history")
+    return lt
+      ? `Asmeniniam modeliui dar nepakanka baigčių: ${result.evaluatedDays}/${result.minimumTrainingDays}.`
+      : `The personal model still needs more outcomes: ${result.evaluatedDays}/${result.minimumTrainingDays}.`;
+  if (result.state === "insufficient_variation")
+    return lt
+      ? `Asmeniniam modeliui dar trūksta skirtingų baigčių: ${result.positiveDays} užbaigtos ir ${result.negativeDays} neužbaigtos dienos iš ${result.evaluatedDays}.`
+      : `The personal model still needs outcome diversity: ${result.positiveDays} completed and ${result.negativeDays} non-completed days out of ${result.evaluatedDays}.`;
+  if (result.state === "trained_shadow")
+    return lt
+      ? `Sukurtas naujas asmeninis „shadow“ kandidatas iš ${result.artifact.trainingDays} ankstesnių dienų. Jis nekeičia šiandienos sprendimo.`
+      : `A new personal shadow candidate was trained on ${result.artifact.trainingDays} earlier days. It does not change today's decision.`;
+  if (result.state === "shadow_learning")
+    return lt
+      ? `Asmeninis „shadow“ kandidatas tikrinamas tik su vėlesnėmis dienomis: ${result.holdout.pairedDays}/${result.holdout.minimumHoldoutDays}.`
+      : `The personal shadow candidate is being checked only on later days: ${result.holdout.pairedDays}/${result.holdout.minimumHoldoutDays}.`;
+  if (result.state === "qualified_shadow")
+    return lt
+      ? `Asmeninis kandidatas įveikė iš anksto nustatytą vėlesnių rezultatų patikrą (${result.holdout.pairedDays} dienų), bet vis dar nekeičia sprendimų.`
+      : `The personal candidate passed the predeclared forward-outcome check (${result.holdout.pairedDays} days) but still does not change decisions.`;
+  if (result.state === "retrained_shadow")
+    return lt
+      ? `Ankstesnis kandidatas nebuvo paaukštintas; naujas „shadow“ modelis apmokytas su išplėsta istorija.`
+      : `The previous candidate was not promoted; a new shadow model was trained on the expanded history.`;
+  return null;
+}
+
 /** A read of confirmed work, not an AI-generated claim that work happened. */
 export function MorningLabReview({ compact = false }: { compact?: boolean }) {
   const { user } = useAuth(),
@@ -130,6 +174,21 @@ export function MorningLabReview({ compact = false }: { compact?: boolean }) {
             : "Prediction review is unconfirmed; it is not shown as zero outcomes."}
         </p>
       ) : null}
+      {learningCopy(r, lt) ? (
+        <p
+          role={r.modelLearning?.status === "unavailable" ? "alert" : "status"}
+          className="text-xs"
+        >
+          {learningCopy(r, lt)}
+        </p>
+      ) : null}
+      {r.modelLearning?.status === "completed" && r.modelLearning.predictionReview?.limited ? (
+        <p role="status" className="text-xs">
+          {lt
+            ? `Šią naktį patikrinta ${r.modelLearning.predictionReview.checked} seniausių asmeninio modelio prognozių. Dar yra laukiančių įrašų; jie palikti kitam ciklui, todėl visa nakties patikra pažymėta daline.`
+            : `This night checked the oldest ${r.modelLearning.predictionReview.checked} personal-model predictions. More records remain queued for the next cycle, so the overall night review is marked partial.`}
+        </p>
+      ) : null}
       {r.hypotheses.status === "completed" ? (
         <p className="text-xs">
           {lt ? "Hipotezių patikrinta" : "Hypotheses reviewed"}:{" "}
@@ -150,8 +209,8 @@ export function MorningLabReview({ compact = false }: { compact?: boolean }) {
         </summary>
         <p>
           {lt
-            ? "Modelio svoriai ir treniruočių planas šia patikra nekeisti. Tai įrodymų patikra, ne išmokto priežastinio ryšio garantija."
-            : "Model weights and the training plan were not changed by this review. This is an evidence review, not proof of a learned causal relationship."}
+            ? "Šiandienos sprendimą valdantis modelis ir treniruočių planas šia patikra nekeisti. Asmeninis „shadow“ modelis gali būti apmokytas, kvalifikuotas arba pakeistas tik bandymams. Tai nėra priežastinio ryšio įrodymas."
+            : "The model driving today's decision and the training plan were not changed by this review. A personal shadow model may be trained, qualified, or replaced for evaluation only. This is not proof of a causal relationship."}
         </p>
         {r.hypotheses.status === "completed" &&
           r.hypotheses.result.current.map((h) => (

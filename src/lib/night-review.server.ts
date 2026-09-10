@@ -79,6 +79,24 @@ export async function runAthleteNightReview(
     predictions: () => reviewPendingWorkoutPredictions(client, input.userId, cutoff),
     hypotheses: (state, snapshotId) =>
       reviewNightHypotheses(client, input.userId, state, snapshotId, input.timeZone, cutoff),
+    modelLearning: async () => {
+      const { reviewPendingPersonalCompletionPredictions } =
+        await import("./personal-completion-prediction.server");
+      const { ensurePersonalCompletionLearning } =
+        await import("./personal-completion-model.server");
+      const predictionReview = await reviewPendingPersonalCompletionPredictions(
+        client,
+        input.userId,
+        cutoff,
+      );
+      const learning = await ensurePersonalCompletionLearning(
+        client,
+        input.userId,
+        cutoff,
+        input.timeZone,
+      );
+      return { learning, predictionReview };
+    },
   });
   const { data: id, error } = await client.rpc("commit_night_lab_review", {
     p_run_id: input.runId,

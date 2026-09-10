@@ -2,6 +2,10 @@ import { z } from "zod";
 import { IsoDaySchema, IanaTimeZoneSchema } from "./local-day";
 import { AthleteHypothesisSchema } from "./athlete-hypothesis.schema";
 import { AthleteHypothesisLedgerSummarySchema } from "./athlete-hypothesis-ledger";
+import {
+  PersonalCompletionLearningStateSchema,
+  PersonalCompletionPredictionReviewSchema,
+} from "./personal-completion-model.schema";
 const stamp = z.string().datetime({ offset: true });
 export const PredictionReviewSchema = z
   .object({
@@ -51,6 +55,18 @@ export const NightReviewSchema = z
       z.object({ status: z.literal("completed"), result: HypothesisReviewSchema }).strict(),
       z.object({ status: z.enum(["unavailable", "not_run"]) }).strict(),
     ]),
+    modelLearning: z
+      .discriminatedUnion("status", [
+        z
+          .object({
+            status: z.literal("completed"),
+            result: PersonalCompletionLearningStateSchema,
+            predictionReview: PersonalCompletionPredictionReviewSchema.optional(),
+          })
+          .strict(),
+        z.object({ status: z.enum(["unavailable", "not_run"]) }).strict(),
+      ])
+      .optional(),
     modelChanged: z.literal(false),
     planChanged: z.literal(false),
   })
@@ -60,14 +76,18 @@ export const NightReviewSchema = z
       v.snapshot.status === "confirmed" &&
       v.predictions.status === "completed" &&
       !v.predictions.result.limited &&
-      v.hypotheses.status === "completed";
+      v.hypotheses.status === "completed" &&
+      (v.modelLearning === undefined ||
+        (v.modelLearning.status === "completed" && !v.modelLearning.predictionReview?.limited));
     const expected =
       v.snapshot.status !== "confirmed" ? "blocked" : completed ? "completed" : "partial";
     if (v.status !== expected)
       ctx.addIssue({ code: "custom", message: "Review status does not match confirmed stages" });
     if (
       v.snapshot.status !== "confirmed" &&
-      (v.predictions.status !== "not_run" || v.hypotheses.status !== "not_run")
+      (v.predictions.status !== "not_run" ||
+        v.hypotheses.status !== "not_run" ||
+        (v.modelLearning !== undefined && v.modelLearning.status !== "not_run"))
     )
       ctx.addIssue({ code: "custom", message: "Untrusted snapshot cannot feed learning stages" });
     if (Date.parse(v.reviewedAt) < Date.parse(v.evidenceThrough))

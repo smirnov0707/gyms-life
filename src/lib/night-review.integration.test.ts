@@ -4,8 +4,18 @@ import type { Database } from "@/integrations/supabase/types";
 import { DigitalAthleteSourcesSchema } from "./digital-athlete.schema";
 import { buildDigitalAthleteState } from "./digital-athlete.service";
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
-const io = vi.hoisted(() => ({ snapshot: vi.fn() }));
+const io = vi.hoisted(() => ({
+  snapshot: vi.fn(),
+  personalReview: vi.fn(),
+  personalLearning: vi.fn(),
+}));
 vi.mock("./athlete-state-snapshot.server", () => ({ refreshAthleteStateSnapshot: io.snapshot }));
+vi.mock("./personal-completion-prediction.server", () => ({
+  reviewPendingPersonalCompletionPredictions: io.personalReview,
+}));
+vi.mock("./personal-completion-model.server", () => ({
+  ensurePersonalCompletionLearning: io.personalLearning,
+}));
 import { runAthleteNightReview, loadMorningNightReview } from "./night-review.server";
 import { NightReviewSchema } from "./night-review.schema";
 const U = "11111111-1111-4111-8111-111111111111",
@@ -150,7 +160,15 @@ function database() {
   } as unknown as SupabaseClient<Database>;
   return { client, calls, controls, transitions, receipt: () => receipt };
 }
-beforeEach(() => io.snapshot.mockReset().mockResolvedValue(model()));
+beforeEach(() => {
+  io.snapshot.mockReset().mockResolvedValue(model());
+  io.personalReview.mockReset().mockResolvedValue({ checked: 0, evaluated: 0, limited: false });
+  io.personalLearning.mockReset().mockResolvedValue({
+    state: "insufficient_history",
+    evaluatedDays: 1,
+    minimumTrainingDays: 12,
+  });
+});
 describe("snapshot → actual result → hypothesis ledger → receipt → morning reader", () => {
   it("connects the real review, prediction and hypothesis services and reads exactly the persisted receipt", async () => {
     const db = database(),
@@ -164,12 +182,26 @@ describe("snapshot → actual result → hypothesis ledger → receipt → morni
       status: "completed",
       result: { current: buildAthleteHypotheses(model().state) },
     });
+    expect(saved.review.modelLearning).toMatchObject({
+      status: "completed",
+      predictionReview: { checked: 0, evaluated: 0, limited: false },
+    });
     const view = await loadMorningNightReview(db.client, U, new Date("2099-01-01T00:00:00Z"));
     expect(view).toEqual({ state: "ready", reviewId: R, review: saved.review });
     const repeated = await runAthleteNightReview(db.client, input);
     expect(repeated).toEqual(saved);
     expect(io.snapshot).toHaveBeenCalledTimes(1);
     expect(db.client.rpc).toHaveBeenCalledTimes(1);
+  });
+  it("records a bounded personal-prediction backlog as partial rather than calling the night complete", async () => {
+    io.personalReview.mockResolvedValue({ checked: 64, evaluated: 64, limited: true });
+    const db = database();
+    const saved = await runAthleteNightReview(db.client, input);
+    expect(saved.review.status).toBe("partial");
+    expect(saved.review.modelLearning).toMatchObject({
+      status: "completed",
+      predictionReview: { checked: 64, evaluated: 64, limited: true },
+    });
   });
   it("stops after an untrusted snapshot while retaining the blocked receipt, not fabricated zeros", async () => {
     io.snapshot.mockResolvedValue({

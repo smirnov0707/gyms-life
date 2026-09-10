@@ -123,6 +123,14 @@ export async function getOrCreateTodayDecision(
     athleteStateSnapshotId: parsedRecord.data.athlete_state_snapshot_id,
     state: athlete.state,
     now,
+  }).catch(() => false);
+  const { capturePersonalCompletionShadowPrediction } =
+    await import("./personal-completion-prediction.server");
+  await capturePersonalCompletionShadowPrediction({
+    client: supabaseAdmin,
+    userId,
+    decisionId: parsedRecord.data.id,
+    decisionOn: parsedRecord.data.decision_on,
   }).catch(() => undefined);
 
   const { error: evidenceError } = await supabaseAdmin.from("decision_evidence").upsert(
