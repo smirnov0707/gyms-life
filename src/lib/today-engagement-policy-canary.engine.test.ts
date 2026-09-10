@@ -17,15 +17,25 @@ const protocol = {
   promotionEligible: false as const,
 };
 
+const evidence = {
+  equivalent: { reviewedDays: 8, completedDays: 5, completionRate: 0.625 },
+  counterfactual: { reviewedDays: 4, completedDays: 3, completionRate: 0.75 },
+  observationalDelta: 0.125,
+  causalEvidence: false as const,
+  promotionEligible: false as const,
+};
+
 describe("today engagement policy canary guard", () => {
   it("reviews shadow outcomes without authorizing exposure", () => {
     expect(
       buildTodayEngagementPolicyCanaryReview(
         { checked: 12, evaluated: 10, limited: false },
+        evidence,
         protocol,
       ),
     ).toEqual({
       outcomeReview: { checked: 12, evaluated: 10, limited: false },
+      evidence,
       protocol,
       readiness: {
         randomizedExposures: 0,
@@ -39,6 +49,7 @@ describe("today engagement policy canary guard", () => {
     expect(() =>
       buildTodayEngagementPolicyCanaryReview(
         { checked: 2, evaluated: 3, limited: false },
+        evidence,
         protocol,
       ),
     ).toThrow();
@@ -47,6 +58,7 @@ describe("today engagement policy canary guard", () => {
   it("cannot be reinterpreted as a promoted or exposed policy", () => {
     const review = buildTodayEngagementPolicyCanaryReview(
       { checked: 20, evaluated: 20, limited: false },
+      evidence,
       protocol,
     );
     expect(

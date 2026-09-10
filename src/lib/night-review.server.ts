@@ -98,8 +98,11 @@ export async function runAthleteNightReview(
       return { learning, predictionReview };
     },
     policyCanary: async () => {
-      const { loadTodayEngagementProtocolReadiness, reviewPendingTodayEngagementPolicyOutcomes } =
-        await import("./today-engagement-policy-review.server");
+      const {
+        loadTodayEngagementPolicyEvidence,
+        loadTodayEngagementProtocolReadiness,
+        reviewPendingTodayEngagementPolicyOutcomes,
+      } = await import("./today-engagement-policy-review.server");
       const { buildTodayEngagementPolicyCanaryReview } =
         await import("./today-engagement-policy-canary.engine");
       const outcomeReview = await reviewPendingTodayEngagementPolicyOutcomes(
@@ -107,8 +110,11 @@ export async function runAthleteNightReview(
         input.userId,
         cutoff,
       );
-      const protocol = await loadTodayEngagementProtocolReadiness(client, input.userId, cutoff);
-      return buildTodayEngagementPolicyCanaryReview(outcomeReview, protocol);
+      const [evidence, protocol] = await Promise.all([
+        loadTodayEngagementPolicyEvidence(client, input.userId),
+        loadTodayEngagementProtocolReadiness(client, input.userId, cutoff),
+      ]);
+      return buildTodayEngagementPolicyCanaryReview(outcomeReview, evidence, protocol);
     },
   });
   const { data: id, error } = await client.rpc("commit_night_lab_review", {

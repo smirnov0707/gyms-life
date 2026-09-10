@@ -37,6 +37,13 @@ const prediction = { checked: 0, evaluated: 0, independentDays: 0, pending: 0, l
 const policyReview = buildTodayEngagementPolicyCanaryReview(
   { checked: 0, evaluated: 0, limited: false },
   {
+    equivalent: { reviewedDays: 0, completedDays: 0, completionRate: null },
+    counterfactual: { reviewedDays: 0, completedDays: 0, completionRate: null },
+    observationalDelta: null,
+    causalEvidence: false,
+    promotionEligible: false,
+  },
+  {
     protocolVersion: "0.1.0",
     state: "blocked",
     reviewedShadowDays: 0,
@@ -110,6 +117,7 @@ describe("confirmed overnight stage orchestration", () => {
         .mockResolvedValue(
           buildTodayEngagementPolicyCanaryReview(
             { checked: 64, evaluated: 64, limited: true },
+            policyReview.evidence,
             policyReview.protocol,
           ),
         ),

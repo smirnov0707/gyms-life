@@ -5,24 +5,26 @@ import {
   type TodayEngagementPolicyCanaryReview,
 } from "./today-engagement-policy-canary.schema";
 import {
+  TodayEngagementPolicyEvidenceSchema,
+  type TodayEngagementPolicyEvidence,
+} from "./today-engagement-policy-evidence.schema";
+import {
   TodayEngagementProtocolReadinessSchema,
   type TodayEngagementProtocolReadiness,
 } from "./today-engagement-policy-protocol.schema";
 
-/**
- * Shadow evidence can be reviewed, but this guard intentionally cannot
- * authorize exposure. A future prospective experiment needs a separate,
- * explicit rollout decision.
- */
 export function buildTodayEngagementPolicyCanaryReview(
   rawOutcomeReview: PolicyShadowOutcomeReview,
+  rawEvidence: TodayEngagementPolicyEvidence,
   rawProtocol: TodayEngagementProtocolReadiness,
 ): TodayEngagementPolicyCanaryReview {
   const outcomeReview = PolicyShadowOutcomeReviewSchema.parse(rawOutcomeReview);
+  const evidence = TodayEngagementPolicyEvidenceSchema.parse(rawEvidence);
   const protocol = TodayEngagementProtocolReadinessSchema.parse(rawProtocol);
 
   return TodayEngagementPolicyCanaryReviewSchema.parse({
     outcomeReview,
+    evidence,
     protocol,
     readiness: {
       randomizedExposures: 0,

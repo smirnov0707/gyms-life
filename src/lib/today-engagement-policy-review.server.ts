@@ -5,6 +5,8 @@ import {
   PolicyShadowOutcomeReviewSchema,
   type PolicyShadowOutcomeReview,
 } from "./today-engagement-policy-canary.schema";
+import { summarizeTodayEngagementPolicyEvidence } from "./today-engagement-policy-evidence.engine";
+import type { TodayEngagementPolicyEvidence } from "./today-engagement-policy-evidence.schema";
 import { evaluateTodayEngagementProtocolReadiness } from "./today-engagement-policy-protocol.engine";
 import type { TodayEngagementProtocolReadiness } from "./today-engagement-policy-protocol.schema";
 
@@ -50,6 +52,37 @@ export async function reviewPendingTodayEngagementPolicyOutcomes(
     if (accepted === true) evaluated++;
   }
   return PolicyShadowOutcomeReviewSchema.parse({ checked: pending.length, evaluated, limited });
+}
+
+export async function loadTodayEngagementPolicyEvidence(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<TodayEngagementPolicyEvidence> {
+  z.string().uuid().parse(userId);
+  const { data, error } = await client
+    .from("policy_shadow_records")
+    .select("comparison,observed_completion")
+    .eq("user_id", userId)
+    .not("reviewed_at", "is", null)
+    .not("observed_completion", "is", null)
+    .order("decision_on", { ascending: true })
+    .limit(HISTORY_LIMIT + 1);
+  if (error || data === null || data.length > HISTORY_LIMIT)
+    throw new Error("POLICY_EVIDENCE_UNAVAILABLE");
+  const rows = z
+    .array(
+      z.object({
+        comparison: z.enum(["equivalent_shadow", "counterfactual_unobserved"]),
+        observed_completion: z.boolean(),
+      }),
+    )
+    .parse(data);
+  return summarizeTodayEngagementPolicyEvidence(
+    rows.map((row) => ({
+      comparison: row.comparison,
+      observedCompletion: row.observed_completion,
+    })),
+  );
 }
 
 export async function loadTodayEngagementProtocolReadiness(

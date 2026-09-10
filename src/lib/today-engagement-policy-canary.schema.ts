@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TodayEngagementPolicyEvidenceSchema } from "./today-engagement-policy-evidence.schema";
 import { TodayEngagementProtocolReadinessSchema } from "./today-engagement-policy-protocol.schema";
 
 export const PolicyShadowOutcomeReviewSchema = z
@@ -23,6 +24,7 @@ export const PolicyCanaryReadinessSchema = z
 export const TodayEngagementPolicyCanaryReviewSchema = z
   .object({
     outcomeReview: PolicyShadowOutcomeReviewSchema,
+    evidence: TodayEngagementPolicyEvidenceSchema,
     protocol: TodayEngagementProtocolReadinessSchema,
     readiness: PolicyCanaryReadinessSchema,
   })
