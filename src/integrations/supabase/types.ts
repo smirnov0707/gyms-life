@@ -1664,6 +1664,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_personalized_twin_provider_terminal_lease: {
+        Args: { p_capture_set_id: string; p_provider_job_id: string; p_lease_until: string }
+        Returns: string
+      }
+      claim_personalized_twin_provider_event: {
+        Args: { p_event_key: string; p_provider_job_id: string; p_provider_key: string }
+        Returns: string
+      }
+      claim_personalized_twin_provider_submission: {
+        Args: { p_capture_set_id: string; p_claim_token: string; p_claim_until: string; p_provider_key: string; p_user_id: string }
+        Returns: Json
+      }
+      complete_personalized_twin_provider_submission: {
+        Args: { p_capture_set_id: string; p_claim_token: string; p_provider_job_id: string; p_provider_key: string; p_user_id: string }
+        Returns: undefined
+      }
+      release_personalized_twin_provider_submission: {
+        Args: { p_capture_set_id: string; p_claim_token: string; p_user_id: string }
+        Returns: undefined
+      }
+      release_personalized_twin_provider_terminal_lease: {
+        Args: { p_capture_set_id: string; p_provider_job_id: string }
+        Returns: undefined
+      }
+      schedule_personalized_twin_provider_poll: {
+        Args: { p_capture_set_id: string; p_next_poll_at: string; p_poll_attempt: number; p_provider_job_id: string }
+        Returns: undefined
+      }
       commit_night_lab_review: {
         Args: { p_run_id: string; p_claimed_at: string; p_user_id: string; p_report: Json }
         Returns: string
