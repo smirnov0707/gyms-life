@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { FlaskConical } from "lucide-react";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import {
   usePersonalExperimentHistory,
+  usePersonalExperimentOutcome,
   usePersonalExperimentTransition,
 } from "./experiment-ledger.query";
 import { buildPersonalExperimentRetrospective } from "@/lib/personal-experiment-retrospective";
@@ -22,6 +24,55 @@ const STATUS_COPY = {
     completed: "Baigtas",
   },
 } as const;
+
+function ExperimentOutcomeInput({
+  experimentId,
+  outcomeKey,
+  phase,
+  english,
+}: {
+  experimentId: string;
+  outcomeKey: string;
+  phase: "baseline" | "intervention" | "followup";
+  english: boolean;
+}) {
+  const [value, setValue] = useState("");
+  const outcome = usePersonalExperimentOutcome();
+  const numeric = Number(value);
+  const canSave = value.trim() !== "" && Number.isFinite(numeric);
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <input
+        type="number"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        placeholder={english ? `Add ${phase} value` : `Įrašyti ${phase} reikšmę`}
+        aria-label={english ? `Add ${phase} outcome` : `Įrašyti ${phase} rezultatą`}
+        className="min-h-11 w-40 rounded-lg border border-border bg-background/40 px-3 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+      />
+      <button
+        type="button"
+        disabled={!canSave || outcome.isPending}
+        onClick={() =>
+          outcome.mutate(
+            { experimentId, phase, outcomeKey, numericValue: numeric },
+            { onSuccess: () => setValue("") },
+          )
+        }
+        className="min-h-11 rounded-full border border-cyan-300/30 px-3 text-[10px] font-medium text-cyan-200 disabled:opacity-50"
+      >
+        {outcome.isPending
+          ? english
+            ? "Saving…"
+            : "Saugoma…"
+          : english
+            ? "Log outcome"
+            : "Įrašyti rezultatą"}
+      </button>
+    </div>
+  );
+}
 
 export function ExperimentLedger({ english }: { english: boolean }) {
   const query = usePersonalExperimentHistory();
@@ -123,6 +174,18 @@ export function ExperimentLedger({ english }: { english: boolean }) {
                     </>
                   ) : null}
                 </div>
+                <ExperimentOutcomeInput
+                  experimentId={experiment.id}
+                  outcomeKey={experiment.primary_outcome}
+                  phase={
+                    experiment.status === "running"
+                      ? "intervention"
+                      : experiment.status === "stopped" || experiment.status === "completed"
+                        ? "followup"
+                        : "baseline"
+                  }
+                  english={english}
+                />
                 <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] text-muted-foreground">
                   {["baseline", "intervention", "followup"].map((phase) => (
                     <span key={phase} className="rounded-full border border-border/60 px-2 py-1">
