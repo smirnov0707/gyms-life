@@ -85,7 +85,7 @@ export function GuidedTwinScanPreview({
           </li>
         ))}
       </ol>
-      <LocalTwinCameraPreview language={language} />
+      <LocalTwinCameraPreview language={language} capability={capability} />
       <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-3 text-xs leading-relaxed text-amber-200">
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         <span>{copy.blocked}</span>

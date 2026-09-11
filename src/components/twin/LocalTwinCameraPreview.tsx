@@ -7,6 +7,8 @@ import {
   type TwinCaptureQuality,
 } from "@/lib/personalized-twin.capture-quality";
 import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
+import { buildPersonalizedTwinPreflight } from "@/lib/personalized-twin.preflight";
+import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 import {
   INITIAL_TWIN_ROTATION_PROGRESS,
   updateTwinRotationProgress,
@@ -40,6 +42,13 @@ const COPY = {
     qualityDark: "Per tamsu — pagerink apšvietimą.",
     qualityBright: "Per šviesu — sumažink tiesioginę šviesą.",
     qualityFast: "Judi per greitai — sukis lėčiau.",
+    preflightCamera: "Pirmiausia atidaryk kamerą.",
+    preflightFraming: "Sutvarkyk kūno kadravimą.",
+    preflightQuality: "Pagerink capture kokybę.",
+    preflightRotation: "Užbaik lėtą 360° apsisukimą.",
+    preflightBlocked:
+      "Lokalus capture baigtas. Išorinis provideris dar užblokuotas privatumo / DPA gate.",
+    preflightReady: "Lokalus capture ir providerio gate paruošti.",
   },
   en: {
     open: "Open local camera",
@@ -62,9 +71,22 @@ const COPY = {
     qualityDark: "Too dark — improve the lighting.",
     qualityBright: "Too bright — reduce direct light.",
     qualityFast: "Moving too fast — rotate more slowly.",
+    preflightCamera: "Open the camera first.",
+    preflightFraming: "Fix full-body framing.",
+    preflightQuality: "Improve capture quality.",
+    preflightRotation: "Complete the slow 360° rotation.",
+    preflightBlocked:
+      "Local capture is complete. The external provider is still blocked by the privacy / DPA gate.",
+    preflightReady: "Local capture and provider gate are ready.",
   },
 } as const;
-export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) {
+export function LocalTwinCameraPreview({
+  language,
+  capability,
+}: {
+  language: "lt" | "en";
+  capability: PersonalizedTwinProviderCapability | null;
+}) {
   const copy = COPY[language];
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -221,6 +243,26 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
               ? copy.qualityFast
               : null;
 
+  const preflight = buildPersonalizedTwinPreflight({
+    cameraActive: cameraState === "active",
+    framing,
+    quality,
+    rotation,
+    capability,
+  });
+  const preflightMessage =
+    preflight.status === "camera_missing"
+      ? copy.preflightCamera
+      : preflight.status === "framing_not_ready"
+        ? copy.preflightFraming
+        : preflight.status === "quality_not_ready"
+          ? copy.preflightQuality
+          : preflight.status === "rotation_incomplete"
+            ? copy.preflightRotation
+            : preflight.status === "provider_blocked"
+              ? copy.preflightBlocked
+              : copy.preflightReady;
+
   const framingMessage =
     framing.status === "ready"
       ? copy.framingReady
@@ -310,6 +352,12 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
       >
         {framingMessage}
       </p>
+      <div
+        className={`mt-3 rounded-xl border p-3 text-[11px] leading-relaxed ${preflight.status === "ready_for_provider" ? "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-200" : preflight.localComplete ? "border-amber-400/20 bg-amber-400/[0.06] text-amber-200" : "border-white/10 bg-white/[0.03] text-neutral-400"}`}
+        data-twin-scan-preflight={preflight.status}
+      >
+        {preflightMessage}
+      </div>
     </div>
   );
 }
