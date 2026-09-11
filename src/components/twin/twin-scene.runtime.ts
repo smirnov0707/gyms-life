@@ -105,6 +105,7 @@ export function mountTwinScene(
       kind: "human" | "identity" | "surface",
       provenance: TwinBodyProvenance | null,
     ) => void;
+    onIdentityShellFallback?: (reason: "load_failed" | "invalid_geometry" | "expired_url") => void;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -350,9 +351,18 @@ export function mountTwinScene(
           }
           applyState();
         })
-        .catch(() => {
-          // Deliberately quiet: the surface goes in, and now that it is the
-          // answer rather than the wait, it carries the reading.
+        .catch((error) => {
+          if (options.identityModelUrl && appearance === "realistic") {
+            const reason =
+              error instanceof Error && error.message.includes("camera frame")
+                ? "invalid_geometry"
+                : error instanceof Error && /401|403/.test(error.message)
+                  ? "expired_url"
+                  : "load_failed";
+            options.onIdentityShellFallback?.(reason);
+          }
+          // Keep the canonical fallback visible; identity-shell failure must
+          // never remove the athlete's evidence view.
           window.clearTimeout(surfaceTimer);
           useSurface();
         });

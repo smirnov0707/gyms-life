@@ -53,6 +53,7 @@ export type BodySceneStageProps = {
   identityModelUrl?: string | null;
   /** Optional appearance selector; shown inside compact mobile controls. */
   appearanceControls?: ReactNode;
+  onIdentityShellFallback?: (reason: "load_failed" | "invalid_geometry" | "expired_url") => void;
 };
 const COPY = {
   en: {
@@ -199,6 +200,9 @@ export function BodySceneStage(props: BodySceneStageProps) {
           onBodyReady: (_kind, loadedProvenance) => loading.ready(loadedProvenance),
           ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
           visualAppearance: current.visualAppearance ?? "analysis",
+          ...(current.onIdentityShellFallback
+            ? { onIdentityShellFallback: current.onIdentityShellFallback }
+            : {}),
           identityModelUrl: current.identityModelUrl ?? null,
         });
         if (!loading.attach(handle)) return;

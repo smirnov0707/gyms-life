@@ -10,6 +10,7 @@ export type PersonalizedTwinLifecycleSnapshot = {
   errorCode: string | null;
   hasModel: boolean;
   modelUrl: string | null;
+  modelUrlExpiresAt: string | null;
   updatedAt: string;
 };
 

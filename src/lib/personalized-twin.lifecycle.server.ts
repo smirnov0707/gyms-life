@@ -20,12 +20,14 @@ export async function loadLatestPersonalizedTwinLifecycle(
   if (error) throw new Error(`PERSONALIZED_TWIN_LIFECYCLE_LOAD_FAILED:${error.message}`);
   if (!data) return null;
   let modelUrl: string | null = null;
+  let modelUrlExpiresAt: string | null = null;
   if (data.status === "ready" && data.model_object_path) {
     const { data: signed, error: signedError } = await supabaseAdmin.storage
       .from("personalized-twin-models")
       .createSignedUrl(data.model_object_path, 300);
     if (signedError) throw new Error(`PERSONALIZED_TWIN_MODEL_URL_FAILED:${signedError.message}`);
     modelUrl = signed?.signedUrl ?? null;
+    modelUrlExpiresAt = modelUrl ? new Date(Date.now() + 300_000).toISOString() : null;
   }
   return {
     captureSetId: data.id,
@@ -33,6 +35,7 @@ export async function loadLatestPersonalizedTwinLifecycle(
     errorCode: data.error_code,
     hasModel: Boolean(data.model_object_path),
     modelUrl,
+    modelUrlExpiresAt,
     updatedAt: data.updated_at,
   };
 }

@@ -34,6 +34,7 @@ export type TwinStageProps = {
   identityModelUrl?: string | null;
   /** Optional mobile control rendered inside the shared view disclosure. */
   appearanceControls?: ReactNode;
+  onIdentityShellFallback?: (reason: "load_failed" | "invalid_geometry" | "expired_url") => void;
 };
 /** Canonical Twin projection. Model provenance belongs to the shared renderer. */
 
