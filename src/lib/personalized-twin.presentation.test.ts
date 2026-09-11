@@ -72,4 +72,31 @@ describe("Personalized Twin presentation state", () => {
       }),
     ).toBe("failed");
   });
+  it("maps persisted ready_for_provider through the current provider gate", () => {
+    expect(
+      derivePersonalizedTwinUiPhase({
+        localComplete: false,
+        consentGranted: false,
+        capability: null,
+        lifecycleStatus: "ready_for_provider",
+      }),
+    ).toBe("provider_blocked");
+    expect(
+      derivePersonalizedTwinUiPhase({
+        localComplete: false,
+        consentGranted: false,
+        capability: {
+          available: true,
+          providerKey: "reviewed-provider",
+          candidate: null,
+          captureModes: ["three_view"],
+          outputFormat: "glb",
+          externalProcessing: true,
+          privacyReview: "approved",
+          medicalScan: false,
+        },
+        lifecycleStatus: "ready_for_provider",
+      }),
+    ).toBe("local_ready");
+  });
 });

@@ -1,9 +1,31 @@
-import { useMemo, useState } from "react";
-import { Camera, CheckCircle2, ChevronDown, ShieldCheck, Upload, UserRound, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  Upload,
+  UserRound,
+  X,
+} from "lucide-react";
 import { buildPersonalizedTwinPreparation } from "@/lib/personalized-twin.engine";
 import { buildPersonalizedTwinCaptureFlow } from "@/lib/personalized-twin.capture-flow";
-import { derivePersonalizedTwinUiPhase } from "@/lib/personalized-twin.presentation";
+import {
+  derivePersonalizedTwinUiPhase,
+  type PersonalizedTwinLifecycleSnapshot,
+} from "@/lib/personalized-twin.presentation";
 import { PersonalizedTwinStatus } from "@/components/twin/PersonalizedTwinStatus";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { errorMessage } from "@/lib/error-message";
+import {
+  deletePersonalizedTwinAction,
+  getPersonalizedTwinLifecycle,
+  retryPersonalizedTwinAction,
+} from "@/lib/personalized-twin.lifecycle.functions";
 import { GuidedTwinScanPreview } from "@/components/twin/GuidedTwinScanPreview";
 import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 import {
@@ -34,6 +56,11 @@ const LABELS = {
     open: "Personalizuoti Twin",
     close: "Uždaryti nustatymą",
     remove: "Pašalinti",
+    retry: "Bandyti iš naujo",
+    deleteTwin: "Ištrinti mano Personalized Twin",
+    processingDelete:
+      "Kol vyksta išorinis apdorojimas, trynimas užrakintas iki provider cancel/delete patvirtinimo.",
+    actionFailed: "Veiksmo atlikti nepavyko.",
   },
   en: {
     eyebrow: "PERSONALIZED TWIN",
@@ -57,6 +84,11 @@ const LABELS = {
     open: "Personalize Twin",
     close: "Close setup",
     remove: "Remove",
+    retry: "Try again",
+    deleteTwin: "Delete my Personalized Twin",
+    processingDelete:
+      "Deletion is locked while external processing is active until provider cancel/delete is approved.",
+    actionFailed: "The action could not be completed.",
   },
 } as const;
 
@@ -73,7 +105,30 @@ export function PersonalizedTwinSetup({
   const [shots, setShots] = useState<ShotMap>({});
   const [consent, setConsent] = useState(false);
   const [open, setOpen] = useState(false);
+  const [lifecycle, setLifecycle] = useState<PersonalizedTwinLifecycleSnapshot | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const loadLifecycleFn = useServerFn(getPersonalizedTwinLifecycle);
+  const deleteTwinFn = useServerFn(deletePersonalizedTwinAction);
+  const retryTwinFn = useServerFn(retryPersonalizedTwinAction);
   const captureFlow = useMemo(() => buildPersonalizedTwinCaptureFlow(capability), [capability]);
+
+  const loadLifecycle = useCallback(async () => {
+    try {
+      setLifecycle(await loadLifecycleFn({}));
+    } catch {
+      // Keep the local, privacy-safe capture UI usable if server status is temporarily unavailable.
+    }
+  }, [loadLifecycleFn]);
+
+  useEffect(() => {
+    void loadLifecycle();
+  }, [loadLifecycle]);
+
+  useEffect(() => {
+    if (lifecycle?.status !== "processing") return;
+    const timer = window.setInterval(() => void loadLifecycle(), 5_000);
+    return () => window.clearInterval(timer);
+  }, [lifecycle?.status, loadLifecycle]);
 
   const state = useMemo(
     () =>
@@ -90,8 +145,9 @@ export function PersonalizedTwinSetup({
         localComplete: state.missingAngles.length === 0,
         consentGranted: consent,
         capability,
+        lifecycleStatus: lifecycle?.status ?? null,
       }),
-    [state.missingAngles.length, consent, capability],
+    [state.missingAngles.length, consent, capability, lifecycle?.status],
   );
 
   const setPhoto = (angle: PersonalizedTwinAngle, file: File | undefined) => {
@@ -224,6 +280,70 @@ export function PersonalizedTwinSetup({
               <GuidedTwinScanPreview language={language} capability={capability} />
             ) : null}
             <PersonalizedTwinStatus language={language} phase={uiPhase} />
+            {lifecycle ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {lifecycle.status === "failed" ? (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={async () => {
+                      setActionBusy(true);
+                      try {
+                        await retryTwinFn({ data: { captureSetId: lifecycle.captureSetId } });
+                        setLifecycle(null);
+                        setShots({});
+                        setConsent(false);
+                        toast.success(copy.retry);
+                      } catch (error) {
+                        toast.error(errorMessage(error, copy.actionFailed));
+                      } finally {
+                        setActionBusy(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold text-white disabled:opacity-50"
+                  >
+                    {actionBusy ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <RotateCcw className="size-3.5" />
+                    )}
+                    {copy.retry}
+                  </button>
+                ) : null}
+                {lifecycle.status !== "processing" ? (
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={async () => {
+                      setActionBusy(true);
+                      try {
+                        await deleteTwinFn({ data: { captureSetId: lifecycle.captureSetId } });
+                        setLifecycle(null);
+                        setShots({});
+                        setConsent(false);
+                        toast.success(copy.deleteTwin);
+                      } catch (error) {
+                        toast.error(errorMessage(error, copy.actionFailed));
+                      } finally {
+                        setActionBusy(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-[11px] font-semibold text-red-200 disabled:opacity-50"
+                  >
+                    {actionBusy ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="size-3.5" />
+                    )}
+                    {copy.deleteTwin}
+                  </button>
+                ) : (
+                  <p className="w-full text-[11px] leading-relaxed text-amber-200/80">
+                    {copy.processingDelete}
+                  </p>
+                )}
+              </div>
+            ) : null}
             <p className="mt-2 flex items-center gap-2 text-neutral-500">
               <ShieldCheck aria-hidden="true" className="size-4" /> {copy.privacy}
             </p>
