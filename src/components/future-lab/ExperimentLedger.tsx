@@ -1,6 +1,9 @@
 import { FlaskConical } from "lucide-react";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
-import { usePersonalExperimentHistory } from "./experiment-ledger.query";
+import {
+  usePersonalExperimentHistory,
+  usePersonalExperimentTransition,
+} from "./experiment-ledger.query";
 import { buildPersonalExperimentRetrospective } from "@/lib/personal-experiment-retrospective";
 
 const STATUS_COPY = {
@@ -22,6 +25,7 @@ const STATUS_COPY = {
 
 export function ExperimentLedger({ english }: { english: boolean }) {
   const query = usePersonalExperimentHistory();
+  const transition = usePersonalExperimentTransition();
   const data = query.data;
   const copy = STATUS_COPY[english ? "en" : "lt"];
 
@@ -69,6 +73,56 @@ export function ExperimentLedger({ english }: { english: boolean }) {
                   {english ? "Outcome" : "Rezultatas"}: {experiment.primary_outcome} ·{" "}
                   {experiment.duration_days}d
                 </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {experiment.status === "draft" ? (
+                    <button
+                      type="button"
+                      disabled={transition.isPending}
+                      onClick={() =>
+                        transition.mutate({ experimentId: experiment.id, event: "mark_eligible" })
+                      }
+                      className="min-h-11 rounded-full border border-violet-300/30 px-3 text-[10px] font-medium text-violet-200 disabled:opacity-50"
+                    >
+                      {english ? "Check eligibility" : "Patikrinti tinkamumą"}
+                    </button>
+                  ) : null}
+                  {experiment.status === "eligible" ? (
+                    <button
+                      type="button"
+                      disabled={transition.isPending}
+                      onClick={() =>
+                        transition.mutate({ experimentId: experiment.id, event: "start" })
+                      }
+                      className="min-h-11 rounded-full border border-emerald-300/30 px-3 text-[10px] font-medium text-emerald-200 disabled:opacity-50"
+                    >
+                      {english ? "Start experiment" : "Pradėti eksperimentą"}
+                    </button>
+                  ) : null}
+                  {experiment.status === "running" ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={transition.isPending}
+                        onClick={() =>
+                          transition.mutate({ experimentId: experiment.id, event: "complete" })
+                        }
+                        className="min-h-11 rounded-full border border-emerald-300/30 px-3 text-[10px] font-medium text-emerald-200 disabled:opacity-50"
+                      >
+                        {english ? "Complete" : "Baigti"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={transition.isPending}
+                        onClick={() =>
+                          transition.mutate({ experimentId: experiment.id, event: "user_stop" })
+                        }
+                        className="min-h-11 rounded-full border border-amber-300/30 px-3 text-[10px] font-medium text-amber-200 disabled:opacity-50"
+                      >
+                        {english ? "Stop" : "Sustabdyti"}
+                      </button>
+                    </>
+                  ) : null}
+                </div>
                 <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] text-muted-foreground">
                   {["baseline", "intervention", "followup"].map((phase) => (
                     <span key={phase} className="rounded-full border border-border/60 px-2 py-1">
