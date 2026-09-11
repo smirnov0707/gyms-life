@@ -144,7 +144,9 @@ export function LocalTwinCameraPreview({
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [framing, setFraming] = useState<TwinFramingAssessment>(() => assessTwinFraming(null));
   const [rotation, setRotation] = useState<TwinRotationProgress>(INITIAL_TWIN_ROTATION_PROGRESS);
-  const [manualGuide, setManualGuide] = useState<ManualTwinGuideState>(INITIAL_MANUAL_TWIN_GUIDE_STATE);
+  const [manualGuide, setManualGuide] = useState<ManualTwinGuideState>(
+    INITIAL_MANUAL_TWIN_GUIDE_STATE,
+  );
   const posePrivacy = personalizedTwinPosePrivacyGate();
   const poseBackend = activePersonalizedTwinPoseBackend();
   const manualMode = poseBackend.key === "manual_guide";
@@ -317,7 +319,13 @@ export function LocalTwinCameraPreview({
   };
 
   const confirmManualCheckpoint = () => {
-    if (!manualMode || cameraState !== "active" || !quality.canAdvanceRotation || manualGuide.complete) return;
+    if (
+      !manualMode ||
+      cameraState !== "active" ||
+      !quality.canAdvanceRotation ||
+      manualGuide.complete
+    )
+      return;
     const next = confirmManualTwinGuideCheckpoint(manualGuideRef.current);
     manualGuideRef.current = next;
     setManualGuide(next);
@@ -427,12 +435,21 @@ export function LocalTwinCameraPreview({
       </p>
 
       {manualMode && cameraState === "active" ? (
-        <div className="mt-3 rounded-xl border border-violet-300/20 bg-violet-300/[0.06] p-3" data-twin-manual-guide>
+        <div
+          className="mt-3 rounded-xl border border-violet-300/20 bg-violet-300/[0.06] p-3"
+          data-twin-manual-guide
+        >
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-200">{copy.manualGuide}</p>
-            <span className="text-[10px] tabular-nums text-neutral-400">{manualGuide.confirmed}/5</span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-200">
+              {copy.manualGuide}
+            </p>
+            <span className="text-[10px] tabular-nums text-neutral-400">
+              {manualGuide.confirmed}/5
+            </span>
           </div>
-          <p className="mt-2 text-xs font-semibold text-white">{checkpointLabel(manualGuide.current)}</p>
+          <p className="mt-2 text-xs font-semibold text-white">
+            {checkpointLabel(manualGuide.current)}
+          </p>
           <p className="mt-1 text-[10px] leading-relaxed text-neutral-400">{copy.manualHint}</p>
           <button
             type="button"
@@ -470,7 +487,10 @@ export function LocalTwinCameraPreview({
       ) : null}
 
       {!posePrivacy.allowed ? (
-        <p className="mt-2 text-[11px] leading-relaxed text-amber-300" data-twin-pose-privacy-blocked>
+        <p
+          className="mt-2 text-[11px] leading-relaxed text-amber-300"
+          data-twin-pose-privacy-blocked
+        >
           {copy.poseBlocked}
         </p>
       ) : (
