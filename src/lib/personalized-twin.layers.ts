@@ -12,7 +12,13 @@ export const TwinIdentityShellSchema = z.object({
 
 export const TwinBodyGeometryEvidenceSchema = z.object({
   status: z.enum(["unknown", "observed", "estimated"]),
-  source: z.enum(["none", "user_measurement", "device_measurement", "body_scan"]),
+  source: z.enum([
+    "none",
+    "canonical_body_metrics",
+    "user_measurement",
+    "device_measurement",
+    "body_scan",
+  ]),
   providerKey: z.string().min(1).nullable(),
   measuredAt: z.string().datetime().nullable(),
   mayDriveBodyMetrics: z.boolean(),
