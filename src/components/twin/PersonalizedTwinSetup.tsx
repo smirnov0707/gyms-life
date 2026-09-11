@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Camera, CheckCircle2, ChevronDown, ShieldCheck, Upload, UserRound, X } from "lucide-react";
 import { buildPersonalizedTwinPreparation } from "@/lib/personalized-twin.engine";
 import { buildPersonalizedTwinCaptureFlow } from "@/lib/personalized-twin.capture-flow";
+import { GuidedTwinScanPreview } from "@/components/twin/GuidedTwinScanPreview";
 import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 import {
   PERSONALIZED_TWIN_REQUIRED_ANGLES,
@@ -207,6 +208,9 @@ export function PersonalizedTwinSetup({
               <p className="mt-2 text-neutral-400">{copy.differentCapture}</p>
             ) : state.status === "provider_unavailable" ? (
               <p className="mt-2 text-neutral-400">{copy.providerMissing}</p>
+            ) : null}
+            {captureFlow.requiresDifferentCapture ? (
+              <GuidedTwinScanPreview language={language} capability={capability} />
             ) : null}
             <p className="mt-2 flex items-center gap-2 text-neutral-500">
               <ShieldCheck aria-hidden="true" className="size-4" /> {copy.privacy}
