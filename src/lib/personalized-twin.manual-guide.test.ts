@@ -9,7 +9,12 @@ import {
 describe("Personalized Twin manual scan guide", () => {
   it("advances only after explicit user confirmations", () => {
     let state = INITIAL_MANUAL_TWIN_GUIDE_STATE;
-    expect(state).toMatchObject({ confirmed: 0, progressPct: 0, complete: false, current: "front" });
+    expect(state).toMatchObject({
+      confirmed: 0,
+      progressPct: 0,
+      complete: false,
+      current: "front",
+    });
 
     state = confirmManualTwinGuideCheckpoint(state);
     expect(state).toMatchObject({ confirmed: 1, progressPct: 20, current: "right" });
@@ -45,7 +50,8 @@ describe("Personalized Twin manual scan guide", () => {
     });
 
     let complete = first;
-    for (let index = 0; index < 4; index += 1) complete = confirmManualTwinGuideCheckpoint(complete);
+    for (let index = 0; index < 4; index += 1)
+      complete = confirmManualTwinGuideCheckpoint(complete);
     expect(manualGuideRotationProgress(complete)).toMatchObject({
       phase: 5,
       progressPct: 100,
