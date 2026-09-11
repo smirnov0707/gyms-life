@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, ShieldCheck } from "lucide-react";
 import { assessTwinFraming, type TwinFramingAssessment } from "@/lib/personalized-twin.framing";
+import {
+  assessTwinCaptureQuality,
+  averageFrameLuminance,
+  type TwinCaptureQuality,
+} from "@/lib/personalized-twin.capture-quality";
 import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
 import {
   INITIAL_TWIN_ROTATION_PROGRESS,
@@ -30,6 +35,11 @@ const COPY = {
     rotationLabel: "Apsisukimo progreso įvertis",
     rotationHint:
       "Lėtai sukis viena kryptimi. Tai tik lokalus progreso įvertis, ne 3D skenavimo įrodymas.",
+    qualityReady: "Vaizdo kokybė tinkama.",
+    qualityStabilizing: "Išlaikyk kūną stabiliai kadre trumpą akimirką.",
+    qualityDark: "Per tamsu — pagerink apšvietimą.",
+    qualityBright: "Per šviesu — sumažink tiesioginę šviesą.",
+    qualityFast: "Judi per greitai — sukis lėčiau.",
   },
   en: {
     open: "Open local camera",
@@ -47,19 +57,33 @@ const COPY = {
     rotationLabel: "Rotation progress estimate",
     rotationHint:
       "Rotate slowly in one direction. This is only a local progress estimate, not proof of a complete 3D scan.",
+    qualityReady: "Capture quality is ready.",
+    qualityStabilizing: "Hold your body steadily in frame for a moment.",
+    qualityDark: "Too dark — improve the lighting.",
+    qualityBright: "Too bright — reduce direct light.",
+    qualityFast: "Moving too fast — rotate more slowly.",
   },
 } as const;
 export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) {
   const copy = COPY[language];
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<LocalTwinPoseDetector | null>(null);
   const rafRef = useRef<number | null>(null);
   const attemptRef = useRef(0);
   const rotationRef = useRef<TwinRotationProgress>(INITIAL_TWIN_ROTATION_PROGRESS);
+  const readySinceRef = useRef<number | null>(null);
+  const previousSpanRef = useRef<number | null>(null);
+  const luminanceRef = useRef<number | null>(null);
+  const sampleFrameRef = useRef(0);
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [framing, setFraming] = useState<TwinFramingAssessment>(() => assessTwinFraming(null));
   const [rotation, setRotation] = useState<TwinRotationProgress>(INITIAL_TWIN_ROTATION_PROGRESS);
+  const [quality, setQuality] = useState<TwinCaptureQuality>({
+    status: "unknown",
+    canAdvanceRotation: false,
+  });
 
   const stopDetection = () => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -67,7 +91,12 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
     detectorRef.current?.close();
     detectorRef.current = null;
     rotationRef.current = INITIAL_TWIN_ROTATION_PROGRESS;
+    readySinceRef.current = null;
+    previousSpanRef.current = null;
+    luminanceRef.current = null;
+    sampleFrameRef.current = 0;
     setRotation(INITIAL_TWIN_ROTATION_PROGRESS);
+    setQuality({ status: "unknown", canAdvanceRotation: false });
     setFraming(assessTwinFraming(null));
   };
 
@@ -100,12 +129,47 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
         if (attemptRef.current !== attempt || detectorRef.current !== detector) return;
         if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
           try {
-            const observation = detector.detect(video, performance.now());
+            const now = performance.now();
+            const observation = detector.detect(video, now);
             const assessment = assessTwinFraming(observation);
             setFraming(assessment);
-            const nextRotation = updateTwinRotationProgress(rotationRef.current, {
+
+            if (assessment.status === "ready") {
+              readySinceRef.current ??= now;
+            } else {
+              readySinceRef.current = null;
+            }
+
+            sampleFrameRef.current += 1;
+            if (sampleFrameRef.current % 12 === 0 && sampleCanvasRef.current) {
+              const canvas = sampleCanvasRef.current;
+              const context = canvas.getContext("2d", { willReadFrequently: true });
+              if (context) {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                luminanceRef.current = averageFrameLuminance(
+                  context.getImageData(0, 0, canvas.width, canvas.height).data,
+                );
+              }
+            }
+
+            const currentSpan = observation?.shoulderSpanRatio ?? null;
+            const motionDelta =
+              currentSpan !== null && previousSpanRef.current !== null
+                ? Math.abs(currentSpan - previousSpanRef.current)
+                : null;
+            previousSpanRef.current = currentSpan;
+
+            const nextQuality = assessTwinCaptureQuality({
               framingReady: assessment.status === "ready",
-              shoulderSpanRatio: observation?.shoulderSpanRatio ?? null,
+              stableReadyMs: readySinceRef.current === null ? 0 : now - readySinceRef.current,
+              luminance: luminanceRef.current,
+              motionDelta,
+            });
+            setQuality(nextQuality);
+
+            const nextRotation = updateTwinRotationProgress(rotationRef.current, {
+              framingReady: nextQuality.canAdvanceRotation,
+              shoulderSpanRatio: currentSpan,
             });
             rotationRef.current = nextRotation;
             setRotation(nextRotation);
@@ -144,6 +208,19 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
       setCameraState(name === "NotAllowedError" ? "denied" : "unavailable");
     }
   };
+  const qualityMessage =
+    quality.status === "ready"
+      ? copy.qualityReady
+      : quality.status === "stabilizing"
+        ? copy.qualityStabilizing
+        : quality.status === "too_dark"
+          ? copy.qualityDark
+          : quality.status === "too_bright"
+            ? copy.qualityBright
+            : quality.status === "moving_too_fast"
+              ? copy.qualityFast
+              : null;
+
   const framingMessage =
     framing.status === "ready"
       ? copy.framingReady
@@ -178,6 +255,8 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
           </div>
         ) : null}
       </div>
+
+      <canvas ref={sampleCanvasRef} width={16} height={16} className="hidden" aria-hidden="true" />
 
       <div className="mt-3 flex flex-wrap gap-2">
         {cameraState === "active" ? (
@@ -217,6 +296,14 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
         </div>
         <p className="mt-1 text-[10px] leading-relaxed text-neutral-500">{copy.rotationHint}</p>
       </div>
+      {qualityMessage ? (
+        <p
+          className={`mt-2 text-[11px] leading-relaxed ${quality.status === "ready" ? "text-emerald-300" : "text-amber-300"}`}
+          data-twin-capture-quality={quality.status}
+        >
+          {qualityMessage}
+        </p>
+      ) : null}
       <p
         className={`mt-2 text-[11px] leading-relaxed ${framing.status === "ready" ? "text-emerald-300" : framing.status === "unknown" ? "text-neutral-500" : "text-amber-300"}`}
         data-twin-framing-status={framing.status}
