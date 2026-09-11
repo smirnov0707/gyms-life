@@ -42,6 +42,7 @@ import { Route as AuthenticatedWorkoutDayRouteImport } from './routes/_authentic
 import { Route as ApiInternalNightLabRouteImport } from './routes/api/internal/night-lab'
 import { Route as ApiPublicHealthIngestRouteImport } from './routes/api/public/health-ingest'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicPersonalizedTwinWebhookRouteImport } from './routes/api/public/personalized-twin/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -211,6 +212,12 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPersonalizedTwinWebhookRoute =
+  ApiPublicPersonalizedTwinWebhookRouteImport.update({
+    id: '/api/public/personalized-twin/webhook',
+    path: '/api/public/personalized-twin/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/api/internal/night-lab': typeof ApiInternalNightLabRoute
   '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/personalized-twin/webhook': typeof ApiPublicPersonalizedTwinWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesByTo {
   '/api/internal/night-lab': typeof ApiInternalNightLabRoute
   '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/personalized-twin/webhook': typeof ApiPublicPersonalizedTwinWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -315,6 +324,7 @@ export interface FileRoutesById {
   '/api/internal/night-lab': typeof ApiInternalNightLabRoute
   '/api/public/health-ingest': typeof ApiPublicHealthIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/personalized-twin/webhook': typeof ApiPublicPersonalizedTwinWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/api/internal/night-lab'
     | '/api/public/health-ingest'
     | '/api/public/payments/webhook'
+    | '/api/public/personalized-twin/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/api/internal/night-lab'
     | '/api/public/health-ingest'
     | '/api/public/payments/webhook'
+    | '/api/public/personalized-twin/webhook'
   id:
     | '__root__'
     | '/'
@@ -420,6 +432,7 @@ export interface FileRouteTypes {
     | '/api/internal/night-lab'
     | '/api/public/health-ingest'
     | '/api/public/payments/webhook'
+    | '/api/public/personalized-twin/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -437,6 +450,7 @@ export interface RootRouteChildren {
   ApiInternalNightLabRoute: typeof ApiInternalNightLabRoute
   ApiPublicHealthIngestRoute: typeof ApiPublicHealthIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  ApiPublicPersonalizedTwinWebhookRoute: typeof ApiPublicPersonalizedTwinWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -672,6 +686,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/personalized-twin/webhook': {
+      id: '/api/public/personalized-twin/webhook'
+      path: '/api/public/personalized-twin/webhook'
+      fullPath: '/api/public/personalized-twin/webhook'
+      preLoaderRoute: typeof ApiPublicPersonalizedTwinWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -737,6 +758,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInternalNightLabRoute: ApiInternalNightLabRoute,
   ApiPublicHealthIngestRoute: ApiPublicHealthIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  ApiPublicPersonalizedTwinWebhookRoute: ApiPublicPersonalizedTwinWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
