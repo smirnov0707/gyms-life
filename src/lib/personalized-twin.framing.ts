@@ -14,6 +14,7 @@ export type TwinFramingObservation = {
   topMarginRatio: number;
   bottomMarginRatio: number;
   fullBodyVisible: boolean;
+  shoulderSpanRatio?: number | null;
 };
 
 export type TwinFramingAssessment = {
