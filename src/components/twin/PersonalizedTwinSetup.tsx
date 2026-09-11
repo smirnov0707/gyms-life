@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Camera, CheckCircle2, ChevronDown, ShieldCheck, Upload, UserRound, X } from "lucide-react";
 import { buildPersonalizedTwinPreparation } from "@/lib/personalized-twin.engine";
 import { buildPersonalizedTwinCaptureFlow } from "@/lib/personalized-twin.capture-flow";
+import { derivePersonalizedTwinUiPhase } from "@/lib/personalized-twin.presentation";
+import { PersonalizedTwinStatus } from "@/components/twin/PersonalizedTwinStatus";
 import { GuidedTwinScanPreview } from "@/components/twin/GuidedTwinScanPreview";
 import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 import {
@@ -81,6 +83,15 @@ export function PersonalizedTwinSetup({
         providerAvailable: captureFlow.currentUiCanSubmit,
       }),
     [shots, consent, captureFlow.currentUiCanSubmit],
+  );
+  const uiPhase = useMemo(
+    () =>
+      derivePersonalizedTwinUiPhase({
+        localComplete: state.missingAngles.length === 0,
+        consentGranted: consent,
+        capability,
+      }),
+    [state.missingAngles.length, consent, capability],
   );
 
   const setPhoto = (angle: PersonalizedTwinAngle, file: File | undefined) => {
@@ -212,6 +223,7 @@ export function PersonalizedTwinSetup({
             {captureFlow.requiresDifferentCapture ? (
               <GuidedTwinScanPreview language={language} capability={capability} />
             ) : null}
+            <PersonalizedTwinStatus language={language} phase={uiPhase} />
             <p className="mt-2 flex items-center gap-2 text-neutral-500">
               <ShieldCheck aria-hidden="true" className="size-4" /> {copy.privacy}
             </p>
