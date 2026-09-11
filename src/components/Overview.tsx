@@ -155,97 +155,130 @@ export function Overview() {
   );
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
   return (
-    <div className="fl-dashboard">
-      <div className="fl-cockpit">
-        <div className="fl-left-rail">
-          <aside className="fl-signal-rail">
-            <LiveSignals />
-          </aside>
-          <div className="fl-plan">
-            <TodaysPlanPanel />
-          </div>
+    <main className="mx-auto w-full max-w-[1480px] space-y-4 px-3 pb-8 sm:px-4 lg:px-6">
+      <header className="flex flex-col gap-1 pt-2 sm:pt-4">
+        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-violet-300 light:text-violet-700">
+          {t("nav.today")} · GYMS.LIFE INTELLIGENCE
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          {greeting}
+          {firstName ? `, ${firstName}` : ""}
+        </h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          {english
+            ? "One decision, backed by your current state and longitudinal evidence."
+            : "Vienas sprendimas, paremtas dabartine tavo būsena ir ilgalaikiais duomenimis."}
+        </p>
+      </header>
+
+      <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <TodayDecision
+          workoutDay={today?.day ?? null}
+          primaryTrainingActionHandled={Boolean(today)}
+        />
+        <div className="min-h-[360px] overflow-hidden rounded-2xl border border-border bg-surface/80">
+          <TwinHome presentation="cockpit" />
         </div>
-        <div className="fl-daily-column">
-          <header className="fl-greeting">
-            <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
-            <h1>
-              {greeting}
-              {firstName ? `, ${firstName}` : ""} <span aria-hidden="true">👋</span>
-            </h1>
-            <p>
-              {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
-            </p>
-          </header>
-          <div className="fl-readiness">
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="rounded-2xl border border-border bg-surface/85 p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                {english ? "SYSTEM STATE" : "SISTEMOS BŪSENA"}
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-foreground">
+                {readinessScore == null
+                  ? english
+                    ? "State still forming"
+                    : "Būsena dar formuojama"
+                  : (recoveryState ?? (english ? "Current state" : "Dabartinė būsena"))}
+              </h2>
+            </div>
             {readinessScore != null && Number.isFinite(readinessScore) ? (
-              <ReadinessCard
-                compact
-                score={readinessScore}
-                state={recoveryState}
-                ring={<ReadinessRing score={readinessScore} />}
-              />
-            ) : (
-              <div className="fl-surface fl-readiness-empty">
-                <p className="fl-eyebrow">{english ? "Readiness" : "Pasiruošimas"}</p>
-                <p>
-                  {readinessReadFailed
-                    ? t("ov.readinessReadFailed")
-                    : english
-                      ? "How are you feeling today?"
-                      : "Kaip šiandien jautiesi?"}
-                </p>
-                <Link to="/readiness" className="fl-text-link">
-                  {english ? "Check in" : "Įvertinti savijautą"} →
-                </Link>
-              </div>
-            )}
+              <ReadinessRing score={readinessScore} />
+            ) : null}
           </div>
-          <div className="fl-brief space-y-3">
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {readinessScore == null
+              ? readinessReadFailed
+                ? t("ov.readinessReadFailed")
+                : english
+                  ? "Complete today's check-in to sharpen the decision boundary."
+                  : "Užpildyk šiandienos check-in, kad sprendimo riba būtų tikslesnė."
+              : english
+                ? `Readiness ${Math.round(readinessScore)}/100 is one input, not the whole decision.`
+                : `Pasiruošimas ${Math.round(readinessScore)}/100 yra tik vienas signalas, ne visas sprendimas.`}
+          </p>
+          {readinessScore == null ? (
+            <Link
+              to="/readiness"
+              className="mt-3 inline-flex min-h-11 items-center text-xs font-medium text-violet-300"
+            >
+              {english ? "Complete check-in" : "Užpildyti check-in"} →
+            </Link>
+          ) : null}
+          <div className="mt-3 grid gap-2">
             <MorningLabReview compact />
             <SmartBrief compact />
           </div>
-          <div className="fl-decision">
-            <TodayDecision
-              compact
-              workoutDay={today?.day ?? null}
-              primaryTrainingActionHandled={Boolean(today)}
-            />
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface/85 p-3 sm:p-4">
+          <div className="mb-2 flex items-center justify-between gap-3 px-1">
+            <div>
+              <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                {english ? "TODAY'S EXECUTION" : "ŠIANDIENOS VYKDYMAS"}
+              </p>
+              <h2 className="mt-1 text-base font-semibold text-foreground">
+                {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+              </h2>
+            </div>
           </div>
+          <TodaysPlanPanel />
         </div>
-        <div className="fl-body">
-          <TwinHome presentation="cockpit" />
-        </div>
-        <aside className="fl-laboratory">
-          <FutureLabRoster />
-        </aside>
-        <aside className="fl-predictions">
+      </section>
+
+      <FutureLabTodayIntelligence />
+
+      <details className="group rounded-2xl border border-border bg-surface/75">
+        <summary className="cursor-pointer list-none px-4 py-4 text-sm font-medium text-foreground sm:px-5">
+          <span className="flex items-center justify-between gap-3">
+            <span>
+              {english ? "Why this? · Evidence & signals" : "Kodėl taip? · Įrodymai ir signalai"}
+            </span>
+            <span className="text-xs text-muted-foreground group-open:hidden">+</span>
+            <span className="hidden text-xs text-muted-foreground group-open:inline">−</span>
+          </span>
+        </summary>
+        <div className="grid gap-3 border-t border-border p-3 sm:p-4 lg:grid-cols-2 xl:grid-cols-3">
           <PredictionEvidencePanel compact />
           <RecoveryOutlook compact />
           <SleepAnalysis />
-        </aside>
-      </div>
-      <FutureLabTodayIntelligence />
-      <div className="fl-dashboard-footer">
-        <DataSourcesStrip />
-        <details className="fl-context-disclosure">
-          <summary>
-            <span className="fl-context-label-full">
-              {english
-                ? "Daily context & programme settings"
-                : "Dienos kontekstas ir programos nustatymai"}
-            </span>
-            <span className="fl-context-label-short">
-              {english ? "Context & settings" : "Kontekstas ir nustatymai"}
-            </span>
-          </summary>
+          <div className="lg:col-span-2 xl:col-span-3">
+            <LiveSignals />
+          </div>
+        </div>
+      </details>
+
+      <details className="group rounded-2xl border border-border/70 bg-surface/60">
+        <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-muted-foreground sm:px-5">
+          {english ? "Context, sources & settings" : "Kontekstas, šaltiniai ir nustatymai"}
+        </summary>
+        <div className="space-y-3 border-t border-border p-4">
+          <DataSourcesStrip />
           <TodayLifeContext />
           {planData ? (
-            <Link to="/onboarding" className="fl-text-link">
+            <Link
+              to="/onboarding"
+              className="inline-flex min-h-11 items-center text-xs font-medium text-violet-300"
+            >
               {t("dash.regenerate")} →
             </Link>
           ) : null}
-        </details>
-      </div>
-    </div>
+        </div>
+      </details>
+    </main>
   );
 }
