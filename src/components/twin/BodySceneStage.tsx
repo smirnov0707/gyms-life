@@ -49,6 +49,8 @@ export type BodySceneStageProps = {
   compactMobileControls?: boolean;
   /** Skin-forward or analysis-forward rendering; evidence remains identical. */
   visualAppearance?: TwinVisualAppearance;
+  /** Private, short-lived Personalized Twin GLB. Visual identity only; never evidence. */
+  identityModelUrl?: string | null;
   /** Optional appearance selector; shown inside compact mobile controls. */
   appearanceControls?: ReactNode;
 };
@@ -197,6 +199,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
           onBodyReady: (_kind, loadedProvenance) => loading.ready(loadedProvenance),
           ...(current.bodyVariant ? { humanVariant: current.bodyVariant } : {}),
           visualAppearance: current.visualAppearance ?? "analysis",
+          identityModelUrl: current.identityModelUrl ?? null,
         });
         if (!loading.attach(handle)) return;
         scene.current = handle;
@@ -205,7 +208,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
       })
       .catch(loading.fail);
     return () => loading.dispose();
-  }, [mode, attempt, bodyVariant, visualAppearance]);
+  }, [mode, attempt, bodyVariant, visualAppearance, props.identityModelUrl]);
   useEffect(() => {
     scene.current?.setState(state);
   }, [state, ready]);

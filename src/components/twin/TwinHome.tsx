@@ -7,6 +7,7 @@ import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinExperience } from "@/lib/digital-twin.functions";
 import { getPersonalizedTwinCapability } from "@/lib/personalized-twin.functions";
+import { getPersonalizedTwinLifecycle } from "@/lib/personalized-twin.lifecycle.functions";
 import { TwinIntelligencePanel } from "@/components/twin/TwinIntelligencePanel";
 import { PersonalizedTwinSetup } from "@/components/twin/PersonalizedTwinSetup";
 import { getTodaysTargets } from "@/lib/todays-targets.functions";
@@ -210,6 +211,13 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
     queryFn: () => getPersonalizedTwinCapability(),
     staleTime: 5 * 60_000,
   });
+  const personalizedLifecycleQuery = useQuery({
+    queryKey: ["personalized-twin-lifecycle", user?.id],
+    enabled: Boolean(user),
+    queryFn: () => getPersonalizedTwinLifecycle(),
+    staleTime: 30_000,
+    refetchInterval: (query) => (query.state.data?.status === "processing" ? 5_000 : false),
+  });
   const targetsQuery = useQuery({
     queryKey: ["todays-targets", user?.id, timeZone],
     enabled: Boolean(user),
@@ -324,6 +332,11 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
         <TwinStage
           presentation="cockpit"
           visualAppearance={visualAppearance}
+          identityModelUrl={
+            personalizedLifecycleQuery.data?.status === "ready"
+              ? personalizedLifecycleQuery.data.modelUrl
+              : null
+          }
           snapshot={snapshot}
           layer={shownLayer}
           onLayerChange={setLayer}
@@ -423,6 +436,11 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           <TwinStage
             fill
             visualAppearance={visualAppearance}
+            identityModelUrl={
+              personalizedLifecycleQuery.data?.status === "ready"
+                ? personalizedLifecycleQuery.data.modelUrl
+                : null
+            }
             snapshot={snapshot}
             layer={shownLayer}
             onLayerChange={setLayer}

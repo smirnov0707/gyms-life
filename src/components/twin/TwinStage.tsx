@@ -30,6 +30,8 @@ export type TwinStageProps = {
   compactMobileControls?: boolean;
   /** Visual treatment only; never changes Twin evidence or picking regions. */
   visualAppearance?: TwinVisualAppearance;
+  /** Personalized visual Identity Shell, used only in realistic presentation. */
+  identityModelUrl?: string | null;
   /** Optional mobile control rendered inside the shared view disclosure. */
   appearanceControls?: ReactNode;
 };
