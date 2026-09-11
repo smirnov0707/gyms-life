@@ -1,0 +1,210 @@
+import { useMemo, useState } from "react";
+import { Camera, CheckCircle2, ChevronDown, ShieldCheck, Upload, UserRound, X } from "lucide-react";
+import { buildPersonalizedTwinPreparation } from "@/lib/personalized-twin.engine";
+import {
+  PERSONALIZED_TWIN_REQUIRED_ANGLES,
+  type PersonalizedTwinAngle,
+} from "@/lib/personalized-twin.schema";
+
+const LABELS = {
+  lt: {
+    eyebrow: "PERSONALIZUOTAS TWIN",
+    title: "Sukurti mano kūno avatarą",
+    intro:
+      "Pridėk tris savo kūno nuotraukas. Jos šiame etape lieka tik šiame įrenginyje ir nėra įkeliamos į serverį.",
+    front: "Priekis",
+    side: "Šonas",
+    back: "Nugara",
+    add: "Pridėti nuotrauką",
+    replace: "Pakeisti",
+    consent:
+      "Suprantu, kad tai bus vizualinis avataras, o ne medicininis skenavimas ar tikslus anatomijos atkūrimas.",
+    missing: "Trūksta kampų",
+    readyLocal: "Nuotraukų rinkinys paruoštas.",
+    providerMissing:
+      "3D rekonstrukcijos paslauga dar neprijungta, todėl nuotraukos niekur nesiunčiamos ir avataras dar negeneruojamas.",
+    privacy: "Nuotraukos nepersistinamos ir nepalieka šio puslapio.",
+    open: "Personalizuoti Twin",
+    close: "Uždaryti nustatymą",
+    remove: "Pašalinti",
+  },
+  en: {
+    eyebrow: "PERSONALIZED TWIN",
+    title: "Create my body avatar",
+    intro:
+      "Add three body photos. At this stage they remain only on this device and are not uploaded to a server.",
+    front: "Front",
+    side: "Side",
+    back: "Back",
+    add: "Add photo",
+    replace: "Replace",
+    consent:
+      "I understand this will be a visual avatar, not a medical scan or exact anatomical reconstruction.",
+    missing: "Missing views",
+    readyLocal: "Photo set is ready.",
+    providerMissing:
+      "A 3D reconstruction provider is not connected yet, so the photos are not sent anywhere and no avatar is generated yet.",
+    privacy: "Photos are not persisted and do not leave this page.",
+    open: "Personalize Twin",
+    close: "Close setup",
+    remove: "Remove",
+  },
+} as const;
+
+type ShotMap = Partial<Record<PersonalizedTwinAngle, string>>;
+
+export function PersonalizedTwinSetup({
+  language,
+  providerAvailable,
+}: {
+  language: "lt" | "en";
+  providerAvailable: boolean;
+}) {
+  const copy = LABELS[language];
+  const [shots, setShots] = useState<ShotMap>({});
+  const [consent, setConsent] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const state = useMemo(
+    () =>
+      buildPersonalizedTwinPreparation({
+        capturedAngles: PERSONALIZED_TWIN_REQUIRED_ANGLES.filter((angle) => Boolean(shots[angle])),
+        consentGranted: consent,
+        providerAvailable,
+      }),
+    [shots, consent, providerAvailable],
+  );
+
+  const setPhoto = (angle: PersonalizedTwinAngle, file: File | undefined) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      setShots((current) => ({ ...current, [angle]: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <section
+      className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5"
+      data-personalized-twin-setup
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full items-start gap-3 text-left"
+      >
+        <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
+          <UserRound aria-hidden="true" className="size-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+            {copy.eyebrow}
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-white">{copy.title}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-neutral-400">{copy.intro}</p>
+          <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+            {open ? copy.close : copy.open}
+            <ChevronDown
+              aria-hidden="true"
+              className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          </span>
+        </div>
+      </button>
+
+      {open ? (
+        <>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {PERSONALIZED_TWIN_REQUIRED_ANGLES.map((angle) => {
+              const value = shots[angle];
+              const label = copy[angle];
+              return (
+                <label
+                  key={angle}
+                  className="group relative min-h-36 overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+                >
+                  {value ? (
+                    <>
+                      <img
+                        src={value}
+                        alt={label}
+                        className="absolute inset-0 size-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`${copy.remove}: ${label}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setShots((current) => {
+                            const next = { ...current };
+                            delete next[angle];
+                            return next;
+                          });
+                        }}
+                        className="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-black/70 text-white backdrop-blur"
+                      >
+                        <X aria-hidden="true" className="size-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="absolute inset-0 grid place-items-center text-neutral-500">
+                      <Camera aria-hidden="true" className="size-7" />
+                    </span>
+                  )}
+                  <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-black/70 px-3 py-2 text-xs text-white backdrop-blur">
+                    <span className="font-semibold">{label}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] text-neutral-300">
+                      <Upload aria-hidden="true" className="size-3.5" />{" "}
+                      {value ? copy.replace : copy.add}
+                    </span>
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    aria-label={`${copy.add}: ${label}`}
+                    onChange={(event) => {
+                      setPhoto(angle, event.target.files?.[0]);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs leading-relaxed text-neutral-300">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+              className="mt-0.5 size-4 accent-violet-500"
+            />
+            <span>{copy.consent}</span>
+          </label>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs leading-relaxed">
+            {state.missingAngles.length > 0 ? (
+              <p className="text-neutral-300">
+                {copy.missing}: {state.missingAngles.map((angle) => copy[angle]).join(", ")}.
+              </p>
+            ) : (
+              <p className="flex items-center gap-2 text-emerald-300">
+                <CheckCircle2 aria-hidden="true" className="size-4" /> {copy.readyLocal}
+              </p>
+            )}
+            {state.status === "provider_unavailable" ? (
+              <p className="mt-2 text-neutral-400">{copy.providerMissing}</p>
+            ) : null}
+            <p className="mt-2 flex items-center gap-2 text-neutral-500">
+              <ShieldCheck aria-hidden="true" className="size-4" /> {copy.privacy}
+            </p>
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}

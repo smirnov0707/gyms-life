@@ -6,7 +6,9 @@ import { useAuth } from "@/lib/auth";
 import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinExperience } from "@/lib/digital-twin.functions";
+import { getPersonalizedTwinCapability } from "@/lib/personalized-twin.functions";
 import { TwinIntelligencePanel } from "@/components/twin/TwinIntelligencePanel";
+import { PersonalizedTwinSetup } from "@/components/twin/PersonalizedTwinSetup";
 import { getTodaysTargets } from "@/lib/todays-targets.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { targetsRegion, type TodaysTargets } from "@/lib/todays-targets.engine";
@@ -201,6 +203,12 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
     enabled: Boolean(user),
     queryFn: () => getTwinExperience({ data: timeZone }),
     staleTime: 60_000,
+  });
+  const capabilityQuery = useQuery({
+    queryKey: ["personalized-twin-capability", user?.id],
+    enabled: Boolean(user),
+    queryFn: () => getPersonalizedTwinCapability(),
+    staleTime: 5 * 60_000,
   });
   const targetsQuery = useQuery({
     queryKey: ["todays-targets", user?.id, timeZone],
@@ -498,6 +506,12 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           ) : null}
           <TrainingLoadPanel />
           <RecentWorkoutEffect />
+          <div className="min-w-0 lg:col-span-2 xl:col-span-4">
+            <PersonalizedTwinSetup
+              language={language}
+              providerAvailable={capabilityQuery.data?.available === true}
+            />
+          </div>
         </div>
       </div>
     </section>
