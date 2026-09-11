@@ -2,6 +2,8 @@ import { Binoculars, CircleHelp, FlaskConical, Sparkles } from "lucide-react";
 import type { DeterministicPerformanceForecast } from "@/lib/forecast.schema";
 import type { LabOverview } from "@/lib/lab.schema";
 import { buildTwinEpistemicState } from "@/lib/twin-epistemic-state";
+import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
+import { buildPredictionVersionComparisons } from "@/lib/prediction-version-comparison";
 import { FutureLabPanel } from "./FutureLabPanel";
 
 export function EpistemicBoundary({
@@ -14,6 +16,12 @@ export function EpistemicBoundary({
   english: boolean;
 }) {
   const state = buildTwinEpistemicState(lab, forecast);
+  const stability = summarizeHypothesisStability(lab?.hypothesisHistory ?? []);
+  const comparisons = lab ? buildPredictionVersionComparisons(lab.predictionCalibration) : [];
+  const candidateWins = comparisons.filter(
+    (item) => item.verdict === "candidate_outperforms",
+  ).length;
+  const mixedComparisons = comparisons.filter((item) => item.verdict === "mixed").length;
   const hypothesisCount =
     state.hypotheses.supported +
     state.hypotheses.monitoring +
@@ -94,10 +102,32 @@ export function EpistemicBoundary({
           </p>
         </article>
       </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {english ? "Hypothesis retrospective" : "Hipotezių retrospektyva"}
+          </p>
+          <p className="mt-1 text-[10px] leading-relaxed text-foreground">
+            {english
+              ? `${stability.transitionCount} recorded transitions · ${stability.reversalCount} supported↔contradicted reversals`
+              : `${stability.transitionCount} užfiksuoti pokyčiai · ${stability.reversalCount} supported↔contradicted reversals`}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {english ? "Model self-evaluation" : "Modelio savęs vertinimas"}
+          </p>
+          <p className="mt-1 text-[10px] leading-relaxed text-foreground">
+            {english
+              ? `${comparisons.length} version comparisons · ${candidateWins} candidate improvements · ${mixedComparisons} mixed`
+              : `${comparisons.length} versijų palyginimai · ${candidateWins} kandidato pagerėjimai · ${mixedComparisons} mišrūs`}
+          </p>
+        </div>
+      </div>
       <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
         {english
-          ? "Shadow predictions and Future Me forecasts are research outputs. They do not influence Today, and unsupported hypotheses cannot become decision authority."
-          : "Shadow prognozės ir Future Me projekcijos yra tyrimo rezultatai. Jos nedaro įtakos Today, o nepagrįstos hipotezės negali tapti sprendimo autoritetu."}
+          ? "Shadow predictions and Future Me forecasts are research outputs. They do not influence Today, and neither a newer version nor a review-eligible model is automatically trusted."
+          : "Shadow prognozės ir Future Me projekcijos yra tyrimo rezultatai. Jos nedaro įtakos Today, o nei naujesnė versija, nei peržiūrai tinkamas modelis automatiškai nelaikomas patikimu."}
       </p>
     </FutureLabPanel>
   );
