@@ -111,6 +111,16 @@ export const extra_twintabs = {
     es: "Ninguna región tiene series registradas en esta ventana.",
     fr: "Aucune région n'a de séries enregistrées dans cette fenêtre.",
   },
+  "tw.measurementTools": {
+    lt: "Matavimai ir kūno fiksavimas",
+    en: "Measurements & body capture",
+    ru: "Измерения и сканирование тела",
+    uk: "Вимірювання та сканування тіла",
+    pl: "Pomiary i skan ciała",
+    de: "Messungen & Körpererfassung",
+    es: "Mediciones y captura corporal",
+    fr: "Mesures et capture du corps",
+  },
   "tw.systemsTitle": {
     lt: "Ką dvynys skaito, o ko ne",
     en: "What the Twin reads, and what it does not",

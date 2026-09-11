@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Activity, HeartPulse, PersonStanding } from "lucide-react";
 import { TwinView } from "@/components/TwinView";
 import { BodyCompositionCard } from "@/components/BodyCompositionCard";
+import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
+import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { TwinMuscleTable } from "@/components/twin/TwinMuscleTable";
 import { TwinMuscleDetail } from "@/components/twin/TwinMuscleDetail";
 import { TwinRewind } from "@/components/twin/TwinRewind";
@@ -121,6 +123,15 @@ export function TwinScreen({
                 <div className="twin-body-composition">
                   <BodyCompositionCard />
                 </div>
+                <details className="rounded-2xl border border-border bg-surface/75">
+                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
+                    {t("tw.measurementTools")}
+                  </summary>
+                  <div className="space-y-4 border-t border-border p-4">
+                    <BodyMetricsPanel compact />
+                    <BodyCompositionScanner />
+                  </div>
+                </details>
                 <TwinTimeline />
               </>
             ) : active === "muscles" ? (
