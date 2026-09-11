@@ -27,14 +27,17 @@ export type PersonalizedTwinProviderCapability = z.infer<
  * Provider-neutral reconstruction port. Implementations belong server-side only.
  * Input photos must never be sent to a provider without explicit capture-set consent.
  */
+export type PersonalizedTwinProviderInput = {
+  angle: "front" | "side" | "back";
+  url: string;
+  expiresAt: string;
+};
+
 export interface PersonalizedTwinReconstructionProvider {
   readonly key: string;
   submit(input: {
-    userId: string;
-    captureSetId: string;
-    frontObjectPath: string;
-    sideObjectPath: string;
-    backObjectPath: string;
+    captureReference: string;
+    inputs: readonly PersonalizedTwinProviderInput[];
   }): Promise<{ providerJobId: string }>;
   poll(
     providerJobId: string,
