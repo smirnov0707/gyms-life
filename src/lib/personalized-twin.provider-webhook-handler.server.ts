@@ -5,6 +5,10 @@ import {
 } from "./personalized-twin.provider-3dlook.server";
 import { parseVerifiedPersonalizedTwinWebhook } from "./personalized-twin.provider-webhook.server";
 import { dispatchPersonalizedTwinProviderWebhook } from "./personalized-twin.provider-dispatch.server";
+import {
+  fetchPersonalizedTwinModel,
+  readPersonalizedTwinNetworkGate,
+} from "./personalized-twin.provider-transport.server";
 
 export async function handleThreeDLookPersonalizedTwinWebhook(
   request: Request,
@@ -31,9 +35,11 @@ export async function handleThreeDLookPersonalizedTwinWebhook(
       providerJobId: event.providerJobId,
       eventId: event.eventId,
       response: event.result,
-      fetchModel: async () => {
-        throw new Error("PERSONALIZED_TWIN_3DLOOK_NETWORK_DISABLED_PENDING_DPA");
-      },
+      fetchModel: (url) =>
+        fetchPersonalizedTwinModel({
+          url,
+          gate: readPersonalizedTwinNetworkGate(),
+        }),
     });
     return Response.json({ accepted: true, outcome }, { status: 202 });
   } catch (error) {
