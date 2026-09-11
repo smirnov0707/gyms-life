@@ -77,8 +77,8 @@ export function EpistemicBoundary({
           <p className="mt-1 text-xs font-medium text-foreground">{predictionLabel}</p>
           <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
             {english
-              ? `${state.prediction.forecastLiftCount} bounded strength forecast${state.prediction.forecastLiftCount === 1 ? "" : "s"}`
-              : `${state.prediction.forecastLiftCount} ribotos jėgos prognozės`}
+              ? `${state.prediction.forecastLiftCount} bounded strength forecast${state.prediction.forecastLiftCount === 1 ? "" : "s"} · ${state.prediction.reviewEligibleModelCount} model${state.prediction.reviewEligibleModelCount === 1 ? "" : "s"} review-eligible`
+              : `${state.prediction.forecastLiftCount} ribotos jėgos prognozės · ${state.prediction.reviewEligibleModelCount} modeliai paruošti peržiūrai`}
           </p>
         </article>
         <article className="rounded-xl border border-border/70 bg-surface-2/45 p-3">

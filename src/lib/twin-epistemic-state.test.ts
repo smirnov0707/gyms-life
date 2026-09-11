@@ -87,6 +87,7 @@ describe("Twin epistemic state", () => {
     expect(state.prediction).toMatchObject({
       state: "shadow_uncalibrated",
       calibratedModelCount: 0,
+      reviewEligibleModelCount: 0,
       forecastLiftCount: 1,
       forecastEvidence: { low: 0, moderate: 1, high: 0 },
     });

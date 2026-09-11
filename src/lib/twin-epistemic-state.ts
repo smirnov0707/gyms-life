@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { DeterministicPerformanceForecast } from "./forecast.schema";
 import type { LabOverview } from "./lab.schema";
+import { buildPredictionPromotionReviews } from "./prediction-promotion-gate";
 
 export const TwinEpistemicPredictionStateSchema = z.enum([
   "unavailable",
@@ -24,6 +25,7 @@ export const TwinEpistemicStateSchema = z
     prediction: z.object({
       state: TwinEpistemicPredictionStateSchema,
       calibratedModelCount: z.number().int().nonnegative(),
+      reviewEligibleModelCount: z.number().int().nonnegative(),
       forecastLiftCount: z.number().int().nonnegative(),
       forecastEvidence: z.object({
         low: z.number().int().nonnegative(),
@@ -59,6 +61,7 @@ export function buildTwinEpistemicState(
 ): TwinEpistemicState {
   const hypotheses = lab?.hypotheses ?? [];
   const lifts = forecast?.status === "ready" ? forecast.lifts : [];
+  const promotionReviews = lab ? buildPredictionPromotionReviews(lab.predictionCalibration) : [];
   const evidence = { low: 0, moderate: 0, high: 0 };
   for (const lift of lifts) evidence[lift.evidenceStrength] += 1;
 
@@ -78,6 +81,8 @@ export function buildTwinEpistemicState(
       state: predictionState(lab),
       calibratedModelCount:
         lab?.predictionCalibration.models.filter((model) => model.brierScore !== null).length ?? 0,
+      reviewEligibleModelCount: promotionReviews.filter((review) => review.eligibleForHumanReview)
+        .length,
       forecastLiftCount: lifts.length,
       forecastEvidence: evidence,
     },
