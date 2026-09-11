@@ -1,10 +1,21 @@
 import { z } from "zod";
 
+export const PersonalizedTwinCaptureModeSchema = z.enum(["three_view", "guided_video"]);
+export const PersonalizedTwinProviderCandidateSchema = z.enum([
+  "in3d",
+  "3dlook",
+  "avatar_sdk",
+  "meshy",
+]);
+
 export const PersonalizedTwinProviderCapabilitySchema = z.object({
   available: z.boolean(),
   providerKey: z.string().min(1).nullable(),
-  supportsThreeView: z.boolean(),
+  candidate: PersonalizedTwinProviderCandidateSchema.nullable(),
+  captureModes: z.array(PersonalizedTwinCaptureModeSchema).min(1),
   outputFormat: z.literal("glb"),
+  externalProcessing: z.boolean(),
+  privacyReview: z.enum(["not_started", "requires_contract", "approved"]),
   medicalScan: z.literal(false),
 });
 
@@ -39,8 +50,11 @@ export function personalizedTwinProviderCapability(): PersonalizedTwinProviderCa
   return PersonalizedTwinProviderCapabilitySchema.parse({
     available: false,
     providerKey: null,
-    supportsThreeView: true,
+    candidate: "in3d",
+    captureModes: ["guided_video"],
     outputFormat: "glb",
+    externalProcessing: true,
+    privacyReview: "requires_contract",
     medicalScan: false,
   });
 }
