@@ -970,6 +970,95 @@ export type Database = {
         }
         Relationships: []
       }
+      personalized_twin_capture_images: {
+        Row: {
+          angle: string
+          byte_size: number
+          capture_set_id: string
+          content_type: string
+          created_at: string
+          id: string
+          object_path: string
+          sha256: string | null
+          user_id: string
+        }
+        Insert: {
+          angle: string
+          byte_size: number
+          capture_set_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          object_path: string
+          sha256?: string | null
+          user_id: string
+        }
+        Update: {
+          angle?: string
+          byte_size?: number
+          capture_set_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          object_path?: string
+          sha256?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personalized_twin_capture_images_capture_set_id_user_id_fkey"
+            columns: ["capture_set_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "personalized_twin_capture_sets"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      personalized_twin_capture_sets: {
+        Row: {
+          consent_version: string
+          consented_at: string
+          created_at: string
+          error_code: string | null
+          id: string
+          input_deleted_at: string | null
+          model_object_path: string | null
+          provider_job_id: string | null
+          provider_key: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_version: string
+          consented_at: string
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          input_deleted_at?: string | null
+          model_object_path?: string | null
+          provider_job_id?: string | null
+          provider_key?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_version?: string
+          consented_at?: string
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          input_deleted_at?: string | null
+          model_object_path?: string | null
+          provider_job_id?: string | null
+          provider_key?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
