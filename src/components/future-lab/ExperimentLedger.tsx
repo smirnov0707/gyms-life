@@ -1,6 +1,7 @@
 import { FlaskConical } from "lucide-react";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import { usePersonalExperimentHistory } from "./experiment-ledger.query";
+import { buildPersonalExperimentRetrospective } from "@/lib/personal-experiment-retrospective";
 
 const STATUS_COPY = {
   en: {
@@ -49,6 +50,10 @@ export function ExperimentLedger({ english }: { english: boolean }) {
           {data.experiments.slice(0, 6).map((experiment) => {
             const outcomes = data.outcomes.filter((item) => item.experiment_id === experiment.id);
             const phases = new Set(outcomes.map((item) => item.phase));
+            const retrospective = buildPersonalExperimentRetrospective({
+              primaryOutcome: experiment.primary_outcome,
+              outcomes,
+            });
             return (
               <article
                 key={experiment.id}
@@ -73,6 +78,33 @@ export function ExperimentLedger({ english }: { english: boolean }) {
                   <span className="rounded-full border border-border/60 px-2 py-1">
                     {outcomes.length} obs.
                   </span>
+                </div>
+                <div className="mt-2 rounded-md border border-border/60 bg-background/20 px-2.5 py-2 text-[9px] text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {retrospective.evidence === "association_observed"
+                      ? english
+                        ? "Association observed"
+                        : "Stebima asociacija"
+                      : retrospective.evidence === "uncertain"
+                        ? english
+                          ? "Uncertain signal"
+                          : "Neaiškus signalas"
+                        : english
+                          ? "Insufficient evidence"
+                          : "Nepakanka įrodymų"}
+                  </span>
+                  {retrospective.absoluteDelta !== null ? (
+                    <span className="ml-2">
+                      Δ {retrospective.absoluteDelta > 0 ? "+" : ""}
+                      {retrospective.absoluteDelta.toFixed(2)}
+                      {retrospective.relativeDeltaPct !== null
+                        ? ` (${retrospective.relativeDeltaPct > 0 ? "+" : ""}${retrospective.relativeDeltaPct.toFixed(1)}%)`
+                        : ""}
+                    </span>
+                  ) : null}
+                  <p className="mt-1">
+                    {english ? "Direction" : "Kryptis"}: {retrospective.direction}
+                  </p>
                 </div>
               </article>
             );
