@@ -7,6 +7,10 @@ import {
   type TwinCaptureQuality,
 } from "@/lib/personalized-twin.capture-quality";
 import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
+import {
+  createWhenPosePrivacyAllows,
+  personalizedTwinPosePrivacyGate,
+} from "@/lib/personalized-twin.pose-privacy";
 import { buildPersonalizedTwinPreflight } from "@/lib/personalized-twin.preflight";
 import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 import {
@@ -34,6 +38,8 @@ const COPY = {
     framingTooClose: "Per arti kameros — atsitrauk šiek tiek atgal.",
     framingTooFar: "Per toli nuo kameros — prieik šiek tiek arčiau.",
     framingCropped: "Dalis kūno nukirsta — sutalpink visą kūną į rėmelį.",
+    poseBlocked:
+      "Automatinis kūno aptikimas išjungtas, kol nepatvirtintas išorinių MediaPipe metrikų privatumo režimas.",
     rotationLabel: "Apsisukimo progreso įvertis",
     rotationHint:
       "Lėtai sukis viena kryptimi. Tai tik lokalus progreso įvertis, ne 3D skenavimo įrodymas.",
@@ -63,6 +69,8 @@ const COPY = {
     framingTooClose: "Too close to the camera — step back a little.",
     framingTooFar: "Too far from the camera — move a little closer.",
     framingCropped: "Part of your body is cropped — fit your whole body inside the guide.",
+    poseBlocked:
+      "Automatic body detection is disabled until the external MediaPipe metrics privacy review is approved.",
     rotationLabel: "Rotation progress estimate",
     rotationHint:
       "Rotate slowly in one direction. This is only a local progress estimate, not proof of a complete 3D scan.",
@@ -102,6 +110,7 @@ export function LocalTwinCameraPreview({
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [framing, setFraming] = useState<TwinFramingAssessment>(() => assessTwinFraming(null));
   const [rotation, setRotation] = useState<TwinRotationProgress>(INITIAL_TWIN_ROTATION_PROGRESS);
+  const posePrivacy = personalizedTwinPosePrivacyGate();
   const [quality, setQuality] = useState<TwinCaptureQuality>({
     status: "unknown",
     canAdvanceRotation: false,
@@ -141,7 +150,11 @@ export function LocalTwinCameraPreview({
 
   const startDetection = async (video: HTMLVideoElement, attempt: number) => {
     try {
-      const detector = await createLocalTwinPoseDetector();
+      const detector = await createWhenPosePrivacyAllows(posePrivacy, createLocalTwinPoseDetector);
+      if (!detector) {
+        setFraming(assessTwinFraming(null));
+        return;
+      }
       if (attemptRef.current !== attempt) {
         detector.close();
         return;
@@ -346,12 +359,21 @@ export function LocalTwinCameraPreview({
           {qualityMessage}
         </p>
       ) : null}
-      <p
-        className={`mt-2 text-[11px] leading-relaxed ${framing.status === "ready" ? "text-emerald-300" : framing.status === "unknown" ? "text-neutral-500" : "text-amber-300"}`}
-        data-twin-framing-status={framing.status}
-      >
-        {framingMessage}
-      </p>
+      {!posePrivacy.allowed ? (
+        <p
+          className="mt-2 text-[11px] leading-relaxed text-amber-300"
+          data-twin-pose-privacy-blocked
+        >
+          {copy.poseBlocked}
+        </p>
+      ) : (
+        <p
+          className={`mt-2 text-[11px] leading-relaxed ${framing.status === "ready" ? "text-emerald-300" : framing.status === "unknown" ? "text-neutral-500" : "text-amber-300"}`}
+          data-twin-framing-status={framing.status}
+        >
+          {framingMessage}
+        </p>
+      )}
       <div
         className={`mt-3 rounded-xl border p-3 text-[11px] leading-relaxed ${preflight.status === "ready_for_provider" ? "border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-200" : preflight.localComplete ? "border-amber-400/20 bg-amber-400/[0.06] text-amber-200" : "border-white/10 bg-white/[0.03] text-neutral-400"}`}
         data-twin-scan-preflight={preflight.status}
