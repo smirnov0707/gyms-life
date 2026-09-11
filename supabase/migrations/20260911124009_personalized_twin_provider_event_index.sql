@@ -1,0 +1,2 @@
+create index personalized_twin_provider_events_capture_set_idx
+  on private.personalized_twin_provider_events (capture_set_id);
