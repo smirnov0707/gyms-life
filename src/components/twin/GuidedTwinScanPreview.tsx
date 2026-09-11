@@ -1,4 +1,5 @@
 import { Camera, CheckCircle2, RotateCw, ShieldCheck, Video } from "lucide-react";
+import { LocalTwinCameraPreview } from "@/components/twin/LocalTwinCameraPreview";
 import { buildGuidedTwinScanState } from "@/lib/personalized-twin.guided-scan";
 import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 
@@ -84,6 +85,7 @@ export function GuidedTwinScanPreview({
           </li>
         ))}
       </ol>
+      <LocalTwinCameraPreview language={language} />
       <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-3 text-xs leading-relaxed text-amber-200">
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         <span>{copy.blocked}</span>
