@@ -169,7 +169,7 @@ export function PersonalizedTwinSetup({
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="flex w-full items-start gap-3 text-left"
+        className="flex min-h-11 w-full items-start gap-3 rounded-2xl text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary/15 text-primary">
           <UserRound aria-hidden="true" className="size-5" />
@@ -199,7 +199,7 @@ export function PersonalizedTwinSetup({
               return (
                 <label
                   key={angle}
-                  className="group relative min-h-36 overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+                  className="group relative min-h-36 cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/20 focus-within:outline focus-within:outline-2 focus-within:outline-primary"
                 >
                   {value ? (
                     <>
@@ -219,7 +219,7 @@ export function PersonalizedTwinSetup({
                             return next;
                           });
                         }}
-                        className="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-black/70 text-white backdrop-blur"
+                        className="absolute right-2 top-2 grid size-11 place-items-center rounded-full bg-black/70 text-white backdrop-blur focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                       >
                         <X aria-hidden="true" className="size-4" />
                       </button>
@@ -251,12 +251,12 @@ export function PersonalizedTwinSetup({
             })}
           </div>
 
-          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs leading-relaxed text-neutral-300">
+          <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs leading-relaxed text-neutral-300 focus-within:outline focus-within:outline-2 focus-within:outline-primary">
             <input
               type="checkbox"
               checked={consent}
               onChange={(event) => setConsent(event.target.checked)}
-              className="mt-0.5 size-4 accent-violet-500"
+              className="mt-0.5 size-5 shrink-0 accent-violet-500"
             />
             <span>{copy.consent}</span>
           </label>
@@ -300,7 +300,7 @@ export function PersonalizedTwinSetup({
                         setActionBusy(false);
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold text-white disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
                   >
                     {actionBusy ? (
                       <Loader2 className="size-3.5 animate-spin" />
@@ -328,7 +328,7 @@ export function PersonalizedTwinSetup({
                         setActionBusy(false);
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-[11px] font-semibold text-red-200 disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-[11px] font-semibold text-red-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-300 disabled:opacity-50"
                   >
                     {actionBusy ? (
                       <Loader2 className="size-3.5 animate-spin" />

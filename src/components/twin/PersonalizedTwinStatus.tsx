@@ -71,6 +71,9 @@ export function PersonalizedTwinStatus({
   return (
     <div
       data-personalized-twin-status={phase}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className="mt-3 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3"
     >
       <Icon
