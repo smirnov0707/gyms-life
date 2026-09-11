@@ -507,10 +507,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           <TrainingLoadPanel />
           <RecentWorkoutEffect />
           <div className="min-w-0 lg:col-span-2 xl:col-span-4">
-            <PersonalizedTwinSetup
-              language={language}
-              providerAvailable={capabilityQuery.data?.available === true}
-            />
+            <PersonalizedTwinSetup language={language} capability={capabilityQuery.data ?? null} />
           </div>
         </div>
       </div>

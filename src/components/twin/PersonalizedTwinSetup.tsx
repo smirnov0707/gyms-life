@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Camera, CheckCircle2, ChevronDown, ShieldCheck, Upload, UserRound, X } from "lucide-react";
 import { buildPersonalizedTwinPreparation } from "@/lib/personalized-twin.engine";
+import { buildPersonalizedTwinCaptureFlow } from "@/lib/personalized-twin.capture-flow";
+import type { PersonalizedTwinProviderCapability } from "@/lib/personalized-twin.provider";
 import {
   PERSONALIZED_TWIN_REQUIRED_ANGLES,
   type PersonalizedTwinAngle,
@@ -24,6 +26,8 @@ const LABELS = {
     providerMissing:
       "3D rekonstrukcijos paslauga dar neprijungta, todėl nuotraukos niekur nesiunčiamos ir avataras dar negeneruojamas.",
     privacy: "Nuotraukos nepersistinamos ir nepalieka šio puslapio.",
+    differentCapture:
+      "Dabartinis 3 nuotraukų režimas yra lokalus prototipas. Vertinamas 3D provideris naudoja vedamą vaizdo skenavimą, todėl šios nuotraukos jam nebus siunčiamos.",
     open: "Personalizuoti Twin",
     close: "Uždaryti nustatymą",
     remove: "Pašalinti",
@@ -45,6 +49,8 @@ const LABELS = {
     providerMissing:
       "A 3D reconstruction provider is not connected yet, so the photos are not sent anywhere and no avatar is generated yet.",
     privacy: "Photos are not persisted and do not leave this page.",
+    differentCapture:
+      "The current three-photo mode is a local prototype. The provider under review uses guided video capture, so these photos will not be submitted to it.",
     open: "Personalize Twin",
     close: "Close setup",
     remove: "Remove",
@@ -55,24 +61,25 @@ type ShotMap = Partial<Record<PersonalizedTwinAngle, string>>;
 
 export function PersonalizedTwinSetup({
   language,
-  providerAvailable,
+  capability,
 }: {
   language: "lt" | "en";
-  providerAvailable: boolean;
+  capability: PersonalizedTwinProviderCapability | null;
 }) {
   const copy = LABELS[language];
   const [shots, setShots] = useState<ShotMap>({});
   const [consent, setConsent] = useState(false);
   const [open, setOpen] = useState(false);
+  const captureFlow = useMemo(() => buildPersonalizedTwinCaptureFlow(capability), [capability]);
 
   const state = useMemo(
     () =>
       buildPersonalizedTwinPreparation({
         capturedAngles: PERSONALIZED_TWIN_REQUIRED_ANGLES.filter((angle) => Boolean(shots[angle])),
         consentGranted: consent,
-        providerAvailable,
+        providerAvailable: captureFlow.currentUiCanSubmit,
       }),
-    [shots, consent, providerAvailable],
+    [shots, consent, captureFlow.currentUiCanSubmit],
   );
 
   const setPhoto = (angle: PersonalizedTwinAngle, file: File | undefined) => {
@@ -196,7 +203,9 @@ export function PersonalizedTwinSetup({
                 <CheckCircle2 aria-hidden="true" className="size-4" /> {copy.readyLocal}
               </p>
             )}
-            {state.status === "provider_unavailable" ? (
+            {captureFlow.requiresDifferentCapture ? (
+              <p className="mt-2 text-neutral-400">{copy.differentCapture}</p>
+            ) : state.status === "provider_unavailable" ? (
               <p className="mt-2 text-neutral-400">{copy.providerMissing}</p>
             ) : null}
             <p className="mt-2 flex items-center gap-2 text-neutral-500">
