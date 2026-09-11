@@ -7,6 +7,7 @@ import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import { useLabOverview } from "./lab-overview.query";
 import { useStrengthForecast } from "./forecast.query";
 import { EpistemicBoundary } from "./EpistemicBoundary";
+import { ExperimentLedger } from "./ExperimentLedger";
 import "./reference-page-density.css";
 
 const STATEMENTS = {
@@ -102,6 +103,10 @@ export function LabCommandDeck() {
           forecast={forecastQuery.isError ? null : (forecastQuery.data ?? null)}
           english={english}
         />
+      </div>
+
+      <div className="mt-3">
+        <ExperimentLedger english={english} />
       </div>
 
       <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
