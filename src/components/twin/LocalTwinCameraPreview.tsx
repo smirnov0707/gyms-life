@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, ShieldCheck } from "lucide-react";
-import { assessTwinFraming } from "@/lib/personalized-twin.framing";
+import { assessTwinFraming, type TwinFramingAssessment } from "@/lib/personalized-twin.framing";
 import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
+import {
+  createLocalTwinPoseDetector,
+  type LocalTwinPoseDetector,
+} from "@/lib/personalized-twin.pose-runtime";
 
 type CameraState = "idle" | "requesting" | "active" | "denied" | "unavailable";
 
@@ -13,7 +17,11 @@ const COPY = {
     denied: "Kameros leidimas nesuteiktas.",
     unavailable: "Šiame įrenginyje kamera naršyklei nepasiekiama.",
     localOnly: "Vaizdas rodomas tik šiame įrenginyje. Jis neįrašomas ir neįkeliamas.",
-    framingUnknown: "Automatinis kūno framing dar nevertinamas — laikyk visą kūną rėmelio viduje.",
+    framingUnknown: "Dar nematau viso kūno — laikyk galvą ir abi kulkšnis rėmelio viduje.",
+    framingReady: "Kadravimas tinkamas 360° skenavimui.",
+    framingTooClose: "Per arti kameros — atsitrauk šiek tiek atgal.",
+    framingTooFar: "Per toli nuo kameros — prieik šiek tiek arčiau.",
+    framingCropped: "Dalis kūno nukirsta — sutalpink visą kūną į rėmelį.",
   },
   en: {
     open: "Open local camera",
@@ -23,17 +31,34 @@ const COPY = {
     unavailable: "Camera access is unavailable in this browser or device.",
     localOnly: "The preview stays on this device. It is not recorded or uploaded.",
     framingUnknown:
-      "Automatic body framing is not active yet — keep your whole body inside the guide.",
+      "I cannot see your full body yet — keep your head and both ankles inside the guide.",
+    framingReady: "Framing is ready for the 360° scan.",
+    framingTooClose: "Too close to the camera — step back a little.",
+    framingTooFar: "Too far from the camera — move a little closer.",
+    framingCropped: "Part of your body is cropped — fit your whole body inside the guide.",
   },
 } as const;
 export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) {
   const copy = COPY[language];
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<LocalTwinPoseDetector | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const attemptRef = useRef(0);
   const [cameraState, setCameraState] = useState<CameraState>("idle");
-  const framing = assessTwinFraming(null);
+  const [framing, setFraming] = useState<TwinFramingAssessment>(() => assessTwinFraming(null));
+
+  const stopDetection = () => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    detectorRef.current?.close();
+    detectorRef.current = null;
+    setFraming(assessTwinFraming(null));
+  };
 
   const stopCamera = () => {
+    attemptRef.current += 1;
+    stopDetection();
     closeLocalTwinCamera(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -48,11 +73,39 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
     [],
   );
 
+  const startDetection = async (video: HTMLVideoElement, attempt: number) => {
+    try {
+      const detector = await createLocalTwinPoseDetector();
+      if (attemptRef.current !== attempt) {
+        detector.close();
+        return;
+      }
+      detectorRef.current = detector;
+      const loop = () => {
+        if (attemptRef.current !== attempt || detectorRef.current !== detector) return;
+        if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          try {
+            setFraming(assessTwinFraming(detector.detect(video, performance.now())));
+          } catch {
+            setFraming(assessTwinFraming(null));
+          }
+        }
+        rafRef.current = requestAnimationFrame(loop);
+      };
+      loop();
+    } catch {
+      if (attemptRef.current === attempt) setFraming(assessTwinFraming(null));
+    }
+  };
+
   const startCamera = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraState("unavailable");
       return;
     }
+    const attempt = attemptRef.current + 1;
+    attemptRef.current = attempt;
+    stopDetection();
     setCameraState("requesting");
     try {
       const stream = await openLocalTwinCamera(navigator.mediaDevices);
@@ -62,11 +115,23 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
         await videoRef.current.play().catch(() => undefined);
       }
       setCameraState("active");
+      if (videoRef.current) void startDetection(videoRef.current, attempt);
     } catch (error) {
       const name = error instanceof DOMException ? error.name : "";
       setCameraState(name === "NotAllowedError" ? "denied" : "unavailable");
     }
   };
+  const framingMessage =
+    framing.status === "ready"
+      ? copy.framingReady
+      : framing.status === "too_close"
+        ? copy.framingTooClose
+        : framing.status === "too_far"
+          ? copy.framingTooFar
+          : framing.status === "cropped"
+            ? copy.framingCropped
+            : copy.framingUnknown;
+
   return (
     <div className="mt-3 rounded-xl border border-white/10 bg-black/25 p-3" data-local-twin-camera>
       <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/40 aspect-[3/4] max-h-[420px]">
@@ -116,9 +181,12 @@ export function LocalTwinCameraPreview({ language }: { language: "lt" | "en" }) 
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         <span>{copy.localOnly}</span>
       </p>
-      {framing.status === "unknown" ? (
-        <p className="mt-1 text-[11px] leading-relaxed text-neutral-500">{copy.framingUnknown}</p>
-      ) : null}
+      <p
+        className={`mt-1 text-[11px] leading-relaxed ${framing.status === "ready" ? "text-emerald-300" : framing.status === "unknown" ? "text-neutral-500" : "text-amber-300"}`}
+        data-twin-framing-status={framing.status}
+      >
+        {framingMessage}
+      </p>
     </div>
   );
 }

@@ -13,6 +13,7 @@ export type TwinFramingObservation = {
   bodyHeightRatio: number;
   topMarginRatio: number;
   bottomMarginRatio: number;
+  fullBodyVisible: boolean;
 };
 
 export type TwinFramingAssessment = {
@@ -27,11 +28,11 @@ export function assessTwinFraming(
     return { status: "unknown", automatic: false, bodyHeightRatio: null };
   }
 
-  const { bodyHeightRatio, topMarginRatio, bottomMarginRatio } = observation;
+  const { bodyHeightRatio, topMarginRatio, bottomMarginRatio, fullBodyVisible } = observation;
   if (![bodyHeightRatio, topMarginRatio, bottomMarginRatio].every(Number.isFinite)) {
     return { status: "unknown", automatic: false, bodyHeightRatio: null };
   }
-  if (topMarginRatio < 0.02 || bottomMarginRatio < 0.02) {
+  if (!fullBodyVisible || topMarginRatio < 0.02 || bottomMarginRatio < 0.02) {
     return { status: "cropped", automatic: true, bodyHeightRatio };
   }
   if (bodyHeightRatio > 0.9) {
