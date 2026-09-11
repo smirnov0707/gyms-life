@@ -22,8 +22,21 @@ export const INITIAL_MANUAL_TWIN_GUIDE_STATE: ManualTwinGuideState = {
   confirmed: 0,
   progressPct: 0,
   complete: false,
-  current: MANUAL_TWIN_GUIDE_CHECKPOINTS[0],
+  current: "front",
 };
+
+function checkpointAt(index: number): ManualTwinGuideCheckpoint | null {
+  return MANUAL_TWIN_GUIDE_CHECKPOINTS[index] ?? null;
+}
+
+function phaseForConfirmed(confirmed: number): TwinRotationProgress["phase"] {
+  if (confirmed <= 0) return 0;
+  if (confirmed === 1) return 1;
+  if (confirmed === 2) return 2;
+  if (confirmed === 3) return 3;
+  if (confirmed === 4) return 4;
+  return 5;
+}
 
 export function confirmManualTwinGuideCheckpoint(
   state: ManualTwinGuideState,
@@ -38,7 +51,7 @@ export function confirmManualTwinGuideCheckpoint(
     confirmed,
     progressPct,
     complete,
-    current: complete ? null : MANUAL_TWIN_GUIDE_CHECKPOINTS[confirmed],
+    current: complete ? null : checkpointAt(confirmed),
   };
 }
 
@@ -52,7 +65,7 @@ export function manualGuideFramingAssessment(confirmed: boolean): TwinFramingAss
 
 export function manualGuideRotationProgress(state: ManualTwinGuideState): TwinRotationProgress {
   return {
-    phase: Math.min(5, state.confirmed) as TwinRotationProgress["phase"],
+    phase: phaseForConfirmed(state.confirmed),
     stableFrames: 0,
     progressPct: state.progressPct,
     completeEstimate: state.complete,
