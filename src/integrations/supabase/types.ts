@@ -803,6 +803,18 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_experiment_outcomes: {
+        Row: { created_at: string; experiment_id: string; id: string; numeric_value: number | null; observed_at: string; outcome_key: string; phase: string; source: string; text_value: string | null; user_id: string }
+        Insert: { created_at?: string; experiment_id: string; id?: string; numeric_value?: number | null; observed_at: string; outcome_key: string; phase: string; source?: string; text_value?: string | null; user_id: string }
+        Update: { created_at?: string; experiment_id?: string; id?: string; numeric_value?: number | null; observed_at?: string; outcome_key?: string; phase?: string; source?: string; text_value?: string | null; user_id?: string }
+        Relationships: [{ foreignKeyName: "personal_experiment_outcomes_experiment_id_fkey"; columns: ["experiment_id"]; isOneToOne: false; referencedRelation: "personal_experiments"; referencedColumns: ["id"] }]
+      }
+      personal_experiments: {
+        Row: { changed_variable_count: number; created_at: string; domain: string; duration_days: number; ended_at: string | null; governance: Json; hypothesis_id: string; id: string; intervention: string; primary_outcome: string; requires_fasting_beyond_normal_routine: boolean; requires_medication_change: boolean; requires_sleep_restriction: boolean; requires_supplement_escalation: boolean; started_at: string | null; status: string; stop_conditions: Json; stop_reason: string | null; updated_at: string; user_id: string }
+        Insert: { changed_variable_count: number; created_at?: string; domain: string; duration_days: number; ended_at?: string | null; governance: Json; hypothesis_id: string; id?: string; intervention: string; primary_outcome: string; requires_fasting_beyond_normal_routine?: boolean; requires_medication_change?: boolean; requires_sleep_restriction?: boolean; requires_supplement_escalation?: boolean; started_at?: string | null; status?: string; stop_conditions?: Json; stop_reason?: string | null; updated_at?: string; user_id: string }
+        Update: { changed_variable_count?: number; created_at?: string; domain?: string; duration_days?: number; ended_at?: string | null; governance?: Json; hypothesis_id?: string; id?: string; intervention?: string; primary_outcome?: string; requires_fasting_beyond_normal_routine?: boolean; requires_medication_change?: boolean; requires_sleep_restriction?: boolean; requires_supplement_escalation?: boolean; started_at?: string | null; status?: string; stop_conditions?: Json; stop_reason?: string | null; updated_at?: string; user_id?: string }
+        Relationships: []
+      }
       personal_model_artifacts: {
         Row: {
           algorithm_version: string
