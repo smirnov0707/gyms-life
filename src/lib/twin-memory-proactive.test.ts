@@ -3,6 +3,7 @@ import type { TwinMemoryEvolution } from "./twin-memory-evolution";
 import {
   buildTwinMemoryProactiveSignal,
   buildTwinMemoryProactiveSignalFromTransition,
+  selectTwinMemoryProactiveChange,
   nextTwinMemoryProactiveStatus,
 } from "./twin-memory-proactive";
 
@@ -94,5 +95,73 @@ describe("Twin Memory proactive policy", () => {
     expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe("dismissed");
     const signal = buildTwinMemoryProactiveSignal(evolution());
     expect(signal?.decisionAuthority).toBe(false);
+  });
+  it("prioritizes attention changes over newer positive changes", () => {
+    const base = {
+      fingerprint: "base",
+      hypothesisId: "base",
+      severity: "positive" as const,
+      source: "deterministic" as const,
+      decisionAuthority: false as const,
+      athleteStateSnapshotId: "11111111-1111-4111-8111-111111111111",
+      status: "new" as const,
+      statusChangedAt: null,
+    };
+    const selected = selectTwinMemoryProactiveChange([
+      {
+        ...base,
+        fingerprint: "newer",
+        hypothesisId: "newer",
+        kind: "strengthened",
+        occurredAt: "2026-09-12T10:00:00.000Z",
+      },
+      {
+        ...base,
+        fingerprint: "older-risk",
+        hypothesisId: "older-risk",
+        kind: "contradicted",
+        severity: "attention",
+        occurredAt: "2026-09-12T09:00:00.000Z",
+      },
+    ]);
+    expect(selected?.hypothesisId).toBe("older-risk");
+  });
+
+  it("uses recency only after material priority and ignores seen records", () => {
+    const base = {
+      severity: "positive" as const,
+      source: "deterministic" as const,
+      decisionAuthority: false as const,
+      athleteStateSnapshotId: "11111111-1111-4111-8111-111111111111",
+      statusChangedAt: null,
+    };
+    const selected = selectTwinMemoryProactiveChange([
+      {
+        ...base,
+        fingerprint: "seen",
+        hypothesisId: "seen",
+        kind: "contradicted",
+        severity: "attention",
+        status: "seen",
+        occurredAt: "2026-09-12T11:00:00.000Z",
+      },
+      {
+        ...base,
+        fingerprint: "older",
+        hypothesisId: "older",
+        kind: "strengthened",
+        status: "new",
+        occurredAt: "2026-09-12T09:00:00.000Z",
+      },
+      {
+        ...base,
+        fingerprint: "newer",
+        hypothesisId: "newer",
+        kind: "strengthened",
+        status: "new",
+        occurredAt: "2026-09-12T10:00:00.000Z",
+      },
+    ]);
+    expect(selected?.hypothesisId).toBe("newer");
   });
 });

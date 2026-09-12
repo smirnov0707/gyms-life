@@ -6,6 +6,7 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { useStrengthForecast } from "./forecast.query";
 import { useLabOverview } from "./lab-overview.query";
 import { projectedChangePercent, projectedEstimated1RM } from "@/lib/future-me-simulation";
+import { selectTwinMemoryProactiveChange } from "@/lib/twin-memory-proactive";
 import {
   dismissTwinMemoryChange,
   markTwinMemoryChangeSeen,
@@ -77,7 +78,9 @@ export function TodayIntelligenceBrief() {
     (item) => item.status === "monitoring" || item.status === "insufficient_evidence",
   );
   const discovery = lab.data?.hypotheses.find((item) => item.status === "supported");
-  const learnedChange = lab.data?.proactiveMemoryChanges.find((item) => item.status === "new");
+  const learnedChange = lab.data
+    ? selectTwinMemoryProactiveChange(lab.data.proactiveMemoryChanges)
+    : null;
   const refreshLab = () => queryClient.invalidateQueries({ queryKey: ["future-lab-overview"] });
   const seenMutation = useMutation({
     mutationFn: (fingerprint: string) => markSeen({ data: { fingerprint } }),

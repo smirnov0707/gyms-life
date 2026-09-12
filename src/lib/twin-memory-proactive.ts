@@ -149,3 +149,25 @@ export function buildTwinMemoryProactiveSignalFromTransition(
     athleteStateSnapshotId: transition.athleteStateSnapshotId,
   });
 }
+
+function proactivePriority(record: TwinMemoryProactiveRecord): number {
+  if (record.status !== "new") return -1;
+  if (record.kind === "contradicted") return 4;
+  if (record.kind === "weakened") return 3;
+  if (record.kind === "strengthened") return 2;
+  return 1;
+}
+
+export function selectTwinMemoryProactiveChange(
+  records: readonly TwinMemoryProactiveRecord[],
+): TwinMemoryProactiveRecord | null {
+  return (
+    [...records]
+      .filter((record) => record.status === "new")
+      .sort((a, b) => {
+        const priorityDelta = proactivePriority(b) - proactivePriority(a);
+        if (priorityDelta !== 0) return priorityDelta;
+        return b.occurredAt.localeCompare(a.occurredAt);
+      })[0] ?? null
+  );
+}
