@@ -1,0 +1,40 @@
+name: Production smoke
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify the live production surface
+        shell: bash
+        run: |
+          set -uo pipefail
+          for attempt in {1..8}; do
+            echo "Production smoke attempt ${attempt}/8"
+            if npm run smoke:production; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 8 ]; then
+              sleep 45
+            fi
+          done
+          echo "Production remained unavailable or unhealthy after retries."
+          exit 1
