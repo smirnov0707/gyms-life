@@ -126,8 +126,8 @@ export function EpistemicBoundary({
           </p>
           <p className="mt-1 text-[10px] leading-relaxed text-foreground">
             {english
-              ? `${integrity.verified} audited · ${integrity.unanchored} unanchored · ${integrity.drift} drift`
-              : `${integrity.verified} audituota · ${integrity.unanchored} be atskaitos taško · ${integrity.drift} neatitikimai`}
+              ? `${integrity.verified} audited · ${integrity.decisionEligible} decision-eligible · ${integrity.unanchored} unanchored · ${integrity.drift} drift`
+              : `${integrity.verified} audituota · ${integrity.decisionEligible} tinkama sprendimams · ${integrity.unanchored} be atskaitos taško · ${integrity.drift} neatitikimai`}
           </p>
         </div>
         <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">

@@ -238,7 +238,7 @@ export function TwinMemory() {
                 <p className="mt-2 text-xs leading-relaxed text-foreground">{statement}</p>
                 <p className="mt-2 flex items-center gap-1.5 text-[9px] text-muted-foreground">
                   <ShieldCheck aria-hidden="true" className="size-3 text-violet-300" />
-                  {english ? "Decision authority" : "Sprendimo teisė"}:{" "}
+                  {english ? "Decision eligibility" : "Tinkamumas sprendimams"}:{" "}
                   {auditIntegrity?.decisionAuthority
                     ? english
                       ? "allowed · audit verified"

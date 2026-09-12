@@ -17,6 +17,7 @@ export type TwinLearningIntegritySummary = {
   verified: number;
   unanchored: number;
   drift: number;
+  decisionEligible: number;
   allVerified: boolean;
   items: TwinLearningIntegrityItem[];
 };
@@ -56,10 +57,12 @@ export function evaluateTwinLearningIntegrity(
   const verified = items.filter((item) => item.status === "verified").length;
   const unanchored = items.filter((item) => item.status === "unanchored").length;
   const drift = items.filter((item) => item.status === "drift").length;
+  const decisionEligible = items.filter((item) => item.decisionAuthority).length;
   return {
     verified,
     unanchored,
     drift,
+    decisionEligible,
     allVerified: items.length > 0 && drift === 0 && unanchored === 0,
     items,
   };
