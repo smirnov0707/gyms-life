@@ -160,23 +160,28 @@ function proactivePriority(record: TwinMemoryProactiveRecord): number {
 
 export const TWIN_MEMORY_PROACTIVE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+export function rankTwinMemoryProactiveChanges(
+  records: readonly TwinMemoryProactiveRecord[],
+  now = new Date(),
+): TwinMemoryProactiveRecord[] {
+  const nowMs = now.getTime();
+  return [...records]
+    .filter((record) => {
+      if (record.status !== "new") return false;
+      const occurredMs = Date.parse(record.occurredAt);
+      const ageMs = nowMs - occurredMs;
+      return ageMs >= 0 && ageMs <= TWIN_MEMORY_PROACTIVE_MAX_AGE_MS;
+    })
+    .sort((a, b) => {
+      const priorityDelta = proactivePriority(b) - proactivePriority(a);
+      if (priorityDelta !== 0) return priorityDelta;
+      return b.occurredAt.localeCompare(a.occurredAt);
+    });
+}
+
 export function selectTwinMemoryProactiveChange(
   records: readonly TwinMemoryProactiveRecord[],
   now = new Date(),
 ): TwinMemoryProactiveRecord | null {
-  const nowMs = now.getTime();
-  return (
-    [...records]
-      .filter((record) => {
-        if (record.status !== "new") return false;
-        const occurredMs = Date.parse(record.occurredAt);
-        const ageMs = nowMs - occurredMs;
-        return ageMs >= 0 && ageMs <= TWIN_MEMORY_PROACTIVE_MAX_AGE_MS;
-      })
-      .sort((a, b) => {
-        const priorityDelta = proactivePriority(b) - proactivePriority(a);
-        if (priorityDelta !== 0) return priorityDelta;
-        return b.occurredAt.localeCompare(a.occurredAt);
-      })[0] ?? null
-  );
+  return rankTwinMemoryProactiveChanges(records, now)[0] ?? null;
 }

@@ -3,6 +3,7 @@ import type { TwinMemoryEvolution } from "./twin-memory-evolution";
 import {
   buildTwinMemoryProactiveSignal,
   buildTwinMemoryProactiveSignalFromTransition,
+  rankTwinMemoryProactiveChanges,
   selectTwinMemoryProactiveChange,
   nextTwinMemoryProactiveStatus,
 } from "./twin-memory-proactive";
@@ -163,6 +164,38 @@ describe("Twin Memory proactive policy", () => {
       },
     ]);
     expect(selected?.hypothesisId).toBe("newer");
+  });
+
+  it("returns the full fresh queue in material-priority order", () => {
+    const base = {
+      source: "deterministic" as const,
+      decisionAuthority: false as const,
+      athleteStateSnapshotId: "11111111-1111-4111-8111-111111111111",
+      status: "new" as const,
+      statusChangedAt: null,
+    };
+    const queue = rankTwinMemoryProactiveChanges(
+      [
+        {
+          ...base,
+          fingerprint: "positive",
+          hypothesisId: "positive",
+          kind: "strengthened",
+          severity: "positive",
+          occurredAt: "2026-09-12T10:00:00.000Z",
+        },
+        {
+          ...base,
+          fingerprint: "risk",
+          hypothesisId: "risk",
+          kind: "weakened",
+          severity: "attention",
+          occurredAt: "2026-09-12T09:00:00.000Z",
+        },
+      ],
+      new Date("2026-09-12T12:00:00.000Z"),
+    );
+    expect(queue.map((item) => item.hypothesisId)).toEqual(["risk", "positive"]);
   });
 
   it("does not surface stale or future records as current proactive intelligence", () => {
