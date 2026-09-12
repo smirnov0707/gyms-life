@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Clock, Info, Pill, Plus, Trash2, Utensils } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
 import { buildSchedule, type Supplement } from "@/lib/supplements";
 import {
@@ -59,7 +59,8 @@ const CATEGORIES = [
 const PREF_TIMES = ["any", "morning", "pre_workout", "post_workout", "evening", "bedtime"] as const;
 
 function SupplementsPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -133,11 +134,18 @@ function SupplementsPage() {
 
   return (
     <div className="grid gap-8">
-      <header>
-        <h1 className="text-display text-4xl leading-none tracking-wide sm:text-5xl">
-          {t("supp.title")}
+      <header className="rounded-[2rem] border border-border bg-surface/85 p-5 sm:p-6">
+        <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-violet-300">
+          SUPPLEMENT INTELLIGENCE
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          {english ? "One supplement system" : "Viena papildų sistema"}
         </h1>
-        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">{t("supp.sub")}</p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          {english
+            ? "Schedule, product capture and nutrient-risk tools are supporting evidence surfaces. None of them diagnose deficiency or replace clinical advice."
+            : "Grafikas, produkto skenavimas ir mikroelementų rizikos įrankiai yra pagalbiniai įrodymų sluoksniai. Jie nediagnozuoja trūkumo ir nepakeičia medicininės konsultacijos."}
+        </p>
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
