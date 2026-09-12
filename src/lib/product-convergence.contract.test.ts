@@ -32,6 +32,11 @@ describe("Product Convergence contract", () => {
     expect(secondaryRoutes.filter((route) => route === "/coach")).toHaveLength(1);
   });
 
+  it("keeps cross-feature recommendation maps out of the navigation contract", async () => {
+    const navMap = await import("./nav-map");
+    expect("RELATED" in navMap).toBe(false);
+  });
+
   it("never gives Twin Pulse decision authority", () => {
     expect(
       buildTwinPulse([signal("sleep", 0.5), signal("hrv", 2), signal("restingHr", -2)])

@@ -44,21 +44,3 @@ export const NAV_GROUPS: { key: TKey; routes: string[] }[] = [
   { key: "nav.group.nutrition", routes: ["/nutrition"] },
   { key: "nav.group.coach", routes: ["/coach"] },
 ];
-
-/**
- * Cross-feature links: what naturally comes next from each page.
- * Keeps every screen connected instead of being a dead end.
- */
-export const RELATED: Record<string, string[]> = {
-  "/app": ["/readiness", "/coach", "/meal-plan"],
-  "/exercises": ["/ar", "/app", "/progress"],
-  "/ar": ["/exercises", "/progress", "/coach"],
-  "/meal-plan": ["/nutrition", "/supplements", "/progress"],
-  "/nutrition": ["/meal-plan", "/supplements", "/coach"],
-  "/supplements": ["/nutrition", "/progress", "/reminders"],
-  "/progress": ["/readiness", "/coach", "/achievements"],
-  "/readiness": ["/app", "/progress", "/coach"],
-  "/coach": ["/app", "/progress", "/meal-plan"],
-  "/achievements": ["/progress", "/app", "/coach"],
-  "/reminders": ["/supplements", "/readiness", "/app"],
-};
