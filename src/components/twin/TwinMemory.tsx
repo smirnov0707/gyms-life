@@ -1,6 +1,7 @@
 import { BrainCircuit, ShieldCheck } from "lucide-react";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "@/components/future-lab/lab-overview.query";
+import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 
 const STATEMENT = {
   en: {
@@ -95,10 +96,7 @@ export function TwinMemory() {
                 <p className="mt-2 text-xs leading-relaxed text-foreground">{statement}</p>
                 <p className="mt-2 flex items-center gap-1.5 text-[9px] text-muted-foreground">
                   <ShieldCheck aria-hidden="true" className="size-3 text-violet-300" />
-                  {english
-                    ? "Deterministic evidence · decision authority"
-                    : "Deterministiniai įrodymai · sprendimo teisė"}
-                  :{" "}
+                  {english ? "Decision authority" : "Sprendimo teisė"}:{" "}
                   {hypothesis.canInfluenceDecision
                     ? english
                       ? "allowed"
@@ -107,6 +105,34 @@ export function TwinMemory() {
                       ? "not allowed"
                       : "neleidžiama"}
                 </p>
+                <WhyThisDisclosure
+                  summary={english ? "Why this? · Evidence" : "Kodėl taip? · Įrodymai"}
+                  className="mt-3 bg-background/20"
+                >
+                  <div className="space-y-2 p-3">
+                    {hypothesis.evidence.length ? (
+                      hypothesis.evidence.map((metric) => (
+                        <div
+                          key={`${metric.key}-${metric.unit}`}
+                          className="flex items-center justify-between gap-3 text-[10px]"
+                        >
+                          <span className="min-w-0 text-muted-foreground">
+                            {metric.key.replaceAll("_", " ")} · {metric.source.replaceAll("_", " ")}
+                          </span>
+                          <span className="shrink-0 font-mono text-foreground">
+                            {metric.value} {metric.unit}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">
+                        {english
+                          ? "No evidence metric is available yet."
+                          : "Įrodymų metrikų dar nėra."}
+                      </p>
+                    )}
+                  </div>
+                </WhyThisDisclosure>
               </article>
             );
           })}

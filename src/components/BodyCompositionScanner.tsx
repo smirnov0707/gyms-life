@@ -542,7 +542,7 @@ export const BodyCompositionScanner: React.FC<{
                 key={s}
                 type="button"
                 onClick={() => setSex(s)}
-                className={`h-8 rounded-lg border px-1 text-[10px] font-semibold transition ${
+                className={`min-h-11 rounded-lg border px-2 text-[10px] font-semibold transition ${
                   sex === s
                     ? "border-primary bg-primary/15 text-primary"
                     : "border-border text-muted-foreground"

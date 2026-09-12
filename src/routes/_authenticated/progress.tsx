@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, ArrowRight, History, PersonStanding } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Activity } from "lucide-react";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
 import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
@@ -40,7 +40,7 @@ function ProgressPage() {
       </header>
 
       <FutureMeSimulationDeck />
-      <details className="fl-secondary-details" open>
+      <details className="fl-secondary-details">
         <summary>{english ? "Observed evolution" : "Stebima evoliucija"}</summary>
         <div className="fl-disclosed-content">
           <FutureMeSummary />
@@ -63,42 +63,6 @@ function ProgressPage() {
           <InjuryRiskRadar />
         </div>
       </details>
-      <section className="grid gap-3 sm:grid-cols-2">
-        <Link
-          to="/twin"
-          className="group rounded-2xl border border-border bg-surface/75 p-4 transition-colors hover:border-violet-400/40"
-        >
-          <PersonStanding className="size-4 text-violet-300" />
-          <h2 className="mt-3 text-sm font-semibold text-foreground">
-            {english ? "Body & identity" : "Kūnas ir identitetas"}
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {english
-              ? "Measurements, body changes and your Living Twin."
-              : "Matavimai, kūno pokyčiai ir tavo Living Twin."}
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-violet-300">
-            {english ? "Open My Twin" : "Atidaryti My Twin"} <ArrowRight className="size-3" />
-          </span>
-        </Link>
-        <Link
-          to="/history"
-          className="group rounded-2xl border border-border bg-surface/75 p-4 transition-colors hover:border-cyan-400/40"
-        >
-          <History className="size-4 text-cyan-300" />
-          <h2 className="mt-3 text-sm font-semibold text-foreground">
-            {english ? "Measured history" : "Pamatuota istorija"}
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {english
-              ? "Completed sessions, records and the longitudinal journal live here."
-              : "Užbaigtos treniruotės, rekordai ir ilgalaikis žurnalas gyvena čia."}
-          </p>
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-cyan-300">
-            {english ? "Open Journal" : "Atidaryti Journal"} <ArrowRight className="size-3" />
-          </span>
-        </Link>
-      </section>
     </main>
   );
 }

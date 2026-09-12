@@ -1,5 +1,6 @@
 import { baseLang, useI18n } from "@/lib/i18n";
 import type { AthleteHypothesis } from "@/lib/athlete-hypothesis.schema";
+import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 
 function metricLabel(key: string, english: boolean) {
   switch (key) {
@@ -20,11 +21,11 @@ export function HypothesisEvidence({ evidence }: { evidence: AthleteHypothesis["
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
   return (
-    <details className="mt-3 border-t border-border/60 pt-3">
-      <summary className="cursor-pointer rounded-lg border border-violet-400/20 bg-violet-500/[0.07] px-3 py-2 text-center text-[10px] font-medium text-violet-300 light:text-violet-700">
-        {english ? "See evidence" : "Peržiūrėti įrodymus"}
-      </summary>
-      <dl className="mt-3 space-y-2">
+    <WhyThisDisclosure
+      summary={english ? "Why this? · Evidence" : "Kodėl taip? · Įrodymai"}
+      className="mt-3 bg-violet-500/[0.03]"
+    >
+      <dl className="space-y-2 p-3">
         {evidence.map((item) => (
           <div key={item.key} className="flex items-start justify-between gap-3 text-[10px]">
             <dt className="text-muted-foreground">
@@ -54,6 +55,6 @@ export function HypothesisEvidence({ evidence }: { evidence: AthleteHypothesis["
           </div>
         ))}
       </dl>
-    </details>
+    </WhyThisDisclosure>
   );
 }
