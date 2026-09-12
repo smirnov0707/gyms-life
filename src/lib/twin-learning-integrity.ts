@@ -12,6 +12,7 @@ export type TwinLearningIntegrityItem = {
   athleteStateSnapshotId: string | null;
   status: TwinLearningIntegrityStatus;
   chainStatus: TwinLearningChainStatus;
+  definitionDrift: boolean;
   decisionAuthority: boolean;
 };
 
@@ -21,6 +22,7 @@ export type TwinLearningIntegritySummary = {
   drift: number;
   decisionEligible: number;
   chainBreaks: number;
+  definitionDrift: number;
   allVerified: boolean;
   items: TwinLearningIntegrityItem[];
 };
@@ -34,6 +36,18 @@ function latestTransitionFor(
     if (!latest || transition.occurredAt > latest.occurredAt) latest = transition;
   }
   return latest;
+}
+
+function definitionDriftFor(
+  hypothesis: AthleteHypothesis,
+  transitions: readonly LabHypothesisTransition[],
+): boolean {
+  return transitions.some(
+    (transition) =>
+      transition.hypothesisId === hypothesis.id &&
+      (transition.domain !== hypothesis.domain ||
+        transition.statementKey !== hypothesis.statementKey),
+  );
 }
 
 function chainStatusFor(
@@ -63,6 +77,7 @@ export function evaluateTwinLearningIntegrity(
         ? "verified"
         : "drift";
     const chainStatus = chainStatusFor(hypothesis.id, transitions);
+    const definitionDrift = definitionDriftFor(hypothesis, transitions);
     return {
       hypothesisId: hypothesis.id,
       currentStatus: hypothesis.status,
@@ -71,8 +86,12 @@ export function evaluateTwinLearningIntegrity(
       athleteStateSnapshotId: latest?.athleteStateSnapshotId ?? null,
       status,
       chainStatus,
+      definitionDrift,
       decisionAuthority:
-        hypothesis.canInfluenceDecision && status === "verified" && chainStatus !== "broken",
+        hypothesis.canInfluenceDecision &&
+        status === "verified" &&
+        chainStatus !== "broken" &&
+        !definitionDrift,
     };
   });
   const verified = items.filter((item) => item.status === "verified").length;
@@ -80,13 +99,20 @@ export function evaluateTwinLearningIntegrity(
   const drift = items.filter((item) => item.status === "drift").length;
   const decisionEligible = items.filter((item) => item.decisionAuthority).length;
   const chainBreaks = items.filter((item) => item.chainStatus === "broken").length;
+  const definitionDrift = items.filter((item) => item.definitionDrift).length;
   return {
     verified,
     unanchored,
     drift,
     decisionEligible,
     chainBreaks,
-    allVerified: items.length > 0 && drift === 0 && unanchored === 0 && chainBreaks === 0,
+    definitionDrift,
+    allVerified:
+      items.length > 0 &&
+      drift === 0 &&
+      unanchored === 0 &&
+      chainBreaks === 0 &&
+      definitionDrift === 0,
     items,
   };
 }

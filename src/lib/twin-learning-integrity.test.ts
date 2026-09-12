@@ -89,4 +89,16 @@ describe("Twin learning integrity", () => {
       decisionAuthority: false,
     });
   });
+
+  it("blocks eligibility when a hypothesis id changes semantic meaning across the ledger", () => {
+    const altered = transition("h1", "supported", "2026-09-12T10:00:00.000Z");
+    altered.statementKey = "athlete.hypothesis.trainingBehavior.usualDayFit";
+    const result = evaluateTwinLearningIntegrity([hypothesis("h1", "supported")], [altered]);
+    expect(result).toMatchObject({ definitionDrift: 1, decisionEligible: 0, allVerified: false });
+    expect(result.items[0]).toMatchObject({
+      status: "verified",
+      definitionDrift: true,
+      decisionAuthority: false,
+    });
+  });
 });
