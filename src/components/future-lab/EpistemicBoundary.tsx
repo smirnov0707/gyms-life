@@ -4,6 +4,7 @@ import type { LabOverview } from "@/lib/lab.schema";
 import { buildTwinEpistemicState } from "@/lib/twin-epistemic-state";
 import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
 import { buildPredictionVersionComparisons } from "@/lib/prediction-version-comparison";
+import { buildTwinUncertaintyMap } from "@/lib/twin-uncertainty-map";
 import { FutureLabPanel } from "./FutureLabPanel";
 
 export function EpistemicBoundary({
@@ -18,6 +19,7 @@ export function EpistemicBoundary({
   const state = buildTwinEpistemicState(lab, forecast);
   const stability = summarizeHypothesisStability(lab?.hypothesisHistory ?? []);
   const comparisons = lab ? buildPredictionVersionComparisons(lab.predictionCalibration) : [];
+  const uncertainty = buildTwinUncertaintyMap(lab);
   const candidateWins = comparisons.filter(
     (item) => item.verdict === "candidate_outperforms",
   ).length;
@@ -97,8 +99,8 @@ export function EpistemicBoundary({
           <p className="mt-1 font-mono text-lg text-foreground">{unknownCount}</p>
           <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
             {english
-              ? "Missing or unreadable sources stay unknown."
-              : "Trūkstami ar neperskaitomi šaltiniai lieka nežinomi."}
+              ? `${uncertainty.activeLearning} active learning · ${uncertainty.actionableEvidenceGaps} actionable gap${uncertainty.actionableEvidenceGaps === 1 ? "" : "s"} · ${uncertainty.unavailableSources} unavailable source${uncertainty.unavailableSources === 1 ? "" : "s"}`
+              : `${uncertainty.activeLearning} aktyviai mokomasi · ${uncertainty.actionableEvidenceGaps} papildomi išmatuojami tarpai · ${uncertainty.unavailableSources} nepasiekiami šaltiniai`}
           </p>
         </article>
       </div>
