@@ -12,6 +12,7 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "@/components/future-lab/lab-overview.query";
 import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 import { evaluateTwinMemoryEvolutionSet } from "@/lib/twin-memory-evolution";
+import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
 
 const STATEMENT = {
   en: {
@@ -40,6 +41,7 @@ export function TwinMemory() {
     .filter((item) => item.kind !== "unchanged" && item.kind !== "unknown")
     .sort((a, b) => (b.occurredAt ?? "").localeCompare(a.occurredAt ?? ""));
   const hasUnknownBaseline = evolution.some((item) => item.kind === "unknown");
+  const stability = query.data ? summarizeHypothesisStability(query.data.hypothesisHistory) : null;
   const labels = english
     ? {
         supported: "Learned pattern",
@@ -201,6 +203,9 @@ export function TwinMemory() {
               (english
                 ? "A personal pattern is under evaluation."
                 : "Vertinamas asmeninis dėsningumas.");
+            const historyStability = stability?.hypotheses.find(
+              (item) => item.hypothesisId === hypothesis.id,
+            );
             return (
               <article
                 key={hypothesis.id}
@@ -226,6 +231,17 @@ export function TwinMemory() {
                       ? "not allowed"
                       : "neleidžiama"}
                 </p>
+                {historyStability && historyStability.transitions > 1 ? (
+                  <p className="mt-1 text-[9px] text-muted-foreground">
+                    {historyStability.reversals > 0
+                      ? english
+                        ? `History unstable · ${historyStability.reversals} reversal${historyStability.reversals === 1 ? "" : "s"}`
+                        : `Istorija nestabili · apsivertimų: ${historyStability.reversals}`
+                      : english
+                        ? `History changed · ${historyStability.transitions} transitions`
+                        : `Istorija keitėsi · perėjimų: ${historyStability.transitions}`}
+                  </p>
+                ) : null}
                 <WhyThisDisclosure
                   summary={english ? "Why this? · Evidence" : "Kodėl taip? · Įrodymai"}
                   className="mt-3 bg-background/20"
