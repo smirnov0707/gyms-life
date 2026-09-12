@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AthleteHypothesis } from "./athlete-hypothesis.schema";
 import type { LabHypothesisTransition } from "./lab.schema";
-import { buildJournalLearningHistory } from "./journal-learning-history";
+import {
+  buildJournalLearningHistory,
+  summarizeJournalLearningWeek,
+} from "./journal-learning-history";
 
 const hypothesis: AthleteHypothesis = {
   id: "training-response-repeated-low-feeling",
@@ -64,5 +67,27 @@ describe("journal learning history", () => {
       status: "contradicted",
       currentStatus: "supported",
     });
+  });
+});
+
+describe("weekly learning summary", () => {
+  it("keeps only the last seven days and prioritizes epistemic reversals", () => {
+    const entries = buildJournalLearningHistory(
+      [
+        transition("supported", "contradicted", 8, "2026-09-11T10:00:00.000Z"),
+        transition("monitoring", "supported", 6, "2026-09-12T09:00:00.000Z"),
+        transition(null, "monitoring", 4, "2026-09-01T09:00:00.000Z"),
+      ],
+      [hypothesis],
+    );
+    const summary = summarizeJournalLearningWeek(entries, new Date("2026-09-12T12:00:00.000Z"));
+    expect(summary).toMatchObject({
+      total: 2,
+      firstObserved: 0,
+      strengthened: 1,
+      weakened: 0,
+      contradicted: 1,
+    });
+    expect(summary.mostImportant?.change).toBe("contradicted");
   });
 });

@@ -65,3 +65,44 @@ export function buildJournalLearningHistory(
     decisionAuthority: false,
   }));
 }
+
+export type JournalLearningWeekSummary = {
+  total: number;
+  firstObserved: number;
+  strengthened: number;
+  weakened: number;
+  contradicted: number;
+  mostImportant: JournalLearningEntry | null;
+};
+
+function weeklyPriority(change: JournalLearningChange): number {
+  if (change === "contradicted") return 4;
+  if (change === "weakened") return 3;
+  if (change === "strengthened") return 2;
+  return 1;
+}
+
+export function summarizeJournalLearningWeek(
+  entries: readonly JournalLearningEntry[],
+  now = new Date(),
+): JournalLearningWeekSummary {
+  const cutoff = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const recent = entries
+    .filter((entry) => {
+      const occurred = Date.parse(entry.occurredAt);
+      return occurred >= cutoff && occurred <= now.getTime();
+    })
+    .sort(
+      (a, b) =>
+        weeklyPriority(b.change) - weeklyPriority(a.change) ||
+        b.occurredAt.localeCompare(a.occurredAt),
+    );
+  return {
+    total: recent.length,
+    firstObserved: recent.filter((entry) => entry.change === "first_observed").length,
+    strengthened: recent.filter((entry) => entry.change === "strengthened").length,
+    weakened: recent.filter((entry) => entry.change === "weakened").length,
+    contradicted: recent.filter((entry) => entry.change === "contradicted").length,
+    mostImportant: recent[0] ?? null,
+  };
+}
