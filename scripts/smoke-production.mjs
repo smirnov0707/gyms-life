@@ -20,7 +20,9 @@ for (const path of routes) {
     const { url, response } = await fetchWithTimeout(path);
     const body = await response.text();
     const ok = response.status === 200 && /<!doctype html>/i.test(body) && /GYMS\.LIFE/i.test(body);
-    console.log(`${ok ? "PASS" : "FAIL"} ${url.pathname} status=${response.status} bytes=${body.length}`);
+    console.log(
+      `${ok ? "PASS" : "FAIL"} ${url.pathname} status=${response.status} bytes=${body.length}`,
+    );
     if (!ok) failed = true;
   } catch (error) {
     failed = true;
@@ -36,7 +38,9 @@ try {
   await response.body?.cancel();
 } catch (error) {
   failed = true;
-  console.error(`FAIL night-lab-public-guard ${error instanceof Error ? error.message : String(error)}`);
+  console.error(
+    `FAIL night-lab-public-guard ${error instanceof Error ? error.message : String(error)}`,
+  );
 }
 
 if (failed) process.exitCode = 1;
