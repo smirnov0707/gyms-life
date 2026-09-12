@@ -67,7 +67,7 @@ export const locale: Record<string, string> = {
   "nav.dashboard": "Tableau de bord",
   "nav.exercises": "Exercices",
   "nav.progress": "Progrès",
-  "nav.coach": "Coach",
+  "nav.coach": "Intelligence",
   "landing.tag": "Votre système d'entraînement personnel",
   "landing.sub":
     "Répondez à quelques questions sur votre objectif — le système crée un programme personnalisé sur plusieurs semaines pour la salle ou la maison, avec vidéos d'exercices, suivi des séries et progression automatique.",

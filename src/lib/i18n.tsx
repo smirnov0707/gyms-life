@@ -97,7 +97,7 @@ const baseDict = {
   },
   "nav.exercises": { lt: "Pratimai", en: "Exercises" },
   "nav.progress": { lt: "Progresas", en: "Progress" },
-  "nav.coach": { lt: "Treneris", en: "Coach" },
+  "nav.coach": { lt: "Intelligence", en: "Intelligence" },
 
   "landing.tag": { lt: "Asmeninė treniruočių sistema", en: "Your personal training system" },
   "landing.sub": {

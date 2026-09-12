@@ -67,7 +67,7 @@ export const locale: Record<string, string> = {
   "nav.dashboard": "Panel",
   "nav.exercises": "Ejercicios",
   "nav.progress": "Progreso",
-  "nav.coach": "Entrenador",
+  "nav.coach": "Intelligence",
   "landing.tag": "Tu sistema de entrenamiento personal",
   "landing.sub":
     "Responde unas preguntas sobre tu objetivo: el sistema crea un plan personal de varias semanas para el gimnasio o casa, con videos de ejercicios, registro de series y progresión automática.",
