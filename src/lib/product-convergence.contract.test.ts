@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NAV_GROUPS } from "./nav-map";
+import { NAV_GROUPS, PRIMARY_WORLD_NAV } from "./nav-map";
 import { buildTwinPulse } from "./twin-pulse";
 import type { LiveSignal } from "./live-signals.engine";
 
@@ -19,6 +19,15 @@ function signal(id: LiveSignal["id"], delta: number): LiveSignal {
 }
 
 describe("Product Convergence contract", () => {
+  it("keeps exactly five canonical product worlds", () => {
+    expect(PRIMARY_WORLD_NAV.map((item) => item.to)).toEqual([
+      "/app",
+      "/twin",
+      "/lab",
+      "/progress",
+      "/history",
+    ]);
+  });
   it("keeps duplicate product worlds out of the secondary drawer", () => {
     expect(secondaryRoutes).not.toContain("/progress");
     expect(secondaryRoutes).not.toContain("/readiness");

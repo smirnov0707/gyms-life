@@ -55,7 +55,7 @@ function copyFor(lang: Lang): Copy {
         start_training: { title: "Record a completed workout", cta: "Open training" },
         check_readiness: { title: "Add a readiness check-in", cta: "Check readiness" },
         log_nutrition: { title: "Log nutrition", cta: "Open nutrition" },
-        log_body_metrics: { title: "Add a body measurement", cta: "Open progress" },
+        log_body_metrics: { title: "Add a body measurement", cta: "Open My Twin" },
         set_training_rhythm: { title: "Set your usual training days", cta: "Set rhythm" },
         open_today: { title: "Follow today's decision", cta: "Open Today" },
       },
@@ -101,7 +101,7 @@ function copyFor(lang: Lang): Copy {
       start_training: { title: "Užregistruok baigtą treniruotę", cta: "Atidaryti treniruotes" },
       check_readiness: { title: "Įvertink šiandienos pasiruošimą", cta: "Įvertinti pasiruošimą" },
       log_nutrition: { title: "Užregistruok mitybą", cta: "Atidaryti mitybą" },
-      log_body_metrics: { title: "Pridėk kūno matavimą", cta: "Atidaryti progresą" },
+      log_body_metrics: { title: "Pridėk kūno matavimą", cta: "Atidaryti My Twin" },
       set_training_rhythm: {
         title: "Nustatyk įprastas treniruočių dienas",
         cta: "Nustatyti ritmą",
@@ -131,14 +131,14 @@ function copyFor(lang: Lang): Copy {
 
 const actionRoute: Record<
   WeeklyIntelligenceAction,
-  "/" | "/training" | "/readiness" | "/nutrition" | "/progress" | "/me"
+  "/app" | "/training" | "/readiness" | "/nutrition" | "/twin" | "/me"
 > = {
   start_training: "/training",
   check_readiness: "/readiness",
   log_nutrition: "/nutrition",
-  log_body_metrics: "/progress",
+  log_body_metrics: "/twin",
   set_training_rhythm: "/me",
-  open_today: "/",
+  open_today: "/app",
 };
 
 function numberOrDash(value: number | null, suffix = ""): string {

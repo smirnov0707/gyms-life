@@ -7,6 +7,10 @@ import {
   HeartPulse,
   LineChart,
   MessageSquare,
+  FlaskConical,
+  History,
+  PersonStanding,
+  Rocket,
   Pill,
   Trophy,
   UtensilsCrossed,
@@ -14,6 +18,14 @@ import {
 import type { TKey } from "./i18n";
 
 export type NavItem = { to: string; key: TKey; icon: typeof Activity };
+
+export const PRIMARY_WORLD_NAV = [
+  { to: "/app", icon: Activity, label: "TODAY" },
+  { to: "/twin", icon: PersonStanding, label: "MY TWIN" },
+  { to: "/lab", icon: FlaskConical, label: "LAB" },
+  { to: "/progress", icon: Rocket, label: "FUTURE ME" },
+  { to: "/history", icon: History, label: "JOURNAL" },
+] as const;
 
 /**
  * Backs `byRoute` only. The primary bottom-tab bar (Today/Twin/Lab/Coach)
