@@ -1,4 +1,5 @@
 import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
+import { NightLabRitual } from "@/components/future-lab/NightLabRitual";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -183,6 +184,7 @@ export function Overview() {
       </section>
 
       <TwinPulse />
+      <NightLabRitual />
 
       <section className="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="rounded-2xl border border-border bg-surface/85 p-4 sm:p-5">
