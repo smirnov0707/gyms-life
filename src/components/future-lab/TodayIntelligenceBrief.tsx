@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BrainCircuit, FlaskConical, Sparkles } from "lucide-react";
+import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { useStrengthForecast } from "./forecast.query";
 import { useLabOverview } from "./lab-overview.query";
@@ -123,6 +124,13 @@ export function TodayIntelligenceBrief() {
   const learnedHypothesis = learnedChange
     ? lab.data?.hypotheses.find((item) => item.id === learnedChange.hypothesisId)
     : undefined;
+  const learnedTransition = learnedChange
+    ? lab.data?.hypothesisHistory.find(
+        (item) =>
+          item.hypothesisId === learnedChange.hypothesisId &&
+          item.athleteStateSnapshotId === learnedChange.athleteStateSnapshotId,
+      )
+    : undefined;
   const learnedDetail = learnedHypothesis
     ? (copy[learnedHypothesis.statementKey as keyof typeof copy] ?? discoveryDetail)
     : discoveryDetail;
@@ -191,6 +199,42 @@ export function TodayIntelligenceBrief() {
         cta={english ? "Review" : "Peržiūrėti"}
         {...(learnedChange ? { onOpen: () => seenMutation.mutate(learnedChange.fingerprint) } : {})}
       />
+      {learnedChange ? (
+        <WhyThisDisclosure
+          summary={english ? "Why this surfaced now" : "Kodėl tai iškilo dabar"}
+          className="mb-3 bg-background/20"
+        >
+          <div className="grid gap-2 p-3 text-[10px] text-muted-foreground">
+            {learnedTransition ? (
+              <>
+                <p>
+                  {english ? "Status transition" : "Būsenos perėjimas"}:{" "}
+                  {learnedTransition.previousStatus ??
+                    (english ? "first observation" : "pirmas stebėjimas")}{" "}
+                  → {learnedTransition.status}
+                </p>
+                <p>
+                  {english ? "Evidence" : "Įrodymai"}: {learnedTransition.evidenceCount}/
+                  {learnedTransition.minimumEvidenceCount}
+                </p>
+              </>
+            ) : (
+              <p>
+                {english
+                  ? "Auditable transition details are unavailable."
+                  : "Audituojamos perėjimo detalės nepasiekiamos."}
+              </p>
+            )}
+            <p>
+              {english ? "Source" : "Šaltinis"}: deterministic ·{" "}
+              {learnedChange.athleteStateSnapshotId.slice(0, 8)}…
+            </p>
+            <p>
+              {english ? "Decision authority" : "Sprendimo teisė"}: {english ? "none" : "nėra"}
+            </p>
+          </div>
+        </WhyThisDisclosure>
+      ) : null}
       {learnedChange ? (
         <div className="-mt-2 flex justify-end border-t border-border/70 pt-2">
           <button
