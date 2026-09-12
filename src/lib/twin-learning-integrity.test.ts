@@ -20,12 +20,13 @@ function transition(
   id: string,
   status: LabHypothesisTransition["status"],
   occurredAt: string,
+  previousStatus: LabHypothesisTransition["previousStatus"] = null,
 ): LabHypothesisTransition {
   return {
     hypothesisId: id,
     athleteStateSnapshotId: "00000000-0000-4000-8000-000000000099",
     domain: "training_response",
-    previousStatus: null,
+    previousStatus,
     status,
     statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
     evidence: [],
@@ -43,7 +44,7 @@ describe("Twin learning integrity", () => {
       [hypothesis("h1", "supported")],
       [
         transition("h1", "monitoring", "2026-09-10T10:00:00.000Z"),
-        transition("h1", "supported", "2026-09-12T10:00:00.000Z"),
+        transition("h1", "supported", "2026-09-12T10:00:00.000Z", "monitoring"),
       ],
     );
     expect(result).toMatchObject({ verified: 1, unanchored: 0, drift: 0, allVerified: true });
@@ -65,6 +66,27 @@ describe("Twin learning integrity", () => {
       status: "drift",
       currentStatus: "supported",
       ledgerStatus: "contradicted",
+    });
+  });
+
+  it("blocks decision eligibility when the auditable transition chain is broken", () => {
+    const result = evaluateTwinLearningIntegrity(
+      [hypothesis("h1", "supported")],
+      [
+        transition("h1", "monitoring", "2026-09-10T10:00:00.000Z"),
+        transition("h1", "supported", "2026-09-12T10:00:00.000Z", "contradicted"),
+      ],
+    );
+    expect(result).toMatchObject({
+      verified: 1,
+      chainBreaks: 1,
+      decisionEligible: 0,
+      allVerified: false,
+    });
+    expect(result.items[0]).toMatchObject({
+      status: "verified",
+      chainStatus: "broken",
+      decisionAuthority: false,
     });
   });
 });
