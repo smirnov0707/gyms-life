@@ -647,7 +647,9 @@ try {
   });
   await expect(lab.page.getByText("Source available", { exact: true })).toHaveCount(0);
   await expect(lab.page.getByText("Rules defined", { exact: true })).toHaveCount(0);
-  await expect(lab.page.getByText("Unknown", { exact: true })).toHaveCount(10);
+  await expect(
+    lab.page.locator(".fl-lab-roster-tiles").getByText("Unknown", { exact: true }),
+  ).toHaveCount(10);
   await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");

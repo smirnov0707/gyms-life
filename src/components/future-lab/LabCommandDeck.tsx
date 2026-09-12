@@ -5,6 +5,9 @@ import { LabRosterRows } from "./FutureLabRoster";
 import { HypothesisEvidence } from "./HypothesisEvidence";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import { useLabOverview } from "./lab-overview.query";
+import { useStrengthForecast } from "./forecast.query";
+import { EpistemicBoundary } from "./EpistemicBoundary";
+import { ExperimentLedger } from "./ExperimentLedger";
 import "./reference-page-density.css";
 
 const STATEMENTS = {
@@ -27,6 +30,7 @@ export function LabCommandDeck() {
   const locale = baseLang(lang);
   const english = locale === "en";
   const query = useLabOverview();
+  const forecastQuery = useStrengthForecast();
   const data = query.isError ? undefined : query.data;
   const primary =
     data?.hypotheses.find((item) => item.status === "monitoring") ?? data?.hypotheses[0];
@@ -92,6 +96,18 @@ export function LabCommandDeck() {
           ? "Roles describe the evidence and rules in GYMS.LIFE."
           : "Vaidmenys apibūdina GYMS.LIFE duomenų sritis ir taisykles."}
       </p>
+
+      <div className="mt-3">
+        <EpistemicBoundary
+          lab={data ?? null}
+          forecast={forecastQuery.isError ? null : (forecastQuery.data ?? null)}
+          english={english}
+        />
+      </div>
+
+      <div className="mt-3">
+        <ExperimentLedger english={english} />
+      </div>
 
       <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
         <FutureLabPanel

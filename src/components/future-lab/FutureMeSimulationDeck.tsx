@@ -13,6 +13,7 @@ import {
   type FutureMeHorizon,
 } from "@/lib/future-me-simulation";
 import { baseLang, useI18n } from "@/lib/i18n";
+import { buildFutureMeGovernance } from "@/lib/future-me-governance";
 
 const HORIZON_LABEL: Record<FutureMeHorizon, string> = {
   "30d": "4W",
@@ -71,6 +72,7 @@ export function FutureMeSimulationDeck() {
     ? projectedChangePercent(selectedLift.currentEstimated1RMKg, projected)
     : null;
   const validated = isValidatedFutureMeHorizon(horizon);
+  const governance = buildFutureMeGovernance(selectedLift, horizon);
   const TrendIcon = selectedLift ? trendIcon(selectedLift.trend) : Minus;
 
   const copy = english
@@ -103,7 +105,9 @@ export function FutureMeSimulationDeck() {
         version: "Model",
         source: "source window",
         disclaimer:
-          "Estimate only. It does not prescribe a working weight, change your training plan, or guarantee future performance.",
+          "Simulation only. It does not prescribe a working weight, change your training plan, make a causal claim, or guarantee future performance.",
+        governance: "Simulation · no Today authority",
+        assumptions: "Explicit assumptions",
         trend: { rising: "Rising", flat: "Flat", falling: "Falling" },
         evidenceLabel: { low: "Low", moderate: "Moderate", high: "High" },
       }
@@ -136,7 +140,9 @@ export function FutureMeSimulationDeck() {
         version: "Modelis",
         source: "šaltinio langas",
         disclaimer:
-          "Tai tik įvertis. Jis nenustato darbinio svorio, nekeičia treniruočių plano ir negarantuoja būsimo rezultato.",
+          "Tai simuliacija. Ji nenustato darbinio svorio, nekeičia treniruočių plano, neteigia priežastinio ryšio ir negarantuoja būsimo rezultato.",
+        governance: "Simuliacija · be Today autoriteto",
+        assumptions: "Aiškios prielaidos",
         trend: { rising: "Kylanti", flat: "Stabili", falling: "Krintanti" },
         evidenceLabel: { low: "Žemas", moderate: "Vidutinis", high: "Aukštas" },
       };
@@ -310,9 +316,22 @@ export function FutureMeSimulationDeck() {
               <summary className="cursor-pointer text-[10px] font-medium text-muted-foreground">
                 {copy.method}
               </summary>
+              <p className="mt-2 inline-flex rounded-full border border-violet-400/20 bg-violet-400/5 px-2 py-1 text-[9px] uppercase tracking-wider text-violet-300">
+                {copy.governance}
+              </p>
               <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
                 {copy.methodBody}
               </p>
+              <p className="mt-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+                {copy.assumptions}
+              </p>
+              <ul className="mt-1 space-y-1 pl-4 text-[10px] leading-relaxed text-muted-foreground">
+                {governance.assumptions.map((assumption) => (
+                  <li key={assumption} className="list-disc">
+                    {assumption}
+                  </li>
+                ))}
+              </ul>
               <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
                 {copy.disclaimer}
               </p>
