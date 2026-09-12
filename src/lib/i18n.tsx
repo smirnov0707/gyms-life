@@ -494,7 +494,7 @@ const baseDict = {
   /* ---------- health sync ---------- */
 
   /* ---------- AR mode ---------- */
-  "nav.ar": { lt: "AR režimas", en: "AR mode" },
+  "nav.ar": { lt: "Judesys", en: "Movement" },
   "ar.title": { lt: "AR treniruočių režimas", en: "AR training mode" },
   "ar.sub": {
     lt: "Kamera realiu laiku seka tavo skeletą, ant vaizdo piešia tikslinius sąnarių kampus ir korekcijos rodykles bei skaičiuoja pakartojimus.",

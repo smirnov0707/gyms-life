@@ -343,7 +343,7 @@ export const locale: Record<string, string> = {
   "mp.hydration": "Hydratation",
   "mp.tips": "Conseils de prépa",
   "mp.none": "Vous n'avez pas encore de plan de repas.",
-  "nav.ar": "Mode AR",
+  "nav.ar": "Mouvement",
   "ar.title": "Mode d'entraînement AR",
   "ar.sub":
     "La caméra suit votre squelette en temps réel, affiche les angles articulaires cibles et des flèches de correction sur la vidéo, et compte vos répétitions.",

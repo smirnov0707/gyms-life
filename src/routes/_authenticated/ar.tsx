@@ -660,10 +660,16 @@ function ArMode() {
   return (
     <div className="grid gap-6">
       <div>
-        <p className="text-xs uppercase tracking-widest text-primary">GYMS.LIFE</p>
-        <h1 className="text-5xl">{t("ar.title")}</h1>
+        <p className="text-xs uppercase tracking-[0.22em] text-cyan-300">
+          GYMS.LIFE MOVEMENT INTELLIGENCE
+        </p>
+        <h1 className="mt-1 text-4xl font-semibold sm:text-5xl">
+          {base === "lt" ? "Judesio analizė" : "Movement intelligence"}
+        </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          {tab === "live" ? t("ar.sub") : t("fc.sub")}
+          {base === "lt"
+            ? "Vienas judesio sluoksnis gyvam treneriui, technikos analizei ir biomechanikos įrodymams."
+            : "One movement layer for live coaching, form analysis and biomechanics evidence."}
         </p>
       </div>
 
