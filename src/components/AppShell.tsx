@@ -1,22 +1,11 @@
 import React, { useId, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Activity,
-  ArrowUpRight,
-  ChevronDown,
-  FlaskConical,
-  History,
-  Menu,
-  MoonStar,
-  PersonStanding,
-  Rocket,
-  UserRound,
-} from "lucide-react";
+import { ArrowUpRight, ChevronDown, Menu, MoonStar, UserRound } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type Lang, type TKey } from "@/lib/i18n";
-import { NAV_GROUPS, byRoute, type NavItem } from "@/lib/nav-map";
+import { NAV_GROUPS, PRIMARY_WORLD_NAV, byRoute, type NavItem } from "@/lib/nav-map";
 import { getOvernightWork } from "@/lib/night-lab.functions";
 import {
   Drawer,
@@ -29,13 +18,7 @@ import {
 } from "@/components/ui/drawer";
 import "./future-lab-shell.css";
 
-const futureNavItems = [
-  { to: "/app", icon: Activity, label: "TODAY" },
-  { to: "/twin", icon: PersonStanding, label: "MY TWIN" },
-  { to: "/lab", icon: FlaskConical, label: "LAB" },
-  { to: "/progress", icon: Rocket, label: "FUTURE ME" },
-  { to: "/history", icon: History, label: "JOURNAL" },
-] as const;
+const futureNavItems = PRIMARY_WORLD_NAV;
 
 function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
   return NAV_GROUPS.map((group) => ({

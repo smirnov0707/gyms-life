@@ -11,17 +11,18 @@ import { AI_CONTEXT_WINDOW_LABEL, OTHER_PERSONALIZED_AI_TASK_COUNT } from "@/lib
 import { ACTIVE_MEMORY_FACT_LIMIT } from "@/lib/user-memory.schema";
 import { COACH_HISTORY_TURNS } from "@/lib/coach-message.schema";
 import { askCoach, listCoachMessages } from "@/lib/plan.functions";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { aiErrorMessage } from "@/lib/ai-error";
 import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { SmartBrief } from "@/components/SmartBrief";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
     meta: [
-      { title: "Tavo treneris — GYMS.LIFE" },
+      { title: "Intelligence — GYMS.LIFE" },
       { name: "description", content: "Asmeninis treneris: technika, mityba ir plano korekcijos." },
       { property: "og:title", content: "Tavo treneris — GYMS.LIFE" },
       {
@@ -39,6 +40,7 @@ const QUICK: TKey[] = ["coach.q1", "coach.q2", "coach.q3", "coach.q4"];
 
 function CoachPage() {
   const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   const ask = useServerFn(askCoach);
   const list = useServerFn(listCoachMessages);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -88,13 +90,15 @@ function CoachPage() {
       <header className="flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400 light:text-emerald-700">
-            <Sparkles className="size-3.5" /> GYMS.LIFE COACH
+            <Sparkles className="size-3.5" /> GYMS.LIFE INTELLIGENCE
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            {t("coach.title")}
+            {english ? "Ask your system" : "Klausk savo sistemos"}
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            {t("coach.sub")}
+            {english
+              ? "Ask why Today chose an action, what your Twin is showing, what the Lab is investigating, or what Future Me is simulating."
+              : "Klausk, kodėl Today pasirinko veiksmą, ką rodo Twin, ką tiria Lab arba ką modeliuoja Future Me."}
           </p>
         </div>
         <Button
@@ -109,6 +113,9 @@ function CoachPage() {
         </Button>
       </header>
 
+      <div className="mb-4">
+        <SmartBrief compact />
+      </div>
       <AiPersonalizationConsentCard />
 
       <section className="relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706]">

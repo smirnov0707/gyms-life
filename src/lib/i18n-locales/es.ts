@@ -67,7 +67,7 @@ export const locale: Record<string, string> = {
   "nav.dashboard": "Panel",
   "nav.exercises": "Ejercicios",
   "nav.progress": "Progreso",
-  "nav.coach": "Entrenador",
+  "nav.coach": "Intelligence",
   "landing.tag": "Tu sistema de entrenamiento personal",
   "landing.sub":
     "Responde unas preguntas sobre tu objetivo: el sistema crea un plan personal de varias semanas para el gimnasio o casa, con videos de ejercicios, registro de series y progresión automática.",
@@ -341,7 +341,7 @@ export const locale: Record<string, string> = {
   "mp.hydration": "Hidratación",
   "mp.tips": "Consejos de preparación",
   "mp.none": "Aún no tienes un plan de comidas.",
-  "nav.ar": "Modo AR",
+  "nav.ar": "Movimiento",
   "ar.title": "Modo de entrenamiento AR",
   "ar.sub":
     "La cámara rastrea tu esqueleto en tiempo real, dibuja ángulos articulares objetivo y flechas de corrección sobre el video y cuenta tus repeticiones.",

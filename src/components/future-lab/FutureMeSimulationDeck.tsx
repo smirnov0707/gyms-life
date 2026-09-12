@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, LockKeyhole, Minus, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 import { useStrengthForecast } from "./forecast.query";
 import { IllustrativeAthlete } from "./IllustrativeAthlete";
 import "./reference-page-density.css";
@@ -312,36 +313,38 @@ export function FutureMeSimulationDeck() {
                 {loading ? copy.refreshing : copy.refresh}
               </Button>
             </article>
-            <details className="mt-2.5 rounded-lg border border-border/60 px-3 py-2.5">
-              <summary className="cursor-pointer text-[10px] font-medium text-muted-foreground">
-                {copy.method}
-              </summary>
-              <p className="mt-2 inline-flex rounded-full border border-violet-400/20 bg-violet-400/5 px-2 py-1 text-[9px] uppercase tracking-wider text-violet-300">
-                {copy.governance}
-              </p>
-              <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
-                {copy.methodBody}
-              </p>
-              <p className="mt-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-                {copy.assumptions}
-              </p>
-              <ul className="mt-1 space-y-1 pl-4 text-[10px] leading-relaxed text-muted-foreground">
-                {governance.assumptions.map((assumption) => (
-                  <li key={assumption} className="list-disc">
-                    {assumption}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
-                {copy.disclaimer}
-              </p>
-              {forecast ? (
-                <p className="mt-2 font-mono text-[9px] text-muted-foreground">
-                  {copy.version} {forecast.forecastVersion} · {forecast.sourceWindowDays}d{" "}
-                  {copy.source}
+            <WhyThisDisclosure
+              summary={`${english ? "Why this?" : "Kodėl taip?"} · ${copy.method}`}
+              className="mt-2.5 rounded-lg bg-transparent"
+            >
+              <div className="px-3 py-2.5">
+                <p className="inline-flex rounded-full border border-violet-400/20 bg-violet-400/5 px-2 py-1 text-[9px] uppercase tracking-wider text-violet-300">
+                  {copy.governance}
                 </p>
-              ) : null}
-            </details>
+                <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                  {copy.methodBody}
+                </p>
+                <p className="mt-2 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
+                  {copy.assumptions}
+                </p>
+                <ul className="mt-1 space-y-1 pl-4 text-[10px] leading-relaxed text-muted-foreground">
+                  {governance.assumptions.map((assumption) => (
+                    <li key={assumption} className="list-disc">
+                      {assumption}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                  {copy.disclaimer}
+                </p>
+                {forecast ? (
+                  <p className="mt-2 font-mono text-[9px] text-muted-foreground">
+                    {copy.version} {forecast.forecastVersion} · {forecast.sourceWindowDays}d{" "}
+                    {copy.source}
+                  </p>
+                ) : null}
+              </div>
+            </WhyThisDisclosure>
           </div>
         </div>
       </div>

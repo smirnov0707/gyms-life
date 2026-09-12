@@ -102,7 +102,7 @@ export function JournalIntelligence() {
         subtitle: "Hypotheses, discoveries and decisions, with their evidence.",
         hypotheses: "Hypotheses",
         discoveries: "Discoveries",
-        experiments: "Observations",
+        experiments: "Patterns",
         decisions: "Decisions",
         all: "All",
         supported: "Supported discovery",
@@ -130,7 +130,7 @@ export function JournalIntelligence() {
         subtitle: "Hipotezės, atradimai ir sprendimai su juos pagrindžiančiais duomenimis.",
         hypotheses: "Hipotezės",
         discoveries: "Atradimai",
-        experiments: "Stebėjimai",
+        experiments: "Dėsningumai",
         decisions: "Sprendimai",
         all: "Visi",
         supported: "Patvirtintas atradimas",
@@ -384,7 +384,7 @@ export function JournalIntelligence() {
                       type="button"
                       aria-pressed={tab === item.id}
                       onClick={() => setTab(item.id)}
-                      className={`min-h-10 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                      className={`min-h-11 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
                         tab === item.id
                           ? "border-violet-400/50 bg-violet-500/15 text-foreground"
                           : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"

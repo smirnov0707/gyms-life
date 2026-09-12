@@ -7,6 +7,10 @@ import {
   HeartPulse,
   LineChart,
   MessageSquare,
+  FlaskConical,
+  History,
+  PersonStanding,
+  Rocket,
   Pill,
   Trophy,
   UtensilsCrossed,
@@ -14,6 +18,14 @@ import {
 import type { TKey } from "./i18n";
 
 export type NavItem = { to: string; key: TKey; icon: typeof Activity };
+
+export const PRIMARY_WORLD_NAV = [
+  { to: "/app", icon: Activity, label: "TODAY" },
+  { to: "/twin", icon: PersonStanding, label: "MY TWIN" },
+  { to: "/lab", icon: FlaskConical, label: "LAB" },
+  { to: "/progress", icon: Rocket, label: "FUTURE ME" },
+  { to: "/history", icon: History, label: "JOURNAL" },
+] as const;
 
 /**
  * Backs `byRoute` only. The primary bottom-tab bar (Today/Twin/Lab/Coach)
@@ -40,26 +52,7 @@ export const byRoute = (to: string) => nav.find((n) => n.to === to);
 
 /** Logical clusters used by the "More" menu and the mobile drawer. */
 export const NAV_GROUPS: { key: TKey; routes: string[] }[] = [
-  { key: "nav.group.train", routes: ["/training", "/exercises", "/ar", "/readiness"] },
-  { key: "nav.group.nutrition", routes: ["/meal-plan", "/nutrition", "/supplements"] },
-  { key: "nav.group.body", routes: ["/progress", "/achievements"] },
-  { key: "nav.group.coach", routes: ["/coach", "/reminders"] },
+  { key: "nav.group.train", routes: ["/training", "/exercises", "/ar"] },
+  { key: "nav.group.nutrition", routes: ["/nutrition"] },
+  { key: "nav.group.coach", routes: ["/coach"] },
 ];
-
-/**
- * Cross-feature links: what naturally comes next from each page.
- * Keeps every screen connected instead of being a dead end.
- */
-export const RELATED: Record<string, string[]> = {
-  "/app": ["/readiness", "/coach", "/meal-plan"],
-  "/exercises": ["/ar", "/app", "/progress"],
-  "/ar": ["/exercises", "/progress", "/coach"],
-  "/meal-plan": ["/nutrition", "/supplements", "/progress"],
-  "/nutrition": ["/meal-plan", "/supplements", "/coach"],
-  "/supplements": ["/nutrition", "/progress", "/reminders"],
-  "/progress": ["/readiness", "/coach", "/achievements"],
-  "/readiness": ["/app", "/progress", "/coach"],
-  "/coach": ["/app", "/progress", "/meal-plan"],
-  "/achievements": ["/progress", "/app", "/coach"],
-  "/reminders": ["/supplements", "/readiness", "/app"],
-};

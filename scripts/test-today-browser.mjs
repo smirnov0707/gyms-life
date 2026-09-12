@@ -216,9 +216,30 @@ try {
     return { page, errors };
   };
 
+  const openTodayEvidenceLayer = async (page) => {
+    const summary = page.getByText(
+      /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
+    );
+    if (await summary.count()) {
+      const details = summary.locator("xpath=ancestor::details[1]");
+      if ((await details.getAttribute("open")) === null) await summary.click();
+    }
+  };
+
+  const openTodayContextLayer = async (page) => {
+    const summary = page.getByText(
+      /^(Context, sources & settings|Kontekstas, šaltiniai ir nustatymai)$/,
+    );
+    if (await summary.count()) {
+      const details = summary.locator("xpath=ancestor::details[1]");
+      if ((await details.getAttribute("open")) === null) await summary.click();
+    }
+  };
+
   const open = async (query = "", options = {}) => {
     const opened = await openPanel(query, options);
     await expect(opened.page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 30000 });
+    await openTodayEvidenceLayer(opened.page);
     return opened;
   };
 
@@ -385,6 +406,7 @@ try {
       viewport: { width: 390, height: 844 },
       locale: "en-US",
     });
+    await openTodayEvidenceLayer(checked.page);
     const rail = checked.page.getByRole("region", { name: "Live signals" });
     await expect(rail).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not be read" : "Not recorded yet";
@@ -490,6 +512,7 @@ try {
       locale: "en-US",
       viewport: { width: 390, height: 844 },
     });
+    await openTodayContextLayer(checked.page);
     const button = checked.page.getByTestId("refresh-received-data");
     await expect(button).toBeEnabled({ timeout: 30000 });
     await button.click();
@@ -538,10 +561,12 @@ try {
   expect(await emptyEvidence.locator(".fl-evidence-count strong").innerText()).toBe("0");
   expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
   await expect(
-    first.page.getByText("No pattern has reached its evidence threshold yet.", { exact: true }),
+    first.page.getByText("No personal pattern has reached its evidence threshold yet.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
-    first.page.getByText("No hypothesis is awaiting more evidence.", { exact: true }),
+    first.page.getByText("No hypothesis is currently awaiting more evidence.", { exact: true }),
   ).toBeVisible();
   const body = await first.page.locator("body").innerText();
   expect(body).not.toContain("Not enough verified data yet."); // obsolete copy must not mask a stuck loading state
@@ -707,7 +732,8 @@ try {
   const ltBody = await lt.page.locator("body").innerText();
   expect(ltBody).not.toContain("separates measurements");
   expect(ltBody).not.toContain("OPEN LAB");
-  expect(ltBody).toContain("atskiria matavimus");
+  expect(ltBody).toContain("Jėgos trajektorija");
+  expect(ltBody).toContain("Tiriama");
   const ltOverflow = await lt.page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
@@ -728,6 +754,7 @@ try {
   //     operational. Ours reports what has actually arrived, which with
   //     nothing connected is two sources that have sent nothing and no
   //     readings at all — never a green light nobody earned.
+  await openTodayContextLayer(first.page);
   const sources = first.page.getByRole("region", { name: "Data sources" });
   await expect(sources).toBeVisible();
   expect(await sources.getByText("Nothing received").count()).toBe(2);
@@ -735,6 +762,7 @@ try {
   const sourcesText = await sources.innerText();
   expect(sourcesText).not.toMatch(/operational|all systems/i);
 
+  await openTodayContextLayer(failed.page);
   const failedSources = failed.page.getByRole("region", { name: "Data sources" });
   expect(await failedSources.getByText("Could not check").count()).toBe(2);
   await expect(failedSources.getByText("Nothing received")).toHaveCount(0);
@@ -1282,6 +1310,7 @@ try {
   // Empty evidence must not claim every region is recovered, in either view.
   for (const query of ["?twin=empty", "?panel=recovery&twin=empty"]) {
     const unknown = await openPanel(query);
+    if (query === "?twin=empty") await openTodayEvidenceLayer(unknown.page);
     const outlook = unknown.page.getByRole("region", { name: "When it comes back" });
     await expect(
       outlook.getByText("Not enough data to estimate recovery.", { exact: true }),

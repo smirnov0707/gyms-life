@@ -97,7 +97,7 @@ const baseDict = {
   },
   "nav.exercises": { lt: "Pratimai", en: "Exercises" },
   "nav.progress": { lt: "Progresas", en: "Progress" },
-  "nav.coach": { lt: "Treneris", en: "Coach" },
+  "nav.coach": { lt: "Intelligence", en: "Intelligence" },
 
   "landing.tag": { lt: "Asmeninė treniruočių sistema", en: "Your personal training system" },
   "landing.sub": {
@@ -292,21 +292,11 @@ const baseDict = {
   "mg.fullbody": { lt: "Visas kūnas", en: "Full body" },
 
   "pr.title": { lt: "Progresas", en: "Progress" },
-  "pr.volume": { lt: "Savaitės tūris (kg)", en: "Weekly volume (kg)" },
-  "pr.records": { lt: "Asmeniniai rekordai", en: "Personal records" },
   "pr.addWeight": { lt: "Įrašyti svorį", en: "Log weight" },
   "pr.save": { lt: "Išsaugoti", en: "Save" },
   "pr.empty": {
     lt: "Duomenų dar nėra — atlik pirmą treniruotę.",
     en: "No data yet — complete your first workout.",
-  },
-  "pr.history": { lt: "Treniruočių istorija", en: "Workout history" },
-  // "We could not look" is not "you have no history". A progress screen that
-  // cannot tell them apart tells an athlete with months of work that they
-  // have never trained.
-  "pr.readFailed": {
-    lt: "Nepavyko nuskaityti istorijos. Tai nereiškia, kad jos nėra — pabandyk atnaujinti puslapį.",
-    en: "Could not read your history. That does not mean there is none — try reloading.",
   },
 
   "coach.title": { lt: "Tavo treneris", en: "Your coach" },
@@ -494,7 +484,7 @@ const baseDict = {
   /* ---------- health sync ---------- */
 
   /* ---------- AR mode ---------- */
-  "nav.ar": { lt: "AR režimas", en: "AR mode" },
+  "nav.ar": { lt: "Judesys", en: "Movement" },
   "ar.title": { lt: "AR treniruočių režimas", en: "AR training mode" },
   "ar.sub": {
     lt: "Kamera realiu laiku seka tavo skeletą, ant vaizdo piešia tikslinius sąnarių kampus ir korekcijos rodykles bei skaičiuoja pakartojimus.",

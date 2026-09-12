@@ -110,16 +110,6 @@ export const extra_brief = {
     es: "Si te queda tiempo",
     fr: "Si tu as le temps",
   },
-  "rel.title": {
-    lt: "Susiję su šiuo puslapiu",
-    en: "Related to this page",
-    ru: "Связано с этой страницей",
-    uk: "Пов'язано з цією сторінкою",
-    pl: "Powiązane z tą stroną",
-    de: "Passt zu dieser Seite",
-    es: "Relacionado con esta página",
-    fr: "En lien avec cette page",
-  },
   "nav.group.train": {
     lt: "Treniruotės",
     en: "Training",
@@ -139,16 +129,6 @@ export const extra_brief = {
     de: "Ernährung",
     es: "Nutrición",
     fr: "Nutrition",
-  },
-  "nav.group.body": {
-    lt: "Kūnas ir progresas",
-    en: "Body & progress",
-    ru: "Тело и прогресс",
-    uk: "Тіло та прогрес",
-    pl: "Ciało i postępy",
-    de: "Körper & Fortschritt",
-    es: "Cuerpo y progreso",
-    fr: "Corps & progrès",
   },
   "nav.group.coach": {
     lt: "Treneris",

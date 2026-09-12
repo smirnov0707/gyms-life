@@ -165,7 +165,7 @@ export function BodyMetricsPanel({ compact = false }: { compact?: boolean }) {
           size="sm"
           onClick={save}
           disabled={saving || (!weight && !fat)}
-          className="rounded-full"
+          className="min-h-11 rounded-full"
         >
           {t("pr.addWeight")}
         </Button>

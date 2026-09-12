@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock, Dumbbell, Loader2, Weight } from "lucide-react";
 import { GlowCard } from "@/components/GlowCard";
 import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence";
+import { WorkoutReportExporter } from "@/components/WorkoutReportExporter";
 import { getWorkoutHistory } from "@/lib/workout-history.functions";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
@@ -154,6 +155,12 @@ export function WorkoutHistoryPage() {
             </div>
           )}
         </section>
+      </details>
+      <details className="fl-secondary-details">
+        <summary>{english ? "Export & records" : "Eksportas ir įrašai"}</summary>
+        <div className="fl-disclosed-content">
+          <WorkoutReportExporter />
+        </div>
       </details>
     </div>
   );

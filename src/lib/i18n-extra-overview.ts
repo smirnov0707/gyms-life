@@ -40,14 +40,4 @@ export const extra_overview = {
     es: "No se pudo leer tu historial, así que las insignias y la racha de abajo no son reales.",
     fr: "Votre historique n'a pas pu être lu : les badges et la série ci-dessous ne sont pas réels.",
   },
-  "ov.readinessReadFailed": {
-    lt: "Nepavyko perskaityti šiandienos pasiruošimo. Tai skaitymo klaida, ne tavo būklė.",
-    en: "Today's readiness could not be read. That is a read failure, not your state.",
-    ru: "Не удалось прочитать сегодняшнюю готовность. Это ошибка чтения, а не ваше состояние.",
-    uk: "Не вдалося прочитати сьогоднішню готовність. Це помилка читання, а не ваш стан.",
-    pl: "Nie udało się odczytać dzisiejszej gotowości. To błąd odczytu, nie twój stan.",
-    de: "Die heutige Readiness konnte nicht gelesen werden. Das ist ein Lesefehler, nicht dein Zustand.",
-    es: "No se pudo leer la readiness de hoy. Es un fallo de lectura, no tu estado.",
-    fr: "La readiness du jour n'a pas pu être lue. C'est une erreur de lecture, pas votre état.",
-  },
 };

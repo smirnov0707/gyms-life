@@ -31,7 +31,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 vi.mock("@/lib/i18n", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/i18n")>()),
-  useI18n: () => ({ lang: state.lang }),
+  useI18n: () => ({ lang: state.lang, t: (key: string) => key }),
 }));
 vi.mock("@/lib/workout-history.functions", () => ({ getWorkoutHistory: vi.fn() }));
 vi.mock("@/components/future-lab/JournalIntelligence", () => ({ JournalIntelligence: () => null }));
