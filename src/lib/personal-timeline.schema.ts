@@ -28,7 +28,13 @@ export const PersonalTimelineEventTypeSchema = z.enum([
  * decision evidence behind them — three screens quietly reporting a background
  * job as something the athlete did.
  */
-export const TIMELINE_AUDIT_EVENT_TYPES = ["hypothesis_transition", "twin_recalculated"] as const;
+export const TIMELINE_AUDIT_EVENT_TYPES = [
+  "hypothesis_transition",
+  "twin_memory_change",
+  "twin_memory_seen",
+  "twin_memory_dismissed",
+  "twin_recalculated",
+] as const;
 
 export const PersonalTimelineStoredEventTypeSchema = z.union([
   PersonalTimelineEventTypeSchema,

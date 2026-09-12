@@ -4,6 +4,7 @@ import { AthleteHypothesisSchema } from "./athlete-hypothesis.schema";
 import { DecisionAccuracySchema } from "./decision-accuracy.schema";
 import { DigitalAthleteDataGapSchema } from "./digital-athlete.schema";
 import { PredictionCalibrationSchema } from "./prediction-calibration.schema";
+import { TwinMemoryProactiveRecordSchema } from "./twin-memory-proactive";
 import {
   TodayDecisionActionSchema,
   TodayDecisionBasisSchema,
@@ -73,6 +74,7 @@ export const LabOverviewSchema = z
     decisions: z.array(LabDecisionSchema),
     decisionAccuracy: DecisionAccuracySchema,
     predictionCalibration: PredictionCalibrationSchema,
+    proactiveMemoryChanges: z.array(TwinMemoryProactiveRecordSchema).default([]),
     dataGaps: z.array(DigitalAthleteDataGapSchema),
     /** Empty is the normal case: every source answered. */
     unreadable: z.array(LabUnreadableSourceSchema),

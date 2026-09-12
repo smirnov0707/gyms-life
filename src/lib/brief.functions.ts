@@ -64,7 +64,7 @@ APP WORLDS AND CONTEXTUAL CAPABILITIES (use the exact route string):
 - "/app" — TODAY: canonical decision and next safe action
 - "/twin" — MY TWIN: body state, measurements, longitudinal memory and learned patterns
 - "/lab" — LAB: hypotheses, experiments and evidence boundaries
-- "/future-me" — FUTURE ME: governed trajectories and simulations
+- "/progress" — FUTURE ME: governed trajectories and simulations
 - "/history" — JOURNAL: longitudinal training and learning history
 - "/onboarding" — goal/equipment intake and training-plan creation
 - "/exercises" — exercise library and technique media

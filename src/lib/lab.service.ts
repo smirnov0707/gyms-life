@@ -6,6 +6,7 @@ import { loadHypothesisRetrospective } from "./athlete-hypothesis-retrospective.
 import { buildAthleteHypotheses } from "./athlete-hypothesis.service";
 import { buildDecisionAccuracy } from "./decision-accuracy.engine";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
+import { loadTwinMemoryProactiveRecords } from "./twin-memory-proactive.server";
 import {
   LabOverviewSchema,
   type LabDecision,
@@ -200,11 +201,13 @@ export async function loadLabOverview(
   }
   await reconcileWorkoutCompletionShadowPredictions(userId, now).catch(() => undefined);
 
-  const [hypothesisHistory, recent, predictionCalibration] = await Promise.all([
-    loadHypothesisRetrospective(supabase, userId),
-    loadRecentDecisions(supabase, userId, since),
-    loadPredictionCalibration(supabase, userId),
-  ]);
+  const [hypothesisHistory, recent, predictionCalibration, proactiveMemoryChanges] =
+    await Promise.all([
+      loadHypothesisRetrospective(supabase, userId),
+      loadRecentDecisions(supabase, userId, since),
+      loadPredictionCalibration(supabase, userId),
+      loadTwinMemoryProactiveRecords(supabase, userId),
+    ]);
 
   return LabOverviewSchema.parse({
     hypotheses,
@@ -212,6 +215,7 @@ export async function loadLabOverview(
     decisions: recent.decisions,
     decisionAccuracy: buildDecisionAccuracy(recent.decisions),
     predictionCalibration,
+    proactiveMemoryChanges,
     dataGaps: athlete.state.dataGaps,
     unreadable: recent.unreadable,
   });

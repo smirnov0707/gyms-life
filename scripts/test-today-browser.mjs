@@ -895,6 +895,23 @@ try {
   });
   expect(changedMemory.errors).toEqual([]);
   await changedMemory.page.close();
+
+  const changedToday = await open("?scenario=reference&memory=changed", {
+    viewport: { width: 390, height: 844 },
+  });
+  const intelligence = changedToday.page.getByRole("region", { name: "Intelligence brief" });
+  await expect(intelligence.getByText("LEARNED CHANGE", { exact: true })).toBeVisible();
+  await expect(intelligence.getByText("Evidence strengthened", { exact: true })).toBeVisible();
+  await expect(intelligence.getByRole("link", { name: /Review/ })).toBeVisible();
+  const dismissLearned = intelligence.getByRole("button", { name: "Dismiss learned change" });
+  await expect(dismissLearned).toBeVisible();
+  await dismissLearned.click();
+  await expect(intelligence.getByText("LEARNED CHANGE", { exact: true })).toHaveCount(0, {
+    timeout: 10000,
+  });
+  await expect(intelligence.getByText("DISCOVERY", { exact: true })).toBeVisible();
+  expect(changedToday.errors).toEqual([]);
+  await changedToday.page.close();
   record(
     "Twin Memory distinguishes empty, unknown-baseline and deterministic learned-change states",
   );

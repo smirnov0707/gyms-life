@@ -1,14 +1,58 @@
+import { z } from "zod";
+import type { AthleteHypothesisLedgerSummary } from "./athlete-hypothesis-ledger";
 import type { TwinMemoryEvolution } from "./twin-memory-evolution";
 
-export type TwinMemoryProactiveSignal = {
-  fingerprint: string;
-  hypothesisId: string;
-  kind: "new" | "strengthened" | "weakened" | "contradicted";
-  severity: "info" | "positive" | "attention";
-  source: "deterministic";
-  decisionAuthority: false;
-  athleteStateSnapshotId: string;
-};
+export const TwinMemoryProactiveSignalSchema = z
+  .object({
+    fingerprint: z.string().min(1).max(300),
+    hypothesisId: z.string().min(1).max(120),
+    kind: z.enum(["new", "strengthened", "weakened", "contradicted"]),
+    severity: z.enum(["info", "positive", "attention"]),
+    source: z.literal("deterministic"),
+    decisionAuthority: z.literal(false),
+    athleteStateSnapshotId: z.string().uuid(),
+  })
+  .strict();
+
+export type TwinMemoryProactiveSignal = z.infer<typeof TwinMemoryProactiveSignalSchema>;
+
+export const TwinMemoryProactiveStatusSchema = z.enum(["new", "seen", "dismissed"]);
+export type TwinMemoryProactiveStatus = z.infer<typeof TwinMemoryProactiveStatusSchema>;
+
+export const TwinMemoryProactiveLifecycleActionSchema = z.enum(["seen", "dismissed"]);
+export type TwinMemoryProactiveLifecycleAction = z.infer<
+  typeof TwinMemoryProactiveLifecycleActionSchema
+>;
+
+export const TwinMemoryProactiveLifecycleEventSchema = z
+  .object({
+    fingerprint: z.string().min(1).max(300),
+    action: TwinMemoryProactiveLifecycleActionSchema,
+    source: z.literal("deterministic"),
+    decisionAuthority: z.literal(false),
+  })
+  .strict();
+
+export type TwinMemoryProactiveLifecycleEvent = z.infer<
+  typeof TwinMemoryProactiveLifecycleEventSchema
+>;
+
+export const TwinMemoryProactiveRecordSchema = TwinMemoryProactiveSignalSchema.extend({
+  occurredAt: z.string().datetime({ offset: true }),
+  status: TwinMemoryProactiveStatusSchema,
+  statusChangedAt: z.string().datetime({ offset: true }).nullable(),
+}).strict();
+
+export type TwinMemoryProactiveRecord = z.infer<typeof TwinMemoryProactiveRecordSchema>;
+
+export function nextTwinMemoryProactiveStatus(
+  current: TwinMemoryProactiveStatus,
+  action: TwinMemoryProactiveLifecycleAction,
+): TwinMemoryProactiveStatus {
+  if (current === "dismissed") return "dismissed";
+  if (action === "dismissed") return "dismissed";
+  return "seen";
+}
 
 /**
  * Proactive intelligence is intentionally stricter than the Twin Memory UI.
@@ -57,5 +101,51 @@ export function buildTwinMemoryProactiveSignals(
   return evolutions.flatMap((evolution) => {
     const signal = buildTwinMemoryProactiveSignal(evolution);
     return signal ? [signal] : [];
+  });
+}
+
+function transitionStrength(status: AthleteHypothesisLedgerSummary["status"]): number {
+  switch (status) {
+    case "contradicted":
+      return 0;
+    case "insufficient_evidence":
+      return 1;
+    case "monitoring":
+      return 2;
+    case "supported":
+      return 3;
+  }
+}
+
+export function buildTwinMemoryProactiveSignalFromTransition(
+  transition: AthleteHypothesisLedgerSummary,
+): TwinMemoryProactiveSignal {
+  const kind =
+    transition.previousStatus === null
+      ? "new"
+      : transition.status === "contradicted"
+        ? "contradicted"
+        : transitionStrength(transition.status) > transitionStrength(transition.previousStatus)
+          ? "strengthened"
+          : "weakened";
+  const severity =
+    kind === "contradicted" || kind === "weakened"
+      ? "attention"
+      : kind === "strengthened"
+        ? "positive"
+        : "info";
+  return TwinMemoryProactiveSignalSchema.parse({
+    fingerprint: [
+      "twin-memory",
+      transition.hypothesisId,
+      kind,
+      transition.athleteStateSnapshotId,
+    ].join(":"),
+    hypothesisId: transition.hypothesisId,
+    kind,
+    severity,
+    source: "deterministic",
+    decisionAuthority: false,
+    athleteStateSnapshotId: transition.athleteStateSnapshotId,
   });
 }

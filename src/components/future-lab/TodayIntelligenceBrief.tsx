@@ -1,9 +1,15 @@
 import { Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { BrainCircuit, FlaskConical, Sparkles } from "lucide-react";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { useStrengthForecast } from "./forecast.query";
 import { useLabOverview } from "./lab-overview.query";
 import { projectedChangePercent, projectedEstimated1RM } from "@/lib/future-me-simulation";
+import {
+  dismissTwinMemoryChange,
+  markTwinMemoryChangeSeen,
+} from "@/lib/twin-memory-proactive.functions";
 
 const statement = {
   en: {
@@ -27,13 +33,15 @@ function Row({
   detail,
   to,
   cta,
+  onOpen,
 }: {
   icon: typeof Sparkles;
   eyebrow: string;
   title: string;
   detail: string;
-  to: "/progress" | "/lab";
+  to: "/progress" | "/lab" | "/twin";
   cta: string;
+  onOpen?: () => void;
 }) {
   return (
     <article className="grid gap-3 border-t border-border/70 py-4 first:border-t-0 first:pt-0 sm:grid-cols-[auto_1fr_auto] sm:items-center">
@@ -49,6 +57,7 @@ function Row({
       </div>
       <Link
         to={to}
+        onClick={onOpen}
         className="inline-flex min-h-11 items-center text-xs font-medium text-violet-300 sm:justify-self-end"
       >
         {cta} →
@@ -61,10 +70,23 @@ export function TodayIntelligenceBrief() {
   const english = baseLang(lang) === "en";
   const lab = useLabOverview();
   const forecast = useStrengthForecast();
+  const queryClient = useQueryClient();
+  const markSeen = useServerFn(markTwinMemoryChangeSeen);
+  const dismiss = useServerFn(dismissTwinMemoryChange);
   const hypothesis = lab.data?.hypotheses.find(
     (item) => item.status === "monitoring" || item.status === "insufficient_evidence",
   );
   const discovery = lab.data?.hypotheses.find((item) => item.status === "supported");
+  const learnedChange = lab.data?.proactiveMemoryChanges.find((item) => item.status === "new");
+  const refreshLab = () => queryClient.invalidateQueries({ queryKey: ["future-lab-overview"] });
+  const seenMutation = useMutation({
+    mutationFn: (fingerprint: string) => markSeen({ data: { fingerprint } }),
+    onSuccess: refreshLab,
+  });
+  const dismissMutation = useMutation({
+    mutationFn: (fingerprint: string) => dismiss({ data: { fingerprint } }),
+    onSuccess: refreshLab,
+  });
   const lift = forecast.data?.status === "ready" ? forecast.data.lifts[0] : undefined;
   const projected = lift ? projectedEstimated1RM(lift, "30d") : null;
   const delta =
@@ -95,6 +117,31 @@ export function TodayIntelligenceBrief() {
     : english
       ? "No personal pattern has reached its evidence threshold yet."
       : "Dar nė vienas asmeninis dėsningumas nepasiekė įrodymų ribos.";
+  const learnedHypothesis = learnedChange
+    ? lab.data?.hypotheses.find((item) => item.id === learnedChange.hypothesisId)
+    : undefined;
+  const learnedDetail = learnedHypothesis
+    ? (copy[learnedHypothesis.statementKey as keyof typeof copy] ?? discoveryDetail)
+    : discoveryDetail;
+  const learnedTitle = learnedChange
+    ? learnedChange.kind === "contradicted"
+      ? english
+        ? "Previous pattern contradicted"
+        : "Ankstesniam dėsningumui prieštaraujama"
+      : learnedChange.kind === "weakened"
+        ? english
+          ? "Evidence weakened"
+          : "Įrodymai susilpnėjo"
+        : learnedChange.kind === "strengthened"
+          ? english
+            ? "Evidence strengthened"
+            : "Įrodymai sustiprėjo"
+          : english
+            ? "New pattern observed"
+            : "Pastebėtas naujas dėsningumas"
+    : english
+      ? "What your data supports"
+      : "Ką pagrindžia tavo duomenys";
   return (
     <section
       className="rounded-2xl border border-border bg-surface/85 p-4 sm:p-5"
@@ -126,12 +173,33 @@ export function TodayIntelligenceBrief() {
       />
       <Row
         icon={BrainCircuit}
-        eyebrow={english ? "DISCOVERY" : "ATRADIMAS"}
-        title={english ? "What your data supports" : "Ką pagrindžia tavo duomenys"}
-        detail={discoveryDetail}
-        to="/lab"
+        eyebrow={
+          learnedChange
+            ? english
+              ? "LEARNED CHANGE"
+              : "IŠMOKTAS POKYTIS"
+            : english
+              ? "DISCOVERY"
+              : "ATRADIMAS"
+        }
+        title={learnedTitle}
+        detail={learnedChange ? learnedDetail : discoveryDetail}
+        to={learnedChange ? "/twin" : "/lab"}
         cta={english ? "Review" : "Peržiūrėti"}
+        {...(learnedChange ? { onOpen: () => seenMutation.mutate(learnedChange.fingerprint) } : {})}
       />
+      {learnedChange ? (
+        <div className="-mt-2 flex justify-end border-t border-border/70 pt-2">
+          <button
+            type="button"
+            className="min-h-11 px-2 text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+            disabled={dismissMutation.isPending}
+            onClick={() => dismissMutation.mutate(learnedChange.fingerprint)}
+          >
+            {english ? "Dismiss learned change" : "Paslėpti išmoktą pokytį"}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { TwinMemoryEvolution } from "./twin-memory-evolution";
-import { buildTwinMemoryProactiveSignal } from "./twin-memory-proactive";
+import {
+  buildTwinMemoryProactiveSignal,
+  buildTwinMemoryProactiveSignalFromTransition,
+  nextTwinMemoryProactiveStatus,
+} from "./twin-memory-proactive";
 
 function evolution(overrides: Partial<TwinMemoryEvolution> = {}): TwinMemoryEvolution {
   return {
@@ -57,5 +61,38 @@ describe("Twin Memory proactive policy", () => {
     expect(buildTwinMemoryProactiveSignal(evolution({ kind: "contradicted" }))?.severity).toBe(
       "attention",
     );
+  });
+  it("turns a persisted status transition into one deterministic proactive signal", () => {
+    const signal = buildTwinMemoryProactiveSignalFromTransition({
+      hypothesisId: "fatigue",
+      athleteStateSnapshotId: "11111111-1111-4111-8111-111111111111",
+      domain: "training_response",
+      previousStatus: "monitoring",
+      status: "supported",
+      statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
+      evidence: [],
+      evidenceCount: 6,
+      minimumEvidenceCount: 6,
+      canInfluenceDecision: true,
+      source: "deterministic",
+    });
+    expect(signal).toMatchObject({
+      kind: "strengthened",
+      severity: "positive",
+      decisionAuthority: false,
+      source: "deterministic",
+    });
+  });
+  it("keeps dismissed proactive changes terminal and makes seen idempotent", () => {
+    expect(nextTwinMemoryProactiveStatus("new", "seen")).toBe("seen");
+    expect(nextTwinMemoryProactiveStatus("seen", "seen")).toBe("seen");
+    expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe("dismissed");
+    expect(nextTwinMemoryProactiveStatus("dismissed", "seen")).toBe("dismissed");
+  });
+  it("keeps lifecycle presentation-only with no decision authority", () => {
+    expect(nextTwinMemoryProactiveStatus("new", "seen")).toBe("seen");
+    expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe("dismissed");
+    const signal = buildTwinMemoryProactiveSignal(evolution());
+    expect(signal?.decisionAuthority).toBe(false);
   });
 });
