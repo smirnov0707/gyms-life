@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -12,6 +13,7 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "@/components/future-lab/lab-overview.query";
 import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 import { evaluateTwinMemoryEvolutionSet } from "@/lib/twin-memory-evolution";
+import { selectEvidenceAcquisitionRecommendation } from "@/lib/evidence-acquisition";
 import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
 
 const STATEMENT = {
@@ -41,6 +43,9 @@ export function TwinMemory() {
     .filter((item) => item.kind !== "unchanged" && item.kind !== "unknown")
     .sort((a, b) => (b.occurredAt ?? "").localeCompare(a.occurredAt ?? ""));
   const hasUnknownBaseline = evolution.some((item) => item.kind === "unknown");
+  const nextEvidence = query.data
+    ? selectEvidenceAcquisitionRecommendation(hypotheses, query.data.dataGaps)
+    : null;
   const stability = query.data ? summarizeHypothesisStability(query.data.hypothesisHistory) : null;
   const labels = english
     ? {
@@ -191,6 +196,50 @@ export function TwinMemory() {
                   : "Nuo naujausio palyginimo taško reikšmingo atminties pokyčio neaptikta."}
             </p>
           )}
+        </div>
+      ) : null}
+
+      {nextEvidence ? (
+        <div className="mt-4 rounded-2xl border border-border/70 bg-surface-2/40 p-3">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-violet-300">
+            {english ? "WHAT WOULD REDUCE UNCERTAINTY" : "KAS SUMAŽINTŲ NEŽINOMYBĘ"}
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-foreground">
+            {nextEvidence.action === "rate_next_workout"
+              ? english
+                ? `Rate your next completed workout${nextEvidence.evidenceRemaining ? ` · ${nextEvidence.evidenceRemaining} more observation(s) to the current evidence threshold` : ""}.`
+                : `Įvertink kitą užbaigtą treniruotę${nextEvidence.evidenceRemaining ? ` · iki dabartinės įrodymų ribos trūksta ${nextEvidence.evidenceRemaining}` : ""}.`
+              : nextEvidence.action === "complete_next_workout"
+                ? english
+                  ? "Complete the next planned workout so the Twin has another observed training point."
+                  : "Užbaik kitą suplanuotą treniruotę, kad Twin gautų dar vieną stebėtą treniruotės tašką."
+                : nextEvidence.action === "record_recovery_checkin"
+                  ? english
+                    ? "Record a recovery check-in; recent recovery evidence is currently missing."
+                    : "Įrašyk atsistatymo check-in — šiuo metu trūksta naujausių atsistatymo duomenų."
+                  : nextEvidence.action === "log_nutrition"
+                    ? english
+                      ? "Log nutrition to restore a recent nutrition evidence window."
+                      : "Įrašyk mitybą, kad būtų atkurtas naujausias mitybos įrodymų langas."
+                    : nextEvidence.action === "record_body_metric"
+                      ? english
+                        ? "Record a body measurement to refresh the longitudinal body baseline."
+                        : "Įrašyk kūno matavimą, kad būtų atnaujinta ilgalaikė kūno atskaita."
+                      : english
+                        ? "Enable AI personalization before context-dependent intelligence can use those sources."
+                        : "Įjunk AI personalizavimą, kad kontekstinis intelligence galėtų naudoti šiuos šaltinius."}
+          </p>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="text-[9px] text-muted-foreground">
+              {english ? "Decision authority: none" : "Sprendimo teisė: nėra"}
+            </span>
+            <Link
+              to={nextEvidence.route}
+              className="inline-flex min-h-11 items-center text-xs font-medium text-violet-300"
+            >
+              {english ? "Add evidence" : "Pridėti įrodymą"} →
+            </Link>
+          </div>
         </div>
       ) : null}
 

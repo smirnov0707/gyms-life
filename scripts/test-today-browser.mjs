@@ -896,6 +896,23 @@ try {
   expect(changedMemory.errors).toEqual([]);
   await changedMemory.page.close();
 
+  const uncertaintyTwin = await openPanel(
+    "?panel=twin&twin=regions&scenario=reference&uncertainty=training",
+    { viewport: { width: 390, height: 844 } },
+  );
+  const uncertaintySummary = uncertaintyTwin.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(uncertaintySummary).toBeVisible({ timeout: 30000 });
+  await uncertaintySummary.click();
+  await expect(
+    uncertaintyTwin.page.getByText("WHAT WOULD REDUCE UNCERTAINTY", { exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(uncertaintyTwin.page.getByText(/2 more observation/)).toBeVisible();
+  await expect(uncertaintyTwin.page.getByRole("link", { name: /Add evidence/ })).toBeVisible();
+  expect(uncertaintyTwin.errors).toEqual([]);
+  await uncertaintyTwin.page.close();
+
   const changedToday = await open("?scenario=reference&memory=changed", {
     viewport: { width: 390, height: 844 },
   });

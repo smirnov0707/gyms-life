@@ -16,6 +16,8 @@ const scenario = () => new URLSearchParams(window.location.search).get("scenario
 const isReference = () => scenario() === "reference";
 const hasMemoryChange = () =>
   new URLSearchParams(window.location.search).get("memory") === "changed";
+const hasEvidenceGap = () =>
+  new URLSearchParams(window.location.search).get("uncertainty") === "training";
 function assertReadable() {
   if (scenario() === "failure") throw new Error("Synthetic source read failure");
 }
@@ -105,7 +107,7 @@ export async function getLabOverview() {
           {
             id: "training_response_low_feeling",
             domain: "training_response",
-            status: "monitoring",
+            status: hasEvidenceGap() ? "insufficient_evidence" : "monitoring",
             statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
             evidence: [
               { key: "rated_sessions", value: 4, unit: "sessions", source: "user_reported" },
