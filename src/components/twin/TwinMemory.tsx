@@ -1,7 +1,17 @@
-import { BrainCircuit, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  BrainCircuit,
+  CircleMinus,
+  HelpCircle,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "@/components/future-lab/lab-overview.query";
 import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
+import { evaluateTwinMemoryEvolutionSet } from "@/lib/twin-memory-evolution";
 
 const STATEMENT = {
   en: {
@@ -23,6 +33,13 @@ export function TwinMemory() {
   const english = baseLang(lang) === "en";
   const query = useLabOverview();
   const hypotheses = query.isError ? [] : (query.data?.hypotheses ?? []);
+  const evolution = query.data
+    ? evaluateTwinMemoryEvolutionSet(hypotheses, query.data.hypothesisHistory)
+    : [];
+  const meaningfulChanges = evolution
+    .filter((item) => item.kind !== "unchanged" && item.kind !== "unknown")
+    .sort((a, b) => (b.occurredAt ?? "").localeCompare(a.occurredAt ?? ""));
+  const hasUnknownBaseline = evolution.some((item) => item.kind === "unknown");
   const labels = english
     ? {
         supported: "Learned pattern",
@@ -71,6 +88,110 @@ export function TwinMemory() {
             : "Stabilaus asmeninio dėsningumo dar nėra."}
         </p>
       ) : null}
+
+      {!query.isLoading && !query.isError && hypotheses.length ? (
+        <div className="mt-4 rounded-2xl border border-violet-400/15 bg-violet-500/[0.04] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-violet-300">
+                {english ? "LATEST LEARNED CHANGES" : "NAUJAUSI IŠMOKTI POKYČIAI"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {english
+                  ? "Deterministic changes relative to the latest auditable memory anchor."
+                  : "Deterministiniai pokyčiai lyginant su naujausiu audituojamu atminties atskaitos tašku."}
+              </p>
+            </div>
+            <Sparkles aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+          </div>
+
+          {meaningfulChanges.length ? (
+            <div className="mt-3 grid gap-2">
+              {meaningfulChanges.slice(0, 3).map((change) => {
+                const hypothesis = hypotheses.find((item) => item.id === change.hypothesisId);
+                if (!hypothesis) return null;
+                const copy = STATEMENT[english ? "en" : "lt"];
+                const statement =
+                  copy[hypothesis.statementKey as keyof typeof copy] ??
+                  (english ? "A personal pattern changed." : "Asmeninis dėsningumas pasikeitė.");
+                const meta = {
+                  new: {
+                    icon: Sparkles,
+                    label: english ? "New" : "Nauja",
+                    tone: "text-violet-300",
+                  },
+                  strengthened: {
+                    icon: ArrowUpRight,
+                    label: english ? "Strengthened" : "Sustiprėjo",
+                    tone: "text-emerald-300",
+                  },
+                  weakened: {
+                    icon: ArrowDownRight,
+                    label: english ? "Weakened" : "Susilpnėjo",
+                    tone: "text-amber-300",
+                  },
+                  contradicted: {
+                    icon: AlertTriangle,
+                    label: english ? "Contradicted" : "Paneigta",
+                    tone: "text-rose-300",
+                  },
+                  unchanged: {
+                    icon: CircleMinus,
+                    label: english ? "Unchanged" : "Nepakito",
+                    tone: "text-muted-foreground",
+                  },
+                  unknown: {
+                    icon: HelpCircle,
+                    label: english ? "Unknown" : "Nežinoma",
+                    tone: "text-muted-foreground",
+                  },
+                }[change.kind];
+                const Icon = meta.icon;
+                return (
+                  <div
+                    key={change.hypothesisId}
+                    className="rounded-xl border border-border/60 bg-background/20 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span
+                        className={`flex items-center gap-1.5 text-[10px] font-semibold ${meta.tone}`}
+                      >
+                        <Icon aria-hidden="true" className="size-3.5" />
+                        {meta.label}
+                      </span>
+                      {change.evidenceDelta !== null && change.evidenceDelta !== 0 ? (
+                        <span className="font-mono text-[9px] text-muted-foreground">
+                          {change.evidenceDelta > 0 ? "+" : ""}
+                          {change.evidenceDelta} evidence
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-foreground">{statement}</p>
+                    <p className="mt-2 text-[9px] text-muted-foreground">
+                      {english ? "Comparison anchor" : "Palyginimo atskaitos taškas"}:{" "}
+                      {change.source}
+                      {change.athleteStateSnapshotId
+                        ? ` · ${change.athleteStateSnapshotId.slice(0, 8)}…`
+                        : ""}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {hasUnknownBaseline
+                ? english
+                  ? "A prior auditable baseline is not available yet, so change is not inferred."
+                  : "Ankstesnio audituojamo atskaitos taško dar nėra, todėl pokytis nespėjamas."
+                : english
+                  ? "No material memory change is detected from the latest comparison anchor."
+                  : "Nuo naujausio palyginimo taško reikšmingo atminties pokyčio neaptikta."}
+            </p>
+          )}
+        </div>
+      ) : null}
+
       {hypotheses.length ? (
         <div className="mt-4 grid gap-2">
           {hypotheses.slice(0, 4).map((hypothesis) => {

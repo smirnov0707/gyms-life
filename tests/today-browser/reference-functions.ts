@@ -14,6 +14,8 @@ import * as legacy from "./functions-stub";
 /** Entirely synthetic, schema-checked records. Never a live-user screenshot. */
 const scenario = () => new URLSearchParams(window.location.search).get("scenario");
 const isReference = () => scenario() === "reference";
+const hasMemoryChange = () =>
+  new URLSearchParams(window.location.search).get("memory") === "changed";
 function assertReadable() {
   if (scenario() === "failure") throw new Error("Synthetic source read failure");
 }
@@ -113,7 +115,26 @@ export async function getLabOverview() {
           },
         ]
       : [],
-    hypothesisHistory: [],
+    hypothesisHistory: hasMemoryChange()
+      ? [
+          {
+            hypothesisId: "training_response_low_feeling",
+            athleteStateSnapshotId: "00000000-0000-4000-8000-000000000099",
+            domain: "training_response",
+            previousStatus: "insufficient_evidence",
+            status: "monitoring",
+            statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
+            evidence: [
+              { key: "rated_sessions", value: 3, unit: "sessions", source: "user_reported" },
+            ],
+            evidenceCount: 3,
+            minimumEvidenceCount: 6,
+            canInfluenceDecision: false,
+            source: "deterministic",
+            occurredAt: "2026-09-07T06:00:00.000Z",
+          },
+        ]
+      : [],
     decisions: isReference()
       ? [
           {

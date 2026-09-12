@@ -850,6 +850,55 @@ try {
   await expect(twin.page.locator('[data-twin-body="human"]')).toHaveCount(1, { timeout: 30000 });
   await twin.page.screenshot({ path: path.join(artifacts, "twin-overview.png"), fullPage: true });
 
+  const memorySummary = twin.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(memorySummary).toBeVisible({ timeout: 30000 });
+  await memorySummary.click();
+  await expect(
+    twin.page.getByText("No stable personal pattern is available yet", { exact: false }),
+  ).toBeVisible();
+
+  const baselineMemory = await openPanel("?panel=twin&twin=regions&scenario=reference", {
+    viewport: { width: 390, height: 844 },
+  });
+  const baselineSummary = baselineMemory.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(baselineSummary).toBeVisible({ timeout: 30000 });
+  await baselineSummary.click();
+  await expect(
+    baselineMemory.page.getByText("A prior auditable baseline is not available yet", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  expect(baselineMemory.errors).toEqual([]);
+  await baselineMemory.page.close();
+
+  const changedMemory = await openPanel(
+    "?panel=twin&twin=regions&scenario=reference&memory=changed",
+    {
+      viewport: { width: 390, height: 844 },
+    },
+  );
+  const changedSummary = changedMemory.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(changedSummary).toBeVisible({ timeout: 30000 });
+  await changedSummary.click();
+  await expect(changedMemory.page.getByText("Strengthened", { exact: true })).toBeVisible();
+  await expect(changedMemory.page.getByText("+1 evidence", { exact: true })).toBeVisible();
+  await expect(changedMemory.page.getByText(/Comparison anchor: deterministic/)).toBeVisible();
+  await changedMemory.page.screenshot({
+    path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
+    fullPage: true,
+  });
+  expect(changedMemory.errors).toEqual([]);
+  await changedMemory.page.close();
+  record(
+    "Twin Memory distinguishes empty, unknown-baseline and deterministic learned-change states",
+  );
+
   await twin.page.getByRole("tab", { name: "Muscles" }).click();
   const table = twin.page.getByRole("region", { name: "Every region" });
   await expect(table).toBeVisible({ timeout: 30000 });
