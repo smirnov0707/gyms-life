@@ -20,7 +20,8 @@
     "test:browser:auth": "node scripts/test-auth-browser.mjs",
     "test:browser:offline": "node scripts/test-offline-browser.mjs",
     "test:bundle:night-lab": "node scripts/test-night-lab-bundle.mjs",
-    "test:browser:night-review": "node scripts/test-night-review-browser.mjs"
+    "test:browser:night-review": "node scripts/test-night-review-browser.mjs",
+    "smoke:production": "node scripts/smoke-production.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1",
