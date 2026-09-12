@@ -1,0 +1,104 @@
+import { describe, expect, it } from "vitest";
+import type { AthleteHypothesis } from "./athlete-hypothesis.schema";
+import type { LabHypothesisTransition } from "./lab.schema";
+import { evaluateTwinLearningIntegrity } from "./twin-learning-integrity";
+
+function hypothesis(id: string, status: AthleteHypothesis["status"]): AthleteHypothesis {
+  return {
+    id,
+    domain: "training_response",
+    status,
+    statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
+    evidence: [],
+    evidenceCount: 6,
+    minimumEvidenceCount: 6,
+    canInfluenceDecision: status === "supported",
+  };
+}
+
+function transition(
+  id: string,
+  status: LabHypothesisTransition["status"],
+  occurredAt: string,
+  previousStatus: LabHypothesisTransition["previousStatus"] = null,
+): LabHypothesisTransition {
+  return {
+    hypothesisId: id,
+    athleteStateSnapshotId: "00000000-0000-4000-8000-000000000099",
+    domain: "training_response",
+    previousStatus,
+    status,
+    statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
+    evidence: [],
+    evidenceCount: 6,
+    minimumEvidenceCount: 6,
+    canInfluenceDecision: status === "supported",
+    source: "deterministic",
+    occurredAt,
+  };
+}
+
+describe("Twin learning integrity", () => {
+  it("verifies a current belief against the latest ledger transition", () => {
+    const result = evaluateTwinLearningIntegrity(
+      [hypothesis("h1", "supported")],
+      [
+        transition("h1", "monitoring", "2026-09-10T10:00:00.000Z"),
+        transition("h1", "supported", "2026-09-12T10:00:00.000Z", "monitoring"),
+      ],
+    );
+    expect(result).toMatchObject({ verified: 1, unanchored: 0, drift: 0, allVerified: true });
+    expect(result.items[0]).toMatchObject({ status: "verified", decisionAuthority: true });
+  });
+  it("marks missing history as unanchored rather than verified", () => {
+    const result = evaluateTwinLearningIntegrity([hypothesis("h1", "monitoring")], []);
+    expect(result).toMatchObject({ verified: 0, unanchored: 1, drift: 0, allVerified: false });
+    expect(result.items[0]).toMatchObject({ ledgerStatus: null, decisionAuthority: false });
+  });
+
+  it("detects drift when current belief differs from the latest auditable status", () => {
+    const result = evaluateTwinLearningIntegrity(
+      [hypothesis("h1", "supported")],
+      [transition("h1", "contradicted", "2026-09-12T10:00:00.000Z")],
+    );
+    expect(result).toMatchObject({ verified: 0, unanchored: 0, drift: 1, allVerified: false });
+    expect(result.items[0]).toMatchObject({
+      status: "drift",
+      currentStatus: "supported",
+      ledgerStatus: "contradicted",
+    });
+  });
+
+  it("blocks decision eligibility when the auditable transition chain is broken", () => {
+    const result = evaluateTwinLearningIntegrity(
+      [hypothesis("h1", "supported")],
+      [
+        transition("h1", "monitoring", "2026-09-10T10:00:00.000Z"),
+        transition("h1", "supported", "2026-09-12T10:00:00.000Z", "contradicted"),
+      ],
+    );
+    expect(result).toMatchObject({
+      verified: 1,
+      chainBreaks: 1,
+      decisionEligible: 0,
+      allVerified: false,
+    });
+    expect(result.items[0]).toMatchObject({
+      status: "verified",
+      chainStatus: "broken",
+      decisionAuthority: false,
+    });
+  });
+
+  it("blocks eligibility when a hypothesis id changes semantic meaning across the ledger", () => {
+    const altered = transition("h1", "supported", "2026-09-12T10:00:00.000Z");
+    altered.statementKey = "athlete.hypothesis.trainingBehavior.usualDayFit";
+    const result = evaluateTwinLearningIntegrity([hypothesis("h1", "supported")], [altered]);
+    expect(result).toMatchObject({ definitionDrift: 1, decisionEligible: 0, allVerified: false });
+    expect(result.items[0]).toMatchObject({
+      status: "verified",
+      definitionDrift: true,
+      decisionAuthority: false,
+    });
+  });
+});

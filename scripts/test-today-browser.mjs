@@ -679,6 +679,21 @@ try {
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");
 
+  const learningLab = await openPanel("?panel=lab&scenario=reference&uncertainty=training", {
+    viewport: { width: 390, height: 844 },
+  });
+  await expect(learningLab.page.getByText("Current investigation", { exact: true })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(
+    learningLab.page.getByText("WHAT WOULD REDUCE UNCERTAINTY", { exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(learningLab.page.getByText(/2 more observation/)).toBeVisible();
+  await expect(learningLab.page.getByRole("link", { name: /Add evidence/ })).toBeVisible();
+  expect(learningLab.errors).toEqual([]);
+  await learningLab.page.close();
+  record("Lab current investigation surfaces the same uncertainty-reducing evidence action");
+
   // The journal's four counters all come off one query. An unread ledger must
   // not report four zeros — "you have no hypotheses" is a claim, and an empty
   // ledger is something an athlete might act on.
@@ -849,6 +864,89 @@ try {
   // so this fails if the asset is missing, unusable or served wrong.
   await expect(twin.page.locator('[data-twin-body="human"]')).toHaveCount(1, { timeout: 30000 });
   await twin.page.screenshot({ path: path.join(artifacts, "twin-overview.png"), fullPage: true });
+
+  const memorySummary = twin.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(memorySummary).toBeVisible({ timeout: 30000 });
+  await memorySummary.click();
+  await expect(
+    twin.page.getByText("No stable personal pattern is available yet", { exact: false }),
+  ).toBeVisible();
+
+  const baselineMemory = await openPanel("?panel=twin&twin=regions&scenario=reference", {
+    viewport: { width: 390, height: 844 },
+  });
+  const baselineSummary = baselineMemory.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(baselineSummary).toBeVisible({ timeout: 30000 });
+  await baselineSummary.click();
+  await expect(
+    baselineMemory.page.getByText("A prior auditable baseline is not available yet", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  expect(baselineMemory.errors).toEqual([]);
+  await baselineMemory.page.close();
+
+  const changedMemory = await openPanel(
+    "?panel=twin&twin=regions&scenario=reference&memory=changed",
+    {
+      viewport: { width: 390, height: 844 },
+    },
+  );
+  const changedSummary = changedMemory.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(changedSummary).toBeVisible({ timeout: 30000 });
+  await changedSummary.click();
+  await expect(changedMemory.page.getByText("Strengthened", { exact: true })).toBeVisible();
+  await expect(changedMemory.page.getByText("+1 evidence", { exact: true })).toBeVisible();
+  await expect(changedMemory.page.getByText(/Comparison anchor: deterministic/)).toBeVisible();
+  await changedMemory.page.screenshot({
+    path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
+    fullPage: true,
+  });
+  expect(changedMemory.errors).toEqual([]);
+  await changedMemory.page.close();
+
+  const uncertaintyTwin = await openPanel(
+    "?panel=twin&twin=regions&scenario=reference&uncertainty=training",
+    { viewport: { width: 390, height: 844 } },
+  );
+  const uncertaintySummary = uncertaintyTwin.page
+    .locator("details > summary")
+    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+  await expect(uncertaintySummary).toBeVisible({ timeout: 30000 });
+  await uncertaintySummary.click();
+  await expect(
+    uncertaintyTwin.page.getByText("WHAT WOULD REDUCE UNCERTAINTY", { exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(uncertaintyTwin.page.getByText(/2 more observation/)).toBeVisible();
+  await expect(uncertaintyTwin.page.getByRole("link", { name: /Add evidence/ })).toBeVisible();
+  expect(uncertaintyTwin.errors).toEqual([]);
+  await uncertaintyTwin.page.close();
+
+  const changedToday = await open("?scenario=reference&memory=changed", {
+    viewport: { width: 390, height: 844 },
+  });
+  const intelligence = changedToday.page.getByRole("region", { name: "Intelligence brief" });
+  await expect(intelligence.getByText("LEARNED CHANGE", { exact: true })).toBeVisible();
+  await expect(intelligence.getByText("Evidence strengthened", { exact: true })).toBeVisible();
+  await expect(intelligence.getByRole("link", { name: /Review/ })).toBeVisible();
+  const dismissLearned = intelligence.getByRole("button", { name: "Dismiss learned change" });
+  await expect(dismissLearned).toBeVisible();
+  await dismissLearned.click();
+  await expect(intelligence.getByText("LEARNED CHANGE", { exact: true })).toHaveCount(0, {
+    timeout: 10000,
+  });
+  await expect(intelligence.getByText("DISCOVERY", { exact: true })).toBeVisible();
+  expect(changedToday.errors).toEqual([]);
+  await changedToday.page.close();
+  record(
+    "Twin Memory distinguishes empty, unknown-baseline and deterministic learned-change states",
+  );
 
   await twin.page.getByRole("tab", { name: "Muscles" }).click();
   const table = twin.page.getByRole("region", { name: "Every region" });

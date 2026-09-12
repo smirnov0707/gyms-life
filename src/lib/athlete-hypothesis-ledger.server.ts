@@ -8,6 +8,7 @@ import {
   type AthleteHypothesisLedgerSummary,
 } from "./athlete-hypothesis-ledger";
 import { recordPersonalTimelineEvent } from "./personal-timeline.server";
+import { buildTwinMemoryProactiveSignalFromTransition } from "./twin-memory-proactive";
 
 const HYPOTHESIS_LEDGER_READ_LIMIT = 200;
 
@@ -76,6 +77,17 @@ export async function reconcileAthleteHypothesisLedger(
         sourceTable: "athlete_hypothesis",
         sourceReference: transitionReference(transition),
         summary: transition,
+      });
+      const proactive = buildTwinMemoryProactiveSignalFromTransition(transition);
+      await recordPersonalTimelineEvent(userId, {
+        eventType: "twin_memory_change",
+        occurredAt,
+        timeZone,
+        provenance: "calculated",
+        sourceSystem: "gymslife",
+        sourceTable: "twin_memory",
+        sourceReference: proactive.fingerprint,
+        summary: proactive,
       });
     }
   } catch (cause) {

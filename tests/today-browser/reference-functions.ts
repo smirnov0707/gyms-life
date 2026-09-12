@@ -14,11 +14,16 @@ import * as legacy from "./functions-stub";
 /** Entirely synthetic, schema-checked records. Never a live-user screenshot. */
 const scenario = () => new URLSearchParams(window.location.search).get("scenario");
 const isReference = () => scenario() === "reference";
+const hasMemoryChange = () =>
+  new URLSearchParams(window.location.search).get("memory") === "changed";
+const hasEvidenceGap = () =>
+  new URLSearchParams(window.location.search).get("uncertainty") === "training";
 function assertReadable() {
   if (scenario() === "failure") throw new Error("Synthetic source read failure");
 }
 const when = "2026-09-08T06:00:00.000Z";
 const id = "00000000-0000-4000-8000-000000000001";
+let proactiveMemoryStatus: "new" | "seen" | "dismissed" = "new";
 
 export async function getLiveSignals() {
   assertReadable();
@@ -102,7 +107,7 @@ export async function getLabOverview() {
           {
             id: "training_response_low_feeling",
             domain: "training_response",
-            status: "monitoring",
+            status: hasEvidenceGap() ? "insufficient_evidence" : "monitoring",
             statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
             evidence: [
               { key: "rated_sessions", value: 4, unit: "sessions", source: "user_reported" },
@@ -113,7 +118,26 @@ export async function getLabOverview() {
           },
         ]
       : [],
-    hypothesisHistory: [],
+    hypothesisHistory: hasMemoryChange()
+      ? [
+          {
+            hypothesisId: "training_response_low_feeling",
+            athleteStateSnapshotId: "00000000-0000-4000-8000-000000000099",
+            domain: "training_response",
+            previousStatus: "insufficient_evidence",
+            status: "monitoring",
+            statementKey: "athlete.hypothesis.trainingResponse.repeatedLowFeeling",
+            evidence: [
+              { key: "rated_sessions", value: 3, unit: "sessions", source: "user_reported" },
+            ],
+            evidenceCount: 3,
+            minimumEvidenceCount: 6,
+            canInfluenceDecision: false,
+            source: "deterministic",
+            occurredAt: "2026-09-07T06:00:00.000Z",
+          },
+        ]
+      : [],
     decisions: isReference()
       ? [
           {
@@ -147,6 +171,23 @@ export async function getLabOverview() {
       minimumEvaluated: 8,
       models: [],
     },
+    proactiveMemoryChanges: hasMemoryChange()
+      ? [
+          {
+            fingerprint:
+              "twin-memory:training_response_low_feeling:strengthened:00000000-0000-4000-8000-000000000099",
+            hypothesisId: "training_response_low_feeling",
+            kind: "strengthened",
+            severity: "positive",
+            source: "deterministic",
+            decisionAuthority: false,
+            athleteStateSnapshotId: "00000000-0000-4000-8000-000000000099",
+            occurredAt: "2026-09-07T06:00:00.000Z",
+            status: proactiveMemoryStatus,
+            statusChangedAt: proactiveMemoryStatus === "new" ? null : "2026-09-08T06:05:00.000Z",
+          },
+        ]
+      : [],
     dataGaps: isReference()
       ? []
       : [
@@ -158,6 +199,17 @@ export async function getLabOverview() {
     unreadable: [],
   });
 }
+
+export async function markTwinMemoryChangeSeen() {
+  proactiveMemoryStatus = proactiveMemoryStatus === "dismissed" ? "dismissed" : "seen";
+  return { status: proactiveMemoryStatus };
+}
+
+export async function dismissTwinMemoryChange() {
+  proactiveMemoryStatus = "dismissed";
+  return { status: proactiveMemoryStatus };
+}
+
 export async function getTodayDecision() {
   assertReadable();
   if (!isReference()) return null;

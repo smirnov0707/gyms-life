@@ -15,6 +15,10 @@ import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "./lab-overview.query";
 import type { LabDecision } from "@/lib/lab.schema";
 import type { AthleteHypothesis } from "@/lib/athlete-hypothesis.schema";
+import {
+  buildJournalLearningHistory,
+  summarizeJournalLearningWeek,
+} from "@/lib/journal-learning-history";
 import "./journal-stats.css";
 import "./reference-page-density.css";
 
@@ -91,6 +95,10 @@ export function JournalIntelligence() {
       (item) => item.status === "monitoring" || item.status === "insufficient_evidence",
     ) ?? [];
   const contradicted = data?.hypotheses.filter((item) => item.status === "contradicted") ?? [];
+  const learningHistory = data
+    ? buildJournalLearningHistory(data.hypothesisHistory, data.hypotheses)
+    : [];
+  const learningWeek = summarizeJournalLearningWeek(learningHistory);
   const statement = (key: string) =>
     statements[locale][key as keyof (typeof statements)[typeof locale]] ??
     (english ? "A personal pattern is being evaluated." : "Vertinamas asmeninis dėsningumas.");
@@ -111,14 +119,25 @@ export function JournalIntelligence() {
         activeEmpty: "No hypothesis currently needs more evidence.",
         decisionTitle: "Recent decisions",
         decisionEmpty: "No recent Today decisions are available.",
-        learningTimeline: "Learning timeline",
         timelineEmpty: "No hypothesis status transitions have been recorded yet.",
+        learningHistoryTitle: "How GYMS.LIFE learning changed",
+        learningHistoryHint: "Auditable changes in what the Twin believed over time.",
+        currentBelief: "Current belief",
+        historicalEligibility: "Decision eligibility then",
+        eligible: "eligible",
+        notEligible: "not eligible",
+        snapshot: "Snapshot",
+        firstObservedChange: "First observed",
+        strengthenedChange: "Strengthened",
+        weakenedChange: "Weakened",
+        contradictedChange: "Contradicted",
+        weekChanged: "What changed this week",
+        weekNoChange: "No auditable learning change in the last 7 days.",
         evidence: "Evidence",
         evidencePoints: "evidence points",
         gathering: "Gathering evidence",
         monitoring: "Monitoring",
         noResponse: "No response yet",
-        previous: "Previous",
         firstObserved: "First observed",
         contradicted: "Contradicted hypotheses retained for audit",
         auditNote:
@@ -139,14 +158,25 @@ export function JournalIntelligence() {
         activeEmpty: "Šiuo metu nė vienai hipotezei nereikia papildomų įrodymų.",
         decisionTitle: "Naujausi sprendimai",
         decisionEmpty: "Naujausių Today sprendimų nėra.",
-        learningTimeline: "Mokymosi laiko juosta",
         timelineEmpty: "Hipotezių statusų pokyčių dar neužregistruota.",
+        learningHistoryTitle: "Kaip keitėsi GYMS.LIFE žinios",
+        learningHistoryHint: "Audituojami pokyčiai, kaip Twin supratimas keitėsi laikui bėgant.",
+        currentBelief: "Dabartinis vertinimas",
+        historicalEligibility: "Tinkamumas sprendimams tuo metu",
+        eligible: "tinkama",
+        notEligible: "netinkama",
+        snapshot: "Momentinė būsena",
+        firstObservedChange: "Pirmas stebėjimas",
+        strengthenedChange: "Sustiprėjo",
+        weakenedChange: "Susilpnėjo",
+        contradictedChange: "Paneigta",
+        weekChanged: "Kas pasikeitė šią savaitę",
+        weekNoChange: "Per paskutines 7 dienas audituojamų mokymosi pokyčių nebuvo.",
         evidence: "Įrodymai",
         evidencePoints: "įrodymų taškai",
         gathering: "Renkami įrodymai",
         monitoring: "Stebima",
         noResponse: "Dar be atsakymo",
-        previous: "Ankstesnis",
         firstObserved: "Pirmas stebėjimas",
         contradicted: "Paneigtos hipotezės išsaugotos auditui",
         auditNote:
@@ -397,6 +427,99 @@ export function JournalIntelligence() {
               </div>
             </details>
 
+            <div className="mt-3 rounded-xl border border-violet-400/10 bg-violet-400/[0.025] px-3 py-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                <span className="font-semibold uppercase tracking-[0.12em] text-violet-300">
+                  {copy.weekChanged}
+                </span>
+                <span className="font-mono text-muted-foreground">{learningWeek.total}</span>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                {learningWeek.mostImportant
+                  ? `${statement(learningWeek.mostImportant.statementKey)} · ${
+                      learningWeek.mostImportant.change === "contradicted"
+                        ? copy.contradictedChange
+                        : learningWeek.mostImportant.change === "weakened"
+                          ? copy.weakenedChange
+                          : learningWeek.mostImportant.change === "strengthened"
+                            ? copy.strengthenedChange
+                            : copy.firstObservedChange
+                    }`
+                  : copy.weekNoChange}
+              </p>
+            </div>
+
+            <details className="fl-secondary-details mt-3">
+              <summary>
+                {copy.learningHistoryTitle} · {learningHistory.length}
+              </summary>
+              <div className="fl-disclosed-content">
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+                  {copy.learningHistoryHint}
+                </p>
+                {learningHistory.length ? (
+                  <div className="mt-3 space-y-3">
+                    {learningHistory.slice(0, 12).map((entry) => {
+                      const changeLabel =
+                        entry.change === "first_observed"
+                          ? copy.firstObservedChange
+                          : entry.change === "strengthened"
+                            ? copy.strengthenedChange
+                            : entry.change === "weakened"
+                              ? copy.weakenedChange
+                              : copy.contradictedChange;
+                      return (
+                        <article
+                          key={`${entry.hypothesisId}-${entry.occurredAt}`}
+                          className="relative border-l border-violet-400/20 pl-4"
+                        >
+                          <span className="absolute -left-1 top-1 size-2 rounded-full bg-violet-400" />
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-300">
+                              {changeLabel}
+                            </span>
+                            <span className="font-mono text-[9px] text-muted-foreground">
+                              {entry.evidenceCount}/{entry.minimumEvidenceCount}{" "}
+                              {copy.evidencePoints}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed text-foreground">
+                            {statement(entry.statementKey)}
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {entry.previousStatus
+                              ? `${entry.previousStatus.replaceAll("_", " ")} → `
+                              : `${copy.firstObserved} → `}
+                            <span className={statusTone(entry.status)}>
+                              {entry.status.replaceAll("_", " ")}
+                            </span>
+                          </p>
+                          <p className="mt-1 font-mono text-[9px] text-muted-foreground">
+                            {new Date(entry.occurredAt).toLocaleDateString(formatLocale(lang))} ·{" "}
+                            {copy.snapshot}: {entry.athleteStateSnapshotId.slice(0, 8)}…
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {copy.historicalEligibility}:{" "}
+                            {entry.wasDecisionEligible ? copy.eligible : copy.notEligible}
+                          </p>
+                          {entry.currentStatus && entry.currentStatus !== entry.status ? (
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              {copy.currentBelief}:{" "}
+                              <span className={statusTone(entry.currentStatus)}>
+                                {entry.currentStatus.replaceAll("_", " ")}
+                              </span>
+                            </p>
+                          ) : null}
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <FutureLabEmpty>{copy.timelineEmpty}</FutureLabEmpty>
+                )}
+              </div>
+            </details>
+
             {(tab === "all" || tab === "decisions") && (
               <details className="fl-secondary-details mt-3" open={tab === "decisions"}>
                 <summary>
@@ -404,7 +527,7 @@ export function JournalIntelligence() {
                   {data.unreadable.includes("decisions") ? "—" : data.decisions.length}
                 </summary>
                 <div className="fl-disclosed-content">
-                  <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_.8fr]">
+                  <div className="mt-4">
                     <FutureLabPanel
                       title={copy.decisionTitle}
                       action={<History className="size-4 text-amber-300" />}
@@ -444,47 +567,6 @@ export function JournalIntelligence() {
                         </div>
                       ) : (
                         <FutureLabEmpty>{copy.decisionEmpty}</FutureLabEmpty>
-                      )}
-                    </FutureLabPanel>
-
-                    <FutureLabPanel
-                      title={copy.learningTimeline}
-                      action={<Microscope className="size-4 text-violet-300" />}
-                    >
-                      {data?.hypothesisHistory.length ? (
-                        <div className="space-y-3">
-                          {data.hypothesisHistory.slice(0, 6).map((transition) => (
-                            <article
-                              key={`${transition.hypothesisId}-${transition.occurredAt}`}
-                              className="relative border-l border-violet-400/20 pl-4"
-                            >
-                              <span className="absolute -left-1 top-1 size-2 rounded-full bg-violet-400" />
-                              <p className="text-xs leading-relaxed text-muted-foreground">
-                                {statement(transition.statementKey)}
-                              </p>
-                              <p className="mt-1 font-mono text-[9px] text-muted-foreground">
-                                {new Date(transition.occurredAt).toLocaleString(
-                                  formatLocale(lang),
-                                  {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  },
-                                )}
-                              </p>
-                              <p className="mt-1 text-[10px] text-muted-foreground">
-                                {transition.previousStatus
-                                  ? `${copy.previous}: ${transition.previousStatus.replaceAll("_", " ")} → `
-                                  : `${copy.firstObserved} → `}
-                                <span className={statusTone(transition.status)}>
-                                  {transition.status.replaceAll("_", " ")}
-                                </span>
-                              </p>
-                            </article>
-                          ))}
-                        </div>
-                      ) : (
-                        <FutureLabEmpty>{copy.timelineEmpty}</FutureLabEmpty>
                       )}
                     </FutureLabPanel>
                   </div>

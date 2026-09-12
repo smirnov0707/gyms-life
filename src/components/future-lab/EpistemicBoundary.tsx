@@ -4,6 +4,8 @@ import type { LabOverview } from "@/lib/lab.schema";
 import { buildTwinEpistemicState } from "@/lib/twin-epistemic-state";
 import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
 import { buildPredictionVersionComparisons } from "@/lib/prediction-version-comparison";
+import { buildTwinUncertaintyMap } from "@/lib/twin-uncertainty-map";
+import { evaluateTwinLearningIntegrity } from "@/lib/twin-learning-integrity";
 import { FutureLabPanel } from "./FutureLabPanel";
 
 export function EpistemicBoundary({
@@ -18,6 +20,11 @@ export function EpistemicBoundary({
   const state = buildTwinEpistemicState(lab, forecast);
   const stability = summarizeHypothesisStability(lab?.hypothesisHistory ?? []);
   const comparisons = lab ? buildPredictionVersionComparisons(lab.predictionCalibration) : [];
+  const uncertainty = buildTwinUncertaintyMap(lab);
+  const integrity = evaluateTwinLearningIntegrity(
+    lab?.hypotheses ?? [],
+    lab?.hypothesisHistory ?? [],
+  );
   const candidateWins = comparisons.filter(
     (item) => item.verdict === "candidate_outperforms",
   ).length;
@@ -97,8 +104,8 @@ export function EpistemicBoundary({
           <p className="mt-1 font-mono text-lg text-foreground">{unknownCount}</p>
           <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
             {english
-              ? "Missing or unreadable sources stay unknown."
-              : "Trūkstami ar neperskaitomi šaltiniai lieka nežinomi."}
+              ? `${uncertainty.activeLearning} active learning · ${uncertainty.actionableEvidenceGaps} actionable gap${uncertainty.actionableEvidenceGaps === 1 ? "" : "s"} · ${uncertainty.unavailableSources} unavailable source${uncertainty.unavailableSources === 1 ? "" : "s"}`
+              : `${uncertainty.activeLearning} aktyviai mokomasi · ${uncertainty.actionableEvidenceGaps} papildomi išmatuojami tarpai · ${uncertainty.unavailableSources} nepasiekiami šaltiniai`}
           </p>
         </article>
       </div>
@@ -111,6 +118,16 @@ export function EpistemicBoundary({
             {english
               ? `${stability.transitionCount} recorded transitions · ${stability.reversalCount} supported↔contradicted reversals`
               : `${stability.transitionCount} užfiksuoti pokyčiai · ${stability.reversalCount} supported↔contradicted reversals`}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {english ? "Learning integrity" : "Mokymosi vientisumas"}
+          </p>
+          <p className="mt-1 text-[10px] leading-relaxed text-foreground">
+            {english
+              ? `${integrity.verified} audited · ${integrity.decisionEligible} decision-eligible · ${integrity.chainBreaks} chain breaks · ${integrity.definitionDrift} definition drift · ${integrity.unanchored} unanchored · ${integrity.drift} drift`
+              : `${integrity.verified} audituota · ${integrity.decisionEligible} tinkama sprendimams · ${integrity.chainBreaks} grandinės trūkiai · ${integrity.definitionDrift} reikšmės neatitikimai · ${integrity.unanchored} be atskaitos taško · ${integrity.drift} neatitikimai`}
           </p>
         </div>
         <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
