@@ -15,6 +15,7 @@ import { EvidenceAcquisitionPrompt } from "@/components/intelligence/EvidenceAcq
 import { evaluateTwinMemoryEvolutionSet } from "@/lib/twin-memory-evolution";
 import { selectEvidenceAcquisitionRecommendation } from "@/lib/evidence-acquisition";
 import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
+import { evaluateTwinLearningIntegrity } from "@/lib/twin-learning-integrity";
 
 const STATEMENT = {
   en: {
@@ -47,6 +48,9 @@ export function TwinMemory() {
     ? selectEvidenceAcquisitionRecommendation(hypotheses, query.data.dataGaps)
     : null;
   const stability = query.data ? summarizeHypothesisStability(query.data.hypothesisHistory) : null;
+  const integrity = query.data
+    ? evaluateTwinLearningIntegrity(hypotheses, query.data.hypothesisHistory)
+    : null;
   const labels = english
     ? {
         supported: "Learned pattern",
@@ -215,6 +219,9 @@ export function TwinMemory() {
             const historyStability = stability?.hypotheses.find(
               (item) => item.hypothesisId === hypothesis.id,
             );
+            const auditIntegrity = integrity?.items.find(
+              (item) => item.hypothesisId === hypothesis.id,
+            );
             return (
               <article
                 key={hypothesis.id}
@@ -240,6 +247,23 @@ export function TwinMemory() {
                       ? "not allowed"
                       : "neleidžiama"}
                 </p>
+                {auditIntegrity ? (
+                  <p
+                    className={`mt-1 text-[9px] ${auditIntegrity.status === "drift" ? "text-rose-300" : "text-muted-foreground"}`}
+                  >
+                    {auditIntegrity.status === "verified"
+                      ? english
+                        ? "Audit integrity · verified"
+                        : "Audito vientisumas · patvirtintas"
+                      : auditIntegrity.status === "unanchored"
+                        ? english
+                          ? "Audit integrity · no historical anchor yet"
+                          : "Audito vientisumas · istorinio atskaitos taško dar nėra"
+                        : english
+                          ? `Audit integrity · drift (${auditIntegrity.ledgerStatus ?? "unknown"} → ${auditIntegrity.currentStatus})`
+                          : `Audito vientisumas · neatitikimas (${auditIntegrity.ledgerStatus ?? "nežinoma"} → ${auditIntegrity.currentStatus})`}
+                  </p>
+                ) : null}
                 {historyStability && historyStability.transitions > 1 ? (
                   <p className="mt-1 text-[9px] text-muted-foreground">
                     {historyStability.reversals > 0

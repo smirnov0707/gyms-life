@@ -5,6 +5,7 @@ import { buildTwinEpistemicState } from "@/lib/twin-epistemic-state";
 import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
 import { buildPredictionVersionComparisons } from "@/lib/prediction-version-comparison";
 import { buildTwinUncertaintyMap } from "@/lib/twin-uncertainty-map";
+import { evaluateTwinLearningIntegrity } from "@/lib/twin-learning-integrity";
 import { FutureLabPanel } from "./FutureLabPanel";
 
 export function EpistemicBoundary({
@@ -20,6 +21,10 @@ export function EpistemicBoundary({
   const stability = summarizeHypothesisStability(lab?.hypothesisHistory ?? []);
   const comparisons = lab ? buildPredictionVersionComparisons(lab.predictionCalibration) : [];
   const uncertainty = buildTwinUncertaintyMap(lab);
+  const integrity = evaluateTwinLearningIntegrity(
+    lab?.hypotheses ?? [],
+    lab?.hypothesisHistory ?? [],
+  );
   const candidateWins = comparisons.filter(
     (item) => item.verdict === "candidate_outperforms",
   ).length;
@@ -113,6 +118,16 @@ export function EpistemicBoundary({
             {english
               ? `${stability.transitionCount} recorded transitions · ${stability.reversalCount} supported↔contradicted reversals`
               : `${stability.transitionCount} užfiksuoti pokyčiai · ${stability.reversalCount} supported↔contradicted reversals`}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {english ? "Learning integrity" : "Mokymosi vientisumas"}
+          </p>
+          <p className="mt-1 text-[10px] leading-relaxed text-foreground">
+            {english
+              ? `${integrity.verified} audited · ${integrity.unanchored} unanchored · ${integrity.drift} drift`
+              : `${integrity.verified} audituota · ${integrity.unanchored} be atskaitos taško · ${integrity.drift} neatitikimai`}
           </p>
         </div>
         <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
