@@ -47,12 +47,12 @@ describe("Twin learning integrity", () => {
       ],
     );
     expect(result).toMatchObject({ verified: 1, unanchored: 0, drift: 0, allVerified: true });
-    expect(result.items[0]?.status).toBe("verified");
+    expect(result.items[0]).toMatchObject({ status: "verified", decisionAuthority: true });
   });
   it("marks missing history as unanchored rather than verified", () => {
     const result = evaluateTwinLearningIntegrity([hypothesis("h1", "monitoring")], []);
     expect(result).toMatchObject({ verified: 0, unanchored: 1, drift: 0, allVerified: false });
-    expect(result.items[0]?.ledgerStatus).toBeNull();
+    expect(result.items[0]).toMatchObject({ ledgerStatus: null, decisionAuthority: false });
   });
 
   it("detects drift when current belief differs from the latest auditable status", () => {

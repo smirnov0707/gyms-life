@@ -10,6 +10,7 @@ export type TwinLearningIntegrityItem = {
   latestOccurredAt: string | null;
   athleteStateSnapshotId: string | null;
   status: TwinLearningIntegrityStatus;
+  decisionAuthority: boolean;
 };
 
 export type TwinLearningIntegritySummary = {
@@ -49,6 +50,7 @@ export function evaluateTwinLearningIntegrity(
       latestOccurredAt: latest?.occurredAt ?? null,
       athleteStateSnapshotId: latest?.athleteStateSnapshotId ?? null,
       status,
+      decisionAuthority: hypothesis.canInfluenceDecision && status === "verified",
     };
   });
   const verified = items.filter((item) => item.status === "verified").length;

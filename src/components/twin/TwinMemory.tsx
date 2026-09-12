@@ -239,10 +239,10 @@ export function TwinMemory() {
                 <p className="mt-2 flex items-center gap-1.5 text-[9px] text-muted-foreground">
                   <ShieldCheck aria-hidden="true" className="size-3 text-violet-300" />
                   {english ? "Decision authority" : "Sprendimo teisė"}:{" "}
-                  {hypothesis.canInfluenceDecision
+                  {auditIntegrity?.decisionAuthority
                     ? english
-                      ? "allowed"
-                      : "leidžiama"
+                      ? "allowed · audit verified"
+                      : "leidžiama · auditas patvirtintas"
                     : english
                       ? "not allowed"
                       : "neleidžiama"}
