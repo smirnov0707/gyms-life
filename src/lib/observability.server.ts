@@ -10,6 +10,7 @@ const ObservabilityEventNameSchema = z.enum([
   "life_context.dismiss",
   "life_context.set",
   "personal_timeline.record",
+  "personalized_twin.identity_shell_fallback",
   "today_decision.outcome",
   "training_rhythm.clear",
   "training_rhythm.set",

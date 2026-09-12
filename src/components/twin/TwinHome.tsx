@@ -6,7 +6,13 @@ import { useAuth } from "@/lib/auth";
 import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTwinExperience } from "@/lib/digital-twin.functions";
+import { getPersonalizedTwinCapability } from "@/lib/personalized-twin.functions";
+import {
+  getPersonalizedTwinLifecycle,
+  reportPersonalizedTwinIdentityFallback,
+} from "@/lib/personalized-twin.lifecycle.functions";
 import { TwinIntelligencePanel } from "@/components/twin/TwinIntelligencePanel";
+import { PersonalizedTwinSetup } from "@/components/twin/PersonalizedTwinSetup";
 import { getTodaysTargets } from "@/lib/todays-targets.functions";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { targetsRegion, type TodaysTargets } from "@/lib/todays-targets.engine";
@@ -202,6 +208,24 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
     queryFn: () => getTwinExperience({ data: timeZone }),
     staleTime: 60_000,
   });
+  const capabilityQuery = useQuery({
+    queryKey: ["personalized-twin-capability", user?.id],
+    enabled: Boolean(user),
+    queryFn: () => getPersonalizedTwinCapability(),
+    staleTime: 5 * 60_000,
+  });
+  const personalizedLifecycleQuery = useQuery({
+    queryKey: ["personalized-twin-lifecycle", user?.id],
+    enabled: Boolean(user),
+    queryFn: () => getPersonalizedTwinLifecycle(),
+    staleTime: 30_000,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status === "processing") return 5_000;
+      if (status === "ready" && query.state.data?.modelUrl) return 4 * 60_000;
+      return false;
+    },
+  });
   const targetsQuery = useQuery({
     queryKey: ["todays-targets", user?.id, timeZone],
     enabled: Boolean(user),
@@ -217,6 +241,15 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
   const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("realistic");
+  const identityModelUrl =
+    personalizedLifecycleQuery.data?.status === "ready"
+      ? personalizedLifecycleQuery.data.modelUrl
+      : null;
+  const personalizedIdentityReady = Boolean(identityModelUrl);
+  const reportIdentityFallback = (reason: "load_failed" | "invalid_geometry" | "expired_url") => {
+    void reportPersonalizedTwinIdentityFallback({ data: { reason } }).catch(() => undefined);
+    if (reason === "expired_url") void personalizedLifecycleQuery.refetch();
+  };
 
   const experience = snapshotQuery.data;
   const snapshot = experience?.snapshot;
@@ -293,8 +326,12 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
               >
                 {option === "realistic"
                   ? language === "lt"
-                    ? "Kūnas"
-                    : "Body"
+                    ? personalizedIdentityReady
+                      ? "Mano Twin"
+                      : "Kūnas"
+                    : personalizedIdentityReady
+                      ? "My Twin"
+                      : "Body"
                   : language === "lt"
                     ? "Raumenys"
                     : "Muscles"}
@@ -316,6 +353,8 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
         <TwinStage
           presentation="cockpit"
           visualAppearance={visualAppearance}
+          identityModelUrl={identityModelUrl}
+          onIdentityShellFallback={reportIdentityFallback}
           snapshot={snapshot}
           layer={shownLayer}
           onLayerChange={setLayer}
@@ -399,8 +438,12 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
               >
                 {option === "realistic"
                   ? language === "lt"
-                    ? "Kūnas"
-                    : "Body"
+                    ? personalizedIdentityReady
+                      ? "Mano Twin"
+                      : "Kūnas"
+                    : personalizedIdentityReady
+                      ? "My Twin"
+                      : "Body"
                   : language === "lt"
                     ? "Raumenys"
                     : "Muscles"}
@@ -415,6 +458,8 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           <TwinStage
             fill
             visualAppearance={visualAppearance}
+            identityModelUrl={identityModelUrl}
+            onIdentityShellFallback={reportIdentityFallback}
             snapshot={snapshot}
             layer={shownLayer}
             onLayerChange={setLayer}
@@ -498,6 +543,9 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           ) : null}
           <TrainingLoadPanel />
           <RecentWorkoutEffect />
+          <div className="min-w-0 lg:col-span-2 xl:col-span-4">
+            <PersonalizedTwinSetup language={language} capability={capabilityQuery.data ?? null} />
+          </div>
         </div>
       </div>
     </section>

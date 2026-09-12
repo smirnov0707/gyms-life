@@ -970,6 +970,110 @@ export type Database = {
         }
         Relationships: []
       }
+      personalized_twin_capture_images: {
+        Row: {
+          angle: string
+          byte_size: number
+          capture_set_id: string
+          content_type: string
+          created_at: string
+          id: string
+          object_path: string
+          sha256: string | null
+          user_id: string
+        }
+        Insert: {
+          angle: string
+          byte_size: number
+          capture_set_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          object_path: string
+          sha256?: string | null
+          user_id: string
+        }
+        Update: {
+          angle?: string
+          byte_size?: number
+          capture_set_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          object_path?: string
+          sha256?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personalized_twin_capture_images_capture_set_id_user_id_fkey"
+            columns: ["capture_set_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "personalized_twin_capture_sets"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      personalized_twin_capture_sets: {
+        Row: {
+          consent_version: string
+          consented_at: string
+          created_at: string
+          error_code: string | null
+          id: string
+          input_deleted_at: string | null
+          model_object_path: string | null
+          provider_job_id: string | null
+          provider_key: string | null
+          provider_next_poll_at: string | null
+          provider_poll_attempt: number
+          provider_submit_claim_token: string | null
+          provider_submit_claim_until: string | null
+          provider_terminal_lease_until: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_version: string
+          consented_at: string
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          input_deleted_at?: string | null
+          model_object_path?: string | null
+          provider_job_id?: string | null
+          provider_key?: string | null
+          provider_next_poll_at?: string | null
+          provider_poll_attempt?: number
+          provider_submit_claim_token?: string | null
+          provider_submit_claim_until?: string | null
+          provider_terminal_lease_until?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_version?: string
+          consented_at?: string
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          input_deleted_at?: string | null
+          model_object_path?: string | null
+          provider_job_id?: string | null
+          provider_key?: string | null
+          provider_next_poll_at?: string | null
+          provider_poll_attempt?: number
+          provider_submit_claim_token?: string | null
+          provider_submit_claim_until?: string | null
+          provider_terminal_lease_until?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
@@ -1560,6 +1664,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_personalized_twin_provider_terminal_lease: {
+        Args: { p_capture_set_id: string; p_provider_job_id: string; p_lease_until: string }
+        Returns: string
+      }
+      claim_personalized_twin_provider_event: {
+        Args: { p_event_key: string; p_provider_job_id: string; p_provider_key: string }
+        Returns: string
+      }
+      claim_personalized_twin_provider_submission: {
+        Args: { p_capture_set_id: string; p_claim_token: string; p_claim_until: string; p_provider_key: string; p_user_id: string }
+        Returns: Json
+      }
+      complete_personalized_twin_provider_submission: {
+        Args: { p_capture_set_id: string; p_claim_token: string; p_provider_job_id: string; p_provider_key: string; p_user_id: string }
+        Returns: undefined
+      }
+      release_personalized_twin_provider_submission: {
+        Args: { p_capture_set_id: string; p_claim_token: string; p_user_id: string }
+        Returns: undefined
+      }
+      release_personalized_twin_provider_terminal_lease: {
+        Args: { p_capture_set_id: string; p_provider_job_id: string }
+        Returns: undefined
+      }
+      schedule_personalized_twin_provider_poll: {
+        Args: { p_capture_set_id: string; p_next_poll_at: string; p_poll_attempt: number; p_provider_job_id: string }
+        Returns: undefined
+      }
       commit_night_lab_review: {
         Args: { p_run_id: string; p_claimed_at: string; p_user_id: string; p_report: Json }
         Returns: string

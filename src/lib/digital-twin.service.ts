@@ -5,10 +5,16 @@ import { mapDigitalAthleteStateToTwinSnapshot, twinBodyVariantFor } from "./digi
 import type { TwinSnapshot } from "./digital-twin.schema";
 import { buildTwinIntelligence } from "./twin-intelligence.engine";
 import type { TwinIntelligence } from "./twin-intelligence.schema";
+import {
+  buildPersonalizedTwinLayers,
+  type PersonalizedTwinLayerBundle,
+} from "./personalized-twin.layers";
+import { buildTwinBodyGeometryEvidenceFromAthleteState } from "./personalized-twin.geometry";
 
 export type TwinExperience = {
   snapshot: TwinSnapshot;
   intelligence: TwinIntelligence;
+  personalizedTwin: PersonalizedTwinLayerBundle;
 };
 
 /**
@@ -33,6 +39,18 @@ export async function loadTwinExperience(
   return {
     snapshot,
     intelligence: buildTwinIntelligence(athlete.state, now),
+    personalizedTwin: buildPersonalizedTwinLayers({
+      identity: {
+        status: "generic",
+        source: "gyms_generic",
+        providerKey: null,
+        modelObjectPath: null,
+        visualIdentityOnly: true,
+        bodyGeometryAuthority: false,
+        medicalScan: false,
+      },
+      geometry: buildTwinBodyGeometryEvidenceFromAthleteState(athlete.state),
+    }),
   };
 }
 

@@ -25,6 +25,7 @@ import { createTwinBody } from "./twin-body.geometry";
 import { createTwinStageDecor } from "./twin-stage.scene";
 import { createTwinCameraFrame } from "./twin-camera.framing";
 import type { TwinBodyProvenance } from "./twin-body.provenance";
+import { loadTwinIdentityShell, type TwinIdentityShellModel } from "./twin-identity-shell.loader";
 import {
   loadTwinHuman,
   twinHumanUrl,
@@ -94,11 +95,17 @@ export function mountTwinScene(
     human?: boolean;
     humanVariant?: TwinHumanVariant;
     visualAppearance?: TwinVisualAppearance;
+    /** Short-lived private URL for a visual Identity Shell. Never carries evidence regions. */
+    identityModelUrl?: string | null;
     /**
      * Fires once there is a body in the scene, and says which one. Until then
      * the stage has nothing to show and keeps its 2D map up.
      */
-    onBodyReady?: (kind: "human" | "surface", provenance: TwinBodyProvenance | null) => void;
+    onBodyReady?: (
+      kind: "human" | "identity" | "surface",
+      provenance: TwinBodyProvenance | null,
+    ) => void;
+    onIdentityShellFallback?: (reason: "load_failed" | "invalid_geometry" | "expired_url") => void;
   },
 ): TwinSceneHandle {
   const cleanups: Array<() => void> = [];
@@ -246,7 +253,8 @@ export function mountTwinScene(
     twinBodyRoot.name = "twin-body-root";
     scene.add(twinBodyRoot);
 
-    let model: TwinBodyModel | ReturnType<typeof createTwinBody> = createTwinBody();
+    let model: TwinBodyModel | TwinIdentityShellModel | ReturnType<typeof createTwinBody> =
+      createTwinBody();
     // The generated surface is no longer shown while the figure downloads. It
     // is a mannequin, and for the seconds a 1.2 MB glTF takes on a phone it
     // stood in the athlete's stage looking like their twin. Nothing is added
@@ -289,11 +297,21 @@ export function mountTwinScene(
     });
 
     if (options.human !== false) {
-      void loadTwinHuman(
-        twinHumanUrl(options.humanVariant ?? "male", appearance),
-        humanLoad.signal,
-        appearance,
-      )
+      const identityUrl = appearance === "realistic" ? options.identityModelUrl : null;
+      const humanPromise = identityUrl
+        ? loadTwinIdentityShell(identityUrl, humanLoad.signal).catch(() =>
+            loadTwinHuman(
+              twinHumanUrl(options.humanVariant ?? "male", appearance),
+              humanLoad.signal,
+              appearance,
+            ),
+          )
+        : loadTwinHuman(
+            twinHumanUrl(options.humanVariant ?? "male", appearance),
+            humanLoad.signal,
+            appearance,
+          );
+      void humanPromise
         .then((human) => {
           if (destroyed || humanLoad.signal.aborted) {
             human.dispose();
@@ -320,15 +338,31 @@ export function mountTwinScene(
           frameBody(nextFrame);
           showStage();
           humanPending = false;
-          canvas.dataset["twinBody"] = "human";
-          canvas.dataset["twinSource"] = human.provenance.source;
-          canvas.dataset["twinAssetSha256"] = human.provenance.sha256;
+          if ("provenance" in human) {
+            canvas.dataset["twinBody"] = "human";
+            canvas.dataset["twinSource"] = human.provenance.source;
+            canvas.dataset["twinAssetSha256"] = human.provenance.sha256;
+            options.onBodyReady?.("human", human.provenance);
+          } else {
+            canvas.dataset["twinBody"] = "identity";
+            canvas.dataset["twinSource"] = "personalized_identity";
+            delete canvas.dataset["twinAssetSha256"];
+            options.onBodyReady?.("identity", null);
+          }
           applyState();
-          options.onBodyReady?.("human", human.provenance);
         })
-        .catch(() => {
-          // Deliberately quiet: the surface goes in, and now that it is the
-          // answer rather than the wait, it carries the reading.
+        .catch((error) => {
+          if (options.identityModelUrl && appearance === "realistic") {
+            const reason =
+              error instanceof Error && error.message.includes("camera frame")
+                ? "invalid_geometry"
+                : error instanceof Error && /401|403/.test(error.message)
+                  ? "expired_url"
+                  : "load_failed";
+            options.onIdentityShellFallback?.(reason);
+          }
+          // Keep the canonical fallback visible; identity-shell failure must
+          // never remove the athlete's evidence view.
           window.clearTimeout(surfaceTimer);
           useSurface();
         });
