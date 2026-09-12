@@ -141,4 +141,15 @@ export const extra_twintabs = {
     es: "Los colores de la figura salen solo de las series registradas. El sueño, la VFC y la frecuencia en reposo no los alimentan — se muestran aquí aparte, tal como llegaron de la fuente.",
     fr: "Les couleurs de la silhouette viennent uniquement des séries enregistrées. Le sommeil, la VFC et la fréquence au repos ne les alimentent pas — ils figurent ici séparément, tels que la source les a livrés.",
   },
+
+  "tw.memoryTitle": {
+    lt: "Ką GYMS.LIFE apie tave išmoko",
+    en: "What GYMS.LIFE has learned about you",
+    ru: "Что GYMS.LIFE узнал о вас",
+    uk: "Що GYMS.LIFE дізнався про вас",
+    pl: "Czego GYMS.LIFE nauczył się o Tobie",
+    de: "Was GYMS.LIFE über dich gelernt hat",
+    es: "Lo que GYMS.LIFE ha aprendido sobre ti",
+    fr: "Ce que GYMS.LIFE a appris sur vous",
+  },
 } as const;

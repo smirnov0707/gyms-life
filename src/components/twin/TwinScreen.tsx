@@ -126,6 +126,14 @@ export function TwinScreen({
                 </div>
                 <details className="rounded-2xl border border-border bg-surface/75">
                   <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
+                    {t("tw.memoryTitle")}
+                  </summary>
+                  <div className="border-t border-border p-4">
+                    <TwinMemory />
+                  </div>
+                </details>
+                <details className="rounded-2xl border border-border bg-surface/75">
+                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
                     {t("tw.measurementTools")}
                   </summary>
                   <div className="space-y-4 border-t border-border p-4">
