@@ -9,6 +9,7 @@ import { TwinMuscleDetail } from "@/components/twin/TwinMuscleDetail";
 import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTimeline } from "@/components/twin/TwinTimeline";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
+import { TwinMemory } from "@/components/twin/TwinMemory";
 import { LiveSignals } from "@/components/LiveSignals";
 import { useI18n, type TKey } from "@/lib/i18n";
 import "./TwinScreen.css";
