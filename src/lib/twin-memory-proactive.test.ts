@@ -164,4 +164,41 @@ describe("Twin Memory proactive policy", () => {
     ]);
     expect(selected?.hypothesisId).toBe("newer");
   });
+
+  it("does not surface stale or future records as current proactive intelligence", () => {
+    const base = {
+      severity: "positive" as const,
+      source: "deterministic" as const,
+      decisionAuthority: false as const,
+      athleteStateSnapshotId: "11111111-1111-4111-8111-111111111111",
+      statusChangedAt: null,
+      status: "new" as const,
+      kind: "strengthened" as const,
+    };
+    const now = new Date("2026-09-12T12:00:00.000Z");
+    const selected = selectTwinMemoryProactiveChange(
+      [
+        {
+          ...base,
+          fingerprint: "stale",
+          hypothesisId: "stale",
+          occurredAt: "2026-09-01T12:00:00.000Z",
+        },
+        {
+          ...base,
+          fingerprint: "future",
+          hypothesisId: "future",
+          occurredAt: "2026-09-13T12:00:00.000Z",
+        },
+        {
+          ...base,
+          fingerprint: "fresh",
+          hypothesisId: "fresh",
+          occurredAt: "2026-09-10T12:00:00.000Z",
+        },
+      ],
+      now,
+    );
+    expect(selected?.hypothesisId).toBe("fresh");
+  });
 });
