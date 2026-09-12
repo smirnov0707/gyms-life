@@ -292,21 +292,11 @@ const baseDict = {
   "mg.fullbody": { lt: "Visas kūnas", en: "Full body" },
 
   "pr.title": { lt: "Progresas", en: "Progress" },
-  "pr.volume": { lt: "Savaitės tūris (kg)", en: "Weekly volume (kg)" },
-  "pr.records": { lt: "Asmeniniai rekordai", en: "Personal records" },
   "pr.addWeight": { lt: "Įrašyti svorį", en: "Log weight" },
   "pr.save": { lt: "Išsaugoti", en: "Save" },
   "pr.empty": {
     lt: "Duomenų dar nėra — atlik pirmą treniruotę.",
     en: "No data yet — complete your first workout.",
-  },
-  "pr.history": { lt: "Treniruočių istorija", en: "Workout history" },
-  // "We could not look" is not "you have no history". A progress screen that
-  // cannot tell them apart tells an athlete with months of work that they
-  // have never trained.
-  "pr.readFailed": {
-    lt: "Nepavyko nuskaityti istorijos. Tai nereiškia, kad jos nėra — pabandyk atnaujinti puslapį.",
-    en: "Could not read your history. That does not mean there is none — try reloading.",
   },
 
   "coach.title": { lt: "Tavo treneris", en: "Your coach" },
