@@ -22,6 +22,7 @@ export type JournalLearningEntry = {
   occurredAt: string;
   athleteStateSnapshotId: string;
   source: "deterministic";
+  wasDecisionEligible: boolean;
   decisionAuthority: false;
 };
 function strength(status: LabHypothesisTransition["status"]): number {
@@ -62,6 +63,7 @@ export function buildJournalLearningHistory(
     occurredAt: transition.occurredAt,
     athleteStateSnapshotId: transition.athleteStateSnapshotId,
     source: "deterministic",
+    wasDecisionEligible: transition.canInfluenceDecision,
     decisionAuthority: false,
   }));
 }

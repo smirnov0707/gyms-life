@@ -123,6 +123,9 @@ export function JournalIntelligence() {
         learningHistoryTitle: "How GYMS.LIFE learning changed",
         learningHistoryHint: "Auditable changes in what the Twin believed over time.",
         currentBelief: "Current belief",
+        historicalEligibility: "Decision eligibility then",
+        eligible: "eligible",
+        notEligible: "not eligible",
         snapshot: "Snapshot",
         firstObservedChange: "First observed",
         strengthenedChange: "Strengthened",
@@ -159,6 +162,9 @@ export function JournalIntelligence() {
         learningHistoryTitle: "Kaip keitėsi GYMS.LIFE žinios",
         learningHistoryHint: "Audituojami pokyčiai, kaip Twin supratimas keitėsi laikui bėgant.",
         currentBelief: "Dabartinis vertinimas",
+        historicalEligibility: "Tinkamumas sprendimams tuo metu",
+        eligible: "tinkama",
+        notEligible: "netinkama",
         snapshot: "Momentinė būsena",
         firstObservedChange: "Pirmas stebėjimas",
         strengthenedChange: "Sustiprėjo",
@@ -491,6 +497,10 @@ export function JournalIntelligence() {
                           <p className="mt-1 font-mono text-[9px] text-muted-foreground">
                             {new Date(entry.occurredAt).toLocaleDateString(formatLocale(lang))} ·{" "}
                             {copy.snapshot}: {entry.athleteStateSnapshotId.slice(0, 8)}…
+                          </p>
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {copy.historicalEligibility}:{" "}
+                            {entry.wasDecisionEligible ? copy.eligible : copy.notEligible}
                           </p>
                           {entry.currentStatus && entry.currentStatus !== entry.status ? (
                             <p className="mt-1 text-[10px] text-muted-foreground">

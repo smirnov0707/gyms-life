@@ -53,6 +53,7 @@ describe("journal learning history", () => {
       currentStatus: "supported",
       evidenceCount: 6,
       source: "deterministic",
+      wasDecisionEligible: true,
       decisionAuthority: false,
     });
   });
