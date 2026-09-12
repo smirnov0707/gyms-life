@@ -10,6 +10,7 @@ import { FutureLabRoster } from "@/components/future-lab/FutureLabRoster";
 import { baseLang } from "@/lib/i18n";
 import "./future-lab-dashboard.css";
 import { SmartBrief } from "@/components/SmartBrief";
+import { TwinPulse } from "@/components/TwinPulse";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
@@ -180,6 +181,8 @@ export function Overview() {
           <TwinHome presentation="cockpit" />
         </div>
       </section>
+
+      <TwinPulse />
 
       <section className="grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="rounded-2xl border border-border bg-surface/85 p-4 sm:p-5">
