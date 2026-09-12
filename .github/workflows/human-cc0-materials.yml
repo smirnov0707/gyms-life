@@ -1,0 +1,34 @@
+name: CC0 human material source
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-materials.yml]
+permissions:
+  contents: read
+jobs:
+  materials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Obtain official CC0 system pack and retain only human materials
+        run: |
+          curl --fail --location --retry 2 --max-time 240 https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip -o "$RUNNER_TEMP/system.zip"
+          python - <<'PY'
+          import os, zipfile, hashlib
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          archive=root/'system.zip'
+          with zipfile.ZipFile(archive) as source, zipfile.ZipFile(root/'cc0-human-materials.zip','w',zipfile.ZIP_DEFLATED) as dest:
+              for name in source.namelist():
+                  p=Path(name)
+                  if p.is_absolute() or '..' in p.parts: raise ValueError('Unsafe archive path')
+                  if any(token in name.lower() for token in ('young_caucasian_male', '/eyes/', '/eyebrows/', '/eyelashes/', '/short01/', '/short02/', 'license')):
+                      dest.writestr(name,source.read(name))
+              dest.writestr('SOURCE.txt','Official MakeHuman system assets CC0\nhttps://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html\nArchive SHA256: '+hashlib.sha256(archive.read_bytes()).hexdigest()+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cc0-human-materials
+          path: ${{ runner.temp }}/cc0-human-materials.zip
+          retention-days: 1
+          if-no-files-found: error
