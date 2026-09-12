@@ -7,6 +7,8 @@ import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
 import { useLabOverview } from "./lab-overview.query";
 import { useStrengthForecast } from "./forecast.query";
 import { EpistemicBoundary } from "./EpistemicBoundary";
+import { EvidenceAcquisitionPrompt } from "@/components/intelligence/EvidenceAcquisitionPrompt";
+import { selectEvidenceAcquisitionRecommendation } from "@/lib/evidence-acquisition";
 import { ExperimentLedger } from "./ExperimentLedger";
 import "./reference-page-density.css";
 
@@ -32,8 +34,15 @@ export function LabCommandDeck() {
   const query = useLabOverview();
   const forecastQuery = useStrengthForecast();
   const data = query.isError ? undefined : query.data;
+  const nextEvidence = data
+    ? selectEvidenceAcquisitionRecommendation(data.hypotheses, data.dataGaps)
+    : null;
   const primary =
-    data?.hypotheses.find((item) => item.status === "monitoring") ?? data?.hypotheses[0];
+    (nextEvidence?.hypothesisId
+      ? data?.hypotheses.find((item) => item.id === nextEvidence.hypothesisId)
+      : undefined) ??
+    data?.hypotheses.find((item) => item.status === "monitoring") ??
+    data?.hypotheses[0];
   const calibration = data?.predictionCalibration;
   const maturity = calibrationMaturityPercent(calibration);
   const progress = primary
@@ -113,6 +122,13 @@ export function LabCommandDeck() {
               </div>
               <p className="mt-2 text-[10px] text-muted-foreground">{statuses[primary.status]}</p>
               <HypothesisEvidence evidence={primary.evidence} />
+              {nextEvidence?.hypothesisId === primary.id ? (
+                <EvidenceAcquisitionPrompt
+                  recommendation={nextEvidence}
+                  english={english}
+                  compact
+                />
+              ) : null}
             </>
           ) : (
             <FutureLabEmpty>

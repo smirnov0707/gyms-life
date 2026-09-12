@@ -679,6 +679,21 @@ try {
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");
 
+  const learningLab = await openPanel("?panel=lab&scenario=reference&uncertainty=training", {
+    viewport: { width: 390, height: 844 },
+  });
+  await expect(learningLab.page.getByText("Current investigation", { exact: true })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(
+    learningLab.page.getByText("WHAT WOULD REDUCE UNCERTAINTY", { exact: true }),
+  ).toBeVisible({ timeout: 30000 });
+  await expect(learningLab.page.getByText(/2 more observation/)).toBeVisible();
+  await expect(learningLab.page.getByRole("link", { name: /Add evidence/ })).toBeVisible();
+  expect(learningLab.errors).toEqual([]);
+  await learningLab.page.close();
+  record("Lab current investigation surfaces the same uncertainty-reducing evidence action");
+
   // The journal's four counters all come off one query. An unread ledger must
   // not report four zeros — "you have no hypotheses" is a claim, and an empty
   // ledger is something an athlete might act on.
