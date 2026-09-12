@@ -1,7 +1,7 @@
 import { readDailyNutritionLogs } from "@/lib/nutrition-log.service";
 import { refreshCoreData } from "@/lib/core-cache";
 import { aiErrorMessage } from "@/lib/ai-error";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -283,6 +283,39 @@ function NutritionPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
+      <section className="rounded-[2rem] border border-border bg-surface/85 p-5 sm:p-6">
+        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-400">
+          NUTRITION INTELLIGENCE
+        </p>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
+              {baseLang(lang) === "en"
+                ? "Fuel, plan and learn in one system"
+                : "Mityba, planas ir mokymasis vienoje sistemoje"}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {baseLang(lang) === "en"
+                ? "Today's intake is the source of truth. Planning, capture and supplements are supporting capabilities."
+                : "Šiandienos suvartojimas yra pagrindinis faktas. Planavimas, fiksavimas ir papildai yra pagalbinės funkcijos."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/meal-plan"
+              className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground hover:bg-surface-2"
+            >
+              {baseLang(lang) === "en" ? "Meal plan" : "Mitybos planas"}
+            </Link>
+            <Link
+              to="/supplements"
+              className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground hover:bg-surface-2"
+            >
+              {baseLang(lang) === "en" ? "Supplements" : "Papildai"}
+            </Link>
+          </div>
+        </div>
+      </section>
       {foodQuery.isPending && <p role="status">{t("common.loading")}</p>}
       {foodQuery.isError && (
         <section role="alert" className="panel border-destructive/30 p-4">

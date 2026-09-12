@@ -41,7 +41,7 @@ export const byRoute = (to: string) => nav.find((n) => n.to === to);
 /** Logical clusters used by the "More" menu and the mobile drawer. */
 export const NAV_GROUPS: { key: TKey; routes: string[] }[] = [
   { key: "nav.group.train", routes: ["/training", "/exercises", "/ar"] },
-  { key: "nav.group.nutrition", routes: ["/meal-plan", "/nutrition", "/supplements"] },
+  { key: "nav.group.nutrition", routes: ["/nutrition"] },
   { key: "nav.group.coach", routes: ["/coach"] },
 ];
 
