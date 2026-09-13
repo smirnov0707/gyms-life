@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import { History, Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import {
   getAiPersonalizationConsent,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { SmartBrief } from "@/components/SmartBrief";
+import { CoachMemory } from "@/components/CoachMemory";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -101,16 +102,6 @@ function CoachPage() {
               : "Klausk, kodėl Today pasirinko veiksmą, ką rodo Twin, ką tiria Lab arba ką modeliuoja Future Me."}
           </p>
         </div>
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <Link to="/coach-history">
-            <History className="size-4" /> {t("coach.history")}
-          </Link>
-        </Button>
       </header>
 
       <div className="mb-4">
@@ -196,6 +187,15 @@ function CoachPage() {
           </div>
         </form>
       </section>
+
+      <details className="mt-4 rounded-2xl border border-border bg-surface/70">
+        <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
+          {english ? "Coach memory" : "Coach atmintis"}
+        </summary>
+        <div className="border-t border-border p-4">
+          <CoachMemory />
+        </div>
+      </details>
     </div>
   );
 }

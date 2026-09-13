@@ -66,14 +66,9 @@ export function CoachDock({
               <p className="mt-1 text-xs text-muted-foreground">{t("coach.sub")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
-              <Link to="/coach-history">{t("coach.history")}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
-              <Link to="/coach">{t("coach.open")}</Link>
-            </Button>
-          </div>
+          <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
+            <Link to="/coach">{t("coach.open")}</Link>
+          </Button>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">

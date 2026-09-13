@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ConnectHealthSource } from "@/components/ConnectHealthSource";
+import { AutomationSettings } from "@/components/AutomationSettings";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -335,7 +336,7 @@ function numberOrDash(value: number | null, suffix = ""): string {
 function dataGapAction(
   gap: string,
   lang: Lang,
-): { label: string; to: "/training" | "/readiness" | "/progress" | "/nutrition" } {
+): { label: string; to: "/training" | "/readiness" | "/twin" | "/nutrition" } {
   const isEnglish = baseLang(lang) === "en";
   if (gap.startsWith("training")) {
     return { label: isEnglish ? "Log a workout" : "Užregistruok treniruotę", to: "/training" };
@@ -344,7 +345,7 @@ function dataGapAction(
     return { label: isEnglish ? "Check readiness" : "Įvertink pasiruošimą", to: "/readiness" };
   }
   if (gap.startsWith("body")) {
-    return { label: isEnglish ? "Log body metrics" : "Įvesk kūno rodiklius", to: "/progress" };
+    return { label: isEnglish ? "Log body metrics" : "Įvesk kūno rodiklius", to: "/twin" };
   }
   return { label: isEnglish ? "Log nutrition" : "Užregistruok mitybą", to: "/nutrition" };
 }
@@ -1023,6 +1024,25 @@ function AthleteModelPage() {
       ) : null}
 
       <ConnectHealthSource />
+
+      <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+        <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            {english ? "AUTOMATIONS" : "AUTOMATIZAVIMAS"}
+          </p>
+          <h2 className="mt-1 text-sm font-semibold text-foreground">
+            {english ? "Reminders & routines" : "Priminimai ir rutina"}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {english
+              ? "Control when GYMS.LIFE nudges you without turning reminders into a separate product."
+              : "Valdyk, kada GYMS.LIFE primena, nepaversdamas priminimų atskiru produktu."}
+          </p>
+        </summary>
+        <div className="border-t border-border p-4 sm:p-5">
+          <AutomationSettings />
+        </div>
+      </details>
 
       {state ? (
         <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">

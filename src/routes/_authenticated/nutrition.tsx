@@ -1,7 +1,7 @@
 import { readDailyNutritionLogs } from "@/lib/nutrition-log.service";
 import { refreshCoreData } from "@/lib/core-cache";
 import { aiErrorMessage } from "@/lib/ai-error";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
@@ -301,20 +301,6 @@ function NutritionPage() {
                 ? "Today's intake is the source of truth. Planning, capture and supplements are supporting capabilities."
                 : "Šiandienos suvartojimas yra pagrindinis faktas. Planavimas, fiksavimas ir papildai yra pagalbinės funkcijos."}
             </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/meal-plan"
-              className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground hover:bg-surface-2"
-            >
-              {baseLang(lang) === "en" ? "Meal plan" : "Mitybos planas"}
-            </Link>
-            <Link
-              to="/supplements"
-              className="inline-flex min-h-11 items-center rounded-full border border-border px-4 text-xs font-semibold text-foreground hover:bg-surface-2"
-            >
-              {baseLang(lang) === "en" ? "Supplements" : "Papildai"}
-            </Link>
           </div>
         </div>
       </section>

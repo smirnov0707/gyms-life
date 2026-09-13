@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NAV_GROUPS, PRIMARY_WORLD_NAV } from "./nav-map";
 import { buildTwinPulse } from "./twin-pulse";
 import { TWIN_VIEWS } from "./twin-navigation";
+import { PRODUCT_SURFACES } from "./product-surfaces";
 import type { LiveSignal } from "./live-signals.engine";
 
 const secondaryRoutes = NAV_GROUPS.flatMap((group) => group.routes);
@@ -42,6 +43,14 @@ describe("Product Convergence contract", () => {
   it("keeps nutrition as a contextual entry point while Coach stays a world", () => {
     expect(secondaryRoutes.filter((route) => route === "/nutrition")).toHaveLength(1);
     expect(secondaryRoutes).not.toContain("/coach");
+  });
+  it("classifies legacy and embedded capabilities without exposing them as worlds", () => {
+    expect(PRODUCT_SURFACES["/readiness"]).toBe("EMBEDDED_FLOW");
+    expect(PRODUCT_SURFACES["/meal-plan"]).toBe("EMBEDDED_FLOW");
+    expect(PRODUCT_SURFACES["/supplements"]).toBe("EMBEDDED_FLOW");
+    expect(PRODUCT_SURFACES["/achievements"]).toBe("LEGACY_COMPAT");
+    expect(PRODUCT_SURFACES["/reminders"]).toBe("LEGACY_COMPAT");
+    expect(PRODUCT_SURFACES["/coach-history"]).toBe("LEGACY_COMPAT");
   });
 
   it("keeps cross-feature recommendation maps out of the navigation contract", async () => {
