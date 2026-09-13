@@ -5,8 +5,8 @@ const screens: Record<string, string> = {
   "/app": "today",
   "/twin": "twin",
   "/lab": "lab",
-  "/progress": "futureme",
-  "/history": "journal",
+  "/twin?view=future": "futureme",
+  "/twin?view=journal": "journal",
 };
 const paths = Object.fromEntries(Object.entries(screens).map(([path, screen]) => [screen, path]));
 export function fixtureHref(
@@ -43,7 +43,9 @@ const fixtureLocation = () => {
   const query = new URLSearchParams(window.location.search);
   const screen = query.get("screen") ?? "today";
   return {
-    pathname: query.get("route") ?? (screen === "muscle" ? "/twin" : (paths[screen] ?? "/app")),
+    pathname:
+      query.get("route") ??
+      (["muscle", "futureme", "journal"].includes(screen) ? "/twin" : (paths[screen] ?? "/app")),
     search: {},
   };
 };
@@ -62,6 +64,13 @@ const navigate = (
   );
 };
 export const useNavigate = () => navigate;
+
+export function redirect(options: { to: string; search?: Record<string, unknown> }) {
+  return Object.assign(new Error(`Fixture redirect to ${options.to}`), {
+    options,
+    isRedirect: true,
+  });
+}
 export const useRouter = () => ({ navigate, invalidate: async () => {} });
 export const createFileRoute =
   () =>
