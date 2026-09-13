@@ -87,9 +87,29 @@ const baseDict = {
   "nav.twin": { lt: "Dvynys", en: "Twin" },
   "nav.lab": { lt: "Laboratorija", en: "Lab" },
   "nav.moreDescription": {
-    lt: "Papildomi įrankiai tavo treniruotėms, mitybai, atsistatymui ir pažangai.",
-    en: "More tools for your training, nutrition, recovery and progress.",
+    lt: "Ką nori padaryti dabar? GYMS.LIFE atveria tinkamą įrankį, o ne dar vieną programą.",
+    en: "What do you want to do now? GYMS.LIFE opens the right tool, not another app.",
   },
+  "action.startWorkout": { lt: "Pradėti treniruotę", en: "Start workout" },
+  "action.startWorkout.d": { lt: "Tęsti šiandienos planą", en: "Continue today’s plan" },
+  "action.checkIn": { lt: "Pasitikrinti būseną", en: "Check in" },
+  "action.checkIn.d": {
+    lt: "Trumpai atnaujinti savijautą ir pasirengimą",
+    en: "Update how you feel and your readiness",
+  },
+  "action.logFood": { lt: "Įrašyti maistą", en: "Log food" },
+  "action.logFood.d": { lt: "Atverti Nutrition Intelligence", en: "Open Nutrition Intelligence" },
+  "action.scanMovement": { lt: "Analizuoti judesį", en: "Analyse movement" },
+  "action.scanMovement.d": {
+    lt: "Kamera, forma ir biomechanika",
+    en: "Camera, form and biomechanics",
+  },
+  "action.askCoach": { lt: "Paklausti Coach", en: "Ask Coach" },
+  "action.askCoach.d": {
+    lt: "Vienas pokalbis su visa sistema",
+    en: "One conversation with the whole system",
+  },
+  "action.title": { lt: "Daryti dabar", en: "Do now" },
   "nav.athlete": { lt: "Sportininko modelis", en: "Athlete model" },
   "nav.athleteDescription": {
     lt: "Skaidri tavo validuotų duomenų suvestinė",
@@ -526,7 +546,6 @@ const baseDict = {
   "ar.rate": { lt: "Kalbos greitis", en: "Speech rate" },
 
   "nav.reminders": { lt: "Priminimai", en: "Reminders" },
-  "nav.more": { lt: "Daugiau", en: "More" },
   "rem.title": { lt: "Priminimai", en: "Reminders" },
   "rem.sub": {
     lt: "Vanduo, valgymai ir treniruotė — priminimai veikia tiesiai programoje, pasirinktu laiku.",

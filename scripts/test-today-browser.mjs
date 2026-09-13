@@ -428,8 +428,12 @@ try {
     viewport: { width: 320, height: 720 },
     locale: "en-US",
   });
-  await menu.page.getByRole("button", { name: "More", exact: true }).click();
+  await menu.page.getByRole("button", { name: "Do now", exact: true }).click();
   const drawer = menu.page.getByRole("dialog");
+  for (const action of ["Start workout", "Check in", "Log food", "Analyse movement", "Ask Coach"]) {
+    await expect(drawer.getByText(action, { exact: true })).toBeVisible();
+  }
+  await expect(drawer.getByText("Exercises", { exact: true })).toHaveCount(0);
   await drawer.getByRole("button", { name: "LT", exact: true }).click();
   await expect(drawer.getByRole("button", { name: "LT", exact: true })).toHaveAttribute(
     "aria-pressed",
@@ -441,7 +445,7 @@ try {
   });
   await drawer.press("Escape");
   await expect(menu.page.locator("summary").filter({ hasText: /^Raumenys$/ })).toBeVisible();
-  await menu.page.getByRole("button", { name: "Daugiau", exact: true }).click();
+  await menu.page.getByRole("button", { name: "Daryti dabar", exact: true }).click();
   await menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }).click();
   await expect(
     menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }),
@@ -449,7 +453,7 @@ try {
   expect(menu.errors).toEqual([]);
   await menu.page.context().close();
   record(
-    "the scrolled mobile tools menu keeps language controls clickable and updates the actual page",
+    "the contextual action layer replaces the feature catalogue and keeps language controls usable",
   );
 
   // Real UI controls, not direct calls to state setters. Search values survive

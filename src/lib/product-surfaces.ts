@@ -8,7 +8,7 @@ export const PRODUCT_SURFACES = {
   "/lab": "WORLD",
   "/coach": "WORLD",
   "/training": "CONTEXT_TOOL",
-  "/exercises": "CONTEXT_TOOL",
+  "/exercises": "EMBEDDED_FLOW",
   "/ar": "CONTEXT_TOOL",
   "/nutrition": "CONTEXT_TOOL",
   "/readiness": "EMBEDDED_FLOW",
