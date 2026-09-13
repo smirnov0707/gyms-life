@@ -89,6 +89,7 @@ export async function runProductionRelease(options = {}, { command, smoke = runP
     report.previousDeployId = before.published_deploy.id;
     if (deploy) {
       await checkSource();
+      await run("node", ["scripts/verify-release-dependencies.mjs"], "DEPENDENCY_LAYOUT_UNSAFE");
       for (const task of ["typecheck", "test", "lint"])
         await run("npm", ["run", task], "QUALITY_GATE_FAILED");
       await checkSource();
