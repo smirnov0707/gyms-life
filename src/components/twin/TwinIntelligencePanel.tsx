@@ -134,7 +134,7 @@ export function TwinIntelligencePanel({
         {selectedRegion ? (
           <Link
             to="/twin"
-            search={{ view: "muscles", region: selectedRegion, detail: "status" }}
+            search={{ view: "overview", region: selectedRegion, detail: "status" }}
             className="mt-2 inline-flex min-h-10 items-center text-xs font-semibold text-primary"
           >
             {lt ? "Atidaryti raumens detales" : "Open muscle details"} →

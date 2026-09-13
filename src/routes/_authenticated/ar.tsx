@@ -47,6 +47,7 @@ import { VoiceCoach } from "@/lib/ar-voice-coach";
 import { Input } from "@/components/ui/input";
 import { recordArWorkout } from "@/lib/ar-workout.functions";
 import { FormScanner } from "@/components/FormScanner";
+import { BiomechanicsScanner } from "@/components/BiomechanicsScanner";
 
 export const Route = createFileRoute("/_authenticated/ar")({
   head: () => ({
@@ -112,7 +113,7 @@ function ArMode() {
   const [savingSet, setSavingSet] = useState(false);
   const [savedSet, setSavedSet] = useState(false);
   const [completedSetId, setCompletedSetId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"live" | "scan">("live");
+  const [tab, setTab] = useState<"live" | "scan" | "biomechanics">("live");
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -679,6 +680,7 @@ function ArMode() {
             [
               ["live", t("ar.title")],
               ["scan", t("fc.title")],
+              ["biomechanics", base === "lt" ? "Biomechanika" : "Biomechanics"],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -699,6 +701,7 @@ function ArMode() {
       )}
 
       {tab === "scan" && <FormScanner />}
+      {tab === "biomechanics" && <BiomechanicsScanner />}
 
       <div
         className={cn(

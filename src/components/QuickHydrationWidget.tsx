@@ -317,7 +317,9 @@ export const QuickHydrationWidget: React.FC = () => {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {target.missingInputs.includes("body_weight") ? (
                     <Button asChild variant="outline" size="sm" className="min-h-9 rounded-full">
-                      <Link to="/progress">{copy.addWeight}</Link>
+                      <Link to="/twin" search={{ view: "overview" }}>
+                        {copy.addWeight}
+                      </Link>
                     </Button>
                   ) : null}
                   {target.missingInputs.includes("nutrition") ? (

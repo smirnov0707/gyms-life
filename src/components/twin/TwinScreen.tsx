@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Activity, HeartPulse, PersonStanding } from "lucide-react";
+import { HeartPulse, History, PersonStanding, Rocket } from "lucide-react";
 import { TwinView } from "@/components/TwinView";
 import { BodyCompositionCard } from "@/components/BodyCompositionCard";
 import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
@@ -7,27 +7,28 @@ import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { TwinMuscleTable } from "@/components/twin/TwinMuscleTable";
 import { TwinMuscleDetail } from "@/components/twin/TwinMuscleDetail";
 import { TwinRewind } from "@/components/twin/TwinRewind";
-import { TwinTimeline } from "@/components/twin/TwinTimeline";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
 import { TwinMemory } from "@/components/twin/TwinMemory";
+import { TwinFuture } from "@/components/twin/TwinFuture";
+import { TwinJournal } from "@/components/twin/TwinJournal";
 import { LiveSignals } from "@/components/LiveSignals";
+import { RecoveryOutlook } from "@/components/RecoveryOutlook";
+import { SleepAnalysis } from "@/components/SleepAnalysis";
 import { useI18n, type TKey } from "@/lib/i18n";
 import "./TwinScreen.css";
 import { nextTwinView, type TwinNavigation } from "@/lib/twin-navigation";
 
 /**
- * The Twin screen's three views, the way the design splits them.
- *
- * The split is by what the reading comes from, not by decoration:
- * Overview is the figure and the body it stands for, Muscles is everything
- * derived from logged sets, and Systems is everything a device measured.
- * Nothing crosses between them, so no panel can borrow another's evidence.
+ * The Twin is the athlete across time: body, load, measured systems, future
+ * scenarios and auditable memory. Views remain evidence-scoped so simulation
+ * never masquerades as measurement and history never becomes a new decision.
  */
 
 const TABS = [
   { id: "overview", label: "tw.tabOverview", icon: PersonStanding },
-  { id: "muscles", label: "tw.tabMuscles", icon: Activity },
   { id: "systems", label: "tw.tabSystems", icon: HeartPulse },
+  { id: "future", label: "tw.tabFuture", icon: Rocket },
+  { id: "journal", label: "tw.tabJournal", icon: History },
 ] as const satisfies readonly { id: string; label: TKey; icon: typeof PersonStanding }[];
 
 type TabId = (typeof TABS)[number]["id"];
@@ -65,7 +66,7 @@ export function TwinScreen({
           regionId={detailRegion}
           onRegionChange={setDetailRegion}
           onBack={() => setDetailRegion(null)}
-          backLabel={t(active === "muscles" ? "tw.tabMuscles" : "tw.tabOverview")}
+          backLabel={t("tw.tabOverview")}
         />
       ) : (
         <>
@@ -126,6 +127,16 @@ export function TwinScreen({
                 </div>
                 <details className="rounded-2xl border border-border bg-surface/75">
                   <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
+                    {t("tw.tabMuscles")}
+                  </summary>
+                  <div className="grid gap-4 border-t border-border p-4">
+                    <TwinMuscleTable onSelectRegion={setDetailRegion} />
+                    <TwinTrendLens />
+                    <TwinRewind />
+                  </div>
+                </details>
+                <details className="rounded-2xl border border-border bg-surface/75">
+                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
                     {t("tw.memoryTitle")}
                   </summary>
                   <div className="border-t border-border p-4">
@@ -141,15 +152,8 @@ export function TwinScreen({
                     <BodyCompositionScanner />
                   </div>
                 </details>
-                <TwinTimeline />
               </>
-            ) : active === "muscles" ? (
-              <>
-                <TwinMuscleTable onSelectRegion={setDetailRegion} />
-                <TwinTrendLens />
-                <TwinRewind />
-              </>
-            ) : (
+            ) : active === "systems" ? (
               <>
                 <section className="rounded-3xl border border-border bg-surface p-4 md:p-5">
                   <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
@@ -160,7 +164,15 @@ export function TwinScreen({
                   </p>
                 </section>
                 <LiveSignals />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <RecoveryOutlook />
+                  <SleepAnalysis />
+                </div>
               </>
+            ) : active === "future" ? (
+              <TwinFuture />
+            ) : (
+              <TwinJournal />
             )}
           </div>
         </>

@@ -1,4 +1,3 @@
-import { NightLabRitual } from "@/components/future-lab/NightLabRitual";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -9,17 +8,11 @@ import { TwinHome } from "@/components/twin/TwinHome";
 import { FutureLabRoster } from "@/components/future-lab/FutureLabRoster";
 import { baseLang } from "@/lib/i18n";
 import "./future-lab-dashboard.css";
-import { SmartBrief } from "@/components/SmartBrief";
 import { TwinPulse } from "@/components/TwinPulse";
-import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
-import { LiveSignals } from "@/components/LiveSignals";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
 import { DataSourcesStrip } from "@/components/DataSourcesStrip";
-import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
-import { SleepAnalysis } from "@/components/SleepAnalysis";
-import { RecoveryOutlook } from "@/components/RecoveryOutlook";
 import { TodayIntelligenceBrief } from "@/components/future-lab/TodayIntelligenceBrief";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import { parseStoredTrainingPlan } from "@/lib/training-plan.schema";
@@ -144,7 +137,6 @@ export function Overview() {
       </section>
 
       <TwinPulse />
-      <NightLabRitual />
 
       <section className="rounded-2xl border border-border bg-surface/85 p-3 sm:p-4">
         <div className="mb-2 flex items-center justify-between gap-3 px-1">
@@ -161,23 +153,6 @@ export function Overview() {
       </section>
 
       <TodayIntelligenceBrief />
-
-      <WhyThisDisclosure
-        summary={english ? "Why this? · Evidence & signals" : "Kodėl taip? · Įrodymai ir signalai"}
-        className="bg-surface/75"
-      >
-        <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-2 xl:grid-cols-3">
-          <div className="lg:col-span-2 xl:col-span-3">
-            <SmartBrief compact />
-          </div>
-          <PredictionEvidencePanel compact />
-          <RecoveryOutlook compact />
-          <SleepAnalysis />
-          <div className="lg:col-span-2 xl:col-span-3">
-            <LiveSignals />
-          </div>
-        </div>
-      </WhyThisDisclosure>
 
       <details className="group rounded-2xl border border-border/70 bg-surface/60">
         <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-muted-foreground sm:px-5">

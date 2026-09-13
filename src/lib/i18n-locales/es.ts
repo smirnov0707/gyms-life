@@ -214,7 +214,6 @@ export const locale: Record<string, string> = {
   "mg.glutes": "Glúteos",
   "mg.cardio": "Cardio",
   "mg.fullbody": "Cuerpo completo",
-  "pr.title": "Progreso",
   "pr.volume": "Volumen semanal (kg)",
   "pr.records": "Récords personales",
   "pr.addWeight": "Registrar peso",
@@ -251,11 +250,7 @@ export const locale: Record<string, string> = {
   "fc.drills": "Ejercicios de técnica",
   "fc.denied": "Permiso de cámara denegado.",
   "fc.history": "Escaneos anteriores",
-  "cmd.ph": "Buscar o ir a...",
-  "cmd.empty": "Sin resultados.",
-  "cmd.nav": "Navegación",
   "nav.nutrition": "Nutrición",
-  "nut.title": "Registro de nutrición",
   "nut.sub":
     "Describe lo que comiste con tus palabras: las calorías y macros se calculan solos y tus objetivos diarios se actualizan automáticamente.",
   "nut.ph": "Ej. 2 huevos, avena con plátano y un café con leche",
@@ -403,7 +398,6 @@ export const locale: Record<string, string> = {
   "common.error": "Algo salió mal",
   "common.kg": "kg",
   "nav.supplements": "Suplementos",
-  "supp.title": "Planificador de suplementos",
   "supp.sub":
     "Añade los suplementos que tomas; el sistema los distribuye a lo largo del día según absorción, interacciones y hora de entrenamiento.",
   "supp.add": "Añadir suplemento",

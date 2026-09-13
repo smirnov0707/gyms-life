@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Lang } from "@/lib/i18n";
 import type { getWorkoutHistory } from "@/lib/workout-history.functions";
-import { WorkoutHistoryPage } from "./history";
+import { WorkoutHistoryPage } from "@/components/twin/TwinWorkoutHistory";
 
 type HistoryData = Awaited<ReturnType<typeof getWorkoutHistory>>;
 const state = vi.hoisted(() => {

@@ -36,6 +36,7 @@ import {
   MEAL_PLAN_MAX_DAILY_KCAL,
 } from "@/lib/meal-plan.schema";
 import { Button } from "@/components/ui/button";
+import { NutritionStudioNav } from "@/components/NutritionStudioNav";
 
 export const Route = createFileRoute("/_authenticated/meal-plan")({
   head: () => ({
@@ -325,6 +326,7 @@ function MealPlanPage() {
 
   return (
     <div className="grid gap-6">
+      <NutritionStudioNav />
       <div>
         <p className="text-xs uppercase tracking-widest text-primary">GYMS.LIFE FUEL</p>
         <h1 className="text-5xl">{t("mp.title")}</h1>

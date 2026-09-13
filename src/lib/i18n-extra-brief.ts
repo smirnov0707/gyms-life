@@ -130,14 +130,4 @@ export const extra_brief = {
     es: "Nutrición",
     fr: "Nutrition",
   },
-  "nav.group.coach": {
-    lt: "Treneris",
-    en: "Coach",
-    ru: "Тренер",
-    uk: "Тренер",
-    pl: "Trener",
-    de: "Coach",
-    es: "Entrenador",
-    fr: "Coach",
-  },
 };

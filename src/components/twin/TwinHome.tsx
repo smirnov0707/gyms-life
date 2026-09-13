@@ -185,7 +185,7 @@ function CockpitLegend({ layer, language }: { layer: TwinLayer; language: "lt" |
       <p className="twin-cockpit-source">{copy.unit[layer]}</p>
       <Link
         to="/twin"
-        search={{ view: "muscles" }}
+        search={{ view: "overview" }}
         className="fl-text-link inline-flex min-h-11 items-center"
       >
         {language === "lt" ? "Tyrinėti raumenis" : "Explore muscles"} →
@@ -386,7 +386,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
                   <span>{layerCopy.band[reading.display.tone]}</span>
                   <Link
                     to="/twin"
-                    search={{ view: "muscles", region: reading.id, detail: "status" }}
+                    search={{ view: "overview", region: reading.id, detail: "status" }}
                     className="fl-text-link inline-flex min-h-11 items-center"
                   >
                     {language === "lt" ? "Peržiūrėti detales" : "View details"} →

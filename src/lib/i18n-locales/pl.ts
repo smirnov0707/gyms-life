@@ -215,7 +215,6 @@ export const locale: Record<string, string> = {
   "mg.glutes": "Pośladki",
   "mg.cardio": "Cardio",
   "mg.fullbody": "Całe ciało",
-  "pr.title": "Postępy",
   "pr.volume": "Tygodniowa objętość (kg)",
   "pr.records": "Rekordy życiowe",
   "pr.addWeight": "Zapisz wagę",
@@ -252,11 +251,7 @@ export const locale: Record<string, string> = {
   "fc.drills": "Ćwiczenia techniczne",
   "fc.denied": "Odmówiono dostępu do kamery.",
   "fc.history": "Poprzednie skany",
-  "cmd.ph": "Szukaj lub przejdź do...",
-  "cmd.empty": "Brak wyników.",
-  "cmd.nav": "Nawigacja",
   "nav.nutrition": "Odżywianie",
-  "nut.title": "Dziennik żywieniowy",
   "nut.sub":
     "Opisz własnymi słowami, co zjadłeś — kalorie i makroskładniki zostaną policzone automatycznie, a Twoje dzienne cele zaktualizują się same.",
   "nut.ph": "Np. 2 jajka, owsianka z bananem i latte",
@@ -405,7 +400,6 @@ export const locale: Record<string, string> = {
   "common.error": "Coś poszło nie tak",
   "common.kg": "kg",
   "nav.supplements": "Suplementy",
-  "supp.title": "Planer suplementacji",
   "supp.sub":
     "Dodaj przyjmowane suplementy — system rozplanuje je w ciągu dnia z uwzględnieniem wchłaniania, interakcji i pory treningu.",
   "supp.add": "Dodaj suplement",

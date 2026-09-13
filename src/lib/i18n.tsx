@@ -291,7 +291,6 @@ const baseDict = {
   "mg.cardio": { lt: "Kardio", en: "Cardio" },
   "mg.fullbody": { lt: "Visas kūnas", en: "Full body" },
 
-  "pr.title": { lt: "Progresas", en: "Progress" },
   "pr.addWeight": { lt: "Įrašyti svorį", en: "Log weight" },
   "pr.save": { lt: "Išsaugoti", en: "Save" },
   "pr.empty": {
@@ -314,7 +313,6 @@ const baseDict = {
   "coach.q2": { lt: "Ką valgyti prieš treniruotę?", en: "What should I eat before training?" },
   "coach.q3": { lt: "Kaip pridėti svorio pratimuose?", en: "How do I add weight to my lifts?" },
   "coach.q4": { lt: "Jaučiuosi pavargęs — ką daryti?", en: "I feel tired — what should I do?" },
-  "coach.history": { lt: "Pokalbių istorija", en: "Conversation history" },
   "coach.historySub": {
     lt: "Visi tavo klausimai ir trenerio atsakymai išsaugomi automatiškai.",
     en: "Every question and coach answer is saved automatically.",
@@ -361,12 +359,7 @@ const baseDict = {
     en: "Could not read your previous scans.",
   },
 
-  "cmd.ph": { lt: "Ieškok arba šok į skiltį...", en: "Search or jump to..." },
-  "cmd.empty": { lt: "Nieko nerasta.", en: "No results." },
-  "cmd.nav": { lt: "Navigacija", en: "Navigation" },
-
   "nav.nutrition": { lt: "Mityba", en: "Nutrition" },
-  "nut.title": { lt: "Mitybos dienoraštis", en: "Nutrition log" },
   "nut.sub": {
     lt: "Parašyk paprastai, ką suvalgei — kalorijos ir makro elementai suskaičiuojami už tave, o dienos tikslai atsinaujina patys.",
     en: "Describe what you ate in plain words — calories and macros are counted for you, and your daily targets update on their own.",
@@ -571,7 +564,6 @@ const baseDict = {
   "common.kg": { lt: "kg", en: "kg" },
 
   "nav.supplements": { lt: "Papildai", en: "Supplements" },
-  "supp.title": { lt: "Papildų planas", en: "Supplement planner" },
   "supp.sub": {
     lt: "Pridėk vartojamus papildus — sistema juos paskirstys dienos metu pagal įsisavinimą, sąveiką ir treniruotės laiką.",
     en: "Add the supplements you take — the system spreads them across the day by absorption, interactions and training time.",

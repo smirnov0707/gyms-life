@@ -1,19 +1,11 @@
 import {
   Activity,
   Apple,
-  Bell,
   Box,
   Dumbbell,
-  HeartPulse,
-  LineChart,
   MessageSquare,
   FlaskConical,
-  History,
   PersonStanding,
-  Rocket,
-  Pill,
-  Trophy,
-  UtensilsCrossed,
 } from "lucide-react";
 import type { TKey } from "./i18n";
 
@@ -23,29 +15,19 @@ export const PRIMARY_WORLD_NAV = [
   { to: "/app", icon: Activity, label: "TODAY" },
   { to: "/twin", icon: PersonStanding, label: "MY TWIN" },
   { to: "/lab", icon: FlaskConical, label: "LAB" },
-  { to: "/progress", icon: Rocket, label: "FUTURE ME" },
-  { to: "/history", icon: History, label: "JOURNAL" },
+  { to: "/coach", icon: MessageSquare, label: "COACH" },
 ] as const;
 
 /**
- * Backs `byRoute` only. The primary bottom-tab bar (Today/Twin/Lab/Coach)
- * is defined once, in AppShell.tsx — this list is the secondary "More"
- * surface and its icon/label metadata, not a second definition of the
- * primary navigation.
+ * Backs `byRoute` only. The four primary product worlds are Today, Twin,
+ * Lab and Coach. Everything below is a contextual tool, not another world.
  */
 const nav: NavItem[] = [
   { to: "/app", key: "nav.dashboard", icon: Activity },
   { to: "/training", key: "nav.training", icon: Dumbbell },
   { to: "/exercises", key: "nav.exercises", icon: Dumbbell },
   { to: "/ar", key: "nav.ar", icon: Box },
-  { to: "/meal-plan", key: "nav.meal", icon: UtensilsCrossed },
   { to: "/nutrition", key: "nav.nutrition", icon: Apple },
-  { to: "/supplements", key: "nav.supplements", icon: Pill },
-  { to: "/achievements", key: "ach.title", icon: Trophy },
-  { to: "/progress", key: "nav.progress", icon: LineChart },
-  { to: "/readiness", key: "rd.title", icon: HeartPulse },
-  { to: "/coach", key: "nav.coach", icon: MessageSquare },
-  { to: "/reminders", key: "nav.reminders", icon: Bell },
 ];
 
 export const byRoute = (to: string) => nav.find((n) => n.to === to);
@@ -54,5 +36,4 @@ export const byRoute = (to: string) => nav.find((n) => n.to === to);
 export const NAV_GROUPS: { key: TKey; routes: string[] }[] = [
   { key: "nav.group.train", routes: ["/training", "/exercises", "/ar"] },
   { key: "nav.group.nutrition", routes: ["/nutrition"] },
-  { key: "nav.group.coach", routes: ["/coach"] },
 ];

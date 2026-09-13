@@ -18,8 +18,6 @@ import { AppShell } from "@/components/AppShell";
 import { Route as TodayRoute } from "@/routes/_authenticated/app";
 import { Route as TwinRoute } from "@/routes/_authenticated/twin";
 import { Route as LabRoute } from "@/routes/_authenticated/lab";
-import { Route as FutureRoute } from "@/routes/_authenticated/progress";
-import { Route as JournalRoute } from "@/routes/_authenticated/history";
 import "@/styles.css";
 
 /** Local-only rendering fixture. Every data record is explicitly synthetic. */
@@ -57,7 +55,15 @@ function Panel() {
 
 const query = new URLSearchParams(window.location.search);
 const withShell = query.get("shell") === "1";
+const requestedScreen = query.get("screen");
+if (requestedScreen === "futureme" && !query.has("view")) query.set("view", "future");
+if (requestedScreen === "journal" && !query.has("view")) query.set("view", "journal");
+if (requestedScreen === "muscle" && !query.has("view")) query.set("view", "overview");
 if (withShell) {
+  const requestedScreen = query.get("screen");
+  if (requestedScreen === "futureme" && !query.has("view")) query.set("view", "future");
+  if (requestedScreen === "journal" && !query.has("view")) query.set("view", "journal");
+  if (requestedScreen === "muscle" && !query.has("view")) query.set("view", "overview");
   const preset =
     query.get("scenario") === "reference"
       ? {
@@ -78,8 +84,8 @@ const routeComponents = {
   twin: TwinRoute.options.component,
   muscle: TwinRoute.options.component,
   lab: LabRoute.options.component,
-  futureme: FutureRoute.options.component,
-  journal: JournalRoute.options.component,
+  futureme: TwinRoute.options.component,
+  journal: TwinRoute.options.component,
 };
 function ReferenceScreen() {
   const screen = query.get("screen") ?? "today";

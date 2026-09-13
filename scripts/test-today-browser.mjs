@@ -306,7 +306,9 @@ try {
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
-        await shown.page.getByRole("tab", { name: "Muscles", exact: true }).click();
+        const muscles = shown.page.locator("summary").filter({ hasText: /^Muscles$/ });
+        await expect(muscles).toBeVisible();
+        await muscles.click();
         await shown.page
           .getByRole("button", { name: /^Chest(?:\s|$)/ })
           .first()
@@ -399,18 +401,18 @@ try {
     path.join(artifacts, "reference-screens.json"),
     JSON.stringify(references, null, 2),
   );
-  record("all six actual route/detail views render inside the shell at 1440px and 390px");
+  record("all six canonical world/detail views render inside the shell at 1440px and 390px");
 
   for (const scenario of ["empty", "failure"]) {
     const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
       viewport: { width: 390, height: 844 },
       locale: "en-US",
     });
-    await openTodayEvidenceLayer(checked.page);
-    const rail = checked.page.getByRole("region", { name: "Live signals" });
-    await expect(rail).toBeVisible({ timeout: 30000 });
-    const label = scenario === "failure" ? "Could not be read" : "Not recorded yet";
-    expect(await rail.getByText(label, { exact: false }).count()).toBe(7);
+    await openTodayContextLayer(checked.page);
+    const sources = checked.page.getByRole("region", { name: "Data sources" });
+    await expect(sources).toBeVisible({ timeout: 30000 });
+    const label = scenario === "failure" ? "Could not check" : "Nothing received";
+    expect(await sources.getByText(label, { exact: true }).count()).toBe(2);
     expect(checked.errors).toEqual([]);
     await checked.page.screenshot({
       path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),
@@ -418,9 +420,11 @@ try {
     });
     await checked.page.context().close();
   }
-  record("full-shell empty data and source failures remain visibly distinct");
+  record(
+    "Today keeps empty data and unreadable sources visibly distinct without duplicating Twin signals",
+  );
 
-  const menu = await openPanel("?shell=1&screen=twin&scenario=reference&view=muscles", {
+  const menu = await openPanel("?shell=1&screen=twin&scenario=reference&view=overview", {
     viewport: { width: 320, height: 720 },
     locale: "en-US",
   });
@@ -436,7 +440,7 @@ try {
     fullPage: false,
   });
   await drawer.press("Escape");
-  await expect(menu.page.getByRole("tab", { name: "Raumenys", exact: true })).toBeVisible();
+  await expect(menu.page.locator("summary").filter({ hasText: /^Raumenys$/ })).toBeVisible();
   await menu.page.getByRole("button", { name: "Daugiau", exact: true }).click();
   await menu.page.getByRole("dialog").getByRole("button", { name: "EN", exact: true }).click();
   await expect(
@@ -455,10 +459,13 @@ try {
     locale: "en-US",
   });
   await linked.page.getByRole("link", { name: "Explore muscles", exact: false }).click();
-  await expect(linked.page.getByRole("tab", { name: "Muscles", exact: true })).toHaveAttribute(
+  await expect(linked.page.getByRole("tab", { name: "Overview", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
   );
+  const linkedMuscles = linked.page.locator("summary").filter({ hasText: /^Muscles$/ });
+  await expect(linkedMuscles).toBeVisible();
+  await linkedMuscles.click();
   await linked.page
     .getByRole("button", { name: /^Chest(?:\s|$)/ })
     .first()
@@ -486,7 +493,7 @@ try {
   );
 
   const offBody = await openPanel(
-    "?shell=1&screen=twin&scenario=reference&view=muscles&region=cardio&detail=status",
+    "?shell=1&screen=twin&scenario=reference&view=overview&region=cardio&detail=status",
     { locale: "en-US" },
   );
   const offBodyDetail = offBody.page.locator('[data-twin-muscle-detail="cardio"]');
@@ -525,9 +532,12 @@ try {
     "manual data refresh distinguishes received, empty and failed records without claiming watch sync",
   );
 
-  // 1. The screen renders at all, with the signal rail and every signal in it.
+  // 1. Today renders as the decision surface. Deeper physiology belongs to Twin Systems.
   const first = await open();
-  const rail = first.page.getByRole("region", { name: "Live signals" });
+  const systems = await openPanel("?shell=1&screen=twin&scenario=empty&view=systems", {
+    locale: "en-US",
+  });
+  const rail = systems.page.getByRole("region", { name: "Live signals" });
   await expect(rail).toBeVisible();
   for (const label of [
     "Sleep",
@@ -540,7 +550,7 @@ try {
   ]) {
     await expect(rail.getByText(label, { exact: true })).toBeVisible();
   }
-  record("Today renders and the signal rail lists every signal");
+  record("Today renders while Twin Systems lists every physiological signal");
 
   // 2. Nothing recorded must read as nothing recorded — not as a zero, and not
   //    as a blank the athlete would take for "fine".
@@ -549,16 +559,20 @@ try {
   const railText = (await rail.innerText()).replace(/[—–-]/g, "");
   expect(/\d/.test(railText)).toBe(false);
   await expect(rail.getByRole("link", { name: "Connect a device" })).toBeVisible();
-  record("an empty source shows as empty, with no invented figure and a way to fix it");
+  record("Twin Systems keeps an empty source honest, with no invented figure and a way to fix it");
 
-  // 3. No recovery evidence means no projection curve; prediction evidence
-  //    shows a count of evaluated predictions, never a confidence percentage.
-  const emptyOutlook = first.page.getByRole("region", { name: "When it comes back" });
+  // 3. Recovery projections live in Twin Systems; prediction calibration lives in Lab.
+  const emptyOutlook = systems.page.getByRole("region", { name: "When it comes back" });
   await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
   await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
-  const emptyEvidence = first.page.getByRole("region", { name: "Prediction evidence" });
-  await expect(emptyEvidence.getByText("Evaluated predictions", { exact: true })).toBeVisible();
-  expect(await emptyEvidence.locator(".fl-evidence-count strong").innerText()).toBe("0");
+  const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
+  const evidenceSummary = evidenceLab.page
+    .locator("details > summary")
+    .filter({ hasText: /^Evidence, decisions & learning history$/ });
+  await expect(evidenceSummary).toBeVisible();
+  await evidenceSummary.click();
+  const emptyEvidence = evidenceLab.page.getByRole("region", { name: "Prediction evidence" });
+  await expect(emptyEvidence).toBeVisible();
   expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
   await expect(
     first.page.getByText("No personal pattern has reached its evidence threshold yet.", {
@@ -578,9 +592,13 @@ try {
   });
   record("panels without evidence say so instead of showing a figure");
 
-  // 4. A failed read is a different sentence from an empty one.
+  // 4. A failed read is a different sentence from an empty one. The signal surface lives in Twin Systems.
   const failed = await open("?signals=fail");
-  const failedRail = failed.page.getByRole("region", { name: "Live signals" });
+  const failedSystems = await openPanel(
+    "?shell=1&screen=twin&scenario=failure&view=systems&signals=fail",
+    { locale: "en-US" },
+  );
+  const failedRail = failedSystems.page.getByRole("region", { name: "Live signals" });
   await expect(failedRail.getByText("Could not be read").first()).toBeVisible();
   expect(await failedRail.getByText("Could not be read").count()).toBe(7);
   await expect(failedRail.getByText("Not recorded yet")).toHaveCount(0);
@@ -718,6 +736,8 @@ try {
   // 8. Strict mode mounts every component twice. Nothing may throw.
   expect(first.errors).toEqual([]);
   expect(failed.errors).toEqual([]);
+  expect(failedSystems.errors).toEqual([]);
+  await failedSystems.page.context().close();
   record("strict-mode double mount raises no uncaught error");
 
   // 9. The narrowest phone still in use must not scroll sideways.
@@ -735,7 +755,11 @@ try {
   //     in English can still break here — and this is the app's default
   //     language, not an afterthought.
   const lt = await open("", { locale: "lt-LT", viewport: { width: 320, height: 720 } });
-  const ltRail = lt.page.getByRole("region", { name: "Gyvi signalai" });
+  const ltSystems = await openPanel("?shell=1&screen=twin&scenario=empty&view=systems", {
+    locale: "lt-LT",
+    viewport: { width: 320, height: 720 },
+  });
+  const ltRail = ltSystems.page.getByRole("region", { name: "Gyvi signalai" });
   await expect(ltRail).toBeVisible({ timeout: 30000 });
   for (const label of ["Miegas", "Ramybės pulsas", "Aktyvi energija", "Kūno riebalai"]) {
     await expect(ltRail.getByText(label, { exact: true })).toBeVisible();
@@ -761,6 +785,9 @@ try {
     expect(box, `${name} is not on screen`).not.toBeNull();
     expect(box.height).toBeGreaterThanOrEqual(44);
   }
+  await ltSystems.page.context().close();
+  await systems.page.context().close();
+  await evidenceLab.page.context().close();
   await lt.page.screenshot({ path: path.join(artifacts, "today-lt-320.png"), fullPage: true });
   expect(lt.errors).toEqual([]);
   record("Lithuanian at 320px stays inside the screen with tappable controls");
@@ -948,7 +975,9 @@ try {
     "Twin Memory distinguishes empty, unknown-baseline and deterministic learned-change states",
   );
 
-  await twin.page.getByRole("tab", { name: "Muscles" }).click();
+  const twinMuscles = twin.page.locator("summary").filter({ hasText: /^Muscles$/ });
+  await expect(twinMuscles).toBeVisible({ timeout: 30000 });
+  await twinMuscles.click();
   const table = twin.page.getByRole("region", { name: "Every region" });
   await expect(table).toBeVisible({ timeout: 30000 });
   const tableText = await table.innerText();
@@ -958,8 +987,8 @@ try {
   expect(tableText.indexOf("55%")).toBeLessThan(tableText.indexOf("Calves"));
   expect(tableText).toMatch(/Calves\s*\n?\s*—/);
   expect(tableText).toContain("it is not");
-  // The body composition card belongs to Overview and must not follow along.
-  await expect(twin.page.getByRole("region", { name: "Body composition" })).toHaveCount(0);
+  // Muscle analytics now live inside the Body/Overview depth layer, alongside body composition.
+  await expect(twin.page.getByRole("region", { name: "Body composition" })).toBeVisible();
 
   await twin.page.screenshot({ path: path.join(artifacts, "twin-muscles.png"), fullPage: true });
 
@@ -973,13 +1002,17 @@ try {
   await twin.page.screenshot({ path: path.join(artifacts, "twin-systems.png"), fullPage: true });
   expect(twin.errors).toEqual([]);
   await twin.page.close();
-  record("the Twin's three views each answer from their own source, and none borrows another's");
+  record(
+    "Twin Body depth and Systems keep their source boundaries without becoming separate products",
+  );
 
   // 14. The six optional languages carry their translations inline, beside the
   //     English, in the newer dictionary files. Nothing read them until the
   //     lookup in `translate` existed, so every one of these screens rendered
   //     in English for a German athlete. One live screen proves the read.
-  const de = await open("", { locale: "de-DE" });
+  const de = await openPanel("?shell=1&screen=twin&scenario=empty&view=systems", {
+    locale: "de-DE",
+  });
   const deRail = de.page.getByRole("region", { name: "Live-Signale" });
   await expect(deRail).toBeVisible({ timeout: 30000 });
   const deText = await deRail.innerText();
@@ -1291,7 +1324,7 @@ try {
   // 20. The mockup draws a small line beside every signal. Ours draws one only
   //     where there is a line to draw: two readings make a shape, one does not,
   //     and inventing one would be the first fabricated trend on this screen.
-  const measured = await open("?signals=measured");
+  const measured = await openPanel("?shell=1&screen=twin&view=systems&signals=measured");
   const plotted = measured.page.getByRole("region", { name: "Live signals" });
   await expect(plotted).toBeVisible({ timeout: 30000 });
   // Resting HR has three readings and gets a line; sleep has one and does not.
@@ -1307,24 +1340,31 @@ try {
   // 21. Where the template shows "82% · High Confidence · 512 data points".
   //     Ours shows how far each target has actually been tested, and keeps
   //     "never predicted" apart from "predicted, nothing resolved yet".
-  const evidence = await open("?evidence=some");
+  const evidence = await openPanel("?shell=1&screen=lab&evidence=some");
+  const evidenceDetails = evidence.page
+    .locator("details > summary")
+    .filter({ hasText: "Evidence, decisions & learning history" });
+  await expect(evidenceDetails).toBeVisible({ timeout: 30000 });
+  await evidenceDetails.click();
   const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
   await expect(evidencePanel).toBeVisible({ timeout: 30000 });
-  await openEvidence(evidencePanel, "Evidence details");
   const evidenceText = await evidencePanel.innerText();
   expect(evidenceText).toContain("Moderate");
   expect(evidenceText).toContain("18 tested · 22 waiting");
   // Two targets nothing has ever predicted say so, rather than being omitted
   // or shown as insufficient evidence about the athlete.
-  await expect(
-    evidencePanel.locator(".fl-evidence-targets").getByText("Not predicted yet", { exact: true }),
-  ).toHaveCount(2);
+  await expect(evidencePanel.locator("li span.w-20").filter({ hasText: /^—$/ })).toHaveCount(2);
   // No blended percentage anywhere on the panel.
   expect(evidenceText).not.toMatch(/\d+\s*%/);
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
   await evidence.page.close();
 
-  const noLedger = await open("?evidence=fail");
+  const noLedger = await openPanel("?shell=1&screen=lab&evidence=fail");
+  const noLedgerDetails = noLedger.page
+    .locator("details > summary")
+    .filter({ hasText: "Evidence, decisions & learning history" });
+  await expect(noLedgerDetails).toBeVisible({ timeout: 30000 });
+  await noLedgerDetails.click();
   await expect(
     noLedger.page.getByText("decision ledger could not be read", { exact: false }),
   ).toBeVisible({ timeout: 30000 });
@@ -1334,13 +1374,13 @@ try {
   // 22. Where the template shows four sleep bars that always fill a night.
   //     Ours shows only what the source actually sent, and says which of the
   //     several kinds of "nothing" it is looking at.
-  const noNight = await open("?sleep=");
+  const noNight = await openPanel("?shell=1&screen=twin&view=systems&sleep=");
   const sleepPanel = noNight.page.getByRole("region", { name: "Sleep analysis" });
   await expect(sleepPanel).toBeVisible({ timeout: 30000 });
   expect(await sleepPanel.innerText()).toMatch(/no source has sent a night yet/i);
   await noNight.page.close();
 
-  const staged = await open("?sleep=staged");
+  const staged = await openPanel("?shell=1&screen=twin&view=systems&sleep=staged");
   const stagedPanel = staged.page.getByRole("region", { name: "Sleep analysis" });
   await expect(stagedPanel).toBeVisible({ timeout: 30000 });
   const stagedText = await stagedPanel.innerText();
@@ -1354,7 +1394,7 @@ try {
 
   // One stage out of four: minutes, no percentages, and the reason said out
   // loud. A share of one stage would read as the whole night.
-  const onlyDeep = await open("?sleep=partial");
+  const onlyDeep = await openPanel("?shell=1&screen=twin&view=systems&sleep=partial");
   const onlyDeepPanel = onlyDeep.page.getByRole("region", { name: "Sleep analysis" });
   await expect(onlyDeepPanel).toBeVisible({ timeout: 30000 });
   const onlyDeepText = await onlyDeepPanel.innerText();
@@ -1366,13 +1406,13 @@ try {
   expect(onlyDeepText).toMatch(/350 min of sleep in no stage/i);
   await onlyDeep.page.close();
 
-  const durationOnly = await open("?sleep=duration");
+  const durationOnly = await openPanel("?shell=1&screen=twin&view=systems&sleep=duration");
   const durationPanel = durationOnly.page.getByRole("region", { name: "Sleep analysis" });
   await expect(durationPanel).toBeVisible({ timeout: 30000 });
   expect(await durationPanel.innerText()).toMatch(/sleep duration only/i);
   await durationOnly.page.close();
 
-  const noSamples = await open("?sleep=fail");
+  const noSamples = await openPanel("?shell=1&screen=twin&view=systems&sleep=fail");
   await expect(
     noSamples.page.getByText("sleep records could not be read", { exact: false }),
   ).toBeVisible({ timeout: 30000 });
@@ -1384,10 +1424,9 @@ try {
   //     validated at four and twelve weeks, so this says when each region
   //     comes back — arithmetic on the fatigue already on the figure — and
   //     carries the assumption it rests on.
-  const ahead = await open("?twin=regions");
+  const ahead = await openPanel("?shell=1&screen=twin&view=systems&twin=regions");
   const aheadPanel = ahead.page.getByRole("region", { name: "When it comes back" });
   await expect(aheadPanel).toBeVisible({ timeout: 30000 });
-  await openEvidence(aheadPanel, "Recovery estimates");
   const aheadText = await aheadPanel.innerText();
   // Back is at 55% and chest at 41%; with a 40-hour constant and an 80%
   // threshold that is 32 and 43 hours, soonest first.
@@ -1406,9 +1445,11 @@ try {
   await ahead.page.close();
 
   // Empty evidence must not claim every region is recovered, in either view.
-  for (const query of ["?twin=empty", "?panel=recovery&twin=empty"]) {
+  for (const query of [
+    "?shell=1&screen=twin&view=systems&twin=empty",
+    "?panel=recovery&twin=empty",
+  ]) {
     const unknown = await openPanel(query);
-    if (query === "?twin=empty") await openTodayEvidenceLayer(unknown.page);
     const outlook = unknown.page.getByRole("region", { name: "When it comes back" });
     await expect(
       outlook.getByText("Not enough data to estimate recovery.", { exact: true }),
@@ -1421,7 +1462,7 @@ try {
   record("unknown recovery remains unknown in compact and full outlooks");
 
   // A source that failed must never render as a body with nothing to recover.
-  const noTwin = await open("?twin=unreadable");
+  const noTwin = await openPanel("?shell=1&screen=twin&view=systems&twin=unreadable");
   await expect(
     noTwin.page.getByText("does not mean everything is recovered", { exact: false }),
   ).toBeVisible({ timeout: 30000 });

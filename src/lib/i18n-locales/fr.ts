@@ -215,7 +215,6 @@ export const locale: Record<string, string> = {
   "mg.glutes": "Fessiers",
   "mg.cardio": "Cardio",
   "mg.fullbody": "Corps entier",
-  "pr.title": "Progression",
   "pr.volume": "Volume hebdomadaire (kg)",
   "pr.records": "Records personnels",
   "pr.addWeight": "Noter le poids",
@@ -252,11 +251,7 @@ export const locale: Record<string, string> = {
   "fc.drills": "Exercices correctifs",
   "fc.denied": "Accès à la caméra refusé.",
   "fc.history": "Scans précédents",
-  "cmd.ph": "Rechercher ou accéder à...",
-  "cmd.empty": "Aucun résultat.",
-  "cmd.nav": "Navigation",
   "nav.nutrition": "Nutrition",
-  "nut.title": "Journal alimentaire",
   "nut.sub":
     "Décrivez ce que vous avez mangé en quelques mots — les calories et macros sont calculés automatiquement et vos objectifs quotidiens s'ajustent tout seuls.",
   "nut.ph": "Ex. 2 œufs, flocons d'avoine avec banane et un latte",
@@ -405,7 +400,6 @@ export const locale: Record<string, string> = {
   "common.error": "Une erreur est survenue",
   "common.kg": "kg",
   "nav.supplements": "Compléments",
-  "supp.title": "Planificateur de compléments",
   "supp.sub":
     "Ajoutez vos compléments — le système les répartit sur la journée selon l'absorption, les interactions et l'heure d'entraînement.",
   "supp.add": "Ajouter un complément",

@@ -7,7 +7,7 @@ describe("Twin reference navigation", () => {
   });
   it("round trips each muscle evidence tab", () => {
     for (const detail of ["status", "history", "impact"]) {
-      const input = { view: "muscles", region: "chest", detail };
+      const input = { view: "overview", region: "chest", detail };
       expect(parseTwinNavigation(input)).toEqual(input);
     }
   });
@@ -20,13 +20,13 @@ describe("Twin reference navigation", () => {
   it.each(["cardio", "mobility", "fullbody"])(
     "retains evidence navigation for off-body group %s",
     (region) => {
-      const input = { view: "muscles", region, detail: "history" };
+      const input = { view: "overview", region, detail: "history" };
       expect(parseTwinNavigation(input)).toEqual(input);
     },
   );
   it("drops detached detail tabs and unrelated user data", () => {
-    expect(parseTwinNavigation({ view: "systems", detail: "history", recovery: 72 })).toEqual({
-      view: "systems",
+    expect(parseTwinNavigation({ view: "future", detail: "history", recovery: 72 })).toEqual({
+      view: "future",
     });
   });
   it("keeps a recognized region when its detail tab is invalid", () => {
@@ -35,13 +35,13 @@ describe("Twin reference navigation", () => {
     });
   });
   it("cycles tabs in both directions", () => {
-    expect(nextTwinView("overview", "ArrowLeft")).toBe("systems");
-    expect(nextTwinView("systems", "ArrowRight")).toBe("overview");
-    expect(nextTwinView("overview", "ArrowRight")).toBe("muscles");
+    expect(nextTwinView("overview", "ArrowLeft")).toBe("journal");
+    expect(nextTwinView("journal", "ArrowRight")).toBe("overview");
+    expect(nextTwinView("overview", "ArrowRight")).toBe("systems");
   });
   it("supports Home and End without intercepting unrelated keys", () => {
-    expect(nextTwinView("muscles", "Home")).toBe("overview");
-    expect(nextTwinView("muscles", "End")).toBe("systems");
+    expect(nextTwinView("future", "Home")).toBe("overview");
+    expect(nextTwinView("systems", "End")).toBe("journal");
     expect(nextTwinView("overview", "Tab")).toBeNull();
   });
 });
