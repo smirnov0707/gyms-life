@@ -125,7 +125,7 @@ export function Overview() {
         </p>
       </header>
 
-      <section className="fl-hero-grid grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="fl-hero-grid grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <TodayDecision
           workoutDay={today?.day ?? null}
           primaryTrainingActionHandled={Boolean(today)}
