@@ -105,8 +105,8 @@ export function JournalIntelligence() {
 
   const copy = english
     ? {
-        eyebrow: "JOURNAL · LEARNING LEDGER",
-        title: "Journal",
+        eyebrow: "TIMELINE · LEARNING LEDGER",
+        title: "Timeline",
         subtitle: "Hypotheses, discoveries and decisions, with their evidence.",
         hypotheses: "Hypotheses",
         discoveries: "Discoveries",
@@ -144,8 +144,8 @@ export function JournalIntelligence() {
           "Supported means the configured evidence threshold was reached. It does not mean universal scientific truth or medical certainty.",
       }
     : {
-        eyebrow: "JOURNAL · MOKYMOSI ŽURNALAS",
-        title: "Journal",
+        eyebrow: "TIMELINE · MOKYMOSI ISTORIJA",
+        title: "Timeline",
         subtitle: "Hipotezės, atradimai ir sprendimai su juos pagrindžiančiais duomenimis.",
         hypotheses: "Hipotezės",
         discoveries: "Atradimai",
@@ -244,14 +244,14 @@ export function JournalIntelligence() {
           <div className="mt-6">
             <FutureLabEmpty>
               {english
-                ? "Journal intelligence is temporarily unavailable."
-                : "Journal intelligence laikinai nepasiekiamas."}
+                ? "Timeline intelligence is temporarily unavailable."
+                : "Timeline intelligence laikinai nepasiekiamas."}
             </FutureLabEmpty>
           </div>
         ) : !data ? (
           <div className="mt-4">
             <FutureLabEmpty>
-              {english ? "Reading your journal…" : "Skaitomas tavo žurnalas…"}
+              {english ? "Reading your timeline…" : "Skaitoma tavo laiko juosta…"}
             </FutureLabEmpty>
           </div>
         ) : (
@@ -400,12 +400,12 @@ export function JournalIntelligence() {
 
             <details className="fl-secondary-details mt-3">
               <summary>
-                {english ? "Browse journal" : "Naršyti žurnalą"} ·{" "}
+                {english ? "Explore timeline" : "Naršyti laiko juostą"} ·{" "}
                 {tabs.find((item) => item.id === tab)?.label}
               </summary>
               <div className="fl-disclosed-content">
                 <nav
-                  aria-label={english ? "Journal filters" : "Žurnalo filtrai"}
+                  aria-label={english ? "Timeline filters" : "Laiko juostos filtrai"}
                   className="fl-journal-filters mt-4 flex gap-1.5 overflow-x-auto border-b border-border pb-3"
                 >
                   {tabs.map((item) => (

@@ -140,8 +140,8 @@ function ReadinessPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
+    <div className="fl-context-route fl-page-enter max-w-4xl">
+      <section className="fl-context-hero">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"

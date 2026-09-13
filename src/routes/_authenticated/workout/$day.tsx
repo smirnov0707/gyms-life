@@ -807,7 +807,7 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
 
   if (workoutQuery.isLoading && !activeWorkout)
     return (
-      <main className="mx-auto grid min-h-[70vh] max-w-3xl place-items-center">
+      <main className="fl-context-tool fl-page-enter mx-auto grid min-h-[70vh] max-w-3xl place-items-center">
         <Loader2 className="size-8 animate-spin text-primary" />
       </main>
     );
@@ -817,8 +817,8 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
         ? copy.weeklyTargetReached
         : copy.noWorkoutAvailable;
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <GlowCard className="panel p-6">
+      <main className="fl-context-tool fl-page-enter mx-auto max-w-3xl px-4 py-8">
+        <GlowCard className="panel fl-premium-surface p-6">
           <p className={workoutQuery.isError ? "text-destructive" : "text-muted-foreground"}>
             {workoutQuery.isError ? copy.loadFailed : unavailableMessage}
           </p>
@@ -831,8 +831,8 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
   }
   if (!exercise)
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <GlowCard className="panel p-6">
+      <main className="fl-context-tool fl-page-enter mx-auto max-w-3xl px-4 py-8">
+        <GlowCard className="panel fl-premium-surface p-6">
           <p className="text-destructive">{copy.exerciseRestoreFailed}</p>
           <Button className="mt-4 min-h-11" onClick={() => navigate({ to: "/app" })}>
             {copy.backToTodaysDecision}
@@ -842,13 +842,13 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
     );
   if (finished && summary)
     return (
-      <main className="mx-auto max-w-3xl px-4 py-8">
-        <GlowCard className="panel p-8 text-center">
+      <main className="fl-context-tool fl-page-enter mx-auto max-w-3xl px-4 py-8">
+        <GlowCard className="panel fl-governing-card p-8 text-center">
           <Trophy className="mx-auto size-14 text-primary" />
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.24em] text-primary">
             {copy.workoutComplete}
           </p>
-          <h1 className="mt-2 text-4xl">{copy.workoutSaved}</h1>
+          <h1 className="fl-world-title mt-2 text-4xl">{copy.workoutSaved}</h1>
           <div className="mt-7 grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl bg-surface-2 p-5">
               <div className="text-3xl font-bold">{formatDuration(summary.duration)}</div>
@@ -923,7 +923,7 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
     );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 pb-12">
+    <main className="fl-context-tool fl-page-enter mx-auto max-w-3xl px-4 py-6 pb-12">
       <div className="mb-5 flex items-center justify-between gap-3">
         <Button variant="ghost" className="min-h-11" onClick={() => navigate({ to: "/app" })}>
           <ArrowLeft className="mr-1 size-4" /> {copy.today}
@@ -932,9 +932,9 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
           <Clock className="size-4" /> {workout.estimated_minutes} min
         </span>
       </div>
-      <GlowCard className="panel p-6 md:p-8">
+      <GlowCard className="panel fl-governing-card p-6 md:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">{copy.session}</p>
-        <h1 className="mt-2 text-3xl sm:text-4xl">{workout.title}</h1>
+        <h1 className="fl-world-title mt-2 text-3xl sm:text-4xl">{workout.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{workout.focus}</p>
         {adaptedDescription ? (
           <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-primary">
@@ -961,7 +961,7 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
             </p>
             <Button
               size="lg"
-              className="mt-5 min-h-12 w-full rounded-none font-bold hard-shadow"
+              className="mt-5 min-h-12 w-full rounded-full font-bold shadow-[0_18px_42px_-26px_var(--primary-glow)]"
               onClick={() => runAction(() => startMutation.mutate())}
               disabled={startMutation.isPending}
             >
@@ -1042,7 +1042,7 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
                       ) : null}
                       <Button
                         size="lg"
-                        className="mt-5 min-h-12 w-full rounded-none font-bold hard-shadow"
+                        className="mt-5 min-h-12 w-full rounded-full font-bold shadow-[0_18px_42px_-26px_var(--primary-glow)]"
                         onClick={() => runAction(() => finishMutation.mutate())}
                         disabled={finishMutation.isPending}
                       >

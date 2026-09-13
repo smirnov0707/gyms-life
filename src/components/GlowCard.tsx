@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useRef, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export function GlowCard({
@@ -11,32 +11,31 @@ export function GlowCard({
   glowColor?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [glow, setGlow] = useState({ x: 50, y: 50, opacity: 0 });
 
-  const handleMove = (e: MouseEvent<HTMLDivElement>) => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setGlow({ x, y, opacity: 1 });
+  const handleMove = (event: MouseEvent<HTMLDivElement>) => {
+    const element = ref.current;
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    element.style.setProperty("--glow-x", `${((event.clientX - rect.left) / rect.width) * 100}%`);
+    element.style.setProperty("--glow-y", `${((event.clientY - rect.top) / rect.height) * 100}%`);
+    element.style.setProperty("--glow-opacity", "1");
   };
 
-  const handleLeave = () => setGlow((g) => ({ ...g, opacity: 0 }));
+  const handleLeave = () => {
+    ref.current?.style.setProperty("--glow-opacity", "0");
+  };
 
   return (
     <div
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      className={cn("relative overflow-hidden", className)}
+      className={cn("fl-glow-card relative overflow-hidden", className)}
+      style={{ "--glow-color": glowColor } as CSSProperties}
     >
       <div
-        className="pointer-events-none absolute -inset-px transition-opacity duration-300"
-        style={{
-          opacity: glow.opacity,
-          background: `radial-gradient(24rem 16rem at ${glow.x}% ${glow.y}%, ${glowColor}, transparent 60%)`,
-        }}
+        aria-hidden="true"
+        className="fl-glow-card-light pointer-events-none absolute -inset-px"
       />
       <div className="relative z-10 h-full">{children}</div>
     </div>

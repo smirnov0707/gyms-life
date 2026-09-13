@@ -8,7 +8,6 @@ import { TwinHome } from "@/components/twin/TwinHome";
 import { FutureLabRoster } from "@/components/future-lab/FutureLabRoster";
 import { baseLang } from "@/lib/i18n";
 import "./future-lab-dashboard.css";
-import { TwinPulse } from "@/components/TwinPulse";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
@@ -110,23 +109,23 @@ export function Overview() {
   );
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
   return (
-    <main className="mx-auto w-full max-w-[1480px] space-y-4 px-3 pb-8 sm:px-4 lg:px-6">
-      <header className="flex flex-col gap-1 pt-2 sm:pt-4">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-violet-300 light:text-violet-700">
+    <div className="fl-world-page fl-page-enter mx-auto w-full max-w-[1480px] space-y-4 px-3 pb-8 sm:px-4 lg:px-6">
+      <header className="fl-world-header flex flex-col gap-1 pt-2 sm:pt-4">
+        <p className="fl-world-kicker text-[10px] font-medium uppercase tracking-[0.2em] text-violet-300 light:text-violet-700">
           {t("nav.today")} · GYMS.LIFE INTELLIGENCE
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="fl-world-title text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           {greeting}
           {firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
+        <p className="fl-world-subtitle max-w-2xl text-sm text-muted-foreground">
           {english
             ? "One decision, backed by your current state and longitudinal evidence."
             : "Vienas sprendimas, paremtas dabartine tavo būsena ir ilgalaikiais duomenimis."}
         </p>
       </header>
 
-      <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="fl-hero-grid grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <TodayDecision
           workoutDay={today?.day ?? null}
           primaryTrainingActionHandled={Boolean(today)}
@@ -136,11 +135,12 @@ export function Overview() {
         </div>
       </section>
 
-      <TwinPulse />
-
-      <section className="rounded-2xl border border-border bg-surface/85 p-3 sm:p-4">
-        <div className="mb-2 flex items-center justify-between gap-3 px-1">
-          <div>
+      <details className="fl-luxury-disclosure group rounded-2xl border border-border/70 bg-surface/60">
+        <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-muted-foreground sm:px-5">
+          {english ? "Today's execution · Open session" : "Šiandienos vykdymas · Atidaryti sesiją"}
+        </summary>
+        <div className="border-t border-border p-4">
+          <div className="mb-3">
             <p className="text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
               {english ? "TODAY'S EXECUTION" : "ŠIANDIENOS VYKDYMAS"}
             </p>
@@ -148,13 +148,20 @@ export function Overview() {
               {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
             </h2>
           </div>
+          <TodaysPlanPanel />
         </div>
-        <TodaysPlanPanel />
-      </section>
+      </details>
 
-      <TodayIntelligenceBrief />
+      <details className="fl-luxury-disclosure group rounded-2xl border border-border/70 bg-surface/60">
+        <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-muted-foreground sm:px-5">
+          {english ? "Why this? · Evidence & signals" : "Kodėl taip? · Įrodymai ir signalai"}
+        </summary>
+        <div className="border-t border-border p-3 sm:p-4">
+          <TodayIntelligenceBrief />
+        </div>
+      </details>
 
-      <details className="group rounded-2xl border border-border/70 bg-surface/60">
+      <details className="fl-luxury-disclosure group rounded-2xl border border-border/70 bg-surface/60">
         <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-muted-foreground sm:px-5">
           {english ? "Context, sources & settings" : "Kontekstas, šaltiniai ir nustatymai"}
         </summary>
@@ -171,6 +178,6 @@ export function Overview() {
           ) : null}
         </div>
       </details>
-    </main>
+    </div>
   );
 }

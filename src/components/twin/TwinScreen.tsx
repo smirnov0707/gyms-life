@@ -57,7 +57,7 @@ export function TwinScreen({
   };
 
   return (
-    <div className="twin-screen mx-auto grid w-full max-w-6xl gap-4">
+    <div className="twin-screen fl-world-page fl-page-enter mx-auto grid w-full max-w-6xl gap-4">
       {detailRegion ? (
         <TwinMuscleDetail
           key={detailRegion}
@@ -74,7 +74,7 @@ export function TwinScreen({
             role="tablist"
             aria-label={t("tw.views")}
             onKeyDown={onKeyDown}
-            className="flex gap-1 overflow-x-auto rounded-full border border-border bg-surface-2 p-1"
+            className="fl-segmented-nav flex gap-1 overflow-x-auto rounded-full border border-border bg-surface-2 p-1"
           >
             {TABS.map((tab) => {
               const selected = tab.id === active;
@@ -125,7 +125,7 @@ export function TwinScreen({
                 <div className="twin-body-composition">
                   <BodyCompositionCard />
                 </div>
-                <details className="rounded-2xl border border-border bg-surface/75">
+                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
                   <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
                     {t("tw.tabMuscles")}
                   </summary>
@@ -135,7 +135,7 @@ export function TwinScreen({
                     <TwinRewind />
                   </div>
                 </details>
-                <details className="rounded-2xl border border-border bg-surface/75">
+                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
                   <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
                     {t("tw.memoryTitle")}
                   </summary>
@@ -143,7 +143,7 @@ export function TwinScreen({
                     <TwinMemory />
                   </div>
                 </details>
-                <details className="rounded-2xl border border-border bg-surface/75">
+                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
                   <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
                     {t("tw.measurementTools")}
                   </summary>
@@ -155,7 +155,7 @@ export function TwinScreen({
               </>
             ) : active === "systems" ? (
               <>
-                <section className="rounded-3xl border border-border bg-surface p-4 md:p-5">
+                <section className="fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
                   <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
                     {t("tw.systemsTitle")}
                   </h2>

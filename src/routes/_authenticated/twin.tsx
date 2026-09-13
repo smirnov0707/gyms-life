@@ -5,15 +5,15 @@ import { parseTwinNavigation } from "@/lib/twin-navigation";
 export const Route = createFileRoute("/_authenticated/twin")({
   head: () => ({
     meta: [
-      { title: "Skaitmeninis dvynys — GYMS.LIFE" },
+      { title: "My Twin — GYMS.LIFE" },
       {
         name: "description",
-        content: "Apskaičiuotas atsistatymas kiekvienam kūno regionui pagal tavo treniruotes.",
+        content: "Gyvas tavo kūno, sistemų, istorijos ir ateities modelis vienoje vietoje.",
       },
-      { property: "og:title", content: "Dvynys — GYMS.LIFE" },
+      { property: "og:title", content: "My Twin — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Tavo kūno regionų krūvis ir atsistatymas realiu laiku.",
+        content: "Tavo būsenos, pokyčių ir scenarijų vaizdas per laiką.",
       },
     ],
   }),

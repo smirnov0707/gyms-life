@@ -87,19 +87,19 @@ function CoachPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-4xl flex-col">
-      <header className="flex flex-wrap items-start justify-between gap-4 pb-5">
+    <div className="fl-world-page fl-page-enter mx-auto flex min-h-[calc(100dvh-9rem)] max-w-4xl flex-col">
+      <header className="fl-world-header flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400 light:text-emerald-700">
+          <p className="fl-world-kicker flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400 light:text-emerald-700">
             <Sparkles className="size-3.5" /> GYMS.LIFE INTELLIGENCE
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          <h1 className="fl-world-title mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {english ? "Ask your system" : "Klausk savo sistemos"}
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          <p className="fl-world-subtitle mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
             {english
-              ? "Ask why Today chose an action, what your Twin is showing, what the Lab is investigating, or what Future Me is simulating."
-              : "Klausk, kodėl Today pasirinko veiksmą, ką rodo Twin, ką tiria Lab arba ką modeliuoja Future Me."}
+              ? "Ask why Today chose an action, what your Twin is showing, what the Lab is investigating, or what Future is simulating."
+              : "Klausk, kodėl Today pasirinko veiksmą, ką rodo Twin, ką tiria Lab arba ką modeliuoja Future."}
           </p>
         </div>
       </header>
@@ -109,7 +109,7 @@ function CoachPage() {
       </div>
       <AiPersonalizationConsentCard />
 
-      <section className="relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706]">
+      <section className="fl-premium-stage relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706]">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -188,7 +188,7 @@ function CoachPage() {
         </form>
       </section>
 
-      <details className="mt-4 rounded-2xl border border-border bg-surface/70">
+      <details className="fl-luxury-disclosure mt-4 rounded-2xl border border-border bg-surface/70">
         <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
           {english ? "Coach memory" : "Coach atmintis"}
         </summary>
@@ -262,7 +262,7 @@ function AiPersonalizationConsentCard() {
   };
 
   return (
-    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
+    <section className="fl-premium-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={cn(

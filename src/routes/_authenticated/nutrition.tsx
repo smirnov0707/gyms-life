@@ -283,9 +283,9 @@ function NutritionPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
+    <div className="fl-context-route fl-page-enter max-w-5xl">
       <NutritionStudioNav />
-      <section className="rounded-[2rem] border border-border bg-surface/85 p-5 sm:p-6">
+      <section className="fl-context-hero">
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-400">
           NUTRITION INTELLIGENCE
         </p>
