@@ -22,7 +22,9 @@
     "test:bundle:night-lab": "node scripts/test-night-lab-bundle.mjs",
     "test:browser:night-review": "node scripts/test-night-review-browser.mjs",
     "smoke:production": "node scripts/smoke-production.mjs",
-    "test:netlify-release-gate": "node scripts/netlify-ignore-build.selftest.mjs"
+    "test:netlify-release-gate": "node scripts/netlify-ignore-build.selftest.mjs",
+    "verify:production": "node scripts/release-production.mjs",
+    "deploy:production": "node scripts/release-production.mjs --deploy"
   },
   "overrides": {
     "rolldown": "1.2.1",

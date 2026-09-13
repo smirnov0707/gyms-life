@@ -41,3 +41,21 @@ The checker is offline, prints bounded error codes only, and performs no deploy,
 Regression command: `npx vitest run scripts/netlify-deployment.test.mjs`. These tests are also included in `npm test`.
 
 For this project, do not override the functions directory with `.netlify/functions` ZIP output. Retain the standard production-context build and framework adapter's metadata; rebuild functions with `--skip-functions-cache` when needed. Do not manually rewrite bundle metadata to make a failing check pass.
+
+## Integrated verification and guarded release
+
+`npm run verify:production` now collects fresh site/deploy metadata using the already authenticated local Netlify CLI, runs the metadata checker and public HTTP smoke together, and re-reads the published pointer before and after smoke. It makes no deployment, secret, database or worker invocation. It returns nonzero on missing metadata, a changed published deploy, bad public responses or unavailable tooling. No raw API/CLI payload is printed.
+
+The opt-in release entry point is:
+
+```sh
+npm run deploy:production -- --expected-sha <full-reviewed-main-SHA>
+```
+
+The exact 40-character SHA is mandatory. The wrapper checks the repository origin, clean tracked/untracked worktree, exact HEAD and remote `main`; runs typecheck, the full test suite and lint; rechecks source and the published pointer; and uses the canonical production build/deploy command. No caller-supplied function directory, `--no-build`, credential or target override is accepted. The build happens inside Netlify CLI's deploy lifecycle, preserving adapter metadata.
+
+After publication it uses the returned deploy ID, checks it against the current site and function metadata, runs live smoke, then checks the published pointer again. A CLI timeout may still have published: the report retains `deploymentAttempted`, the previous deploy ID and a bounded error. Do not blindly retry or automatically restore a deployment over another operator's release. This is not an atomic cross-provider lock and cannot prevent all concurrent changes.
+
+This wrapper supports the existing macOS/Linux CLI setup, requires the verified Netlify CLI **27.5.2** already installed/available to `npx --no-install`, and never downloads or upgrades it. Review a CLI version change before changing the version gate. Install application dependencies from the lockfile before use. Existing CLI authentication remains outside source control; no new secret is provisioned by this command.
+
+These are local/operator release commands, not a new GitHub deployment workflow. Direct `netlify deploy` invocations remain possible and do not inherit this wrapper's gates. Post-publication checks detect failures; they do not guarantee a bad version could never briefly become public. Runtime code identity and real Night Lab execution remain explicitly unverified even when these checks pass.
