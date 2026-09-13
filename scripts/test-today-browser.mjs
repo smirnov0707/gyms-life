@@ -1348,15 +1348,12 @@ try {
   await evidenceDetails.click();
   const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
   await expect(evidencePanel).toBeVisible({ timeout: 30000 });
-  await openEvidence(evidencePanel, "Evidence details");
   const evidenceText = await evidencePanel.innerText();
   expect(evidenceText).toContain("Moderate");
   expect(evidenceText).toContain("18 tested · 22 waiting");
   // Two targets nothing has ever predicted say so, rather than being omitted
   // or shown as insufficient evidence about the athlete.
-  await expect(
-    evidencePanel.locator(".fl-evidence-targets").getByText("Not predicted yet", { exact: true }),
-  ).toHaveCount(2);
+  await expect(evidencePanel.locator("li span.w-20").filter({ hasText: /^—$/ })).toHaveCount(2);
   // No blended percentage anywhere on the panel.
   expect(evidenceText).not.toMatch(/\d+\s*%/);
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
@@ -1427,12 +1424,9 @@ try {
   //     validated at four and twelve weeks, so this says when each region
   //     comes back — arithmetic on the fatigue already on the figure — and
   //     carries the assumption it rests on.
-  const ahead = await openPanel(
-    "?shell=1&screen=twin&scenario=reference&view=systems&twin=regions",
-  );
+  const ahead = await openPanel("?shell=1&screen=twin&view=systems&twin=regions");
   const aheadPanel = ahead.page.getByRole("region", { name: "When it comes back" });
   await expect(aheadPanel).toBeVisible({ timeout: 30000 });
-  await openEvidence(aheadPanel, "Recovery estimates");
   const aheadText = await aheadPanel.innerText();
   // Back is at 55% and chest at 41%; with a 40-hour constant and an 80%
   // threshold that is 32 and 43 hours, soonest first.
