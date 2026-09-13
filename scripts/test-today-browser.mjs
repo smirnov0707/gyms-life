@@ -1340,7 +1340,12 @@ try {
   // 21. Where the template shows "82% · High Confidence · 512 data points".
   //     Ours shows how far each target has actually been tested, and keeps
   //     "never predicted" apart from "predicted, nothing resolved yet".
-  const evidence = await openPanel("?shell=1&screen=lab&scenario=reference&evidence=some");
+  const evidence = await openPanel("?shell=1&screen=lab&evidence=some");
+  const evidenceDetails = evidence.page
+    .locator("details > summary")
+    .filter({ hasText: "Evidence, decisions & learning history" });
+  await expect(evidenceDetails).toBeVisible({ timeout: 30000 });
+  await evidenceDetails.click();
   const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
   await expect(evidencePanel).toBeVisible({ timeout: 30000 });
   await openEvidence(evidencePanel, "Evidence details");
@@ -1357,7 +1362,12 @@ try {
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
   await evidence.page.close();
 
-  const noLedger = await openPanel("?shell=1&screen=lab&scenario=reference&evidence=fail");
+  const noLedger = await openPanel("?shell=1&screen=lab&evidence=fail");
+  const noLedgerDetails = noLedger.page
+    .locator("details > summary")
+    .filter({ hasText: "Evidence, decisions & learning history" });
+  await expect(noLedgerDetails).toBeVisible({ timeout: 30000 });
+  await noLedgerDetails.click();
   await expect(
     noLedger.page.getByText("decision ledger could not be read", { exact: false }),
   ).toBeVisible({ timeout: 30000 });
@@ -1441,9 +1451,11 @@ try {
   await ahead.page.close();
 
   // Empty evidence must not claim every region is recovered, in either view.
-  for (const query of ["?twin=empty", "?panel=recovery&twin=empty"]) {
+  for (const query of [
+    "?shell=1&screen=twin&view=systems&twin=empty",
+    "?panel=recovery&twin=empty",
+  ]) {
     const unknown = await openPanel(query);
-    if (query === "?twin=empty") await openTodayEvidenceLayer(unknown.page);
     const outlook = unknown.page.getByRole("region", { name: "When it comes back" });
     await expect(
       outlook.getByText("Not enough data to estimate recovery.", { exact: true }),
@@ -1456,7 +1468,7 @@ try {
   record("unknown recovery remains unknown in compact and full outlooks");
 
   // A source that failed must never render as a body with nothing to recover.
-  const noTwin = await open("?twin=unreadable");
+  const noTwin = await openPanel("?shell=1&screen=twin&view=systems&twin=unreadable");
   await expect(
     noTwin.page.getByText("does not mean everything is recovered", { exact: false }),
   ).toBeVisible({ timeout: 30000 });
