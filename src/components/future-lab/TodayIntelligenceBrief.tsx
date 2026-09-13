@@ -172,7 +172,7 @@ export function TodayIntelligenceBrief() {
       </header>
       <Row
         icon={Sparkles}
-        eyebrow="FUTURE ME"
+        eyebrow="FUTURE"
         title={english ? "Strength trajectory" : "Jėgos trajektorija"}
         detail={futureDetail}
         to="/twin"

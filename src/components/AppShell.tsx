@@ -51,7 +51,7 @@ function MoreNavigation() {
           <Plus aria-hidden="true" size={18} />
         </button>
       </DrawerTrigger>
-      <DrawerContent className="future-lab-drawer max-h-[85vh] rounded-t-2xl border-border bg-surface px-4 text-foreground sm:mx-auto sm:max-w-2xl">
+      <DrawerContent className="future-lab-drawer fl-premium-drawer max-h-[85vh] rounded-t-2xl border-border bg-surface px-4 text-foreground sm:mx-auto sm:max-w-2xl">
         <div className="min-h-0 overflow-y-auto pb-[max(1.5rem,var(--sab))]" data-vaul-no-drag>
           <DrawerHeader className="px-1 pb-4 pt-5 text-left">
             <DrawerTitle className="text-lg font-semibold text-foreground">
@@ -69,7 +69,7 @@ function MoreNavigation() {
                   <DrawerClose key={action.to} asChild>
                     <Link
                       to={action.to}
-                      className="group flex min-h-20 items-center gap-3 rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
+                      className="fl-action-tile group flex min-h-20 items-center gap-3 rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                         <Icon aria-hidden="true" className="size-4" />

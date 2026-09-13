@@ -4,15 +4,16 @@ import { Overview } from "@/components/Overview";
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
     meta: [
-      { title: "Apžvalga — GYMS.LIFE treniruočių planas" },
+      { title: "Today — GYMS.LIFE" },
       {
         name: "description",
-        content: "Tavo šios dienos treniruotė, savaitės planas ir statistika.",
+        content:
+          "Vienas aiškus dienos sprendimas, paremtas tavo būsena, istorija ir patvirtintais duomenimis.",
       },
-      { property: "og:title", content: "Apžvalga — GYMS.LIFE" },
+      { property: "og:title", content: "Today — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Šios dienos treniruotė ir progresas vienoje vietoje.",
+        content: "Ką daryti dabar — ir kodėl sistema taip nusprendė.",
       },
     ],
   }),

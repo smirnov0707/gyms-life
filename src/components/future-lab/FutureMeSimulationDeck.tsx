@@ -78,7 +78,7 @@ export function FutureMeSimulationDeck() {
 
   const copy = english
     ? {
-        eyebrow: "FUTURE ME · STRENGTH PROJECTION",
+        eyebrow: "FUTURE · STRENGTH PROJECTION",
         title: "If you stay on this path",
         subtitle:
           "A bounded strength projection from your completed training history — separated from your Today decision and never treated as a promise.",
@@ -97,7 +97,7 @@ export function FutureMeSimulationDeck() {
         boundaryTitle: "Long horizon intentionally locked",
         boundaryBody:
           "The current model produces only 4- and 12-week outputs. 180-day and 1-year tabs stay visible so the product shows the boundary instead of inventing a future result.",
-        learningTitle: "Future Me is still learning your strength trajectory",
+        learningTitle: "Future is still learning your strength trajectory",
         learningBody: (sessions: number, days: number) =>
           `A lift needs at least ${sessions} completed sessions across ${days} days, plus enough weekly observations, before a projection is shown.`,
         unavailable: "The projection service could not be read. No result is being inferred.",
@@ -113,7 +113,7 @@ export function FutureMeSimulationDeck() {
         evidenceLabel: { low: "Low", moderate: "Moderate", high: "High" },
       }
     : {
-        eyebrow: "FUTURE ME · JĖGOS PROJEKCIJA",
+        eyebrow: "FUTURE · JĖGOS PROJEKCIJA",
         title: "Jei tęsi šia kryptimi",
         subtitle:
           "Ribota jėgos projekcija iš tavo užbaigtų treniruočių istorijos — atskirta nuo šiandienos sprendimo ir niekada nepateikiama kaip pažadas.",
@@ -132,7 +132,7 @@ export function FutureMeSimulationDeck() {
         boundaryTitle: "Ilgas horizontas sąmoningai užrakintas",
         boundaryBody:
           "Dabartinis modelis pateikia tik 4 ir 12 savaičių rezultatus. 180 dienų ir 1 metų skirtukai palikti matomi tam, kad sistema parodytų ribą, o ne išgalvotų ateities rezultatą.",
-        learningTitle: "Future Me dar mokosi tavo jėgos trajektorijos",
+        learningTitle: "Future dar mokosi tavo jėgos trajektorijos",
         learningBody: (sessions: number, days: number) =>
           `Pratimui reikia bent ${sessions} užbaigtų sesijų per ${days} dienų ir pakankamai savaitinių stebėjimų, kad būtų rodoma projekcija.`,
         unavailable: "Projekcijos šaltinio nepavyko perskaityti. Rezultatas nėra spėjamas.",
@@ -160,7 +160,7 @@ export function FutureMeSimulationDeck() {
             <p className="text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
               GYMS.LIFE
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Future Me</h1>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Future</h1>
           </div>
           <div
             className="grid grid-cols-4 gap-1.5 sm:flex"

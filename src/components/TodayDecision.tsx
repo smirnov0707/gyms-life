@@ -424,7 +424,7 @@ export function TodayDecision({
     );
   }
   return (
-    <GlowCard className="panel relative overflow-hidden border-primary/40 p-6 md:p-7">
+    <GlowCard className="fl-governing-card panel relative overflow-hidden border-primary/40 p-6 md:p-7">
       <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-primary/12 blur-3xl" />
       <div className="relative z-10 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
@@ -437,57 +437,60 @@ export function TodayDecision({
           </p>
         </div>
 
-        <Button
-          size="lg"
-          className="press min-h-12 rounded-full px-6 text-sm font-bold"
-          disabled={acting}
-          onClick={() => void continueToAction()}
-        >
-          {acting ? <Loader2 className="size-4 animate-spin" /> : <Activity className="size-4" />}
-          {action.cta} <ArrowRight className="size-4" />
-        </Button>
-      </div>
-
-      <div className="relative z-10 mt-6 grid gap-3 border-t border-border/70 pt-5 md:grid-cols-[auto_1fr]">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <ShieldCheck className="size-4 text-primary" /> {copy.evidence}
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {decision.evidence.map((item) => (
-            <div
-              key={item.position}
-              className="rounded-xl bg-surface-2 px-3 py-2 text-xs leading-relaxed text-muted-foreground"
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {!feedbackRecorded ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="min-h-11 rounded-full px-4 text-xs text-muted-foreground hover:text-foreground"
+              disabled={acting || feedbackState === "sending"}
+              onClick={() => void reportNotHelpful()}
             >
-              {copy.evidenceLabel[item.key](item.value)}
-            </div>
-          ))}
+              {feedbackState === "sending" ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <ThumbsDown className="size-3.5" />
+              )}
+              {copy.notHelpful}
+            </Button>
+          ) : null}
+          <Button
+            size="lg"
+            className="press min-h-12 rounded-full px-6 text-sm font-bold"
+            disabled={acting}
+            onClick={() => void continueToAction()}
+          >
+            {acting ? <Loader2 className="size-4 animate-spin" /> : <Activity className="size-4" />}
+            {action.cta} <ArrowRight className="size-4" />
+          </Button>
         </div>
       </div>
 
-      <div className="relative z-10 mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Info className="size-3.5 text-primary" /> {copy.basis}: {copy.basisLabel[decision.basis]}
+      <details className="relative z-10 mt-5 border-t border-border/70 pt-4">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <ShieldCheck className="size-4 text-primary" /> {copy.evidence}
+        </summary>
+        <div className="grid gap-3 pb-1 pt-2">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {decision.evidence.map((item) => (
+              <div
+                key={item.position}
+                className="rounded-xl bg-surface-2 px-3 py-2 text-xs leading-relaxed text-muted-foreground"
+              >
+                {copy.evidenceLabel[item.key](item.value)}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Info className="size-3.5 text-primary" /> {copy.basis}:{" "}
+            {copy.basisLabel[decision.basis]}
+          </div>
+          {feedbackRecorded ? (
+            <p className="text-xs text-muted-foreground">{copy.feedbackRecorded}</p>
+          ) : null}
         </div>
-        {feedbackRecorded ? (
-          <p className="text-xs text-muted-foreground">{copy.feedbackRecorded}</p>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="min-h-10 self-start rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
-            disabled={acting || feedbackState === "sending"}
-            onClick={() => void reportNotHelpful()}
-          >
-            {feedbackState === "sending" ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <ThumbsDown className="size-3.5" />
-            )}
-            {copy.notHelpful}
-          </Button>
-        )}
-      </div>
+      </details>
 
       {feedbackRecorded && alternative ? (
         <div className="relative z-10 mt-3 flex flex-col gap-2 rounded-xl bg-surface-2 p-3 sm:flex-row sm:items-center sm:justify-between">

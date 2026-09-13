@@ -28,15 +28,15 @@ function LabPage() {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
   return (
-    <div className="fl-lab-route mx-auto max-w-[1480px] space-y-3">
+    <div className="fl-lab-route fl-world-page fl-page-enter mx-auto max-w-[1480px] space-y-3">
       <LabCommandDeck />
-      <details className="fl-secondary-details">
+      <details className="fl-secondary-details fl-luxury-disclosure">
         <summary>Night Lab</summary>
         <div className="fl-disclosed-content">
           <NightLabPanel />
         </div>
       </details>
-      <details className="fl-secondary-details">
+      <details className="fl-secondary-details fl-luxury-disclosure">
         <summary>
           {english
             ? "Evidence, decisions & learning history"

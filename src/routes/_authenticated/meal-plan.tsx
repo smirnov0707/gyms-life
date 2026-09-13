@@ -325,17 +325,19 @@ function MealPlanPage() {
   })();
 
   return (
-    <div className="grid gap-6">
+    <div className="fl-context-route fl-page-enter">
       <NutritionStudioNav />
-      <div>
-        <p className="text-xs uppercase tracking-widest text-primary">GYMS.LIFE FUEL</p>
-        <h1 className="text-5xl">{t("mp.title")}</h1>
+      <div className="fl-context-heading">
+        <p className="fl-world-kicker text-xs uppercase tracking-widest text-primary">
+          NUTRITION STUDIO · PLAN
+        </p>
+        <h1 className="fl-context-title">{t("mp.title")}</h1>
         {translating && (
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("common.loading")}
           </p>
         )}
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("mp.sub")}</p>
+        <p className="fl-context-copy">{t("mp.sub")}</p>
         {translationFailed && (
           <p role="status" className="mt-2 text-sm text-muted-foreground">
             {en

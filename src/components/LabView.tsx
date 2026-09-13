@@ -272,7 +272,7 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
+      <section className="fl-premium-stage fl-lab-hero relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -344,7 +344,7 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
       </section>
 
       {secondary.length > 0 ? (
-        <section className="rounded-[1.75rem] border border-border bg-surface-2 px-5 py-2 sm:px-6">
+        <section className="fl-premium-card rounded-[1.75rem] border border-border bg-surface-2 px-5 py-2 sm:px-6">
           <p className="pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             {copy.otherInvestigations}
           </p>
@@ -358,7 +358,7 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
 
       <PredictionCalibrationPanel data={data.predictionCalibration} />
 
-      <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
+      <section className="fl-premium-card overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
           type="button"
           onClick={() => setHistoryOpen((open) => !open)}

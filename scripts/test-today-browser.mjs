@@ -226,6 +226,16 @@ try {
     }
   };
 
+  const openTodayExecutionLayer = async (page) => {
+    const summary = page.getByText(
+      /^(Today's execution · Open session|Šiandienos vykdymas · Atidaryti sesiją)$/,
+    );
+    if (await summary.count()) {
+      const details = summary.locator("xpath=ancestor::details[1]");
+      if ((await details.getAttribute("open")) === null) await summary.click();
+    }
+  };
+
   const openTodayContextLayer = async (page) => {
     const summary = page.getByText(
       /^(Context, sources & settings|Kontekstas, šaltiniai ir nustatymai)$/,
@@ -611,10 +621,12 @@ try {
   // 5. The plan panel lists the real session, and shows no load — the
   //    programme does not carry one, and printing a weight here would be the
   //    screen writing a prescription nobody set.
+  await openTodayExecutionLayer(first.page);
   await expect(first.page.getByRole("region", { name: "Today's plan" })).toBeVisible();
   await expect(first.page.getByRole("link", { name: "Create a programme" })).toBeVisible();
 
   const planned = await open("?plan=ready");
+  await openTodayExecutionLayer(planned.page);
   const plan = planned.page.getByRole("region", { name: "Today's plan" });
   await expect(plan.getByText("Upper body focus")).toBeVisible();
   await expect(plan.getByText("Bench press", { exact: true })).toBeVisible();
@@ -722,7 +734,7 @@ try {
   const journal = await openPanel("?panel=journal&scenario=failure");
   await expect(journal.page.locator("section").first()).toBeVisible({ timeout: 30000 });
   await expect(
-    journal.page.getByText("Journal intelligence is temporarily unavailable."),
+    journal.page.getByText("Timeline intelligence is temporarily unavailable."),
   ).toBeVisible();
   await expect(journal.page.locator(".fl-journal-stats")).toHaveCount(0);
   await journal.page.screenshot({
@@ -768,6 +780,8 @@ try {
   for (const label of ["Miegas", "Ramybės pulsas", "Aktyvi energija", "Kūno riebalai"]) {
     await expect(ltRail.getByText(label, { exact: true })).toBeVisible();
   }
+  const ltExecution = lt.page.getByText("Šiandienos vykdymas · Atidaryti sesiją", { exact: true });
+  await ltExecution.click();
   await expect(lt.page.getByRole("region", { name: "Šiandienos planas" })).toBeVisible();
   // Every sentence on the screen has to be in the athlete's language. The Lab
   // card shipped its paragraph and its button in English only, so a Lithuanian

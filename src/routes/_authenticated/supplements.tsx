@@ -134,16 +134,16 @@ function SupplementsPage() {
   const schedule = buildSchedule(supplements);
 
   return (
-    <div className="grid gap-8">
+    <div className="fl-context-route fl-page-enter">
       <NutritionStudioNav />
-      <header className="rounded-[2rem] border border-border bg-surface/85 p-5 sm:p-6">
+      <header className="fl-context-hero">
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-violet-300">
           SUPPLEMENT INTELLIGENCE
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        <h1 className="fl-context-title">
           {english ? "One supplement system" : "Viena papildų sistema"}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        <p className="fl-context-copy">
           {english
             ? "Schedule, product capture and nutrient-risk tools are supporting evidence surfaces. None of them diagnose deficiency or replace clinical advice."
             : "Grafikas, produkto skenavimas ir mikroelementų rizikos įrankiai yra pagalbiniai įrodymų sluoksniai. Jie nediagnozuoja trūkumo ir nepakeičia medicininės konsultacijos."}

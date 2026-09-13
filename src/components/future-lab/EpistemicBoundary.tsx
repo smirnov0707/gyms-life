@@ -143,8 +143,8 @@ export function EpistemicBoundary({
       </div>
       <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
         {english
-          ? "Shadow predictions and Future Me forecasts are research outputs. They do not influence Today, and neither a newer version nor a review-eligible model is automatically trusted."
-          : "Shadow prognozės ir Future Me projekcijos yra tyrimo rezultatai. Jos nedaro įtakos Today, o nei naujesnė versija, nei peržiūrai tinkamas modelis automatiškai nelaikomas patikimu."}
+          ? "Shadow predictions and Future projections are research outputs. They do not influence Today, and neither a newer version nor a review-eligible model is automatically trusted."
+          : "Shadow prognozės ir Future projekcijos yra tyrimo rezultatai. Jos nedaro įtakos Today, o nei naujesnė versija, nei peržiūrai tinkamas modelis automatiškai nelaikomas patikimu."}
       </p>
     </FutureLabPanel>
   );
