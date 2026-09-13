@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { QuickHydrationWidget } from "@/components/QuickHydrationWidget";
 import { SmartFridgeScanner } from "@/components/SmartFridgeScanner";
 import { VisionMealScanner } from "@/components/VisionMealScanner";
+import { NutritionStudioNav } from "@/components/NutritionStudioNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/error-message";
@@ -283,6 +284,7 @@ function NutritionPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
+      <NutritionStudioNav />
       <section className="rounded-[2rem] border border-border bg-surface/85 p-5 sm:p-6">
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-400">
           NUTRITION INTELLIGENCE

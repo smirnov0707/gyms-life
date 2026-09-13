@@ -215,7 +215,6 @@ export const locale: Record<string, string> = {
   "mg.glutes": "Fessiers",
   "mg.cardio": "Cardio",
   "mg.fullbody": "Corps entier",
-  "pr.title": "Progression",
   "pr.volume": "Volume hebdomadaire (kg)",
   "pr.records": "Records personnels",
   "pr.addWeight": "Noter le poids",

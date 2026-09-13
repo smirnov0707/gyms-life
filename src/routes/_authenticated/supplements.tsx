@@ -20,6 +20,7 @@ import { tactileClick } from "@/lib/tactile";
 import { MicronutrientDeficiencyScanner } from "@/components/MicronutrientDeficiencyScanner";
 import { SupplementCycleAdvisor } from "@/components/SupplementCycleAdvisor";
 import { SupplementPhotoScanner } from "@/components/SupplementPhotoScanner";
+import { NutritionStudioNav } from "@/components/NutritionStudioNav";
 
 export const Route = createFileRoute("/_authenticated/supplements")({
   head: () => ({
@@ -134,6 +135,7 @@ function SupplementsPage() {
 
   return (
     <div className="grid gap-8">
+      <NutritionStudioNav />
       <header className="rounded-[2rem] border border-border bg-surface/85 p-5 sm:p-6">
         <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-violet-300">
           SUPPLEMENT INTELLIGENCE

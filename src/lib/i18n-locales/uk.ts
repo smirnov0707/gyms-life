@@ -212,7 +212,6 @@ export const locale: Record<string, string> = {
   "mg.glutes": "Сідниці",
   "mg.cardio": "Кардіо",
   "mg.fullbody": "Все тіло",
-  "pr.title": "Прогрес",
   "pr.volume": "Тижневий об'єм (кг)",
   "pr.records": "Особисті рекорди",
   "pr.addWeight": "Записати вагу",

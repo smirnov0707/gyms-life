@@ -5,7 +5,7 @@ const KNOWN_GROUPS = new Set<string>(KNOWN_MUSCLE_GROUPS);
 export const isTwinDetailRegion = (region: string) =>
   KNOWN_GROUPS.has(region) || isAnatomicalRegion(region);
 
-export const TWIN_VIEWS = ["overview", "muscles", "systems"] as const;
+export const TWIN_VIEWS = ["overview", "systems", "future", "journal"] as const;
 export const TWIN_DETAIL_TABS = ["status", "history", "impact"] as const;
 export type TwinViewId = (typeof TWIN_VIEWS)[number];
 export type TwinDetailTab = (typeof TWIN_DETAIL_TABS)[number];

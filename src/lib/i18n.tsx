@@ -291,7 +291,6 @@ const baseDict = {
   "mg.cardio": { lt: "Kardio", en: "Cardio" },
   "mg.fullbody": { lt: "Visas kūnas", en: "Full body" },
 
-  "pr.title": { lt: "Progresas", en: "Progress" },
   "pr.addWeight": { lt: "Įrašyti svorį", en: "Log weight" },
   "pr.save": { lt: "Išsaugoti", en: "Save" },
   "pr.empty": {

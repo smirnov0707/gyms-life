@@ -242,7 +242,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const navTitle = (to: string): string | undefined => {
     if (to === "/app") return t("dash.welcomeBack");
     if (to === "/twin") return t("nav.twin");
-    if (to === "/progress") return t("pr.title");
+    if (to === "/coach") return t("nav.coach");
     return undefined;
   };
   const profileLabel = baseLang(lang) === "en" ? "My profile" : "Mano profilis";

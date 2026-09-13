@@ -3,6 +3,7 @@ import { HypothesisRetrospective } from "@/components/HypothesisRetrospective";
 import { LabView } from "@/components/LabView";
 import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 import { NightLabPanel } from "@/components/future-lab/NightLabPanel";
+import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { baseLang, useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/lab")({
@@ -42,6 +43,7 @@ function LabPage() {
             : "Įrodymai, sprendimai ir mokymosi istorija"}
         </summary>
         <div className="fl-disclosed-content space-y-3">
+          <PredictionEvidencePanel />
           <LabView />
           <HypothesisRetrospective />
         </div>

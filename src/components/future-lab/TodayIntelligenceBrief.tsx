@@ -34,6 +34,7 @@ function Row({
   title,
   detail,
   to,
+  search,
   cta,
   onOpen,
 }: {
@@ -41,7 +42,8 @@ function Row({
   eyebrow: string;
   title: string;
   detail: string;
-  to: "/progress" | "/lab" | "/twin";
+  to: "/lab" | "/twin";
+  search?: { view: "future" | "journal" };
   cta: string;
   onOpen?: () => void;
 }) {
@@ -59,6 +61,7 @@ function Row({
       </div>
       <Link
         to={to}
+        {...(search ? { search } : {})}
         onClick={onOpen}
         className="inline-flex min-h-11 items-center text-xs font-medium text-violet-300 sm:justify-self-end"
       >
@@ -172,7 +175,8 @@ export function TodayIntelligenceBrief() {
         eyebrow="FUTURE ME"
         title={english ? "Strength trajectory" : "Jėgos trajektorija"}
         detail={futureDetail}
-        to="/progress"
+        to="/twin"
+        search={{ view: "future" }}
         cta={english ? "Open" : "Atidaryti"}
       />
       <Row
@@ -197,6 +201,7 @@ export function TodayIntelligenceBrief() {
         title={learnedTitle}
         detail={learnedChange ? learnedDetail : discoveryDetail}
         to={learnedChange ? "/twin" : "/lab"}
+        {...(learnedChange ? { search: { view: "journal" as const } } : {})}
         cta={english ? "Review" : "Peržiūrėti"}
         {...(learnedChange ? { onOpen: () => seenMutation.mutate(learnedChange.fingerprint) } : {})}
       />
