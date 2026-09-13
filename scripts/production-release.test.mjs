@@ -42,6 +42,7 @@ function fixture() {
       if (args[0] === "status") return state.dirty ? " M src/changed.ts\n" : "";
       if (args[0] === "ls-remote") return `${state.remote}\trefs/heads/main\n`;
     }
+    if (file === "node") return "release runtime dependencies are local\n";
     if (file === "npm") {
       state.onQuality(args);
       return "";
@@ -111,6 +112,22 @@ describe("guarded production release", () => {
     expect(await release(f)).toMatchObject({ ok: false, deploymentAttempted: false, error });
     expect(publishCalls(f)).toHaveLength(0);
   });
+  it("blocks publication when runtime dependencies are not local to the release worktree", async () => {
+    const f = fixture();
+    const base = f.command;
+    f.command = vi.fn(async (file, args, options) => {
+      if (file === "node") throw new Error("external dependency");
+      return base(file, args, options);
+    });
+    const r = await release(f);
+    expect(r).toMatchObject({
+      ok: false,
+      deploymentAttempted: false,
+      error: "DEPENDENCY_LAYOUT_UNSAFE",
+    });
+    expect(publishCalls(f)).toHaveLength(0);
+  });
+
   it("uses the canonical adapter with quality and post-release metadata/smoke gates", async () => {
     const f = fixture(),
       r = await release(f);
@@ -124,6 +141,9 @@ describe("guarded production release", () => {
       executionVerified: false,
       codeIdentityVerified: false,
     });
+    expect(
+      f.command.mock.calls.filter(([file]) => file === "node").map(([, args]) => args),
+    ).toEqual([["scripts/verify-release-dependencies.mjs"]]);
     expect(f.command.mock.calls.filter(([file]) => file === "npm").map(([, args]) => args)).toEqual(
       [
         ["run", "typecheck"],
