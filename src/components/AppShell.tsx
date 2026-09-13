@@ -1,11 +1,23 @@
 import React, { useId, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, ChevronDown, Menu, MoonStar, UserRound } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  Dumbbell,
+  MessageSquare,
+  MoonStar,
+  Plus,
+  ScanLine,
+  Salad,
+  UserRound,
+  Zap,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type Lang, type TKey } from "@/lib/i18n";
-import { NAV_GROUPS, PRIMARY_WORLD_NAV, byRoute, type NavItem } from "@/lib/nav-map";
+import { PRIMARY_WORLD_NAV } from "@/lib/nav-map";
+import { CONTEXT_ACTIONS, type ContextAction } from "@/lib/action-layer";
 import { getOvernightWork } from "@/lib/night-lab.functions";
 import {
   Drawer,
@@ -20,68 +32,65 @@ import "./future-lab-shell.css";
 
 const futureNavItems = PRIMARY_WORLD_NAV;
 
-function groupedToolNavigation(): { key: TKey; items: NavItem[] }[] {
-  return NAV_GROUPS.map((group) => ({
-    key: group.key,
-    items: group.routes.flatMap((route) => {
-      const item = byRoute(route);
-      return item ? [item] : [];
-    }),
-  }));
-}
+const ACTION_ICONS: Record<ContextAction["intent"], typeof Dumbbell> = {
+  workout: Dumbbell,
+  checkin: Zap,
+  nutrition: Salad,
+  movement: ScanLine,
+  coach: MessageSquare,
+};
 
 function MoreNavigation() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const groups = groupedToolNavigation();
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <button type="button" aria-label={t("nav.more")} className="fl-shell-icon-button">
-          <Menu aria-hidden="true" size={17} />
+        <button type="button" aria-label={t("action.title")} className="fl-shell-icon-button">
+          <Plus aria-hidden="true" size={18} />
         </button>
       </DrawerTrigger>
       <DrawerContent className="future-lab-drawer max-h-[85vh] rounded-t-2xl border-border bg-surface px-4 text-foreground sm:mx-auto sm:max-w-2xl">
         <div className="min-h-0 overflow-y-auto pb-[max(1.5rem,var(--sab))]" data-vaul-no-drag>
           <DrawerHeader className="px-1 pb-4 pt-5 text-left">
             <DrawerTitle className="text-lg font-semibold text-foreground">
-              {t("nav.more")}
+              {t("action.title")}
             </DrawerTitle>
             <DrawerDescription className="mt-1 max-w-lg text-sm leading-relaxed text-muted-foreground">
               {t("nav.moreDescription")}
             </DrawerDescription>
           </DrawerHeader>
-          <div className="grid gap-5">
-            {groups.map((group) => (
-              <section key={group.key}>
-                <h2 className="px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                  {t(group.key)}
-                </h2>
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <DrawerClose key={item.to} asChild>
-                        <Link
-                          to={item.to}
-                          className="group flex min-h-20 flex-col justify-between rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
-                        >
-                          <Icon aria-hidden="true" className="size-4 text-primary" />
-                          <span className="flex items-end justify-between gap-2 text-xs font-bold text-foreground">
-                            <span className="leading-tight">{t(item.key)}</span>
-                            <ArrowUpRight
-                              aria-hidden="true"
-                              className="size-3 shrink-0 text-muted-foreground group-hover:text-primary"
-                            />
-                          </span>
-                        </Link>
-                      </DrawerClose>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+          <div className="grid gap-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {CONTEXT_ACTIONS.map((action) => {
+                const Icon = ACTION_ICONS[action.intent];
+                return (
+                  <DrawerClose key={action.to} asChild>
+                    <Link
+                      to={action.to}
+                      className="group flex min-h-20 items-center gap-3 rounded-xl border border-border bg-surface-2 p-3 transition-colors hover:border-primary/40 hover:bg-primary/[0.06]"
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                        <Icon aria-hidden="true" className="size-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold text-foreground">
+                          {t(action.label)}
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                          {t(action.description)}
+                        </span>
+                      </span>
+                      <ArrowUpRight
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-muted-foreground group-hover:text-primary"
+                      />
+                    </Link>
+                  </DrawerClose>
+                );
+              })}
+            </div>
             <DrawerClose asChild>
               <Link
                 to="/me"

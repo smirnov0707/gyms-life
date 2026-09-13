@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { NAV_GROUPS, PRIMARY_WORLD_NAV } from "./nav-map";
+import { PRIMARY_WORLD_NAV } from "./nav-map";
+import { CONTEXT_ACTIONS } from "./action-layer";
 import { buildTwinPulse } from "./twin-pulse";
 import { TWIN_VIEWS } from "./twin-navigation";
 import { PRODUCT_SURFACES } from "./product-surfaces";
 import type { LiveSignal } from "./live-signals.engine";
 
-const secondaryRoutes = NAV_GROUPS.flatMap((group) => group.routes);
+const actionRoutes = CONTEXT_ACTIONS.map((action) => action.to);
 
 function signal(id: LiveSignal["id"], delta: number): LiveSignal {
   return {
@@ -30,22 +31,27 @@ describe("Product Convergence contract", () => {
     expect(PRIMARY_WORLD_NAV.map((item) => item.to)).not.toContain("/history");
   });
 
-  it("keeps duplicate product worlds out of the secondary drawer", () => {
-    expect(secondaryRoutes).not.toContain("/progress");
-    expect(secondaryRoutes).not.toContain("/history");
-    expect(secondaryRoutes).not.toContain("/coach");
-    expect(secondaryRoutes).not.toContain("/readiness");
-    expect(secondaryRoutes).not.toContain("/achievements");
-    expect(secondaryRoutes).not.toContain("/reminders");
-    expect(secondaryRoutes).not.toContain("/meal-plan");
-    expect(secondaryRoutes).not.toContain("/supplements");
+  it("replaces the feature catalogue with a bounded contextual action layer", () => {
+    expect(actionRoutes).toEqual(["/training", "/readiness", "/nutrition", "/ar", "/coach"]);
+    for (const legacy of [
+      "/progress",
+      "/history",
+      "/achievements",
+      "/reminders",
+      "/meal-plan",
+      "/supplements",
+      "/exercises",
+    ]) {
+      expect(actionRoutes).not.toContain(legacy);
+    }
   });
-  it("keeps nutrition as a contextual entry point while Coach stays a world", () => {
-    expect(secondaryRoutes.filter((route) => route === "/nutrition")).toHaveLength(1);
-    expect(secondaryRoutes).not.toContain("/coach");
+  it("uses Coach as an action without creating a fifth product world", () => {
+    expect(actionRoutes.filter((route) => route === "/coach")).toHaveLength(1);
+    expect(PRIMARY_WORLD_NAV.filter((item) => item.to === "/coach")).toHaveLength(1);
   });
   it("classifies legacy and embedded capabilities without exposing them as worlds", () => {
     expect(PRODUCT_SURFACES["/readiness"]).toBe("EMBEDDED_FLOW");
+    expect(PRODUCT_SURFACES["/exercises"]).toBe("EMBEDDED_FLOW");
     expect(PRODUCT_SURFACES["/meal-plan"]).toBe("EMBEDDED_FLOW");
     expect(PRODUCT_SURFACES["/supplements"]).toBe("EMBEDDED_FLOW");
     expect(PRODUCT_SURFACES["/achievements"]).toBe("LEGACY_COMPAT");
