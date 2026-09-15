@@ -1,0 +1,96 @@
+{
+  "fingerprintVersion": 1,
+  "referenceName": "gyms-digital-human-v8.glb",
+  "bodyMaterial": "young_caucasian_male_detailed",
+  "sha256": "6eea1173fae1ed970b5f911e256922004709d5ffc5d71b46b21cbf9bb72683ff",
+  "storedTriangles": 28796,
+  "meshCount": 2,
+  "primitiveCount": 2,
+  "bodyPrimitives": 1,
+  "geometry": [
+    {
+      "name": "base.obj_1",
+      "primitives": [
+        {
+          "mode": 4,
+          "attributes": {
+            "NORMAL": {
+              "componentType": 5126,
+              "type": "VEC3",
+              "count": 14517,
+              "normalized": false,
+              "sha256": "c4bcc16f31db6b34a701a066e377f04d8b7718186906329f55306e048e16425c"
+            },
+            "POSITION": {
+              "componentType": 5126,
+              "type": "VEC3",
+              "count": 14517,
+              "normalized": false,
+              "sha256": "4c1e3d4ae38dec36e80ff1b848f165aedac1185619fb9ddd1ba8137dd1261e14"
+            },
+            "TEXCOORD_0": {
+              "componentType": 5126,
+              "type": "VEC2",
+              "count": 14517,
+              "normalized": false,
+              "sha256": "eaed14d7552795a7f8f50b66c21f7bdd648fcc64346d5f8fc3209dd29a0e2fa0"
+            }
+          },
+          "indices": {
+            "componentType": 5123,
+            "type": "SCALAR",
+            "count": 80268,
+            "normalized": false,
+            "sha256": "af397cf4cc919a141768e6b3390b959951fc89860a5dc3bca0c33bd8b6e0e5ce"
+          }
+        }
+      ]
+    },
+    {
+      "name": "high-poly.obj_1",
+      "primitives": [
+        {
+          "mode": 4,
+          "attributes": {
+            "NORMAL": {
+              "componentType": 5126,
+              "type": "VEC3",
+              "count": 1076,
+              "normalized": false,
+              "sha256": "ba7421c1dd0fff24fd7db5164ec740703f688a1f913ccf28a105c87f06ea0253"
+            },
+            "POSITION": {
+              "componentType": 5126,
+              "type": "VEC3",
+              "count": 1076,
+              "normalized": false,
+              "sha256": "5ac7933b5f703987301775dc96602e9f9093df5964f8dc1048a9452825272f04"
+            },
+            "TEXCOORD_0": {
+              "componentType": 5126,
+              "type": "VEC2",
+              "count": 1076,
+              "normalized": false,
+              "sha256": "3ad0ee67ba2b6fe59ae33192d798c5507f57943c1c184df695a524cc8a39156a"
+            }
+          },
+          "indices": {
+            "componentType": 5123,
+            "type": "SCALAR",
+            "count": 6120,
+            "normalized": false,
+            "sha256": "69040e18546d465779d418f8e9abc91f1426ffc5fe5bedd75f0e9fac8f8a7cee"
+          }
+        }
+      ]
+    }
+  ],
+  "geometrySha256": "79d1155084e231f477fb8ff08f0283724c8831c98a6a6b5ece5a1f70aa1a13ce",
+  "sceneStructureSha256": "62458153d6874954827d58d03e53f360c9e3ebc63436c9d91d688618a178e7d4",
+  "skinCount": 0,
+  "animationCount": 0,
+  "meshNames": [
+    "base.obj_1",
+    "high-poly.obj_1"
+  ]
+}
