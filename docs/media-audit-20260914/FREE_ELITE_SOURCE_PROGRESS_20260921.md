@@ -50,3 +50,20 @@ Prioritize exact real-human searches for: arnold-press, chest-supported-row, clo
 ## Current decision rule
 
 Do not chase 175/175 video coverage at the expense of correctness or rights. A correct static illustration is preferable to a wrong movement video. Import should begin with the strongest A-tier exact matches first, with license metadata stored alongside every selected asset.
+
+
+## Continuation — 2026-09-21
+
+- `lunge` is now promoted to A: Mixkit item 52112 was downloaded earlier as 1280x720 H.264 and frame-reviewed. The demonstrator advances through repeated bodyweight walking lunges without added load. Mixkit item 52101 remains rejected because it transitions into another floor movement.
+- `cable-lateral-raise` remains B: the Wger/Goulart 1080p CC BY-SA 4.0 original was frame-reviewed and shows a single-arm cable lateral raise. It is technically exact but visually weaker than the premium stock layer.
+- `med-ball-slam` still has a strong Coverr exact candidate ("Throwing a medicine ball on the floor", Free Commercial Rights), but it remains pending original-file frame QC rather than being promoted from A/B.
+- Pexels currently exposes many search pages for missing movements such as wall sit, Pallof press, concentration curl and Arnold press, but search-result counts/tags are not accepted as coverage. Only exact asset pages or reviewed files qualify.
+- A JULLIAN PRODUCTION shoulder-press clip remains a strong premium candidate for dumbbell shoulder press, but it is not re-labelled as Arnold press without visible rotation/supination evidence.
+- Commons currently surfaces exact still images for Bird Dog and Plank Shoulder Tap, but the searched results are still images rather than video; they do not count toward video coverage.
+
+### New reject / caution notes
+
+- Generic stock search terms such as "farmer carry" are heavily contaminated by agriculture/farming results; do not treat category/search pages as exercise matches.
+- Mixkit farmer search pages can contain Restricted-License clips alongside Free-License clips; the individual asset license must be read before use.
+- Pexels wall-sit/Pallof/Arnold search pages report large generic result counts, but that is not evidence of an exact usable exercise clip.
+- DVIDS/DoW exact exercise material remains excluded from the preferred commercial-app pipeline because public-domain copyright status does not by itself resolve publicity/non-endorsement concerns.
