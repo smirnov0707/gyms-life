@@ -401,22 +401,23 @@ try {
         );
       }
       if (screen === "journal") {
-        const filters = shown.page.getByRole("navigation", { name: "Timeline filters" });
+        const journal = shown.page.locator(".fl-journal-page");
+        const filters = journal.getByRole("navigation", { name: "Timeline filters" });
         await expect(filters).toBeVisible();
         await filters.getByRole("button", { name: "Patterns", exact: true }).click();
         await expect(
-          shown.page.getByRole("heading", { name: "Supported discovery", exact: true }),
+          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
         ).toHaveCount(0);
         await expect(
-          shown.page.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
+          journal.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
         ).toBeVisible();
         await filters.getByRole("button", { name: "Decisions", exact: true }).click();
         await expect(
-          shown.page.getByRole("heading", { name: "Recent decisions", exact: true }),
+          journal.getByRole("heading", { name: "Recent decisions", exact: true }),
         ).toBeVisible();
         await filters.getByRole("button", { name: "All", exact: true }).click();
         await expect(
-          shown.page.getByRole("heading", { name: "Supported discovery", exact: true }),
+          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
         ).toBeVisible();
         record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
       }
