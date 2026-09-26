@@ -672,7 +672,7 @@ try {
   const { emitTwinUiReview } = await import("./emit-twin-ui-review.mjs");
   if (!candidate) await emitTwinUiReview("world");
   const { reviewVisualSystem } = await import("./test-visual-system.mjs");
-  await reviewVisualSystem({ openPanel, artifacts, record });
+  await reviewVisualSystem({ openPanel, artifacts, record, assertInteractiveTwin });
   if (!candidate) await emitTwinUiReview("design");
   console.log("TWIN_ACTION_LAYOUT " + JSON.stringify(actionLayoutChecks));
   await writeFile(

@@ -47,11 +47,11 @@ function Stages({ night }: { night: StagedNight }) {
         {bars.bars.map((bar) => (
           <li key={bar.stage} className="text-xs">
             <span className="flex items-baseline justify-between gap-3">
-              <span className="text-slate-300">{t(`sl.stage.${bar.stage}` as TKey)}</span>
-              <span className="shrink-0 tabular-nums text-slate-400">
+              <span className="text-muted-foreground">{t(`sl.stage.${bar.stage}` as TKey)}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
                 {t("sl.minutes").replace("{minutes}", String(Math.round(bar.minutes)))}
                 {bar.share === null ? null : (
-                  <span className="ml-2 font-semibold text-slate-200">{percent(bar.share)}</span>
+                  <span className="ml-2 font-semibold text-foreground">{percent(bar.share)}</span>
                 )}
               </span>
             </span>
@@ -74,16 +74,18 @@ function Stages({ night }: { night: StagedNight }) {
 
       {bars.basis === "night" ? null : (
         <>
-          <p className="mt-3 text-[10px] leading-relaxed text-slate-500">{t("sl.partial")}</p>
+          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
+            {t("sl.partial")}
+          </p>
           {bars.basis === "reported" ? (
-            <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
               {t("sl.barsReported")}
             </p>
           ) : null}
         </>
       )}
       {night.unattributedMinutes === null ? null : (
-        <p className="mt-2 text-[10px] leading-relaxed text-amber-300/80">
+        <p className="mt-2 text-[10px] leading-relaxed text-amber-300 light:text-amber-700/80">
           {t("sl.unattributed").replace("{minutes}", String(night.unattributedMinutes))}
         </p>
       )}
@@ -125,32 +127,38 @@ export function SleepAnalysis() {
   return (
     <section
       aria-label={t("sl.title")}
-      className="fl-sleep-analysis rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4"
+      className="fl-sleep-analysis rounded-[1.35rem] border border-border bg-surface p-4"
     >
-      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-indigo-300">
+      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-primary">
         <Moon aria-hidden="true" className="size-3" /> {t("sl.title")}
       </p>
 
       {!night ? null : night.status === "unreadable" ? (
-        <p className="mt-3 text-xs leading-relaxed text-amber-300">{t("sl.unreadable")}</p>
+        <p className="mt-3 text-xs leading-relaxed text-amber-300 light:text-amber-700">
+          {t("sl.unreadable")}
+        </p>
       ) : night.status === "absent" ? (
         <>
-          <p className="mt-3 text-xs leading-relaxed text-slate-300">{t("sl.absent")}</p>
-          <p className="mt-1 text-[10px] leading-relaxed text-slate-500">{t("sl.absentHow")}</p>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("sl.absent")}</p>
+          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+            {t("sl.absentHow")}
+          </p>
         </>
       ) : (
         <>
           <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-sm font-semibold text-slate-100">
+            <span className="text-sm font-semibold text-foreground">
               {durationLine(night.sleepHours)}
             </span>
-            <span className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
+            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               {whenLabel(night.ageDays)}
             </span>
           </p>
 
           {night.status === "duration_only" ? (
-            <p className="mt-3 text-[11px] leading-relaxed text-slate-400">{t("sl.noStages")}</p>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              {t("sl.noStages")}
+            </p>
           ) : (
             <Stages night={night} />
           )}

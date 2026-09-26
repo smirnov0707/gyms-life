@@ -21,6 +21,7 @@ on:
       - "src/routes/_authenticated/progress.tsx"
       - "src/routes/_authenticated/history.tsx"
       - "src/components/LiveSignals.tsx"
+      - "src/components/SleepAnalysis.tsx"
       - "src/components/SmartBrief.tsx"
       - "src/components/TodayDecision.tsx"
       - "src/components/TodayLifeContext.tsx"

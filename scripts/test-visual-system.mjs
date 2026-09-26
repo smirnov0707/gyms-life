@@ -18,7 +18,7 @@ function contrast(a, b) {
 
 /** Actual routes + shared controls; assertions cover readability and input access,
  * rather than pinning incidental CSS declarations or weakening layout gates. */
-export async function reviewVisualSystem({ openPanel, artifacts, record }) {
+export async function reviewVisualSystem({ openPanel, artifacts, record, assertInteractiveTwin }) {
   const evidence = [];
   for (const test of [
     { screen: "today", theme: "light", width: 1440, height: 1000 },
@@ -118,18 +118,21 @@ export async function reviewVisualSystem({ openPanel, artifacts, record }) {
         .evaluate((element) => parseFloat(getComputedStyle(element).animationDuration));
       expect(duration).toBeLessThanOrEqual(0.01);
     }
-    if (test.screen === "twin") {
-      await expect(page.locator("canvas[data-twin-frames]").first()).toBeVisible();
-      await expect
-        .poll(() =>
-          page
-            .locator("canvas[data-twin-frames]")
-            .first()
-            .getAttribute("data-twin-frames")
-            .then(Number),
-        )
-        // The reduced-motion renderer paints on demand; a static frame is valid.
-        .toBeGreaterThan(0);
+    if (["twin", "today"].includes(test.screen)) {
+      await assertInteractiveTwin(page.locator("canvas[data-twin-frames]").first());
+    }
+    if (test.screen === "today") {
+      const reading = page.locator(".fl-sleep-analysis > p:nth-child(2) > span:first-child");
+      const color = await reading.evaluate((element) => getComputedStyle(element).color);
+      const channels = color.match(/\d+/g);
+      expect(channels).toHaveLength(3);
+      const hex =
+        "#" + channels.map((value) => Number(value).toString(16).padStart(2, "0")).join("");
+      const ratio = contrast(hex, tokens.surface);
+      expect(ratio, "Rendered sleep duration is readable on the light card").toBeGreaterThanOrEqual(
+        4.5,
+      );
+      ratios["sleepReading/surface"] = Number(ratio.toFixed(2));
     }
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
