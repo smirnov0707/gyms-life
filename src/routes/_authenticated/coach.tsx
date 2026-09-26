@@ -104,9 +104,14 @@ function CoachPage() {
         </div>
       </header>
 
-      <div className="mb-4">
-        <SmartBrief compact />
-      </div>
+      <details className="fl-coach-brief fl-luxury-disclosure mb-3 border border-border bg-surface">
+        <summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-semibold text-muted-foreground">
+          {english ? "Today's context" : "Šiandienos kontekstas"}
+        </summary>
+        <div className="border-t border-border p-3">
+          <SmartBrief compact />
+        </div>
+      </details>
       <AiPersonalizationConsentCard />
 
       <section className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface">
@@ -120,7 +125,7 @@ function CoachPage() {
 
         <div className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {messages.length === 0 && !busy ? (
-            <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+            <div className="fl-coach-empty flex min-h-[260px] flex-col items-center justify-center text-center">
               <span className="grid size-14 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
                 <Sparkles className="size-5" />
               </span>
@@ -262,7 +267,7 @@ function AiPersonalizationConsentCard() {
   };
 
   return (
-    <section className="fl-premium-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
+    <section className="fl-coach-consent fl-premium-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={cn(

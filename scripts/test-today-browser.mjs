@@ -235,9 +235,14 @@ try {
       });
     }, Date.parse("2026-09-08T06:05:00.000Z"));
     const errors = [];
+    const fontResponses = [];
+    page.on("response", (response) => {
+      if (response.request().resourceType() === "font")
+        fontResponses.push({ url: response.url(), status: response.status() });
+    });
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.goto(`${origin}/index.html${query}`);
-    return { page, errors };
+    return { page, errors, fontResponses };
   };
 
   const openTodayEvidenceLayer = async (page) => {

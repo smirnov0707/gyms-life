@@ -27,7 +27,7 @@ export async function reviewVisualSystem({ openPanel, artifacts, record }) {
     { screen: "coach", theme: "light", width: 390, height: 844 },
     { screen: "coach", theme: "dark", width: 1440, height: 1000 },
   ]) {
-    const { page, errors } = await openPanel(
+    const { page, errors, fontResponses } = await openPanel(
       `?shell=1&screen=${test.screen}&scenario=reference&theme=${test.theme}`,
       {
         viewport: { width: test.width, height: test.height },
@@ -73,14 +73,23 @@ export async function reviewVisualSystem({ openPanel, artifacts, record }) {
         `${test.theme} ${foreground}/${background} normal text contrast`,
       ).toBeGreaterThanOrEqual(4.5);
     }
-    const fonts = await page.evaluate(() =>
-      performance
-        .getEntriesByType("resource")
-        .map((entry) => entry.name)
-        .filter((name) => /\.(ttf|woff2?)(\?|$)/.test(name)),
+    // Vite's module requests can fill the Resource Timing buffer before fonts.
+    // Observe actual font responses and loaded FontFace objects instead.
+    const faces = await page.evaluate(() =>
+      Array.from(document.fonts).map((face) => ({ family: face.family, status: face.status })),
     );
-    expect(fonts).toHaveLength(2);
-    for (const font of fonts) expect(new URL(font).origin).toBe(new URL(page.url()).origin);
+    for (const family of ["Manrope", "Space Grotesk"])
+      expect(
+        faces.some(
+          (face) => face.family.replaceAll('"', "") === family && face.status === "loaded",
+        ),
+      ).toBe(true);
+    expect(fontResponses).toHaveLength(2);
+    const fonts = fontResponses.map((response) => response.url);
+    for (const response of fontResponses) {
+      expect(response.status).toBe(200);
+      expect(new URL(response.url).origin).toBe(new URL(page.url()).origin);
+    }
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "Skip to content", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
@@ -93,6 +102,15 @@ export async function reviewVisualSystem({ openPanel, artifacts, record }) {
       await composer.fill("Explain my training signals");
       await expect(send).toBeEnabled();
       expect((await send.boundingBox()).height).toBeGreaterThanOrEqual(44);
+      if (test.width < 640) {
+        await page.evaluate(() => scrollTo(0, 0));
+        const action = await send.boundingBox();
+        const dock = await page.locator(".fl-mobile-navigation").boundingBox();
+        expect(
+          action.y + action.height,
+          "Coach composer remains above the mobile dock",
+        ).toBeLessThanOrEqual(dock.y);
+      }
       await composer.fill("");
       await expect(send).toBeDisabled();
       const duration = await page

@@ -240,7 +240,11 @@
   position: relative;
   border-radius: 14px;
   border-color: var(--border);
-  background: linear-gradient(150deg, var(--primary-dim), transparent 65%), var(--surface-2);
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--primary) 12%, var(--surface-2)),
+    var(--surface-2) 72%
+  );
 }
 
 .future-lab-app .fl-lab-domains .fl-role-icon {
@@ -340,8 +344,26 @@
 }
 
 .future-lab-app .fl-coach-conversation form {
+  flex-shrink: 0;
   border-color: var(--border);
   background: color-mix(in srgb, var(--surface-2) 75%, transparent);
+}
+
+.future-lab-app .fl-coach-conversation > .relative {
+  min-height: 0;
+}
+
+.future-lab-app .fl-coach-consent {
+  flex-wrap: nowrap;
+}
+
+.future-lab-app .fl-coach-consent > div {
+  flex: 1;
+}
+
+.future-lab-app .fl-coach-consent > button {
+  min-height: 44px;
+  flex-shrink: 0;
 }
 
 .future-lab-app .fl-coach-conversation form input {
@@ -430,6 +452,21 @@
 }
 
 @media (max-width: 639px) {
+  .future-lab-app .fl-coach-page .fl-world-header {
+    padding-block: 6px 12px;
+  }
+  .future-lab-app .fl-coach-page .fl-world-subtitle {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .future-lab-app .fl-coach-conversation {
+    min-height: 0;
+    height: clamp(280px, calc(100svh - 470px), 500px);
+    flex: none;
+  }
+  .future-lab-app .fl-coach-empty {
+    min-height: 100%;
+  }
   .future-lab-app :is(.fl-page-heading h1, .fl-future-heading h1) {
     font-size: 21px;
     line-height: 1.15;
