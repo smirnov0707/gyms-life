@@ -571,9 +571,8 @@ button {
      Handled once here rather than per component, so a new `animate-pulse`
      added tomorrow is covered without anyone remembering to do it.
 
-     `animate-spin` is deliberately left running: it reports that work is in
-     progress rather than drawing attention to itself, and freezing it makes
-     a loading state look stalled. */
+     The shared ui-design-system also reduces transitions and other CSS
+     animation durations; loading controls retain their textual busy state. */
   .animate-pulse,
   .animate-ping,
   .animate-bounce {

@@ -598,10 +598,12 @@ try {
         );
         console.log("TODAY_REFERENCE_LAYOUT " + JSON.stringify(layout));
         const footer = await shown.page.locator(".fl-dashboard-footer").boundingBox();
-        expect(
-          footer.y + footer.height,
-          "Resting Today composition should fit the reference viewport",
-        ).toBeLessThanOrEqual(viewport.height);
+        referenceLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          target: footer,
+          usableBottom: viewport.height,
+        });
         const columns = await shown.page.evaluate(() =>
           [
             ".fl-left-rail",
@@ -662,9 +664,11 @@ try {
   );
   record("all seven canonical world/detail views render inside the shell at 1440px and 390px");
   // Preserve review images even when a later functional regression fails.
+  const { emitTwinUiReview } = await import("./emit-twin-ui-review.mjs");
+  if (!candidate) await emitTwinUiReview("world");
   const { reviewVisualSystem } = await import("./test-visual-system.mjs");
   await reviewVisualSystem({ openPanel, artifacts, record });
-  if (!candidate) await import("./emit-twin-ui-review.mjs");
+  if (!candidate) await emitTwinUiReview("design");
   console.log("TWIN_ACTION_LAYOUT " + JSON.stringify(actionLayoutChecks));
   await writeFile(
     path.join(artifacts, "action-layout.json"),
@@ -697,7 +701,12 @@ try {
     JSON.stringify(referenceLayoutChecks, null, 2),
   );
   for (const check of referenceLayoutChecks) {
-    if (check.viewport === "mobile") {
+    if (check.viewport === "reference") {
+      expect(
+        check.target.y + check.target.height,
+        "Resting Today composition should fit the reference viewport",
+      ).toBeLessThanOrEqual(check.usableBottom);
+    } else if (check.viewport === "mobile") {
       expect(
         check.target.y + check.target.height,
         `${check.screen} primary content remains above the mobile dock`,

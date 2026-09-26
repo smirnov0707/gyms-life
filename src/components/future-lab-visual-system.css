@@ -294,6 +294,15 @@
 
 /* Intentional dark media stages retain their own contrast in either theme. */
 .future-lab-app :is(.twin-home--cockpit, .twin-screen [data-twin-cockpit], .twin-muscle-detail) {
+  --foreground: #edf2fc;
+  --muted-foreground: #a3b0c9;
+  --surface: #0e1625;
+  --surface-2: #151f32;
+  --primary: #baa5ff;
+  --primary-foreground: #191329;
+  --action-start: #c0acff;
+  --action-end: #96b6ff;
+  --border: rgb(164 186 231 / 20%);
   border-radius: 20px;
   border-color: rgb(157 184 239 / 22%);
   box-shadow:
@@ -343,6 +352,15 @@
 .future-lab-app .fl-coach-conversation form button {
   width: 44px;
   height: 44px;
+}
+
+@media (min-width: 1200px) {
+  .future-lab-app .fl-dashboard {
+    gap: 6px;
+  }
+  .future-lab-app .fl-dashboard .fl-bottom-deck > .fl-panel {
+    padding: 8px;
+  }
 }
 
 @media (min-width: 640px) {
