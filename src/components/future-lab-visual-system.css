@@ -43,6 +43,8 @@
 }
 
 .future-lab-app .fl-desktop-navigation {
+  height: auto;
+  align-self: center;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border);
@@ -452,6 +454,10 @@
 }
 
 @media (max-width: 639px) {
+  .future-lab-app .fl-future-page .fl-future-heading > div:first-child > h1 {
+    font-size: 21px;
+    line-height: 1.15;
+  }
   .future-lab-app .fl-coach-page .fl-world-header {
     padding-block: 6px 12px;
   }
