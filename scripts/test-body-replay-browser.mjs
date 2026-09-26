@@ -70,11 +70,10 @@ try {
   page = await desktop.newPage();
   page.on("pageerror", (error) => errors.push(String(error)));
   await ready();
-  await expect(page.locator("[data-twin-credit]")).toContainText("MakeHuman graphical assets (CC0)");
-  await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
-    "data-twin-source",
-    "makehuman",
+  await expect(page.locator("[data-twin-credit]")).toContainText(
+    "MakeHuman graphical assets (CC0)",
   );
+  await expect(page.locator("[data-twin-stage]")).toHaveAttribute("data-twin-source", "makehuman");
   const selectedBytes = await readFile(path.join(root, "public/models/twin-selected-v1.glb"));
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-twin-asset-sha256",
