@@ -57,7 +57,7 @@ export async function verifyIntakeDesign({ open, record, artifacts }) {
           await expect(page.locator("video")).toHaveAttribute("controls", "");
           await expect
             .poll(() => page.locator("video").evaluate((el) => el.readyState))
-            .toBeGreaterThanOrEqual(1);
+            .toBeGreaterThanOrEqual(2);
           expect(await page.locator("video").evaluate((el) => el.paused)).toBe(true);
           await expect(workspace).not.toContainText("AI OPTIMIZED");
           await expect(workspace).not.toContainText("VECT:");
@@ -79,10 +79,25 @@ export async function verifyIntakeDesign({ open, record, artifacts }) {
         expect(audit.nestedMain).toBe(0);
         expect(audit.titleFont).toContain("Space Grotesk");
         expect(audit.tinyButtons).toEqual([]);
+        if (screen === "intake-result") {
+          const size = await page
+            .locator(".fl-intake-prescription")
+            .first()
+            .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+          expect(size).toBeLessThanOrEqual(20);
+        }
         await page.evaluate(() => {
           document.activeElement?.blur();
           window.scrollTo(0, 0);
         });
+        if (screen === "intake-goal" && width === 390) {
+          const geometry = await page.evaluate(() => ({
+            actionBottom: document.querySelector(".fl-intake-navigation").getBoundingClientRect()
+              .bottom,
+            dockTop: document.querySelector(".fl-mobile-navigation").getBoundingClientRect().top,
+          }));
+          expect(geometry.actionBottom).toBeLessThan(geometry.dockTop);
+        }
         const name = `intake-${screen}-${theme}-${width}`;
         const png = await page.screenshot({
           path: path.join(artifacts, `${name}.png`),

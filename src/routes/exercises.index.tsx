@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Heart, Sparkles, ShieldCheck, Play, Filter, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -194,6 +194,7 @@ function ExercisesPage() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
+  const previewTrigger = useRef<HTMLButtonElement | null>(null);
   const [previewEx, setPreviewEx] = useState<{
     slug: string;
     name: string;
@@ -372,7 +373,7 @@ function ExercisesPage() {
       <div className="fl-context-route fl-workspace fl-library-workspace">
         <header className="fl-workspace-hero fl-library-hero">
           <div>
-            <p className="fl-workspace-eyebrow">GYMS.LIFE / {t("rt.ex.proLibrary")}</p>
+            <p className="fl-workspace-eyebrow">{t("rt.ex.proLibrary")}</p>
             <h1 className="fl-workspace-title mt-3">{t("ex.title")}</h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
               {baseLang(lang) === "lt"
@@ -713,6 +714,9 @@ function ExercisesPage() {
 
                   <button
                     type="button"
+                    onClickCapture={(event) => {
+                      previewTrigger.current = event.currentTarget;
+                    }}
                     onClick={() =>
                       setPreviewEx({
                         slug: e.slug,
@@ -767,7 +771,7 @@ function ExercisesPage() {
                       params={{ slug: e.slug }}
                       className="inline-flex min-h-11 items-center text-xs font-semibold text-primary transition-colors hover:text-foreground"
                     >
-                      {t("rt.ex.fullAnatomy")} →
+                      {t("rt.ex.fullAnatomy")}
                     </Link>
                   </div>
                 </div>
@@ -779,6 +783,10 @@ function ExercisesPage() {
         {/* Quick Preview & Technique Modal */}
         <Dialog open={!!previewEx} onOpenChange={(o) => !o && setPreviewEx(null)}>
           <DialogContent
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              previewTrigger.current?.focus();
+            }}
             aria-describedby={undefined}
             className="fl-library-preview max-w-3xl bg-surface border-border text-foreground p-6 rounded-3xl"
           >

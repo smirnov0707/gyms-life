@@ -80,7 +80,6 @@ export const locale: Record<string, string> = {
   "theme.system": "Systemowy",
   "qo.quick": "Szybki · 2 min",
   "qo.full": "Pełny · 5 min",
-  "qo.left": "zostało",
   "qo.q1": "Jaki jest Twój cel?",
   "qo.q2": "Gdzie i jak często trenujesz?",
   "qo.q3": "Ciało i ograniczenia",

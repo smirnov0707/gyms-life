@@ -133,7 +133,6 @@ const baseDict = {
 
   "qo.quick": { lt: "Greitas · 2 min", en: "Quick · 2 min" },
   "qo.full": { lt: "Pilnas · 5 min", en: "Full · 5 min" },
-  "qo.left": { lt: "liko", en: "left" },
   "qo.q1": { lt: "Koks tavo tikslas?", en: "What is your goal?" },
   "qo.q2": { lt: "Kur ir kiek kartų treniruojiesi?", en: "Where and how often do you train?" },
   "qo.q3": { lt: "Kūnas ir apribojimai", en: "Body and limitations" },

@@ -40,6 +40,9 @@ export function Link({ to = "/app", params, search: _search, children, ...rest }
 export const useLocation = () => ({
   pathname:
     new URLSearchParams(location.search).get("route") ??
+    (new URLSearchParams(location.search).get("screen") === "movement"
+      ? `/exercises/${new URLSearchParams(location.search).get("slug") ?? "bench-press"}`
+      : undefined) ??
     Object.entries(screens).find(
       ([, screen]) => screen === new URLSearchParams(location.search).get("screen"),
     )?.[0] ??

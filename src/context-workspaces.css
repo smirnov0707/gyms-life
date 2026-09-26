@@ -869,3 +869,34 @@
     padding: 16px;
   }
 }
+
+.fl-intake-prescription {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+@media (max-width: 640px) {
+  .fl-context-route.fl-intake-workspace {
+    gap: 12px;
+  }
+  .fl-intake-form {
+    padding: 16px;
+  }
+  .fl-intake-questions {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+  .fl-intake-questions > .mt-4 {
+    margin-top: 12px;
+  }
+  .fl-intake-questions > h2.mt-6 {
+    margin-top: 20px;
+  }
+  .fl-intake-navigation {
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+}

@@ -304,7 +304,7 @@ function Onboarding() {
                     className="flex items-center justify-between gap-4 rounded-lg bg-surface-2 px-3 py-2 text-sm"
                   >
                     <span className="min-w-0 break-words">{e.name}</span>
-                    <span className="shrink-0 text-display text-lg text-primary">
+                    <span className="fl-intake-prescription">
                       {e.sets}×{e.reps}
                     </span>
                   </div>
