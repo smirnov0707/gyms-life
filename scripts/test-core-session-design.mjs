@@ -6,16 +6,18 @@ import path from "node:path";
 async function start(page) {
   await page.getByRole("button", { name: "Start or resume workout", exact: true }).click();
   await expect(page.getByRole("spinbutton", { name: "Reps", exact: true })).toBeVisible();
+  await page.getByRole("spinbutton", { name: "Reps", exact: true }).fill("8");
 }
 async function finish(page) {
   for (let exercise = 0; exercise < 2; exercise++) {
     for (let set = 0; set < 3; set++) {
+      await page.getByRole("spinbutton", { name: "Reps", exact: true }).fill("8");
       await page.getByRole("button", { name: "Log set", exact: true }).click();
       await expect
         .poll(() => page.evaluate(() => window.__core.workoutSession.logs.length))
         .toBe(exercise * 3 + set + 1);
       if (set < 2)
-        await expect(page.getByRole("button", { name: "Log set", exact: true })).toBeEnabled();
+        await expect(page.getByText(`Set ${set + 2} / 3`, { exact: true })).toBeVisible();
     }
     await page
       .getByRole("button", { name: exercise ? "Finish workout" : "Next exercise", exact: true })
@@ -48,7 +50,7 @@ export async function verifySessionDesign({ open, record, artifacts }) {
           await expect(
             page.getByText(
               screen === "readiness-empty"
-                ? "No recovery state recorded today"
+                ? "No check-in yet today"
                 : "Synthetic saved check-in advice.",
               { exact: true },
             ),
@@ -139,17 +141,13 @@ export async function verifySessionDesign({ open, record, artifacts }) {
   {
     const { page, context } = await open("screen=readiness&fail=readiness-pending");
     await expect(page.getByRole("status")).toContainText("Loading today’s check-in");
-    await expect(page.getByText("No recovery state recorded today", { exact: true })).toHaveCount(
-      0,
-    );
+    await expect(page.getByText("No check-in yet today", { exact: true })).toHaveCount(0);
     await expect(page.getByRole("slider")).toHaveCount(0);
     await page.evaluate(() => {
       window.__core.fail = "readiness";
     });
     await expect(page.getByRole("alert")).toContainText("could not be loaded");
-    await expect(page.getByText("No recovery state recorded today", { exact: true })).toHaveCount(
-      0,
-    );
+    await expect(page.getByText("No check-in yet today", { exact: true })).toHaveCount(0);
     await page.evaluate(() => {
       window.__core.fail = null;
     });
@@ -206,7 +204,7 @@ export async function verifySessionDesign({ open, record, artifacts }) {
     await save.click();
     await expect.poll(() => page.evaluate(() => window.__core.counts.submitCheckin)).toBe(1);
     await expect(save).toBeEnabled();
-    await expect(page.getByText("No recovery state recorded today", { exact: true })).toBeVisible();
+    await expect(page.getByText("No check-in yet today", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.__core.checkin)).toBeNull();
     await context.close();
     record("failed readiness save leaves the day empty and the draft editable");

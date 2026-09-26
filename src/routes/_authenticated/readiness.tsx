@@ -67,15 +67,13 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
       eyebrow: "RECOVERY STATE",
       source: "USER-REPORTED CHECK-IN",
       sourceHint:
-        "This state is calculated from the sleep, soreness, stress, energy and mood you report. Wearable physiology is not part of this score yet.",
-      noState: "No recovery state recorded today",
-      noStateHint:
-        "Complete the short check-in below before GYMS.LIFE uses today's self-reported recovery signal.",
+        "Based on your sleep and how you feel today. This is a self-reported signal, not a wearable measurement.",
+      noState: "No check-in yet today",
+      noStateHint: "Tell us how you feel to build today’s recovery signal.",
       calculated: "Calculated state",
       influence: "Training load modifier",
-      checkin: "Update today's recovery evidence",
-      checkinHint:
-        "These inputs are subjective evidence. GYMS.LIFE stores them as your report, not as measured physiology.",
+      checkin: "How are you feeling?",
+      checkinHint: "Six answers to guide today’s training load.",
       preview: "Preview from current inputs",
       loading: "Loading today’s check-in…",
       loadError:
@@ -91,15 +89,13 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
     eyebrow: "ATSISTATYMO BŪSENA",
     source: "VARTOTOJO PATEIKTA PATIKRA",
     sourceHint:
-      "Ši būsena apskaičiuojama iš tavo nurodyto miego, raumenų skausmo, streso, energijos ir nuotaikos. Dėvimų įrenginių fiziologiniai signalai į šį balą kol kas neįtraukti.",
-    noState: "Šiandienos atsistatymo būsena dar neužregistruota",
-    noStateHint:
-      "Atlik trumpą patikrą žemiau prieš GYMS.LIFE naudojant šiandienos subjektyvų atsistatymo signalą.",
+      "Pagal tavo nurodytą miegą ir šiandienos savijautą. Tai tavo atsakymais, ne dėvimų įrenginių matavimais pagrįstas signalas.",
+    noState: "Šiandienos patikra dar neatlikta",
+    noStateHint: "Pasidalink savijauta, kad galėtume įvertinti šiandienos atsistatymą.",
     calculated: "Apskaičiuota būsena",
     influence: "Treniruočių krūvio modifikatorius",
-    checkin: "Atnaujinti šiandienos atsistatymo duomenis",
-    checkinHint:
-      "Šie atsakymai yra subjektyvūs įrodymai. GYMS.LIFE juos saugo kaip tavo pateiktą informaciją, o ne kaip išmatuotą fiziologiją.",
+    checkin: "Kaip šiandien jautiesi?",
+    checkinHint: "Šeši atsakymai šiandienos treniruotės krūviui pritaikyti.",
     preview: "Peržiūra pagal dabartinius atsakymus",
     loading: "Kraunama šiandienos patikra…",
     loadError: "Nepavyko įkelti šiandienos patikros. Išsaugota informacija nepakeista.",
@@ -221,7 +217,7 @@ function ReadinessPage() {
           </div>
         ) : !isPending && !isError ? (
           <div className="fl-readiness-state">
-            <Heart className="mb-4 size-7 text-primary" aria-hidden="true" />
+            <Heart className="mb-4 hidden size-7 text-primary sm:block" aria-hidden="true" />
             <h2 className="text-xl font-semibold tracking-tight text-foreground">{copy.noState}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{copy.noStateHint}</p>
           </div>
