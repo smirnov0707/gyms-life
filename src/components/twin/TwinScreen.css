@@ -506,7 +506,8 @@
   }
 
   .twin-detail-stage [data-twin-viewport] {
-    height: clamp(250px, 34svh, 300px);
+    /* Reserve space for the readout, both 44px actions and the mobile dock. */
+    height: clamp(220px, calc(100svh - 590px), 280px);
   }
 
   .twin-detail-readout,
