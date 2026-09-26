@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Mesh } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { loadTwinHuman } from "./twin-human.loader";
+import { loadTwinHuman, twinHumanUrl } from "./twin-human.loader";
 import { TWIN_REGISTERED_ASSETS, verifyTwinAsset } from "./twin-body.provenance";
 
 const bytesOf = async (path: string) => new Uint8Array(await readFile(path)).buffer;
@@ -13,6 +13,44 @@ afterEach(() => {
 });
 
 describe("Twin asset provenance", () => {
+  it("loads the selected surface with its exact region mapping and keeps Body separate", async () => {
+    const url = twinHumanUrl("male");
+    expect(url).toBe("/models/twin-selected-v1.glb");
+    expect(twinHumanUrl("female")).toBe(url);
+    expect(twinHumanUrl("male", "realistic")).toBe("/models/twin-body-v2.glb");
+    const bytes = await bytesOf(`public${url}`);
+    expect(
+      Buffer.from(bytes).equals(
+        await readFile("tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb"),
+      ),
+    ).toBe(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(bytes)),
+    );
+    const model = await loadTwinHuman(url);
+    expect([...model.regionMeshes.keys()].sort()).toEqual([
+      "abs",
+      "arms",
+      "back",
+      "chest",
+      "core",
+      "glutes",
+      "legs",
+      "shoulders",
+    ]);
+    expect(model.provenance.sha256).toBe(
+      "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
+    );
+    expect(model.provenance.candidate).toBe(true);
+    for (const meshes of model.regionMeshes.values()) {
+      for (const mesh of meshes) {
+        expect(mesh.geometry.getAttribute("_twin_mask")?.itemSize).toBe(1);
+        expect(mesh.geometry.getAttribute("_twin_sculpt_position")?.itemSize).toBe(3);
+      }
+    }
+    model.dispose();
+  });
   it.each(TWIN_REGISTERED_ASSETS)("verifies the exact bytes of $path", async (asset) => {
     const result = await verifyTwinAsset(await bytesOf(asset.path));
     expect(result.sha256).toBe(asset.sha256);

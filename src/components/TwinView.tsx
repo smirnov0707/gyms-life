@@ -314,7 +314,7 @@ export function TwinSnapshotView({
   onInspectRegion?: (region: string) => void;
 }) {
   const [layer, setLayer] = useState<TwinLayer>("recovery");
-  const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("realistic");
+  const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("analysis");
   const language = baseLang(lang);
   const layerCopy = twinLayerCopy(language);
   const display = (id: string) => getTwinRegionDisplay(data, id, layer);

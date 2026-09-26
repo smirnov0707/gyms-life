@@ -240,7 +240,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
   const [layer, setLayer] = useState<TwinLayer | null>(null);
   const [view, setView] = useState<BodyView>("front");
   const [selected, setSelected] = useState<string | null>(null);
-  const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("realistic");
+  const [visualAppearance, setVisualAppearance] = useState<"realistic" | "analysis">("analysis");
   const identityModelUrl =
     personalizedLifecycleQuery.data?.status === "ready"
       ? personalizedLifecycleQuery.data.modelUrl

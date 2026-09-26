@@ -7,6 +7,8 @@ on:
       - "src/components/future-lab-shell.css"
       - "src/components/future-lab-dashboard.css"
       - "src/components/twin/**"
+      - "src/components/TwinView.tsx"
+      - "public/models/**"
       - "src/routes/_authenticated/app.tsx"
       - "src/routes/_authenticated/twin.tsx"
       - "src/routes/_authenticated/lab.tsx"
@@ -23,6 +25,7 @@ on:
       - "src/styles.css"
       - "tests/today-browser/**"
       - "scripts/test-today-browser.mjs"
+      - "scripts/emit-twin-ui-review.mjs"
       - "package*.json"
       - ".github/workflows/today-browser.yml"
       - ".github/playwright-image.json"
@@ -51,6 +54,8 @@ jobs:
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-today-browser.mjs
+      - name: Emit selected Twin UI previews from the synthetic fixture
+        run: node scripts/emit-twin-ui-review.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

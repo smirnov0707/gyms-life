@@ -39,6 +39,9 @@ const candidatePath =
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
+const expectedAnalysisSha = createHash("sha256")
+  .update(candidateBytes ?? (await readFile(path.join(root, "public/models/twin-selected-v1.glb"))))
+  .digest("hex");
 if (
   candidateBytes &&
   (candidateBytes.length < 12 ||
@@ -55,9 +58,11 @@ const candidatePlugin = {
       if (
         !candidateBytes ||
         !["GET", "HEAD"].includes(request.method) ||
-        !["/models/twin-body-v2.glb", "/models/twin-anatomy-v1.glb"].includes(
-          new URL(request.url, "http://localhost").pathname,
-        )
+        ![
+          "/models/twin-body-v2.glb",
+          "/models/twin-anatomy-v1.glb",
+          "/models/twin-selected-v1.glb",
+        ].includes(new URL(request.url, "http://localhost").pathname)
       )
         return next();
       response.setHeader("Content-Type", "model/gltf-binary");
@@ -288,6 +293,7 @@ try {
     // frame is valid. Bring it into view, then prove a real input is repainted.
     await canvas.scrollIntoViewIfNeeded();
     await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
+    await expect(canvas).toHaveAttribute("data-twin-asset-sha256", expectedAnalysisSha);
     if (candidate) expect(candidateRequests).toBeGreaterThan(0);
     await expect
       .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
@@ -396,6 +402,12 @@ try {
       expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
       const filename = `reference-${screen}-${viewport.name}.png`;
       await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
+      if (screen === "twin") {
+        await shown.page.screenshot({
+          path: path.join(artifacts, `reference-twin-${viewport.name}-viewport.png`),
+          fullPage: false,
+        });
+      }
       if (viewport.name === "reference") {
         await shown.page.screenshot({
           path: path.join(artifacts, "reference-today-1280x853.png"),
@@ -1517,7 +1529,7 @@ try {
           sha256: createHash("sha256").update(candidateBytes).digest("hex"),
           bytes: candidateBytes.length,
           requests: candidateRequests,
-          servedAs: "/models/twin-anatomy-v1.glb",
+          servedAs: ["/models/twin-selected-v1.glb", "/models/twin-body-v2.glb"],
         },
         null,
         2,
