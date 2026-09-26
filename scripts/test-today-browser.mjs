@@ -429,6 +429,12 @@ try {
           path.join(artifacts, "reference-layout.json"),
           JSON.stringify(layout, null, 2),
         );
+        console.log("TODAY_REFERENCE_LAYOUT " + JSON.stringify(layout));
+        const footer = await shown.page.locator(".fl-dashboard-footer").boundingBox();
+        expect(
+          footer.y + footer.height,
+          "Resting Today composition should fit the reference viewport",
+        ).toBeLessThanOrEqual(viewport.height);
         const columns = await shown.page.evaluate(() =>
           [
             ".fl-left-rail",
@@ -875,8 +881,7 @@ try {
   for (const label of ["Miegas", "Ramybės pulsas", "Aktyvi energija", "Kūno riebalai"]) {
     await expect(ltRail.getByText(label, { exact: true })).toBeVisible();
   }
-  const ltExecution = lt.page.getByText("Šiandienos vykdymas · Atidaryti sesiją", { exact: true });
-  await ltExecution.click();
+  // The plan is directly visible in the reference composition on mobile.
   await expect(lt.page.getByRole("region", { name: "Šiandienos planas" })).toBeVisible();
   // Every sentence on the screen has to be in the athlete's language. The Lab
   // card shipped its paragraph and its button in English only, so a Lithuanian

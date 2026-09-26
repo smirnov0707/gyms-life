@@ -1083,8 +1083,21 @@
       minmax(170px, 0.92fr) minmax(160px, 0.9fr) minmax(340px, 1.9fr)
       minmax(165px, 0.85fr) minmax(200px, 1.06fr);
   }
+  .fl-dashboard .twin-cockpit-scene {
+    height: clamp(380px, calc(100svh - 463px), 500px);
+  }
+  .fl-dashboard .twin-home--cockpit [data-twin-credit] {
+    margin-block: 3px;
+    font-size: 8px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .twin-cockpit-insights > summary {
+    min-height: 26px;
+    padding-block: 5px;
+  }
   .fl-dashboard .fl-bottom-deck {
     grid-template-columns: 1.28fr 1.7fr 0.88fr 0.94fr;
+    min-height: 188px;
   }
   .fl-dashboard .fl-intelligence-card:has(.fl-illustrative-athlete) {
     display: grid;
