@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Clock, Dumbbell, Loader2, Weight } from "lucide-react";
 import { GlowCard } from "@/components/GlowCard";
-import { JournalIntelligence } from "@/components/future-lab/JournalIntelligence";
 import { WorkoutReportExporter } from "@/components/WorkoutReportExporter";
 import { getWorkoutHistory } from "@/lib/workout-history.functions";
 import { useAuth } from "@/lib/auth";
@@ -46,7 +45,6 @@ export function WorkoutHistoryPage() {
   });
   return (
     <div className="fl-history-page mx-auto max-w-[1480px] space-y-3">
-      <JournalIntelligence />
       <details className="fl-secondary-details">
         <summary>
           {isError ? copy.unavailable : isLoading || !data ? copy.loading : copy.eyebrow}

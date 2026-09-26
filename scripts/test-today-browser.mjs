@@ -402,6 +402,10 @@ try {
       }
       if (screen === "journal") {
         const journal = shown.page.locator(".fl-journal-page");
+        await expect(
+          journal,
+          "The Twin mounts one learning ledger, including inside history",
+        ).toHaveCount(1);
         const filters = journal.getByRole("navigation", { name: "Timeline filters" });
         await expect(filters).toBeVisible();
         await filters.getByRole("button", { name: "Patterns", exact: true }).click();

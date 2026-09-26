@@ -12,24 +12,14 @@ export function TwinJournal() {
   return (
     <div className="twin-journal-view grid gap-3">
       <JournalIntelligence />
-      <details className="fl-secondary-details">
-        <summary>{english ? "Twin state history" : "Twin būsenų istorija"}</summary>
-        <div className="fl-disclosed-content">
-          <TwinTimeline />
-        </div>
-      </details>
+      <TwinTimeline />
       <details className="fl-secondary-details">
         <summary>{english ? "Milestones & consistency" : "Etapai ir nuoseklumas"}</summary>
         <div className="fl-disclosed-content">
           <TwinMilestones />
         </div>
       </details>
-      <details className="fl-secondary-details">
-        <summary>{english ? "Recorded workouts" : "Užregistruotos treniruotės"}</summary>
-        <div className="fl-disclosed-content">
-          <WorkoutHistoryPage />
-        </div>
-      </details>
+      <WorkoutHistoryPage />
     </div>
   );
 }
