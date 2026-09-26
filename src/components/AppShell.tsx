@@ -29,6 +29,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import "./future-lab-shell.css";
+import "./future-lab-visual-system.css";
 
 const futureNavItems = PRIMARY_WORLD_NAV;
 
@@ -258,6 +259,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   return (
     <div className="future-lab-app">
+      <a href="#main-content" className="fl-skip-link">
+        {baseLang(lang) === "en" ? "Skip to content" : "Pereiti prie turinio"}
+      </a>
       <header className="fl-shell-header">
         <div className="fl-shell-header-inner">
           <Logo />
@@ -292,7 +296,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         </div>
       </header>
-      <main className="fl-shell-main">{children}</main>
+      <main id="main-content" tabIndex={-1} className="fl-shell-main">
+        {children}
+      </main>
       <nav className="fl-mobile-navigation" aria-label="Future Lab">
         {futureNavItems.map((item) => {
           const Icon = item.icon;

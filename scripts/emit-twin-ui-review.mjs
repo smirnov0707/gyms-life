@@ -20,6 +20,14 @@ for (const name of [
   "reference-lab-mobile-viewport",
   "reference-journal-desktop-viewport",
   "reference-journal-mobile-viewport",
+  "reference-coach-desktop-viewport",
+  "reference-coach-mobile-viewport",
+  "design-today-light-1440",
+  "design-lab-light-390",
+  "design-twin-light-390",
+  "design-coach-light-390",
+  "design-coach-dark-1440",
+  "design-actions-light-390",
 ]) {
   const bytes = await readFile(`test-results/today/${name}.png`);
   if (bytes.length > 2 * 1024 * 1024) throw new Error("Preview exceeds bounded log size");

@@ -370,3 +370,6 @@ export async function listPersonalExperimentHistory() {
   assertReadable();
   return { experiments: [], outcomes: [] };
 }
+// Explicit empty conversation and disabled consent for the visual fixture.
+export const listCoachMessages = async () => ({ messages: [] });
+export const getAiPersonalizationConsent = async () => ({ enabled: false });

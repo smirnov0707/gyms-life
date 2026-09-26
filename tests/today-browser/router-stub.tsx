@@ -5,6 +5,7 @@ const screens: Record<string, string> = {
   "/app": "today",
   "/twin": "twin",
   "/lab": "lab",
+  "/coach": "coach",
   "/twin?view=future": "futureme",
   "/twin?view=journal": "journal",
 };

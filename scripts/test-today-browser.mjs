@@ -324,7 +324,7 @@ try {
     { name: "desktop", width: 1440, height: 1000 },
     { name: "mobile", width: 390, height: 844 },
   ]) {
-    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal"]) {
+    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal", "coach"]) {
       if (viewport.name === "reference" && screen !== "today") continue;
       const shown = await openPanel(`?shell=1&screen=${screen}&scenario=reference`, {
         viewport: { width: viewport.width, height: viewport.height },
@@ -501,6 +501,19 @@ try {
           .toBe(true);
       }
       await shown.page.evaluate(() => window.scrollTo(0, 0));
+      await shown.page.evaluate(async () => {
+        await document.fonts.load('500 16px "Manrope"', "Ąžuolas Žygis");
+        await document.fonts.load('500 16px "Space Grotesk"', "Ąžuolas Žygis");
+        await document.fonts.ready;
+      });
+      const fontsReady = await shown.page.evaluate(
+        () =>
+          document.fonts.check('500 16px "Manrope"') &&
+          document.fonts.check('500 16px "Space Grotesk"'),
+      );
+      expect(fontsReady, "Both bundled fonts must render, including the Lithuanian sample").toBe(
+        true,
+      );
       await shown.page.waitForTimeout(700);
       const overflow = await shown.page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -647,8 +660,10 @@ try {
     path.join(artifacts, "reference-screens.json"),
     JSON.stringify(references, null, 2),
   );
-  record("all six canonical world/detail views render inside the shell at 1440px and 390px");
+  record("all seven canonical world/detail views render inside the shell at 1440px and 390px");
   // Preserve review images even when a later functional regression fails.
+  const { reviewVisualSystem } = await import("./test-visual-system.mjs");
+  await reviewVisualSystem({ openPanel, artifacts, record });
   if (!candidate) await import("./emit-twin-ui-review.mjs");
   console.log("TWIN_ACTION_LAYOUT " + JSON.stringify(actionLayoutChecks));
   await writeFile(

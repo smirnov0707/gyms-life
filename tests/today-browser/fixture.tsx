@@ -18,6 +18,7 @@ import { AppShell } from "@/components/AppShell";
 import { Route as TodayRoute } from "@/routes/_authenticated/app";
 import { Route as TwinRoute } from "@/routes/_authenticated/twin";
 import { Route as LabRoute } from "@/routes/_authenticated/lab";
+import { Route as CoachRoute } from "@/routes/_authenticated/coach";
 import "@/styles.css";
 
 /** Local-only rendering fixture. Every data record is explicitly synthetic. */
@@ -80,6 +81,7 @@ if (withShell) {
   localStorage.setItem("forma_theme", query.get("theme") === "light" ? "light" : "dark");
 }
 const routeComponents = {
+  coach: CoachRoute.options.component,
   today: TodayRoute.options.component,
   twin: TwinRoute.options.component,
   muscle: TwinRoute.options.component,
