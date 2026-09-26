@@ -24,6 +24,8 @@ async function finish(page) {
       .click();
   }
   await expect(page.locator(".fl-workout-summary h1")).toBeVisible();
+  // Inspect the permanent summary after its normal confirmation has expired.
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 10000 });
 }
 
 /** Real route components; all account reads and writes use labeled synthetic fixtures. */
