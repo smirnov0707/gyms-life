@@ -50,7 +50,7 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           const heroTint = surface.map((v, i) => v * 0.92 + primary[i] * 0.08);
           const samples = [
             ...el.querySelectorAll(
-              ".fl-workspace-title,.fl-workspace-number,.fl-metric-label,.fl-workspace-eyebrow",
+              ".fl-workspace-title,.fl-workspace-number,.fl-metric-label,.fl-workspace-eyebrow,.fl-profile-memory summary span",
             ),
           ]
             .filter((node) => node.getClientRects().length)

@@ -831,7 +831,7 @@ function AthleteModelPage() {
                             <span
                               className={
                                 sharedWithAi
-                                  ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300"
+                                  ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300 light:border-amber-700/30 light:bg-amber-100 light:text-amber-800"
                                   : "rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
                               }
                             >
