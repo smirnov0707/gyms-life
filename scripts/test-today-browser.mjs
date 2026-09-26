@@ -210,6 +210,9 @@ try {
       ...options,
     });
     const page = await context.newPage();
+    // Synthetic records are anchored to September 8. Fix Date only; timers and
+    // animation frames must keep running for queries, retries and GPU checks.
+    await page.clock.setFixedTime(new Date("2026-09-08T06:05:00.000Z"));
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.goto(`${origin}/index.html${query}`);
