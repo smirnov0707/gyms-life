@@ -6,6 +6,7 @@ const screens: Record<string, string> = {
   "/training": "training",
   "/meal-plan": "meals",
   "/nutrition": "nutrition",
+  "/me": "profile",
 };
 function href(to: string, params: Record<string, unknown> = {}) {
   const resolved = to.replace(/\$([A-Za-z0-9_]+)/g, (token, key) =>
@@ -30,7 +31,12 @@ export function Link({ to = "/app", params, search: _search, children, ...rest }
   );
 }
 export const useLocation = () => ({
-  pathname: new URLSearchParams(location.search).get("route") ?? "/app",
+  pathname:
+    new URLSearchParams(location.search).get("route") ??
+    Object.entries(screens).find(
+      ([, screen]) => screen === new URLSearchParams(location.search).get("screen"),
+    )?.[0] ??
+    "/app",
   search: {},
 });
 export const useNavigate =

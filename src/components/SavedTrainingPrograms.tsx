@@ -31,7 +31,7 @@ export function SavedTrainingPrograms() {
     );
   if (saved.isError)
     return (
-      <section role="alert" className="panel mt-4 p-5">
+      <section role="alert" className="fl-workspace-panel mt-4 p-5">
         <p>
           {en
             ? "Could not load saved programmes. They have not been deleted."
@@ -44,7 +44,7 @@ export function SavedTrainingPrograms() {
     );
   if (!saved.data.length) return null;
   return (
-    <details className="panel mt-4 p-5">
+    <details className="fl-workspace-panel mt-4 p-5">
       <summary className="cursor-pointer font-semibold">
         {en ? "Saved programmes" : "Išsaugotos programos"} ({saved.data.length})
       </summary>

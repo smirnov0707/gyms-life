@@ -116,29 +116,29 @@ function Metric({
       : Math.min(100, Math.round((value / target) * 100));
 
   return (
-    <div className="border-b border-white/[0.06] py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:py-0 sm:last:border-r-0">
-      <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-neutral-600">{label}</p>
+    <div className="fl-nutrition-metric">
+      <div className="fl-metric-heading">
+        <p className="fl-metric-label">{label}</p>
+        <span>{pct === null ? "—" : `${pct}%`}</span>
+      </div>
       <div className="mt-2 flex items-baseline gap-2">
-        <p className="font-mono text-2xl text-white">
+        <p className="fl-workspace-number">
           {value === null ? "—" : Math.round(value)}
-          {unit}
+          <span className="fl-metric-unit">{unit}</span>
         </p>
         {target === null ? null : (
-          <span className="font-mono text-xs text-neutral-600">
+          <span className="text-xs text-muted-foreground">
             / {Math.round(target)}
             {unit}
           </span>
         )}
       </div>
-      <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-secondary">
         <div
-          className="h-full rounded-full bg-emerald-400/70 transition-[width]"
+          className="h-full rounded-full bg-primary transition-[width]"
           style={{ width: `${pct ?? 0}%` }}
         />
       </div>
-      <p className="mt-2 font-mono text-[10px] text-neutral-600">
-        {pct === null ? "—" : `${pct}%`}
-      </p>
     </div>
   );
 }
@@ -283,27 +283,8 @@ function NutritionPage() {
   });
 
   return (
-    <div className="fl-context-route fl-page-enter max-w-5xl">
+    <div className="fl-context-route fl-workspace fl-nutrition-workspace fl-page-enter">
       <NutritionStudioNav />
-      <section className="fl-context-hero">
-        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-emerald-400">
-          NUTRITION INTELLIGENCE
-        </p>
-        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
-              {baseLang(lang) === "en"
-                ? "Fuel, plan and learn in one system"
-                : "Mityba, planas ir mokymasis vienoje sistemoje"}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {baseLang(lang) === "en"
-                ? "Today's intake is the source of truth. Planning, capture and supplements are supporting capabilities."
-                : "Šiandienos suvartojimas yra pagrindinis faktas. Planavimas, fiksavimas ir papildai yra pagalbinės funkcijos."}
-            </p>
-          </div>
-        </div>
-      </section>
       {foodQuery.isPending && <p role="status">{t("common.loading")}</p>}
       {foodQuery.isError && (
         <section role="alert" className="panel border-destructive/30 p-4">
@@ -317,26 +298,17 @@ function NutritionPage() {
           </Button>
         </section>
       )}
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "radial-gradient(70% 120% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
-          }}
-        />
+      <section className="fl-workspace-hero fl-nutrition-intake">
         <div className="relative">
-          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
+          <p className="fl-workspace-eyebrow">
             {copy.eyebrow} · {t("nut.today")}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {copy.state}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
+          <h1 className="fl-workspace-title mt-3">{copy.state}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {copy.stateHint}
           </p>
 
-          <div className="mt-7 grid sm:grid-cols-4">
+          <div className="fl-nutrition-metrics">
             <Metric
               value={sum("calories")}
               target={targets.kcal}
@@ -353,56 +325,61 @@ function NutritionPage() {
             <Metric value={sum("fat")} target={targets.fatG} label={copy.fat} unit="g" />
           </div>
 
-          <p className="mt-5 border-t border-white/[0.06] pt-4 text-xs leading-relaxed text-neutral-600">
+          <p className="mt-5 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
             {planTargetsReadFailed ? t("nut.planTargetsReadFailed") : targetsNote(targets, lang)}
           </p>
         </div>
       </section>
 
-      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
-        <div className="flex items-center gap-2">
-          <Utensils className="size-4 text-emerald-400 light:text-emerald-700" />
-          <h2 className="text-sm font-semibold text-foreground">{copy.logAction}</h2>
-        </div>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Input
-            value={text}
-            disabled={add.isPending}
-            maxLength={400}
-            onChange={(event) => setText(event.target.value)}
-            placeholder={t("nut.ph")}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !add.isPending &&
-                !mealLock.current &&
-                text.trim().length > 1
-              ) {
-                event.preventDefault();
-                add.mutate();
-              }
-            }}
-            className="h-12 flex-1 border-border bg-foreground/[0.02]"
-          />
-          <Button
-            size="lg"
-            className="h-12 rounded-full px-7 font-bold"
-            disabled={add.isPending || text.trim().length < 2}
-            onClick={() => add.mutate()}
-          >
-            {add.isPending ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 size-4" />
-            )}
-            {add.isPending ? t("nut.analyzing") : t("nut.add")}
-          </Button>
-        </div>
-      </section>
+      <div className="fl-nutrition-workbench">
+        <section className="fl-workspace-panel fl-meal-entry p-5 sm:p-6">
+          <div className="flex items-center gap-2">
+            <Utensils className="size-4 text-primary" />
+            <h2 id="meal-entry-label" className="text-lg font-semibold text-foreground">
+              {copy.logAction}
+            </h2>
+          </div>
+          <div className="fl-meal-entry-fields">
+            <Input
+              aria-labelledby="meal-entry-label"
+              value={text}
+              disabled={add.isPending}
+              maxLength={400}
+              onChange={(event) => setText(event.target.value)}
+              placeholder={t("nut.ph")}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !add.isPending &&
+                  !mealLock.current &&
+                  text.trim().length > 1
+                ) {
+                  event.preventDefault();
+                  add.mutate();
+                }
+              }}
+              className="h-12 w-full border-border bg-surface-2"
+            />
+            <Button
+              size="lg"
+              className="h-12 rounded-full px-7 font-bold"
+              disabled={add.isPending || text.trim().length < 2}
+              onClick={() => add.mutate()}
+            >
+              {add.isPending ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 size-4" />
+              )}
+              {add.isPending ? t("nut.analyzing") : t("nut.add")}
+            </Button>
+          </div>
+        </section>
 
-      <QuickHydrationWidget />
+        <QuickHydrationWidget />
+      </div>
 
-      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+      <details className="fl-workspace-panel group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -426,10 +403,10 @@ function NutritionPage() {
           ) : todays.length === 0 ? (
             <p className="py-4 text-sm text-muted-foreground">{t("nut.empty")}</p>
           ) : (
-            <ul className="divide-y divide-white/[0.06]">
+            <ul className="divide-y divide-border">
               {todays.map((log) => (
                 <li key={log.id} className="flex items-start gap-3 py-4">
-                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg border border-border text-emerald-400 light:text-emerald-700">
+                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg border border-border text-primary">
                     <Flame className="size-3.5" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -464,6 +441,7 @@ function NutritionPage() {
                     disabled={remove.isPending}
                     onClick={() => remove.mutate(log.id)}
                     title={t("nut.delete")}
+                    aria-label={`${t("nut.delete")}: ${log.food_name}`}
                     className="text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="size-4" />
@@ -475,12 +453,12 @@ function NutritionPage() {
         </div>
       </details>
 
-      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+      <details className="fl-workspace-panel group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <ScanLine className="size-4 text-emerald-400 light:text-emerald-700" /> {copy.tools}
+                <ScanLine className="size-4 text-primary" /> {copy.tools}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{copy.toolsHint}</p>
             </div>

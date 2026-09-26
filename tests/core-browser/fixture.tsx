@@ -8,7 +8,10 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { LangProvider } from "@/lib/i18n";
+import { ReminderProvider } from "@/lib/reminders";
 import { ThemeProvider } from "@/lib/theme";
+import { AppShell } from "@/components/AppShell";
+import { Route as ProfileRoute } from "@/routes/_authenticated/me";
 import { ActivePlanLoader } from "@/components/ActivePlanLoader";
 import { ProgramActivationActions } from "@/components/ProgramActivationActions";
 import { Route as MealRoute } from "@/routes/_authenticated/meal-plan";
@@ -26,6 +29,7 @@ Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
   const routes = {
+    profile: ProfileRoute.options.component,
     meals: MealRoute.options.component,
     nutrition: NutritionRoute.options.component,
     onboarding: OnboardingRoute.options.component,
@@ -51,13 +55,21 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={client}>
       <LangProvider>
         <ThemeProvider>
-          <aside data-testid="synthetic-watermark" style={{ padding: 12, fontSize: 12 }}>
-            SYNTHETIC TEST FIXTURE — NOT USER DATA
-          </aside>
-          <main style={{ padding: 16, maxWidth: 1180, margin: "auto" }}>
-            <Panel />
-          </main>
-          <Toaster />
+          <ReminderProvider>
+            <aside data-testid="synthetic-watermark" style={{ padding: 12, fontSize: 12 }}>
+              SYNTHETIC TEST FIXTURE — NOT USER DATA
+            </aside>
+            {query.get("shell") === "1" ? (
+              <AppShell>
+                <Panel />
+              </AppShell>
+            ) : (
+              <main style={{ padding: 16, maxWidth: 1180, margin: "auto" }}>
+                <Panel />
+              </main>
+            )}
+            <Toaster />
+          </ReminderProvider>
         </ThemeProvider>
       </LangProvider>
     </QueryClientProvider>

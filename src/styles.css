@@ -3,6 +3,7 @@
 @import "tw-animate-css";
 @import "./fonts.css";
 @import "./ui-design-system.css";
+@import "./context-workspaces.css";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -197,16 +197,14 @@ export const QuickHydrationWidget: React.FC = () => {
   const percentage = Math.min(100, Math.round((currentMl / targetMl) * 100));
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-cyan-950/30 via-surface to-surface p-5 shadow-2xl backdrop-blur-xl">
+    <div className="fl-workspace-panel fl-hydration-panel p-5">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 p-2 text-cyan-400">
+          <div className="rounded-xl border border-accent/20 bg-accent/10 p-2 text-accent">
             <Droplets className="size-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-              {t("ms.hydration.title")}
-            </h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("ms.hydration.title")}</h3>
             <p className="text-xs text-muted-foreground">
               {t("ms.hydration.progress")
                 .replace("{cur}", ready ? String(currentMl) : "—")
@@ -221,7 +219,7 @@ export const QuickHydrationWidget: React.FC = () => {
           aria-label={copy.resetToday}
           variant="ghost"
           size="icon"
-          className="size-8 text-muted-foreground hover:text-foreground"
+          className="size-11 shrink-0 text-muted-foreground hover:text-foreground"
         >
           <RotateCcw className="size-4" />
         </Button>
@@ -235,7 +233,7 @@ export const QuickHydrationWidget: React.FC = () => {
 
       <div className="relative mb-4 h-3.5 w-full overflow-hidden rounded-full border border-border bg-surface">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 motion-reduce:transition-none"
+          className="h-full rounded-full bg-accent transition-all duration-500 motion-reduce:transition-none"
           style={{ width: `${ready ? percentage : 0}%` }}
         />
       </div>
@@ -248,9 +246,9 @@ export const QuickHydrationWidget: React.FC = () => {
             disabled={add.isPending}
             variant="outline"
             size="sm"
-            className="min-h-11 border-border bg-surface text-xs text-foreground hover:border-cyan-500/40 hover:bg-cyan-950/40"
+            className="min-h-11 border-border bg-surface text-xs text-foreground hover:border-accent/40 hover:bg-accent/10"
           >
-            <Plus className="mr-1 size-3.5 text-cyan-400" /> {amount} ml
+            <Plus className="mr-1 size-3.5 text-accent" /> {amount} ml
           </Button>
         ))}
       </div>

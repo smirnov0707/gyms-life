@@ -325,13 +325,13 @@ function MealPlanPage() {
   })();
 
   return (
-    <div className="fl-context-route fl-page-enter">
+    <div className="fl-context-route fl-workspace fl-meal-plan-workspace fl-page-enter">
       <NutritionStudioNav />
-      <div className="fl-context-heading">
+      <div className="fl-workspace-hero">
         <p className="fl-world-kicker text-xs uppercase tracking-widest text-primary">
           NUTRITION STUDIO · PLAN
         </p>
-        <h1 className="fl-context-title">{t("mp.title")}</h1>
+        <h1 className="fl-workspace-title mt-3">{t("mp.title")}</h1>
         {translating && (
           <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> {t("common.loading")}
