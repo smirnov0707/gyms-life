@@ -105,7 +105,8 @@ export function createTwinAnatomyMaterial(
       contourCode = `
         float twinOwnSupport = 0.0;
         float twinLobe = 0.0;
-        float twinContourPhase = 0.0;
+        vec2 twinFiberSignal = vec2(0.0);
+        float twinFiberWeight = 0.0;
         for(int i=0; i<${contours.length}; i++) {
           vec3 twinDelta = vec3(abs(vTwinSculptPosition.x), vTwinSculptPosition.yz) - twinContourCentres[i].xyz;
           float twinCos = cos(twinContourCentres[i].w), twinSin = sin(twinContourCentres[i].w);
@@ -119,11 +120,20 @@ export function createTwinAnatomyMaterial(
           twinOwnSupport = max(twinOwnSupport, max(0.0, 1.0 - pow(abs(supportQ.x),twinPower)-pow(abs(supportQ.y),twinPower)-supportQ.z*supportQ.z));`
               : ""
           }
-          if(twinEnvelope > twinLobe) {
-            twinLobe = twinEnvelope;
-            twinContourPhase = ${contourFan ? "(vTwinSculptPosition.y + .65*twinDelta.x*twinDelta.x)" : "twinChart.x"} * 3.2;
-          }
+          twinLobe = max(twinLobe, twinEnvelope);
+          // Blend periodic signals, not unwrapped phase or the winning lobe.
+          // A tie between overlapping guides must not abruptly rotate stripes.
+          float twinGuidePhase = ${contourFan ? "(vTwinSculptPosition.y + .65*twinDelta.x*twinDelta.x)" : "twinChart.x"} * 102.4;
+          float twinGuideWeight = twinEnvelope * twinEnvelope;
+          twinGuideWeight *= twinGuideWeight;
+          twinFiberSignal += vec2(cos(twinGuidePhase * 6.28318530718), sin(twinGuidePhase * 6.28318530718)) * twinGuideWeight;
+          twinFiberWeight += twinGuideWeight;
         }
+        float twinSignalLength = length(twinFiberSignal);
+        float twinFiberCoherence = twinSignalLength / max(twinFiberWeight, 0.000001);
+        // atan(0,0) is undefined in GLSL: use a finite phase outside all lobes.
+        float twinContourPhase = twinSignalLength > 0.000001
+          ? atan(twinFiberSignal.y, twinFiberSignal.x) / 6.28318530718 : 0.0;
         float twinContourMask = smoothstep(.02,.32,twinLobe);
         ${rivalry}
       `;
@@ -132,11 +142,12 @@ export function createTwinAnatomyMaterial(
     // the coarse triangulation. Existing assets keep their original shader path.
     const fiberCode = fibers
       ? `
-      float twinPhase = ${contours.length ? "twinContourPhase" : "vTwinFiberUv.y"} * 32.0;
+      float twinPhase = ${contours.length ? "twinContourPhase" : "vTwinFiberUv.y * 32.0"};
       float twinBand = abs(fract(twinPhase + 0.5) - 0.5);
       float twinPixel = max(fwidth(twinPhase), 0.002);
       float twinFiber = 1.0 - smoothstep(0.055, 0.055 + twinPixel, twinBand);
       float twinFade = 1.0 - smoothstep(0.3, 0.8, twinPixel);
+      ${contours.length ? "twinFade *= smoothstep(0.15, 0.55, twinFiberCoherence);" : ""}
       diffuseColor.rgb *= 0.92 + 0.18 * twinFiber * twinFade;
     `
       : "";
@@ -150,20 +161,17 @@ export function createTwinAnatomyMaterial(
       "#include <color_fragment>",
       "#include <color_fragment>\n" + contourCode + fiberCode + maskCode,
     );
-    if (regionMask)
-      shader.fragmentShader = shader.fragmentShader.replace(
-        "#include <emissivemap_fragment>",
-        "#include <emissivemap_fragment>\ntotalEmissiveRadiance *= twinSurfaceMask;",
-      );
-
+    // The mask controls the data glow only. Apply it before the constant studio
+    // rim, otherwise neutral material seams lose their silhouette lighting.
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <emissivemap_fragment>",
       `#include <emissivemap_fragment>
+      ${regionMask ? "totalEmissiveRadiance *= twinSurfaceMask;" : ""}
       float twinRim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 6.0);
       totalEmissiveRadiance += vec3(0.14, 0.38, 0.46) * twinRim * 0.18;`,
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-rim-v6-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
+    `twin-anatomy-rim-v7-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }
