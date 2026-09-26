@@ -155,12 +155,14 @@ export function FutureMeSimulationDeck() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(96,54,170,.13),transparent_55%)]"
       />
       <div className="fl-page-content relative p-3.5 sm:p-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <header className="fl-future-heading flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
               GYMS.LIFE
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Future</h1>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+              {english ? "Future Me" : "Mano ateitis"}
+            </h1>
           </div>
           <div
             className="grid grid-cols-4 gap-1.5 sm:flex"
@@ -182,7 +184,7 @@ export function FutureMeSimulationDeck() {
         </header>
 
         {forecast?.status === "ready" && selectedLift && !failed ? (
-          <label className="mt-3 flex items-center justify-between gap-3 border-y border-border/60 py-2 text-[10px] text-muted-foreground">
+          <label className="fl-projection-target mt-3 flex items-center justify-between gap-3 border-y border-border/60 py-2 text-[10px] text-muted-foreground">
             <span className="shrink-0">{copy.select}</span>
             <select
               aria-label={copy.select}
@@ -199,7 +201,7 @@ export function FutureMeSimulationDeck() {
           </label>
         ) : null}
 
-        <div className="mt-3 grid items-center gap-3 lg:grid-cols-[.75fr_1.15fr_1fr] lg:gap-5">
+        <div className="fl-future-scene mt-3 grid items-center gap-3 lg:grid-cols-[.75fr_1.15fr_1fr] lg:gap-5">
           <div className="hidden lg:block">
             {selectedLift && !failed ? (
               <article className="rounded-xl border border-border bg-surface-2/45 p-4">

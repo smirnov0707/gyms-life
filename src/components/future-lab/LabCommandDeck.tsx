@@ -93,6 +93,22 @@ export function LabCommandDeck() {
         </span>
       </header>
 
+      <section
+        className="fl-lab-domains"
+        aria-label={english ? "Evidence domains" : "Duomenų sritys"}
+      >
+        <LabRosterRows
+          data={data}
+          status={query.isError ? "error" : data ? "ready" : "loading"}
+          tiles
+        />
+        <p className="mt-2 text-[9px] text-muted-foreground">
+          {english
+            ? "Roles describe the evidence and rules in GYMS.LIFE."
+            : "Vaidmenys apibūdina GYMS.LIFE duomenų sritis ir taisykles."}
+        </p>
+      </section>
+
       <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
         <FutureLabPanel
           className="fl-investigation-card"
@@ -231,22 +247,6 @@ export function LabCommandDeck() {
           english={english}
         />
       </div>
-
-      <details className="fl-secondary-details mt-3">
-        <summary>{english ? "Evidence domains" : "Duomenų sritys"}</summary>
-        <div className="fl-disclosed-content">
-          <LabRosterRows
-            data={data}
-            status={query.isError ? "error" : data ? "ready" : "loading"}
-            tiles
-          />
-          <p className="mt-2 text-[9px] text-muted-foreground">
-            {english
-              ? "Roles describe the evidence and rules in GYMS.LIFE."
-              : "Vaidmenys apibūdina GYMS.LIFE duomenų sritis ir taisykles."}
-          </p>
-        </div>
-      </details>
 
       <div className="mt-3">
         <ExperimentLedger english={english} />

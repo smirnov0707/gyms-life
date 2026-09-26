@@ -317,6 +317,7 @@ try {
   // Capture the real route trees inside the real shell before legacy checks,
   // so downloadable design evidence survives a later regression failure.
   const references = [];
+  const referenceLayoutChecks = [];
   for (const viewport of [
     { name: "reference", width: 1280, height: 853 },
     { name: "desktop", width: 1440, height: 1000 },
@@ -385,6 +386,51 @@ try {
         await expect(region).toBeEnabled();
         record(`${screen} mobile controls retain keyboard access, layers and 3D/2D rendering`);
       }
+      if (screen === "futureme") {
+        const summary = shown.page.locator(".fl-strength-summary");
+        await expect(summary.getByText("94.4 kg", { exact: true })).toBeVisible();
+        await shown.page.getByRole("button", { name: "12W", exact: true }).click();
+        await expect(summary.getByText("97.5 kg", { exact: true })).toBeVisible();
+        await shown.page.getByRole("button", { name: "180D", exact: true }).click();
+        await expect(summary.getByText("Long horizon intentionally locked")).toBeVisible();
+        await expect(summary.getByText("97.5 kg", { exact: true })).toHaveCount(0);
+        await shown.page.getByRole("button", { name: "4W", exact: true }).click();
+        await expect(summary.getByText("94.4 kg", { exact: true })).toBeVisible();
+        record(
+          `Future ${viewport.name} changes validated horizons without inventing a long-range result`,
+        );
+      }
+      if (screen === "journal") {
+        const filters = shown.page.getByRole("navigation", { name: "Timeline filters" });
+        await expect(filters).toBeVisible();
+        await filters.getByRole("button", { name: "Patterns", exact: true }).click();
+        await expect(
+          shown.page.getByRole("heading", { name: "Supported discovery", exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          shown.page.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
+        ).toBeVisible();
+        await filters.getByRole("button", { name: "Decisions", exact: true }).click();
+        await expect(
+          shown.page.getByRole("heading", { name: "Recent decisions", exact: true }),
+        ).toBeVisible();
+        await filters.getByRole("button", { name: "All", exact: true }).click();
+        await expect(
+          shown.page.getByRole("heading", { name: "Supported discovery", exact: true }),
+        ).toBeVisible();
+        record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
+      }
+      if (screen === "lab") {
+        const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
+        await expect(domains).toBeVisible();
+        await expect(domains.getByRole("listitem")).toHaveCount(10);
+        await expect(
+          shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
+        ).toBeVisible();
+        record(
+          `Lab ${viewport.name} shows evidence domains and the current investigation together`,
+        );
+      }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
         await illustration.scrollIntoViewIfNeeded();
         await expect
@@ -402,17 +448,32 @@ try {
       expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
       const filename = `reference-${screen}-${viewport.name}.png`;
       await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
-      if (screen === "twin") {
+      if (viewport.name !== "reference") {
         await shown.page.screenshot({
-          path: path.join(artifacts, `reference-twin-${viewport.name}-viewport.png`),
+          path: path.join(artifacts, `reference-${screen}-${viewport.name}-viewport.png`),
           fullPage: false,
         });
       }
-      if (screen === "today" && viewport.name === "mobile") {
-        await shown.page.screenshot({
-          path: path.join(artifacts, "reference-today-mobile-viewport.png"),
-          fullPage: false,
+      if (viewport.name === "mobile" && ["futureme", "lab", "journal"].includes(screen)) {
+        const selector =
+          screen === "futureme"
+            ? ".fl-strength-summary > button"
+            : screen === "lab"
+              ? ".fl-investigation-card h2"
+              : ".fl-journal-filters";
+        const target = await shown.page.locator(selector).boundingBox();
+        const dock = await shown.page.locator(".fl-mobile-navigation").boundingBox();
+        referenceLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          selector,
+          target,
+          dockTop: dock.y,
         });
+      }
+      if (viewport.name === "desktop" && screen === "twin") {
+        const target = await canvas.boundingBox();
+        referenceLayoutChecks.push({ screen, viewport: viewport.name, target });
       }
       if (viewport.name === "reference") {
         await shown.page.screenshot({
@@ -496,6 +557,25 @@ try {
   record("all six canonical world/detail views render inside the shell at 1440px and 390px");
   // Preserve review images even when a later functional regression fails.
   if (!candidate) await import("./emit-twin-ui-review.mjs");
+  console.log("TWIN_WORLD_LAYOUT " + JSON.stringify(referenceLayoutChecks));
+  await writeFile(
+    path.join(artifacts, "world-layout.json"),
+    JSON.stringify(referenceLayoutChecks, null, 2),
+  );
+  for (const check of referenceLayoutChecks) {
+    if (check.viewport === "mobile") {
+      expect(
+        check.target.y + check.target.height,
+        `${check.screen} primary content remains above the mobile dock`,
+      ).toBeLessThanOrEqual(check.dockTop);
+    } else {
+      expect(check.target.y, "Desktop Twin starts near its view controls").toBeLessThan(310);
+      expect(check.target.height).toBeGreaterThanOrEqual(360);
+    }
+  }
+  record(
+    "Reference world layouts keep primary content above the mobile dock and the desktop Twin near its controls",
+  );
 
   for (const scenario of ["empty", "failure"]) {
     const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {

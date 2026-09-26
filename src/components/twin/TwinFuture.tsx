@@ -12,21 +12,7 @@ export function TwinFuture() {
   const english = baseLang(lang) === "en";
 
   return (
-    <div className="grid gap-4">
-      <header className="rounded-3xl border border-border bg-surface p-4 md:p-5">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-300 light:text-violet-700">
-          {english ? "TWIN · FUTURE" : "DVYNYS · ATEITIS"}
-        </p>
-        <h2 className="mt-1 text-xl font-semibold text-foreground">
-          {english ? "Explore trajectories, not promises" : "Tyrinėk trajektorijas, ne pažadus"}
-        </h2>
-        <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-          {english
-            ? "Bounded simulations use observed evidence and never override Today."
-            : "Ribotos simuliacijos remiasi stebėtais duomenimis ir niekada nepakeičia Today sprendimo."}
-        </p>
-      </header>
-
+    <div className="twin-future-view grid gap-3">
       <FutureMeSimulationDeck />
       <details className="fl-secondary-details">
         <summary>{english ? "Observed evolution" : "Stebima evoliucija"}</summary>

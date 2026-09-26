@@ -40,6 +40,67 @@
   background: linear-gradient(145deg, rgba(21, 27, 54, 0.94), rgba(11, 19, 34, 0.97));
 }
 
+@media (min-width: 1024px) {
+  .twin-screen [data-twin-cockpit] > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 14px 20px 10px;
+  }
+
+  .twin-screen [data-twin-cockpit] > header > :not([role="group"]) {
+    grid-column: 1;
+  }
+
+  .twin-screen [data-twin-cockpit] > header > [role="group"] {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: center;
+    border-radius: 8px;
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-controls-row] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px 8px;
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-layer-controls] {
+    margin: 0;
+    border-radius: 8px;
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-layer-controls] button {
+    padding-inline: 6px;
+    border-radius: 5px;
+    font-size: 10px;
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-toolbar] {
+    padding: 0;
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-toolbar] > p {
+    max-width: 8ch;
+    font-size: 8px;
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-viewport] {
+    height: clamp(360px, calc(100svh - 430px), 540px);
+  }
+
+  .twin-screen [data-twin-cockpit] [data-twin-credit] {
+    margin-block: 4px;
+    font-size: 8px;
+  }
+
+  .twin-screen [data-twin-inspector] {
+    align-self: start;
+    padding-top: 64px;
+  }
+}
+
 .twin-muscle-detail {
   overflow: hidden;
   border: 1px solid rgba(145, 162, 208, 0.17);
