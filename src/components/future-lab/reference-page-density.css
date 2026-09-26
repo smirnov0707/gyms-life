@@ -37,6 +37,14 @@
   );
 }
 
+.fl-lab-workbench {
+  min-width: 0;
+}
+
+.fl-lab-experiments {
+  min-width: 0;
+}
+
 .fl-journal-filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

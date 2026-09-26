@@ -352,6 +352,21 @@ try {
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
         await expect(detail).toBeVisible();
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
+        const limits = detail.locator(".twin-detail-readout details");
+        await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
+        await limits.locator("summary").focus();
+        await shown.page.keyboard.press("Enter");
+        await expect(limits.getByText("Injury risk", { exact: true })).toBeVisible();
+        await expect(limits.getByText("Not assessed", { exact: true })).toBeVisible();
+        await expect(limits.getByText("Not modelled", { exact: true })).toHaveCount(2);
+        await shown.page.keyboard.press("Enter");
+        await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
+        await expect(
+          detail.getByRole("link", { name: "Open training", exact: true }),
+        ).toHaveAttribute("href", "/training");
+        record(
+          `Muscle ${viewport.name} keeps training accessible and unsupported outcomes inside evidence limits`,
+        );
       }
       if (viewport.name === "mobile" && ["twin", "muscle"].includes(screen)) {
         const stage = shown.page.locator("[data-twin-stage]");
@@ -443,8 +458,34 @@ try {
         await expect(
           shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
         ).toBeVisible();
+        const experiments = shown.page.locator(".fl-lab-experiments");
+        await expect(
+          experiments.getByText("No governed personal experiments yet.", { exact: true }),
+        ).toBeVisible();
+        const knowledge = shown.page.locator(".fl-lab-knowledge");
+        await expect(
+          knowledge.getByRole("heading", {
+            name: "What the Twin knows — and does not know",
+            exact: true,
+          }),
+        ).toBeHidden();
+        await knowledge.locator("summary").focus();
+        await shown.page.keyboard.press("Enter");
+        await expect(
+          knowledge.getByRole("heading", {
+            name: "What the Twin knows — and does not know",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await shown.page.keyboard.press("Enter");
+        await expect(
+          knowledge.getByRole("heading", {
+            name: "What the Twin knows — and does not know",
+            exact: true,
+          }),
+        ).toBeHidden();
         record(
-          `Lab ${viewport.name} shows evidence domains and the current investigation together`,
+          `Lab ${viewport.name} shows evidence domains, investigation and experiment state with accessible knowledge details`,
         );
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
@@ -462,6 +503,35 @@ try {
       );
       expect(overflow, `${screen} ${viewport.name} overflows`).toBeLessThanOrEqual(1);
       expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
+      if (screen === "muscle") {
+        const action = await shown.page
+          .getByRole("link", { name: "Open training", exact: true })
+          .boundingBox();
+        const limits = await shown.page.locator(".twin-detail-readout summary").boundingBox();
+        const usableBottom =
+          viewport.name === "mobile"
+            ? (await shown.page.locator(".fl-mobile-navigation").boundingBox()).y
+            : viewport.height;
+        expect(
+          action.y + action.height,
+          `Muscle ${viewport.name} training action is above the fold`,
+        ).toBeLessThanOrEqual(usableBottom);
+        expect(
+          limits.y + limits.height,
+          `Muscle ${viewport.name} evidence access is above the fold`,
+        ).toBeLessThanOrEqual(usableBottom);
+        if (viewport.name === "desktop") {
+          const stage = await shown.page.locator(".twin-detail-stage").boundingBox();
+          const readout = await shown.page.locator(".twin-detail-readout").boundingBox();
+          expect(readout.x).toBeGreaterThanOrEqual(stage.x + stage.width);
+        }
+      }
+      if (screen === "lab" && viewport.name === "desktop") {
+        const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
+        const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
+        expect(experiments.x).toBeGreaterThanOrEqual(investigation.x + investigation.width);
+        expect(experiments.y + experiments.height).toBeLessThanOrEqual(viewport.height);
+      }
       const filename = `reference-${screen}-${viewport.name}.png`;
       await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
       if (viewport.name !== "reference") {
@@ -906,6 +976,12 @@ try {
   await expect(
     lab.page.locator(".fl-lab-roster-tiles").getByText("Unknown", { exact: true }),
   ).toHaveCount(10);
+  await expect(
+    lab.page.getByText("Experiment history is unavailable.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    lab.page.getByText("No governed personal experiments yet.", { exact: true }),
+  ).toHaveCount(0);
   await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");

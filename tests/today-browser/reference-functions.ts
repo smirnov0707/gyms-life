@@ -365,3 +365,8 @@ export async function getDailyBrief() {
         },
   );
 }
+
+export async function listPersonalExperimentHistory() {
+  assertReadable();
+  return { experiments: [], outcomes: [] };
+}

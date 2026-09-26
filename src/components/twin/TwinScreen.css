@@ -284,6 +284,31 @@
   line-height: 1.7;
 }
 
+.twin-detail-readout > a {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 1024px) {
+  .twin-detail-status.has-anatomy {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+    gap: 20px;
+    align-items: center;
+    padding: 8px 16px 20px;
+  }
+
+  .twin-detail-status.has-anatomy .twin-detail-stage {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .twin-detail-status.has-anatomy .twin-detail-readout {
+    margin: 0;
+  }
+}
+
 .twin-detail-impact {
   margin-top: 18px;
   min-height: 200px;

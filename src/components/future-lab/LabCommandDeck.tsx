@@ -109,7 +109,7 @@ export function LabCommandDeck() {
         </p>
       </section>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+      <div className="fl-lab-workbench mt-3 grid items-start gap-3 lg:grid-cols-[1.15fr_1fr]">
         <FutureLabPanel
           className="fl-investigation-card"
           title={english ? "Current investigation" : "Dabartinis tyrimas"}
@@ -155,6 +155,12 @@ export function LabCommandDeck() {
           )}
         </FutureLabPanel>
 
+        <div className="fl-lab-experiments">
+          <ExperimentLedger english={english} />
+        </div>
+      </div>
+
+      <div className="mt-3 grid items-start gap-3 lg:grid-cols-2">
         <details className="fl-secondary-details self-start">
           <summary>
             {english ? "Prediction calibration" : "Prognozių kalibracija"} ·{" "}
@@ -238,18 +244,18 @@ export function LabCommandDeck() {
             </FutureLabPanel>
           </div>
         </details>
-      </div>
-
-      <div className="mt-3">
-        <EpistemicBoundary
-          lab={data ?? null}
-          forecast={forecastQuery.isError ? null : (forecastQuery.data ?? null)}
-          english={english}
-        />
-      </div>
-
-      <div className="mt-3">
-        <ExperimentLedger english={english} />
+        <details className="fl-secondary-details fl-lab-knowledge">
+          <summary>
+            {english ? "What the Twin knows — and does not know" : "Ką Twin žino — ir ko nežino"}
+          </summary>
+          <div className="fl-disclosed-content">
+            <EpistemicBoundary
+              lab={data ?? null}
+              forecast={forecastQuery.isError ? null : (forecastQuery.data ?? null)}
+              english={english}
+            />
+          </div>
+        </details>
       </div>
     </section>
   );
