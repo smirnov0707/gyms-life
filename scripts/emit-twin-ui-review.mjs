@@ -9,6 +9,7 @@ if (assetSha256 !== "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c3249
 
 for (const name of [
   "reference-today-1280x853",
+  "reference-today-mobile-viewport",
   "reference-twin-desktop-viewport",
   "reference-twin-mobile-viewport",
 ]) {

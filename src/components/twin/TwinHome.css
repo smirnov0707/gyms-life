@@ -115,6 +115,24 @@
   scrollbar-width: thin;
 }
 
+/* Detailed intelligence needs the card width, not the narrow map legend rail. */
+.twin-cockpit-insights {
+  margin: 0 10px 8px;
+  border-top: 1px solid rgba(156, 181, 226, 0.12);
+}
+
+.twin-cockpit-insights > summary {
+  min-height: 32px;
+  padding: 8px 0;
+  color: #bca7ef;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.twin-cockpit-insights[open] > section {
+  padding: 8px 0 12px;
+}
+
 .twin-cockpit-side > :first-child {
   margin-top: auto;
 }

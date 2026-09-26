@@ -408,6 +408,12 @@ try {
           fullPage: false,
         });
       }
+      if (screen === "today" && viewport.name === "mobile") {
+        await shown.page.screenshot({
+          path: path.join(artifacts, "reference-today-mobile-viewport.png"),
+          fullPage: false,
+        });
+      }
       if (viewport.name === "reference") {
         await shown.page.screenshot({
           path: path.join(artifacts, "reference-today-1280x853.png"),
@@ -422,6 +428,45 @@ try {
         await writeFile(
           path.join(artifacts, "reference-layout.json"),
           JSON.stringify(layout, null, 2),
+        );
+        const columns = await shown.page.evaluate(() =>
+          [
+            ".fl-left-rail",
+            ".fl-daily-column",
+            ".fl-body",
+            ".fl-laboratory",
+            ".fl-predictions",
+          ].map((selector) => {
+            const element = document.querySelector(selector);
+            const rect = element.getBoundingClientRect();
+            return {
+              selector,
+              x: rect.x,
+              right: rect.right,
+              width: rect.width,
+              overflow: element.scrollWidth - element.clientWidth,
+            };
+          }),
+        );
+        for (let i = 1; i < columns.length; i++)
+          expect(columns[i].x).toBeGreaterThanOrEqual(columns[i - 1].right);
+        for (const column of columns)
+          expect(column.overflow, column.selector).toBeLessThanOrEqual(1);
+        const canvasBounds = await canvas.boundingBox();
+        expect(canvasBounds.width).toBeGreaterThanOrEqual(220);
+        expect(canvasBounds.height).toBeGreaterThanOrEqual(380);
+        const insightSummary = shown.page.locator(".twin-cockpit-insights > summary");
+        await insightSummary.click();
+        const insights = shown.page.locator(".twin-cockpit-insights > section");
+        await expect(insights).toBeVisible();
+        const insightBounds = await insights.boundingBox();
+        expect(insightBounds.width).toBeGreaterThan(300);
+        expect(
+          await insights.evaluate((element) => element.scrollWidth - element.clientWidth),
+        ).toBeLessThanOrEqual(1);
+        await insightSummary.click();
+        record(
+          "Today reference columns preserve a full-height Twin and full-width expandable insights",
         );
       }
       await writeFile(
@@ -443,6 +488,8 @@ try {
     JSON.stringify(references, null, 2),
   );
   record("all six canonical world/detail views render inside the shell at 1440px and 390px");
+  // Preserve review images even when a later functional regression fails.
+  if (!candidate) await import("./emit-twin-ui-review.mjs");
 
   for (const scenario of ["empty", "failure"]) {
     const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
@@ -454,6 +501,23 @@ try {
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
     expect(await sources.getByText(label, { exact: true }).count()).toBe(2);
+    const intelligence = checked.page.getByRole("region", { name: "Intelligence brief" });
+    if (scenario === "failure") {
+      await expect(
+        intelligence.getByText("Lab evidence is temporarily unavailable.", { exact: true }),
+      ).toHaveCount(2);
+      await expect(
+        intelligence.getByText("No hypothesis is currently awaiting more evidence.", {
+          exact: true,
+        }),
+      ).toHaveCount(0);
+    } else {
+      await expect(
+        intelligence.getByText("No hypothesis is currently awaiting more evidence.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+    }
     expect(checked.errors).toEqual([]);
     await checked.page.screenshot({
       path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),

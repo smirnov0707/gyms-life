@@ -368,14 +368,6 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
           sidePanel={
             <aside className="twin-cockpit-side">
               <CockpitLegend layer={shownLayer} language={language} />
-              {intelligence ? (
-                <TwinIntelligencePanel
-                  compact
-                  intelligence={intelligence}
-                  selectedRegion={selected}
-                  onSelectRegion={selectRegion}
-                />
-              ) : null}
               <div className="twin-cockpit-load">
                 <TrainingLoadPanel compact />
               </div>
@@ -396,6 +388,17 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             </aside>
           }
         />
+        {intelligence ? (
+          <details className="twin-cockpit-insights">
+            <summary>{language === "lt" ? "Twin įžvalgos" : "Twin insights"}</summary>
+            <TwinIntelligencePanel
+              compact
+              intelligence={intelligence}
+              selectedRegion={selected}
+              onSelectRegion={selectRegion}
+            />
+          </details>
+        ) : null}
       </section>
     );
   }
