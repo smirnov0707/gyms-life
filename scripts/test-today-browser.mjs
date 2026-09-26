@@ -210,9 +210,25 @@ try {
       ...options,
     });
     const page = await context.newPage();
-    // Synthetic records are anchored to September 8. Fix Date only; timers and
-    // animation frames must keep running for queries, retries and GPU checks.
-    await page.clock.setFixedTime(new Date("2026-09-08T06:05:00.000Z"));
+    // Align synthetic records with their September 8 epoch. The Playwright
+    // clock also replaces timers/rAF, which stalls actionability on GPU pages.
+    // Offset Date alone and let elapsed time and native scheduling keep running.
+    await page.addInitScript((epoch) => {
+      const NativeDate = Date;
+      const offset = epoch - NativeDate.now();
+      const now = () => NativeDate.now() + offset;
+      globalThis.Date = new Proxy(NativeDate, {
+        construct(target, args, newTarget) {
+          return Reflect.construct(target, args.length ? args : [now()], newTarget);
+        },
+        apply() {
+          return new NativeDate(now()).toString();
+        },
+        get(target, key, receiver) {
+          return key === "now" ? now : Reflect.get(target, key, receiver);
+        },
+      });
+    }, Date.parse("2026-09-08T06:05:00.000Z"));
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.goto(`${origin}/index.html${query}`);
