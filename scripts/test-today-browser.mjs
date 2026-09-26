@@ -318,6 +318,7 @@ try {
   // so downloadable design evidence survives a later regression failure.
   const references = [];
   const referenceLayoutChecks = [];
+  const actionLayoutChecks = [];
   for (const viewport of [
     { name: "reference", width: 1280, height: 853 },
     { name: "desktop", width: 1440, height: 1000 },
@@ -361,9 +362,12 @@ try {
         await expect(limits.getByText("Not modelled", { exact: true })).toHaveCount(2);
         await shown.page.keyboard.press("Enter");
         await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
-        await expect(
-          detail.getByRole("link", { name: "Open training", exact: true }),
-        ).toHaveAttribute("href", "/training");
+        const trainingHref = await detail
+          .getByRole("link", { name: "Open training", exact: true })
+          .getAttribute("href");
+        expect(trainingHref).not.toBeNull();
+        // The fixture router carries the actual app destination in `route`.
+        expect(new URL(trainingHref, origin).searchParams.get("route")).toBe("/training");
         record(
           `Muscle ${viewport.name} keeps training accessible and unsupported outcomes inside evidence limits`,
         );
@@ -512,25 +516,28 @@ try {
           viewport.name === "mobile"
             ? (await shown.page.locator(".fl-mobile-navigation").boundingBox()).y
             : viewport.height;
-        expect(
-          action.y + action.height,
-          `Muscle ${viewport.name} training action is above the fold`,
-        ).toBeLessThanOrEqual(usableBottom);
-        expect(
-          limits.y + limits.height,
-          `Muscle ${viewport.name} evidence access is above the fold`,
-        ).toBeLessThanOrEqual(usableBottom);
-        if (viewport.name === "desktop") {
-          const stage = await shown.page.locator(".twin-detail-stage").boundingBox();
-          const readout = await shown.page.locator(".twin-detail-readout").boundingBox();
-          expect(readout.x).toBeGreaterThanOrEqual(stage.x + stage.width);
-        }
+        const stage = await shown.page.locator(".twin-detail-stage").boundingBox();
+        const readout = await shown.page.locator(".twin-detail-readout").boundingBox();
+        actionLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          action,
+          limits,
+          usableBottom,
+          stage,
+          readout,
+        });
       }
       if (screen === "lab" && viewport.name === "desktop") {
         const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
         const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
-        expect(experiments.x).toBeGreaterThanOrEqual(investigation.x + investigation.width);
-        expect(experiments.y + experiments.height).toBeLessThanOrEqual(viewport.height);
+        actionLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          investigation,
+          experiments,
+          usableBottom: viewport.height,
+        });
       }
       const filename = `reference-${screen}-${viewport.name}.png`;
       await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
@@ -643,6 +650,32 @@ try {
   record("all six canonical world/detail views render inside the shell at 1440px and 390px");
   // Preserve review images even when a later functional regression fails.
   if (!candidate) await import("./emit-twin-ui-review.mjs");
+  console.log("TWIN_ACTION_LAYOUT " + JSON.stringify(actionLayoutChecks));
+  await writeFile(
+    path.join(artifacts, "action-layout.json"),
+    JSON.stringify(actionLayoutChecks, null, 2),
+  );
+  for (const check of actionLayoutChecks) {
+    if (check.screen === "muscle") {
+      expect(
+        check.action.y + check.action.height,
+        `Muscle ${check.viewport} training action is above the fold`,
+      ).toBeLessThanOrEqual(check.usableBottom);
+      expect(
+        check.limits.y + check.limits.height,
+        `Muscle ${check.viewport} evidence access is above the fold`,
+      ).toBeLessThanOrEqual(check.usableBottom);
+      if (check.viewport === "desktop")
+        expect(check.readout.x).toBeGreaterThanOrEqual(check.stage.x + check.stage.width);
+    } else {
+      expect(check.experiments.x).toBeGreaterThanOrEqual(
+        check.investigation.x + check.investigation.width,
+      );
+      expect(check.experiments.y + check.experiments.height).toBeLessThanOrEqual(
+        check.usableBottom,
+      );
+    }
+  }
   console.log("TWIN_WORLD_LAYOUT " + JSON.stringify(referenceLayoutChecks));
   await writeFile(
     path.join(artifacts, "world-layout.json"),
