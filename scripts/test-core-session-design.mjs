@@ -78,12 +78,16 @@ export async function verifySessionDesign({ open, record, artifacts }) {
             await expect(
               page.getByRole("progressbar", { name: "Session progress" }),
             ).toHaveAttribute("aria-valuenow", "0");
-            const log = await page
-              .getByRole("button", { name: "Log set", exact: true })
-              .boundingBox();
-            const voice = await page.locator(".fl-workout-voice summary").boundingBox();
-            expect(log.height).toBeGreaterThanOrEqual(44);
-            expect(log.y + log.height).toBeLessThan(voice.y);
+            await page.evaluate(() => document.fonts.ready);
+            // Focus-induced scrolling or font layout between separate browser calls
+            // must not mix two viewport origins in the same geometry assertion.
+            const geometry = await workspace.evaluate((el) => {
+              const log = el.querySelector(".fl-workout-log").getBoundingClientRect();
+              const voice = el.querySelector(".fl-workout-voice summary").getBoundingClientRect();
+              return { logHeight: log.height, logBottom: log.bottom, voiceTop: voice.top };
+            });
+            expect(geometry.logHeight).toBeGreaterThanOrEqual(44);
+            expect(geometry.logBottom).toBeLessThan(geometry.voiceTop);
             // Ensure native keyboard order follows the same primary-before-secondary layout.
             await page.getByRole("spinbutton", { name: "RPE", exact: true }).focus();
             await page.keyboard.press("Tab");
