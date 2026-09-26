@@ -423,6 +423,17 @@ try {
         await expect(
           journal.getByRole("heading", { name: "Supported discovery", exact: true }),
         ).toBeVisible();
+        if (viewport.name === "mobile") {
+          const labelLines = await filters.getByRole("button").evaluateAll((buttons) =>
+            buttons.map((button) => {
+              const range = document.createRange();
+              range.selectNodeContents(button);
+              return { label: button.textContent, lines: range.getClientRects().length };
+            }),
+          );
+          for (const label of labelLines)
+            expect(label.lines, `${label.label} remains readable without a split word`).toBe(1);
+        }
         record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
       }
       if (screen === "lab") {

@@ -82,7 +82,9 @@
   }
 
   .twin-screen [data-twin-cockpit] [data-twin-toolbar] > p {
-    max-width: 8ch;
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
     font-size: 8px;
   }
 
