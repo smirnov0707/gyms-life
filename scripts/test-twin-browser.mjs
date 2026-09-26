@@ -460,7 +460,7 @@ try {
     artifacts,
     expectedSource,
     expectedCredit,
-    expectedSha: expectedBodySha,
+    expectedSha: expectedAnalysisSha,
     record,
   });
   await context.close();

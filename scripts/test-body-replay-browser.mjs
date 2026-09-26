@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { createServer } from "vite";
@@ -69,11 +70,17 @@ try {
   page = await desktop.newPage();
   page.on("pageerror", (error) => errors.push(String(error)));
   await ready();
-  await expect(page.locator("[data-twin-credit]")).toContainText("BodyParts3D");
+  await expect(page.locator("[data-twin-credit]")).toContainText("MakeHuman graphical assets (CC0)");
   await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
     "data-twin-source",
-    "bodyparts3d",
+    "makehuman",
   );
+  const selectedBytes = await readFile(path.join(root, "public/models/twin-selected-v1.glb"));
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-twin-asset-sha256",
+    createHash("sha256").update(selectedBytes).digest("hex"),
+  );
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
   record("session replay credits the actual loaded model through the shared renderer");
   await expect(inspect()).toHaveText("2 sets");
   await controls(true);
