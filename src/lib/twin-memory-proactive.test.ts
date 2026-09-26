@@ -8,9 +8,7 @@ import {
   nextTwinMemoryProactiveStatus,
 } from "./twin-memory-proactive";
 
-function evolution(
-  overrides: Partial<TwinMemoryEvolution> = {},
-): TwinMemoryEvolution {
+function evolution(overrides: Partial<TwinMemoryEvolution> = {}): TwinMemoryEvolution {
   return {
     hypothesisId: "fatigue",
     kind: "strengthened",
@@ -29,8 +27,7 @@ function evolution(
 describe("Twin Memory proactive policy", () => {
   it("surfaces a deterministic status transition with no decision authority", () => {
     expect(buildTwinMemoryProactiveSignal(evolution())).toEqual({
-      fingerprint:
-        "twin-memory:fatigue:strengthened:11111111-1111-4111-8111-111111111111",
+      fingerprint: "twin-memory:fatigue:strengthened:11111111-1111-4111-8111-111111111111",
       hypothesisId: "fatigue",
       kind: "strengthened",
       severity: "positive",
@@ -42,9 +39,7 @@ describe("Twin Memory proactive policy", () => {
 
   it("does not notify for ordinary evidence accumulation", () => {
     expect(
-      buildTwinMemoryProactiveSignal(
-        evolution({ basis: "evidence_delta", evidenceDelta: 1 }),
-      ),
+      buildTwinMemoryProactiveSignal(evolution({ basis: "evidence_delta", evidenceDelta: 1 })),
     ).toBeNull();
   });
 
@@ -62,13 +57,12 @@ describe("Twin Memory proactive policy", () => {
   });
 
   it("marks weakening and contradiction as attention, not medical alarm", () => {
-    expect(
-      buildTwinMemoryProactiveSignal(evolution({ kind: "weakened" }))?.severity,
-    ).toBe("attention");
-    expect(
-      buildTwinMemoryProactiveSignal(evolution({ kind: "contradicted" }))
-        ?.severity,
-    ).toBe("attention");
+    expect(buildTwinMemoryProactiveSignal(evolution({ kind: "weakened" }))?.severity).toBe(
+      "attention",
+    );
+    expect(buildTwinMemoryProactiveSignal(evolution({ kind: "contradicted" }))?.severity).toBe(
+      "attention",
+    );
   });
   it("turns a persisted status transition into one deterministic proactive signal", () => {
     const signal = buildTwinMemoryProactiveSignalFromTransition({
@@ -94,18 +88,12 @@ describe("Twin Memory proactive policy", () => {
   it("keeps dismissed proactive changes terminal and makes seen idempotent", () => {
     expect(nextTwinMemoryProactiveStatus("new", "seen")).toBe("seen");
     expect(nextTwinMemoryProactiveStatus("seen", "seen")).toBe("seen");
-    expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe(
-      "dismissed",
-    );
-    expect(nextTwinMemoryProactiveStatus("dismissed", "seen")).toBe(
-      "dismissed",
-    );
+    expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe("dismissed");
+    expect(nextTwinMemoryProactiveStatus("dismissed", "seen")).toBe("dismissed");
   });
   it("keeps lifecycle presentation-only with no decision authority", () => {
     expect(nextTwinMemoryProactiveStatus("new", "seen")).toBe("seen");
-    expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe(
-      "dismissed",
-    );
+    expect(nextTwinMemoryProactiveStatus("seen", "dismissed")).toBe("dismissed");
     const signal = buildTwinMemoryProactiveSignal(evolution());
     expect(signal?.decisionAuthority).toBe(false);
   });
@@ -213,10 +201,7 @@ describe("Twin Memory proactive policy", () => {
       ],
       new Date("2026-09-12T12:00:00.000Z"),
     );
-    expect(queue.map((item) => item.hypothesisId)).toEqual([
-      "risk",
-      "positive",
-    ]);
+    expect(queue.map((item) => item.hypothesisId)).toEqual(["risk", "positive"]);
   });
 
   it("does not surface stale or future records as current proactive intelligence", () => {
