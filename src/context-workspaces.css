@@ -573,3 +573,299 @@
     flex-wrap: wrap;
   }
 }
+
+/* Goal intake and movement library share the same compact workspace rhythm. */
+.fl-context-route.fl-intake-workspace {
+  max-width: 840px;
+}
+.fl-intake-form {
+  padding: 28px;
+}
+.fl-intake-questions {
+  margin-top: 28px;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+}
+.fl-intake-questions h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 550;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+.fl-intake-option {
+  min-width: 0;
+  min-height: 50px;
+  padding: 13px 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.fl-intake-option[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.fl-intake-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.fl-intake-pending {
+  min-height: 60vh;
+  place-items: center;
+  text-align: center;
+}
+.fl-intake-day h2 {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+}
+.fl-library-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.fl-library-favorites {
+  flex-shrink: 0;
+}
+.fl-library-builder > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+.fl-library-builder > summary::after {
+  content: "+";
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--primary);
+}
+.fl-library-builder[open] > summary::after {
+  content: "−";
+}
+.fl-library-builder > div {
+  margin: 0 16px 16px;
+  box-shadow: none;
+  border-radius: 16px;
+}
+.fl-library-toolbar {
+  padding: 20px;
+}
+.fl-library-filters button {
+  min-height: 44px;
+}
+.fl-library-count {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted-foreground);
+}
+.fl-library-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  padding: 42px 22px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.fl-library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.fl-library-card {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: border-color 0.2s;
+}
+.fl-library-card:hover {
+  border-color: var(--primary);
+}
+.fl-library-media {
+  background: #10151e;
+}
+.fl-library-media button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.fl-library-preview {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.fl-movement-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+.fl-movement-metadata dt {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.fl-movement-metadata dd {
+  margin-top: 5px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.fl-movement-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+.fl-movement-demonstration,
+.fl-movement-guidance {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.fl-movement-guidance h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 550;
+  letter-spacing: -0.025em;
+}
+.fl-movement-steps {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+.fl-movement-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+.fl-movement-steps li > span {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--primary);
+}
+.fl-movement-steps p {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.75;
+}
+.fl-exercise-demo {
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+}
+.fl-exercise-demo-stage {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 11;
+  background: #10151e;
+  color: #edf2fc;
+}
+.fl-exercise-demo-stage > video,
+.fl-exercise-demo-stage > img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  aspect-ratio: 16 / 11;
+}
+.fl-exercise-demo-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 20px;
+}
+.fl-exercise-demo-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.fl-exercise-demo-caption strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.fl-exercise-demo-controls {
+  display: flex;
+  gap: 5px;
+}
+.fl-exercise-demo-controls button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.fl-exercise-demo-controls button[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+.fl-exercise-demo button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+@media (max-width: 1000px) {
+  .fl-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .fl-intake-form {
+    padding: 18px;
+  }
+  .fl-intake-questions {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+  .fl-intake-questions h2 {
+    font-size: 20px;
+  }
+  .fl-intake-option {
+    padding: 12px 7px;
+    font-size: 12px;
+  }
+  .fl-intake-navigation {
+    margin-top: 22px;
+  }
+  .fl-library-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+  .fl-library-favorites {
+    align-self: flex-start;
+  }
+  .fl-library-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-library-toolbar {
+    padding: 16px;
+  }
+  .fl-movement-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-movement-metadata {
+    gap: 14px 24px;
+  }
+  .fl-exercise-demo-caption {
+    padding: 16px;
+  }
+}

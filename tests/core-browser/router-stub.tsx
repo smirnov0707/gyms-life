@@ -2,6 +2,7 @@
 import type { AnchorHTMLAttributes, ComponentType, ReactNode } from "react";
 const screens: Record<string, string> = {
   "/app": "today",
+  "/exercises": "exercises",
   "/onboarding": "onboarding",
   "/training": "training",
   "/meal-plan": "meals",
@@ -15,7 +16,11 @@ function href(to: string, params: Record<string, unknown> = {}) {
     params[key] == null ? token : encodeURIComponent(String(params[key])),
   );
   const query = new URLSearchParams(location.search);
-  query.set("screen", screens[resolved] ?? "outside");
+  query.set(
+    "screen",
+    resolved.startsWith("/exercises/") ? "movement" : (screens[resolved] ?? "outside"),
+  );
+  if (params.slug != null) query.set("slug", String(params.slug));
   query.set("route", resolved);
   return `/index.html?${query}`;
 }
@@ -53,5 +58,8 @@ export const createFileRoute =
   () => (options: { component: ComponentType; [key: string]: unknown }) => ({
     options,
     useSearch: () => ({}),
-    useParams: () => ({ day: new URLSearchParams(location.search).get("day") ?? "1" }),
+    useParams: () => ({
+      day: new URLSearchParams(location.search).get("day") ?? "1",
+      slug: new URLSearchParams(location.search).get("slug") ?? "bench-press",
+    }),
   });

@@ -1,4 +1,6 @@
 import "./offline-fixture";
+import { Route as ExercisesRoute } from "@/routes/exercises.index";
+import { Route as MovementRoute } from "@/routes/exercises.$slug";
 import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
 import { Route as ReadinessRoute } from "@/routes/_authenticated/readiness";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
@@ -30,6 +32,8 @@ Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
   const routes = {
+    exercises: ExercisesRoute.options.component,
+    movement: MovementRoute.options.component,
     readiness: ReadinessRoute.options.component,
     profile: ProfileRoute.options.component,
     meals: MealRoute.options.component,
@@ -61,7 +65,9 @@ createRoot(document.getElementById("root")!).render(
             <aside data-testid="synthetic-watermark" style={{ padding: 12, fontSize: 12 }}>
               SYNTHETIC TEST FIXTURE — NOT USER DATA
             </aside>
-            {query.get("shell") === "1" ? (
+            {["exercises", "movement"].includes(query.get("screen") ?? "") ? (
+              <Panel />
+            ) : query.get("shell") === "1" ? (
               <AppShell>
                 <Panel />
               </AppShell>

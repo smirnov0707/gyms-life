@@ -225,3 +225,8 @@ export {
 } from "./profile-functions";
 
 export { submitCheckin } from "./readiness-functions";
+
+export async function smartExerciseFilter({ data }: { data: { prompt: string } }) {
+  count("smartExerciseFilter");
+  return { group: "all", equipment: "all", level: "all", safety: "all", query: data.prompt };
+}
