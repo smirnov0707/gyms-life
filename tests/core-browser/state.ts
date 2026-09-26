@@ -14,6 +14,14 @@ export type FoodRow = {
   source: string;
   note: string | null;
 };
+export type ReadinessRow = {
+  id: string;
+  user_id: string;
+  checkin_on: string;
+  readiness_score: number | null;
+  load_modifier: number | null;
+  advice: string | null;
+};
 export type MealRow = {
   id: string;
   user_id: string;
@@ -32,6 +40,7 @@ export const state: {
   profile: typeof profile;
   meal: MealRow | null;
   foods: FoodRow[];
+  checkin: ReadinessRow | null;
   active: boolean;
   plan: typeof trainingPlan;
   fail: string | null;
@@ -50,6 +59,17 @@ export const state: {
   };
 } = {
   profile: structuredClone(profile),
+  checkin:
+    scenario === "empty"
+      ? null
+      : {
+          id: "66666666-6666-4666-8666-666666666666",
+          user_id: USER,
+          checkin_on: dayInTimeZone(new Date(), browserTimeZone()),
+          readiness_score: scenario === "missing-readiness" ? null : 72,
+          load_modifier: scenario === "missing-readiness" ? null : 1,
+          advice: "Synthetic saved check-in advice.",
+        },
   meal:
     scenario === "empty"
       ? null

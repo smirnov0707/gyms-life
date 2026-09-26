@@ -7,6 +7,8 @@ const screens: Record<string, string> = {
   "/meal-plan": "meals",
   "/nutrition": "nutrition",
   "/me": "profile",
+  "/readiness": "readiness",
+  "/workout/1": "workout",
 };
 function href(to: string, params: Record<string, unknown> = {}) {
   const resolved = to.replace(/\$([A-Za-z0-9_]+)/g, (token, key) =>

@@ -1,3 +1,4 @@
+import { verifySessionDesign } from "./test-core-session-design.mjs";
 import { verifyCoreDesign } from "./test-core-design.mjs";
 import { verifyFoundationMerge } from "./test-foundation-browser.mjs";
 import { verifyAiUi } from "./test-ai-ui-browser.mjs";
@@ -251,6 +252,7 @@ try {
         }
   }
   await verifyCoreDesign({ open, record, artifacts });
+  await verifySessionDesign({ open, record, artifacts });
   expect(errors).toEqual([]);
 } finally {
   await writeFile(

@@ -1,5 +1,5 @@
 // Synthetic in-memory Supabase adapter. No network or real account access.
-import { state, count, persist } from "./state";
+import { state, count, persist, delay } from "./state";
 class Query {
   private filters: Record<string, unknown> = {};
   private start = 0;
@@ -39,34 +39,43 @@ class Query {
   }
   private async execute() {
     count("read:" + this.table);
+    if (this.table === "daily_checkins") {
+      state.last["read:daily_checkins"] = { ...this.filters };
+      while (state.fail === "readiness-pending") await delay();
+    }
     const failed =
+      (this.table === "daily_checkins" && state.fail === "readiness") ||
       (this.table === "nutrition_logs" && state.fail === "food") ||
       (this.table === "profiles" && state.fail === "profile") ||
       (this.table === "meal_plans" && state.fail === "meals");
     if (failed)
       return { data: null, error: { message: "Synthetic unavailable source" }, count: null };
     const rows =
-      this.table === "profiles"
-        ? [state.profile]
-        : this.table === "meal_plans"
-          ? state.meal
-            ? [{ ...state.meal, ...state.meal.data }]
-            : []
-          : this.table === "plans"
-            ? [
-                {
-                  id: "22222222-2222-4222-8222-222222222222",
-                  user_id: state.profile.id,
-                  title: state.plan.title,
-                  weeks: 8,
-                  days_per_week: 3,
-                  created_at: "2026-09-09T12:00:00Z",
-                  is_active: state.active,
-                },
-              ]
-            : this.table === "nutrition_logs"
-              ? state.foods
-              : null;
+      this.table === "daily_checkins"
+        ? state.checkin
+          ? [state.checkin]
+          : []
+        : this.table === "profiles"
+          ? [state.profile]
+          : this.table === "meal_plans"
+            ? state.meal
+              ? [{ ...state.meal, ...state.meal.data }]
+              : []
+            : this.table === "plans"
+              ? [
+                  {
+                    id: "22222222-2222-4222-8222-222222222222",
+                    user_id: state.profile.id,
+                    title: state.plan.title,
+                    weeks: 8,
+                    days_per_week: 3,
+                    created_at: "2026-09-09T12:00:00Z",
+                    is_active: state.active,
+                  },
+                ]
+              : this.table === "nutrition_logs"
+                ? state.foods
+                : null;
     if (rows === null) throw new Error("Unexpected fixture table: " + this.table);
     const matches = rows.filter((row) =>
       Object.entries(this.filters).every(

@@ -1,5 +1,6 @@
 import "./offline-fixture";
 import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
+import { Route as ReadinessRoute } from "@/routes/_authenticated/readiness";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";
 /* eslint-disable react-refresh/only-export-components -- isolated executable fixture */
@@ -29,6 +30,7 @@ Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
   const routes = {
+    readiness: ReadinessRoute.options.component,
     profile: ProfileRoute.options.component,
     meals: MealRoute.options.component,
     nutrition: NutritionRoute.options.component,
