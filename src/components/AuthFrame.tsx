@@ -7,7 +7,6 @@ import {
   MessageCircle,
   Eye,
   EyeOff,
-  ArrowLeft,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Logo, LangSwitch } from "./Brand";
@@ -103,7 +102,6 @@ export function AuthFrame({
           </div>
           {children}
           <Link to="/" className="fl-auth-home">
-            <ArrowLeft aria-hidden="true" />
             {t("rt.backToHome")}
           </Link>
         </section>

@@ -396,3 +396,18 @@
     font-size: 34px;
   }
 }
+
+.fl-auth-header .fl-brand-mark {
+  width: 36px;
+  height: 36px;
+}
+.fl-auth-header .fl-language-switch {
+  border-radius: 14px;
+}
+.fl-auth-header .fl-language-switch button {
+  border-radius: 10px;
+  font-size: 10px;
+}
+.fl-auth .ui-button:not(.ui-button-primary) {
+  background: var(--surface);
+}

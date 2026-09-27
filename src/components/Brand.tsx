@@ -1,3 +1,4 @@
+import "./brand.css";
 import React, { useId } from "react";
 import { Link } from "@tanstack/react-router";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";

@@ -43,6 +43,13 @@ export async function reviewAuthDesign({ open, record, output, engine }) {
         const { page, context } = await open(`${state.query}&theme=${theme}`, width);
         await expect(page.locator("html")).toHaveClass(new RegExp(theme));
         await expect(page.locator("h1")).toBeVisible();
+        const mark = await page.locator(".fl-brand-mark").boundingBox();
+        expect(mark.width).toBe(36);
+        expect(mark.height).toBe(36);
+        if (width === 390 && state.name === "signin") {
+          const primary = await submit(page).boundingBox();
+          expect(primary.y + primary.height).toBeLessThan(844);
+        }
         if (state.action) await state.action(page);
         if (state.name === "reset") await expect(page.locator("#pw")).toBeVisible();
         if (state.name === "expired")
@@ -65,7 +72,11 @@ export async function reviewAuthDesign({ open, record, output, engine }) {
         // Keep captures clear of transient notifications; the persistent inline status is asserted above.
         await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 10000 });
         const name = `auth-${state.name}-${theme}-${width}.png`;
-        const buffer = await page.screenshot({ path: path.join(output, name), fullPage: true });
+        const buffer = await page.screenshot({
+          path: path.join(output, name),
+          fullPage: true,
+          animations: "disabled",
+        });
         const capture = {
           name,
           state: state.name,

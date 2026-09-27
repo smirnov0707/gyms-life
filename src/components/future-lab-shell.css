@@ -31,40 +31,6 @@
   gap: 22px;
   padding: 0 18px;
 }
-.fl-brand {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 9px;
-  color: var(--foreground, #edf0fa);
-  text-decoration: none;
-}
-.fl-brand-mark {
-  width: 33px;
-  height: 33px;
-  filter: drop-shadow(0 0 8px rgb(123 78 232 / 18%));
-}
-.fl-brand-mark-frame {
-  fill: rgb(113 68 207 / 8%);
-  stroke: rgb(151 120 225 / 20%);
-}
-.fl-brand-wordmark {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.fl-brand-wordmark > span {
-  font-size: 17px;
-  font-weight: 650;
-  letter-spacing: 0.035em;
-  line-height: 1;
-}
-.fl-brand-wordmark small {
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  line-height: 1;
-}
 .fl-desktop-navigation {
   display: flex;
   gap: 6px;
@@ -122,32 +88,6 @@
 .fl-shell-icon-button:hover {
   color: var(--foreground);
   border-color: var(--primary);
-}
-.fl-language-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface);
-}
-.fl-language-switch button {
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0 5px;
-  border-radius: 4px;
-  color: var(--muted-foreground);
-  font-size: 9px;
-  font-weight: 650;
-  cursor: pointer;
-}
-.fl-language-switch button[aria-pressed="true"] {
-  color: var(--primary);
-  background: var(--primary-dim);
-}
-.fl-language-switch button:hover {
-  color: var(--foreground);
 }
 .fl-night-status {
   position: relative;
