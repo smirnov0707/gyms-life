@@ -6,6 +6,7 @@
 @import "./context-workspaces.css";
 @import "./auth-workspace.css";
 @import "./public-workspace.css";
+@import "./landing-workspace.css";
 
 @custom-variant dark (&:is(.dark *));
 

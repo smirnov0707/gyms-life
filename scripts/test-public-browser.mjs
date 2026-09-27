@@ -16,6 +16,8 @@ const server = await createServer({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [
+      { find: "@/components/AppShell", replacement: dir("app.tsx") },
+      { find: "@/components/Overview", replacement: dir("app.tsx") },
       ...[
         "@/lib/auth",
         "@/lib/access",
@@ -40,6 +42,9 @@ const server = await createServer({
       "lucide-react",
       "sonner",
       "@radix-ui/react-slider",
+      "three",
+      "three/examples/jsm/loaders/GLTFLoader.js",
+      "three/addons/controls/OrbitControls.js",
     ],
   },
   server: { host: "127.0.0.1", port: 0, strictPort: true, fs: { allow: [root] } },
@@ -58,14 +63,26 @@ try {
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
   const engine = process.env.CORE_BROWSER_ENGINE ?? "chromium";
   if (!["chromium", "webkit"].includes(engine)) throw new Error("Unknown browser engine");
-  browser = await (engine === "webkit" ? webkit : chromium).launch();
-  const open = async (query = "", width = 390) => {
+  browser = await (engine === "webkit" ? webkit : chromium).launch(
+    engine === "chromium"
+      ? { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] }
+      : {},
+  );
+  const open = async (query = "", width = 390, block3D = engine === "webkit") => {
     const context = await browser.newContext({
       viewport: { width, height: 900 },
       reducedMotion: "reduce",
     });
     const page = await context.newPage();
     page.on("pageerror", (error) => errors.push(String(error)));
+    if (block3D)
+      await page.addInitScript(() => {
+        const original = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+          if (String(type).includes("webgl")) return null;
+          return original.call(this, type, ...args);
+        };
+      });
     await page.goto(`${origin}/index.html?${query}`);
     await expect(page.getByTestId("synthetic-public")).toBeVisible();
     await expect(page.locator("h1")).toBeVisible();
@@ -73,6 +90,8 @@ try {
     return { page, context };
   };
   const states = [
+    { name: "home", query: "screen=home" },
+    { name: "home-lt", query: "screen=home&lang=lt" },
     { name: "beta", query: "" },
     { name: "plans", query: "billing=yes" },
     { name: "subscription", query: "billing=yes&user=yes&access=cancelled" },
@@ -86,6 +105,18 @@ try {
     for (const theme of ["dark", "light"])
       for (const width of [1440, 390]) {
         const { page, context } = await open(`${state.query}&theme=${theme}`, width);
+        if (state.name.startsWith("home") && engine === "chromium") {
+          await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
+          await expect(page.locator("canvas")).toHaveAttribute(
+            "data-twin-asset-sha256",
+            "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
+          );
+          await expect
+            .poll(async () => Number(await page.locator("canvas").getAttribute("data-twin-frames")))
+            .toBeGreaterThan(0);
+        }
+        if (state.name.startsWith("home") && engine === "webkit")
+          await expect(page.locator("[data-twin-stage='2d']")).toBeVisible({ timeout: 45000 });
         if (state.name === "subscription")
           await expect(page.getByRole("button", { name: "Resume subscription" })).toBeVisible();
         if (state.name === "unavailable")
@@ -325,6 +356,82 @@ try {
     await context.close();
     record("skip navigation, keyboard preferences and persistence work on public pages");
   }
+
+  for (const lang of ["en", "lt", "de", "fr", "es", "pl", "ru", "uk"]) {
+    const { page, context } = await open(`screen=home&lang=${lang}`, 320);
+    const lt = lang === "lt";
+    await expect(page.locator("h1")).toContainText(lt ? "Stipresnis tu." : "A stronger you.");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await expect(page.locator('.fl-landing a[href="/auth?mode=up"]')).toHaveCount(3);
+    await expect(page.locator('.fl-landing a[href="/exercises"]')).toHaveCount(1);
+    await expect(page.locator('.fl-landing a[href="/pricing"]')).toHaveCount(1);
+    const question = page.locator(".fl-landing-faq summary").first();
+    await question.press("Enter");
+    await expect(page.locator(".fl-landing-faq details").first()).toHaveAttribute("open", "");
+    await question.press("Enter");
+    await expect(page.locator(".fl-landing-faq details").first()).not.toHaveAttribute("open");
+    await page.locator('a[href="#experience"]').press("Enter");
+    await expect(page.locator("#experience-title")).toBeInViewport();
+    expect(await page.evaluate(() => window.__publicTest.calls)).toEqual([]);
+    await expect(page.locator("video")).toHaveCount(0);
+    await context.close();
+    record(
+      `${lang} landing 320px: copy, registration/library/pricing links, keyboard FAQ and section navigation`,
+    );
+  }
+  {
+    const { page, context } = await open("screen=home", 390);
+    if (engine === "chromium")
+      await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
+    else
+      await expect(page.getByRole("button", { name: "Try 3D again" })).toBeVisible({
+        timeout: 45000,
+      });
+    const region = page.getByRole("combobox", { name: "Inspect a region" });
+    await region.selectOption("back");
+    await expect(page.locator(".fl-landing-region strong")).toHaveText("Back");
+    await expect(page.locator(".fl-landing-region")).toContainText("no personal data");
+    await page.getByRole("button", { name: "View controls", exact: true }).click();
+    await page.getByRole("button", { name: "2D", exact: true }).click();
+    await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible();
+    if (engine === "chromium") {
+      await page.getByRole("button", { name: "3D", exact: true }).click();
+      await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
+    }
+    await page.getByRole("button", { name: "View controls", exact: true }).press("Enter");
+    expect(await page.evaluate(() => window.__publicTest.calls)).toEqual([]);
+    await context.close();
+    record(
+      engine === "chromium"
+        ? "landing selected Twin region, 2D/3D controls without personal data or writes"
+        : "landing WebKit no-WebGL region and 2D controls without personal data or writes",
+    );
+  }
+  {
+    const { page, context } = await open("screen=home", 390, true);
+    await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible({ timeout: 45000 });
+    await expect(page.getByRole("button", { name: "Try 3D again" })).toBeVisible({
+      timeout: 45000,
+    });
+    await page.getByRole("combobox", { name: "Inspect a region" }).selectOption("legs");
+    await expect(page.locator(".fl-landing-region strong")).toHaveText("Legs");
+    await expect(page.locator('.fl-landing a[href="/auth?mode=up"]').first()).toBeVisible();
+    await context.close();
+    record("unavailable WebGL retains an honest interactive 2D fallback and registration");
+  }
+  {
+    const { page, context } = await open("screen=home&user=yes");
+    await expect(page.getByTestId("signed-in-shell")).toBeVisible();
+    await expect(page.locator("h1")).toHaveText("Signed-in Today");
+    await expect(page.locator(".fl-landing")).toHaveCount(0);
+    await expect(page.locator("canvas")).toHaveCount(0);
+    expect(await page.evaluate(() => window.__publicTest.calls)).toEqual([]);
+    await context.close();
+    record("signed-in root retains Today and does not mount the public anatomy demo");
+  }
+
   expect(errors).toEqual([]);
 } finally {
   await writeFile(

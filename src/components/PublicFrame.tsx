@@ -5,7 +5,7 @@ import { Logo, LangSwitch } from "./Brand";
 import { ThemeToggle } from "./ThemeToggle";
 import { baseLang, useI18n } from "@/lib/i18n";
 
-type PublicPage = "pricing" | "privacy" | "terms" | "refund";
+type PublicPage = "home" | "pricing" | "privacy" | "terms" | "refund";
 
 export function PublicFrame({
   children,
@@ -73,7 +73,7 @@ export function LegalFrame({
   headings,
   children,
 }: {
-  page: Exclude<PublicPage, "pricing">;
+  page: Exclude<PublicPage, "pricing" | "home">;
   title: string;
   updated: string;
   headings: string[];

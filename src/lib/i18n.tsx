@@ -115,13 +115,7 @@ const baseDict = {
     lt: "Skaidri tavo validuotų duomenų suvestinė",
     en: "A transparent summary of your validated data",
   },
-  "nav.exercises": { lt: "Pratimai", en: "Exercises" },
-  "nav.progress": { lt: "Progresas", en: "Progress" },
   "nav.coach": { lt: "Intelligence", en: "Intelligence" },
-
-  "landing.tag": { lt: "Asmeninė treniruočių sistema", en: "Your personal training system" },
-  "landing.cta": { lt: "Sukurti planą", en: "Build my plan" },
-  "landing.login": { lt: "Prisijungti", en: "Sign in" },
   "theme.label": { lt: "Tema", en: "Theme" },
   "theme.light": { lt: "Šviesi", en: "Light" },
   "theme.dark": { lt: "Tamsi", en: "Dark" },
@@ -141,68 +135,10 @@ const baseDict = {
     lt: "Nematau tavęs — atsitrauk nuo kameros",
     en: "I can\u2019t see you — step back from the camera",
   },
-  "landing.h1a": { lt: "Tavo AI treneris.", en: "Your AI coach." },
-  "landing.h1b": { lt: "Tavo planas.", en: "Your plan." },
-  "landing.h1c": { lt: "Tavo progresas.", en: "Your progress." },
-  "landing.sub2": {
-    lt: "GYMS.LIFE sukuria ir kiekvieną treniruotę pritaiko pagal tavo tikslą, kūną, laiką, patirtį ir turimą įrangą.",
-    en: "GYMS.LIFE builds your plan and adapts every session to your goal, body, time, experience and available equipment.",
-  },
-  "landing.ticker": {
-    lt: "DISCIPLINA > MOTYVACIJA ·",
-    en: "DISCIPLINE > MOTIVATION ·",
-  },
-  "landing.s1v": { lt: "175+", en: "175+" },
-  "landing.s1l": { lt: "pratimų su technikos video", en: "exercises with technique video" },
-  "landing.s2v": { lt: "60 s", en: "60 s" },
-  "landing.s2l": { lt: "iki pirmo plano", en: "to your first plan" },
-  "landing.s3v": { lt: "24/7", en: "24/7" },
-  "landing.s3l": { lt: "treneris tavo kišenėje", en: "coach in your pocket" },
-  "landing.s4v": { lt: "12 sav.", en: "12 wks" },
-  "landing.s4l": { lt: "progreso sistema", en: "progression system" },
-  "landing.bandSub": {
-    lt: "Pirmas planas sugeneruojamas per 60 sekundžių — tereikia atsakyti į kelis klausimus.",
-    en: "Your first plan is generated in 60 seconds — just answer a few questions.",
-  },
-  "landing.ctaNow": { lt: "Sukurti mano planą nemokamai", en: "Build my plan free" },
-  "landing.trialNote": {
-    lt: "7 dienos nemokamai · kortelės nereikia · atšaukti bet kada",
-    en: "7 days free · no card required · cancel anytime",
-  },
-  "landing.demo": { lt: "Žiūrėti pratimus", en: "See the exercises" },
-  "landing.myPlan": { lt: "Apžvalga", en: "Dashboard" },
-  "landing.hasPlanTitle": { lt: "Jau turi aktyvų planą", en: "You already have an active plan" },
-  "landing.hasPlanDesc": {
-    lt: "Tavo treniruočių planas jau sugeneruotas. Nori pereiti prie jo ar sugeneruoti visiškai naują?",
-    en: "Your workout plan is already generated. Do you want to go to it or generate a brand new one?",
-  },
-  "landing.goToPlan": { lt: "Eiti į mano planą", en: "Go to my plan" },
-  "landing.newPlan": { lt: "Generuoti naują", en: "Generate new" },
   "landing.cmd.bodyMetrics": { lt: "Kūno rodikliai", en: "Body metrics" },
 
   "bm.weight": { lt: "Svoris", en: "Weight" },
   "bm.bodyFat": { lt: "Kūno riebalai", en: "Body fat" },
-
-  "landing.f1.t": { lt: "Tikslo anketa", en: "Goal intake" },
-  "landing.f1.d": {
-    lt: "Patirtis, įranga, laikas, traumos — planas kuriamas tik pagal tavo realybę.",
-    en: "Experience, equipment, time, injuries — the plan is built around your reality.",
-  },
-  "landing.f2.t": { lt: "Vaizdo technika", en: "Video technique" },
-  "landing.f2.d": {
-    lt: "Kiekvienas pratimas su demonstracija, technikos žingsniais ir dažniausiomis klaidomis.",
-    en: "Every exercise with a demo clip, step-by-step cues and the most common mistakes.",
-  },
-  "landing.f3.t": { lt: "Protingas progresas", en: "Smart progression" },
-  "landing.f3.d": {
-    lt: "Sistema seka tūrį, asmeninius rekordus ir siūlo kitos treniruotės svorius.",
-    en: "Tracks volume and personal records, then suggests next session's weights.",
-  },
-  "landing.f4.t": { lt: "Treniruotės režimas", en: "Live workout mode" },
-  "landing.f4.d": {
-    lt: "Serijų žymėjimas, poilsio laikmatis ir tūrio skaičiavimas realiu laiku.",
-    en: "Set logging, rest timer and live volume counting.",
-  },
 
   "auth.title": { lt: "Sveikas sugrįžęs", en: "Welcome back" },
   "auth.email": { lt: "El. paštas", en: "Email" },
@@ -339,10 +275,6 @@ const baseDict = {
   "coach.cleared": { lt: "Istorija išvalyta", en: "History cleared" },
 
   "rd.title": { lt: "Paros pasiruošimas", en: "Daily readiness" },
-  "rd.sub": {
-    lt: "30 sekundžių patikra — sistema perskaičiuoja šiandienos krūvį pagal tavo miegą, raumenų skausmą ir stresą.",
-    en: "A 30-second check-in — the system recalculates today's load from your sleep, soreness and stress.",
-  },
   "rd.sleepHours": { lt: "Miego valandos", en: "Hours of sleep" },
   "rd.sleepQuality": { lt: "Miego kokybė", en: "Sleep quality" },
   "rd.soreness": { lt: "Raumenų skausmas", en: "Muscle soreness" },
@@ -371,12 +303,6 @@ const baseDict = {
   "fc.historyReadFailed": {
     lt: "Nepavyko nuskaityti ankstesnių analizių.",
     en: "Could not read your previous scans.",
-  },
-
-  "nav.nutrition": { lt: "Mityba", en: "Nutrition" },
-  "nut.sub": {
-    lt: "Parašyk paprastai, ką suvalgei — kalorijos ir makro elementai suskaičiuojami už tave, o dienos tikslai atsinaujina patys.",
-    en: "Describe what you ate in plain words — calories and macros are counted for you, and your daily targets update on their own.",
   },
   "nut.ph": {
     lt: "Pvz.: 2 kiaušiniai, avižinė košė su bananu ir kava su pienu",
@@ -427,9 +353,6 @@ const baseDict = {
   "ach.b8d": { lt: "7 paros pasiruošimo patikros", en: "7 readiness check-ins" },
 
   "common.loading": { lt: "Kraunama...", en: "Loading..." },
-
-  /* ---------- 7-day meal plan ---------- */
-  "nav.meal": { lt: "Mitybos planas", en: "Meal plan" },
   "mp.title": { lt: "7 dienų mitybos planas", en: "7-day meal plan" },
   "mp.sub": {
     lt: "Pagal tavo svorį, tikslą ir mėgstamą maistą sudėliosime savaitės valgiaraštį su receptais ir vienu parduotuvės sąrašu.",
@@ -487,15 +410,6 @@ const baseDict = {
   "mp.hydration": { lt: "Skysčiai", en: "Hydration" },
   "mp.tips": { lt: "Paruošimo patarimai", en: "Prep tips" },
   "mp.none": { lt: "Dar neturi mitybos plano.", en: "You don't have a meal plan yet." },
-
-  /* ---------- health sync ---------- */
-
-  /* ---------- AR mode ---------- */
-  "nav.ar": { lt: "Judesys", en: "Movement" },
-  "ar.sub": {
-    lt: "Kamera realiu laiku seka tavo skeletą, ant vaizdo piešia tikslinius sąnarių kampus ir korekcijos rodykles bei skaičiuoja pakartojimus.",
-    en: "The camera tracks your skeleton in real time, draws target joint angles and correction arrows over the video and counts your reps.",
-  },
   "ar.start": { lt: "Įjungti AR", en: "Start AR" },
   "ar.loading": { lt: "Kraunamas modelis...", en: "Loading model..." },
   "ar.failed": { lt: "Nepavyko paleisti AR režimo.", en: "Could not start AR mode." },
@@ -537,8 +451,6 @@ const baseDict = {
   "ar.voiceSelect": { lt: "Balsas", en: "Voice" },
   "ar.voiceDefault": { lt: "Sistemos balsas", en: "System voice" },
   "ar.rate": { lt: "Kalbos greitis", en: "Speech rate" },
-
-  "nav.reminders": { lt: "Priminimai", en: "Reminders" },
   "rem.title": { lt: "Priminimai", en: "Reminders" },
   "rem.sub": {
     lt: "Vanduo, valgymai ir treniruotė — priminimai veikia tiesiai programoje, pasirinktu laiku.",
@@ -574,12 +486,6 @@ const baseDict = {
 
   "common.error": { lt: "Įvyko klaida", en: "Something went wrong" },
   "common.kg": { lt: "kg", en: "kg" },
-
-  "nav.supplements": { lt: "Papildai", en: "Supplements" },
-  "supp.sub": {
-    lt: "Pridėk vartojamus papildus — sistema juos paskirstys dienos metu pagal įsisavinimą, sąveiką ir treniruotės laiką.",
-    en: "Add the supplements you take — the system spreads them across the day by absorption, interactions and training time.",
-  },
   "supp.add": { lt: "Pridėti papildą", en: "Add supplement" },
   "supp.name": { lt: "Pavadinimas", en: "Name" },
   "supp.namePh": { lt: "pvz., Kreatinas", en: "e.g. Creatine" },
@@ -697,15 +603,6 @@ const baseDict = {
   "supp.paused": { lt: "Pristabdytas", en: "Paused" },
   "supp.active": { lt: "Aktyvus", en: "Active" },
   "supp.perDay": { lt: "per dieną", en: "per day" },
-
-  "footer.privacy": { lt: "Privatumo politika", en: "Privacy Policy" },
-  "footer.terms": { lt: "Naudojimo sąlygos", en: "Terms of Service" },
-  "footer.refund": { lt: "Grąžinimo politika", en: "Refund Policy" },
-  "footer.pricing": { lt: "Kainodara", en: "Pricing" },
-  "footer.copyright": {
-    lt: "© {year} GYMS.LIFE. Visos teisės saugomos. Pardavėjas: Aleksandr Smirnov.",
-    en: "© {year} GYMS.LIFE. All rights reserved. Seller: Aleksandr Smirnov.",
-  },
   "auth.forgot": { lt: "Pamiršai slaptažodį?", en: "Forgot your password?" },
   "auth.resetTitle": { lt: "Atkurk slaptažodį", en: "Reset your password" },
   "auth.resetHint": {
