@@ -251,8 +251,31 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
         delay: false,
         attachments: 0,
         source: null,
+        events: [],
       };
       window.__supplementCamera = camera;
+      // Retain native focus/activation evidence when a platform-specific reopen fails.
+      const surface = document.querySelector(".fl-supplement-tool");
+      for (const type of ["click", "keydown", "keyup", "focusin", "toggle"]) {
+        surface.addEventListener(
+          type,
+          (event) => {
+            camera.events.push({
+              type,
+              key: event.key,
+              target: event.target.tagName,
+              text: event.target.textContent?.trim().slice(0, 40),
+              open: surface.open,
+              disabled: event.target.disabled,
+              focus: document.activeElement?.textContent?.trim().slice(0, 40),
+              calls: camera.calls,
+            });
+            if (camera.events.length > 80) camera.events.shift();
+          },
+          true,
+        );
+      }
+
       // Simulate the entire media boundary. An empty native MediaStream is not a
       // portable fake video source, and this suite makes no hardware-playback claim.
       const video = document.querySelector(".fl-supplement-tool video");

@@ -21,6 +21,9 @@ export async function verifyTrendDesign({ open, record, artifacts }) {
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
     await noOverflow(page);
+    expect(
+      await page.locator(".fl-skip-link").evaluate((el) => getComputedStyle(el).clipPath),
+    ).toBe("inset(50%)");
     const png = await page.screenshot({
       path: path.join(artifacts, name + ".png"),
       fullPage: true,
@@ -100,6 +103,12 @@ export async function verifyTrendDesign({ open, record, artifacts }) {
       width: 320,
       height: 900,
     });
+    await page.keyboard.press("Tab");
+    const skip = page.locator(".fl-skip-link");
+    await expect(skip).toBeFocused();
+    expect(await skip.evaluate((el) => getComputedStyle(el).clipPath)).toBe("none");
+    await skip.press("Enter");
+    await expect(page.locator("#main-content")).toBeFocused();
     const toggle = panel(page).locator("h2 button");
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(await page.evaluate(() => window.__core.counts.getTwinTrendHistory ?? 0)).toBe(0);
