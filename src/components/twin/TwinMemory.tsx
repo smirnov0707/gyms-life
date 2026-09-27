@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { baseLang, useI18n } from "@/lib/i18n";
+import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
 import { useLabOverview } from "@/components/future-lab/lab-overview.query";
 import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
 import { EvidenceAcquisitionPrompt } from "@/components/intelligence/EvidenceAcquisitionPrompt";
@@ -16,296 +16,349 @@ import { evaluateTwinMemoryEvolutionSet } from "@/lib/twin-memory-evolution";
 import { selectEvidenceAcquisitionRecommendation } from "@/lib/evidence-acquisition";
 import { summarizeHypothesisStability } from "@/lib/hypothesis-stability";
 import { evaluateTwinLearningIntegrity } from "@/lib/twin-learning-integrity";
+import { TwinLedgerState } from "./TwinLedgerState";
+import "./TwinMemory.css";
 
-const STATEMENT = {
-  en: {
-    "athlete.hypothesis.trainingResponse.repeatedLowFeeling":
-      "Repeated difficult sessions may signal accumulating training fatigue.",
-    "athlete.hypothesis.trainingBehavior.usualDayFit":
-      "Your completed sessions are being compared with your usual training rhythm.",
+const STATEMENTS: Record<string, { en: string; lt: string }> = {
+  "athlete.hypothesis.trainingResponse.repeatedLowFeeling": {
+    en: "Repeated difficult sessions may signal accumulating training fatigue.",
+    lt: "Pasikartojančios sunkios treniruotės gali rodyti besikaupiantį treniruočių nuovargį.",
   },
-  lt: {
-    "athlete.hypothesis.trainingResponse.repeatedLowFeeling":
-      "Pasikartojančios sunkios treniruotės gali rodyti besikaupiantį treniruočių nuovargį.",
-    "athlete.hypothesis.trainingBehavior.usualDayFit":
-      "Atliktos treniruotės lyginamos su tavo įprastu treniruočių ritmu.",
+  "athlete.hypothesis.trainingBehavior.usualDayFit": {
+    en: "Your completed sessions are being compared with your usual training rhythm.",
+    lt: "Atliktos treniruotės lyginamos su tavo įprastu treniruočių ritmu.",
   },
-} as const;
+};
+const METRICS: Record<string, { en: string; lt: string }> = {
+  rated_sessions: { en: "Rated workouts", lt: "Įvertintos treniruotės" },
+  rated_sessions_28d: { en: "Rated workouts · 28 days", lt: "Įvertintos treniruotės · 28 d." },
+  recent_low_feeling_streak: {
+    en: "Difficult workouts in a row",
+    lt: "Sunkios treniruotės iš eilės",
+  },
+  usual_training_days_28d: {
+    en: "Usual training days · 28 days",
+    lt: "Įprastos treniruočių dienos · 28 d.",
+  },
+  usual_day_completion_rate_28d: {
+    en: "Completion on usual days",
+    lt: "Atlikta įprastomis dienomis",
+  },
+};
 
 export function TwinMemory() {
   const { lang } = useI18n();
-  const english = baseLang(lang) === "en";
+  const language = baseLang(lang);
+  const english = language === "en";
+  const number = new Intl.NumberFormat(formatLocale(lang), { maximumFractionDigits: 2 });
+  const date = new Intl.DateTimeFormat(formatLocale(lang), { dateStyle: "medium" });
   const query = useLabOverview();
-  const hypotheses = query.isError ? [] : (query.data?.hypotheses ?? []);
-  const evolution = query.data
-    ? evaluateTwinMemoryEvolutionSet(hypotheses, query.data.hypothesisHistory)
-    : [];
-  const meaningfulChanges = evolution
+  // Every derived surface shares the read state, including data-gap recommendations.
+  // Cached data remains in React Query after a failed refresh; it is not a successful read.
+  const data = query.isSuccess ? query.data : undefined;
+  const hypotheses = data?.hypotheses ?? [];
+  const evolution = data ? evaluateTwinMemoryEvolutionSet(hypotheses, data.hypothesisHistory) : [];
+  const changes = evolution
     .filter((item) => item.kind !== "unchanged" && item.kind !== "unknown")
     .sort((a, b) => (b.occurredAt ?? "").localeCompare(a.occurredAt ?? ""));
-  const hasUnknownBaseline = evolution.some((item) => item.kind === "unknown");
-  const nextEvidence = query.data
-    ? selectEvidenceAcquisitionRecommendation(hypotheses, query.data.dataGaps)
+  const nextEvidence = data
+    ? selectEvidenceAcquisitionRecommendation(hypotheses, data.dataGaps)
     : null;
-  const stability = query.data ? summarizeHypothesisStability(query.data.hypothesisHistory) : null;
-  const integrity = query.data
-    ? evaluateTwinLearningIntegrity(hypotheses, query.data.hypothesisHistory)
-    : null;
+  const stability = data ? summarizeHypothesisStability(data.hypothesisHistory) : null;
+  const integrity = data ? evaluateTwinLearningIntegrity(hypotheses, data.hypothesisHistory) : null;
+  const statement = (key: string) =>
+    STATEMENTS[key]?.[language] ??
+    (english ? "A personal pattern is under evaluation." : "Vertinamas asmeninis dėsningumas.");
   const labels = english
     ? {
-        supported: "Learned pattern",
+        supported: "Supported pattern",
         monitoring: "Still learning",
-        insufficient_evidence: "Not enough evidence",
-        contradicted: "Evidence contradicted",
+        insufficient_evidence: "More observations needed",
+        contradicted: "Conflicting evidence",
       }
     : {
-        supported: "Išmoktas dėsningumas",
+        supported: "Duomenimis pagrįsta",
         monitoring: "Vis dar mokomasi",
-        insufficient_evidence: "Įrodymų nepakanka",
-        contradicted: "Duomenys prieštarauja",
+        insufficient_evidence: "Reikia daugiau stebėjimų",
+        contradicted: "Prieštaringi duomenys",
       };
+  const sources = english
+    ? {
+        calculated: "Calculated from your records",
+        user_reported: "Reported by you",
+        measured: "Measured",
+      }
+    : {
+        calculated: "Apskaičiuota iš tavo įrašų",
+        user_reported: "Tavo pateikti duomenys",
+        measured: "Išmatuota",
+      };
+  const units: Record<string, string> = english
+    ? { sessions: "workouts", days: "days", ratio: "ratio" }
+    : { sessions: "trenir.", days: "d.", ratio: "santykis" };
   return (
-    <section
-      className="rounded-3xl border border-border bg-surface p-4 md:p-5"
-      aria-label="Twin Memory"
-    >
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
-            TWIN MEMORY
-          </p>
-          <h2 className="mt-1 text-lg font-semibold text-foreground">
-            {english ? "What GYMS.LIFE has learned about you" : "Ką GYMS.LIFE apie tave išmoko"}
-          </h2>
+    <section className="fl-twin-memory" aria-label="Twin Memory">
+      <header className="fl-ledger-heading">
+        <div className="fl-ledger-eyebrow">
+          <BrainCircuit aria-hidden="true" />
+          {english ? "Twin memory" : "Twin atmintis"}
         </div>
-        <BrainCircuit aria-hidden="true" className="size-5 text-violet-300" />
+        <h2>{english ? "Learning your rhythm." : "Pažinti tavo ritmą."}</h2>
+        <p>
+          {english
+            ? "Your observations, the patterns they support and what still needs time."
+            : "Tavo stebėjimai, jų pagrindžiami dėsningumai ir tai, kam dar reikia laiko."}
+        </p>
       </header>
-      {query.isLoading ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          {english ? "Reading longitudinal evidence…" : "Skaitomi ilgalaikiai įrodymai…"}
-        </p>
-      ) : null}
-      {query.isError ? (
-        <p role="alert" className="mt-3 text-xs text-muted-foreground">
-          {english
-            ? "Longitudinal evidence is unavailable. Nothing is inferred."
-            : "Ilgalaikiai įrodymai nepasiekiami. Nieko nespėjama."}
-        </p>
-      ) : null}
-      {!query.isLoading && !query.isError && hypotheses.length === 0 ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          {english
-            ? "No stable personal pattern is available yet."
-            : "Stabilaus asmeninio dėsningumo dar nėra."}
-        </p>
-      ) : null}
-
-      {!query.isLoading && !query.isError && hypotheses.length ? (
-        <div className="mt-4 rounded-2xl border border-violet-400/15 bg-violet-500/[0.04] p-3">
-          <div className="flex items-center justify-between gap-3">
+      {query.isPending ? (
+        <TwinLedgerState
+          state="loading"
+          title={english ? "Reading your observations…" : "Įkeliami tavo stebėjimai…"}
+        />
+      ) : query.isError ? (
+        <TwinLedgerState
+          state="error"
+          title={
+            english ? "Your observations could not be loaded" : "Nepavyko įkelti tavo stebėjimų"
+          }
+          description={
+            english
+              ? "Patterns and next steps will return after a successful refresh."
+              : "Dėsningumai ir kiti žingsniai bus rodomi sėkmingai atnaujinus duomenis."
+          }
+          onRetry={() => {
+            void query.refetch();
+          }}
+          retrying={query.isFetching}
+        />
+      ) : hypotheses.length === 0 ? (
+        <TwinLedgerState
+          state="empty"
+          title={
+            english
+              ? "No stable personal pattern is available yet."
+              : "Stabilaus asmeninio dėsningumo dar nėra."
+          }
+          description={
+            english
+              ? "Your recorded workouts and reflections help build this picture over time."
+              : "Užregistruotos treniruotės ir savijautos įvertinimai ilgainiui padės susidaryti vaizdą."
+          }
+        />
+      ) : (
+        <>
+          <div className="fl-memory-overview">
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-violet-300">
-                {english ? "LATEST LEARNED CHANGES" : "NAUJAUSI IŠMOKTI POKYČIAI"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <Sparkles aria-hidden="true" />
+              <h3>{english ? "A picture that grows with you" : "Pažinimas, kuris auga kartu"}</h3>
+              <p>
                 {english
-                  ? "Deterministic changes relative to the latest auditable memory anchor."
-                  : "Deterministiniai pokyčiai lyginant su naujausiu audituojamu atminties atskaitos tašku."}
+                  ? "These patterns describe your records. A supported pattern can still need further verification before it informs a decision."
+                  : "Šie dėsningumai apibūdina tavo įrašus. Net ir duomenimis pagrįstą dėsningumą gali reikėti papildomai patikrinti prieš naudojant sprendimui."}
               </p>
             </div>
-            <Sparkles aria-hidden="true" className="size-4 shrink-0 text-violet-300" />
+            <dl>
+              <div>
+                <dt>{english ? "Patterns followed" : "Stebimi dėsningumai"}</dt>
+                <dd>{number.format(hypotheses.length)}</dd>
+              </div>
+              <div>
+                <dt>{english ? "Eligible for decisions" : "Galima naudoti sprendimams"}</dt>
+                <dd>{number.format(integrity?.decisionEligible ?? 0)}</dd>
+              </div>
+            </dl>
           </div>
-
-          {meaningfulChanges.length ? (
-            <div className="mt-3 grid gap-2">
-              {meaningfulChanges.slice(0, 3).map((change) => {
-                const hypothesis = hypotheses.find((item) => item.id === change.hypothesisId);
-                if (!hypothesis) return null;
-                const copy = STATEMENT[english ? "en" : "lt"];
-                const statement =
-                  copy[hypothesis.statementKey as keyof typeof copy] ??
-                  (english ? "A personal pattern changed." : "Asmeninis dėsningumas pasikeitė.");
-                const meta = {
-                  new: {
-                    icon: Sparkles,
-                    label: english ? "New" : "Nauja",
-                    tone: "text-violet-300",
-                  },
-                  strengthened: {
-                    icon: ArrowUpRight,
-                    label: english ? "Strengthened" : "Sustiprėjo",
-                    tone: "text-emerald-300",
-                  },
-                  weakened: {
-                    icon: ArrowDownRight,
-                    label: english ? "Weakened" : "Susilpnėjo",
-                    tone: "text-amber-300",
-                  },
-                  contradicted: {
-                    icon: AlertTriangle,
-                    label: english ? "Contradicted" : "Paneigta",
-                    tone: "text-rose-300",
-                  },
-                  unchanged: {
-                    icon: CircleMinus,
-                    label: english ? "Unchanged" : "Nepakito",
-                    tone: "text-muted-foreground",
-                  },
-                  unknown: {
-                    icon: HelpCircle,
-                    label: english ? "Unknown" : "Nežinoma",
-                    tone: "text-muted-foreground",
-                  },
-                }[change.kind];
-                const Icon = meta.icon;
-                return (
-                  <div
-                    key={change.hypothesisId}
-                    className="rounded-xl border border-border/60 bg-background/20 p-3"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span
-                        className={`flex items-center gap-1.5 text-[10px] font-semibold ${meta.tone}`}
-                      >
-                        <Icon aria-hidden="true" className="size-3.5" />
-                        {meta.label}
-                      </span>
-                      {change.evidenceDelta !== null && change.evidenceDelta !== 0 ? (
-                        <span className="font-mono text-[9px] text-muted-foreground">
-                          {change.evidenceDelta > 0 ? "+" : ""}
-                          {change.evidenceDelta} evidence
+          <section
+            className="fl-memory-changes"
+            aria-label={english ? "Latest changes" : "Naujausi pokyčiai"}
+          >
+            <header>
+              <h3>{english ? "Latest changes" : "Naujausi pokyčiai"}</h3>
+              <p>
+                {english
+                  ? "Compared with the latest saved observation for each pattern."
+                  : "Palyginta su naujausiu išsaugotu kiekvieno dėsningumo stebėjimu."}
+              </p>
+            </header>
+            {changes.length ? (
+              <div className="fl-memory-change-grid">
+                {changes.slice(0, 3).map((change) => {
+                  const hypothesis = hypotheses.find((item) => item.id === change.hypothesisId);
+                  if (!hypothesis) return null;
+                  const meta = {
+                    new: { icon: Sparkles, label: english ? "New" : "Nauja" },
+                    strengthened: {
+                      icon: ArrowUpRight,
+                      label: english ? "Strengthened" : "Sustiprėjo",
+                    },
+                    weakened: { icon: ArrowDownRight, label: english ? "Weakened" : "Susilpnėjo" },
+                    contradicted: {
+                      icon: AlertTriangle,
+                      label: english ? "Contradicted" : "Prieštarauja",
+                    },
+                    unchanged: { icon: CircleMinus, label: english ? "Unchanged" : "Nepakito" },
+                    unknown: { icon: HelpCircle, label: english ? "Unknown" : "Nežinoma" },
+                  }[change.kind];
+                  const Icon = meta.icon;
+                  return (
+                    <article key={change.hypothesisId} data-change={change.kind}>
+                      <div className="fl-memory-change-label">
+                        <span>
+                          <Icon aria-hidden="true" />
+                          {meta.label}
                         </span>
+                        {change.evidenceDelta !== null && change.evidenceDelta !== 0 ? (
+                          <small>
+                            {english ? "Observation change" : "Stebėjimų pokytis"}:{" "}
+                            {change.evidenceDelta > 0 ? "+" : ""}
+                            {number.format(change.evidenceDelta)}
+                          </small>
+                        ) : null}
+                      </div>
+                      <p>{statement(hypothesis.statementKey)}</p>
+                      {change.occurredAt ? (
+                        <footer>
+                          {english ? "Compared with" : "Palyginta su"}{" "}
+                          <time dateTime={change.occurredAt}>
+                            {date.format(new Date(change.occurredAt))}
+                          </time>
+                        </footer>
                       ) : null}
-                    </div>
-                    <p className="mt-2 text-xs leading-relaxed text-foreground">{statement}</p>
-                    <p className="mt-2 text-[9px] text-muted-foreground">
-                      {english ? "Comparison anchor" : "Palyginimo atskaitos taškas"}:{" "}
-                      {change.source}
-                      {change.athleteStateSnapshotId
-                        ? ` · ${change.athleteStateSnapshotId.slice(0, 8)}…`
-                        : ""}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="mt-3 text-xs text-muted-foreground">
-              {hasUnknownBaseline
-                ? english
-                  ? "A prior auditable baseline is not available yet, so change is not inferred."
-                  : "Ankstesnio audituojamo atskaitos taško dar nėra, todėl pokytis nespėjamas."
-                : english
-                  ? "No material memory change is detected from the latest comparison anchor."
-                  : "Nuo naujausio palyginimo taško reikšmingo atminties pokyčio neaptikta."}
-            </p>
-          )}
-        </div>
-      ) : null}
-
-      {nextEvidence ? (
-        <EvidenceAcquisitionPrompt recommendation={nextEvidence} english={english} />
-      ) : null}
-
-      {hypotheses.length ? (
-        <div className="mt-4 grid gap-2">
-          {hypotheses.slice(0, 4).map((hypothesis) => {
-            const copy = STATEMENT[english ? "en" : "lt"];
-            const statement =
-              copy[hypothesis.statementKey as keyof typeof copy] ??
-              (english
-                ? "A personal pattern is under evaluation."
-                : "Vertinamas asmeninis dėsningumas.");
-            const historyStability = stability?.hypotheses.find(
-              (item) => item.hypothesisId === hypothesis.id,
-            );
-            const auditIntegrity = integrity?.items.find(
-              (item) => item.hypothesisId === hypothesis.id,
-            );
-            return (
-              <article
-                key={hypothesis.id}
-                className="rounded-2xl border border-border/70 bg-surface-2/50 p-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[10px] font-medium text-foreground">
-                    {labels[hypothesis.status]}
-                  </span>
-                  <span className="text-[9px] text-muted-foreground">
-                    {hypothesis.evidenceCount}/{hypothesis.minimumEvidenceCount} evidence
-                  </span>
-                </div>
-                <p className="mt-2 text-xs leading-relaxed text-foreground">{statement}</p>
-                <p className="mt-2 flex items-center gap-1.5 text-[9px] text-muted-foreground">
-                  <ShieldCheck aria-hidden="true" className="size-3 text-violet-300" />
-                  {english ? "Decision eligibility" : "Tinkamumas sprendimams"}:{" "}
-                  {auditIntegrity?.decisionAuthority
-                    ? english
-                      ? "allowed · audit verified"
-                      : "leidžiama · auditas patvirtintas"
-                    : english
-                      ? "not allowed"
-                      : "neleidžiama"}
-                </p>
-                {auditIntegrity ? (
-                  <p
-                    className={`mt-1 text-[9px] ${auditIntegrity.status === "drift" ? "text-rose-300" : "text-muted-foreground"}`}
-                  >
-                    {auditIntegrity.status === "verified"
-                      ? english
-                        ? "Audit integrity · verified"
-                        : "Audito vientisumas · patvirtintas"
-                      : auditIntegrity.status === "unanchored"
-                        ? english
-                          ? "Audit integrity · no historical anchor yet"
-                          : "Audito vientisumas · istorinio atskaitos taško dar nėra"
-                        : english
-                          ? `Audit integrity · drift (${auditIntegrity.ledgerStatus ?? "unknown"} → ${auditIntegrity.currentStatus})`
-                          : `Audito vientisumas · neatitikimas (${auditIntegrity.ledgerStatus ?? "nežinoma"} → ${auditIntegrity.currentStatus})`}
-                  </p>
-                ) : null}
-                {historyStability && historyStability.transitions > 1 ? (
-                  <p className="mt-1 text-[9px] text-muted-foreground">
-                    {historyStability.reversals > 0
-                      ? english
-                        ? `History unstable · ${historyStability.reversals} reversal${historyStability.reversals === 1 ? "" : "s"}`
-                        : `Istorija nestabili · apsivertimų: ${historyStability.reversals}`
-                      : english
-                        ? `History changed · ${historyStability.transitions} transitions`
-                        : `Istorija keitėsi · perėjimų: ${historyStability.transitions}`}
-                  </p>
-                ) : null}
-                <WhyThisDisclosure
-                  summary={english ? "Why this? · Evidence" : "Kodėl taip? · Įrodymai"}
-                  className="mt-3 bg-background/20"
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="fl-memory-no-change">
+                {evolution.some((item) => item.kind === "unknown")
+                  ? english
+                    ? "There is no earlier saved observation to compare yet."
+                    : "Dar nėra ankstesnio išsaugoto stebėjimo palyginimui."
+                  : english
+                    ? "No meaningful change since the latest saved observation."
+                    : "Nuo paskutinio išsaugoto stebėjimo reikšmingo pokyčio nėra."}
+              </p>
+            )}
+          </section>
+          <div className="fl-memory-patterns">
+            {hypotheses.slice(0, 4).map((hypothesis) => {
+              const history = stability?.hypotheses.find(
+                (item) => item.hypothesisId === hypothesis.id,
+              );
+              const audit = integrity?.items.find((item) => item.hypothesisId === hypothesis.id);
+              const mismatch =
+                audit?.status === "drift" ||
+                audit?.chainStatus === "broken" ||
+                audit?.definitionDrift;
+              return (
+                <article
+                  className="fl-memory-pattern"
+                  key={hypothesis.id}
+                  data-status={hypothesis.status}
                 >
-                  <div className="space-y-2 p-3">
-                    {hypothesis.evidence.length ? (
-                      hypothesis.evidence.map((metric) => (
-                        <div
-                          key={`${metric.key}-${metric.unit}`}
-                          className="flex items-center justify-between gap-3 text-[10px]"
-                        >
-                          <span className="min-w-0 text-muted-foreground">
-                            {metric.key.replaceAll("_", " ")} · {metric.source.replaceAll("_", " ")}
-                          </span>
-                          <span className="shrink-0 font-mono text-foreground">
-                            {metric.value} {metric.unit}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground">
-                        {english
-                          ? "No evidence metric is available yet."
-                          : "Įrodymų metrikų dar nėra."}
+                  <header>
+                    <span className="fl-memory-status">{labels[hypothesis.status]}</span>
+                    <span className="fl-memory-count">
+                      {english ? "Observations" : "Stebėjimai"}{" "}
+                      <strong>{number.format(hypothesis.evidenceCount)}</strong>
+                    </span>
+                  </header>
+                  <h3>{statement(hypothesis.statementKey)}</h3>
+                  <p className="fl-memory-threshold">
+                    {english
+                      ? "Minimum observations for evaluation"
+                      : "Mažiausiai stebėjimų vertinimui"}
+                    : {number.format(hypothesis.minimumEvidenceCount)}
+                  </p>
+                  <p
+                    className="fl-memory-authority"
+                    data-eligible={audit?.decisionAuthority ? "true" : "false"}
+                  >
+                    <ShieldCheck aria-hidden="true" />
+                    {audit?.decisionAuthority
+                      ? english
+                        ? "Can inform your training decisions"
+                        : "Galima naudoti tavo treniruočių sprendimams"
+                      : english
+                        ? "Observation only · does not guide decisions"
+                        : "Tik stebėjimas · sprendimams nenaudojama"}
+                  </p>
+                  <WhyThisDisclosure
+                    summary={english ? "Why this pattern?" : "Kuo pagrįstas šis dėsningumas?"}
+                    className="fl-memory-evidence"
+                  >
+                    <div className="fl-memory-evidence-body">
+                      <p
+                        className="fl-memory-verification"
+                        data-warning={mismatch ? "true" : "false"}
+                      >
+                        {mismatch
+                          ? english
+                            ? "Saved history does not match consistently. This pattern is withheld from decisions."
+                            : "Išsaugota istorija nesutampa. Šis dėsningumas sprendimams nenaudojamas."
+                          : audit?.status === "verified"
+                            ? english
+                              ? "The current pattern agrees with its saved history."
+                              : "Dabartinis dėsningumas sutampa su išsaugota istorija."
+                            : english
+                              ? "There is no saved history to verify this pattern yet."
+                              : "Dar nėra išsaugotos istorijos šiam dėsningumui patikrinti."}
                       </p>
-                    )}
-                  </div>
-                </WhyThisDisclosure>
-              </article>
-            );
-          })}
+                      {history && history.transitions > 1 ? (
+                        <p className="fl-memory-history">
+                          {history.reversals > 0
+                            ? english
+                              ? `The evidence has reversed direction ${number.format(history.reversals)} time(s).`
+                              : `Duomenų kryptis keitėsi į priešingą: ${number.format(history.reversals)} k.`
+                            : english
+                              ? `Saved updates: ${number.format(history.transitions)}.`
+                              : `Išsaugoti atnaujinimai: ${number.format(history.transitions)}.`}
+                        </p>
+                      ) : null}
+                      {hypothesis.evidence.length ? (
+                        <dl>
+                          {hypothesis.evidence.map((metric, index) => (
+                            <div key={`${metric.key}-${index}`}>
+                              <dt>
+                                {METRICS[metric.key]?.[language] ??
+                                  (english ? "Additional observation" : "Papildomas stebėjimas")}
+                                <small>{sources[metric.source]}</small>
+                              </dt>
+                              <dd>
+                                {units[metric.unit]
+                                  ? `${number.format(metric.value)} ${units[metric.unit]}`
+                                  : english
+                                    ? "Value format unavailable"
+                                    : "Reikšmės formatas neatpažintas"}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      ) : (
+                        <p>
+                          {english
+                            ? "No evidence metric is available yet."
+                            : "Stebėjimų reikšmių dar nėra."}
+                        </p>
+                      )}
+                    </div>
+                  </WhyThisDisclosure>
+                </article>
+              );
+            })}
+          </div>
+          {hypotheses.length > 4 || changes.length > 3 ? (
+            <p className="fl-memory-limit">
+              {english
+                ? "Showing up to four patterns and three latest changes from the loaded history."
+                : "Rodomi iki keturių dėsningumų ir trys naujausi pokyčiai iš įkeltos istorijos."}
+            </p>
+          ) : null}
+        </>
+      )}
+      {nextEvidence ? (
+        <div className="fl-memory-next">
+          <EvidenceAcquisitionPrompt recommendation={nextEvidence} english={english} />
         </div>
       ) : null}
     </section>

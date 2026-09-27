@@ -1,3 +1,4 @@
+export { getLabOverview } from "./memory-fixtures";
 // Synthetic service fixtures; all simulated writes stay in the isolated test state.
 import { state, count, ids } from "./state";
 export async function getActivePlan() {

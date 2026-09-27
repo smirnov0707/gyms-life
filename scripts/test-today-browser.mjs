@@ -1262,7 +1262,7 @@ try {
   await expect(baselineSummary).toBeVisible({ timeout: 30000 });
   await baselineSummary.click();
   await expect(
-    baselineMemory.page.getByText("A prior auditable baseline is not available yet", {
+    baselineMemory.page.getByText("There is no earlier saved observation to compare yet", {
       exact: false,
     }),
   ).toBeVisible();
@@ -1281,8 +1281,10 @@ try {
   await expect(changedSummary).toBeVisible({ timeout: 30000 });
   await changedSummary.click();
   await expect(changedMemory.page.getByText("Strengthened", { exact: true })).toBeVisible();
-  await expect(changedMemory.page.getByText("+1 evidence", { exact: true })).toBeVisible();
-  await expect(changedMemory.page.getByText(/Comparison anchor: deterministic/)).toBeVisible();
+  await expect(
+    changedMemory.page.getByText("Observation change: +1", { exact: true }),
+  ).toBeVisible();
+  await expect(changedMemory.page.getByText(/Compared with/).last()).toBeVisible();
   await changedMemory.page.screenshot({
     path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
     fullPage: true,

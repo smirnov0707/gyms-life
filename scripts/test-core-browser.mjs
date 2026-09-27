@@ -1,3 +1,4 @@
+import { verifyMemoryDesign } from "./test-core-memory-design.mjs";
 import { verifyRiskDesign } from "./test-core-risk-design.mjs";
 import { verifyObservedDesign } from "./test-core-observed-design.mjs";
 import { verifyWeeklyDesign } from "./test-core-weekly-design.mjs";
@@ -126,6 +127,7 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
+  await verifyMemoryDesign({ open, record, artifacts });
   await verifyRiskDesign({ open, record, artifacts });
   await verifyObservedDesign({ open, record, artifacts });
   await verifyWeeklyDesign({ open, record, artifacts });

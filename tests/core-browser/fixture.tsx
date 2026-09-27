@@ -1,3 +1,4 @@
+import { TwinMemory } from "@/components/twin/TwinMemory";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { TwinFuture } from "@/components/twin/TwinFuture";
 import { FutureMeSummary } from "@/components/future-lab/FutureMeSummary";
@@ -63,6 +64,12 @@ function Panel() {
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
         {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
+      </div>
+    );
+  if (selected === "memory")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <TwinMemory />
       </div>
     );
   if (selected === "risk")
