@@ -137,7 +137,10 @@ export async function verifyRiskDesign({ open, record, artifacts }) {
       window.__core.fail = "risk-pending";
     });
     await panel(page).getByRole("button", { name: "Try again", exact: true }).press("Enter");
-    await expect(panel(page).getByRole("button", { name: "Loading…", exact: true })).toBeDisabled();
+    // With no cached data, React Query returns to pending during retry.
+    await expect(panel(page).locator(".fl-ledger-state")).toHaveAttribute("data-state", "loading");
+    await expect(panel(page).getByRole("button")).toHaveCount(0);
+    await expect(panel(page).getByTestId("risk-score")).toHaveCount(0);
     await page.evaluate(() => {
       window.__core.fail = null;
     });
