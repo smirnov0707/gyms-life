@@ -192,6 +192,11 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
       await list(page)
         .getByRole("button", { name: `${action}: Synthetic morning product`, exact: true })
         .click();
+      const operation =
+        action === "Pause" ? "setSupplementActive:failed" : "removeSupplement:failed";
+      await expect
+        .poll(() => page.evaluate((key) => window.__core.counts[key] ?? 0, operation))
+        .toBe(1);
       await expect(
         list(page).getByRole("button", { name: "Pause: Synthetic morning product" }),
       ).toBeEnabled();

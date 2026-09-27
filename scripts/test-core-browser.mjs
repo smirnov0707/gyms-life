@@ -258,6 +258,23 @@ try {
   await verifyIntakeDesign({ open, record, artifacts });
   await verifySupplementDesign({ open, record, artifacts });
   expect(errors).toEqual([]);
+} catch (error) {
+  // Controlled fixtures only: retain the observed failure instead of hiding it with a retry.
+  for (const context of browser?.contexts() ?? []) {
+    for (const page of context.pages()) {
+      console.log(
+        "CORE_FAILURE_STATE " +
+          JSON.stringify(
+            await page.evaluate(() => ({
+              url: location.href,
+              text: document.body.innerText,
+              fixture: window.__core,
+            })),
+          ),
+      );
+    }
+  }
+  throw error;
 } finally {
   await writeFile(
     path.join(artifacts, "results.json"),

@@ -182,11 +182,15 @@ export async function verifySessionDesign({ open, record, artifacts }) {
   }
   {
     const { page, context } = await open("screen=readiness&scenario=empty");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.getByText("No check-in yet today", { exact: true })).toBeVisible();
     const sleep = page.getByRole("slider", { name: "Hours of sleep", exact: true });
     await sleep.focus();
     await page.keyboard.press("ArrowRight");
     await expect(sleep).toHaveAttribute("aria-valuenow", "7.5");
     await page.getByRole("button", { name: "Calculate my load", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.__core.counts.submitCheckin ?? 0)).toBe(1);
     await expect(page.getByText("Synthetic saved check-in advice.", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.__core.last.submitCheckin)).toMatchObject({
       sleepHours: 7.5,

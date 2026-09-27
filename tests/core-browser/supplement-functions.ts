@@ -35,8 +35,12 @@ export async function addSupplements({ data }: { data: unknown }) {
 }
 export async function setSupplementActive({ data }: { data: { id: string; isActive: boolean } }) {
   count("setSupplementActive");
+  const fail = state.fail === "supplement-toggle";
   await delay();
-  if (state.fail === "supplement-toggle") throw new Error("Synthetic private update failure");
+  if (fail) {
+    count("setSupplementActive:failed");
+    throw new Error("Synthetic private update failure");
+  }
   const row = state.supplements.find((item) => item.id === data.id);
   if (!row) throw new Error("Missing synthetic supplement");
   row.is_active = data.isActive;
@@ -45,8 +49,12 @@ export async function setSupplementActive({ data }: { data: { id: string; isActi
 }
 export async function removeSupplement({ data }: { data: { id: string } }) {
   count("removeSupplement");
+  const fail = state.fail === "supplement-remove";
   await delay();
-  if (state.fail === "supplement-remove") throw new Error("Synthetic private delete failure");
+  if (fail) {
+    count("removeSupplement:failed");
+    throw new Error("Synthetic private delete failure");
+  }
   state.supplements = state.supplements.filter((item) => item.id !== data.id);
   persist();
   return { ok: true };
