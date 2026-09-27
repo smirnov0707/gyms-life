@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, ScanLine, SwitchCamera, Upload, X } from "lucide-react";
@@ -70,7 +70,9 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
     setLive(false);
   }, []);
 
-  useEffect(() => {
+  // Reset the session before reopened controls become interactive. A passive
+  // effect could otherwise invalidate a fresh keyboard start after the paint.
+  useLayoutEffect(() => {
     activeRef.current = active;
     // A visibility transition owns a fresh, idle camera session.
     // Clear a pending indicator even when an older permission response was invalidated.
@@ -101,6 +103,9 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
   }, [stopCamera]);
 
   const startCamera = async (mode: "environment" | "user" = facing) => {
+    const surface = videoRef.current;
+    if (!activeRef.current || !surface?.isConnected || surface.closest("details:not([open])"))
+      return;
     const request = ++requestRef.current;
     setCameraStarting(true);
     try {
@@ -259,7 +264,7 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
             <Button
               variant="secondary"
               onClick={() => void startCamera(facing === "environment" ? "user" : "environment")}
-              disabled={cameraStarting || busy}
+              disabled={!active || cameraStarting || busy}
             >
               <SwitchCamera className="size-4" />
               {t("supp.scan.switch")}
@@ -275,7 +280,7 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
               tactileClick();
               void startCamera();
             }}
-            disabled={busy || cameraStarting}
+            disabled={!active || busy || cameraStarting}
             className="press"
           >
             <Camera className="size-4" />

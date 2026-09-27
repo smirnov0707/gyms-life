@@ -128,13 +128,13 @@ try {
   };
   // Exercise the newly changed boundary first; all existing checks still run.
   await verifyMemoryDesign({ open, record, artifacts });
+  await verifySupplementDesign({ open, record, artifacts });
   await verifyRiskDesign({ open, record, artifacts });
   await verifyObservedDesign({ open, record, artifacts });
   await verifyWeeklyDesign({ open, record, artifacts });
   await verifyPerformanceDesign({ open, record, artifacts });
   await verifyLedgerDesign({ open, record, artifacts });
   await verifyCameraDesign({ open, record, artifacts });
-  await verifySupplementDesign({ open, record, artifacts });
   if (!process.argv.includes("--design-only")) {
     {
       const { page, context } = await open("screen=training");

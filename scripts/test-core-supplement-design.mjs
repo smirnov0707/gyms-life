@@ -289,12 +289,22 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
         },
       });
     });
+    const startWithKeyboard = async () => {
+      const start = tool.getByRole("button", { name: "Start camera", exact: true });
+      await expect(start).toBeEnabled();
+      await start.focus();
+      await expect(start).toBeFocused();
+      await page.keyboard.press("Enter");
+    };
     expect(await page.evaluate(() => window.__supplementCamera.calls)).toBe(0);
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
-    await tool.getByRole("button", { name: "Start camera", exact: true }).press("Enter");
+    await startWithKeyboard();
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(1);
     await expect(tool.getByRole("button", { name: "Stop camera", exact: true })).toBeVisible();
     await tool.locator("summary").press("Enter");
+    await expect(
+      tool.getByRole("button", { name: "Start camera", exact: true, includeHidden: true }),
+    ).toBeDisabled();
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.stopped)).toBe(1);
     await expect
       .poll(() => page.evaluate(() => window.__supplementCamera.source === null))
@@ -305,7 +315,7 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
       window.__supplementCamera.delay = true;
     });
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
-    await tool.getByRole("button", { name: "Start camera", exact: true }).press("Enter");
+    await startWithKeyboard();
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(2);
     await tool.locator("summary").press("Enter");
     await page.evaluate(() => window.__supplementCamera.pending());
@@ -316,7 +326,7 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
     // Native close/reopen can occur before React receives a coalesced toggle event.
     // Resolve the permission in that same task; it must not attach to the reopened tool.
     for (let cycle = 0; cycle < 3; cycle++) {
-      await tool.getByRole("button", { name: "Start camera", exact: true }).press("Enter");
+      await startWithKeyboard();
       await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(3 + cycle);
       await page.evaluate(() => {
         const disclosure = document.querySelector(".fl-supplement-tool");
