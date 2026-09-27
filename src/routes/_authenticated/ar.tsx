@@ -1212,7 +1212,7 @@ function ArMode() {
                     <div className="flex items-center justify-between">
                       <span className="font-semibold">{target.label[base]}</span>
                       <span
-                        className={`text-display text-xl ${ok ? "text-primary" : "text-accent"}`}
+                        className={`fl-camera-angle ${state ? (ok ? "text-primary" : "text-accent") : "text-muted-foreground"}`}
                       >
                         {state ? `${state.angle}°` : "—"}
                       </span>

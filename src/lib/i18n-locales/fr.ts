@@ -86,7 +86,6 @@ export const locale: Record<string, string> = {
   "qo.open": "Ouvrir le programme",
   "qo.again": "Générer à nouveau",
   "ar.formOk": "Bonne posture",
-  "ar.idleTitle": "Activer la caméra",
   "ar.noPose": "Je ne vous vois pas — reculez-vous de la caméra",
   "landing.h1a": "Ton coach IA",
   "landing.h1b": "qui s'adapte",
@@ -240,7 +239,7 @@ export const locale: Record<string, string> = {
   "rd.again": "Recalculer",
   "fc.title": "Scanner de technique",
   "fc.sub":
-    "Activez la caméra et effectuez une répétition — vous obtenez un score précis sur 100 et des conseils clairs pour vous corriger.",
+    "Active la caméra, choisis ton exercice et lance une analyse. Les images capturées donnent une estimation de ta technique et des suggestions pour la prochaine répétition.",
   "fc.enable": "Activer la caméra",
   "fc.record": "Enregistrer une répétition (5 s)",
   "fc.analyzing": "Analyse de la technique...",
@@ -338,7 +337,6 @@ export const locale: Record<string, string> = {
   "mp.tips": "Conseils de prépa",
   "mp.none": "Vous n'avez pas encore de plan de repas.",
   "nav.ar": "Mouvement",
-  "ar.title": "Mode d'entraînement AR",
   "ar.sub":
     "La caméra suit votre squelette en temps réel, affiche les angles articulaires cibles et des flèches de correction sur la vidéo, et compte vos répétitions.",
   "ar.start": "Démarrer l'AR",

@@ -141,7 +141,6 @@ const baseDict = {
   "qo.again": { lt: "Generuoti iš naujo", en: "Generate again" },
 
   "ar.formOk": { lt: "Technika gera", en: "Form looks good" },
-  "ar.idleTitle": { lt: "Įjunk kamerą", en: "Start camera" },
   "ar.noPose": {
     lt: "Nematau tavęs — atsitrauk nuo kameros",
     en: "I can\u2019t see you — step back from the camera",
@@ -361,8 +360,8 @@ const baseDict = {
 
   "fc.title": { lt: "Technikos skeneris", en: "Technique scanner" },
   "fc.sub": {
-    lt: "Įjunk kamerą ir atlik vieną pakartojimą — gausi tikslų technikos įvertinimą 100 balų skalėje ir aiškų patarimą, ką pataisyti.",
-    en: "Turn on the camera and do one rep — you get a precise technique score out of 100 and a clear tip on what to fix.",
+    lt: "Įjunk kamerą, pasirink pratimą ir pradėk peržiūrą. Pagal užfiksuotus kadrus gausi technikos įvertį bei pasiūlymus kitam pakartojimui.",
+    en: "Turn on the camera, choose your exercise and start a review. Captured frames provide an estimate of your form and suggestions for your next rep.",
   },
   "fc.enable": { lt: "Įjungti kamerą", en: "Enable camera" },
   "fc.record": { lt: "Filmuoti pakartojimą (5 s)", en: "Record a rep (5 s)" },
@@ -497,7 +496,6 @@ const baseDict = {
 
   /* ---------- AR mode ---------- */
   "nav.ar": { lt: "Judesys", en: "Movement" },
-  "ar.title": { lt: "AR treniruočių režimas", en: "AR training mode" },
   "ar.sub": {
     lt: "Kamera realiu laiku seka tavo skeletą, ant vaizdo piešia tikslinius sąnarių kampus ir korekcijos rodykles bei skaičiuoja pakartojimus.",
     en: "The camera tracks your skeleton in real time, draws target joint angles and correction arrows over the video and counts your reps.",

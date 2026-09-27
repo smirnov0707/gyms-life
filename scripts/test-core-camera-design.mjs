@@ -264,6 +264,18 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
     await context.close();
     record("unavailable height remains empty and fullscreen settings remain escapable");
   }
+  {
+    const { page, context } = await opened(open);
+    await choose(page, "Position review");
+    const picker = page.waitForEvent("filechooser");
+    await page.locator(".fl-position-upload").press("Enter");
+    const chooser = await picker;
+    expect(chooser.isMultiple()).toBe(false);
+    await expect(chooser.element()).toHaveAttribute("accept", "image/*");
+    expect((await cameraStats(page)).requests).toBe(0);
+    await context.close();
+    record("position photo selection is keyboard accessible and does not start a live camera");
+  }
   for (const theme of ["dark", "light"]) {
     const { page, context } = await opened(open, `lang=lt&theme=${theme}`, 320);
     await expect(page.locator("h1")).toHaveText("Pajusk savo judesį.");

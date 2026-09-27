@@ -87,7 +87,6 @@ export const locale: Record<string, string> = {
   "qo.open": "Otwórz plan",
   "qo.again": "Wygeneruj ponownie",
   "ar.formOk": "Technika wygląda dobrze",
-  "ar.idleTitle": "Włącz kamerę",
   "ar.noPose": "Nie widzę Cię — cofnij się od kamery",
   "landing.h1a": "Twój trener AI,",
   "landing.h1b": "który dopasowuje się",
@@ -240,7 +239,7 @@ export const locale: Record<string, string> = {
   "rd.again": "Przelicz ponownie",
   "fc.title": "Skaner techniki",
   "fc.sub":
-    "Włącz kamerę i zrób jedno powtórzenie — otrzymasz precyzyjną ocenę techniki w skali do 100 oraz jasną wskazówkę, co poprawić.",
+    "Włącz kamerę, wybierz ćwiczenie i rozpocznij analizę. Zarejestrowane klatki pozwalają oszacować technikę i podpowiedzieć zmiany na kolejne powtórzenie.",
   "fc.enable": "Włącz kamerę",
   "fc.record": "Nagraj powtórzenie (5 s)",
   "fc.analyzing": "Analizowanie techniki...",
@@ -337,7 +336,6 @@ export const locale: Record<string, string> = {
   "mp.tips": "Wskazówki",
   "mp.none": "Nie masz jeszcze jadłospisu.",
   "nav.ar": "Ruch",
-  "ar.title": "Tryb treningu AR",
   "ar.sub":
     "Kamera śledzi Twój szkielet w czasie rzeczywistym, nanosi docelowe kąty stawów oraz strzałki korygujące na obraz wideo i liczy Twoje powtórzenia.",
   "ar.start": "Uruchom AR",

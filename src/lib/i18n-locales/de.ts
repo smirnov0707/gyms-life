@@ -88,7 +88,6 @@ export const locale: Record<string, string> = {
   "qo.open": "Plan öffnen",
   "qo.again": "Erneut generieren",
   "ar.formOk": "Haltung sieht gut aus",
-  "ar.idleTitle": "Kamera starten",
   "ar.noPose": "Ich kann dich nicht sehen – tritt weiter von der Kamera zurück",
   "landing.h1a": "Dein KI-Coach,",
   "landing.h1b": "der sich anpasst",
@@ -242,7 +241,7 @@ export const locale: Record<string, string> = {
   "rd.again": "Neu berechnen",
   "fc.title": "Technik-Scanner",
   "fc.sub":
-    "Kamera einschalten und eine Wiederholung machen – du erhältst einen präzisen Technik-Score bis 100 und klare Tipps zur Verbesserung.",
+    "Schalte die Kamera ein, wähle deine Übung und starte eine Analyse. Die aufgenommenen Bilder liefern eine Einschätzung deiner Technik und Vorschläge für die nächste Wiederholung.",
   "fc.enable": "Kamera aktivieren",
   "fc.record": "Wiederholung aufnehmen (5 s)",
   "fc.analyzing": "Technik wird analysiert...",
@@ -340,7 +339,6 @@ export const locale: Record<string, string> = {
   "mp.tips": "Zubereitungstipps",
   "mp.none": "Du hast noch keinen Ernährungsplan.",
   "nav.ar": "Bewegung",
-  "ar.title": "AR-Trainingsmodus",
   "ar.sub":
     "Die Kamera verfolgt dein Skelett in Echtzeit, blendet Soll-Gelenkwinkel sowie Korrekturpfeile über dem Video ein und zählt deine Wiederholungen.",
   "ar.start": "AR starten",

@@ -306,7 +306,7 @@ export function FormScanner() {
               </div>
             </>
           ) : (
-            <div className="panel grid place-items-center gap-3 p-10 text-center text-sm text-muted-foreground">
+            <div className="panel fl-form-empty grid place-items-center content-center gap-4 p-8 text-center text-sm text-muted-foreground">
               <Sparkles className="size-7 text-primary" />
               {t("fc.sub")}
             </div>
