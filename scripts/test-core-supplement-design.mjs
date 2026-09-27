@@ -313,9 +313,26 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
     expect(await page.evaluate(() => window.__supplementCamera.attachments)).toBe(1);
     await tool.locator("summary").press("Enter");
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
+    // Native close/reopen can occur before React receives a coalesced toggle event.
+    // Resolve the permission in that same task; it must not attach to the reopened tool.
+    for (let cycle = 0; cycle < 3; cycle++) {
+      await tool.getByRole("button", { name: "Start camera", exact: true }).press("Enter");
+      await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(3 + cycle);
+      await page.evaluate(() => {
+        const disclosure = document.querySelector(".fl-supplement-tool");
+        disclosure.open = false;
+        window.__supplementCamera.pending();
+        disclosure.open = true;
+      });
+      await expect
+        .poll(() => page.evaluate(() => window.__supplementCamera.stopped))
+        .toBe(3 + cycle);
+      expect(await page.evaluate(() => window.__supplementCamera.attachments)).toBe(1);
+      await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
+    }
     await context.close();
     record(
-      "folding the label tool releases live and late-permission camera streams without auto-restarting",
+      "folding and rapid native reopening release live and late-permission camera streams and restore idle controls",
     );
   }
   for (const theme of ["light", "dark"]) {

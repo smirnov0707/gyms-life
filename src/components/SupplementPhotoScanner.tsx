@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, ScanLine, SwitchCamera, Upload, X } from "lucide-react";
@@ -61,29 +61,44 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
   const activeRef = useRef(active);
   const [cameraStarting, setCameraStarting] = useState(false);
 
-  useEffect(() => {
-    activeRef.current = active;
-    if (!active) {
-      if (videoRef.current) videoRef.current.srcObject = null;
-      setLive(false);
-      setCameraStarting(false);
-    }
-    return () => {
-      activeRef.current = false;
-      requestRef.current += 1;
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    };
-  }, [active]);
-
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     requestRef.current += 1;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraStarting(false);
     setLive(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    activeRef.current = active;
+    // A visibility transition owns a fresh, idle camera session.
+    // Clear a pending indicator even when an older permission response was invalidated.
+    stopCamera();
+    return () => {
+      activeRef.current = false;
+      requestRef.current += 1;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [active, stopCamera]);
+
+  useEffect(() => {
+    const disclosure = videoRef.current?.closest("details");
+    if (!disclosure) return;
+    // Native toggle events may be coalesced when a disclosure closes and reopens
+    // quickly. Invalidate the request on the actual close, before a late stream attaches.
+    const observer = new MutationObserver((records) => {
+      if (records.some((record) => record.attributeName === "open" && record.oldValue !== null))
+        stopCamera();
+    });
+    observer.observe(disclosure, {
+      attributes: true,
+      attributeFilter: ["open"],
+      attributeOldValue: true,
+    });
+    return () => observer.disconnect();
+  }, [stopCamera]);
 
   const startCamera = async (mode: "environment" | "user" = facing) => {
     const request = ++requestRef.current;
