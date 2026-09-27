@@ -44,6 +44,7 @@
 .fl-memory-overview dl > div {
   display: flex;
   flex-direction: column-reverse;
+  justify-content: flex-end;
   gap: 8px;
   border-left: 1px solid var(--border);
   padding-left: 20px;

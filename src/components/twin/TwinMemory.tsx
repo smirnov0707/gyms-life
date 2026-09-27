@@ -51,6 +51,10 @@ export function TwinMemory() {
   const language = baseLang(lang);
   const english = language === "en";
   const number = new Intl.NumberFormat(formatLocale(lang), { maximumFractionDigits: 2 });
+  const percentage = new Intl.NumberFormat(formatLocale(lang), {
+    style: "percent",
+    maximumFractionDigits: 1,
+  });
   const date = new Intl.DateTimeFormat(formatLocale(lang), { dateStyle: "medium" });
   const query = useLabOverview();
   // Every derived surface shares the read state, including data-gap recommendations.
@@ -325,11 +329,14 @@ export function TwinMemory() {
                                 <small>{sources[metric.source]}</small>
                               </dt>
                               <dd>
-                                {units[metric.unit]
-                                  ? `${number.format(metric.value)} ${units[metric.unit]}`
-                                  : english
-                                    ? "Value format unavailable"
-                                    : "Reikšmės formatas neatpažintas"}
+                                {metric.key === "usual_day_completion_rate_28d" &&
+                                metric.unit === "ratio"
+                                  ? percentage.format(metric.value)
+                                  : units[metric.unit]
+                                    ? `${number.format(metric.value)} ${units[metric.unit]}`
+                                    : english
+                                      ? "Value format unavailable"
+                                      : "Reikšmės formatas neatpažintas"}
                               </dd>
                             </div>
                           ))}

@@ -53,7 +53,7 @@ export async function verifyMemoryDesign({ open, record, artifacts }) {
         const summaries = panel(page).locator("details > summary");
         for (let i = 0; i < 2; i++) await summaries.nth(i).press("Enter");
         await expect(panel(page).locator("details[open]")).toHaveCount(2);
-        await expect(panel(page)).toContainText(lang === "lt" ? "0,63 santykis" : "0.63 ratio");
+        await expect(panel(page)).toContainText(lang === "lt" ? /62,5\s*%/ : "62.5%");
         await expect(panel(page)).toContainText(lang === "lt" ? "7 trenir." : "7 workouts");
         await expect(panel(page)).not.toContainText(
           /rated_sessions|deterministic|00000000|user_reported/,
@@ -73,6 +73,10 @@ export async function verifyMemoryDesign({ open, record, artifacts }) {
             .locator("h2")
             .evaluate((el) => getComputedStyle(el).fontFamily),
         ).toContain("Space Grotesk");
+        const numberRows = await panel(page)
+          .locator(".fl-memory-overview dd")
+          .evaluateAll((items) => items.map((el) => el.getBoundingClientRect().top));
+        expect(Math.abs(numberRows[0] - numberRows[1])).toBeLessThanOrEqual(1);
         await capture(page, `memory-${lang}-${theme}-${width}`, "ready");
         await context.close();
         record(
