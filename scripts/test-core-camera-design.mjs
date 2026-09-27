@@ -271,7 +271,7 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
     await page.locator(".fl-position-upload").press("Enter");
     const chooser = await picker;
     expect(chooser.isMultiple()).toBe(false);
-    await expect(chooser.element()).toHaveAttribute("accept", "image/*");
+    expect(await chooser.element().getAttribute("accept")).toBe("image/*");
     expect((await cameraStats(page)).requests).toBe(0);
     await context.close();
     record("position photo selection is keyboard accessible and does not start a live camera");
