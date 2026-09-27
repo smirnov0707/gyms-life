@@ -210,9 +210,15 @@ export async function verifySessionDesign({ open, record, artifacts }) {
   }
   {
     const { page, context } = await open("screen=readiness&scenario=empty&fail=save-readiness");
+    // Match the successful-save scenario above: font loading and the entry
+    // animation must finish before WebKit targets a pointer coordinate.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.evaluate(() => document.fonts.ready);
+    await expect(page.getByText("No check-in yet today", { exact: true })).toBeVisible();
     const save = page.getByRole("button", { name: "Calculate my load", exact: true });
     await save.click();
     await expect.poll(() => page.evaluate(() => window.__core.counts.submitCheckin)).toBe(1);
+    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toBeVisible();
     await expect(save).toBeEnabled();
     await expect(page.getByText("No check-in yet today", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => window.__core.checkin)).toBeNull();
