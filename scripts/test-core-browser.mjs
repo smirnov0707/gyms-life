@@ -118,6 +118,8 @@ try {
     await expect(page.getByTestId("synthetic-watermark")).toBeVisible({ timeout: 30000 });
     return { page, context };
   };
+  // Exercise the newly changed boundary first; all existing checks still run.
+  await verifySupplementDesign({ open, record, artifacts });
   if (!process.argv.includes("--design-only")) {
     {
       const { page, context } = await open("screen=training");
@@ -256,7 +258,6 @@ try {
   await verifyCoreDesign({ open, record, artifacts });
   await verifySessionDesign({ open, record, artifacts });
   await verifyIntakeDesign({ open, record, artifacts });
-  await verifySupplementDesign({ open, record, artifacts });
   expect(errors).toEqual([]);
 } catch (error) {
   // Controlled fixtures only: retain the observed failure instead of hiding it with a retry.

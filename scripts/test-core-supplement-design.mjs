@@ -239,7 +239,7 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.evaluate(() => document.fonts.ready);
     const tool = photoTool(page);
-    await tool.locator("summary").click();
+    await tool.locator("summary").press("Enter");
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeVisible();
     await page.evaluate(() => {
       const camera = {
@@ -288,26 +288,28 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
       });
     });
     expect(await page.evaluate(() => window.__supplementCamera.calls)).toBe(0);
-    await tool.getByRole("button", { name: "Start camera", exact: true }).click();
+    await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
+    await tool.getByRole("button", { name: "Start camera", exact: true }).press("Enter");
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(1);
     await expect(tool.getByRole("button", { name: "Stop camera", exact: true })).toBeVisible();
-    await tool.locator("summary").click();
+    await tool.locator("summary").press("Enter");
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.stopped)).toBe(1);
     await expect
       .poll(() => page.evaluate(() => window.__supplementCamera.source === null))
       .toBe(true);
-    await tool.locator("summary").click();
+    await tool.locator("summary").press("Enter");
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeVisible();
     await page.evaluate(() => {
       window.__supplementCamera.delay = true;
     });
-    await tool.getByRole("button", { name: "Start camera", exact: true }).click();
+    await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
+    await tool.getByRole("button", { name: "Start camera", exact: true }).press("Enter");
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(2);
-    await tool.locator("summary").click();
+    await tool.locator("summary").press("Enter");
     await page.evaluate(() => window.__supplementCamera.pending());
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.stopped)).toBe(2);
     expect(await page.evaluate(() => window.__supplementCamera.attachments)).toBe(1);
-    await tool.locator("summary").click();
+    await tool.locator("summary").press("Enter");
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
     await context.close();
     record(

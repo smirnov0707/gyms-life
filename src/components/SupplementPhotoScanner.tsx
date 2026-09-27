@@ -93,15 +93,22 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
         video: { facingMode: { ideal: mode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
-      // Permission can resolve after the disclosure closes or the route unmounts.
-      if (!activeRef.current || request !== requestRef.current || !videoRef.current) {
+      const video = videoRef.current;
+      // Native details closes before its deferred toggle event updates React.
+      // Check the actual surface too, so a permission reply in that gap never attaches.
+      if (
+        !activeRef.current ||
+        request !== requestRef.current ||
+        !video?.isConnected ||
+        video.closest("details:not([open])")
+      ) {
         stream.getTracks().forEach((track) => track.stop());
         return;
       }
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      void videoRef.current.play().catch(() => undefined);
+      video.srcObject = stream;
+      void video.play().catch(() => undefined);
       setFacing(mode);
       setLive(true);
     } catch {
