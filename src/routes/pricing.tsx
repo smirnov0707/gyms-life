@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Crown, Loader2, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Check, Crown, Loader2, Sparkles, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { useAccess } from "@/lib/access";
 import { usePaddleCheckout } from "@/hooks/usePaddleCheckout";
 import { useServerFn } from "@tanstack/react-start";
@@ -13,9 +13,8 @@ import {
   cancelSubscription,
   resumeSubscription,
 } from "@/lib/payments.functions";
-import { Logo, LangSwitch } from "@/components/AppShell";
+import { PublicFrame } from "@/components/PublicFrame";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { TransformationCalculator } from "@/components/TransformationCalculator";
 import { isBillingEnabled } from "@/lib/billing";
@@ -130,14 +129,15 @@ function PricingPage() {
   const navigate = useNavigate();
   const portal = useServerFn(getPortalUrl);
   const switchPlan = useServerFn(changePlan);
-  const [switching, setSwitching] = useState(false);
+  const actionLock = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const cancelSub = useServerFn(cancelSubscription);
   const resumeSub = useServerFn(resumeSubscription);
-  const [cancelling, setCancelling] = useState(false);
   const queryClient = useQueryClient();
   const billingEnabled = isBillingEnabled();
   const betaCopy =
-    lang === "lt"
+    baseLang(lang) === "lt"
       ? {
           title: "Mokėjimai dar nejungiami",
           body: "Visi GYMS.LIFE funkcionalumai šiuo beta etapu prieinami be prenumeratos.",
@@ -171,7 +171,7 @@ function PricingPage() {
       lagging:
         "Registered with the payment provider. This page may take a few minutes to catch up.",
     },
-  }[lang === "lt" ? "lt" : "en"]!;
+  }[baseLang(lang) === "lt" ? "lt" : "en"]!;
 
   /**
    * Both actions change a subscription at Paddle and then mirror it locally.
@@ -187,27 +187,43 @@ function PricingPage() {
     else toast.success(done, { description: cancelLabels.lagging });
   };
 
-  const doCancel = async () => {
-    if (!window.confirm(cancelLabels.confirm)) return;
-    setCancelling(true);
+  const accountUncertain = !!user && (access.loading || access.readFailed || retrying);
+  const busy = pending || loading;
+  const blocked = !billingEnabled || accountUncertain || access.isOwner || busy;
+  const lt = baseLang(lang) === "lt";
+
+  // One lock covers all payment actions, including two clicks in the same render.
+  const performBilling = async (operation: () => Promise<void>) => {
+    if (blocked || !user || actionLock.current) return;
+    actionLock.current = true;
+    setPending(true);
     try {
-      await afterBillingChange(await cancelSub(), cancelLabels.done);
-    } catch {
-      toast.error(cancelLabels.error);
+      await operation();
     } finally {
-      setCancelling(false);
+      actionLock.current = false;
+      setPending(false);
     }
   };
 
+  const doCancel = async () => {
+    if (blocked || actionLock.current || !window.confirm(cancelLabels.confirm)) return;
+    await performBilling(async () => {
+      try {
+        await afterBillingChange(await cancelSub(), cancelLabels.done);
+      } catch {
+        toast.error(cancelLabels.error);
+      }
+    });
+  };
+
   const doResume = async () => {
-    setCancelling(true);
-    try {
-      await afterBillingChange(await resumeSub(), cancelLabels.resumed);
-    } catch {
-      toast.error(cancelLabels.error);
-    } finally {
-      setCancelling(false);
-    }
+    await performBilling(async () => {
+      try {
+        await afterBillingChange(await resumeSub(), cancelLabels.resumed);
+      } catch {
+        toast.error(cancelLabels.error);
+      }
+    });
   };
 
   const featureKeys: TKey[] = [
@@ -221,233 +237,224 @@ function PricingPage() {
   ];
 
   const buy = async (priceId: string) => {
-    if (!billingEnabled) {
-      toast.info(betaCopy.body);
-      return;
-    }
+    if (blocked || actionLock.current) return;
     if (!user) {
       navigate({ to: "/auth" });
       return;
     }
-    // Already subscribed → switch plan; the new plan starts at the next renewal.
-    if (access.subscribed) {
-      setSwitching(true);
+    await performBilling(async () => {
       try {
-        await switchPlan({ data: { priceId } });
-        toast.success(t("lg.pricing.planSwitched"));
+        if (access.subscribed) {
+          await switchPlan({ data: { priceId } });
+          toast.success(t("lg.pricing.planSwitched"));
+          await queryClient.invalidateQueries({ queryKey: ["access", user.id] });
+        } else {
+          await openCheckout({
+            priceId,
+            quantity: 1,
+            ...(user.email ? { customerEmail: user.email } : {}),
+            customData: { userId: user.id },
+            successUrl: `${window.location.origin}/app?checkout=success`,
+          });
+        }
       } catch {
         toast.error(t("lg.pricing.checkoutError"));
-      } finally {
-        setSwitching(false);
       }
-      return;
-    }
-    try {
-      await openCheckout({
-        priceId,
-        quantity: 1,
-        ...(user.email ? { customerEmail: user.email } : {}),
-        customData: { userId: user.id },
-        successUrl: `${window.location.origin}/app?checkout=success`,
-      });
-    } catch {
-      toast.error(t("lg.pricing.checkoutError"));
-    }
+    });
   };
 
   const openPortal = async () => {
+    await performBilling(async () => {
+      try {
+        const { url } = await portal();
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch {
+        toast.error(t("lg.pricing.noSub"));
+      }
+    });
+  };
+
+  const retryAccess = async () => {
+    if (retrying) return;
+    setRetrying(true);
     try {
-      const { url } = await portal();
-      window.open(url, "_blank");
-    } catch {
-      toast.error(t("lg.pricing.noSub"));
+      await queryClient.invalidateQueries({ queryKey: ["access", user?.id] });
+    } finally {
+      setRetrying(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <PublicFrame page="pricing" signedIn={!!user}>
       <PaymentTestModeBanner />
-      <header className="sticky top-0 z-40 border-b border-border bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <Logo />
-          <div className="flex items-center gap-3">
-            <LangSwitch />
-            <Link
-              to={user ? "/app" : "/auth"}
-              className="press rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-            >
-              {user ? t("lg.pricing.myApp") : t("lg.pricing.signIn")}
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-4 py-16">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary">
-            <Sparkles className="size-3.5" />
-            {t("lg.pricing.freeDays")}
+      <div className="fl-pricing">
+        <header className="fl-public-heading fl-pricing-heading">
+          <span className="fl-public-eyebrow">
+            <Sparkles aria-hidden="true" />
+            {billingEnabled ? t("lg.pricing.freeDays") : "FUTURE LAB · BETA"}
           </span>
-          <h1 className="text-display mt-4 text-5xl leading-none sm:text-6xl">
-            {t("lg.pricing.heroTitle")}
-          </h1>
-          <p className="mt-4 text-muted-foreground">{t("lg.pricing.heroSubtitle")}</p>
-        </div>
+          <h1>{t("lg.pricing.heroTitle")}</h1>
+          <p>{billingEnabled ? t("lg.pricing.heroSubtitle") : betaCopy.body}</p>
+        </header>
 
         {!billingEnabled && (
-          <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-primary/30 bg-primary/10 p-4 text-center">
-            <h2 className="font-bold text-primary">{betaCopy.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{betaCopy.body}</p>
+          <div className="fl-public-notice">
+            <ShieldCheck aria-hidden="true" />
+            <div>
+              <h2>{betaCopy.title}</h2>
+              <p>
+                {lt
+                  ? "Žemiau – būsimi planai. Kol kas pradėk be mokėjimo."
+                  : "Explore the upcoming plans below. For now, get started without payment."}
+              </p>
+            </div>
+            <a href={user ? "/app" : "/auth"}>
+              {user ? t("lg.pricing.myApp") : t("lg.pricing.startFree")}
+              <ArrowUpRight aria-hidden="true" />
+            </a>
           </div>
         )}
 
-        <TransformationCalculator />
+        {billingEnabled && accountUncertain && (
+          <div className="fl-public-notice" role={access.readFailed ? "alert" : "status"}>
+            <ShieldCheck aria-hidden="true" />
+            <div>
+              <h2>
+                {access.readFailed
+                  ? lt
+                    ? "Prenumeratos būsena nepasiekiama"
+                    : "Subscription status unavailable"
+                  : lt
+                    ? "Tikrinama prenumerata"
+                    : "Checking your subscription"}
+              </h2>
+              <p>
+                {lt
+                  ? "Mokėjimų veiksmai bus prieinami patikrinus tavo paskyrą."
+                  : "Payment actions will be available after your account is checked."}
+              </p>
+            </div>
+            {access.readFailed && (
+              <button type="button" onClick={retryAccess} disabled={retrying}>
+                {lt ? "Tikrinti dar kartą" : "Check again"}
+              </button>
+            )}
+          </div>
+        )}
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-3">
-          {PLANS.map((p) => {
-            return (
-              <div
-                key={p.priceId}
-                className={cn(
-                  "panel relative flex flex-col gap-4 rounded-2xl border p-6 transition-all",
-                  p.popular
-                    ? "border-primary shadow-[0_0_40px_-10px_var(--primary-dim)]"
-                    : "border-border",
+        <div className="fl-pricing-plans">
+          {PLANS.map((p, index) => (
+            <section
+              key={p.priceId}
+              className={`fl-price-card${p.popular ? " fl-price-featured" : ""}`}
+              aria-labelledby={`plan-${index}`}
+            >
+              <div className="fl-price-card-top">
+                <span>0{index + 1}</span>
+                <span className="fl-price-badge">{t(p.badgeKey)}</span>
+              </div>
+              <h2 id={`plan-${index}`}>{t(p.nameKey)}</h2>
+              <p className="fl-price-tagline">{t(p.taglineKey)}</p>
+              <div className="fl-price-amount">
+                <p>
+                  <strong>{p.price}</strong>
+                  <span>{t(p.perKey)}</span>
+                </p>
+                {p.strike && (
+                  <div className="fl-price-saving">
+                    <s>{p.strike}</s>
+                    {p.saveKey && <span>{t(p.saveKey)}</span>}
+                  </div>
                 )}
+                {p.perMonthKey && <small>{t(p.perMonthKey)}</small>}
+              </div>
+              <button
+                type="button"
+                onClick={() => buy(p.priceId)}
+                disabled={blocked}
+                data-plan={p.priceId}
+                className="fl-public-action"
               >
-                <span
-                  className={cn(
-                    "absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider",
-                    p.popular
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-surface text-muted-foreground",
-                  )}
-                >
-                  {t(p.badgeKey)}
-                </span>
+                {busy && <Loader2 className="animate-spin" aria-hidden="true" />}
+                {!billingEnabled
+                  ? betaCopy.button
+                  : access.isOwner
+                    ? t("lg.pricing.ownerAccount")
+                    : access.subscribed
+                      ? t("lg.pricing.switchPlan")
+                      : t("lg.pricing.startFree")}
+                {!busy && <ArrowUpRight aria-hidden="true" />}
+              </button>
+            </section>
+          ))}
+        </div>
+
+        <section className="fl-pricing-features" aria-labelledby="features-title">
+          <div>
+            <span className="fl-public-eyebrow">GYMS.LIFE PREMIUM</span>
+            <h2 id="features-title">{t("l3.pr.allFeatures")}</h2>
+          </div>
+          <ul>
+            {featureKeys.map((key) => (
+              <li key={key}>
+                <Check aria-hidden="true" />
+                <span>{t(key)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <p className="fl-pricing-payment-note">
+          <ShieldCheck aria-hidden="true" />
+          {t("lg.pricing.payNote")}
+        </p>
+
+        {billingEnabled && user && !accountUncertain && (access.subscribed || access.isOwner) && (
+          <section
+            className="fl-pricing-account"
+            aria-label={lt ? "Tavo prenumerata" : "Your subscription"}
+          >
+            {access.isOwner ? (
+              <h2>
+                <Crown aria-hidden="true" />
+                {t("lg.pricing.ownerAccount")}
+              </h2>
+            ) : (
+              <>
                 <div>
-                  <h2 className="text-lg font-bold">{t(p.nameKey)}</h2>
-                  <p className="text-sm text-muted-foreground">{t(p.taglineKey)}</p>
-                </div>
-                <div>
-                  <p className="text-display text-5xl">
-                    {p.price}
-                    <span className="text-base text-muted-foreground"> {t(p.perKey)}</span>
-                  </p>
-                  {p.strike && (
-                    <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-muted-foreground line-through">{p.strike}</span>
-                      {p.saveKey && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">
-                          {t(p.saveKey)}
-                        </span>
+                  <h2>{t("lg.pricing.subActive")}</h2>
+                  {access.cancelAtPeriodEnd && access.periodEnd && (
+                    <p>
+                      {cancelLabels.scheduled.replace(
+                        "{date}",
+                        access.periodEnd.toLocaleDateString(lang),
                       )}
                     </p>
                   )}
-                  {p.perMonthKey && (
-                    <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                      {t(p.perMonthKey)}
-                    </p>
-                  )}
                 </div>
-                <ul className="flex-1 space-y-2 text-sm">
-                  {featureKeys.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                      <span>{t(f)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => buy(p.priceId)}
-                  disabled={!billingEnabled || loading || switching}
-                  className={cn(
-                    "press flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-colors",
-                    p.popular
-                      ? "bg-primary text-primary-foreground hover:opacity-90"
-                      : "border border-border bg-surface hover:bg-surface-2",
-                  )}
-                >
-                  {billingEnabled && (loading || switching) && (
-                    <Loader2 className="size-4 animate-spin" />
-                  )}
-                  {billingEnabled
-                    ? access.subscribed
-                      ? t("lg.pricing.switchPlan")
-                      : t("lg.pricing.startFree")
-                    : betaCopy.button}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        <p className="mt-6 text-center text-sm font-semibold text-foreground">
-          {t("l3.pr.allFeatures")}
-        </p>
-        <p className="mt-2 text-center text-xs text-muted-foreground">{t("lg.pricing.payNote")}</p>
-
-        <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-border bg-surface p-6 text-center">
-          <h2 className="text-lg font-bold">{t("l3.pr.compare.t")}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {t("l3.pr.compare.d")}
-          </p>
-        </div>
-
-        {user && (access.subscribed || access.isOwner) && (
-          <div className="mx-auto mt-10 max-w-md rounded-2xl border border-border bg-surface p-5 text-center">
-            {access.isOwner ? (
-              <p className="flex items-center justify-center gap-2 text-sm font-semibold text-primary">
-                <Crown className="size-4" />
-                {t("lg.pricing.ownerAccount")}
-              </p>
-            ) : (
-              <>
-                <p className="text-sm font-semibold">{t("lg.pricing.subActive")}</p>
-                {access.cancelAtPeriodEnd && access.periodEnd && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {cancelLabels.scheduled.replace(
-                      "{date}",
-                      access.periodEnd.toLocaleDateString(),
-                    )}
-                  </p>
-                )}
-                <div className="mt-3 flex flex-wrap justify-center gap-2">
-                  <button
-                    onClick={openPortal}
-                    className="press rounded-full border border-border px-4 py-2 text-xs font-semibold hover:bg-surface-2"
-                  >
+                <div className="fl-pricing-account-actions">
+                  <button type="button" disabled={busy} onClick={openPortal}>
                     {t("lg.pricing.manageSub")}
                   </button>
                   <button
+                    type="button"
+                    disabled={busy}
                     onClick={access.cancelAtPeriodEnd ? doResume : doCancel}
-                    disabled={cancelling}
-                    className="press rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-surface-2 disabled:opacity-50"
                   >
-                    {cancelling && <Loader2 className="mr-1 inline size-3 animate-spin" />}
+                    {busy && <Loader2 className="animate-spin" aria-hidden="true" />}
                     {access.cancelAtPeriodEnd ? cancelLabels.resume : cancelLabels.cancel}
                   </button>
                 </div>
               </>
             )}
-          </div>
+          </section>
         )}
 
-        <footer className="mt-16 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border pt-8 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">
-            GYMS.LIFE
-          </Link>
-          <Link to="/terms" className="hover:text-foreground">
-            {t("lg.pricing.terms")}
-          </Link>
-          <Link to="/privacy" className="hover:text-foreground">
-            {t("lg.pricing.privacy")}
-          </Link>
-          <Link to="/refund" className="hover:text-foreground">
-            {t("lg.pricing.refunds")}
-          </Link>
-        </footer>
-      </main>
-    </div>
+        <TransformationCalculator />
+        <div className="fl-pricing-context">
+          <h2>{t("l3.pr.compare.t")}</h2>
+          <p>{t("l3.pr.compare.d")}</p>
+        </div>
+      </div>
+    </PublicFrame>
   );
 }

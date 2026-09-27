@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Logo } from "@/components/AppShell";
-import { Link } from "@tanstack/react-router";
+import { LegalFrame } from "@/components/PublicFrame";
 import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/terms")({
@@ -21,57 +20,59 @@ export const Route = createFileRoute("/terms")({
 function TermsPage() {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
-          <Logo />
-          <Link to="/pricing" className="text-sm font-semibold text-primary">
-            {t("lg.nav.pricing")}
-          </Link>
-        </div>
-      </header>
-      <main className="prose-sm mx-auto max-w-3xl px-4 py-12 text-sm leading-relaxed">
-        <h1 className="text-display text-4xl">{t("lg.terms.title")}</h1>
-        <p className="text-muted-foreground">{t("lg.terms.updated")}</p>
+    <LegalFrame
+      page="terms"
+      title={t("lg.terms.title")}
+      updated={t("lg.terms.updated")}
+      headings={[
+        t("lg.terms.h1"),
+        t("lg.terms.h2"),
+        t("lg.terms.h3"),
+        t("lg.terms.h4"),
+        t("lg.terms.h5"),
+        t("lg.terms.h6"),
+        t("lg.terms.h7"),
+        t("lg.terms.h8"),
+        t("lg.terms.h9"),
+      ]}
+    >
+      <h2 id="section-1">{t("lg.terms.h1")}</h2>
+      <p>{t("lg.terms.p1")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h1")}</h2>
-        <p>{t("lg.terms.p1")}</p>
+      <h2 id="section-2">{t("lg.terms.h2")}</h2>
+      <p>{t("lg.terms.p2")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h2")}</h2>
-        <p>{t("lg.terms.p2")}</p>
+      <h2 id="section-3">{t("lg.terms.h3")}</h2>
+      <p>{t("lg.terms.p3")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h3")}</h2>
-        <p>{t("lg.terms.p3")}</p>
+      <h2 id="section-4">{t("lg.terms.h4")}</h2>
+      <p>
+        {t("lg.terms.p4a")}{" "}
+        <a
+          className="text-primary underline"
+          href="https://www.paddle.com/legal/checkout-buyer-terms"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t("lg.terms.p4link")}
+        </a>
+        . {t("lg.terms.p4b")}
+      </p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h4")}</h2>
-        <p>
-          {t("lg.terms.p4a")}{" "}
-          <a
-            className="text-primary underline"
-            href="https://www.paddle.com/legal/checkout-buyer-terms"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t("lg.terms.p4link")}
-          </a>
-          . {t("lg.terms.p4b")}
-        </p>
+      <h2 id="section-5">{t("lg.terms.h5")}</h2>
+      <p>{t("lg.terms.p5")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h5")}</h2>
-        <p>{t("lg.terms.p5")}</p>
+      <h2 id="section-6">{t("lg.terms.h6")}</h2>
+      <p>{t("lg.terms.p6")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h6")}</h2>
-        <p>{t("lg.terms.p6")}</p>
+      <h2 id="section-7">{t("lg.terms.h7")}</h2>
+      <p>{t("lg.terms.p7")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h7")}</h2>
-        <p>{t("lg.terms.p7")}</p>
+      <h2 id="section-8">{t("lg.terms.h8")}</h2>
+      <p>{t("lg.terms.p8")}</p>
 
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h8")}</h2>
-        <p>{t("lg.terms.p8")}</p>
-
-        <h2 className="mt-8 text-lg font-bold">{t("lg.terms.h9")}</h2>
-        <p>{t("lg.terms.p9")}</p>
-      </main>
-    </div>
+      <h2 id="section-9">{t("lg.terms.h9")}</h2>
+      <p>{t("lg.terms.p9")}</p>
+    </LegalFrame>
   );
 }
