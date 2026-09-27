@@ -95,16 +95,16 @@
   font: 600 12px var(--font-sans);
 }
 .fl-performance-plot {
-  overflow-x: auto;
+  min-width: 0;
 }
 .fl-performance-bars {
   display: flex;
-  gap: 10px;
-  min-width: max-content;
+  gap: 6px;
+  width: 100%;
 }
 .fl-performance-column {
   flex: 1;
-  min-width: 32px;
+  min-width: 0;
 }
 .fl-performance-bar-track {
   height: 150px;
@@ -123,11 +123,12 @@
   );
   border-radius: 6px 6px 0 0;
 }
-.fl-performance-column > span {
-  display: block;
+.fl-performance-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 9px;
   color: var(--muted-foreground);
-  text-align: center;
   margin-top: 10px;
   white-space: nowrap;
 }
@@ -243,4 +244,8 @@
   .fl-performance {
     gap: 22px;
   }
+}
+
+.fl-performance-metrics small {
+  margin-left: 4px;
 }

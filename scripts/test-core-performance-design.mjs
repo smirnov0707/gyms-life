@@ -31,6 +31,16 @@ export async function verifyPerformanceDesign({ open, record, artifacts }) {
         ).toHaveAttribute("data-value", "76");
         await expect(page.locator(".fl-performance-records li").last()).toContainText("— kg");
         await page.evaluate(() => document.fonts.ready);
+        for (const plot of await page.locator(".fl-performance-plot").all()) {
+          const bounds = await plot.boundingBox();
+          for (const track of await plot.locator(".fl-performance-bar-track").all()) {
+            const box = await track.boundingBox();
+            expect(box.width).toBeGreaterThan(0);
+            expect(box.x).toBeGreaterThanOrEqual(bounds.x - 1);
+            expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width + 1);
+          }
+          await expect(plot.locator(".fl-performance-axis > span")).toHaveCount(2);
+        }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
           true,
         );

@@ -97,29 +97,32 @@ function Trend({
   copy: Copy;
   name: string;
 }) {
-  const visible = [...points].sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
+  const visible = [...points].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(-14);
+  const latest = visible.at(-1);
   const maximum = Math.max(1, ...visible.map((p) => p.value));
-  const date = (value: string, short = false) =>
-    new Date(value).toLocaleDateString(
-      locale,
-      short ? { month: "short", day: "numeric" } : undefined,
-    );
+  const date = (value: string) => new Date(value).toLocaleDateString(locale);
   return (
     <>
       <div className="fl-performance-plot" role="img" aria-label={name}>
         <div aria-hidden="true" className="fl-performance-bars">
           {visible.map((p) => (
             <div key={p.id} className="fl-performance-column">
-              <div className="fl-performance-bar-track">
+              <div
+                className="fl-performance-bar-track"
+                title={`${p.label} · ${date(p.date)} · ${p.value.toLocaleString(locale)} kg`}
+              >
                 <span
                   data-performance-bar
                   data-value={p.value}
                   style={{ height: `${(p.value / maximum) * 100}%` }}
                 />
               </div>
-              <span>{date(p.date, true)}</span>
             </div>
           ))}
+        </div>
+        <div className="fl-performance-axis" aria-hidden="true">
+          <span>{visible[0] ? date(visible[0].date) : ""}</span>
+          <span>{latest ? date(latest.date) : ""}</span>
         </div>
       </div>
       <details className="fl-performance-values">
