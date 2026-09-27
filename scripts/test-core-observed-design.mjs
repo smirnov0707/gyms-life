@@ -13,6 +13,8 @@ export async function verifyObservedDesign({ open, record, artifacts }) {
   const capture = async (page, meta) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.evaluate(() => document.fonts.ready);
+    // Capture the resting design after keyboard behavior has been exercised.
+    await page.evaluate(() => document.activeElement?.blur());
     await noOverflow(page);
     const png = await page.screenshot({
       path: path.join(artifacts, meta.name + ".png"),
@@ -171,6 +173,39 @@ export async function verifyObservedDesign({ open, record, artifacts }) {
       );
       const disclosures = page.locator(".twin-future-view > details");
       await expect(disclosures).toHaveCount(2);
+      const projection = page.locator(".fl-strength-summary");
+      await expect(projection).toContainText("94,4 kg");
+      await expect(projection).toContainText("+2,6%");
+      const contrastSamples = await projection.evaluate((el) => {
+        const root = getComputedStyle(document.documentElement);
+        const rgba = (value) => {
+          const c = document.createElement("canvas").getContext("2d");
+          c.fillStyle = value;
+          c.fillRect(0, 0, 1, 1);
+          return [...c.getImageData(0, 0, 1, 1).data].slice(0, 3).map((v) => v / 255);
+        };
+        const lum = (rgb) =>
+          rgb
+            .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+            .reduce((n, v, i) => n + v * [0.2126, 0.7152, 0.0722][i], 0);
+        const contrast = (a, b) =>
+          (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+        const surface = rgba(root.getPropertyValue("--surface")),
+          primary = rgba(root.getPropertyValue("--primary"));
+        const tint = surface.map((v, i) => v * 0.92 + primary[i] * 0.08);
+        return [...el.querySelectorAll("dd")]
+          .filter((n) => n.getClientRects().length)
+          .map((n) => {
+            const color = rgba(getComputedStyle(n).color);
+            return {
+              text: n.textContent,
+              ratio: Math.min(contrast(color, surface), contrast(color, tint)),
+            };
+          });
+      });
+      expect(contrastSamples.length).toBeGreaterThanOrEqual(3);
+      for (const sample of contrastSamples)
+        expect(sample.ratio, `${theme}: ${sample.text}`).toBeGreaterThanOrEqual(4.5);
       await disclosures.nth(0).locator(":scope > summary").press("Enter");
       await expect(panel(page)).toBeVisible();
       await expect(page.locator(".fl-observed-metric")).toHaveCount(4);
