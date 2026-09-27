@@ -1,3 +1,4 @@
+import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
 import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
 import "./offline-fixture";
 import { TwinMilestones } from "@/components/twin/TwinMilestones";
@@ -55,6 +56,12 @@ const client = new QueryClient({
 Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
+  if (selected === "weekly")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <WeeklyIntelligenceReview />
+      </div>
+    );
   if (selected === "performance")
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
