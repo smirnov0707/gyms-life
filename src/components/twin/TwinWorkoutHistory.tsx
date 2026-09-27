@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Clock, Dumbbell, Loader2, Weight } from "lucide-react";
-import { GlowCard } from "@/components/GlowCard";
+import { CalendarDays, Clock, Weight } from "lucide-react";
+import { TwinLedgerState } from "./TwinLedgerState";
+import "./TwinLedger.css";
 import { WorkoutReportExporter } from "@/components/WorkoutReportExporter";
 import { getWorkoutHistory } from "@/lib/workout-history.functions";
 import { useAuth } from "@/lib/auth";
@@ -37,48 +38,46 @@ export function WorkoutHistoryPage() {
         sets: "atlikti setai · paskutinis",
         reps: "kart.",
       };
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey: ["workout-history", user?.id],
     queryFn: () => getWorkoutHistory({ data: { limit: 20 } }),
     enabled: !!user,
     staleTime: 30_000,
   });
   return (
-    <div className="fl-history-page mx-auto max-w-[1480px] space-y-3">
+    <div className="fl-history-page fl-workout-ledger mx-auto max-w-[1480px] space-y-3">
       <details className="fl-secondary-details">
         <summary>
           {isError ? copy.unavailable : isLoading || !data ? copy.loading : copy.eyebrow}
         </summary>
-        <section className="fl-disclosed-content bg-surface/90 p-4 sm:p-5">
-          <header className="border-b border-border pb-4">
-            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-cyan-300 light:text-cyan-700">
-              {copy.eyebrow}
-            </p>
-            <h2 className="mt-2 text-xl font-semibold text-foreground">{copy.title}</h2>
-            <p className="mt-2 text-xs text-muted-foreground">{copy.description}</p>
+        <section className="fl-disclosed-content fl-ledger-content">
+          <header className="fl-ledger-heading">
+            <p className="fl-ledger-eyebrow">{copy.eyebrow}</p>
+            <h2 className="fl-ledger-title">{copy.title}</h2>
+            <p className="fl-ledger-description">{copy.description}</p>
           </header>
-          {isLoading || (!data && !isError) ? (
-            <div
-              role="status"
-              className="flex min-h-32 items-center justify-center gap-2 text-xs text-muted-foreground"
-            >
-              <Loader2 aria-hidden="true" className="size-5 animate-spin text-violet-300" />
-              {copy.loading}
-            </div>
-          ) : isError ? (
-            <GlowCard className="panel mt-5 p-6">
-              <p role="alert" className="text-destructive">
-                {copy.unavailable}
-              </p>
-            </GlowCard>
+          {isError ? (
+            <TwinLedgerState
+              state="error"
+              title={copy.unavailable}
+              onRetry={() => {
+                void refetch();
+              }}
+              retrying={isFetching}
+            />
+          ) : isLoading || !data ? (
+            <TwinLedgerState state="loading" title={copy.loading} />
           ) : (
-            <div className="mt-5 grid gap-3">
-              {(data?.sessions ?? []).length === 0 ? (
-                <GlowCard className="panel p-8 text-center">
-                  <Dumbbell className="mx-auto size-10 text-primary" />
-                  <h3 className="mt-4 text-xl font-semibold">{copy.empty}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{copy.emptyHint}</p>
-                </GlowCard>
+            <div className="fl-workout-entries">
+              {data.sessions.length > 0 ? (
+                <p className="fl-ledger-note">
+                  {english
+                    ? "Up to 20 most recent completed sessions"
+                    : "Iki 20 naujausių užbaigtų treniruočių"}
+                </p>
+              ) : null}
+              {data.sessions.length === 0 ? (
+                <TwinLedgerState state="empty" title={copy.empty} description={copy.emptyHint} />
               ) : (
                 (data?.sessions ?? []).map((session) => {
                   const date = new Date(session.session.finishedAt);
@@ -88,14 +87,16 @@ export function WorkoutHistoryPage() {
                     ).values(),
                   );
                   return (
-                    <GlowCard key={session.session.id} className="panel p-5">
+                    <article key={session.session.id} className="fl-workout-entry">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
                             <CalendarDays className="size-3.5" />
                             {date.toLocaleDateString(formatLocale(lang))}
                           </p>
-                          <h3 className="mt-2 text-xl">{session.session.title}</h3>
+                          <h3 className="mt-2 text-xl">
+                            {session.session.title ?? copy.unplanned}
+                          </h3>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {session.session.dayIndex === null
                               ? copy.unplanned
@@ -112,13 +113,13 @@ export function WorkoutHistoryPage() {
                           </span>
                           <span className="flex items-center gap-1">
                             <Weight className="size-4" />
-                            {session.session.totalVolume} kg
+                            {session.session.totalVolume.toLocaleString(formatLocale(lang))} kg
                           </span>
                         </div>
                       </div>
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <div className="fl-workout-sets">
                         {exercises.map((set) => (
-                          <div key={set.exerciseSlug} className="rounded-lg bg-surface-2 px-4 py-3">
+                          <div key={set.exerciseSlug} className="fl-workout-exercise">
                             <div className="font-medium">{set.exerciseName}</div>
                             <div className="mt-1 text-xs text-muted-foreground">
                               {
@@ -132,7 +133,7 @@ export function WorkoutHistoryPage() {
                           </div>
                         ))}
                       </div>
-                    </GlowCard>
+                    </article>
                   );
                 })
               )}

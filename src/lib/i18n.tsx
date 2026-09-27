@@ -328,8 +328,8 @@ const baseDict = {
 
   "ach.title": { lt: "Pasiekimai", en: "Achievements" },
   "ach.sub": {
-    lt: "Kiekviena serija duoda XP. Kelk lygį, rink ženkliukus ir nenutrauk savo grandinės.",
-    en: "Every set earns XP. Level up, collect badges and keep your chain alive.",
+    lt: "Tavo užregistruotas aktyvumas, sukaupti pasiekimai ir treniruočių ritmas.",
+    en: "Your recorded activity, collected milestones and training rhythm.",
   },
   "ach.level": { lt: "Lygis", en: "Level" },
   "ach.xp": { lt: "XP", en: "XP" },

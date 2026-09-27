@@ -153,8 +153,7 @@ export const locale: Record<string, string> = {
   "nut.empty": "Heute noch nichts eingetragen.",
   "nut.delete": "Löschen",
   "ach.title": "Erfolge",
-  "ach.sub":
-    "Jeder Satz bringt XP. Steige im Level auf, sammle Abzeichen und halte deinen Streak aktiv.",
+  "ach.sub": "Deine erfassten Aktivitäten, erreichten Meilensteine und dein Trainingsrhythmus.",
   "ach.level": "Level",
   "ach.xp": "XP",
   "ach.next": "bis zum nächsten Level",

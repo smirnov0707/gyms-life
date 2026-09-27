@@ -1,3 +1,4 @@
+import { verifyLedgerDesign } from "./test-core-ledger-design.mjs";
 import { verifyCameraDesign } from "./test-core-camera-design.mjs";
 import { verifySupplementDesign } from "./test-core-supplement-design.mjs";
 import { verifyIntakeDesign } from "./test-core-intake-design.mjs";
@@ -121,6 +122,7 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
+  await verifyLedgerDesign({ open, record, artifacts });
   await verifyCameraDesign({ open, record, artifacts });
   await verifySupplementDesign({ open, record, artifacts });
   if (!process.argv.includes("--design-only")) {

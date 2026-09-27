@@ -1,21 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { Award, Flame, Lock, Trophy, Zap } from "lucide-react";
+import { Award, Flame, Lock, Trophy, Zap, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { formatLocale, useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
 import {
   browserTimeZone,
   calculateConsecutiveCalendarDayStreak,
   dayInTimeZone,
   dayOffset,
 } from "@/lib/local-day";
-import { cn } from "@/lib/utils";
+import { TwinLedgerState } from "./TwinLedgerState";
+import "./TwinLedger.css";
 
 export function TwinMilestones() {
   const { lang, t } = useI18n();
   const { user } = useAuth();
 
-  const { data, isError } = useQuery({
+  const { data, isError, isFetching, refetch } = useQuery({
     queryKey: ["achievements", user?.id],
     queryFn: async () => {
       const [sessions, forms, checkins] = await Promise.all([
@@ -41,6 +42,45 @@ export function TwinMilestones() {
     },
     enabled: !!user,
   });
+
+  const lt = baseLang(lang) === "lt";
+  const heading = (
+    <header className="fl-ledger-heading">
+      <span className="fl-ledger-eyebrow">
+        <Award aria-hidden="true" />
+        {lt ? "TAVO UŽREGISTRUOTAS PROGRESAS" : "YOUR RECORDED PROGRESS"}
+      </span>
+      <h2>{t("ach.title")}</h2>
+      <p>{t("ach.sub")}</p>
+    </header>
+  );
+  if (isError || !data)
+    return (
+      <section className="fl-milestones">
+        {heading}
+        <TwinLedgerState
+          state={isError ? "error" : "loading"}
+          title={
+            isError ? t("ach.readFailed") : lt ? "Įkeliami pasiekimai…" : "Loading achievements…"
+          }
+          description={
+            isError
+              ? lt
+                ? "Lygis, ženkleliai ir aktyvumas bus rodomi, kai istorija vėl bus pasiekiama."
+                : "Your level, badges and activity will appear when your history is available again."
+              : undefined
+          }
+          onRetry={
+            isError
+              ? () => {
+                  void refetch();
+                }
+              : undefined
+          }
+          retrying={isFetching}
+        />
+      </section>
+    );
 
   const sessions = data?.sessions ?? [];
   const volume = sessions.reduce((s, x) => s + Number(x.total_volume ?? 0), 0);
@@ -83,113 +123,136 @@ export function TwinMilestones() {
     return { key, active: trainedDays.has(key) };
   });
 
+  const earned = badges.filter((badge) => badge.unlocked).length;
+  const recorded = sessions.length > 0 || data.forms.length > 0 || checkins > 0;
+  const pointsNote = lt
+    ? "XP ir lygiai apibendrina aktyvumą programoje, o ne fizinį pajėgumą ar sveikatą."
+    : "XP and levels summarise activity in the app, not physical ability or health.";
   return (
-    <div className="grid gap-8">
-      <header>
-        <p className="text-xs uppercase tracking-widest text-primary">GYMS.LIFE · XP</p>
-        <h1 className="mt-1 text-5xl">{t("ach.title")}</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{t("ach.sub")}</p>
-      </header>
-
-      {isError ? (
-        <p className="rounded-2xl border border-border bg-surface-2 p-4 text-sm text-muted-foreground">
-          {t("ach.readFailed")}
-        </p>
+    <section className="fl-milestones">
+      {heading}
+      {!recorded ? (
+        <TwinLedgerState
+          state="empty"
+          title={lt ? "Tavo istorija dar prasidės" : "Your story starts here"}
+          description={
+            lt
+              ? "Užregistruok treniruotę ar dienos savijautą. Čia matysi savo sukauptą progresą."
+              : "Record a workout or daily check-in. Your collected progress will appear here."
+          }
+        />
       ) : null}
-
-      <div className="panel relative overflow-hidden p-6 md:p-8">
-        <div className="grain-hero pointer-events-none absolute inset-0 opacity-40" />
-        <div className="relative flex flex-wrap items-end justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <span className="grid size-16 place-items-center rounded-2xl bg-primary text-primary-foreground glow-ring">
-              <Trophy className="size-7" />
-            </span>
-            <div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                {t("ach.level")}
-              </div>
-              <div className="text-display text-6xl leading-none">{level}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <div>
-              <div className="text-display text-4xl leading-none text-primary">
-                {xp.toLocaleString(formatLocale(lang))}
-              </div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                {t("ach.xp")}
-              </div>
-            </div>
-            <div>
-              <div className="text-display flex items-center gap-1 text-4xl leading-none text-accent">
-                <Flame className="size-6" />
-                {streak}
-              </div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                {t("dash.streak")}
-              </div>
-            </div>
+      <div className="fl-milestone-overview">
+        <div className="fl-milestone-level">
+          <span className="fl-ledger-icon">
+            <Trophy aria-hidden="true" />
+          </span>
+          <div>
+            <span>{t("ach.level")}</span>
+            <strong data-milestone-level>{level}</strong>
           </div>
         </div>
-        <div className="relative mt-6">
-          <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-700"
-              style={{ width: `${pct}%` }}
-            />
+        <dl className="fl-ledger-metrics">
+          <div>
+            <dt>{t("ach.xp")}</dt>
+            <dd data-milestone-xp>{xp.toLocaleString(formatLocale(lang))}</dd>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <div>
+            <dt>
+              <Flame aria-hidden="true" />
+              {t("dash.streak")}
+            </dt>
+            <dd data-milestone-streak>{streak}</dd>
+          </div>
+          <div>
+            <dt>{t("ach.badges")}</dt>
+            <dd>
+              {earned}
+              <small> / {badges.length}</small>
+            </dd>
+          </div>
+        </dl>
+        <div className="fl-milestone-progress">
+          <div
+            role="progressbar"
+            aria-label={lt ? "Progresas iki kito lygio" : "Progress to next level"}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+          >
+            <span style={{ width: `${pct}%` }} />
+          </div>
+          <p>
             {levelCeil - xp} {t("ach.xp")} {t("ach.next")}
           </p>
         </div>
+        <p className="fl-ledger-note">{pointsNote}</p>
       </div>
-
-      <section>
-        <h2 className="flex items-center gap-2 text-3xl">
-          <Award className="size-5 text-primary" /> {t("ach.badges")}
-        </h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {badges.map((b) => (
-            <div
-              key={b.key}
-              className={cn(
-                "panel flex items-start gap-4 p-5 transition-all",
-                b.unlocked ? "border-primary/40 glow-ring" : "opacity-60",
-              )}
-            >
-              <span
-                className={cn(
-                  "grid size-11 shrink-0 place-items-center rounded-xl",
-                  b.unlocked ? "bg-primary/15 text-primary" : "bg-surface-2 text-muted-foreground",
-                )}
-              >
-                {b.unlocked ? <Zap className="size-5" /> : <Lock className="size-4" />}
+      <section aria-labelledby="milestone-badges-title">
+        <div className="fl-ledger-section-title">
+          <h3 id="milestone-badges-title">{t("ach.badges")}</h3>
+          <span>
+            {earned} / {badges.length}
+          </span>
+        </div>
+        <ul className="fl-milestone-badges">
+          {badges.map((badge) => (
+            <li key={badge.key} data-unlocked={badge.unlocked}>
+              <span className="fl-ledger-icon">
+                {badge.unlocked ? <Zap aria-hidden="true" /> : <Lock aria-hidden="true" />}
               </span>
               <div>
-                <div className="text-lg font-semibold leading-tight">{t(b.key)}</div>
-                <p className="text-xs text-muted-foreground">
-                  {b.unlocked ? t(b.desc) : `${t("ach.locked")} · ${t(b.desc)}`}
-                </p>
+                <span className="fl-milestone-badge-status">
+                  {badge.unlocked ? (lt ? "Pasiekta" : "Earned") : t("ach.locked")}
+                </span>
+                <h4>{t(badge.key)}</h4>
+                <p>{t(badge.desc)}</p>
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
-
-      <section>
-        <h2 className="text-3xl">{t("ach.heat")}</h2>
-        <div className="panel mt-4 overflow-x-auto p-5">
-          <div className="grid grid-flow-col grid-rows-7 gap-1">
+      <section className="fl-milestone-activity" aria-labelledby="milestone-activity-title">
+        <div className="fl-ledger-section-title">
+          <h3 id="milestone-activity-title">
+            <CalendarDays aria-hidden="true" />
+            {t("ach.heat")}
+          </h3>
+          <span>{lt ? "Paskutinės 182 dienos" : "Last 182 days"}</span>
+        </div>
+        <div
+          className="fl-milestone-calendar"
+          role="region"
+          aria-label={t("ach.heat")}
+          tabIndex={0}
+        >
+          <div
+            role="img"
+            aria-label={
+              lt
+                ? `${grid.filter((d) => d.active).length} treniruočių dienų per paskutines 182 dienas`
+                : `${grid.filter((d) => d.active).length} training days in the last 182 days`
+            }
+          >
             {grid.map((d) => (
-              <span
-                key={d.key}
-                title={d.key}
-                className={cn("size-3 rounded-[3px]", d.active ? "bg-primary" : "bg-surface-2")}
-              />
+              <span key={d.key} title={d.key} data-active={d.active} />
             ))}
           </div>
         </div>
+        <div className="fl-milestone-calendar-legend">
+          <span>
+            <i aria-hidden="true" />
+            {lt ? "Treniruotė neužregistruota" : "No workout recorded"}
+          </span>
+          <span>
+            <i aria-hidden="true" data-active />
+            {lt ? "Užregistruota treniruotė" : "Recorded workout"}
+          </span>
+        </div>
+        <p className="fl-ledger-note">
+          {grid[0]?.key} — {todayDay}
+        </p>
       </section>
-    </div>
+    </section>
   );
 }

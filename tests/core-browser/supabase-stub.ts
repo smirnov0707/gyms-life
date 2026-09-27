@@ -6,6 +6,12 @@ class Query {
   private start = 0;
   private end = Infinity;
   private single = false;
+  private nonNull: string[] = [];
+  not(key: string, operator: string, value: unknown) {
+    if (operator !== "is" || value !== null) throw new Error("Unexpected synthetic not filter");
+    this.nonNull.push(key);
+    return this;
+  }
   private removing = false;
   delete() {
     this.removing = true;
@@ -40,6 +46,57 @@ class Query {
   }
   private async execute() {
     count("read:" + this.table);
+    if (
+      new URLSearchParams(location.search).get("screen") === "milestones" &&
+      ["workout_sessions", "form_analyses", "daily_checkins"].includes(this.table)
+    ) {
+      state.last["ledgerRead:" + this.table] = { filters: this.filters, nonNull: this.nonNull };
+      while (state.fail === "milestones-pending") await delay();
+      if (state.fail === "milestones" || state.fail === "milestones-" + this.table)
+        return { data: null, error: { message: "Synthetic ledger unavailable" } };
+      if (new URLSearchParams(location.search).get("scenario") === "empty")
+        return { data: [], error: null };
+      const days = Array.from({ length: 10 }, (_, i) =>
+        new Date(Date.now() - i * 86400000).toISOString(),
+      );
+      const records: Record<string, unknown>[] =
+        this.table === "workout_sessions"
+          ? [
+              ...days.map((started_at) => ({
+                user_id: state.profile.id,
+                started_at,
+                finished_at: started_at,
+                total_volume: 6500,
+              })),
+              {
+                user_id: state.profile.id,
+                started_at: days[0],
+                finished_at: null,
+                total_volume: 990000,
+              },
+            ]
+          : this.table === "form_analyses"
+            ? [{ user_id: state.profile.id, score: 92 }]
+            : days
+                .slice(0, 7)
+                .map((date) => ({ user_id: state.profile.id, checkin_on: date.slice(0, 10) }));
+      records.push({
+        user_id: "another-user",
+        started_at: days[0],
+        finished_at: days[0],
+        total_volume: 999999,
+        score: 100,
+        checkin_on: days[0],
+      });
+      return {
+        data: records.filter(
+          (row) =>
+            Object.entries(this.filters).every(([key, value]) => row[key] === value) &&
+            this.nonNull.every((key) => row[key] != null),
+        ),
+        error: null,
+      };
+    }
     if (this.table === "daily_checkins") {
       state.last["read:daily_checkins"] = { ...this.filters };
       while (state.fail === "readiness-pending") await delay();

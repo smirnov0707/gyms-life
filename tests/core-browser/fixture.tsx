@@ -1,4 +1,6 @@
 import "./offline-fixture";
+import { TwinMilestones } from "@/components/twin/TwinMilestones";
+import { WorkoutHistoryPage } from "@/components/twin/TwinWorkoutHistory";
 import { Route as CameraRoute } from "@/routes/_authenticated/ar";
 import { Route as SupplementsRoute } from "@/routes/_authenticated/supplements";
 import { Route as ExercisesRoute } from "@/routes/exercises.index";
@@ -52,6 +54,8 @@ const client = new QueryClient({
 Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
+  if (selected === "milestones") return <TwinMilestones />;
+  if (selected === "history") return <WorkoutHistoryPage />;
   const routes = {
     camera: CameraRoute.options.component,
     supplements: SupplementsRoute.options.component,
