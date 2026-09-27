@@ -119,7 +119,7 @@ export function WorkoutHistoryPage() {
                       </div>
                       <div className="fl-workout-sets">
                         {exercises.map((set) => (
-                          <div key={set.exerciseSlug} className="fl-workout-exercise">
+                          <div key={set.exerciseSlug} className="fl-ledger-exercise">
                             <div className="font-medium">{set.exerciseName}</div>
                             <div className="mt-1 text-xs text-muted-foreground">
                               {

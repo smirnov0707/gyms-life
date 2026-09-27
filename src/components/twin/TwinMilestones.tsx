@@ -223,7 +223,7 @@ export function TwinMilestones() {
         <div
           className="fl-milestone-calendar"
           role="region"
-          aria-label={t("ach.heat")}
+          aria-label={lt ? "Slenkamas treniruočių kalendorius" : "Scrollable training calendar"}
           tabIndex={0}
         >
           <div

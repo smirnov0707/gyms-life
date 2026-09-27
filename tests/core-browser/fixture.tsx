@@ -54,8 +54,18 @@ const client = new QueryClient({
 Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
-  if (selected === "milestones") return <TwinMilestones />;
-  if (selected === "history") return <WorkoutHistoryPage />;
+  if (selected === "milestones")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <TwinMilestones />
+      </div>
+    );
+  if (selected === "history")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <WorkoutHistoryPage />
+      </div>
+    );
   const routes = {
     camera: CameraRoute.options.component,
     supplements: SupplementsRoute.options.component,

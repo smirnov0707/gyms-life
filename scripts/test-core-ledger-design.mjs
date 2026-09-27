@@ -9,16 +9,19 @@ export async function verifyLedgerDesign({ open, record, artifacts }) {
   for (const screen of ["milestones", "history"])
     for (const theme of ["dark", "light"])
       for (const width of [1440, 390]) {
-        const { page, context } = await open(`screen=${screen}&shell=1&theme=${theme}`, {
-          width,
-          height: 900,
-        });
+        const { page, context } = await open(
+          `screen=${screen}&route=/twin&shell=1&theme=${theme}`,
+          {
+            width,
+            height: 900,
+          },
+        );
         await page.emulateMedia({ reducedMotion: "reduce" });
         if (screen === "history") {
           await expect(history(page).locator("summary")).toHaveText("Recorded training");
           await history(page).locator("summary").press("Enter");
           await expect(page.locator(".fl-workout-entry")).toHaveCount(1);
-          await expect(page.locator(".fl-workout-exercise")).toHaveCount(2);
+          await expect(page.locator(".fl-ledger-exercise")).toHaveCount(2);
           await expect(page.locator(".fl-workout-entry")).toContainText("— min");
           await expect(page.locator(".fl-workout-entry")).toContainText(
             "2 completed sets · last: 8 reps × 40 kg · RPE 7",
@@ -123,7 +126,7 @@ export async function verifyLedgerDesign({ open, record, artifacts }) {
         await expect(page.locator("[data-milestone-xp]")).toHaveText("0");
         await expect(page.locator("[data-milestone-streak]")).toHaveText("0");
         await expect(page.locator(".fl-milestone-badges [data-unlocked=true]")).toHaveCount(0);
-        const calendar = page.getByRole("region", { name: "Aktyvumo žemėlapis" });
+        const calendar = page.getByRole("region", { name: "Slenkamas treniruočių kalendorius" });
         await calendar.focus();
         await expect(calendar).toBeFocused();
         await calendar.press("ArrowRight");
