@@ -1,3 +1,4 @@
+import { verifyPerformanceDesign } from "./test-core-performance-design.mjs";
 import { verifyLedgerDesign } from "./test-core-ledger-design.mjs";
 import { verifyCameraDesign } from "./test-core-camera-design.mjs";
 import { verifySupplementDesign } from "./test-core-supplement-design.mjs";
@@ -122,6 +123,7 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
+  await verifyPerformanceDesign({ open, record, artifacts });
   await verifyLedgerDesign({ open, record, artifacts });
   await verifyCameraDesign({ open, record, artifacts });
   await verifySupplementDesign({ open, record, artifacts });

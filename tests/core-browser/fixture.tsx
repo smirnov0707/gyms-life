@@ -1,3 +1,4 @@
+import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
 import "./offline-fixture";
 import { TwinMilestones } from "@/components/twin/TwinMilestones";
 import { WorkoutHistoryPage } from "@/components/twin/TwinWorkoutHistory";
@@ -54,6 +55,12 @@ const client = new QueryClient({
 Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
+  if (selected === "performance")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <PerformanceProgressPanel />
+      </div>
+    );
   if (selected === "milestones")
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
