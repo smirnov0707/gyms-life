@@ -74,7 +74,9 @@ export async function verifyComparisonDesign({ open, record, artifacts }) {
         );
         await select.selectOption("glutes");
         await expect(
-          map(page).getByRole("button", { name: lang === "lt" ? "Nugara" : "Back", exact: true }),
+          map(page)
+            .locator(".fl-comparison-toggle")
+            .getByRole("button", { name: lang === "lt" ? "Nugara" : "Back", exact: true }),
         ).toHaveAttribute("aria-pressed", "true");
         await expect(map(page).locator(".fl-change-selection span")).toHaveAttribute(
           "data-tone",
