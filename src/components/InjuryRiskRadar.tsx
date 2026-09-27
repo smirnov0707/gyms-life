@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { ShieldAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
+import { Activity, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n, type TKey } from "@/lib/i18n";
+import { TwinLedgerState } from "@/components/twin/TwinLedgerState";
+import "./InjuryRiskRadar.css";
 import {
   buildRiskReport,
   RISK_HIGH_AT,
@@ -19,19 +21,19 @@ import { cn } from "@/lib/utils";
  */
 const TONE: Record<RiskLevel, { chip: string; bar: string; text: string }> = {
   low: {
-    chip: "bg-emerald-400/12 text-emerald-300 light:bg-emerald-600/10 light:text-emerald-700",
+    chip: "bg-emerald-400/12 text-emerald-300 light:bg-emerald-600/10 light:text-emerald-800",
     bar: "bg-emerald-400/30 light:bg-emerald-600/25",
-    text: "text-emerald-300 light:text-emerald-700",
+    text: "text-emerald-300 light:text-emerald-800",
   },
   moderate: {
-    chip: "bg-amber-400/12 text-amber-300 light:bg-amber-600/10 light:text-amber-700",
+    chip: "bg-amber-400/12 text-amber-300 light:bg-amber-600/10 light:text-amber-800",
     bar: "bg-amber-400/30 light:bg-amber-600/25",
-    text: "text-amber-300 light:text-amber-700",
+    text: "text-amber-300 light:text-amber-800",
   },
   high: {
-    chip: "bg-rose-400/12 text-rose-300 light:bg-rose-600/10 light:text-rose-700",
+    chip: "bg-rose-400/12 text-rose-300 light:bg-rose-600/10 light:text-rose-800",
     bar: "bg-rose-400/30 light:bg-rose-600/25",
-    text: "text-rose-300 light:text-rose-700",
+    text: "text-rose-300 light:text-rose-800",
   },
 };
 
@@ -46,7 +48,7 @@ const LEVEL_KEY = {
  * marked where they fall. The figure is decorative: the score, the level
  * and both thresholds are all written out beside it.
  */
-function RiskScale({ score, level }: { score: number; level: RiskLevel }) {
+function RiskScale({ score }: { score: number }) {
   const zones: { level: RiskLevel; width: number }[] = [
     { level: "low", width: RISK_MODERATE_AT },
     { level: "moderate", width: RISK_HIGH_AT - RISK_MODERATE_AT },
@@ -54,7 +56,7 @@ function RiskScale({ score, level }: { score: number; level: RiskLevel }) {
   ];
 
   return (
-    <div aria-hidden="true" className="mt-3">
+    <div aria-hidden="true" className="fl-risk-scale">
       <div className="relative flex h-2.5 overflow-hidden rounded-full">
         {zones.map((zone) => (
           <span
@@ -78,7 +80,6 @@ function RiskScale({ score, level }: { score: number; level: RiskLevel }) {
         </span>
         <span className="absolute right-0">100</span>
       </div>
-      <span className="sr-only">{level}</span>
     </div>
   );
 }
@@ -94,7 +95,7 @@ export function InjuryRiskRadar() {
   const { t } = useI18n();
   const { user } = useAuth();
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, isFetching, refetch } = useQuery({
     queryKey: ["injury-risk", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -138,6 +139,8 @@ export function InjuryRiskRadar() {
             : { status: "report", report: data }
       }
       t={t}
+      onRetry={() => void refetch()}
+      retrying={isFetching}
     />
   );
 }
@@ -150,119 +153,168 @@ export function InjuryRiskRadar() {
 export type InjuryRiskViewState =
   { status: "loading" } | { status: "failed" } | { status: "report"; report: RiskReport };
 
+const COPY = {
+  en: {
+    eyebrow: "Load & recovery",
+    overview: "Signals in your training",
+    assessed: "Assessed factors",
+    factors: "What contributes to the score",
+    method: "How to read this score",
+    model: "The score summarizes recorded signals. It is not a percentage probability of injury.",
+    missing:
+      "Missing factors add nothing to this score. Read it together with the data coverage below.",
+    complete: "All five factors could be assessed from the loaded history.",
+    failed: "Training signals are unavailable",
+    failedDetail: "Your history could not be read. Try again to restore the report.",
+    empty: "No training signals yet",
+    unmeasured: "More measured signals are needed",
+    unmeasuredDetail:
+      "The loaded records do not support any of the five factors yet. No score is shown.",
+    boundaries: "Model thresholds",
+  },
+  lt: {
+    eyebrow: "Krūvis ir atsistatymas",
+    overview: "Tavo treniruočių signalai",
+    assessed: "Įvertinti veiksniai",
+    factors: "Kas sudaro šį balą",
+    method: "Kaip skaityti šį balą",
+    model: "Balas apibendrina užregistruotus signalus. Tai nėra traumos tikimybės procentas.",
+    missing:
+      "Trūkstami veiksniai prie balo neprisideda. Vertink jį kartu su žemiau nurodyta duomenų aprėptimi.",
+    complete: "Įkelta istorija leido įvertinti visus penkis veiksnius.",
+    failed: "Treniruočių signalai nepasiekiami",
+    failedDetail: "Nepavyko perskaityti istorijos. Bandyk dar kartą, kad atkurtum ataskaitą.",
+    empty: "Treniruočių signalų dar nėra",
+    unmeasured: "Reikia daugiau išmatuotų signalų",
+    unmeasuredDetail:
+      "Įkelti įrašai dar neleidžia įvertinti nė vieno iš penkių veiksnių. Balas nerodomas.",
+    boundaries: "Modelio ribos",
+  },
+} as const;
+
 export function InjuryRiskView({
   state,
   t,
+  onRetry,
+  retrying = false,
 }: {
   state: InjuryRiskViewState;
   t: (key: TKey) => string;
+  onRetry?: (() => void) | undefined;
+  retrying?: boolean;
 }) {
+  const { lang } = useI18n();
+  const copy = COPY[baseLang(lang)];
   const data = state.status === "report" ? state.report : undefined;
-  const level = data?.level ?? "low";
-  const tone = TONE[level];
-  const showsReport = data !== undefined && data.hasData;
-  const Icon = !showsReport ? ShieldQuestion : level === "low" ? ShieldCheck : ShieldAlert;
+  const showsReport = data !== undefined && data.hasData && data.factors.length > 0;
 
   return (
-    <section className="rounded-2xl border border-border bg-surface-2 p-5 text-left sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "rounded-xl border border-border p-2.5",
-              showsReport ? tone.chip : "text-muted-foreground",
-            )}
-          >
-            <Icon className="size-6" />
-          </span>
-          <div>
-            <h2 className="text-lg font-bold sm:text-xl">{t("nx.risk.title")}</h2>
-            <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
-              {t("nx.risk.subtitle")}
-            </p>
-          </div>
+    <section className="fl-risk-review" data-state={state.status}>
+      <header className="fl-ledger-heading">
+        <div className="fl-ledger-eyebrow">
+          <Activity aria-hidden="true" />
+          {copy.eyebrow}
         </div>
-
-        {showsReport && (
-          <div className="min-w-[13rem] flex-1 sm:max-w-xs">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {t("nx.risk.score")}
-            </p>
-            <p className="mt-1 flex items-baseline gap-2">
-              <span className={cn("font-mono text-2xl font-bold", tone.text)}>{data.score}</span>
-              <span className="font-mono text-xs text-muted-foreground">/ 100</span>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider",
-                  tone.chip,
-                )}
-              >
-                {t(LEVEL_KEY[level])}
-              </span>
-            </p>
-            <RiskScale score={data.score} level={level} />
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              {t("nx.risk.scale")}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-5 space-y-2.5">
-        {state.status === "loading" ? (
-          <p className="rounded-xl border border-border bg-surface p-4 text-center text-xs text-muted-foreground">
-            {t("nx.risk.loading")}
-          </p>
-        ) : state.status === "failed" ? (
-          <p className="rounded-xl border border-border bg-surface p-4 text-center text-xs text-muted-foreground">
-            {t("nx.risk.failed")}
-          </p>
-        ) : !showsReport || data.factors.length === 0 ? (
-          <p className="rounded-xl border border-border bg-surface p-4 text-center text-xs text-muted-foreground">
-            {t("nx.risk.empty")}
-          </p>
-        ) : (
-          data.factors.map((factor) => (
-            <div
-              key={factor.key}
-              className="space-y-1.5 rounded-xl border border-border bg-surface p-3.5"
-            >
-              <div className="flex items-center justify-between gap-3 text-xs font-semibold">
-                <span className="text-foreground">{t(factor.key)}</span>
+        <h2>{t("nx.risk.title")}</h2>
+        <p>{t("nx.risk.subtitle")}</p>
+      </header>
+      {state.status === "loading" ? (
+        <TwinLedgerState state="loading" title={t("nx.risk.loading")} />
+      ) : state.status === "failed" ? (
+        <TwinLedgerState
+          state="error"
+          title={copy.failed}
+          description={copy.failedDetail}
+          onRetry={onRetry}
+          retrying={retrying}
+        />
+      ) : !showsReport ? (
+        <TwinLedgerState
+          state="empty"
+          title={data?.hasData ? copy.unmeasured : copy.empty}
+          description={data?.hasData ? copy.unmeasuredDetail : t("nx.risk.empty")}
+        />
+      ) : (
+        <>
+          <div className="fl-risk-overview">
+            <div className="fl-risk-summary">
+              <h3>{copy.overview}</h3>
+              <div className="fl-risk-score-line">
+                <dl>
+                  <dt>{t("nx.risk.score")}</dt>
+                  <dd data-testid="risk-score" className={TONE[data.level].text}>
+                    {data.score}
+                    <small>/100</small>
+                  </dd>
+                </dl>
                 <span
-                  className={cn(
-                    "shrink-0 rounded px-2 py-0.5 font-mono font-bold",
-                    TONE[factor.level].chip,
-                  )}
+                  className={cn("fl-risk-level", TONE[data.level].chip)}
+                  data-level={data.level}
                 >
-                  {factor.value}
+                  {t(LEVEL_KEY[data.level])}
                 </span>
               </div>
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                {t(factor.adviceKey)}
+              <RiskScale score={data.score} />
+            </div>
+            <div className="fl-risk-coverage">
+              <dl>
+                <dt>{copy.assessed}</dt>
+                <dd>
+                  {data.factors.length}
+                  <small>/{data.factors.length + data.unassessed.length}</small>
+                </dd>
+              </dl>
+              <p>{data.unassessed.length ? copy.missing : copy.complete}</p>
+            </div>
+          </div>
+          <details className="fl-risk-method">
+            <summary>
+              <Info aria-hidden="true" />
+              {copy.method}
+            </summary>
+            <div>
+              <p>{copy.model}</p>
+              <p>
+                {copy.boundaries}: {t(LEVEL_KEY.low)} 0–{RISK_MODERATE_AT - 1} ·{" "}
+                {t(LEVEL_KEY.moderate)} {RISK_MODERATE_AT}–{RISK_HIGH_AT - 1} · {t(LEVEL_KEY.high)}{" "}
+                {RISK_HIGH_AT}–100.
               </p>
             </div>
-          ))
-        )}
-      </div>
-
-      {/* An additive score is flattered by the terms it could not compute.
-          Naming them is the difference between a low score and a low score
-          the athlete can trust. An athlete with no history at all is told
-          that once, by the empty state — listing all five underneath it
-          would only say the same thing a second time. */}
-      {showsReport && data.unassessed.length > 0 && (
-        <div className="mt-4 border-t border-border pt-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            {t("nx.risk.unassessed")}
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-            {data.unassessed.map((key) => t(key)).join(" · ")}
-          </p>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-            {t("nx.risk.unassessed.note")}
-          </p>
-        </div>
+          </details>
+          <div className="fl-risk-factor-section">
+            <h3>{copy.factors}</h3>
+            <div className="fl-risk-factors">
+              {data.factors.map((factor, index) => (
+                <article key={factor.key} data-factor={factor.key}>
+                  <header>
+                    <span className="fl-risk-index" aria-hidden="true">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h4>{t(factor.key)}</h4>
+                  </header>
+                  <div className="fl-risk-factor-value">
+                    <strong>{factor.value}</strong>
+                    <span className={cn("fl-risk-level", TONE[factor.level].chip)}>
+                      {t(LEVEL_KEY[factor.level])}
+                    </span>
+                  </div>
+                  <p>{t(factor.adviceKey)}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+          {data.unassessed.length > 0 && (
+            <section className="fl-risk-gaps">
+              <h3>{t("nx.risk.unassessed")}</h3>
+              <ul>
+                {data.unassessed.map((key) => (
+                  <li key={key}>{t(key)}</li>
+                ))}
+              </ul>
+              <p>{t("nx.risk.unassessed.note")}</p>
+            </section>
+          )}
+        </>
       )}
     </section>
   );

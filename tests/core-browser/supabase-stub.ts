@@ -1,6 +1,7 @@
 // Synthetic in-memory Supabase adapter. No network or real account access.
 import { state, count, persist, delay } from "./state";
 import { exercises } from "./fixtures";
+import { riskFixtureRows } from "./risk-fixtures";
 class Query {
   private filters: Record<string, unknown> = {};
   private lowerBounds: Record<string, unknown> = {};
@@ -30,7 +31,9 @@ class Query {
     this.filters[key] = value;
     return this;
   }
-  order() {
+  private ordering: { key: string; ascending: boolean }[] = [];
+  order(key: string, options: { ascending?: boolean } = {}) {
+    this.ordering.push({ key, ascending: options.ascending ?? true });
     return this;
   }
   limit(value: number) {
@@ -51,6 +54,32 @@ class Query {
   }
   private async execute() {
     count("read:" + this.table);
+    const params = new URLSearchParams(location.search);
+    if (
+      (params.get("screen") === "risk" || params.get("risk") === "ready") &&
+      ["set_logs", "workout_sessions", "daily_checkins"].includes(this.table)
+    ) {
+      state.last["riskRead:" + this.table] = {
+        filters: this.filters,
+        lowerBounds: this.lowerBounds,
+        ordering: this.ordering,
+        limit: this.end + 1,
+      };
+      while (state.fail === "risk-pending") await delay();
+      if (state.fail === "risk" || state.fail === "risk-" + this.table)
+        return { data: null, error: { message: "UNTRUSTED_SYNTHETIC_RISK_FAILURE" } };
+      const records = riskFixtureRows(this.table, params.get("scenario") ?? "ready").filter(
+        (row) =>
+          Object.entries(this.filters).every(([key, value]) => row[key] === value) &&
+          Object.entries(this.lowerBounds).every(
+            ([key, value]) =>
+              typeof row[key] === "string" && typeof value === "string" && row[key] >= value,
+          ),
+      );
+      for (const { key, ascending } of [...this.ordering].reverse())
+        records.sort((a, b) => String(a[key]).localeCompare(String(b[key])) * (ascending ? 1 : -1));
+      return { data: records.slice(this.start, this.end + 1), error: null };
+    }
     if (
       new URLSearchParams(location.search).get("screen") === "future" &&
       ["set_logs", "workout_sessions", "daily_checkins"].includes(this.table)

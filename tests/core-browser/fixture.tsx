@@ -1,3 +1,4 @@
+import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { TwinFuture } from "@/components/twin/TwinFuture";
 import { FutureMeSummary } from "@/components/future-lab/FutureMeSummary";
 import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
@@ -62,6 +63,12 @@ function Panel() {
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
         {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
+      </div>
+    );
+  if (selected === "risk")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <InjuryRiskRadar />
       </div>
     );
   if (selected === "weekly")
