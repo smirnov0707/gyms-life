@@ -194,7 +194,9 @@ try {
   }
   {
     const { page, context } = await open("billing=yes&user=yes&access=subscriber");
-    await expect(page.getByRole("button", { name: "Cancel subscription" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Cancel subscription", exact: true }),
+    ).toBeVisible();
     await page.locator('[data-plan="vex_yearly"]').press("Enter");
     await expect.poll(() => page.evaluate(() => window.__publicTest.reads)).toBe(2);
     expect(await page.evaluate(() => window.__publicTest.calls)).toEqual([
@@ -213,6 +215,7 @@ try {
           ? page.locator(".fl-pricing-account-actions button").first()
           : page.getByRole("button", {
               name: action === "cancel" ? "Cancel subscription" : "Resume subscription",
+              exact: true,
             });
       await expect(button).toBeVisible();
       if (action === "cancel") page.once("dialog", (dialog) => dialog.accept());
@@ -237,7 +240,7 @@ try {
     }
   {
     const { page, context } = await open("billing=yes&user=yes&access=subscriber");
-    const cancel = page.getByRole("button", { name: "Cancel subscription" });
+    const cancel = page.getByRole("button", { name: "Cancel subscription", exact: true });
     await expect(cancel).toBeVisible();
     page.once("dialog", (dialog) => dialog.dismiss());
     await cancel.press("Enter");
@@ -259,6 +262,7 @@ try {
   }
   for (const lang of ["en", "lt", "de", "fr", "es", "pl", "ru", "uk"]) {
     const { page, context } = await open(`lang=${lang}`, 320);
+    await expect(page.locator(".fl-price-tagline").last()).toContainText("95");
     const sliders = page.getByRole("slider");
     for (const slider of await sliders.all())
       expect(await slider.getAttribute("aria-labelledby")).toBeTruthy();

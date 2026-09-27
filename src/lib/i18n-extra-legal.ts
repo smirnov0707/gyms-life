@@ -226,8 +226,8 @@ export const extra_legal = {
   "lg.pricing.plan.yearly.name": { lt: "Metinis", en: "Yearly" },
   "lg.pricing.plan.yearly.per": { lt: "/ metus", en: "/ year" },
   "lg.pricing.plan.yearly.tagline": {
-    lt: "€4.08 / mėn. · sutaupai €98",
-    en: "€4.08 / mo · save €98",
+    lt: "€4.08 / mėn. · sutaupai €95",
+    en: "€4.08 / mo · save €95",
   },
 
   "lg.pricing.feature.plans": {

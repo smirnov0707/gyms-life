@@ -597,7 +597,7 @@ export const locale: Record<string, string> = {
   "lg.pricing.plan.monthly.tagline": "Le plus populaire",
   "lg.pricing.plan.yearly.name": "Annuel",
   "lg.pricing.plan.yearly.per": "/ an",
-  "lg.pricing.plan.yearly.tagline": "4,08 € / mois · économise 98 €",
+  "lg.pricing.plan.yearly.tagline": "4,08 € / mois · économise 95 €",
   "lg.pricing.feature.plans": "Programmes d'entraînement personnalisés selon vos objectifs",
   "lg.pricing.feature.library": "Bibliothèque de 175+ exercices avec vidéos technique",
   "lg.pricing.feature.meals": "Plans de repas avec recettes et listes de courses",

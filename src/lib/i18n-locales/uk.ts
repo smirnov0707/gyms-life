@@ -588,7 +588,7 @@ export const locale: Record<string, string> = {
   "lg.pricing.plan.monthly.tagline": "Найпопулярніший",
   "lg.pricing.plan.yearly.name": "Річний",
   "lg.pricing.plan.yearly.per": "/ рік",
-  "lg.pricing.plan.yearly.tagline": "€4.08 / міс. · економія €98",
+  "lg.pricing.plan.yearly.tagline": "€4.08 / міс. · економія €95",
   "lg.pricing.feature.plans": "Персональні плани тренувань під вашу мету",
   "lg.pricing.feature.library": "Бібліотека 175+ вправ із відео техніки",
   "lg.pricing.feature.meals": "Плани харчування з рецептами та списками покупок",

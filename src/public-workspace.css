@@ -669,7 +669,7 @@
     margin-top: 2px;
   }
   .fl-public-notice > div {
-    flex: 1;
+    flex: 1 1 calc(100% - 30px);
     min-width: 0;
   }
   .fl-public-notice > a,
