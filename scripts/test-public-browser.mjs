@@ -367,6 +367,15 @@ try {
     await expect(page.locator('.fl-landing a[href="/auth?mode=up"]')).toHaveCount(3);
     await expect(page.locator('.fl-landing a[href="/exercises"]')).toHaveCount(1);
     await expect(page.locator('.fl-landing a[href="/pricing"]')).toHaveCount(1);
+    expect(
+      await page.locator(".fl-landing-routine li > span").evaluateAll((numbers) =>
+        numbers.every((number) => {
+          const range = document.createRange();
+          range.selectNodeContents(number);
+          return range.getClientRects().length === 1;
+        }),
+      ),
+    ).toBe(true);
     const question = page.locator(".fl-landing-faq summary").first();
     await question.press("Enter");
     await expect(page.locator(".fl-landing-faq details").first()).toHaveAttribute("open", "");

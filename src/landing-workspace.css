@@ -255,6 +255,8 @@
   padding-top: 0;
 }
 .fl-landing-routine li > span {
+  flex: 0 0 26px;
+  white-space: nowrap;
   font: 500 14px var(--font-display);
   color: var(--primary);
   padding-top: 5px;
