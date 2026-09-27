@@ -1,3 +1,4 @@
+import { trendFixture } from "./trend-fixtures";
 import type { TwinTrendHistory } from "../../src/lib/twin-trend";
 import { state, count, delay } from "./state";
 import { DeterministicPerformanceForecastSchema } from "../../src/lib/forecast.schema";
@@ -32,6 +33,7 @@ export async function getTwinTrendHistory(): Promise<TwinTrendHistory> {
   count("getTwinTrendHistory");
   while (state.fail === "observed-pending") await delay();
   if (state.fail === "observed") throw new Error("UNTRUSTED_SYNTHETIC_OBSERVED_FAILURE");
+  if (new URLSearchParams(location.search).get("screen") === "trend") return trendFixture();
   const scenario = new URLSearchParams(location.search).get("scenario");
   const days =
     scenario === "empty"

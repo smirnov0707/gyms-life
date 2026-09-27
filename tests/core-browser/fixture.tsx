@@ -1,3 +1,4 @@
+import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
 import { TwinMemory } from "@/components/twin/TwinMemory";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
 import { TwinFuture } from "@/components/twin/TwinFuture";
@@ -64,6 +65,15 @@ function Panel() {
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
         {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
+      </div>
+    );
+  if (selected === "trend")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <TwinTrendLens
+          initialRegion={query.get("region")}
+          initiallyExpanded={query.get("collapsed") !== "1"}
+        />
       </div>
     );
   if (selected === "memory")
