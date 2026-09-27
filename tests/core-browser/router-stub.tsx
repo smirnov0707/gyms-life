@@ -2,6 +2,7 @@
 import type { AnchorHTMLAttributes, ComponentType, ReactNode } from "react";
 const screens: Record<string, string> = {
   "/app": "today",
+  "/ar": "camera",
   "/exercises": "exercises",
   "/onboarding": "onboarding",
   "/training": "training",

@@ -1243,3 +1243,268 @@
     padding: 16px;
   }
 }
+
+/* Movement tools: one deliberate dark camera stage inside theme-aware surfaces. */
+.fl-camera-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+.fl-camera-hero .fl-workspace-title {
+  margin-top: 15px;
+}
+.fl-camera-hero p:not(.fl-workspace-eyebrow) {
+  max-width: 620px;
+  margin-top: 14px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.fl-camera-hero-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 104px;
+  height: 104px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 50%;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  box-shadow: 0 0 0 16px color-mix(in srgb, var(--primary) 3%, transparent);
+}
+.fl-camera-hero-mark svg {
+  width: 48px;
+  height: 48px;
+  stroke-width: 1.25;
+}
+.fl-camera-modebar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.fl-camera-modebar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--muted-foreground);
+}
+.fl-camera-modebar button[aria-pressed="true"] {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+.fl-camera-modebar button:hover {
+  color: var(--foreground);
+}
+.fl-camera-mode-copy {
+  margin: -3px 4px 2px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+.fl-camera-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.fl-camera-layout.hidden {
+  display: none;
+}
+.fl-camera-panel {
+  min-width: 0;
+}
+.fl-camera-workspace .panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.fl-camera-stage {
+  min-height: 340px;
+  background: #070e1b;
+  color: #eef3ff;
+}
+.fl-camera-idle {
+  background: radial-gradient(ellipse at 50% 75%, #152449 0%, #0c1425 46%, #070e1b 85%);
+}
+.fl-camera-idle::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid #a6bde01c;
+  border-radius: 12px;
+  pointer-events: none;
+}
+.fl-camera-idle > div {
+  position: relative;
+  max-width: 380px;
+}
+.fl-camera-idle-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 20px;
+  border: 1px solid #baa5ff45;
+  border-radius: 20px;
+  background: #baa5ff10;
+  color: #cbbcff;
+}
+.fl-camera-idle-icon svg {
+  width: 25px;
+  height: 25px;
+  stroke-width: 1.4;
+}
+.fl-camera-idle-title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.6vw, 32px);
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  color: #eef3ff;
+}
+.fl-camera-idle p {
+  color: #abbad3;
+  line-height: 1.7;
+}
+.fl-camera-idle-note {
+  display: block;
+  margin-top: 17px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: #94a7c6;
+}
+.fl-camera-idle .ui-button {
+  background: #baa5ff;
+  color: #20143d;
+  border-color: #baa5ff;
+  box-shadow: none;
+}
+.fl-camera-cancel {
+  display: block;
+  margin: 6px auto 0;
+  padding: 8px 20px;
+  color: #ced9ed;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.fl-camera-controls {
+  border-top: 1px solid var(--border);
+}
+.fl-camera-controls > button {
+  flex-grow: 1;
+  font-size: 11px;
+  padding-inline: 12px;
+}
+.fl-camera-controls > button[aria-expanded] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.fl-camera-controls > select {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+}
+.fl-camera-settings {
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.fl-camera-settings h2,
+.fl-camera-evidence h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.fl-camera-settings input[type="range"] {
+  height: 44px;
+}
+.fl-camera-panel.fixed {
+  display: flex;
+  border-radius: 0;
+}
+.fl-camera-panel.fixed .fl-camera-stage {
+  min-height: 0;
+}
+.fl-camera-panel.fixed .fl-camera-settings {
+  flex-shrink: 1;
+  overflow-y: auto;
+  min-height: 120px;
+}
+.fl-camera-panel.fixed .fl-camera-controls {
+  flex-shrink: 0;
+}
+.fl-camera-evidence .panel > p {
+  line-height: 1.7;
+}
+.fl-camera-evidence .text-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.fl-camera-evidence .panel:last-child {
+  border-style: dashed;
+}
+@media (max-width: 1023px) {
+  .fl-camera-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-camera-evidence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .fl-camera-hero-mark {
+    display: none;
+  }
+  .fl-camera-modebar {
+    gap: 3px;
+    padding: 4px;
+    border-radius: 16px;
+  }
+  .fl-camera-modebar button {
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px 4px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .fl-camera-modebar button svg {
+    flex-shrink: 0;
+  }
+  .fl-camera-layout {
+    gap: 12px;
+  }
+  .fl-camera-stage {
+    min-height: 360px;
+  }
+  .fl-camera-evidence {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .fl-camera-controls {
+    padding: 12px;
+  }
+  .fl-camera-controls > button {
+    flex-basis: calc(50% - 8px);
+  }
+  .fl-camera-controls > button[aria-expanded] {
+    flex-basis: 100%;
+  }
+}

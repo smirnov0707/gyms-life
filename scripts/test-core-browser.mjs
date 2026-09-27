@@ -1,3 +1,4 @@
+import { verifyCameraDesign } from "./test-core-camera-design.mjs";
 import { verifySupplementDesign } from "./test-core-supplement-design.mjs";
 import { verifyIntakeDesign } from "./test-core-intake-design.mjs";
 import { verifySessionDesign } from "./test-core-session-design.mjs";
@@ -57,6 +58,7 @@ const server = await createServer({
   ],
   resolve: {
     alias: [
+      { find: "@mediapipe/tasks-vision", replacement: fixture("pose-stub.ts") },
       { find: "@/lib/auth", replacement: fixture("auth-stub.tsx") },
       { find: "@/integrations/supabase/client", replacement: fixture("supabase-stub.ts") },
       { find: /^@tanstack\/react-router$/, replacement: fixture("router-stub.tsx") },
@@ -119,6 +121,7 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
+  await verifyCameraDesign({ open, record, artifacts });
   await verifySupplementDesign({ open, record, artifacts });
   if (!process.argv.includes("--design-only")) {
     {

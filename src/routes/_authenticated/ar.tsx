@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PoseLandmarker } from "@mediapipe/tasks-vision";
 import {
@@ -46,6 +46,7 @@ import {
 import { VoiceCoach } from "@/lib/ar-voice-coach";
 import { Input } from "@/components/ui/input";
 import { recordArWorkout } from "@/lib/ar-workout.functions";
+import { useCameraStream } from "@/hooks/use-camera-stream";
 import { FormScanner } from "@/components/FormScanner";
 import { BiomechanicsScanner } from "@/components/BiomechanicsScanner";
 
@@ -82,9 +83,12 @@ function ArMode() {
   const TX = AR_TXT[base];
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { start: openCamera, stop: releaseCamera, busy: cameraBusy } = useCameraStream(videoRef);
+  const startRequest = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<PoseLandmarker | null>(null);
+  const speakTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speakRef = useRef<{ text: string; at: number }>({ text: "", at: 0 });
   const analyserRef = useRef(new RepAnalyser(AR_EXERCISES[0]!));
   const samplesRef = useRef<PoseSample[]>([]);
@@ -232,15 +236,19 @@ function ArMode() {
     };
   }, []);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
-      const stream = video?.srcObject;
-      if (stream instanceof MediaStream) stream.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
+  const releaseSession = useCallback(() => {
+    startRequest.current++;
+    releaseCamera();
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    landmarkerRef.current?.close();
+    landmarkerRef.current = null;
+    if (speakTimer.current) clearTimeout(speakTimer.current);
+    speakTimer.current = null;
+    window.speechSynthesis?.cancel();
+  }, [releaseCamera]);
+
+  useEffect(() => () => releaseSession(), [releaseSession]);
 
   // Fullscreen must always be escapable.
   useEffect(() => {
@@ -326,7 +334,10 @@ function ArMode() {
 
     if (busy) {
       synth.cancel();
-      window.setTimeout(say, 80);
+      speakTimer.current = setTimeout(() => {
+        speakTimer.current = null;
+        say();
+      }, 80);
     } else {
       say();
     }
@@ -353,51 +364,42 @@ function ArMode() {
 
   const facingRef = useRef(facing);
 
-  /** Opens the widest field of view the selected camera can give us. */
-  const openCamera = (mode: "environment" | "user") =>
-    navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: mode },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        aspectRatio: { ideal: 16 / 9 },
-      },
-      audio: false,
-    });
-
-  /** Swaps between front and rear camera without losing the running set. */
+  /** Swaps cameras without resetting the analysed set. */
   const switchCamera = async () => {
     const next = facing === "environment" ? "user" : "environment";
     setFacing(next);
     facingRef.current = next;
     if (!live) return;
     try {
-      const video = videoRef.current!;
-      (video.srcObject as MediaStream | null)?.getTracks().forEach((tr) => tr.stop());
-      const stream = await openCamera(next);
-      video.srcObject = stream;
-      await video.play();
+      await openCamera(next);
     } catch (error) {
+      stopCamera();
       toast.error(errorMessage(error, t("ar.failed")));
     }
   };
 
   const start = async () => {
+    releaseSession();
+    const request = startRequest.current;
     setLoading(true);
     if (voiceRef.current) unlockVoice();
     try {
       const vision = await import("@mediapipe/tasks-vision");
+      if (request !== startRequest.current) return;
       const fileset = await vision.FilesetResolver.forVisionTasks(WASM_URL);
-      landmarkerRef.current = await vision.PoseLandmarker.createFromOptions(fileset, {
+      if (request !== startRequest.current) return;
+      const landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
         runningMode: "VIDEO",
         numPoses: 1,
       });
 
-      const stream = await openCamera(facingRef.current);
-      const video = videoRef.current!;
-      video.srcObject = stream;
-      await video.play();
+      if (request !== startRequest.current) {
+        landmarker.close();
+        return;
+      }
+      landmarkerRef.current = landmarker;
+      if (!(await openCamera(facingRef.current)) || request !== startRequest.current) return;
 
       analyserRef.current.reset(AR_EXERCISES.find((e) => e.slug === slugRef.current)!);
       calibFramesRef.current = [];
@@ -417,9 +419,11 @@ function ArMode() {
       loop();
       speak(TX.ready, true);
     } catch (error) {
+      if (request !== startRequest.current) return;
+      stopCamera();
       toast.error(errorMessage(error, t("ar.failed")));
     } finally {
-      setLoading(false);
+      if (request === startRequest.current) setLoading(false);
     }
   };
 
@@ -455,16 +459,13 @@ function ArMode() {
     setSummary(result);
     setSavedSet(false);
     setCompletedSetId(result ? crypto.randomUUID() : null);
-    if (result) speak(`${result.headline} ${result.fix}`.trim(), true);
     stopCamera();
+    if (result) speak(`${result.headline} ${result.fix}`.trim(), true);
   };
 
   const stopCamera = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-    const stream = videoRef.current?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((track) => track.stop());
-    if (videoRef.current) videoRef.current.srcObject = null;
+    releaseSession();
+    setLoading(false);
     setLive(false);
     setPoseOn(false);
     setCalibrating(false);
@@ -659,69 +660,90 @@ function ArMode() {
     : (states.find((s) => s.status !== "ok")?.cue ?? t("ar.formOk"));
 
   return (
-    <div className="fl-context-route fl-page-enter">
-      <div className="fl-context-heading">
-        <p className="fl-world-kicker text-xs uppercase tracking-[0.22em] text-cyan-300">
-          GYMS.LIFE MOVEMENT INTELLIGENCE
-        </p>
-        <h1 className="fl-context-title">
-          {base === "lt" ? "Judesio analizė" : "Movement intelligence"}
-        </h1>
-        <p className="fl-context-copy">
-          {base === "lt"
-            ? "Vienas judesio sluoksnis gyvam treneriui, technikos analizei ir biomechanikos įrodymams."
-            : "One movement layer for live coaching, form analysis and biomechanics evidence."}
-        </p>
-      </div>
+    <div className="fl-context-route fl-workspace fl-camera-workspace fl-page-enter">
+      {!fullscreen && (
+        <header className="fl-workspace-hero fl-camera-hero">
+          <div>
+            <p className="fl-workspace-eyebrow">
+              GYMS.LIFE / {base === "lt" ? "JUDESYS" : "MOVEMENT"}
+            </p>
+            <h1 className="fl-workspace-title">
+              {base === "lt" ? "Pajusk savo judesį." : "Find your flow."}
+            </h1>
+            <p>
+              {base === "lt"
+                ? "Stebėk techniką, suprask pakartojimą ir judėk sąmoningiau. Pasirink, kaip nori analizuoti judesį."
+                : "See your form, understand each rep and move with intention. Choose how you want to explore your movement."}
+            </p>
+          </div>
+          <div className="fl-camera-hero-mark" aria-hidden="true">
+            <Activity />
+          </div>
+        </header>
+      )}
 
       {!fullscreen && (
-        <div className="flex w-fit gap-1 rounded-xl border border-border bg-surface-2 p-1">
+        <div
+          className="fl-camera-modebar"
+          role="group"
+          aria-label={base === "lt" ? "Analizės režimai" : "Analysis modes"}
+        >
           {(
             [
-              ["live", t("ar.title")],
-              ["scan", t("fc.title")],
-              ["biomechanics", base === "lt" ? "Biomechanika" : "Biomechanics"],
+              ["live", Camera, base === "lt" ? "Gyvas treneris" : "Live coach"],
+              ["scan", Target, base === "lt" ? "Technikos analizė" : "Technique review"],
+              ["biomechanics", Activity, base === "lt" ? "Pozicijos analizė" : "Position review"],
             ] as const
-          ).map(([key, label]) => (
+          ).map(([key, Icon, label]) => (
             <button
               key={key}
               type="button"
-              onClick={() => setTab(key)}
-              className={cn(
-                "rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-widest transition",
-                tab === key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              aria-pressed={tab === key}
+              onClick={() => {
+                if (key === tab) return;
+                if (live) finishSet();
+                else stopCamera();
+                window.speechSynthesis?.cancel();
+                setTab(key);
+              }}
             >
-              {label}
+              <Icon size={18} aria-hidden="true" />
+              <span>{label}</span>
             </button>
           ))}
         </div>
       )}
 
+      {!fullscreen && (
+        <p className="fl-camera-mode-copy">
+          {tab === "live"
+            ? base === "lt"
+              ? "Gyvas režimas apdoroja vaizdą šiame įrenginyje. Kamera įsijungia tik tau pasirinkus."
+              : "Live mode processes video on this device. The camera starts only when you choose."
+            : tab === "scan"
+              ? base === "lt"
+                ? "Pradėjus analizę, penki kameros kadrai siunčiami technikos peržiūrai."
+                : "Starting a review sends five camera frames for technique analysis."
+              : base === "lt"
+                ? "Pasirinkta nuotrauka siunčiama pozicijos analizei. Rezultatas yra įvertis."
+                : "Your selected photo is sent for a position review. The result is an estimate."}
+        </p>
+      )}
+
       {tab === "scan" && <FormScanner />}
       {tab === "biomechanics" && <BiomechanicsScanner />}
 
-      <div
-        className={cn(
-          "grid gap-6",
-          tab !== "live" && "hidden",
-          !fullscreen && "lg:grid-cols-[3fr_2fr]",
-        )}
-      >
+      <div className={cn("fl-camera-layout", tab !== "live" && "hidden")}>
         <div
           className={cn(
-            "panel overflow-hidden",
+            "panel fl-camera-panel overflow-hidden",
             fullscreen && "fixed inset-0 z-50 flex flex-col rounded-none border-0 bg-background",
           )}
         >
           <div
             className={cn(
-              "relative w-full bg-surface",
-              fullscreen
-                ? "min-h-0 flex-1"
-                : "aspect-[4/3] min-h-[60vh] sm:aspect-video sm:min-h-0",
+              "fl-camera-stage relative w-full",
+              fullscreen ? "min-h-0 flex-1" : "aspect-[4/3] sm:aspect-video",
             )}
           >
             {fullscreen && (
@@ -737,6 +759,7 @@ function ArMode() {
 
             <video
               ref={videoRef}
+              aria-label={base === "lt" ? "Gyvos kameros vaizdas" : "Live camera preview"}
               muted
               autoPlay
               playsInline
@@ -801,11 +824,15 @@ function ArMode() {
             )}
 
             {!live && (
-              <div className="absolute inset-0 grid place-items-center bg-gradient-to-b from-surface to-surface p-6 text-center">
+              <div className="fl-camera-idle absolute inset-0 grid place-items-center p-6 text-center">
                 <div>
-                  <Camera className="mx-auto size-10 text-primary" />
-                  <h3 className="headline-xl mt-3 text-4xl text-foreground">{t("ar.idleTitle")}</h3>
-                  <p className="mx-auto mt-2 max-w-sm text-sm text-foreground/70">{TX.ready}</p>
+                  <span className="fl-camera-idle-icon">
+                    <Camera aria-hidden="true" />
+                  </span>
+                  <h2 className="fl-camera-idle-title">
+                    {base === "lt" ? "Tavo erdvė judėti." : "Your space to move."}
+                  </h2>
+                  <p className="mx-auto mt-2 max-w-sm text-sm">{TX.ready}</p>
                   <Button
                     onClick={start}
                     disabled={loading}
@@ -817,8 +844,18 @@ function ArMode() {
                     ) : (
                       <Camera className="mr-2 size-4" />
                     )}
-                    {loading ? t("ar.loading") : t("ar.start")}
+                    {loading ? t("ar.loading") : summary ? TX.again : t("ar.start")}
                   </Button>
+                  {loading && (
+                    <button type="button" className="fl-camera-cancel" onClick={stopCamera}>
+                      {base === "lt" ? "Atšaukti" : "Cancel"}
+                    </button>
+                  )}
+                  <span className="fl-camera-idle-note">
+                    {base === "lt"
+                      ? "Visas kūnas kadre · Gera šviesa"
+                      : "Full body in frame · Good lighting"}
+                  </span>
                 </div>
               </div>
             )}
@@ -856,27 +893,19 @@ function ArMode() {
 
           <div
             className={cn(
-              "flex flex-wrap items-center gap-3 p-4",
+              "fl-camera-controls flex flex-wrap items-center gap-2 p-4",
               fullscreen &&
                 "max-h-[45vh] shrink-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]",
             )}
           >
-            {live ? (
+            {live && (
               <Button onClick={finishSet} className="font-bold">
                 <Square className="mr-1 size-4" /> {TX.finish}
               </Button>
-            ) : (
-              <Button onClick={start} disabled={loading} className="glow-ring font-bold">
-                {loading ? (
-                  <Loader2 className="mr-1 size-4 animate-spin" />
-                ) : (
-                  <Camera className="mr-1 size-4" />
-                )}
-                {summary ? TX.again : t("ar.start")}
-              </Button>
             )}
             <Button
-              variant={voice ? "default" : "outline"}
+              aria-pressed={voice}
+              variant={voice ? "secondary" : "outline"}
               onClick={() => {
                 const next = !voice;
                 setVoice(next);
@@ -888,7 +917,8 @@ function ArMode() {
               {t("ar.voice")}
             </Button>
             <Button
-              variant={coachMode ? "default" : "outline"}
+              aria-pressed={coachMode}
+              variant={coachMode ? "secondary" : "outline"}
               disabled={!voice}
               onClick={() => {
                 const next = !coachMode;
@@ -899,7 +929,7 @@ function ArMode() {
             >
               {t("rt.ar.voiceCoach")}
             </Button>
-            <Button variant="outline" onClick={switchCamera}>
+            <Button variant="outline" onClick={switchCamera} disabled={loading || cameraBusy}>
               <SwitchCamera className="mr-1 size-4" />
               {facing === "environment" ? t("nx.ar.front") : t("nx.ar.rear")}
             </Button>
@@ -914,6 +944,8 @@ function ArMode() {
 
             <button
               type="button"
+              aria-expanded={showSettings}
+              aria-controls="camera-settings"
               onClick={() => setShowSettings((s) => !s)}
               className="ml-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
@@ -921,9 +953,112 @@ function ArMode() {
               <ChevronDown className={cn("size-4 transition", showSettings && "rotate-180")} />
             </button>
           </div>
+          {showSettings && (
+            <div id="camera-settings" className="fl-camera-settings grid gap-4 p-5">
+              <h2 className="flex items-center gap-2 text-xl">
+                <Gauge className="size-4 text-primary" /> {TX.settings}
+              </h2>
+
+              <div className="flex gap-2">
+                <Button
+                  aria-pressed={autoMode}
+                  variant={autoMode ? "default" : "outline"}
+                  onClick={() => setAutoMode(true)}
+                  className="flex-1"
+                >
+                  {TX.auto}
+                </Button>
+                <Button
+                  aria-pressed={!autoMode}
+                  variant={!autoMode ? "default" : "outline"}
+                  onClick={() => setAutoMode(false)}
+                  className="flex-1"
+                >
+                  {TX.manual}
+                </Button>
+              </div>
+
+              {!autoMode && (
+                <select
+                  aria-label={base === "lt" ? "Pratimas" : "Exercise"}
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(e.target.value);
+                    setReps(0);
+                    setLastRep(null);
+                  }}
+                  className="h-10 rounded-lg border border-border bg-surface-2 px-3 text-sm"
+                >
+                  {AR_EXERCISES.map((e) => (
+                    <option key={e.slug} value={e.slug}>
+                      {e.name[base]}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {t("ar.height")}
+                </span>
+                <input
+                  type="number"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                  className="h-10 rounded-lg border border-border bg-surface-2 px-3"
+                />
+                {Number(heightCm) > 0 ? null : (
+                  <span className="text-xs leading-relaxed text-amber-400 light:text-amber-700">
+                    {t("ar.heightNeeded")}
+                  </span>
+                )}
+              </label>
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {t("ar.voiceSelect")}
+                </span>
+                <select
+                  value={voiceUri}
+                  onChange={(e) => setVoiceUri(e.target.value)}
+                  className="h-10 rounded-lg border border-border bg-surface-2 px-3"
+                >
+                  <option value="">{t("ar.voiceDefault")}</option>
+                  {voices.map((v) => (
+                    <option key={v.voiceURI} value={v.voiceURI}>
+                      {v.name} ({v.lang})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="flex items-center justify-between text-xs uppercase tracking-widest text-muted-foreground">
+                  {t("ar.rate")} <span className="text-primary">{rate.toFixed(1)}x</span>
+                </span>
+                <input
+                  type="range"
+                  min={0.6}
+                  max={1.6}
+                  step={0.1}
+                  value={rate}
+                  onChange={(e) => setRate(Number(e.target.value))}
+                  className="accent-[var(--primary)]"
+                />
+              </label>
+
+              {calib && (
+                <p className="text-xs text-primary">
+                  {TX.calDone} · {calib.quality}% · {calib.cmPerPx.toFixed(3)} cm/px
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="grid content-start gap-4">
+        <aside
+          className={cn("fl-camera-evidence grid content-start gap-4", fullscreen && "hidden")}
+        >
           {summary ? (
             <div className="panel p-5">
               <h2 className="flex items-center gap-2 text-xl">
@@ -961,6 +1096,7 @@ function ArMode() {
                   value={setWeight}
                   onChange={(e) => setSetWeight(e.target.value)}
                   inputMode="decimal"
+                  aria-label={t("nx.ar.weight")}
                   placeholder={t("nx.ar.weight")}
                   className="h-9 w-28"
                 />
@@ -1090,110 +1226,11 @@ function ArMode() {
             </div>
           </div>
 
-          {showSettings && (
-            <div className="panel grid gap-4 p-5">
-              <h2 className="flex items-center gap-2 text-xl">
-                <Gauge className="size-4 text-primary" /> {TX.settings}
-              </h2>
-
-              <div className="flex gap-2">
-                <Button
-                  variant={autoMode ? "default" : "outline"}
-                  onClick={() => setAutoMode(true)}
-                  className="flex-1"
-                >
-                  {TX.auto}
-                </Button>
-                <Button
-                  variant={!autoMode ? "default" : "outline"}
-                  onClick={() => setAutoMode(false)}
-                  className="flex-1"
-                >
-                  {TX.manual}
-                </Button>
-              </div>
-
-              {!autoMode && (
-                <select
-                  value={slug}
-                  onChange={(e) => {
-                    setSlug(e.target.value);
-                    setReps(0);
-                    setLastRep(null);
-                  }}
-                  className="h-10 rounded-lg border border-border bg-surface-2 px-3 text-sm"
-                >
-                  {AR_EXERCISES.map((e) => (
-                    <option key={e.slug} value={e.slug}>
-                      {e.name[base]}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <label className="grid gap-1.5 text-sm">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {t("ar.height")}
-                </span>
-                <input
-                  type="number"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
-                  className="h-10 rounded-lg border border-border bg-surface-2 px-3"
-                />
-                {Number(heightCm) > 0 ? null : (
-                  <span className="text-xs leading-relaxed text-amber-400 light:text-amber-700">
-                    {t("ar.heightNeeded")}
-                  </span>
-                )}
-              </label>
-
-              <label className="grid gap-1.5 text-sm">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {t("ar.voiceSelect")}
-                </span>
-                <select
-                  value={voiceUri}
-                  onChange={(e) => setVoiceUri(e.target.value)}
-                  className="h-10 rounded-lg border border-border bg-surface-2 px-3"
-                >
-                  <option value="">{t("ar.voiceDefault")}</option>
-                  {voices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} ({v.lang})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-1.5 text-sm">
-                <span className="flex items-center justify-between text-xs uppercase tracking-widest text-muted-foreground">
-                  {t("ar.rate")} <span className="text-primary">{rate.toFixed(1)}x</span>
-                </span>
-                <input
-                  type="range"
-                  min={0.6}
-                  max={1.6}
-                  step={0.1}
-                  value={rate}
-                  onChange={(e) => setRate(Number(e.target.value))}
-                  className="accent-[var(--primary)]"
-                />
-              </label>
-
-              {calib && (
-                <p className="text-xs text-primary">
-                  {TX.calDone} · {calib.quality}% · {calib.cmPerPx.toFixed(3)} cm/px
-                </p>
-              )}
-            </div>
-          )}
-
           <div className="panel flex gap-3 p-5 text-xs text-muted-foreground">
             <Cpu className="size-5 shrink-0 text-primary" />
             {t("ar.privacy")}
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

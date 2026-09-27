@@ -54,33 +54,35 @@ class Query {
     if (failed)
       return { data: null, error: { message: "Synthetic unavailable source" }, count: null };
     const rows =
-      this.table === "exercises"
-        ? exercises
-        : this.table === "daily_checkins"
-          ? state.checkin
-            ? [state.checkin]
-            : []
-          : this.table === "profiles"
-            ? [state.profile]
-            : this.table === "meal_plans"
-              ? state.meal
-                ? [{ ...state.meal, ...state.meal.data }]
-                : []
-              : this.table === "plans"
-                ? [
-                    {
-                      id: "22222222-2222-4222-8222-222222222222",
-                      user_id: state.profile.id,
-                      title: state.plan.title,
-                      weeks: 8,
-                      days_per_week: 3,
-                      created_at: "2026-09-09T12:00:00Z",
-                      is_active: state.active,
-                    },
-                  ]
-                : this.table === "nutrition_logs"
-                  ? state.foods
-                  : null;
+      this.table === "form_analyses"
+        ? []
+        : this.table === "exercises"
+          ? exercises
+          : this.table === "daily_checkins"
+            ? state.checkin
+              ? [state.checkin]
+              : []
+            : this.table === "profiles"
+              ? [state.profile]
+              : this.table === "meal_plans"
+                ? state.meal
+                  ? [{ ...state.meal, ...state.meal.data }]
+                  : []
+                : this.table === "plans"
+                  ? [
+                      {
+                        id: "22222222-2222-4222-8222-222222222222",
+                        user_id: state.profile.id,
+                        title: state.plan.title,
+                        weeks: 8,
+                        days_per_week: 3,
+                        created_at: "2026-09-09T12:00:00Z",
+                        is_active: state.active,
+                      },
+                    ]
+                  : this.table === "nutrition_logs"
+                    ? state.foods
+                    : null;
     if (rows === null) throw new Error("Unexpected fixture table: " + this.table);
     const matches = rows.filter((row) =>
       Object.entries(this.filters).every(

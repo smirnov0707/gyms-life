@@ -88,12 +88,13 @@ export const BiomechanicsScanner: React.FC = () => {
       />
 
       {!imagePreview ? (
-        <div
+        <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="cursor-pointer border-2 border-dashed border-border hover:border-cyan-500/40 p-8 rounded-xl text-center space-y-2 group transition-all"
+          className="w-full cursor-pointer border-2 border-dashed border-border hover:border-cyan-500/40 p-8 rounded-xl text-center space-y-2 group transition-all"
         >
           <Camera className="w-8 h-8 text-muted-foreground mx-auto group-hover:text-cyan-400 light:text-cyan-700 group-hover:scale-110 transition-transform" />
-          <div className="text-sm font-semibold text-neutral-200">
+          <div className="text-sm font-semibold text-foreground">
             {lang === "lt"
               ? "Nufotografuokite pratimo atlikimo poziciją"
               : "Snap a photo of your exercise form"}
@@ -103,7 +104,7 @@ export const BiomechanicsScanner: React.FC = () => {
               ? "Pritūpimai, štangos spaudimas, trauka"
               : "Squats, bench press, deadlifts"}
           </p>
-        </div>
+        </button>
       ) : (
         <div className="space-y-4">
           <div className="relative aspect-video max-h-64 rounded-xl overflow-hidden border border-white/15 bg-black">
@@ -135,7 +136,7 @@ export const BiomechanicsScanner: React.FC = () => {
               </div>
 
               {result.coachCue && (
-                <div className="p-3 rounded-lg bg-cyan-950/30 border border-cyan-500/20 text-xs text-cyan-200">
+                <div className="p-3 rounded-lg bg-surface-2 border border-border text-xs text-accent">
                   💡 <strong>Cue:</strong> {result.coachCue}
                 </div>
               )}
@@ -157,7 +158,7 @@ export const BiomechanicsScanner: React.FC = () => {
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
-                className="w-full border-border bg-foreground/[0.06] hover:bg-foreground/10 text-neutral-200 gap-2 text-xs py-2"
+                className="w-full border-border bg-foreground/[0.06] hover:bg-foreground/10 text-foreground gap-2 text-xs py-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 {lang === "lt" ? "Perfotografuoti kitą kadrą" : "Retake form frame"}

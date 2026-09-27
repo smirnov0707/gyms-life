@@ -10,12 +10,14 @@ import {
   ShieldAlert,
   Sparkles,
   SwitchCamera,
+  Square,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeForm } from "@/lib/smart.functions";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { useCameraStream } from "@/hooks/use-camera-stream";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { aiErrorMessage } from "@/lib/ai-error";
@@ -36,7 +38,13 @@ export function FormScanner() {
   const { user } = useAuth();
   const run = useServerFn(analyzeForm);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [ready, setReady] = useState(false);
+  const {
+    start: openCamera,
+    stop: stopCamera,
+    active: ready,
+    busy: cameraBusy,
+  } = useCameraStream(videoRef);
+  const reviewRequest = useRef(0);
   const [busy, setBusy] = useState(false);
   const [slug, setSlug] = useState("squat");
   const [result, setResult] = useState<Result | null>(null);
@@ -59,8 +67,7 @@ export function FormScanner() {
 
   useEffect(
     () => () => {
-      const stream = videoRef.current?.srcObject as MediaStream | null;
-      stream?.getTracks().forEach((tr) => tr.stop());
+      reviewRequest.current++;
     },
     [],
   );
@@ -97,26 +104,9 @@ export function FormScanner() {
   const exercise = exercises?.find((e) => e.slug === slug);
   const exerciseName = exercise ? (lang === "lt" ? exercise.name_lt : exercise.name_en) : slug;
 
-  /** Opens the widest field of view the selected camera can give us. */
-  const openCamera = (mode: "environment" | "user") =>
-    navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: mode },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        aspectRatio: { ideal: 16 / 9 },
-      },
-      audio: false,
-    });
-
   const enable = async () => {
     try {
-      const stream = await openCamera(facing);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setReady(true);
+      await openCamera(facing);
     } catch {
       toast.error(t("fc.denied"));
     }
@@ -127,11 +117,7 @@ export function FormScanner() {
     setFacing(next);
     if (!ready) return;
     try {
-      const video = videoRef.current!;
-      (video.srcObject as MediaStream | null)?.getTracks().forEach((tr) => tr.stop());
-      const stream = await openCamera(next);
-      video.srcObject = stream;
-      await video.play();
+      await openCamera(next);
     } catch (error) {
       toast.error(errorMessage(error, t("fc.denied")));
     }
@@ -148,6 +134,7 @@ export function FormScanner() {
   };
 
   const record = async () => {
+    const request = ++reviewRequest.current;
     setBusy(true);
     setResult(null);
     const frames: string[] = [];
@@ -156,35 +143,36 @@ export function FormScanner() {
         const frame = capture();
         if (frame) frames.push(frame);
         await new Promise((r) => setTimeout(r, 1000));
+        if (request !== reviewRequest.current) return;
       }
       const res = await run({ data: { exerciseSlug: slug, exerciseName, frames, lang } });
+      if (request !== reviewRequest.current) return;
       setResult(res);
       refetch();
     } catch (err) {
-      toast.error(aiErrorMessage(err, t));
+      if (request === reviewRequest.current) toast.error(aiErrorMessage(err, t));
     } finally {
-      setBusy(false);
+      if (request === reviewRequest.current) setBusy(false);
     }
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="fl-form-review grid gap-6">
       <div className={cn("grid gap-6", !fullscreen && "lg:grid-cols-[3fr_2fr]")}>
         <div
           className={cn(
-            "panel overflow-hidden",
+            "panel fl-camera-panel overflow-hidden",
             fullscreen && "fixed inset-0 z-50 flex flex-col rounded-none border-0 bg-background",
           )}
         >
           <div
             className={cn(
-              "relative w-full bg-surface",
-              fullscreen
-                ? "min-h-0 flex-1"
-                : "aspect-[4/3] min-h-[60vh] sm:aspect-video sm:min-h-0",
+              "fl-camera-stage relative w-full",
+              fullscreen ? "min-h-0 flex-1" : "aspect-[4/3] sm:aspect-video",
             )}
           >
             <video
+              aria-label={t("fc.title")}
               ref={videoRef}
               muted
               autoPlay
@@ -194,6 +182,34 @@ export function FormScanner() {
                 facing === "user" && "-scale-x-100",
               )}
             />
+            {!ready && (
+              <div className="fl-camera-idle absolute inset-0 grid place-items-center p-6 text-center">
+                <div>
+                  <span className="fl-camera-idle-icon">
+                    <ScanLine aria-hidden="true" />
+                  </span>
+                  <h2 className="fl-camera-idle-title">{t("fc.title")}</h2>
+                  <p className="mt-2 text-sm">
+                    {lang === "lt"
+                      ? "Kamera išjungta. Pasiruošk, tada pradėk."
+                      : "Camera is off. Get into position, then begin."}
+                  </p>
+                  <Button onClick={enable} disabled={cameraBusy} className="mt-5">
+                    {cameraBusy ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Camera className="mr-2 size-4" />
+                    )}
+                    {t("fc.enable")}
+                  </Button>
+                  {cameraBusy && (
+                    <button type="button" className="fl-camera-cancel" onClick={stopCamera}>
+                      {lang === "lt" ? "Atšaukti" : "Cancel"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {fullscreen && (
               <button
                 type="button"
@@ -207,12 +223,14 @@ export function FormScanner() {
           </div>
           <div
             className={cn(
-              "flex flex-wrap items-center gap-3 p-4",
+              "fl-camera-controls flex flex-wrap items-center gap-2 p-4",
               fullscreen &&
                 "max-h-[45vh] shrink-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]",
             )}
           >
             <select
+              aria-label={lang === "lt" ? "Pratimas" : "Exercise"}
+              disabled={busy}
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               className="h-10 rounded-lg border border-border bg-surface-2 px-3 text-sm"
@@ -223,11 +241,7 @@ export function FormScanner() {
                 </option>
               ))}
             </select>
-            {!ready ? (
-              <Button onClick={enable} className="font-bold">
-                <Camera className="mr-1 size-4" /> {t("fc.enable")}
-              </Button>
-            ) : (
+            {ready && (
               <Button onClick={record} disabled={busy} className="font-bold glow-ring">
                 {busy ? (
                   <Loader2 className="mr-1 size-4 animate-spin" />
@@ -237,7 +251,13 @@ export function FormScanner() {
                 {busy ? t("fc.analyzing") : t("fc.record")}
               </Button>
             )}
-            <Button variant="outline" onClick={switchCamera}>
+            {ready && (
+              <Button variant="outline" disabled={busy} onClick={stopCamera}>
+                <Square className="mr-2 size-4" />
+                {lang === "lt" ? "Išjungti kamerą" : "Stop camera"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={switchCamera} disabled={busy || cameraBusy}>
               <SwitchCamera className="mr-1 size-4" />
               {facing === "environment" ? t("nx.ar.front") : t("nx.ar.rear")}
             </Button>
