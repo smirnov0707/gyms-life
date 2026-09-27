@@ -372,7 +372,10 @@ try {
         numbers.every((number) => {
           const range = document.createRange();
           range.selectNodeContents(number);
-          return range.getClientRects().length === 1;
+          const rects = [...range.getClientRects()].filter((rect) => rect.width > 0);
+          // React renders the prefix and ordinal as adjacent text nodes.
+          // One line may therefore contain multiple Range rectangles.
+          return rects.length > 0 && rects.every((rect) => Math.abs(rect.top - rects[0].top) < 1);
         }),
       ),
     ).toBe(true);
