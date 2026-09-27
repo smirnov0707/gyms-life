@@ -1,3 +1,4 @@
+import { evidenceFixture } from "./comparison-fixtures";
 import { baseState } from "./trend-fixtures";
 import { state, count, delay } from "./state";
 import { buildTwinRewindHistory } from "../../src/lib/twin-rewind";
@@ -53,5 +54,9 @@ export async function getTwinEvidenceWindow({
 }) {
   count("getTwinEvidenceWindow");
   state.last.getTwinEvidenceWindow = data;
-  return { events: [], omittedCount: 0, hasMore: false, limit: 30 };
+  while (state.fail === "evidence-pending") await delay();
+  if (state.fail === "evidence") throw new Error("UNTRUSTED_SYNTHETIC_INTERVAL_FAILURE");
+  if (new URLSearchParams(location.search).get("screen") === "comparison")
+    return evidenceFixture(data);
+  return { ...data, events: [], omittedCount: 0, hasMore: false, limit: 30 };
 }

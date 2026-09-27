@@ -192,11 +192,11 @@ export async function verifyRewindDesign({ open, record, artifacts }) {
       .filter({ hasText: "Palyginti raumenų grupes" })
       .press("Enter");
     await expect(
-      selected(page).getByRole("heading", { name: "Twin Change Map", exact: true }),
+      selected(page).getByRole("heading", { name: "Raumenų pokyčių žemėlapis", exact: true }),
     ).toBeVisible();
     await expect(selected(page)).toContainText("+4 proc. p.");
     await selected(page)
-      .getByRole("button", { name: /Įrodymai tarp būsenų/ })
+      .getByRole("button", { name: /Įvykiai tarp būsenų/ })
       .press("Enter");
     await expect
       .poll(() => page.evaluate(() => window.__core.counts.getTwinEvidenceWindow ?? 0))
@@ -215,7 +215,9 @@ export async function verifyRewindDesign({ open, record, artifacts }) {
         ".fl-rewind-selected,.fl-rewind-history,.fl-rewind-coverage,[data-twin-stage]",
       ),
     ).toHaveCount(0);
-    await expect(panel(page).getByText("Twin Change Map", { exact: true })).toHaveCount(0);
+    await expect(panel(page).getByText("Raumenų pokyčių žemėlapis", { exact: true })).toHaveCount(
+      0,
+    );
     await page.evaluate(() => {
       window.__core.fail = null;
     });

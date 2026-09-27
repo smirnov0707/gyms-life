@@ -1,3 +1,4 @@
+import { verifyComparisonDesign } from "./test-core-comparison-design.mjs";
 import { verifyRewindDesign } from "./test-core-rewind-design.mjs";
 import { verifyTrendDesign } from "./test-core-trend-design.mjs";
 import { verifyMemoryDesign } from "./test-core-memory-design.mjs";
@@ -129,6 +130,7 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
+  await verifyComparisonDesign({ open, record, artifacts });
   await verifyRewindDesign({ open, record, artifacts });
   await verifyTrendDesign({ open, record, artifacts });
   await verifyMemoryDesign({ open, record, artifacts });

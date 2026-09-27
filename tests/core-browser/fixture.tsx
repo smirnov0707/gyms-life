@@ -1,3 +1,4 @@
+import { ComparisonFixture } from "./ComparisonFixture";
 import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
 import { TwinMemory } from "@/components/twin/TwinMemory";
@@ -68,6 +69,7 @@ function Panel() {
         {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
       </div>
     );
+  if (selected === "comparison") return <ComparisonFixture />;
   if (selected === "rewind")
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
