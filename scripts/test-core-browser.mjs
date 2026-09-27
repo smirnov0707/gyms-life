@@ -1,3 +1,4 @@
+import { verifySupplementDesign } from "./test-core-supplement-design.mjs";
 import { verifyIntakeDesign } from "./test-core-intake-design.mjs";
 import { verifySessionDesign } from "./test-core-session-design.mjs";
 import { verifyCoreDesign } from "./test-core-design.mjs";
@@ -255,6 +256,7 @@ try {
   await verifyCoreDesign({ open, record, artifacts });
   await verifySessionDesign({ open, record, artifacts });
   await verifyIntakeDesign({ open, record, artifacts });
+  await verifySupplementDesign({ open, record, artifacts });
   expect(errors).toEqual([]);
 } finally {
   await writeFile(

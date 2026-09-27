@@ -47,10 +47,10 @@ type ScanResult = {
 };
 
 const PRIORITY_STYLE: Record<string, string> = {
-  critical: "bg-rose-950 text-rose-400 border-rose-800",
-  high: "bg-amber-950 text-accent border-amber-800",
-  medium: "bg-indigo-950 text-indigo-300 border-indigo-800",
-  low: "bg-emerald-950 text-primary border-emerald-800",
+  critical: "bg-rose-500/10 text-rose-400 light:text-rose-700 border-rose-500/25",
+  high: "bg-amber-500/10 text-amber-300 light:text-amber-800 border-amber-500/25",
+  medium: "bg-primary/10 text-primary border-primary/25",
+  low: "bg-emerald-500/10 text-emerald-400 light:text-emerald-700 border-emerald-500/25",
 };
 
 export const MicronutrientDeficiencyScanner: React.FC = () => {
@@ -115,15 +115,15 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
   const allApplied = actionable.length > 0 && actionable.every((f) => added[f.key]);
 
   return (
-    <div className="p-6 rounded-3xl border border-border bg-surface backdrop-blur-xl shadow-2xl space-y-4">
+    <div className="p-6 rounded-3xl border border-border bg-surface backdrop-blur-xl space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
             <Pill className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-              {t("sc.micro.title")} <Sparkles className="w-4 h-4 text-violet-400" />
+              {t("sc.micro.title")} <Sparkles className="w-4 h-4 text-primary" />
             </h3>
             <p className="text-xs text-muted-foreground">{t("sc.micro.subtitle")}</p>
           </div>
@@ -146,12 +146,16 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
       {scan.isLoading && (
         <div className="py-8 flex flex-col items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin text-violet-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
           {t("sc.micro.analyzing")}
         </div>
       )}
 
-      {scan.isError && <p className="text-xs text-rose-400">{t("common.error")}</p>}
+      {scan.isError && (
+        <p role="alert" className="text-xs text-rose-400 light:text-rose-700">
+          {t("common.error")}
+        </p>
+      )}
 
       {data && (
         <>
@@ -240,7 +244,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
           </div>
 
           {data.strengths.length > 0 && (
-            <div className="p-3 rounded-2xl bg-emerald-950/30 border border-emerald-500/20 space-y-1">
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
               <p className="text-[10px] font-mono uppercase text-primary">
                 {t("sc.micro.strengths")}
               </p>
@@ -261,7 +265,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
               check stays as a guard, not as the thing keeping the sentence on
               screen. */}
           {data.warnings.length > 0 && (
-            <div className="p-3 rounded-2xl bg-amber-950/20 border border-amber-500/20 space-y-1">
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-1">
               <p className="text-[10px] font-mono uppercase text-accent flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" /> {t("sc.micro.warnings")}
               </p>
@@ -279,7 +283,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
               disabled={allApplied || applyAll.isPending || !user}
               className={`w-full font-bold rounded-2xl transition-all ${
                 allApplied
-                  ? "bg-emerald-950 border border-emerald-500/40 text-primary"
+                  ? "bg-emerald-500/10 border border-emerald-500/40 text-primary"
                   : "bg-gradient-to-r from-violet-500 to-indigo-600 hover:opacity-90 text-foreground shadow-lg shadow-violet-500/20"
               }`}
             >

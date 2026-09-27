@@ -43,7 +43,7 @@ type Draft = {
 };
 
 /** Camera-first supplement entry: photograph a label, AI fills an editable plan. */
-export function SupplementPhotoScanner() {
+export function SupplementPhotoScanner({ active = true }: { active?: boolean }) {
   const { t, lang } = useI18n();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -56,41 +56,59 @@ export function SupplementPhotoScanner() {
   const [busy, setBusy] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
 
-  useEffect(
-    () => () => {
-      const stream = videoRef.current?.srcObject as MediaStream | null;
-      stream?.getTracks().forEach((tr) => tr.stop());
-    },
-    [],
-  );
+  const streamRef = useRef<MediaStream | null>(null);
+  const requestRef = useRef(0);
+  const activeRef = useRef(active);
+  const [cameraStarting, setCameraStarting] = useState(false);
+
+  useEffect(() => {
+    activeRef.current = active;
+    if (!active) {
+      if (videoRef.current) videoRef.current.srcObject = null;
+      setLive(false);
+      setCameraStarting(false);
+    }
+    return () => {
+      activeRef.current = false;
+      requestRef.current += 1;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [active]);
 
   const stopCamera = () => {
-    const stream = videoRef.current?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((tr) => tr.stop());
+    requestRef.current += 1;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraStarting(false);
     setLive(false);
   };
 
   const startCamera = async (mode: "environment" | "user" = facing) => {
+    const request = ++requestRef.current;
+    setCameraStarting(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: mode },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
+        video: { facingMode: { ideal: mode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
-      const prev = videoRef.current?.srcObject as MediaStream | null;
-      prev?.getTracks().forEach((tr) => tr.stop());
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
+      // Permission can resolve after the disclosure closes or the route unmounts.
+      if (!activeRef.current || request !== requestRef.current || !videoRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = stream;
+      videoRef.current.srcObject = stream;
+      void videoRef.current.play().catch(() => undefined);
       setFacing(mode);
       setLive(true);
     } catch {
-      toast.error(t("supp.scan.cameraError"));
+      if (activeRef.current && request === requestRef.current)
+        toast.error(t("supp.scan.cameraError"));
+    } finally {
+      if (activeRef.current && request === requestRef.current) setCameraStarting(false);
     }
   };
 
@@ -219,6 +237,7 @@ export function SupplementPhotoScanner() {
             <Button
               variant="secondary"
               onClick={() => void startCamera(facing === "environment" ? "user" : "environment")}
+              disabled={cameraStarting || busy}
             >
               <SwitchCamera className="size-4" />
               {t("supp.scan.switch")}
@@ -234,7 +253,7 @@ export function SupplementPhotoScanner() {
               tactileClick();
               void startCamera();
             }}
-            disabled={busy}
+            disabled={busy || cameraStarting}
             className="press"
           >
             <Camera className="size-4" />
@@ -264,11 +283,16 @@ export function SupplementPhotoScanner() {
           {drafts.map((d, i) => (
             <div key={i} className="grid gap-3 rounded-2xl border border-border bg-surface p-4">
               <div className="flex items-start justify-between gap-2">
-                <Input value={d.name} onChange={(e) => patch(i, { name: e.target.value })} />
+                <Input
+                  aria-label={t("supp.name")}
+                  maxLength={160}
+                  value={d.name}
+                  onChange={(e) => patch(i, { name: e.target.value })}
+                />
                 <button
                   type="button"
                   onClick={() => setDrafts((rows) => rows.filter((_, idx) => idx !== i))}
-                  className="mt-2 text-muted-foreground hover:text-foreground"
+                  className="grid size-11 shrink-0 place-items-center text-muted-foreground hover:text-foreground"
                   aria-label={t("supp.scan.discard")}
                 >
                   <X className="size-4" />
@@ -315,7 +339,11 @@ export function SupplementPhotoScanner() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="grid gap-1.5 text-xs uppercase tracking-widest text-muted-foreground">
                   {t("supp.timesPerDay")}
-                  <div className="flex h-10 items-center gap-1 rounded-lg border border-border bg-surface p-1">
+                  <div
+                    role="group"
+                    aria-label={t("supp.timesPerDay")}
+                    className="flex items-center gap-1 rounded-xl border border-border bg-surface-2 p-1"
+                  >
                     {[1, 2, 3, 4].map((n) => (
                       <button
                         key={n}

@@ -230,3 +230,13 @@ export async function smartExerciseFilter({ data }: { data: { prompt: string } }
   count("smartExerciseFilter");
   return { group: "all", equipment: "all", level: "all", safety: "all", query: data.prompt };
 }
+
+export {
+  getSupplements,
+  addSupplements,
+  setSupplementActive,
+  removeSupplement,
+  scanMicronutrients,
+  analyzeSupplementCycles,
+  analyzeSupplementPhoto,
+} from "./supplement-functions";

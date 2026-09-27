@@ -7,6 +7,7 @@ const screens: Record<string, string> = {
   "/training": "training",
   "/meal-plan": "meals",
   "/nutrition": "nutrition",
+  "/supplements": "supplements",
   "/me": "profile",
   "/readiness": "readiness",
   "/workout/1": "workout",

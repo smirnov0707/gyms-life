@@ -8,10 +8,10 @@ import { useI18n, type TKey } from "@/lib/i18n";
 import { analyzeSupplementCycles, type CycleAdvice } from "@/lib/supplement-cycle.functions";
 
 const STATUS_STYLE: Record<string, string> = {
-  continue: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-  cycle_soon: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-  break_now: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-  reduce: "bg-sky-500/10 text-sky-400 border-sky-500/30",
+  continue: "bg-emerald-500/10 text-emerald-400 light:text-emerald-700 border-emerald-500/30",
+  cycle_soon: "bg-amber-500/10 text-amber-400 light:text-amber-700 border-amber-500/30",
+  break_now: "bg-rose-500/10 text-rose-400 light:text-rose-700 border-rose-500/30",
+  reduce: "bg-sky-500/10 text-sky-400 light:text-sky-700 border-sky-500/30",
 };
 
 export const SupplementCycleAdvisor: React.FC = () => {

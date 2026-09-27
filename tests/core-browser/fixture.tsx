@@ -1,4 +1,5 @@
 import "./offline-fixture";
+import { Route as SupplementsRoute } from "@/routes/_authenticated/supplements";
 import { Route as ExercisesRoute } from "@/routes/exercises.index";
 import { Route as MovementRoute } from "@/routes/exercises.$slug";
 import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
@@ -32,6 +33,7 @@ Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
   const routes = {
+    supplements: SupplementsRoute.options.component,
     exercises: ExercisesRoute.options.component,
     movement: MovementRoute.options.component,
     readiness: ReadinessRoute.options.component,

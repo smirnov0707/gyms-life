@@ -1,5 +1,6 @@
 import { USER, MEAL_ID, TRAINING_ID, VERSION, profile, mealPlan, trainingPlan } from "./fixtures";
 import { dayInTimeZone, browserTimeZone } from "../../src/lib/local-day";
+import type { Supplement } from "../../src/lib/supplement.schema";
 export type FoodRow = {
   id: string;
   user_id: string;
@@ -40,6 +41,7 @@ export const state: {
   profile: typeof profile;
   meal: MealRow | null;
   foods: FoodRow[];
+  supplements: Supplement[];
   checkin: ReadinessRow | null;
   active: boolean;
   plan: typeof trainingPlan;
@@ -59,6 +61,44 @@ export const state: {
   };
 } = {
   profile: structuredClone(profile),
+  supplements:
+    scenario === "empty"
+      ? []
+      : [
+          {
+            id: "88888888-8888-4888-8888-888888888881",
+            name: "Synthetic morning product",
+            dose: "Label amount",
+            category: "general",
+            times_per_day: 1,
+            with_food: true,
+            preferred_time: "morning",
+            notes: "Synthetic saved label note.",
+            is_active: true,
+          },
+          {
+            id: "88888888-8888-4888-8888-888888888882",
+            name: "Synthetic evening product",
+            dose: null,
+            category: "general",
+            times_per_day: 1,
+            with_food: false,
+            preferred_time: "evening",
+            notes: null,
+            is_active: true,
+          },
+          {
+            id: "88888888-8888-4888-8888-888888888883",
+            name: "Synthetic paused product",
+            dose: null,
+            category: "general",
+            times_per_day: 1,
+            with_food: false,
+            preferred_time: "any",
+            notes: null,
+            is_active: false,
+          },
+        ],
   checkin:
     scenario === "empty"
       ? null
