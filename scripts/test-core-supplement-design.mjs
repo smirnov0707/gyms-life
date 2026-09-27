@@ -236,12 +236,33 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
   }
   {
     const { page, context } = await open("screen=supplements");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.evaluate(() => document.fonts.ready);
     const tool = photoTool(page);
     await tool.locator("summary").click();
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeVisible();
     await page.evaluate(() => {
-      const camera = { calls: 0, stopped: 0, pending: null, delay: false };
+      const camera = {
+        calls: 0,
+        stopped: 0,
+        pending: null,
+        delay: false,
+        attachments: 0,
+        source: null,
+      };
       window.__supplementCamera = camera;
+      // Simulate the entire media boundary. An empty native MediaStream is not a
+      // portable fake video source, and this suite makes no hardware-playback claim.
+      const video = document.querySelector(".fl-supplement-tool video");
+      Object.defineProperty(video, "srcObject", {
+        configurable: true,
+        get: () => camera.source,
+        set: (source) => {
+          camera.source = source;
+          if (source) camera.attachments += 1;
+        },
+      });
+      Object.defineProperty(video, "play", { configurable: true, value: async () => undefined });
       const devices = navigator.mediaDevices ?? {};
       if (!navigator.mediaDevices)
         Object.defineProperty(navigator, "mediaDevices", { value: devices });
@@ -249,16 +270,15 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
         configurable: true,
         value: async () => {
           camera.calls += 1;
-          const stream = new MediaStream();
-          Object.defineProperty(stream, "getTracks", {
-            value: () => [
+          const stream = {
+            getTracks: () => [
               {
                 stop: () => {
                   camera.stopped += 1;
                 },
               },
             ],
-          });
+          };
           if (camera.delay)
             return new Promise((resolve) => {
               camera.pending = () => resolve(stream);
@@ -269,9 +289,13 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
     });
     expect(await page.evaluate(() => window.__supplementCamera.calls)).toBe(0);
     await tool.getByRole("button", { name: "Start camera", exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.__supplementCamera.calls)).toBe(1);
     await expect(tool.getByRole("button", { name: "Stop camera", exact: true })).toBeVisible();
     await tool.locator("summary").click();
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.stopped)).toBe(1);
+    await expect
+      .poll(() => page.evaluate(() => window.__supplementCamera.source === null))
+      .toBe(true);
     await tool.locator("summary").click();
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeVisible();
     await page.evaluate(() => {
@@ -282,6 +306,7 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
     await tool.locator("summary").click();
     await page.evaluate(() => window.__supplementCamera.pending());
     await expect.poll(() => page.evaluate(() => window.__supplementCamera.stopped)).toBe(2);
+    expect(await page.evaluate(() => window.__supplementCamera.attachments)).toBe(1);
     await tool.locator("summary").click();
     await expect(tool.getByRole("button", { name: "Start camera", exact: true })).toBeEnabled();
     await context.close();

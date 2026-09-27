@@ -268,7 +268,17 @@ try {
             await page.evaluate(() => ({
               url: location.href,
               text: document.body.innerText,
-              fixture: window.__core,
+              fixture: {
+                counts: window.__core.counts,
+                last: window.__core.last,
+                fail: window.__core.fail,
+                checkin: window.__core.checkin,
+                supplements: window.__core.supplements,
+              },
+              camera: window.__supplementCamera,
+              toasts: [...document.querySelectorAll("[data-sonner-toast]")].map(
+                (el) => el.textContent,
+              ),
             })),
           ),
       );
