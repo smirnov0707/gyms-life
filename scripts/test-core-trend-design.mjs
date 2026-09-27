@@ -56,7 +56,7 @@ export async function verifyTrendDesign({ open, record, artifacts }) {
           lang === "lt" ? "+12 p." : "+12 pt",
         );
         await expect(region(page).locator(".fl-trend-summary dd").nth(1)).toHaveText(
-          lang === "lt" ? "-12 proc. p." : "-12 pp",
+          lang === "lt" ? "−12 proc. p." : "-12 pp",
         );
         for (const area of [overall(page), region(page)]) {
           await area.locator(".fl-trend-values summary").press("Enter");
