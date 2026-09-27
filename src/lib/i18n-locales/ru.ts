@@ -69,8 +69,6 @@ export const locale: Record<string, string> = {
   "nav.progress": "Прогресс",
   "nav.coach": "Intelligence",
   "landing.tag": "Ваша персональная система тренировок",
-  "landing.sub":
-    "Ответьте на несколько вопросов о вашей цели — система составит персональный план на несколько недель для зала или дома, с видео упражнений, трекингом подходов и автоматической прогрессией.",
   "landing.cta": "Составить мой план",
   "landing.login": "Войти",
   "theme.label": "Тема",
@@ -470,7 +468,8 @@ export const locale: Record<string, string> = {
   "auth.resetTitle": "Сброс пароля",
   "auth.resetHint": "Введите ваш email — мы отправим ссылку для создания нового пароля.",
   "auth.resetSend": "Отправить ссылку",
-  "auth.resetSent": "Ссылка отправлена. Проверьте почту.",
+  "auth.resetSent":
+    "Запрос принят. Если с этой почтой связан аккаунт, проверьте входящие: там будет ссылка для восстановления.",
   "auth.backToSignin": "Назад ко входу",
   "auth.newPassword": "Новый пароль",
   "auth.newPassword2": "Повторите пароль",

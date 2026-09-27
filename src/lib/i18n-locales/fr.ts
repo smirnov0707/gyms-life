@@ -69,8 +69,6 @@ export const locale: Record<string, string> = {
   "nav.progress": "Progrès",
   "nav.coach": "Intelligence",
   "landing.tag": "Votre système d'entraînement personnel",
-  "landing.sub":
-    "Répondez à quelques questions sur votre objectif — le système crée un programme personnalisé sur plusieurs semaines pour la salle ou la maison, avec vidéos d'exercices, suivi des séries et progression automatique.",
   "landing.cta": "Créer mon programme",
   "landing.login": "Se connecter",
   "theme.label": "Thème",
@@ -477,7 +475,8 @@ export const locale: Record<string, string> = {
   "auth.resetHint":
     "Entrez votre e-mail — nous vous enverrons un lien pour créer un nouveau mot de passe.",
   "auth.resetSend": "Envoyer le lien",
-  "auth.resetSent": "Lien envoyé. Vérifiez votre boîte de réception.",
+  "auth.resetSent":
+    "Demande reçue. Si un compte utilise cet e-mail, consulte ta boîte de réception pour le lien de récupération.",
   "auth.backToSignin": "Retour à la connexion",
   "auth.newPassword": "Nouveau mot de passe",
   "auth.newPassword2": "Confirmer le mot de passe",

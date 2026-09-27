@@ -69,8 +69,6 @@ export const locale: Record<string, string> = {
   "nav.progress": "Progreso",
   "nav.coach": "Intelligence",
   "landing.tag": "Tu sistema de entrenamiento personal",
-  "landing.sub":
-    "Responde unas preguntas sobre tu objetivo: el sistema crea un plan personal de varias semanas para el gimnasio o casa, con videos de ejercicios, registro de series y progresión automática.",
   "landing.cta": "Crear mi plan",
   "landing.login": "Iniciar sesión",
   "theme.label": "Tema",
@@ -473,7 +471,8 @@ export const locale: Record<string, string> = {
   "auth.resetHint":
     "Introduce tu correo electrónico — te enviaremos un enlace para crear una nueva contraseña.",
   "auth.resetSend": "Enviar enlace",
-  "auth.resetSent": "Enlace enviado. Revisa tu bandeja de entrada.",
+  "auth.resetSent":
+    "Solicitud recibida. Si hay una cuenta con este correo, revisa tu bandeja de entrada para encontrar el enlace de recuperación.",
   "auth.backToSignin": "Volver a iniciar sesión",
   "auth.newPassword": "Nueva contraseña",
   "auth.newPassword2": "Repetir contraseña",

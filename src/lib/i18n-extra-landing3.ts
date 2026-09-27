@@ -147,8 +147,8 @@ export const extra_landing3 = {
   // Auth
   "l3.auth.title": { lt: "Pradėk savo treniruočių planą", en: "Start your training plan" },
   "l3.auth.sub": {
-    lt: "Atsakyk į kelis klausimus ir per ~60 sek. gauk pirmą planą.",
-    en: "Answer a few questions and get your first plan in ~60 s.",
+    lt: "Susikurk paskyrą. Tada pasirink savo tikslus ir treniruočių ritmą.",
+    en: "Create your account. Then choose your goals and training rhythm.",
   },
   "l3.auth.trial": {
     lt: "7 dienos nemokamai · kortelės nereikia",

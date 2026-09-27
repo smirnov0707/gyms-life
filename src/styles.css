@@ -4,6 +4,7 @@
 @import "./fonts.css";
 @import "./ui-design-system.css";
 @import "./context-workspaces.css";
+@import "./auth-workspace.css";
 
 @custom-variant dark (&:is(.dark *));
 

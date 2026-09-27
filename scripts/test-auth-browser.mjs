@@ -1,4 +1,5 @@
 import path from "node:path";
+import { reviewAuthDesign } from "./test-auth-design.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { chromium, webkit, expect } from "@playwright/test";
 import { createServer } from "vite";
@@ -11,6 +12,7 @@ await mkdir(output, { recursive: true });
 const server = await createServer({
   configFile: false,
   root: dir(""),
+  publicDir: path.join(root, "public"),
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: [
@@ -178,6 +180,7 @@ try {
       await context.close();
       record(`${screen}: ${lang} 320px view has no horizontal overflow`);
     }
+  await reviewAuthDesign({ open, record, output, engine });
   expect(errors).toEqual([]);
 } finally {
   await writeFile(

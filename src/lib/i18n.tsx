@@ -120,10 +120,6 @@ const baseDict = {
   "nav.coach": { lt: "Intelligence", en: "Intelligence" },
 
   "landing.tag": { lt: "Asmeninė treniruočių sistema", en: "Your personal training system" },
-  "landing.sub": {
-    lt: "Atsakyk į kelis klausimus apie savo tikslą — sistema sugeneruos individualų savaičių planą salei arba namams, su vaizdo įrašais, serijų sekimu ir automatiniu progresu.",
-    en: "Answer a few questions about your goal — the system builds a personal multi-week plan for the gym or home, with exercise videos, set tracking and automatic progression.",
-  },
   "landing.cta": { lt: "Sukurti planą", en: "Build my plan" },
   "landing.login": { lt: "Prisijungti", en: "Sign in" },
   "theme.label": { lt: "Tema", en: "Theme" },
@@ -718,8 +714,8 @@ const baseDict = {
   },
   "auth.resetSend": { lt: "Siųsti nuorodą", en: "Send link" },
   "auth.resetSent": {
-    lt: "Nuoroda išsiųsta. Patikrink savo el. paštą.",
-    en: "Link sent. Check your inbox.",
+    lt: "Užklausa priimta. Jei su šiuo el. paštu yra paskyra, atkūrimo nuorodą rasi gautuose laiškuose.",
+    en: "Request received. If an account uses this email, check your inbox for a recovery link.",
   },
   "auth.backToSignin": { lt: "Grįžti prie prisijungimo", en: "Back to sign in" },
   "auth.newPassword": { lt: "Naujas slaptažodis", en: "New password" },
