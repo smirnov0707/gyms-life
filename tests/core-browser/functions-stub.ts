@@ -308,3 +308,5 @@ export { getPerformanceOverview, getVolumeTrend, getStrengthTrend } from "./perf
 export { getWeeklyIntelligenceReview } from "./weekly-functions";
 
 export { getTwinTrendHistory, forecastProgress } from "./observed-functions";
+
+export { getTwinRewindHistory, getTwinEvidenceWindow } from "./rewind-fixtures";

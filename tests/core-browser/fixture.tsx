@@ -1,3 +1,4 @@
+import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
 import { TwinMemory } from "@/components/twin/TwinMemory";
 import { InjuryRiskRadar } from "@/components/InjuryRiskRadar";
@@ -65,6 +66,12 @@ function Panel() {
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">
         {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
+      </div>
+    );
+  if (selected === "rewind")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        <TwinRewind />
       </div>
     );
   if (selected === "trend")

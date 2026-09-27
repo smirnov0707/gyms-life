@@ -3,7 +3,7 @@ import { buildTwinTrendHistory } from "../../src/lib/twin-trend";
 import { DIGITAL_ATHLETE_CALCULATION_VERSION } from "../../src/lib/digital-athlete.service";
 
 // Synthetic source rows pass through the real schema and history projection.
-const baseState: DigitalAthleteState = {
+export const baseState: DigitalAthleteState = {
   schemaVersion: "1.7",
   training: {
     sessionsLast7Days: 2,
