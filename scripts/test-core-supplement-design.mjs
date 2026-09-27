@@ -288,12 +288,11 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
         },
       });
       Object.defineProperty(video, "play", { configurable: true, value: async () => undefined });
-      const devices = navigator.mediaDevices ?? {};
-      if (!navigator.mediaDevices)
-        Object.defineProperty(navigator, "mediaDevices", { value: devices });
-      Object.defineProperty(devices, "getUserMedia", {
-        configurable: true,
-        value: async () => {
+      // Own the complete synthetic API, not a method on a native wrapper.
+      // Keep both objects rooted and assert ownership before every activation;
+      // this test must never fall through to a real browser permission request.
+      const devices = {
+        getUserMedia: async () => {
           camera.calls += 1;
           const stream = {
             getTracks: () => [
@@ -310,13 +309,21 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
             });
           return stream;
         },
-      });
+      };
+      camera.mediaDevices = devices;
+      camera.navigator = navigator;
+      Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: devices });
     });
     const startWithKeyboard = async () => {
       const start = tool.getByRole("button", { name: "Start camera", exact: true });
       await expect(start).toBeEnabled();
       await start.focus();
       await expect(start).toBeFocused();
+      expect(
+        await page.evaluate(
+          () => navigator.mediaDevices === window.__supplementCamera.mediaDevices,
+        ),
+      ).toBe(true);
       await page.keyboard.press("Enter");
     };
     expect(await page.evaluate(() => window.__supplementCamera.calls)).toBe(0);
