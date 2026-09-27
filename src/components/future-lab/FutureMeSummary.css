@@ -1,0 +1,198 @@
+.fl-observed-page {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  color: var(--foreground);
+}
+.fl-observed-ranges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: fit-content;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.fl-observed-ranges button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 11px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 650;
+}
+.fl-observed-ranges button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.fl-observed-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.fl-observed-metric {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.fl-observed-metric h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+.fl-observed-metric h3 svg {
+  color: var(--primary);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.fl-observed-value {
+  margin-top: 22px;
+  font: 500 clamp(28px, 3vw, 38px)/1.2 var(--font-display);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.fl-observed-value small {
+  margin-left: 6px;
+  color: var(--muted-foreground);
+  font: 500 12px var(--font-sans);
+  letter-spacing: 0;
+}
+.fl-observed-date {
+  margin-top: 12px;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.7;
+}
+.fl-observed-line {
+  margin-top: 18px;
+  width: 100%;
+  height: 76px;
+  color: var(--primary);
+}
+.fl-observed-change {
+  margin: 18px 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.fl-observed-values {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.fl-observed-values summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 14px 0;
+  line-height: 1.6;
+}
+.fl-observed-values summary span {
+  margin-left: 8px;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+.fl-observed-values > div {
+  overflow: auto;
+  max-height: 320px;
+}
+.fl-observed-values table {
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: left;
+}
+.fl-observed-values caption {
+  text-align: left;
+  padding-bottom: 12px;
+}
+.fl-observed-values th,
+.fl-observed-values td {
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.fl-observed-values th:last-child,
+.fl-observed-values td:last-child {
+  text-align: right;
+}
+.fl-observed-coverage {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.fl-observed-context {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.fl-observed-context h3 {
+  font: 500 17px/1.5 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.fl-observed-context p {
+  margin-top: 10px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.twin-future-view {
+  gap: 22px;
+  min-width: 0;
+}
+.twin-future-view > .fl-secondary-details {
+  border-radius: 22px;
+}
+.twin-future-view > .fl-secondary-details > summary {
+  padding: 20px 24px;
+  min-height: 60px;
+  font: 500 17px/1.5 var(--font-display);
+  color: var(--foreground);
+}
+.twin-future-view > .fl-secondary-details > .fl-disclosed-content {
+  padding: 12px 24px 24px;
+}
+.fl-trajectory-evidence {
+  display: grid;
+  gap: 36px;
+}
+.fl-trajectory-evidence > section + section {
+  border-top: 1px solid var(--border);
+  padding-top: 32px;
+}
+@media (max-width: 1100px) {
+  .fl-observed-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 639px) {
+  .fl-observed-metrics,
+  .fl-observed-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-observed-ranges button {
+    padding: 10px 12px;
+  }
+  .twin-future-view > .fl-secondary-details > summary {
+    padding: 18px 16px;
+  }
+  .twin-future-view > .fl-secondary-details > .fl-disclosed-content {
+    padding: 8px 12px 20px;
+  }
+  .fl-observed-metric {
+    padding: 20px;
+  }
+}

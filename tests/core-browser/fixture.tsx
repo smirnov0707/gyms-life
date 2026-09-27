@@ -1,3 +1,5 @@
+import { TwinFuture } from "@/components/twin/TwinFuture";
+import { FutureMeSummary } from "@/components/future-lab/FutureMeSummary";
 import { WeeklyIntelligenceReview } from "@/components/WeeklyIntelligenceReview";
 import { PerformanceProgressPanel } from "@/components/PerformanceProgressPanel";
 import "./offline-fixture";
@@ -56,6 +58,12 @@ const client = new QueryClient({
 Object.assign(window, { __coreQueries: client });
 function Panel() {
   const selected = query.get("screen") ?? "meals";
+  if (selected === "future" || selected === "observed")
+    return (
+      <div className="fl-world-page mx-auto w-full max-w-6xl">
+        {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
+      </div>
+    );
   if (selected === "weekly")
     return (
       <div className="fl-world-page mx-auto w-full max-w-6xl">

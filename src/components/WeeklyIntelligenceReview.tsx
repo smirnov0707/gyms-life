@@ -139,7 +139,7 @@ function copyFor(lang: Lang): Copy {
       decision_feedback_data_unavailable: "Atsiliepimai apie sprendimus laikinai nepasiekiami.",
       no_completed_workouts_28d: "Per pastarąsias 28 dienas nėra baigtų treniruočių.",
       recovery_data_unavailable: "Atsistatymo duomenys laikinai nepasiekiami.",
-      no_recovery_checkins_7d: "Per pastarąsias 7 dienas nėra pasiruošimo check-in'ų.",
+      no_recovery_checkins_7d: "Per pastarąsias 7 dienas nėra pasiruošimo patikrų.",
       body_measurements_unavailable: "Kūno duomenys laikinai nepasiekiami.",
       no_body_measurements_30d: "Per pastarąsias 30 dienų nėra kūno matavimų.",
       nutrition_data_unavailable: "Mitybos duomenys laikinai nepasiekiami.",

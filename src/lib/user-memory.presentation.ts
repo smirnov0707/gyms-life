@@ -12,15 +12,16 @@ type MemoryPresentationItem = Pick<
 export function displayedMemoryContent(memory: MemoryPresentationItem, lang: string): string {
   const value = calculatedMemoryValueForTransparency(memory);
   if (value === null) return memory.content;
+  const locale = lang === "lt" ? "lt-LT" : "en-GB";
 
-  if (lang === "en") {
+  if (lang !== "lt") {
     switch (value.kind) {
       case "training_consistency_28d":
         return `You completed ${value.sessionsLast28Days} workouts in the last ${value.windowDays} days.`;
       case "recovery_low_7d":
-        return `Your average readiness was ${value.averageReadiness}/100 in the last ${value.windowDays} days.`;
+        return `Your average readiness was ${value.averageReadiness.toLocaleString(locale)}/100 in the last ${value.windowDays} days.`;
       case "weight_change_30d":
-        return `Your recorded weight changed by ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toFixed(1)} kg in the last ${value.windowDays} days.`;
+        return `Your recorded weight changed by ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg in the last ${value.windowDays} days.`;
       case "nutrition_logging_14d":
         return `You logged nutrition on ${value.loggedDaysLast14Days} of the last ${value.windowDays} days.`;
       case "training_rhythm_observation_28d":
@@ -28,15 +29,13 @@ export function displayedMemoryContent(memory: MemoryPresentationItem, lang: str
     }
   }
 
-  if (lang !== "lt") return memory.content;
-
   switch (value.kind) {
     case "training_consistency_28d":
-      return `Per pastarąsias ${value.windowDays} dienas atlikai ${value.sessionsLast28Days} treniruotes.`;
+      return `Baigtos treniruotės per pastarąsias ${value.windowDays} dienas: ${value.sessionsLast28Days}.`;
     case "recovery_low_7d":
-      return `Per pastarąsias ${value.windowDays} dienas vidutinis tavo pasiruošimas buvo ${value.averageReadiness}/100.`;
+      return `Per pastarąsias ${value.windowDays} dienas vidutinis tavo pasiruošimas buvo ${value.averageReadiness.toLocaleString(locale)}/100.`;
     case "weight_change_30d":
-      return `Per pastarąsias ${value.windowDays} dienas užregistruotas svorio pokytis: ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toFixed(1)} kg.`;
+      return `Per pastarąsias ${value.windowDays} dienas užregistruotas svorio pokytis: ${value.weightChangeKg > 0 ? "+" : ""}${value.weightChangeKg.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg.`;
     case "nutrition_logging_14d":
       return `Per pastarąsias ${value.windowDays} dienas mitybą užregistravai ${value.loggedDaysLast14Days} dienų.`;
     case "training_rhythm_observation_28d":
@@ -49,7 +48,7 @@ export function memoryEvidenceSummary(memory: MemoryPresentationItem, lang: stri
   const value = calculatedMemoryValueForTransparency(memory);
   if (value === null) return null;
 
-  if (lang === "en") {
+  if (lang !== "lt") {
     switch (value.kind) {
       case "training_consistency_28d":
         return `Evidence: ${value.sessionsLast28Days} completed workout records across ${value.windowDays} days.`;
@@ -64,13 +63,11 @@ export function memoryEvidenceSummary(memory: MemoryPresentationItem, lang: stri
     }
   }
 
-  if (lang !== "lt") return null;
-
   switch (value.kind) {
     case "training_consistency_28d":
       return `Įrodymai: ${value.sessionsLast28Days} baigtų treniruočių įrašai per ${value.windowDays} dienas.`;
     case "recovery_low_7d":
-      return `Įrodymai: ${value.checkinsLast7Days} pasiruošimo check-in'ai per ${value.windowDays} dienas.`;
+      return `Įrodymai: pasiruošimo patikrų per ${value.windowDays} dienas — ${value.checkinsLast7Days}.`;
     case "weight_change_30d":
       return `Įrodymai: ${value.measurementsLast30Days} svorio matavimai per ${value.windowDays} dienas.`;
     case "nutrition_logging_14d":

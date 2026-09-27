@@ -3,6 +3,11 @@ import { state, count, persist, delay } from "./state";
 import { exercises } from "./fixtures";
 class Query {
   private filters: Record<string, unknown> = {};
+  private lowerBounds: Record<string, unknown> = {};
+  gte(key: string, value: unknown) {
+    this.lowerBounds[key] = value;
+    return this;
+  }
   private start = 0;
   private end = Infinity;
   private single = false;
@@ -46,6 +51,16 @@ class Query {
   }
   private async execute() {
     count("read:" + this.table);
+    if (
+      new URLSearchParams(location.search).get("screen") === "future" &&
+      ["set_logs", "workout_sessions", "daily_checkins"].includes(this.table)
+    ) {
+      state.last["futureRead:" + this.table] = {
+        filters: this.filters,
+        lowerBounds: this.lowerBounds,
+      };
+      return { data: [], error: null };
+    }
     if (
       new URLSearchParams(location.search).get("screen") === "milestones" &&
       ["workout_sessions", "form_analyses", "daily_checkins"].includes(this.table)

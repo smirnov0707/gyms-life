@@ -305,3 +305,5 @@ export async function getWorkoutHistory({ data }: { data: { limit: number } }) {
 export { getPerformanceOverview, getVolumeTrend, getStrengthTrend } from "./performance-functions";
 
 export { getWeeklyIntelligenceReview } from "./weekly-functions";
+
+export { getTwinTrendHistory, forecastProgress } from "./observed-functions";
