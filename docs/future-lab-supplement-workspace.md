@@ -20,4 +20,6 @@ The supplement route completes the Nutrition / Plan / Supplements context naviga
 - Initial/pending/cached read errors and retry; manual keyboard add with absent dose preserved as null; reload, pause/resume, removal and all-paused state; failed writes; lazy tool activation and draft retention; keyboard-operated live and late-permission camera stream disposal, including no late attachment.
 - 320px Lithuanian layouts, real navigation state, fonts, control size and horizontal overflow.
 
+The fixture disables scheduled reminders and marks its initial scheduler tick as handled, keeping wall-clock notifications separate from route-action toasts. Real user reminder preferences are unchanged.
+
 All test writes remain in synthetic in-memory fixture state. Synthetic labels and simulated streams do not certify real product recognition, medical advice, hardware-camera compatibility or production account transactions. The selected Twin GLB and material are untouched. Keep PR #87 draft for visual acceptance; no main merge or production release.

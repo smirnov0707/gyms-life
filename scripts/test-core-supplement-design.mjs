@@ -178,7 +178,9 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
     await expect(form.getByRole("textbox", { name: "Name", exact: true })).toBeEnabled();
     await form.getByRole("textbox", { name: "Name", exact: true }).fill("Keep my unsaved product");
     await form.getByRole("button", { name: "Add supplement", exact: true }).click();
-    await expect(page.locator("[data-sonner-toast]")).toContainText("Something went wrong");
+    await expect(
+      page.locator("[data-sonner-toast]").filter({ hasText: "Something went wrong" }),
+    ).toBeVisible();
     await expect(form.getByRole("textbox", { name: "Name", exact: true })).toHaveValue(
       "Keep my unsaved product",
     );
