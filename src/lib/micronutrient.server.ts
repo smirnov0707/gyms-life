@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { athleteDay } from "./athlete-day.server";
+import { dayOffset } from "./local-day";
 import { resolveBodyWeight } from "./body-weight.engine";
 import { withMedicalDisclaimer } from "./micronutrient.warnings";
 
@@ -87,7 +89,12 @@ export async function loadMicroSnapshot(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<MicroSnapshot> {
-  const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  // `logged_on` is a calendar day, so the window that selects it has to be one
+  // too. Anchored to UTC, "the last 14 days" started a day early for an athlete
+  // east of Greenwich in their small hours and a day late west of it — a
+  // fifteen- or thirteen-day window feeding a scan that tells them what their
+  // fourteen days looked like.
+  const since = dayOffset(await athleteDay(supabase, userId), -14);
 
   const [foods, sups, prof, sessions, checkins, weights] = await Promise.all([
     supabase

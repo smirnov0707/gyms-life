@@ -6,6 +6,7 @@ import {
   type HealthSampleRow,
   type LiveSignal,
 } from "./live-signals.engine";
+import { dayOffset } from "./local-day";
 
 /**
  * Reads the athlete's own recent measurements for the signal rail.
@@ -16,10 +17,9 @@ import {
  */
 const WINDOW_DAYS = 45;
 
-function windowStart(today: string): string {
-  const start = Date.parse(`${today}T00:00:00Z`) - WINDOW_DAYS * 86_400_000;
-  return new Date(start).toISOString().slice(0, 10);
-}
+// `dayOffset` is the canonical calendar-day arithmetic and validates its input;
+// this was a second copy of it that happened to agree.
+const windowStart = (today: string): string => dayOffset(today, -WINDOW_DAYS);
 
 export async function loadLiveSignals(
   supabase: SupabaseClient<Database>,

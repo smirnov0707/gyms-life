@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Tables } from "@/integrations/supabase/types";
 import { REPORT_SOURCES, type ReportSource } from "./medical-report.schema";
+import { athleteDay } from "./athlete-day.server";
+import { dayOffset } from "./local-day";
 
 /**
  * Aggregates the last 30 days of real user data for the monthly / medical
@@ -93,10 +95,19 @@ export async function buildReportStats(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<ReportStats> {
-  const to = new Date();
-  const from = new Date(Date.now() - 30 * 864e5);
-  const fromIso = from.toISOString();
-  const fromDay = fromIso.slice(0, 10);
+  // The report's period is a calendar period, so it belongs to the athlete's
+  // calendar. Taken from UTC, the header said the report ended yesterday for
+  // anybody east of Greenwich in their small hours — while the date-only
+  // filters below, which have no upper bound, still returned today's rows. A
+  // report handed to a doctor claimed to cover a period ending before some of
+  // the data printed inside it. West of Greenwich in the evening it claimed a
+  // period ending tomorrow.
+  const toDay = await athleteDay(supabase, userId);
+  const fromDay = dayOffset(toDay, -30);
+  // Timestamps stay instants. `started_at` and `performed_at` record a moment,
+  // not a day, and thirty days back from now is exactly what they should be
+  // compared against.
+  const fromIso = new Date(Date.now() - 30 * 864e5).toISOString();
 
   const [sessionsRes, checkinsRes, nutriRes, bodyRes, setsRes, suppRes, profileRes] =
     await Promise.all([
@@ -218,7 +229,7 @@ export async function buildReportStats(
 
   return {
     from: fromDay,
-    to: to.toISOString().slice(0, 10),
+    to: toDay,
     unreadable,
     sessions: sessions.length,
     totalVolumeKg,

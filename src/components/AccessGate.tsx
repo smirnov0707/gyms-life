@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useAccess, TRIAL_DAYS } from "@/lib/access";
 import { isBillingEnabled } from "@/lib/billing";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 
 type Labels = {
   trialLeft: string;
@@ -55,7 +56,11 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
   // Reminder: once a day while the trial is running out.
   useEffect(() => {
     if (!billingEnabled || !access.inTrial || daysLeft > 3) return;
-    const key = `vex_trial_reminder_${new Date().toISOString().slice(0, 10)}`;
+    // Once a day means once a day where the athlete is. Keyed to the UTC date,
+    // the reminder rolled over mid-evening in the Americas and mid-night in
+    // Vilnius — so somebody could be reminded twice in one of their days and
+    // not at all in the next.
+    const key = `vex_trial_reminder_${dayInTimeZone(new Date(), browserTimeZone())}`;
     try {
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, "1");
