@@ -735,6 +735,10 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  useEffect(() => {
     if (lang === "lt" || lang === "en" || loadedSupplementalLocales[lang]) return;
 
     let active = true;
