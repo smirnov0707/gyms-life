@@ -1,97 +1,123 @@
-import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { useId, useState } from "react";
+import { ArrowRight, ChevronDown, ScanLine } from "lucide-react";
 import { BodyMap, type BodyMapRegion } from "./BodyMap";
+import { TwinLedgerState } from "./TwinLedgerState";
 import { changeTone, regionChange } from "./change-map.model";
 import { isAnatomicalRegion, viewShowing, type BodyView } from "./body-map.geometry";
 import { baseLang, formatLocale, type Lang } from "@/lib/i18n";
+import { browserTimeZone } from "@/lib/local-day";
 import {
   compareTwinRewindRegions,
   type TwinRegionDelta,
   type TwinRewindPoint,
 } from "@/lib/twin-rewind";
+import "./TwinComparison.css";
 
 const COPY = {
   lt: {
-    title: "Twin Change Map",
-    description: "Kūno regionų skirtumas tarp dviejų tikrai išsaugotų, suderinamų Twin būsenų.",
-    note: "Spalva rodo tik apskaičiuoto atsistatymo įverčio kryptį tarp šių dviejų snapshot'ų. Teigiamas skirtumas nėra įrodymas, kad treniruotė sukėlė pagerėjimą; neigiamas nėra diagnozė ar žala.",
+    title: "Raumenų pokyčių žemėlapis",
+    description: "Dvi išsaugotos būsenos. Kiekvienos raumenų grupės rodikliai greta.",
+    note: "Spalva rodo apskaičiuoto atsistatymo įverčio skirtumą. Aukštesnis įvertis neįrodo treniruotės poveikio, o žemesnis nėra traumos ar žalos nustatymas.",
     front: "Priekis",
     back: "Nugara",
     positive: "Įvertis aukštesnis",
     unchanged: "Nepakito",
     notCompared: "Nepalyginta",
     negative: "Įvertis žemesnis",
-    recoveryChange: "Atsistatymo įverčio skirtumas",
-    volumeChange: "Registruoto krūvio skirtumas",
-    from: "Nuo",
-    to: "Iki",
-    unknown: "Nepakanka abiejų būsenų duomenų",
-    select: "Pasirink kūno regioną, kad pamatytum skaitinį skirtumą.",
+    recovery: "Atsistatymo įvertis",
+    volume: "Registruotas krūvis",
+    difference: "Skirtumas",
+    from: "Ankstesnė būsena",
+    to: "Pasirinkta būsena",
+    previous: "Prieš",
+    current: "Po",
+    unknown: "Šiam rodikliui trūksta palyginamų duomenų.",
+    select: "Pasirink raumenų grupę",
     points: "proc. p.",
+    method: "Ką reiškia spalvos?",
+    zone: "Laiko juosta",
+    unavailable: "Šių būsenų palyginti negalima.",
+    unavailableHelp: "Reikia dviejų suderinamų būsenų su prieinamais kūno regionų duomenimis.",
+    schematic: "Scheminis palyginimo žemėlapis",
+    missing: "Brūkšnys reiškia nežinomą reikšmę; jis nėra nulis.",
   },
   en: {
-    title: "Twin Change Map",
-    description: "Body-region differences between two real stored, compatible Twin states.",
-    note: "Colour shows only the direction of the calculated recovery estimate between these two snapshots. A positive difference is not proof that training caused improvement; a negative difference is not a diagnosis or injury signal.",
+    title: "Muscle change map",
+    description: "Two saved states. Each muscle group's readings, side by side.",
+    note: "Colour shows the difference in the calculated recovery estimate. A higher estimate does not prove a training effect; a lower estimate does not establish injury or harm.",
     front: "Front",
     back: "Back",
     positive: "Estimate higher",
     unchanged: "Unchanged",
     notCompared: "Not compared",
     negative: "Estimate lower",
-    recoveryChange: "Recovery-estimate difference",
-    volumeChange: "Logged-volume difference",
-    from: "From",
-    to: "To",
-    unknown: "Insufficient data in both states",
-    select: "Select a body region to inspect its numeric difference.",
+    recovery: "Recovery estimate",
+    volume: "Logged volume",
+    difference: "Difference",
+    from: "Previous state",
+    to: "Selected state",
+    previous: "Before",
+    current: "After",
+    unknown: "Comparable data is missing for this reading.",
+    select: "Choose a muscle group",
     points: "pp",
+    method: "What do the colours mean?",
+    zone: "Time zone",
+    unavailable: "These states cannot be compared.",
+    unavailableHelp: "Two compatible states with available body-region data are needed.",
+    schematic: "Schematic comparison map",
+    missing: "A dash means an unknown reading; it is not zero.",
   },
 };
-
-function signed(value: number | null, unit: string, locale: string): string {
-  if (value === null) return "—";
-  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
-  return `${value > 0 ? "+" : ""}${number} ${unit}`;
+type Copy = (typeof COPY)[keyof typeof COPY];
+type Props = {
+  older: TwinRewindPoint;
+  newer: TwinRewindPoint;
+  lang: Lang;
+  regionLabel: (region: string) => string;
+};
+function value(number: number | null, unit: string, locale: string, signed = false) {
+  if (number === null || !Number.isFinite(number)) return "—";
+  const normalized = number === 0 ? 0 : number;
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1, ...(signed ? { signDisplay: "exceptZero" as const } : {}) }).format(normalized)} ${unit}`;
 }
-
-function time(value: string, locale: string): string {
+function time(date: string, locale: string, timeZone: string) {
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+    timeZone,
+  }).format(new Date(date));
 }
-
-export function TwinChangeMap({
+export function TwinChangeMap(props: Props) {
+  const deltas = compareTwinRewindRegions(props.older, props.newer);
+  const copy = COPY[baseLang(props.lang)];
+  if (!deltas)
+    return (
+      <TwinLedgerState state="empty" title={copy.unavailable} description={copy.unavailableHelp} />
+    );
+  return <Comparison key={`${props.older.id}:${props.newer.id}`} {...props} deltas={deltas} />;
+}
+function Comparison({
   older,
   newer,
   lang,
   regionLabel,
-}: {
-  older: TwinRewindPoint;
-  newer: TwinRewindPoint;
-  lang: Lang;
-  regionLabel: (region: string) => string;
-}) {
-  const language = baseLang(lang);
-  const copy = COPY[language];
-  const locale = formatLocale(lang);
-  const deltas = useMemo(() => compareTwinRewindRegions(older, newer), [older, newer]);
-  const firstKnown = deltas?.find(
+  deltas,
+}: Props & { deltas: TwinRegionDelta[] }) {
+  const id = useId(),
+    copy = COPY[baseLang(lang)],
+    locale = formatLocale(lang),
+    timeZone = browserTimeZone();
+  const firstKnown = deltas.find(
     (region) => isAnatomicalRegion(region.region) && region.recoveryPctDelta !== null,
   );
   const [selectedRegion, setSelectedRegion] = useState<string | null>(firstKnown?.region ?? null);
   const [view, setView] = useState<BodyView>(() =>
     firstKnown ? viewShowing(firstKnown.region, "front") : "front",
   );
-
-  if (!deltas) return null;
-
-  // The colour and the number come from one call, so a difference too small to
-  // print can never still be a direction on the map.
   const regions: BodyMapRegion[] = deltas.map((region) => {
     const change = regionChange(region.recoveryPctDelta);
     return {
@@ -99,134 +125,190 @@ export function TwinChangeMap({
       tone: changeTone(change),
       value:
         change.state === "changed"
-          ? signed(change.delta, copy.points, locale)
+          ? value(change.delta, copy.points, locale, true)
           : change.state === "unchanged"
             ? copy.unchanged
             : null,
     };
   });
   const selected = deltas.find((region) => region.region === selectedRegion) ?? null;
-
+  const tone = selected ? changeTone(regionChange(selected.recoveryPctDelta)) : "muted";
+  const toneLabels = {
+    cool: copy.positive,
+    neutral: copy.unchanged,
+    hot: copy.negative,
+    muted: copy.notCompared,
+  };
   function selectRegion(region: string) {
-    setSelectedRegion(region);
+    setSelectedRegion(region || null);
     if (isAnatomicalRegion(region)) setView((current) => viewShowing(region, current));
   }
-
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">{copy.title}</h3>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-            {copy.description}
-          </p>
+    <section className="fl-change-map" aria-labelledby={`${id}-title`}>
+      <header className="fl-comparison-heading">
+        <p className="fl-ledger-eyebrow">
+          <ScanLine aria-hidden="true" />
+          Twin
+        </p>
+        <h3 id={`${id}-title`}>{copy.title}</h3>
+        <p>{copy.description}</p>
+      </header>
+      <div className="fl-comparison-dates">
+        <div>
+          <span>{copy.from}</span>
+          <time dateTime={older.computedAt}>{time(older.computedAt, locale, timeZone)}</time>
         </div>
-        <div className="flex rounded-xl border border-border p-1" aria-label={copy.title}>
-          {(["front", "back"] as const).map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              aria-pressed={view === candidate}
-              onClick={() => setView(candidate)}
-              className="min-h-11 rounded-lg px-3 text-xs font-medium text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              {candidate === "front" ? copy.front : copy.back}
-            </button>
-          ))}
+        <ArrowRight aria-hidden="true" />
+        <div>
+          <span>{copy.to}</span>
+          <time dateTime={newer.computedAt}>{time(newer.computedAt, locale, timeZone)}</time>
         </div>
+        <p>
+          {copy.zone}: {timeZone}
+        </p>
       </div>
-
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{copy.note}</p>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(260px,1.1fr)]">
-        <div className="min-h-[360px] rounded-2xl border border-border bg-surface-2 p-2">
-          <BodyMap
-            regions={regions}
-            view={view}
-            selectedRegion={selectedRegion}
-            onSelectRegion={selectRegion}
-            regionLabel={regionLabel}
-          />
-        </div>
-
-        <div className="min-w-0">
-          {/* Four entries, not three. "Unchanged" and "not compared" shared one
-              box and one colour, and the label said so out loud — a region we
-              held up against another state and found steady is a finding, and
-              a region we had nothing to compare is not. */}
-          <div className="grid grid-cols-2 gap-2 text-[10px] text-muted-foreground sm:grid-cols-4">
-            <span className="rounded-lg border border-emerald-500/20 px-2 py-2 text-center">
-              {copy.positive}
-            </span>
-            <span className="rounded-lg border border-slate-400/30 px-2 py-2 text-center">
-              {copy.unchanged}
-            </span>
-            <span className="rounded-lg border border-rose-500/20 px-2 py-2 text-center">
-              {copy.negative}
-            </span>
-            <span className="rounded-lg border border-border px-2 py-2 text-center opacity-60">
-              {copy.notCompared}
-            </span>
+      <div className="fl-change-workspace">
+        <figure className="fl-change-stage">
+          <div className="fl-comparison-toggle" role="group" aria-label={copy.schematic}>
+            {(["front", "back"] as const).map((candidate) => (
+              <button
+                key={candidate}
+                type="button"
+                aria-pressed={view === candidate}
+                onClick={() => setView(candidate)}
+              >
+                {copy[candidate]}
+              </button>
+            ))}
           </div>
-
+          <div className="fl-change-figure">
+            <BodyMap
+              regions={regions}
+              view={view}
+              selectedRegion={selectedRegion}
+              onSelectRegion={selectRegion}
+              regionLabel={regionLabel}
+            />
+          </div>
+          <figcaption>{copy.schematic}</figcaption>
+        </figure>
+        <div className="fl-change-readout">
+          <label htmlFor={`${id}-muscle`}>{copy.select}</label>
+          <select
+            id={`${id}-muscle`}
+            value={selected?.region ?? ""}
+            onChange={(event) => selectRegion(event.target.value)}
+          >
+            <option value="">{copy.select}</option>
+            {deltas.map((region) => (
+              <option key={region.region} value={region.region}>
+                {regionLabel(region.region)}
+              </option>
+            ))}
+          </select>
           {selected ? (
-            <RegionDeltaReadout delta={selected} copy={copy} locale={locale} label={regionLabel} />
+            <>
+              <div className="fl-change-selection">
+                <h4>{regionLabel(selected.region)}</h4>
+                <span data-tone={tone}>
+                  {tone === "cool"
+                    ? copy.positive
+                    : tone === "neutral"
+                      ? copy.unchanged
+                      : tone === "hot"
+                        ? copy.negative
+                        : copy.notCompared}
+                </span>
+              </div>
+              <Metric
+                kind="recovery"
+                title={copy.recovery}
+                older={selected.olderRecoveryPct}
+                newer={selected.newerRecoveryPct}
+                delta={selected.recoveryPctDelta}
+                unit="%"
+                deltaUnit={copy.points}
+                copy={copy}
+                locale={locale}
+              />
+              <Metric
+                kind="volume"
+                title={copy.volume}
+                older={selected.olderVolumeKg}
+                newer={selected.newerVolumeKg}
+                delta={selected.volumeKgDelta}
+                unit="kg"
+                deltaUnit="kg"
+                copy={copy}
+                locale={locale}
+              />
+            </>
           ) : (
-            <p className="mt-4 text-sm text-muted-foreground">{copy.select}</p>
+            <p className="fl-comparison-note">{copy.select}</p>
           )}
-
-          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-2 px-3 py-3 text-xs text-muted-foreground">
-            <span>
-              {copy.from}: {time(older.computedAt, locale)}
-            </span>
-            <ArrowRight aria-hidden="true" className="size-3.5 shrink-0" />
-            <span>
-              {copy.to}: {time(newer.computedAt, locale)}
-            </span>
-          </div>
+          <p className="fl-comparison-note">{copy.missing}</p>
         </div>
       </div>
+      <ul className="fl-change-legend" aria-label={copy.method}>
+        {(["cool", "neutral", "hot", "muted"] as const).map((candidate) => (
+          <li key={candidate} data-tone={candidate}>
+            <i aria-hidden="true" />
+            {toneLabels[candidate]}
+          </li>
+        ))}
+      </ul>
+      <details className="fl-comparison-method">
+        <summary>
+          {copy.method}
+          <ChevronDown aria-hidden="true" />
+        </summary>
+        <p>{copy.note}</p>
+      </details>
     </section>
   );
 }
-
-function RegionDeltaReadout({
+function Metric({
+  kind,
+  title,
+  older,
+  newer,
   delta,
+  unit,
+  deltaUnit,
   copy,
   locale,
-  label,
 }: {
-  delta: TwinRegionDelta;
-  copy: (typeof COPY)[keyof typeof COPY];
+  kind: string;
+  title: string;
+  older: number | null;
+  newer: number | null;
+  delta: number | null;
+  unit: string;
+  deltaUnit: string;
+  copy: Copy;
   locale: string;
-  label: (region: string) => string;
 }) {
+  const change = regionChange(delta);
+  const normalizedDelta =
+    change.state === "changed" ? change.delta : change.state === "unchanged" ? 0 : null;
   return (
-    <div className="mt-4 rounded-xl border border-border bg-surface-2 p-4">
-      <h4 className="text-base font-semibold text-foreground">{label(delta.region)}</h4>
-      <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+    <article className="fl-change-metric" data-metric={kind}>
+      <h5>{title}</h5>
+      <dl>
         <div>
-          <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            {copy.recoveryChange}
-          </dt>
-          <dd className="mt-1 font-mono text-lg text-foreground">
-            {delta.recoveryPctDelta === null
-              ? "—"
-              : signed(delta.recoveryPctDelta, copy.points, locale)}
-          </dd>
+          <dt>{copy.previous}</dt>
+          <dd>{value(older, unit, locale)}</dd>
         </div>
         <div>
-          <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            {copy.volumeChange}
-          </dt>
-          <dd className="mt-1 font-mono text-lg text-foreground">
-            {delta.volumeKgDelta === null ? "—" : signed(delta.volumeKgDelta, "kg", locale)}
-          </dd>
+          <dt>{copy.current}</dt>
+          <dd>{value(newer, unit, locale)}</dd>
+        </div>
+        <div className="fl-change-difference">
+          <dt>{copy.difference}</dt>
+          <dd>{value(normalizedDelta, deltaUnit, locale, true)}</dd>
         </div>
       </dl>
-      {delta.recoveryPctDelta === null && delta.volumeKgDelta === null ? (
-        <p className="mt-2 text-xs text-muted-foreground">{copy.unknown}</p>
-      ) : null}
-    </div>
+      {normalizedDelta === null ? <p>{copy.unknown}</p> : null}
+    </article>
   );
 }

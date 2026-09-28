@@ -139,7 +139,7 @@ function copyFor(lang: Lang): Copy {
     return {
       eyebrow: "DIGITAL ATHLETE",
       title: "Your athlete model",
-      description: "A transparent, deterministic summary of the data you have logged in GYMS.LIFE.",
+      description: "Your measurements, training and habits, with the sources behind them.",
       refresh: "Refresh model",
       updating: "Updating your model…",
       quality: {
@@ -148,7 +148,7 @@ function copyFor(lang: Lang): Copy {
         informed: "Evidence-informed",
       },
       evidence: "evidence points",
-      transparent: "No guesses: GYMS.LIFE stores only validated aggregate facts here.",
+      transparent: "Built from your recorded data.",
       training: "Training",
       recovery: "Recovery",
       body: "Body",
@@ -215,7 +215,7 @@ function copyFor(lang: Lang): Copy {
       bodyFacts: {
         eyebrow: "YOUR BODY",
         title: "What the model measures against",
-        sub: "Height, year of birth and sex are what the meal plan, the micronutrient scan and the body scan's age term reason from. Left blank, each of those says so rather than assuming a body.",
+        sub: "Height, birth year and sex help personalize your plans. Empty fields remain unknown.",
         height: "Height (cm)",
         birthYear: "Year of birth",
         gender: "Sex",
@@ -223,8 +223,7 @@ function copyFor(lang: Lang): Copy {
         unset: "Not set",
         missing: (fields) =>
           `Still unknown: ${fields}. Anything that needs one of these will say so instead of estimating.`,
-        weightNote:
-          "Body weight is not here on purpose: it is a measurement with a date, recorded on the progress page, and the latest one is what every calculation uses.",
+        weightNote: "Record your weight in My Twin. Each measurement keeps its date.",
         save: "Save",
         saved: "Saved.",
         invalid:
@@ -235,7 +234,7 @@ function copyFor(lang: Lang): Copy {
   return {
     eyebrow: "SKAITMENINIS SPORTININKAS",
     title: "Tavo sportininko modelis",
-    description: "Skaidri, deterministinė suvestinė iš duomenų, kuriuos užregistravai GYMS.LIFE.",
+    description: "Tavo matavimai, treniruotės ir įpročiai su juos pagrindžiančiais šaltiniais.",
     refresh: "Atnaujinti modelį",
     updating: "Atnaujinamas tavo modelis…",
     quality: {
@@ -244,7 +243,7 @@ function copyFor(lang: Lang): Copy {
       informed: "Paremta pakankamais duomenimis",
     },
     evidence: "įrodymo taškai",
-    transparent: "Be spėjimų: čia saugomi tik validuoti apibendrinti faktai.",
+    transparent: "Remiasi tavo užregistruotais duomenimis.",
     training: "Treniruotės",
     recovery: "Atsistatymas",
     body: "Kūnas",
@@ -311,7 +310,7 @@ function copyFor(lang: Lang): Copy {
     bodyFacts: {
       eyebrow: "TAVO KŪNAS",
       title: "Į ką modelis atsiremia",
-      sub: "Ūgis, gimimo metai ir lytis yra tai, iš ko samprotauja mitybos planas, mikroelementų skenavimas ir kūno skenavimo amžiaus narys. Palikti tuščius, jie tai pasako, o ne prisigalvoja kūną.",
+      sub: "Ūgis, gimimo metai ir lytis padeda pritaikyti planus tau. Tušti laukai lieka nežinomi.",
       height: "Ūgis (cm)",
       birthYear: "Gimimo metai",
       gender: "Lytis",
@@ -319,8 +318,7 @@ function copyFor(lang: Lang): Copy {
       unset: "Nenurodyta",
       missing: (fields) =>
         `Vis dar nežinoma: ${fields}. Kas remiasi šiais dydžiais, tai pasakys, o ne spės.`,
-      weightNote:
-        "Kūno svorio čia nėra sąmoningai: tai matavimas su data, įrašomas progreso puslapyje, ir kiekvienas skaičiavimas naudoja naujausią.",
+      weightNote: "Svorį registruok My Twin. Kiekvienas matavimas išsaugo savo datą.",
       save: "Išsaugoti",
       saved: "Išsaugota.",
       invalid:
@@ -589,7 +587,7 @@ function AthleteModelPage() {
         rhythm: "Inspect training rhythm",
         controls: "Evidence & controls",
         modelState: "Model state",
-        snapshot: "Last deterministic snapshot",
+        snapshot: "Last model update",
       }
     : {
         trust: "MODELIO SKAIDRUMAS",
@@ -602,28 +600,17 @@ function AthleteModelPage() {
         rhythm: "Peržiūrėti treniruočių ritmą",
         controls: "Įrodymai ir valdymas",
         modelState: "Modelio būsena",
-        snapshot: "Paskutinė deterministinė būsena",
+        snapshot: "Paskutinis modelio atnaujinimas",
       };
 
   return (
-    <div className="fl-context-route fl-page-enter max-w-5xl">
-      <section className="fl-context-hero">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "radial-gradient(65% 110% at 0% 0%, rgba(16,185,129,.10), transparent 62%)",
-          }}
-        />
+    <div className="fl-context-route fl-workspace fl-profile-workspace fl-page-enter">
+      <section className="fl-workspace-hero">
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
-              {ui.trust}
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {copy.title}
-            </h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-500">
+            <p className="fl-workspace-eyebrow">{ui.trust}</p>
+            <h1 className="fl-workspace-title mt-3">{copy.title}</h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
               {copy.description}
             </p>
           </div>
@@ -632,7 +619,7 @@ function AthleteModelPage() {
             disabled={loading}
             variant="ghost"
             size="sm"
-            className="self-start text-neutral-500 hover:text-white lg:self-auto"
+            className="self-start text-muted-foreground hover:text-foreground lg:self-auto"
           >
             {loading ? (
               <Loader2 className="size-4 animate-spin" />
@@ -644,30 +631,30 @@ function AthleteModelPage() {
         </div>
 
         {loading && !state ? (
-          <div className="relative mt-7 flex items-center gap-2 text-sm text-neutral-500">
-            <Loader2 className="size-4 animate-spin text-emerald-400" /> {copy.updating}
+          <div className="relative mt-7 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin text-primary" /> {copy.updating}
           </div>
         ) : null}
 
         {state ? (
-          <div className="relative mt-7 grid gap-5 border-t border-white/[0.06] pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="relative mt-7 grid gap-5 border-t border-border pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
             <div className="flex items-start gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-400">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <ShieldCheck className="size-4" />
               </span>
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-neutral-600">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                   {ui.modelState}
                 </p>
-                <p className="mt-1 text-lg font-medium text-white">
+                <p className="mt-1 text-lg font-medium text-foreground">
                   {copy.quality[state.dataQuality.level]}
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {state.dataQuality.evidenceCount} {copy.evidence} · {copy.transparent}
                 </p>
               </div>
             </div>
-            <div className="font-mono text-[10px] text-neutral-600">
+            <div className="font-mono text-[10px] text-muted-foreground">
               {model?.snapshot
                 ? `${ui.snapshot}: ${new Date(model.snapshot.computedAt).toLocaleString(locale)}`
                 : copy.unavailable}
@@ -679,9 +666,9 @@ function AthleteModelPage() {
       {/* The stable body facts. Until now their only entry point was the
           onboarding form, so an athlete who signed up before it started saving
           them had no way to tell the app how tall they are. */}
-      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
+      <section className="fl-workspace-panel fl-profile-body p-5 sm:p-6">
         <div>
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 light:text-emerald-700">
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             <Ruler className="size-4" /> {copy.bodyFacts.eyebrow}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
@@ -694,8 +681,7 @@ function AthleteModelPage() {
 
         {bodyLoading ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin text-emerald-400 light:text-emerald-700" />{" "}
-            {copy.memory.loading}
+            <Loader2 className="size-4 animate-spin text-primary" /> {copy.memory.loading}
           </div>
         ) : (
           <>
@@ -789,9 +775,9 @@ function AthleteModelPage() {
         )}
       </section>
 
-      <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
+      <section className="fl-workspace-panel fl-profile-memory p-5 sm:p-6">
         <div>
-          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400 light:text-emerald-700">
+          <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             <Brain className="size-4" /> {copy.memory.eyebrow}
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{ui.knows}</h2>
@@ -800,8 +786,7 @@ function AthleteModelPage() {
 
         {memoryLoading ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin text-emerald-400 light:text-emerald-700" />{" "}
-            {copy.memory.loading}
+            <Loader2 className="size-4 animate-spin text-primary" /> {copy.memory.loading}
           </div>
         ) : memories.length === 0 ? (
           <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{copy.memory.empty}</p>
@@ -811,11 +796,11 @@ function AthleteModelPage() {
                 the page does not mention makes it answer a different question
                 than the one it asks. */}
             {memoryHasMore ? (
-              <p className="mt-4 rounded-2xl border border-border bg-black/20 p-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-4 rounded-2xl border border-border bg-surface-2 p-3 text-xs leading-relaxed text-muted-foreground">
                 {copy.memory.truncated(memoryLimit)}
               </p>
             ) : null}
-            <div className="mt-5 divide-y divide-white/[0.06]">
+            <div className="mt-5 divide-y divide-border">
               {memories.map((memory) => {
                 // The page lists up to fifty entries; twelve of them travel with
                 // the athlete's context. Between those two numbers there was no
@@ -837,7 +822,7 @@ function AthleteModelPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400 light:text-emerald-700">
+                            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-primary">
                               {memoryTypeLabel(memory.type, lang)}
                             </span>
                             <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
@@ -846,7 +831,7 @@ function AthleteModelPage() {
                             <span
                               className={
                                 sharedWithAi
-                                  ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300"
+                                  ? "rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-amber-300 light:border-amber-700/30 light:bg-amber-100 light:text-amber-800"
                                   : "rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
                               }
                             >
@@ -863,7 +848,7 @@ function AthleteModelPage() {
                       </div>
                     </summary>
 
-                    <div className="mt-4 rounded-2xl border border-border bg-black/20 p-4">
+                    <div className="mt-4 rounded-2xl border border-border bg-surface-2 p-4">
                       <p className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
                         <Info className="mt-0.5 size-3.5 shrink-0" />
                         {evidenceSummary ?? copy.memory.evidence(memory.evidenceCount)}
@@ -1002,7 +987,7 @@ function AthleteModelPage() {
       </section>
 
       {state ? (
-        <section className="rounded-[1.75rem] border border-border bg-foreground/[0.02] p-5 sm:p-6">
+        <section className="fl-workspace-panel p-5 sm:p-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             {ui.needs}
           </p>
@@ -1025,7 +1010,7 @@ function AthleteModelPage() {
 
       <ConnectHealthSource />
 
-      <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+      <details className="fl-workspace-panel">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
             {english ? "AUTOMATIONS" : "AUTOMATIZAVIMAS"}
@@ -1045,7 +1030,7 @@ function AthleteModelPage() {
       </details>
 
       {state ? (
-        <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+        <details className="fl-workspace-panel">
           <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
             <p className="text-sm font-semibold text-foreground">{ui.inspect}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.inspectSub}</p>
@@ -1053,8 +1038,7 @@ function AthleteModelPage() {
           <div className="grid border-t border-border md:grid-cols-2">
             <div className="p-5 sm:p-6 md:border-r md:border-border">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Dumbbell className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
-                {copy.training}
+                <Dumbbell className="size-4 text-primary" /> {copy.training}
               </h3>
               <div className="mt-3">
                 <Metric label={copy.sessions7d} value={String(state.training.sessionsLast7Days)} />
@@ -1102,8 +1086,7 @@ function AthleteModelPage() {
             <div className="grid sm:grid-cols-3 md:grid-cols-1">
               <div className="p-5 sm:p-6">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <HeartPulse className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
-                  {copy.recovery}
+                  <HeartPulse className="size-4 text-primary" /> {copy.recovery}
                 </h3>
                 <div className="mt-3">
                   <Metric
@@ -1118,7 +1101,7 @@ function AthleteModelPage() {
               </div>
               <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Scale className="size-4 text-emerald-400 light:text-emerald-700" /> {copy.body}
+                  <Scale className="size-4 text-primary" /> {copy.body}
                 </h3>
                 <div className="mt-3">
                   <Metric
@@ -1133,8 +1116,7 @@ function AthleteModelPage() {
               </div>
               <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
                 <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Apple className="size-4 text-emerald-400 light:text-emerald-700" />{" "}
-                  {copy.nutrition}
+                  <Apple className="size-4 text-primary" /> {copy.nutrition}
                 </h3>
                 <div className="mt-3">
                   <Metric
@@ -1156,7 +1138,7 @@ function AthleteModelPage() {
         </details>
       ) : null}
 
-      <details className="rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+      <details className="fl-workspace-panel">
         <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-foreground sm:px-6">
           {ui.rhythm}
         </summary>

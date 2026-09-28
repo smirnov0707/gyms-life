@@ -13,13 +13,12 @@ import {
   Sparkles,
   Zap,
   ListChecks,
-  Timer,
   CheckCircle2,
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { generatePlan } from "@/lib/plan.functions";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { useI18n, baseLang, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,9 +99,9 @@ function OptionButton({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "rounded-xl border p-4 text-left text-sm font-semibold transition-all",
+        "fl-intake-option rounded-xl border p-4 text-left text-sm font-semibold transition-colors",
         active
-          ? "border-primary bg-primary/12 text-primary glow-ring"
+          ? "border-primary bg-primary/12 text-primary"
           : "border-border bg-surface text-foreground hover:border-primary/40",
       )}
     >
@@ -120,7 +119,6 @@ function Onboarding() {
   const [mode, setMode] = useState<"quick" | "full">("quick");
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [result, setResult] = useState<TrainingPlanData | null>(null);
   const [generatedPlanId, setGeneratedPlanId] = useState<string | null>(null);
 
@@ -179,16 +177,6 @@ function Onboarding() {
   const steps = stepIds.length;
   const current = stepIds[Math.min(step, steps - 1)]!;
 
-  // 2-minute budget indicator for quick mode
-  useEffect(() => {
-    if (result || busy) return;
-    const id = window.setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [result, busy]);
-
-  const remaining = Math.max(0, 120 - elapsed);
-  const mmss = `${String(Math.floor(remaining / 60)).padStart(1, "0")}:${String(remaining % 60).padStart(2, "0")}`;
-
   const toggleEquip = (v: string) =>
     setEquipment((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
@@ -215,7 +203,7 @@ function Onboarding() {
       });
       if (!intake.success) {
         toast.error(
-          lang === "lt"
+          baseLang(lang) === "lt"
             ? "Patikrink skaičius ir pasirinkimus anketoje. Svorį galima įvesti su kableliu."
             : "Check the numbers and choices in the form. Decimal commas are accepted.",
         );
@@ -239,18 +227,21 @@ function Onboarding() {
     return (
       <section role="alert" className="panel p-6">
         <p>
-          {lang === "lt"
+          {baseLang(lang) === "lt"
             ? "Nepavyko įkelti tavo profilio. Esami pasirinkimai nebus pakeisti."
             : "Could not load your profile. Your existing choices will not be overwritten."}
         </p>
         <Button onClick={() => void profileQuery.refetch()}>
-          {lang === "lt" ? "Bandyti dar kartą" : "Retry"}
+          {baseLang(lang) === "lt" ? "Bandyti dar kartą" : "Retry"}
         </Button>
       </section>
     );
   if (busy) {
     return (
-      <div className="grid min-h-[60vh] place-items-center text-center">
+      <div
+        role="status"
+        className="fl-context-route fl-workspace fl-intake-workspace fl-intake-pending"
+      >
         <div>
           <Loader2 className="mx-auto size-10 animate-spin text-primary" />
           <h2 className="mt-6 text-3xl">{t("ob.generating")}</h2>
@@ -262,20 +253,20 @@ function Onboarding() {
 
   if (result) {
     return (
-      <div className="mx-auto max-w-3xl">
-        <div className="panel relative overflow-hidden p-7 md:p-9">
+      <div className="fl-context-route fl-workspace fl-intake-workspace">
+        <div className="fl-workspace-hero">
           <div className="grain-hero pointer-events-none absolute inset-0 opacity-40" />
           <div className="relative">
             <p className="flex items-center gap-2 text-xs uppercase tracking-widest text-primary">
               <CheckCircle2 className="size-4" /> {t("qo.ready")}
             </p>
-            <h1 className="headline-xl mt-3 text-5xl md:text-6xl">{result.title}</h1>
+            <h1 className="fl-workspace-title mt-3">{result.title}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               {result.summary}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               {generatedPlanId && <ProgramActivationActions planId={generatedPlanId} lang={lang} />}
-              <Button asChild size="lg" variant="outline" className="rounded-none px-8 font-bold">
+              <Button asChild size="lg" variant="outline" className="px-6 font-bold">
                 <Link to="/app">{t("qo.open")}</Link>
               </Button>
               <Button
@@ -285,7 +276,6 @@ function Onboarding() {
                   setResult(null);
                   setGeneratedPlanId(null);
                   setStep(0);
-                  setElapsed(0);
                 }}
               >
                 {t("qo.again")}
@@ -295,8 +285,8 @@ function Onboarding() {
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {result.days.map((d, i) => (
-            <div key={d.day} className="panel lift p-5">
+          {result.days.map((d) => (
+            <div key={d.day} className="fl-workspace-panel fl-intake-day p-5">
               <div className="flex items-center justify-between">
                 <span className="text-xs uppercase tracking-widest text-muted-foreground">
                   {t("plan.day")} {d.day}
@@ -311,19 +301,15 @@ function Onboarding() {
                 {d.exercises.map((e) => (
                   <div
                     key={e.slug}
-                    className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-4 rounded-lg bg-surface-2 px-3 py-2 text-sm"
                   >
-                    <span>{e.name}</span>
-                    <span className="text-display text-lg text-primary">
+                    <span className="min-w-0 break-words">{e.name}</span>
+                    <span className="fl-intake-prescription">
                       {e.sets}×{e.reps}
                     </span>
                   </div>
                 ))}
               </div>
-              <div
-                className="mt-3 h-1 rounded-full bg-primary/25"
-                style={{ width: `${Math.min(100, (i + 1) * (100 / result.days.length))}%` }}
-              />
             </div>
           ))}
         </div>
@@ -332,312 +318,331 @@ function Onboarding() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-full border border-border bg-surface p-0.5 text-xs font-bold">
-          {(
-            [
-              { v: "quick", key: "qo.quick", icon: Zap },
-              { v: "full", key: "qo.full", icon: ListChecks },
-            ] as const
-          ).map((m) => (
-            <button
-              key={m.v}
-              type="button"
-              onClick={() => {
-                setMode(m.v);
-                setStep(0);
-              }}
+    <div className="fl-context-route fl-workspace fl-intake-workspace">
+      <header className="fl-workspace-hero fl-intake-hero">
+        <p className="fl-workspace-eyebrow">GYMS.LIFE / {t("ob.title")}</p>
+        <h1 className="fl-workspace-title mt-3">
+          {baseLang(lang) === "lt" ? "Tavo tikslas. Tavo ritmas." : "Your goal. Your rhythm."}
+        </h1>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{t("ob.sub")}</p>
+      </header>
+      <div className="fl-workspace-panel fl-intake-form">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex rounded-full border border-border bg-surface p-0.5 text-xs font-bold">
+            {(
+              [
+                { v: "quick", key: "qo.quick", icon: Zap },
+                { v: "full", key: "qo.full", icon: ListChecks },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.v}
+                aria-pressed={mode === m.v}
+                type="button"
+                onClick={() => {
+                  setMode(m.v);
+                  setStep(0);
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 uppercase tracking-wide transition-colors",
+                  mode === m.v ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                )}
+              >
+                <m.icon className="size-3.5" />
+                {t(m.key)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          <span>
+            {t("ob.step")} {step + 1} {t("ob.of")} {steps}
+          </span>
+          <Sparkles className="size-4 text-primary" />
+        </div>
+        <div
+          className="mt-3 flex gap-1.5"
+          role="progressbar"
+          aria-label={t("ob.step")}
+          aria-valuemin={1}
+          aria-valuemax={steps}
+          aria-valuenow={step + 1}
+          aria-valuetext={`${t("ob.step")} ${step + 1} ${t("ob.of")} ${steps}`}
+        >
+          {stepIds.map((id, i) => (
+            <span
+              key={id}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1.5 uppercase tracking-wide transition-colors",
-                mode === m.v ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                "h-1.5 flex-1 rounded-full transition-colors",
+                i <= step ? "bg-primary" : "bg-surface-2",
               )}
-            >
-              <m.icon className="size-3.5" />
-              {t(m.key)}
-            </button>
+            />
           ))}
         </div>
-        {mode === "quick" && (
-          <span
-            className={cn(
-              "flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest",
-              remaining > 20 ? "text-muted-foreground" : "text-accent",
-            )}
-          >
-            <Timer className="size-3.5" /> {mmss} {t("qo.left")}
-          </span>
-        )}
-      </div>
 
-      <div className="mt-4 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
-        <span>
-          {t("ob.step")} {step + 1} {t("ob.of")} {steps}
-        </span>
-        <Sparkles className="size-4 text-primary" />
-      </div>
-      <div className="mt-3 flex gap-1.5">
-        {stepIds.map((id, i) => (
-          <span
-            key={id}
-            className={cn(
-              "h-1.5 flex-1 rounded-full transition-colors",
-              i <= step ? "bg-primary" : "bg-surface-2",
-            )}
-          />
-        ))}
-      </div>
+        <div className="fl-intake-questions" key={current}>
+          {current === "goal" && (
+            <>
+              <h2 className="text-2xl">{t("qo.q1")}</h2>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {goals.map((g) => (
+                  <OptionButton
+                    key={g.value}
+                    active={goal === g.value}
+                    onClick={() => setGoal(g.value)}
+                  >
+                    {t(g.key)}
+                  </OptionButton>
+                ))}
+              </div>
+              {mode === "quick" && (
+                <>
+                  <h2 className="mt-6 text-2xl">{t("ob.q.experience")}</h2>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {experiences.map((g) => (
+                      <OptionButton
+                        key={g.value}
+                        active={experience === g.value}
+                        onClick={() => setExperience(g.value)}
+                      >
+                        <span className="block text-center text-xs">{t(g.key)}</span>
+                      </OptionButton>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
 
-      <h1 className="headline-xl mt-8 text-5xl">{t("ob.title")}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{t("ob.sub")}</p>
+          {current === "experience" && (
+            <>
+              <h2 className="text-2xl">{t("ob.q.experience")}</h2>
+              <div className="mt-4 grid gap-3">
+                {experiences.map((g) => (
+                  <OptionButton
+                    key={g.value}
+                    active={experience === g.value}
+                    onClick={() => setExperience(g.value)}
+                  >
+                    {t(g.key)}
+                  </OptionButton>
+                ))}
+              </div>
+            </>
+          )}
 
-      <div className="mt-8 panel p-6">
-        {current === "goal" && (
-          <>
-            <h2 className="text-2xl">{t("qo.q1")}</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {goals.map((g) => (
-                <OptionButton
-                  key={g.value}
-                  active={goal === g.value}
-                  onClick={() => setGoal(g.value)}
-                >
-                  {t(g.key)}
-                </OptionButton>
-              ))}
-            </div>
-            {mode === "quick" && (
-              <>
-                <h2 className="mt-8 text-2xl">{t("ob.q.experience")}</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {experiences.map((g) => (
-                    <OptionButton
-                      key={g.value}
-                      active={experience === g.value}
-                      onClick={() => setExperience(g.value)}
-                    >
-                      <span className="block text-center text-xs">{t(g.key)}</span>
-                    </OptionButton>
-                  ))}
+          {(current === "place" || current === "quickTrain") && (
+            <>
+              <h2 className="text-2xl">{mode === "quick" ? t("qo.q2") : t("ob.q.location")}</h2>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {locations.map((g) => (
+                  <OptionButton
+                    key={g.value}
+                    active={location === g.value}
+                    onClick={() => setLocation(g.value)}
+                  >
+                    {t(g.key)}
+                  </OptionButton>
+                ))}
+              </div>
+
+              {current === "quickTrain" ? (
+                <>
+                  <h2 className="mt-6 text-2xl">{t("ob.q.days")}</h2>
+                  <div className="mt-4 grid grid-cols-6 gap-2">
+                    {[1, 2, 3, 4, 5, 6].map((d) => (
+                      <OptionButton key={d} active={days === d} onClick={() => setDays(d)}>
+                        <span className="block text-center text-lg">{d}</span>
+                      </OptionButton>
+                    ))}
+                  </div>
+                  <h2 className="mt-6 text-2xl">{t("ob.q.minutes")}</h2>
+                  <div className="mt-4 grid grid-cols-4 gap-2">
+                    {[30, 45, 60, 90].map((m) => (
+                      <OptionButton key={m} active={minutes === m} onClick={() => setMinutes(m)}>
+                        <span className="block text-center text-lg">{m}</span>
+                      </OptionButton>
+                    ))}
+                  </div>
+                  <h2 className="mt-6 text-2xl">
+                    {baseLang(lang) === "lt" ? "Plano trukmė" : "Plan duration"}
+                  </h2>
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {[4, 8, 12].map((w) => (
+                      <OptionButton
+                        key={w}
+                        active={planWeeks === w}
+                        onClick={() => setPlanWeeks(w)}
+                      >
+                        <span className="block text-center text-lg">
+                          {w} {baseLang(lang) === "lt" ? "sav." : "wk"}
+                        </span>
+                      </OptionButton>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+              {
+                <>
+                  <h2 className="mt-6 text-2xl">{t("ob.q.equipment")}</h2>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    {equipmentOptions.map((g) => (
+                      <OptionButton
+                        key={g.value}
+                        active={equipment.includes(g.value)}
+                        onClick={() => toggleEquip(g.value)}
+                      >
+                        {t(g.key)}
+                      </OptionButton>
+                    ))}
+                  </div>
+                </>
+              }
+            </>
+          )}
+
+          {current === "schedule" && (
+            <>
+              <h2 className="text-2xl">{t("ob.q.days")}</h2>
+              <div className="mt-4 grid grid-cols-6 gap-2">
+                {[1, 2, 3, 4, 5, 6].map((d) => (
+                  <OptionButton key={d} active={days === d} onClick={() => setDays(d)}>
+                    <span className="block text-center text-lg">{d}</span>
+                  </OptionButton>
+                ))}
+              </div>
+              <h2 className="mt-6 text-2xl">{t("ob.q.minutes")}</h2>
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                {[30, 45, 60, 90].map((m) => (
+                  <OptionButton key={m} active={minutes === m} onClick={() => setMinutes(m)}>
+                    <span className="block text-center text-lg">{m}</span>
+                  </OptionButton>
+                ))}
+              </div>
+              <h2 className="mt-6 text-2xl">
+                {baseLang(lang) === "lt" ? "Plano trukmė" : "Plan duration"}
+              </h2>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {[4, 8, 12].map((w) => (
+                  <OptionButton key={w} active={planWeeks === w} onClick={() => setPlanWeeks(w)}>
+                    <span className="block text-center text-lg">
+                      {w} {baseLang(lang) === "lt" ? "sav." : "wk"}
+                    </span>
+                  </OptionButton>
+                ))}
+              </div>
+            </>
+          )}
+
+          {(current === "body" || current === "quickBody") && (
+            <>
+              <h2 className="text-2xl">{mode === "quick" ? t("qo.q3") : t("ob.q.body")}</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="age">{t("ob.f.age")}</Label>
+                  <Input
+                    id="age"
+                    inputMode="numeric"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                  />
                 </div>
-              </>
-            )}
-          </>
-        )}
-
-        {current === "experience" && (
-          <>
-            <h2 className="text-2xl">{t("ob.q.experience")}</h2>
-            <div className="mt-4 grid gap-3">
-              {experiences.map((g) => (
-                <OptionButton
-                  key={g.value}
-                  active={experience === g.value}
-                  onClick={() => setExperience(g.value)}
-                >
-                  {t(g.key)}
-                </OptionButton>
-              ))}
-            </div>
-          </>
-        )}
-
-        {(current === "place" || current === "quickTrain") && (
-          <>
-            <h2 className="text-2xl">{mode === "quick" ? t("qo.q2") : t("ob.q.location")}</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {locations.map((g) => (
-                <OptionButton
-                  key={g.value}
-                  active={location === g.value}
-                  onClick={() => setLocation(g.value)}
-                >
-                  {t(g.key)}
-                </OptionButton>
-              ))}
-            </div>
-
-            {current === "quickTrain" ? (
-              <>
-                <h2 className="mt-8 text-2xl">{t("ob.q.days")}</h2>
-                <div className="mt-4 grid grid-cols-6 gap-2">
-                  {[1, 2, 3, 4, 5, 6].map((d) => (
-                    <OptionButton key={d} active={days === d} onClick={() => setDays(d)}>
-                      <span className="block text-center text-lg">{d}</span>
-                    </OptionButton>
-                  ))}
-                </div>
-                <h2 className="mt-8 text-2xl">{t("ob.q.minutes")}</h2>
-                <div className="mt-4 grid grid-cols-4 gap-2">
-                  {[30, 45, 60, 90].map((m) => (
-                    <OptionButton key={m} active={minutes === m} onClick={() => setMinutes(m)}>
-                      <span className="block text-center text-lg">{m}</span>
-                    </OptionButton>
-                  ))}
-                </div>
-                <h2 className="mt-8 text-2xl">
-                  {lang === "lt" ? "Plano trukmė" : "Plan duration"}
-                </h2>
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {[4, 8, 12].map((w) => (
-                    <OptionButton key={w} active={planWeeks === w} onClick={() => setPlanWeeks(w)}>
-                      <span className="block text-center text-lg">
-                        {w} {lang === "lt" ? "sav." : "wk"}
-                      </span>
-                    </OptionButton>
-                  ))}
-                </div>
-              </>
-            ) : null}
-            {
-              <>
-                <h2 className="mt-8 text-2xl">{t("ob.q.equipment")}</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {equipmentOptions.map((g) => (
-                    <OptionButton
-                      key={g.value}
-                      active={equipment.includes(g.value)}
-                      onClick={() => toggleEquip(g.value)}
-                    >
-                      {t(g.key)}
-                    </OptionButton>
-                  ))}
-                </div>
-              </>
-            }
-          </>
-        )}
-
-        {current === "schedule" && (
-          <>
-            <h2 className="text-2xl">{t("ob.q.days")}</h2>
-            <div className="mt-4 grid grid-cols-6 gap-2">
-              {[1, 2, 3, 4, 5, 6].map((d) => (
-                <OptionButton key={d} active={days === d} onClick={() => setDays(d)}>
-                  <span className="block text-center text-lg">{d}</span>
-                </OptionButton>
-              ))}
-            </div>
-            <h2 className="mt-8 text-2xl">{t("ob.q.minutes")}</h2>
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {[30, 45, 60, 90].map((m) => (
-                <OptionButton key={m} active={minutes === m} onClick={() => setMinutes(m)}>
-                  <span className="block text-center text-lg">{m}</span>
-                </OptionButton>
-              ))}
-            </div>
-            <h2 className="mt-8 text-2xl">{lang === "lt" ? "Plano trukmė" : "Plan duration"}</h2>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {[4, 8, 12].map((w) => (
-                <OptionButton key={w} active={planWeeks === w} onClick={() => setPlanWeeks(w)}>
-                  <span className="block text-center text-lg">
-                    {w} {lang === "lt" ? "sav." : "wk"}
+                <div className="grid gap-2">
+                  <span id="intake-gender" className="text-sm font-medium">
+                    {t("ob.f.gender")}
                   </span>
-                </OptionButton>
-              ))}
-            </div>
-          </>
-        )}
-
-        {(current === "body" || current === "quickBody") && (
-          <>
-            <h2 className="text-2xl">{mode === "quick" ? t("qo.q3") : t("ob.q.body")}</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="age">{t("ob.f.age")}</Label>
-                <Input
-                  id="age"
-                  inputMode="numeric"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("ob.f.gender")}</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {genders.map((g) => (
-                    <OptionButton
-                      key={g.value}
-                      active={gender === g.value}
-                      onClick={() => setGender(g.value)}
-                    >
-                      <span className="block text-center text-xs">{t(g.key)}</span>
-                    </OptionButton>
-                  ))}
+                  <div
+                    className="grid grid-cols-3 gap-2"
+                    role="group"
+                    aria-labelledby="intake-gender"
+                  >
+                    {genders.map((g) => (
+                      <OptionButton
+                        key={g.value}
+                        active={gender === g.value}
+                        onClick={() => setGender(g.value)}
+                      >
+                        <span className="block text-center text-xs">{t(g.key)}</span>
+                      </OptionButton>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="h">{t("ob.f.height")}</Label>
+                  <Input
+                    id="h"
+                    inputMode="decimal"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="w">{t("ob.f.weight")}</Label>
+                  <Input
+                    id="w"
+                    inputMode="decimal"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="tw">{t("ob.f.target")}</Label>
+                  <Input
+                    id="tw"
+                    inputMode="decimal"
+                    value={target}
+                    onChange={(e) => setTarget(e.target.value)}
+                  />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="h">{t("ob.f.height")}</Label>
-                <Input
-                  id="h"
-                  inputMode="numeric"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="w">{t("ob.f.weight")}</Label>
-                <Input
-                  id="w"
-                  inputMode="numeric"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tw">{t("ob.f.target")}</Label>
-                <Input
-                  id="tw"
-                  inputMode="numeric"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                />
-              </div>
-            </div>
-            {current === "quickBody" && (
-              <>
-                <h2 className="mt-8 text-2xl">{t("ob.q.limits")}</h2>
-                <Textarea
-                  className="mt-3 min-h-24"
-                  placeholder={t("ob.limits.ph")}
-                  value={limits}
-                  onChange={(e) => setLimits(e.target.value)}
-                />
-              </>
-            )}
-          </>
-        )}
+              {current === "quickBody" && (
+                <>
+                  <h2 className="mt-6 text-2xl">{t("ob.q.limits")}</h2>
+                  <Textarea
+                    aria-label={t("ob.q.limits")}
+                    className="mt-3 min-h-24"
+                    placeholder={t("ob.limits.ph")}
+                    value={limits}
+                    onChange={(e) => setLimits(e.target.value)}
+                  />
+                </>
+              )}
+            </>
+          )}
 
-        {current === "limits" && (
-          <>
-            <h2 className="text-2xl">{t("ob.q.limits")}</h2>
-            <Textarea
-              className="mt-4 min-h-32"
-              placeholder={t("ob.limits.ph")}
-              value={limits}
-              onChange={(e) => setLimits(e.target.value)}
-            />
-          </>
-        )}
-      </div>
+          {current === "limits" && (
+            <>
+              <h2 className="text-2xl">{t("ob.q.limits")}</h2>
+              <Textarea
+                aria-label={t("ob.q.limits")}
+                className="mt-4 min-h-32"
+                placeholder={t("ob.limits.ph")}
+                value={limits}
+                onChange={(e) => setLimits(e.target.value)}
+              />
+            </>
+          )}
+        </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <Button
-          variant="ghost"
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
-        >
-          <ArrowLeft className="mr-1 size-4" /> {t("ob.back")}
-        </Button>
-        {step < steps - 1 ? (
-          <Button className="rounded-full px-6 font-bold" onClick={() => setStep((s) => s + 1)}>
-            {t("ob.next")} <ArrowRight className="ml-1 size-4" />
+        <div className="fl-intake-navigation">
+          <Button
+            variant="ghost"
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            disabled={step === 0}
+          >
+            <ArrowLeft className="mr-1 size-4" /> {t("ob.back")}
           </Button>
-        ) : (
-          <Button className="rounded-full px-6 font-bold glow-ring" onClick={submit}>
-            <Sparkles className="mr-1 size-4" /> {t("ob.generate")}
-          </Button>
-        )}
+          {step < steps - 1 ? (
+            <Button className="px-6 font-bold" onClick={() => setStep((s) => s + 1)}>
+              {t("ob.next")} <ArrowRight className="ml-1 size-4" />
+            </Button>
+          ) : (
+            <Button className="px-6 font-bold" onClick={submit}>
+              <Sparkles className="mr-1 size-4" /> {t("ob.generate")}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

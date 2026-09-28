@@ -289,10 +289,10 @@ export function BodySceneStage(props: BodySceneStageProps) {
       data-twin-mobile-compact={mobileDisclosure || undefined}
     >
       {presentation !== "cockpit" && !mobileDisclosure && (
-        <>
+        <div data-twin-controls-row>
           {layerControls}
           {rendererControls}
-        </>
+        </div>
       )}
       {mobileDisclosure ? <p data-twin-mobile-unit>{unitLabel}</p> : null}
       <div className={presentation === "cockpit" ? "twin-cockpit-scene" : "contents"}>

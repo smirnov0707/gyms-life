@@ -108,23 +108,26 @@ describe("Twin Memory proactive policy", () => {
       status: "new" as const,
       statusChangedAt: null,
     };
-    const selected = selectTwinMemoryProactiveChange([
-      {
-        ...base,
-        fingerprint: "newer",
-        hypothesisId: "newer",
-        kind: "strengthened",
-        occurredAt: "2026-09-12T10:00:00.000Z",
-      },
-      {
-        ...base,
-        fingerprint: "older-risk",
-        hypothesisId: "older-risk",
-        kind: "contradicted",
-        severity: "attention",
-        occurredAt: "2026-09-12T09:00:00.000Z",
-      },
-    ]);
+    const selected = selectTwinMemoryProactiveChange(
+      [
+        {
+          ...base,
+          fingerprint: "newer",
+          hypothesisId: "newer",
+          kind: "strengthened",
+          occurredAt: "2026-09-12T10:00:00.000Z",
+        },
+        {
+          ...base,
+          fingerprint: "older-risk",
+          hypothesisId: "older-risk",
+          kind: "contradicted",
+          severity: "attention",
+          occurredAt: "2026-09-12T09:00:00.000Z",
+        },
+      ],
+      new Date("2026-09-12T12:00:00.000Z"),
+    );
     expect(selected?.hypothesisId).toBe("older-risk");
   });
 
@@ -136,33 +139,36 @@ describe("Twin Memory proactive policy", () => {
       athleteStateSnapshotId: "11111111-1111-4111-8111-111111111111",
       statusChangedAt: null,
     };
-    const selected = selectTwinMemoryProactiveChange([
-      {
-        ...base,
-        fingerprint: "seen",
-        hypothesisId: "seen",
-        kind: "contradicted",
-        severity: "attention",
-        status: "seen",
-        occurredAt: "2026-09-12T11:00:00.000Z",
-      },
-      {
-        ...base,
-        fingerprint: "older",
-        hypothesisId: "older",
-        kind: "strengthened",
-        status: "new",
-        occurredAt: "2026-09-12T09:00:00.000Z",
-      },
-      {
-        ...base,
-        fingerprint: "newer",
-        hypothesisId: "newer",
-        kind: "strengthened",
-        status: "new",
-        occurredAt: "2026-09-12T10:00:00.000Z",
-      },
-    ]);
+    const selected = selectTwinMemoryProactiveChange(
+      [
+        {
+          ...base,
+          fingerprint: "seen",
+          hypothesisId: "seen",
+          kind: "contradicted",
+          severity: "attention",
+          status: "seen",
+          occurredAt: "2026-09-12T11:00:00.000Z",
+        },
+        {
+          ...base,
+          fingerprint: "older",
+          hypothesisId: "older",
+          kind: "strengthened",
+          status: "new",
+          occurredAt: "2026-09-12T09:00:00.000Z",
+        },
+        {
+          ...base,
+          fingerprint: "newer",
+          hypothesisId: "newer",
+          kind: "strengthened",
+          status: "new",
+          occurredAt: "2026-09-12T10:00:00.000Z",
+        },
+      ],
+      new Date("2026-09-12T12:00:00.000Z"),
+    );
     expect(selected?.hypothesisId).toBe("newer");
   });
 

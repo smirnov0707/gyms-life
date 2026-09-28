@@ -1,0 +1,413 @@
+/* Public account entry: isolated from the application and approved Twin. */
+.fl-auth {
+  min-height: 100svh;
+  background: var(--background);
+  color: var(--foreground);
+  padding: 0 36px;
+}
+.fl-auth-header,
+.fl-auth-footer {
+  max-width: 1280px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.fl-auth-header {
+  min-height: 100px;
+  border-bottom: 1px solid var(--border);
+}
+.fl-auth-preferences {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.fl-auth-preferences button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.fl-auth-layout {
+  max-width: 1120px;
+  margin: auto;
+  padding: 64px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  gap: clamp(48px, 7vw, 110px);
+  align-items: center;
+}
+.fl-auth-story {
+  position: relative;
+  isolation: isolate;
+}
+.fl-auth-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--muted-foreground);
+}
+.fl-auth-eyebrow > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.fl-auth-statement {
+  margin-top: 24px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(48px, 5.5vw, 76px);
+  font-weight: 500;
+  letter-spacing: -0.065em;
+  line-height: 1.07;
+}
+.fl-auth-statement > span {
+  color: var(--primary);
+}
+.fl-auth-story-copy {
+  margin-top: 24px;
+  max-width: 360px;
+  color: var(--muted-foreground);
+  font-size: 15px;
+  line-height: 1.9;
+}
+.fl-auth-orbit {
+  width: 230px;
+  height: 150px;
+  position: relative;
+  display: grid;
+  place-content: center;
+  margin: 24px auto 24px 32px;
+  color: var(--primary);
+}
+.fl-auth-orbit i {
+  position: absolute;
+  inset: 16px 30px;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  border-radius: 50%;
+  transform: rotate(-30deg);
+}
+.fl-auth-orbit i:nth-child(2) {
+  inset: 0;
+  border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+  transform: rotate(20deg);
+}
+.fl-auth-orbit i:nth-child(3) {
+  inset: 30px 45px;
+  transform: rotate(35deg);
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--primary) 10%, transparent),
+    transparent
+  );
+}
+.fl-auth-orbit > svg {
+  width: 38px;
+  height: 38px;
+  margin: auto;
+  stroke-width: 1;
+}
+.fl-auth-orbit > span {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  margin-top: 12px;
+}
+.fl-auth-worlds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.fl-auth-worlds > div {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.fl-auth-worlds svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--primary);
+  stroke-width: 1.5;
+}
+.fl-auth-worlds svg:last-child {
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  color: var(--muted-foreground);
+}
+.fl-auth-worlds strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+.fl-auth-worlds small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 1.6;
+  margin-top: 3px;
+}
+.fl-auth-story-footer {
+  margin-top: 28px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.fl-auth-card {
+  min-width: 0;
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--primary) 5%, var(--surface)),
+    var(--surface) 42%
+  );
+  box-shadow: 0 22px 70px color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+.fl-auth-card-heading {
+  margin-bottom: 28px;
+}
+.fl-auth-card-heading h1 {
+  margin-top: 14px;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+.fl-auth-card-heading p {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+}
+.fl-auth-form {
+  display: grid;
+  gap: 20px;
+}
+.fl-auth-field {
+  display: grid;
+  gap: 9px;
+}
+.fl-auth-field label {
+  font-size: 12px;
+  font-weight: 650;
+}
+.fl-auth input {
+  min-height: 48px;
+  font-size: 16px;
+  border-radius: 12px;
+  background: var(--background);
+}
+.fl-auth-password {
+  position: relative;
+}
+.fl-auth-password input {
+  padding-right: 52px;
+}
+.fl-auth-password button {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  color: var(--muted-foreground);
+}
+.fl-auth-password button:hover {
+  color: var(--foreground);
+  background: var(--surface-2);
+}
+.fl-auth-password svg {
+  width: 18px;
+  height: 18px;
+}
+.fl-auth .ui-button {
+  min-height: 48px;
+  border-radius: 12px;
+  white-space: normal;
+}
+.fl-auth-link,
+.fl-auth-home {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--primary);
+}
+.fl-auth-link:hover,
+.fl-auth-home:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.fl-auth-home {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.fl-auth-home svg {
+  width: 14px;
+  height: 14px;
+}
+.fl-auth-note {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+.fl-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.fl-auth-divider::before,
+.fl-auth-divider::after {
+  content: "";
+  height: 1px;
+  background: var(--border);
+  flex: 1;
+}
+.fl-auth-notice {
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.8;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.fl-auth-notice > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary);
+}
+.fl-auth-card > .fl-auth-notice {
+  margin-bottom: 22px;
+}
+.fl-auth-error {
+  border-color: color-mix(in srgb, var(--destructive) 40%, var(--border));
+}
+.fl-auth-footer {
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+.fl-auth-footer > span:first-child {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.fl-auth-footer > span > span {
+  margin: 0 8px;
+  color: var(--primary);
+}
+@media (max-width: 800px) {
+  .fl-auth {
+    padding: 0 20px;
+  }
+  .fl-auth-header {
+    flex-wrap: wrap;
+    min-height: 90px;
+    padding: 18px 0;
+  }
+  .fl-auth-layout {
+    grid-template-columns: minmax(0, 440px);
+    justify-content: center;
+    gap: 26px;
+    padding: 34px 0;
+  }
+  .fl-auth-story {
+    text-align: center;
+  }
+  .fl-auth-story > .fl-auth-eyebrow {
+    justify-content: center;
+  }
+  .fl-auth-statement {
+    font-size: 38px;
+    margin-top: 16px;
+    line-height: 1.1;
+  }
+  .fl-auth-statement br {
+    display: none;
+  }
+  .fl-auth-statement > span::before {
+    content: " ";
+  }
+  .fl-auth-story-copy {
+    margin: 14px auto 0;
+    font-size: 12px;
+    max-width: 320px;
+  }
+  .fl-auth-orbit,
+  .fl-auth-worlds,
+  .fl-auth-story-footer {
+    display: none;
+  }
+  .fl-auth-card {
+    padding: 26px;
+    border-radius: 22px;
+  }
+  .fl-auth-card-heading h1 {
+    font-size: 29px;
+  }
+  .fl-auth-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+  }
+}
+@media (max-width: 480px) {
+  .fl-auth-header {
+    justify-content: center;
+    gap: 14px;
+  }
+  .fl-auth-header > .fl-brand {
+    justify-content: center;
+    width: 100%;
+  }
+  .fl-auth-preferences {
+    gap: 14px;
+  }
+  .fl-auth {
+    padding: 0 16px;
+  }
+  .fl-auth-card {
+    padding: 24px 20px;
+  }
+  .fl-auth-statement {
+    font-size: 34px;
+  }
+}
+
+.fl-auth-header .fl-brand-mark {
+  width: 36px;
+  height: 36px;
+}
+.fl-auth-header .fl-language-switch {
+  border-radius: 14px;
+}
+.fl-auth-header .fl-language-switch button {
+  border-radius: 10px;
+  font-size: 10px;
+}
+.fl-auth .ui-button:not(.ui-button-primary) {
+  background: var(--surface);
+}

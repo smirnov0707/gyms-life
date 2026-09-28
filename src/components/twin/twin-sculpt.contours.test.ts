@@ -62,6 +62,49 @@ describe("bounded presentation contour contract", () => {
     expect(shader.fragmentShader).toContain("vTwinFiberUv.y * 32.0");
     material.dispose();
   });
+  it("keeps studio silhouette lighting outside the data mask", () => {
+    for (const regionMask of [false, true]) {
+      const material = createTwinAnatomyMaterial({}, { regionMask });
+      const shader = {
+        uniforms: {},
+        vertexShader: ShaderLib.standard.vertexShader,
+        fragmentShader: ShaderLib.standard.fragmentShader,
+      };
+      Reflect.apply(material.onBeforeCompile, material, [shader, null]);
+      const rim = shader.fragmentShader.indexOf("totalEmissiveRadiance +=");
+      const mask = shader.fragmentShader.indexOf("totalEmissiveRadiance *= twinSurfaceMask;");
+      expect(rim).toBeGreaterThan(0);
+      if (regionMask) {
+        expect(mask).toBeGreaterThan(0);
+        expect(mask).toBeLessThan(rim);
+      } else expect(mask).toBe(-1);
+      material.dispose();
+    }
+  });
+  it("uses bounded periodic blending across competing fiber guides", () => {
+    const material = createTwinAnatomyMaterial(
+      {},
+      {
+        regionMask: true,
+        fibers: true,
+        contours: parseTwinSculptContours([guide, { ...guide, angle: -0.2 }]),
+      },
+    );
+    const shader = {
+      uniforms: {},
+      vertexShader: ShaderLib.standard.vertexShader,
+      fragmentShader: ShaderLib.standard.fragmentShader,
+    };
+    Reflect.apply(material.onBeforeCompile, material, [shader, null]);
+    // Regression: the former winner switch changed direction discontinuously
+    // at equal support, even when neither region's color changed.
+    expect(shader.fragmentShader).not.toContain("if(twinEnvelope > twinLobe)");
+    expect(shader.fragmentShader).toContain("twinFiberSignal +=");
+    expect(shader.fragmentShader).toContain("twinSignalLength > 0.000001");
+    expect(shader.fragmentShader).toContain("max(twinFiberWeight, 0.000001)");
+    expect(shader.fragmentShader).toContain("smoothstep(0.15, 0.55, twinFiberCoherence)");
+    material.dispose();
+  });
 });
 
 describe("presentation profile and contour competition limits", () => {

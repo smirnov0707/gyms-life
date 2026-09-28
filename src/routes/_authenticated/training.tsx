@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/training")({
 
 function TrainingPage() {
   return (
-    <main className="fl-context-route fl-page-enter px-2 sm:px-0">
+    <main className="fl-context-route fl-workspace fl-training-workspace fl-page-enter">
       <ActivePlanLoader />
       <SavedTrainingPrograms />
     </main>

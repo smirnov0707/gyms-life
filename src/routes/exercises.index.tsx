@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Heart, Sparkles, ShieldCheck, Play, Filter, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   smartExerciseFilter,
   type ExerciseFilterSuggestion,
 } from "@/lib/exercise-filter.functions";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { useI18n, baseLang, type TKey } from "@/lib/i18n";
 
 import { WorkoutRequestBuilder } from "@/components/WorkoutRequestBuilder";
 import { AppShell } from "@/components/AppShell";
@@ -46,17 +46,17 @@ function CardMedia({
   video,
   poster,
   name,
+  label,
 }: {
   video: string | null;
   poster: string | null;
   name: string;
+  label: string;
 }) {
   const [hover, setHover] = useState(false);
-  const [activated, setActivated] = useState(false);
 
   const handleMouseEnter = () => {
-    setActivated(true);
-    setHover(true);
+    setHover(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   };
 
   return (
@@ -70,7 +70,7 @@ function CardMedia({
           src={poster}
           alt={name}
           loading="lazy"
-          className={`h-full w-full object-cover transition-transform duration-700 ${
+          className={`h-full w-full object-contain transition-transform duration-700 ${
             hover ? "scale-[1.04]" : "scale-100"
           }`}
         />
@@ -80,7 +80,7 @@ function CardMedia({
         </div>
       )}
 
-      {video && activated && (
+      {video && hover && (
         <video
           src={video}
           poster={poster ?? undefined}
@@ -89,7 +89,7 @@ function CardMedia({
           loop
           playsInline
           preload="none"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+          className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-500 ${
             hover ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -97,10 +97,10 @@ function CardMedia({
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+      <div className="pointer-events-none absolute left-0 top-0 p-3">
         <div className="flex items-center justify-between gap-2">
           <span className="rounded-full border border-white/15 bg-black/40 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-xl">
-            Technique
+            {label}
           </span>
 
           {video && (
@@ -156,13 +156,14 @@ const safetyTags = [
 const levels = ["all", "beginner", "intermediate", "advanced"] as const;
 
 function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+  const { lang } = useI18n();
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-mono text-foreground">
       {label}
       <button
-        aria-label="Remove filter"
+        aria-label={`${baseLang(lang) === "lt" ? "Pašalinti filtrą" : "Remove filter"}: ${label}`}
         onClick={onClear}
-        className="text-muted-foreground hover:text-foreground"
+        className="grid min-h-11 min-w-11 place-items-center text-muted-foreground hover:text-foreground"
       >
         <X className="size-3" />
       </button>
@@ -193,6 +194,7 @@ function ExercisesPage() {
   const [onlyFavorites, setOnlyFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
+  const previewTrigger = useRef<HTMLButtonElement | null>(null);
   const [previewEx, setPreviewEx] = useState<{
     slug: string;
     name: string;
@@ -260,7 +262,11 @@ function ExercisesPage() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("forma_fav_exercises");
-      if (saved) setFavorites(JSON.parse(saved));
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed))
+          setFavorites(parsed.filter((value): value is string => typeof value === "string"));
+      }
     } catch {
       // Browser storage is optional for exercise preferences.
     }
@@ -299,7 +305,7 @@ function ExercisesPage() {
     return data ?? [];
   };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["exercises"],
     staleTime: 1000 * 60 * 60, // 1 valanda talpykloje
     gcTime: 1000 * 60 * 60 * 24,
@@ -316,7 +322,8 @@ function ExercisesPage() {
   });
 
   const list = (data ?? []).filter((e) => {
-    const name = (lang === "lt" ? e.name_lt : e.name_en) || e.name_en || e.name_lt || e.slug || "";
+    const name =
+      (baseLang(lang) === "lt" ? e.name_lt : e.name_en) || e.name_en || e.name_lt || e.slug || "";
     const slugStr = e.slug || "";
     const query = q.toLowerCase().trim();
     const mg = e.muscle_group ?? "";
@@ -363,384 +370,435 @@ function ExercisesPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-indigo-400 uppercase tracking-widest">
-            <Sparkles className="w-3.5 h-3.5" /> {t("rt.ex.proLibrary")}
+      <div className="fl-context-route fl-workspace fl-library-workspace">
+        <header className="fl-workspace-hero fl-library-hero">
+          <div>
+            <p className="fl-workspace-eyebrow">{t("rt.ex.proLibrary")}</p>
+            <h1 className="fl-workspace-title mt-3">{t("ex.title")}</h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {baseLang(lang) === "lt"
+                ? "Atrask judesį. Peržiūrėk techniką. Treniruokis sąmoningai."
+                : "Find your movement. Explore the technique. Train with intention."}
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black mt-1">{t("ex.title")}</h1>
-        </div>
-        <div className="flex items-center gap-3">
           <Button
             onClick={() => setOnlyFavorites(!onlyFavorites)}
+            aria-pressed={onlyFavorites}
             variant={onlyFavorites ? "default" : "outline"}
-            size="sm"
-            className="rounded-full text-xs font-bold"
+            className="fl-library-favorites"
           >
-            <Heart className={`w-3.5 h-3.5 mr-1.5 ${onlyFavorites ? "fill-current" : ""}`} />
+            <Heart className={`size-4 ${onlyFavorites ? "fill-current" : ""}`} />
             {t("rt.ex.myFavorites").replace("{n}", String(favorites.length))}
           </Button>
-          <span className="text-display text-2xl uppercase text-primary font-mono">
-            {list.length} {t("ex.count")}
-          </span>
-        </div>
-      </div>
+        </header>
 
-      <WorkoutRequestBuilder />
+        <details className="fl-workspace-panel fl-library-builder">
+          <summary>
+            <Sparkles className="size-4 text-primary" />
+            {baseLang(lang) === "lt"
+              ? "Sudaryk treniruotę su Treneriu"
+              : "Build a workout with Coach"}
+          </summary>
+          <WorkoutRequestBuilder />
+        </details>
 
-      {/* Compact toolbar: search + AI + collapsible filters */}
-      <div className="mt-6 rounded-3xl border border-border bg-surface p-4 shadow-lg backdrop-blur-xl">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(ev) => setQ(ev.target.value)}
-              placeholder={t("rt.ex.searchPlaceholder")}
-              className="h-11 rounded-2xl border-border bg-surface pl-10 text-sm text-foreground"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={aiBusy || q.trim().length < 2}
-              onClick={() => void requestSuggestion(q)}
-              className="h-11 gap-1.5 rounded-2xl px-4 text-xs font-bold"
-            >
-              {aiBusy ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Sparkles className="size-4" />
-              )}
-              {aiLabels.title.split(" ")[0]}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={showFilters ? "default" : "outline"}
-              aria-label="Toggle filters"
-              aria-expanded={showFilters}
-              onClick={() => setShowFilters((s) => !s)}
-              className="h-11 gap-1.5 rounded-2xl px-4 text-xs font-bold"
-            >
-              <Filter className="size-4" />
-              {activeCount > 0 && (
-                <span className="grid size-5 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                  {activeCount}
-                </span>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Active filter chips */}
-        {activeCount > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            {group !== "all" && (
-              <FilterChip label={t(`mg.${group}` as TKey)} onClear={() => setGroup("all")} />
-            )}
-            {level !== "all" && (
-              <FilterChip label={t(`ex.level.${level}` as TKey)} onClear={() => setLevel("all")} />
-            )}
-            {equipment !== "all" && (
-              <FilterChip
-                label={t(`eq.${equipment}` as TKey)}
-                onClear={() => setEquipment("all")}
+        {/* Compact toolbar: search + AI + collapsible filters */}
+        <div className="fl-workspace-panel fl-library-toolbar">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label={t("rt.ex.searchPlaceholder")}
+                type="search"
+                value={q}
+                onChange={(ev) => setQ(ev.target.value)}
+                placeholder={t("rt.ex.searchPlaceholder")}
+                className="h-11 rounded-2xl border-border bg-surface pl-10 text-sm text-foreground"
               />
-            )}
-            {safety !== "all" && (
-              <FilterChip
-                label={t(
-                  (safetyTags.find((s) => s.id === safety)?.labelKey ?? "rt.ex.safety.all") as TKey,
-                )}
-                onClear={() => setSafety("all")}
-              />
-            )}
-            <button
-              aria-label="Clear all filters"
-              onClick={resetFilters}
-              className="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-mono text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3" />
-            </button>
-          </div>
-        )}
-
-        {/* AI filter suggestion */}
-        {suggestion && (
-          <div className="mt-3 rounded-2xl border border-indigo-500/40 bg-indigo-500/10 p-3">
-            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-indigo-300">
-              <Sparkles className="size-3.5" /> {aiLabels.title}
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {suggestion.group !== "all" &&
-                groups.includes(suggestion.group as (typeof groups)[number]) && (
-                  <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-[11px] font-mono font-bold text-foreground">
-                    {t(`mg.${suggestion.group}` as TKey)}
-                  </span>
-                )}
-              {suggestion.level !== "all" &&
-                levels.includes(suggestion.level as (typeof levels)[number]) && (
-                  <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-mono font-bold text-background">
-                    {t(`ex.level.${suggestion.level}` as TKey)}
-                  </span>
-                )}
-              {suggestion.equipment !== "all" &&
-                equipmentList.includes(suggestion.equipment as (typeof equipmentList)[number]) && (
-                  <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-mono font-bold text-background">
-                    {t(`eq.${suggestion.equipment}` as TKey)}
-                  </span>
-                )}
-              {suggestion.safety !== "all" &&
-                safetyTags.some((s) => s.id === suggestion.safety) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[11px] font-mono font-bold text-background">
-                    <ShieldCheck className="size-3" />
-                    {t(
-                      (safetyTags.find((s) => s.id === suggestion.safety)?.labelKey ??
-                        "rt.ex.safety.all") as TKey,
-                    )}
-                  </span>
-                )}
-            </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 size="sm"
-                onClick={() => applySuggestion(suggestion)}
-                className="h-9 rounded-xl px-4 text-xs font-bold"
+                variant="secondary"
+                aria-label={aiLabels.title}
+                disabled={aiBusy || q.trim().length < 3}
+                onClick={() => void requestSuggestion(q)}
+                className="h-11 gap-1.5 rounded-2xl px-4 text-xs font-bold"
               >
-                {aiLabels.apply}
+                {aiBusy ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                {aiLabels.title.split(" ")[0]}
               </Button>
               <Button
                 type="button"
                 size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setSuggestion(null);
-                  setDismissed(q.trim().toLowerCase());
-                }}
-                className="h-9 rounded-xl px-3 text-xs"
+                variant={showFilters ? "default" : "outline"}
+                aria-label={baseLang(lang) === "lt" ? "Filtrai" : "Filters"}
+                aria-controls="exercise-filters"
+                aria-expanded={showFilters}
+                onClick={() => setShowFilters((s) => !s)}
+                className="h-11 gap-1.5 rounded-2xl px-4 text-xs font-bold"
               >
-                {aiLabels.dismiss}
+                <Filter className="size-4" />
+                {baseLang(lang) === "lt" ? "Filtrai" : "Filters"}
+                {activeCount > 0 && (
+                  <span className="grid size-5 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                    {activeCount}
+                  </span>
+                )}
               </Button>
             </div>
           </div>
-        )}
 
-        {showFilters && (
-          <div className="mt-4 space-y-4 border-t border-border pt-4">
-            {/* Muscle Groups */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                {t("rt.ex.muscleGroup")}
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {groups.map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setGroup(g)}
-                    className={cn(
-                      "rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all",
-                      group === g
-                        ? "bg-indigo-600 text-foreground shadow-lg shadow-indigo-500/30"
-                        : "border border-border bg-surface text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {g === "all" ? t("ex.all") : t(`mg.${g}` as TKey)}
-                  </button>
-                ))}
+          {/* Active filter chips */}
+          {activeCount > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {group !== "all" && (
+                <FilterChip label={t(`mg.${group}` as TKey)} onClear={() => setGroup("all")} />
+              )}
+              {level !== "all" && (
+                <FilterChip
+                  label={t(`ex.level.${level}` as TKey)}
+                  onClear={() => setLevel("all")}
+                />
+              )}
+              {equipment !== "all" && (
+                <FilterChip
+                  label={t(`eq.${equipment}` as TKey)}
+                  onClear={() => setEquipment("all")}
+                />
+              )}
+              {safety !== "all" && (
+                <FilterChip
+                  label={t(
+                    (safetyTags.find((s) => s.id === safety)?.labelKey ??
+                      "rt.ex.safety.all") as TKey,
+                  )}
+                  onClear={() => setSafety("all")}
+                />
+              )}
+              <button
+                aria-label={baseLang(lang) === "lt" ? "Išvalyti filtrus" : "Clear all filters"}
+                onClick={resetFilters}
+                className="ml-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-mono text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" /> {baseLang(lang) === "lt" ? "Išvalyti" : "Clear"}
+              </button>
+            </div>
+          )}
+
+          {/* AI filter suggestion */}
+          {suggestion && (
+            <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/10 p-3">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-primary">
+                <Sparkles className="size-3.5" /> {aiLabels.title}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {suggestion.group !== "all" &&
+                  groups.includes(suggestion.group as (typeof groups)[number]) && (
+                    <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-mono font-bold text-foreground">
+                      {t(`mg.${suggestion.group}` as TKey)}
+                    </span>
+                  )}
+                {suggestion.level !== "all" &&
+                  levels.includes(suggestion.level as (typeof levels)[number]) && (
+                    <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-mono font-bold text-background">
+                      {t(`ex.level.${suggestion.level}` as TKey)}
+                    </span>
+                  )}
+                {suggestion.equipment !== "all" &&
+                  equipmentList.includes(
+                    suggestion.equipment as (typeof equipmentList)[number],
+                  ) && (
+                    <span className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-mono font-bold text-background">
+                      {t(`eq.${suggestion.equipment}` as TKey)}
+                    </span>
+                  )}
+                {suggestion.safety !== "all" &&
+                  safetyTags.some((s) => s.id === suggestion.safety) && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[11px] font-mono font-bold text-background">
+                      <ShieldCheck className="size-3" />
+                      {t(
+                        (safetyTags.find((s) => s.id === suggestion.safety)?.labelKey ??
+                          "rt.ex.safety.all") as TKey,
+                      )}
+                    </span>
+                  )}
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => applySuggestion(suggestion)}
+                  className="h-9 rounded-xl px-4 text-xs font-bold"
+                >
+                  {aiLabels.apply}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSuggestion(null);
+                    setDismissed(q.trim().toLowerCase());
+                  }}
+                  className="h-9 rounded-xl px-3 text-xs"
+                >
+                  {aiLabels.dismiss}
+                </Button>
               </div>
             </div>
+          )}
 
-            {/* Difficulty */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                {t("ex.level")}
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {levels.map((lv) => (
-                  <button
-                    key={lv}
-                    onClick={() => setLevel(lv)}
-                    className={cn(
-                      "rounded-xl px-2.5 py-1 text-[11px] font-mono transition-all",
-                      level === lv
-                        ? "bg-primary text-background font-bold"
-                        : "border border-border bg-surface text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {lv === "all" ? t("ex.all") : t(`ex.level.${lv}` as TKey)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Equipment & Joint Safety Filters */}
-            <div className="grid gap-4 border-t border-border pt-4 md:grid-cols-2">
+          {showFilters && (
+            <div
+              id="exercise-filters"
+              className="fl-library-filters mt-4 space-y-4 border-t border-border pt-4"
+            >
+              {/* Muscle Groups */}
               <div className="space-y-1.5">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  {t("rt.ex.equipment")}
+                  {t("rt.ex.muscleGroup")}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {equipmentList.map((eq) => (
+                  {groups.map((g) => (
                     <button
-                      key={eq}
-                      onClick={() => setEquipment(eq)}
+                      key={g}
+                      aria-pressed={group === g}
+                      onClick={() => setGroup(g)}
+                      className={cn(
+                        "rounded-xl px-3 py-1.5 text-xs font-bold font-mono transition-all",
+                        group === g
+                          ? "bg-primary text-primary-foreground "
+                          : "border border-border bg-surface text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {g === "all" ? t("ex.all") : t(`mg.${g}` as TKey)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Difficulty */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  {t("ex.level")}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {levels.map((lv) => (
+                    <button
+                      key={lv}
+                      aria-pressed={level === lv}
+                      onClick={() => setLevel(lv)}
                       className={cn(
                         "rounded-xl px-2.5 py-1 text-[11px] font-mono transition-all",
-                        equipment === eq
-                          ? "bg-emerald-500 text-background font-bold"
+                        level === lv
+                          ? "bg-primary text-background font-bold"
                           : "border border-border bg-surface text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      {eq === "all" ? t("rt.ex.all2") : t(`eq.${eq}` as TKey)}
+                      {lv === "all" ? t("ex.all") : t(`ex.level.${lv}` as TKey)}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                  {t("rt.ex.jointSafety")}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {safetyTags.map((sf) => (
-                    <button
-                      key={sf.id}
-                      onClick={() => setSafety(sf.id)}
-                      className={cn(
-                        "flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-mono transition-all",
-                        safety === sf.id
-                          ? "bg-accent text-background font-bold"
-                          : "border border-border bg-surface text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {sf.id !== "all" && <ShieldCheck className="w-3 h-3" />}
-                      {t(sf.labelKey as TKey)}
-                    </button>
-                  ))}
+              {/* Equipment & Joint Safety Filters */}
+              <div className="grid gap-4 border-t border-border pt-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    {t("rt.ex.equipment")}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {equipmentList.map((eq) => (
+                      <button
+                        key={eq}
+                        aria-pressed={equipment === eq}
+                        onClick={() => setEquipment(eq)}
+                        className={cn(
+                          "rounded-xl px-2.5 py-1 text-[11px] font-mono transition-all",
+                          equipment === eq
+                            ? "bg-accent text-background font-bold"
+                            : "border border-border bg-surface text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {eq === "all" ? t("rt.ex.all2") : t(`eq.${eq}` as TKey)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    {t("rt.ex.jointSafety")}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {safetyTags.map((sf) => (
+                      <button
+                        key={sf.id}
+                        aria-pressed={safety === sf.id}
+                        onClick={() => setSafety(sf.id)}
+                        className={cn(
+                          "flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-mono transition-all",
+                          safety === sf.id
+                            ? "bg-accent text-background font-bold"
+                            : "border border-border bg-surface text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {sf.id !== "all" && <ShieldCheck className="w-3 h-3" />}
+                        {t(sf.labelKey as TKey)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+          )}
+        </div>
+
+        {isError && (
+          <section role="alert" className="fl-workspace-panel fl-library-state">
+            <p>{t("rt.ex.loadFailed")}</p>
+            <Button variant="outline" onClick={() => void refetch()}>
+              {t("rt.ex.retry")}
+            </Button>
+          </section>
+        )}
+        {!isLoading && !isError && (
+          <p className="fl-library-count" role="status">
+            {list.length} {t("ex.count")}
+          </p>
+        )}
+        {isLoading && (
+          <div role="status" className="fl-workspace-panel fl-library-state">
+            <Loader2 className="size-6 animate-spin text-primary" />
+            <span>{t("common.loading")}</span>
           </div>
         )}
-      </div>
 
-      {isLoading && (
-        <div className="panel p-12 text-center text-sm text-muted-foreground mt-8 flex flex-col items-center gap-2">
-          <Loader2 className="size-6 animate-spin text-primary" />
-          <span>{t("common.loading")}</span>
-        </div>
-      )}
+        {list.length === 0 && !isLoading && !isError ? (
+          <div className="fl-workspace-panel fl-library-state">{t("rt.ex.noResults")}</div>
+        ) : null}
 
-      {list.length === 0 && !isLoading ? (
-        <div className="panel p-12 text-center text-sm text-muted-foreground mt-8">
-          {t("rt.ex.noResults")}
-        </div>
-      ) : null}
+        {/* V6 Exercise Library — video-first premium cards */}
+        <div className="fl-library-grid">
+          {list.map((e) => {
+            const video = exerciseVideo(e.slug);
+            const poster = exerciseVideoPoster(e.slug);
+            const isFav = favorites.includes(e.slug);
+            const name =
+              (baseLang(lang) === "lt" ? e.name_lt : e.name_en) ||
+              e.name_en ||
+              e.name_lt ||
+              e.slug ||
+              "";
 
-      {/* V6 Exercise Library — video-first premium cards */}
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {list.map((e) => {
-          const video = exerciseVideo(e.slug);
-          const poster = exerciseVideoPoster(e.slug);
-          const isFav = favorites.includes(e.slug);
-          const name =
-            (lang === "lt" ? e.name_lt : e.name_en) || e.name_en || e.name_lt || e.slug || "";
+            return (
+              <article key={e.id} className="fl-library-card group">
+                <div className="fl-library-media relative aspect-[4/3] overflow-hidden">
+                  <CardMedia video={video} poster={poster} name={name} label={t("ex.technique")} />
 
-          return (
-            <article
-              key={e.id}
-              className="group overflow-hidden rounded-[1.75rem] border border-border/70 bg-surface shadow-lg transition-all duration-500 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl"
-            >
-              <div className="relative aspect-[4/3] overflow-hidden bg-background">
-                <CardMedia video={video} poster={poster} name={name} />
+                  <button
+                    type="button"
+                    aria-pressed={isFav}
+                    aria-label={`${isFav ? (baseLang(lang) === "lt" ? "Pašalinti iš mėgstamų" : "Remove from favorites") : baseLang(lang) === "lt" ? "Įtraukti į mėgstamus" : "Add to favorites"}: ${name}`}
+                    onClick={(ev) => toggleFavorite(e.slug, ev)}
+                    className="absolute right-3 top-3 z-10 rounded-full border border-white/15 bg-black/40 p-2.5 text-white backdrop-blur-xl transition-all hover:scale-105 hover:bg-black/60 hover:text-rose-400"
+                  >
+                    <Heart className={`size-4 ${isFav ? "fill-rose-500 text-rose-500" : ""}`} />
+                  </button>
 
-                <button
-                  type="button"
-                  aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
-                  onClick={(ev) => toggleFavorite(e.slug, ev)}
-                  className="absolute right-3 top-3 z-10 rounded-full border border-white/15 bg-black/40 p-2.5 text-white backdrop-blur-xl transition-all hover:scale-105 hover:bg-black/60 hover:text-rose-400"
-                >
-                  <Heart className={`size-4 ${isFav ? "fill-rose-500 text-rose-500" : ""}`} />
-                </button>
+                  <button
+                    type="button"
+                    onClickCapture={(event) => {
+                      previewTrigger.current = event.currentTarget;
+                    }}
+                    onClick={() =>
+                      setPreviewEx({
+                        slug: e.slug,
+                        name,
+                        group: e.muscle_group,
+                        equipment: e.equipment,
+                        mistakes:
+                          (baseLang(lang) === "lt" ? e.mistakes_lt : e.mistakes_en) ||
+                          e.mistakes_en ||
+                          e.mistakes_lt ||
+                          undefined,
+                        instructions:
+                          (baseLang(lang) === "lt" ? e.instructions_lt : e.instructions_en) ||
+                          e.instructions_en ||
+                          e.instructions_lt ||
+                          undefined,
+                      })
+                    }
+                    className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-xl transition-all hover:bg-white/20"
+                  >
+                    <Play className="size-3 fill-current" />
+                    {t("rt.ex.quickPreview")}
+                  </button>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPreviewEx({
-                      slug: e.slug,
-                      name,
-                      group: e.muscle_group,
-                      equipment: e.equipment,
-                      mistakes:
-                        (lang === "lt" ? e.mistakes_lt : e.mistakes_en) ||
-                        e.mistakes_en ||
-                        e.mistakes_lt ||
-                        undefined,
-                      instructions:
-                        (lang === "lt" ? e.instructions_lt : e.instructions_en) ||
-                        e.instructions_en ||
-                        e.instructions_lt ||
-                        undefined,
-                    })
-                  }
-                  className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-xl transition-all hover:bg-white/20"
-                >
-                  <Play className="size-3 fill-current" />
-                  {t("rt.ex.quickPreview")}
-                </button>
-              </div>
+                <div className="flex min-h-[142px] flex-col justify-between p-4">
+                  <div>
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                        {t(`mg.${e.muscle_group}` as TKey)}
+                      </span>
 
-              <div className="flex min-h-[142px] flex-col justify-between p-4">
-                <div>
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
-                      {t(`mg.${e.muscle_group}` as TKey)}
-                    </span>
+                      <span className="rounded-full border border-border bg-background/60 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {t(`eq.${e.equipment}` as TKey)}
+                      </span>
+                    </div>
 
-                    <span className="rounded-full border border-border bg-background/60 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {t(`eq.${e.equipment}` as TKey)}
-                    </span>
+                    <h2 className="line-clamp-2 text-lg font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
+                      {name}
+                    </h2>
                   </div>
 
-                  <h2 className="line-clamp-2 text-base font-black leading-tight text-foreground transition-colors group-hover:text-primary">
-                    {name}
-                  </h2>
-                </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
+                    <span className="rounded-full bg-background px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {e.difficulty
+                        ? t(`ex.level.${e.difficulty}` as TKey)
+                        : t("rt.ex.forEveryone")}
+                    </span>
 
-                <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/70 pt-3">
-                  <span className="rounded-full bg-background px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {e.difficulty ? t(`ex.level.${e.difficulty}` as TKey) : t("rt.ex.forEveryone")}
-                  </span>
-
-                  <Link
-                    to="/exercises/$slug"
-                    params={{ slug: e.slug }}
-                    className="text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:text-primary"
-                  >
-                    {t("rt.ex.fullAnatomy")} →
-                  </Link>
+                    <Link
+                      to="/exercises/$slug"
+                      params={{ slug: e.slug }}
+                      className="inline-flex min-h-11 items-center text-xs font-semibold text-primary transition-colors hover:text-foreground"
+                    >
+                      {t("rt.ex.fullAnatomy")}
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </article>
-          );
-        })}
+              </article>
+            );
+          })}
+        </div>
+
+        {/* Quick Preview & Technique Modal */}
+        <Dialog open={!!previewEx} onOpenChange={(o) => !o && setPreviewEx(null)}>
+          <DialogContent
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              previewTrigger.current?.focus();
+            }}
+            aria-describedby={undefined}
+            className="fl-library-preview max-w-3xl bg-surface border-border text-foreground p-6 rounded-3xl"
+          >
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" /> {previewEx?.name}
+              </DialogTitle>
+            </DialogHeader>
+            {previewEx && <ExerciseVideo slug={previewEx.slug} title={previewEx.name} />}
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Quick Preview & Technique Modal */}
-      <Dialog open={!!previewEx} onOpenChange={(o) => !o && setPreviewEx(null)}>
-        <DialogContent className="max-w-3xl bg-surface border-border text-foreground p-6 rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-400" /> {previewEx?.name}
-            </DialogTitle>
-          </DialogHeader>
-          {previewEx && <ExerciseVideo slug={previewEx.slug} title={previewEx.name} />}
-        </DialogContent>
-      </Dialog>
     </AppShell>
   );
 }

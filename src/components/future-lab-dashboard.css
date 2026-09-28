@@ -1017,3 +1017,111 @@
     display: inline;
   }
 }
+
+/* Keep the reference overview dense while allowing real evidence to expand. */
+.fl-dashboard .fl-bottom-deck {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+}
+.fl-dashboard .fl-intelligence-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.fl-intelligence-card > span {
+  display: none;
+}
+.fl-intelligence-card h3 {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.fl-intelligence-card > div > p:last-child {
+  font-size: 11px;
+  line-height: 1.55;
+}
+.fl-intelligence-card .fl-card-action {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding: 6px 9px;
+  border: 1px solid #865bea80;
+  border-radius: 5px;
+  background: linear-gradient(115deg, #472393, #372174);
+  color: #efebff;
+  font-size: 10px;
+  text-align: center;
+}
+.fl-learned-evidence {
+  grid-column: 1 / -1;
+}
+.fl-dashboard .fl-brief > section {
+  padding: 10px;
+  border-radius: 8px;
+}
+.fl-dashboard .fl-brief > section p {
+  font-size: 10px;
+  line-height: 1.5;
+}
+.fl-dashboard .fl-recent-effect .text-white {
+  color: var(--foreground);
+}
+.fl-dashboard .fl-recent-effect :is(.text-neutral-300, .text-neutral-400, .text-neutral-500) {
+  color: var(--muted-foreground);
+}
+@media (min-width: 1200px) {
+  .fl-dashboard .fl-cockpit {
+    grid-template-columns:
+      minmax(170px, 0.92fr) minmax(160px, 0.9fr) minmax(340px, 1.9fr)
+      minmax(165px, 0.85fr) minmax(200px, 1.06fr);
+  }
+  .fl-dashboard .twin-cockpit-scene {
+    height: clamp(380px, calc(100svh - 463px), 500px);
+  }
+  .fl-dashboard .twin-home--cockpit [data-twin-credit] {
+    margin-block: 3px;
+    font-size: 8px;
+    line-height: 1.35;
+  }
+  .fl-dashboard .twin-cockpit-insights > summary {
+    min-height: 26px;
+    padding-block: 5px;
+  }
+  .fl-dashboard .fl-bottom-deck {
+    grid-template-columns: 1.28fr 1.7fr 0.88fr 0.94fr;
+    min-height: 188px;
+  }
+  .fl-dashboard .fl-intelligence-card:has(.fl-illustrative-athlete) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 90px;
+    grid-template-rows: 1fr auto;
+    align-items: start;
+  }
+  .fl-dashboard .fl-intelligence-card .fl-illustrative-athlete {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .fl-dashboard .fl-intelligence-card:has(.fl-illustrative-athlete) > .fl-card-action {
+    grid-column: 1 / -1;
+    align-self: end;
+  }
+}
+@media (max-width: 759px) {
+  .fl-dashboard .fl-bottom-deck {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-dashboard .fl-intelligence-card .fl-card-action,
+  .fl-dashboard .fl-text-link,
+  .fl-dashboard .fl-context-disclosure > summary,
+  .fl-dashboard .twin-cockpit-insights > summary {
+    min-height: 44px;
+  }
+}

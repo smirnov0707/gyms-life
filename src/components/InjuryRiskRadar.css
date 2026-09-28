@@ -1,0 +1,207 @@
+.fl-risk-review {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  color: var(--foreground);
+}
+.fl-risk-overview {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.fl-risk-summary,
+.fl-risk-coverage {
+  padding: 26px;
+  min-width: 0;
+}
+.fl-risk-summary h3,
+.fl-risk-factor-section > h3,
+.fl-risk-gaps h3 {
+  font: 500 18px/1.5 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.fl-risk-score-line {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+.fl-risk-review dt {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.fl-risk-review dd {
+  font: 500 42px/1.3 var(--font-display);
+  letter-spacing: -0.04em;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.fl-risk-review dd small {
+  font: 500 12px var(--font-sans);
+  letter-spacing: 0;
+  margin-left: 6px;
+  color: var(--muted-foreground);
+}
+.fl-risk-level {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.fl-risk-scale {
+  margin-top: 22px;
+}
+.fl-risk-coverage {
+  border-left: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary) 4%, var(--surface));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+.fl-risk-coverage p,
+.fl-risk-method p,
+.fl-risk-gaps p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+  max-width: 680px;
+}
+.fl-risk-method {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.fl-risk-method summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  min-height: 44px;
+  font-size: 12px;
+  font-weight: 650;
+  width: fit-content;
+  max-width: 100%;
+}
+.fl-risk-method summary::after {
+  content: "+";
+  margin-left: 8px;
+  color: var(--primary);
+  font-size: 17px;
+}
+.fl-risk-method[open] summary::after {
+  content: "−";
+}
+.fl-risk-method summary svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.fl-risk-method > div {
+  display: grid;
+  gap: 8px;
+  padding: 6px 0 12px;
+}
+.fl-risk-factors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.fl-risk-factors article {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  padding: 22px;
+  min-width: 0;
+}
+.fl-risk-factors article:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.fl-risk-factors header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fl-risk-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  font: 600 11px var(--font-display);
+}
+.fl-risk-factors h4 {
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+.fl-risk-factor-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 20px 0 14px;
+}
+.fl-risk-factor-value strong {
+  font: 500 25px/1.4 var(--font-display);
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.fl-risk-factors article > p {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.fl-risk-gaps {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.fl-risk-gaps ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+  list-style: none;
+}
+.fl-risk-gaps li {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.6;
+}
+@media (max-width: 639px) {
+  .fl-risk-overview,
+  .fl-risk-factors {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-risk-summary,
+  .fl-risk-coverage,
+  .fl-risk-factors article {
+    padding: 20px;
+  }
+  .fl-risk-coverage {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .fl-risk-review dd {
+    font-size: 36px;
+  }
+}

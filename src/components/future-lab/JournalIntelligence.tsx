@@ -105,8 +105,8 @@ export function JournalIntelligence() {
 
   const copy = english
     ? {
-        eyebrow: "TIMELINE · LEARNING LEDGER",
-        title: "Timeline",
+        eyebrow: "TWIN · LEARNING LEDGER",
+        title: "Journal",
         subtitle: "Hypotheses, discoveries and decisions, with their evidence.",
         hypotheses: "Hypotheses",
         discoveries: "Discoveries",
@@ -144,8 +144,8 @@ export function JournalIntelligence() {
           "Supported means the configured evidence threshold was reached. It does not mean universal scientific truth or medical certainty.",
       }
     : {
-        eyebrow: "TIMELINE · MOKYMOSI ISTORIJA",
-        title: "Timeline",
+        eyebrow: "TWIN · MOKYMOSI ISTORIJA",
+        title: "Dienoraštis",
         subtitle: "Hipotezės, atradimai ir sprendimai su juos pagrindžiančiais duomenimis.",
         hypotheses: "Hipotezės",
         discoveries: "Atradimai",
@@ -283,6 +283,27 @@ export function JournalIntelligence() {
               })}
             </div>
 
+            <nav
+              aria-label={english ? "Timeline filters" : "Laiko juostos filtrai"}
+              className="fl-journal-filters mt-4 flex gap-1.5 overflow-x-auto border-b border-border pb-3"
+            >
+              {tabs.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={tab === item.id}
+                  onClick={() => setTab(item.id)}
+                  className={`min-h-11 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                    tab === item.id
+                      ? "border-violet-400/50 bg-violet-500/15 text-foreground"
+                      : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+
             {(tab === "all" || tab === "discoveries") && (
               <div className="mt-4 grid gap-3 lg:grid-cols-2">
                 <FutureLabPanel
@@ -397,35 +418,6 @@ export function JournalIntelligence() {
                 )}
               </div>
             )}
-
-            <details className="fl-secondary-details mt-3">
-              <summary>
-                {english ? "Explore timeline" : "Naršyti laiko juostą"} ·{" "}
-                {tabs.find((item) => item.id === tab)?.label}
-              </summary>
-              <div className="fl-disclosed-content">
-                <nav
-                  aria-label={english ? "Timeline filters" : "Laiko juostos filtrai"}
-                  className="fl-journal-filters mt-4 flex gap-1.5 overflow-x-auto border-b border-border pb-3"
-                >
-                  {tabs.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-pressed={tab === item.id}
-                      onClick={() => setTab(item.id)}
-                      className={`min-h-11 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
-                        tab === item.id
-                          ? "border-violet-400/50 bg-violet-500/15 text-foreground"
-                          : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </details>
 
             <div className="mt-3 rounded-xl border border-violet-400/10 bg-violet-400/[0.025] px-3 py-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">

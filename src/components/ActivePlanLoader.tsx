@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CalendarDays, ChevronDown, Clock3, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deactivateActivePlan, getActivePlan } from "@/lib/active-plan.functions";
-import { baseLang, useI18n, type Lang } from "@/lib/i18n";
+import { baseLang, useI18n, type Lang, type TKey } from "@/lib/i18n";
 
 type Copy = {
   loadFailed: string;
@@ -96,7 +96,7 @@ function copyFor(lang: Lang): Copy {
 }
 
 export function ActivePlanLoader() {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const deactivate = useServerFn(deactivateActivePlan);
@@ -157,34 +157,31 @@ export function ActivePlanLoader() {
   }
 
   const { plan } = data;
+  const goalLabels: Record<string, TKey> = {
+    lose_fat: "ob.goal.lose",
+    lose: "ob.goal.lose",
+    build_muscle: "ob.goal.muscle",
+    muscle: "ob.goal.muscle",
+    strength: "ob.goal.strength",
+    endurance: "ob.goal.endurance",
+  };
+  const goalKey = plan.goal ? goalLabels[plan.goal] : undefined;
 
   return (
     <div className="space-y-4">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-8">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: "radial-gradient(75% 120% at 0% 0%, rgba(16,185,129,.10), transparent 60%)",
-          }}
-        />
-
+      <section className="fl-workspace-hero fl-plan-hero">
         <div className="relative">
-          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
-            {copy.eyebrow}
-          </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {plan.title}
-          </h1>
+          <p className="fl-workspace-eyebrow">{copy.eyebrow}</p>
+          <h1 className="fl-workspace-title mt-3 max-w-3xl">{plan.title}</h1>
 
           {plan.goal ? (
-            <div className="mt-4 flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-neutral-400">
-              <Target className="mt-0.5 size-4 shrink-0 text-emerald-400" />
+            <div className="mt-4 flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-muted-foreground">
+              <Target className="mt-0.5 size-4 shrink-0 text-primary" />
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-600">
+                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                   {copy.mission}
                 </span>
-                <p className="mt-1">{plan.goal}</p>
+                <p className="mt-1">{goalKey ? t(goalKey) : plan.goal}</p>
               </div>
             </div>
           ) : null}
@@ -212,31 +209,25 @@ export function ActivePlanLoader() {
             </Button>
           </div>
 
-          <div className="mt-7 grid grid-cols-3 gap-3 border-y border-white/[0.06] py-5">
+          <div className="fl-plan-metrics">
             <div>
-              <p className="font-mono text-xl text-white">{plan.weeks}</p>
-              <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-600">
-                {copy.weeks}
-              </p>
+              <p className="fl-workspace-number">{plan.weeks}</p>
+              <p className="fl-metric-label">{copy.weeks}</p>
             </div>
             <div>
-              <p className="font-mono text-xl text-white">{plan.daysPerWeek}</p>
-              <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-600">
-                {copy.daysPerWeek}
-              </p>
+              <p className="fl-workspace-number">{plan.daysPerWeek}</p>
+              <p className="fl-metric-label">{copy.daysPerWeek}</p>
             </div>
             <div>
-              <p className="font-mono text-xl text-white">{plan.data.days.length}</p>
-              <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-600">
-                {copy.sessions}
-              </p>
+              <p className="fl-workspace-number">{plan.data.days.length}</p>
+              <p className="fl-metric-label">{copy.sessions}</p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="fl-plan-next">
             <div className="max-w-2xl">
-              <p className="text-lg font-medium text-white">{copy.todayAction}</p>
-              <p className="mt-1 text-sm leading-relaxed text-neutral-500">{copy.todayHint}</p>
+              <p className="text-lg font-medium text-foreground">{copy.todayAction}</p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{copy.todayHint}</p>
             </div>
             <Button asChild size="lg" className="rounded-full px-6">
               <Link to="/app">
@@ -248,7 +239,7 @@ export function ActivePlanLoader() {
         </div>
       </section>
 
-      <details className="group rounded-[1.75rem] border border-border bg-foreground/[0.02]">
+      <details className="fl-workspace-panel group">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -268,12 +259,12 @@ export function ActivePlanLoader() {
             </p>
           ) : null}
 
-          <div className="divide-y divide-white/[0.06]">
+          <div className="divide-y divide-border">
             {plan.data.days.map((day) => (
               <article key={day.day} className="py-5 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-emerald-400 light:text-emerald-700">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary">
                       {copy.day} {day.day}
                     </p>
                     <h2 className="mt-1 text-lg font-medium text-foreground">{day.title}</h2>
@@ -288,9 +279,9 @@ export function ActivePlanLoader() {
                   {day.exercises.map((exercise) => (
                     <div
                       key={`${day.day}-${exercise.slug}`}
-                      className="rounded-xl border border-border bg-black/20 px-3 py-3"
+                      className="rounded-xl border border-border bg-surface-2 px-3 py-3"
                     >
-                      <p className="truncate text-sm font-medium text-foreground">
+                      <p className="break-words text-sm font-medium text-foreground">
                         {exercise.name}
                       </p>
                       <p className="mt-1 font-mono text-xs text-muted-foreground">

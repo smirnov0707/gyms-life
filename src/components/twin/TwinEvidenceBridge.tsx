@@ -1,42 +1,52 @@
 import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Link2, Loader2 } from "lucide-react";
+import { ChevronDown, Link2, Activity, Dumbbell, ClipboardCheck, CircleHelp } from "lucide-react";
+import { TwinLedgerState } from "./TwinLedgerState";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, type Lang } from "@/lib/i18n";
 import type { PersonalTimelineEntry } from "@/lib/personal-timeline.read";
 import { getTwinEvidenceWindow } from "@/lib/twin-evidence-window.functions";
+import { TwinEvidenceWindowInputSchema } from "@/lib/twin-evidence-window";
 import type { TwinRewindPoint } from "@/lib/twin-rewind";
+import "./TwinComparison.css";
 
 const COPY = {
   lt: {
-    title: "Įrodymai tarp būsenų",
-    description:
-      "Timeline įrašai, kurių indeksuotas įvykio laikas patenka tarp šių Twin snapshot'ų.",
-    note: "Tai laiko sutapimas, o ne priežastinis paaiškinimas. Timeline occurred_at nebūtinai yra tikslus pratimo atlikimo, matavimo ar fiziologinio pokyčio momentas.",
-    loading: "Įkeliami intervalo įrodymai…",
-    error: "Nepavyko įkelti intervalo įrodymų. Tai nereiškia, kad įvykių nebuvo.",
-    retry: "Bandyti dar kartą",
-    empty:
-      "Šiame intervale nėra indeksuotų Timeline įvykių. Tai nereiškia, kad nieko neįvyko arba kad nėra neindeksuotų duomenų.",
-    more: "Yra daugiau indeksuotų įvykių, nei rodoma šiame ribotame lange.",
-    omitted: "Dalies įrašų nepavyko patikrinti ir jie nerodomi:",
-    indexedAt: "Indeksuotas įvykio laikas",
-    recordedAt: "Įrašyta į Timeline",
-    source: "Šaltinis",
-    provenance: "Kilmė",
-    zone: "Šaltinio laiko juosta",
+    title: "Įvykiai tarp būsenų",
+    description: "Užregistruotos treniruotės, savijauta ir sprendimai pasirinktame intervale.",
+    note: "Įvykiai patenka tarp dviejų būsenų pagal istorijoje nurodytą laiką: po ankstesnės būsenos ir iki pasirinktos būsenos imtinai. Šis laikas gali skirtis nuo tikrojo veiksmo ar matavimo momento. Sutapimas laike neįrodo, kad įvykis sukėlė rodiklių pokytį.",
+    method: "Kaip susiję įvykiai ir būsenos?",
+    loading: "Įkeliami intervalo įvykiai…",
+    error: "Nepavyko įkelti intervalo įvykių.",
+    errorHelp: "Tai nereiškia, kad įvykių nebuvo. Pabandyk dar kartą.",
+    empty: "Šiame intervale įrašų nerasta.",
+    emptyHelp: "Istorijoje gali trūkti dar neįtrauktų įvykių. Tai nereiškia, kad nieko neįvyko.",
+    excluded: "Nė vieno įrašo nepavyko patvirtinti.",
+    excludedHelp: "Gauti įrašai netinkami šiam intervalui arba jų nepavyko patikrinti.",
+    invalid: "Šiam palyginimui laiko intervalo nėra.",
+    invalidHelp: "Ankstesnė būsena turi būti išsaugota anksčiau nei pasirinkta būsena.",
+    more: "Rodoma tik dalis intervalo įrašų.",
+    omitted: "Nepatikrinti arba intervalui nepriskirti įrašai:",
+    indexedAt: "Įvykio laikas įraše",
+    recordedAt: "Įtraukta į istoriją",
+    source: "Įrašo kilmė",
+    sourceSystem: "Šaltinis",
+    provenance: "Duomenų kilmė",
+    zone: "Laiko juosta",
     unknown: "Nežinoma",
+    unknownEvent: "Kitas istorijos įvykis",
+    utc: "Laikas rodomas UTC; šaltinio laiko juosta nežinoma.",
     counts: {
       workout_completed: "Treniruotės",
-      checkin_recorded: "Check-in'ai",
+      checkin_recorded: "Savijauta",
       decision_recorded: "Sprendimai",
-      unknown: "Kiti / nežinomi",
+      unknown: "Kiti įvykiai",
     },
     events: {
-      workout_completed: "Užregistruotas treniruotės užbaigimas",
-      checkin_recorded: "Užregistruota savijauta",
-      decision_recorded: "Užregistruotas dienos sprendimas",
+      workout_completed: "Treniruotė užbaigta",
+      checkin_recorded: "Savijauta užregistruota",
+      decision_recorded: "Dienos sprendimas išsaugotas",
     },
     origins: {
       measured: "Išmatuota",
@@ -49,33 +59,41 @@ const COPY = {
     },
   },
   en: {
-    title: "Evidence between states",
-    description:
-      "Timeline records whose indexed event time falls between these two Twin snapshots.",
-    note: "This is temporal overlap, not a causal explanation. Timeline occurred_at is not necessarily the exact time an exercise, measurement or physiological change happened.",
-    loading: "Loading interval evidence…",
-    error: "Interval evidence could not be loaded. This does not mean no events occurred.",
-    retry: "Try again",
-    empty:
-      "There are no indexed Timeline events in this interval. This does not mean nothing happened or that no unindexed source data exists.",
-    more: "More indexed events exist than are shown in this bounded window.",
-    omitted: "Some records could not be validated and are not shown:",
-    indexedAt: "Indexed event time",
-    recordedAt: "Written to Timeline",
-    source: "Source",
-    provenance: "Provenance",
-    zone: "Source time zone",
+    title: "Events between states",
+    description: "Recorded workouts, check-ins and decisions within the selected interval.",
+    note: "Events belong to the interval by their history timestamp: after the previous state and up to and including the selected state. This may differ from when an action or measurement actually happened. Overlap in time does not prove that an event caused a change in your readings.",
+    method: "How do events relate to these states?",
+    loading: "Loading interval events…",
+    error: "Interval events could not be loaded.",
+    errorHelp: "This does not mean no events occurred. Please try again.",
+    empty: "No records were found in this interval.",
+    emptyHelp:
+      "Some events may not have been added to history yet. This does not mean nothing happened.",
+    excluded: "None of the records could be confirmed.",
+    excludedHelp: "The returned records fall outside this interval or could not be verified.",
+    invalid: "This comparison has no time interval.",
+    invalidHelp: "The previous state must have been saved before the selected state.",
+    more: "Only part of the interval's records is shown.",
+    omitted: "Unverified or out-of-interval records:",
+    indexedAt: "Event time in history",
+    recordedAt: "Added to history",
+    source: "Record source",
+    sourceSystem: "Source",
+    provenance: "Data origin",
+    zone: "Time zone",
     unknown: "Unknown",
+    unknownEvent: "Other history event",
+    utc: "Time is shown in UTC; the source time zone is unknown.",
     counts: {
       workout_completed: "Workouts",
       checkin_recorded: "Check-ins",
       decision_recorded: "Decisions",
-      unknown: "Other / unknown",
+      unknown: "Other events",
     },
     events: {
-      workout_completed: "Workout completion recorded",
+      workout_completed: "Workout completed",
       checkin_recorded: "Check-in recorded",
-      decision_recorded: "Daily decision recorded",
+      decision_recorded: "Daily decision saved",
     },
     origins: {
       measured: "Measured",
@@ -88,10 +106,20 @@ const COPY = {
     },
   },
 };
-
 type Copy = (typeof COPY)[keyof typeof COPY];
 type CountKey = keyof Copy["counts"];
-
+const COUNT_KEYS = [
+  "workout_completed",
+  "checkin_recorded",
+  "decision_recorded",
+  "unknown",
+] as const satisfies readonly CountKey[];
+const ICONS = {
+  workout_completed: Dumbbell,
+  checkin_recorded: Activity,
+  decision_recorded: ClipboardCheck,
+  unknown: CircleHelp,
+};
 function formatEventTime(event: PersonalTimelineEntry, locale: string, value: string): string {
   const options: Intl.DateTimeFormatOptions = {
     year: "numeric",
@@ -110,7 +138,6 @@ function formatEventTime(event: PersonalTimelineEntry, locale: string, value: st
     return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(new Date(value));
   }
 }
-
 function EventCard({
   event,
   copy,
@@ -120,50 +147,56 @@ function EventCard({
   copy: Copy;
   locale: string;
 }) {
+  const Icon = ICONS[event.eventType ?? "unknown"];
   return (
-    <li className="rounded-xl border border-border bg-surface-2 p-3">
-      <p className="text-sm font-medium text-foreground">
-        {event.eventType === null ? copy.unknown : copy.events[event.eventType]}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {copy.indexedAt}:{" "}
-        <time dateTime={event.occurredAt}>{formatEventTime(event, locale, event.occurredAt)}</time>
-      </p>
-      <details className="mt-2 text-xs text-muted-foreground">
-        <summary className="min-h-11 cursor-pointer content-center rounded-lg text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
-          {copy.source}
-        </summary>
-        <dl className="grid gap-2 border-t border-border pt-2 sm:grid-cols-2">
-          <div>
-            <dt>{copy.provenance}</dt>
-            <dd className="mt-0.5 text-foreground">
-              {event.provenance === null ? copy.unknown : copy.origins[event.provenance]}
-            </dd>
-          </div>
-          <div>
-            <dt>{copy.zone}</dt>
-            <dd className="mt-0.5 break-words text-foreground">{event.timeZone ?? copy.unknown}</dd>
-          </div>
-          <div>
-            <dt>{copy.recordedAt}</dt>
-            <dd className="mt-0.5 text-foreground">
-              <time dateTime={event.recordedAt}>
-                {formatEventTime(event, locale, event.recordedAt)}
-              </time>
-            </dd>
-          </div>
-          <div>
-            <dt>{copy.source}</dt>
-            <dd className="mt-0.5 break-all font-mono text-foreground">
-              {event.sourceSystem} / {event.sourceTable ?? copy.unknown}
-            </dd>
-          </div>
-        </dl>
-      </details>
+    <li className="fl-evidence-event" data-event={event.eventType ?? "unknown"}>
+      <Icon aria-hidden="true" />
+      <div>
+        <h4>{event.eventType === null ? copy.unknownEvent : copy.events[event.eventType]}</h4>
+        <p className="fl-evidence-time">
+          <span>{copy.indexedAt}</span>
+          <time dateTime={event.occurredAt}>
+            {formatEventTime(event, locale, event.occurredAt)}
+          </time>
+        </p>
+        <p className="fl-evidence-origin">
+          {event.provenance === null ? copy.unknown : copy.origins[event.provenance]}
+        </p>
+        {event.timeZone === null ? <p className="fl-comparison-note">{copy.utc}</p> : null}
+        <details className="fl-evidence-source">
+          <summary>
+            {copy.source}
+            <ChevronDown aria-hidden="true" />
+          </summary>
+          <dl>
+            <div>
+              <dt>{copy.provenance}</dt>
+              <dd>{event.provenance === null ? copy.unknown : copy.origins[event.provenance]}</dd>
+            </div>
+            <div>
+              <dt>{copy.zone}</dt>
+              <dd>{event.timeZone ?? copy.unknown}</dd>
+            </div>
+            <div>
+              <dt>{copy.recordedAt}</dt>
+              <dd>
+                <time dateTime={event.recordedAt}>
+                  {formatEventTime(event, locale, event.recordedAt)}
+                </time>
+              </dd>
+            </div>
+            <div>
+              <dt>{copy.sourceSystem}</dt>
+              <dd>
+                {event.sourceSystem} / {event.sourceTable ?? copy.unknown}
+              </dd>
+            </div>
+          </dl>
+        </details>
+      </div>
     </li>
   );
 }
-
 export function TwinEvidenceBridge({
   older,
   newer,
@@ -173,115 +206,116 @@ export function TwinEvidenceBridge({
   newer: TwinRewindPoint;
   lang: Lang;
 }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const fetchEvidence = useServerFn(getTwinEvidenceWindow);
   const [expanded, setExpanded] = useState(false);
-  const contentId = useId();
-  const copy = COPY[baseLang(lang)];
-  const locale = formatLocale(lang);
+  const id = useId(),
+    copy = COPY[baseLang(lang)],
+    locale = formatLocale(lang);
+  const interval = TwinEvidenceWindowInputSchema.safeParse({
+    olderAt: older.computedAt,
+    newerAt: newer.computedAt,
+  });
   const query = useQuery({
-    queryKey: ["twin-evidence-window", user?.id, older.id, newer.id],
-    enabled: expanded && Boolean(user),
+    queryKey: [
+      "twin-evidence-window",
+      user?.id,
+      older.id,
+      newer.id,
+      older.computedAt,
+      newer.computedAt,
+    ],
+    enabled: expanded && Boolean(user) && !authLoading && interval.success,
     queryFn: () =>
-      fetchEvidence({
-        data: { olderAt: older.computedAt, newerAt: newer.computedAt },
-      }),
+      fetchEvidence({ data: { olderAt: older.computedAt, newerAt: newer.computedAt } }),
     staleTime: 30_000,
     gcTime: 0,
     retry: 1,
   });
-
-  if (!user) return null;
-
-  const counts = query.data?.events.reduce<Record<CountKey, number>>(
+  if (!user || authLoading) return null;
+  const data = query.isSuccess && interval.success ? query.data : undefined;
+  const counts = data?.events.reduce<Record<CountKey, number>>(
     (result, event) => {
-      const key: CountKey = event.eventType ?? "unknown";
-      result[key] += 1;
+      result[event.eventType ?? "unknown"] += 1;
       return result;
     },
     { workout_completed: 0, checkin_recorded: 0, decision_recorded: 0, unknown: 0 },
   );
-
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={contentId}
-        onClick={() => setExpanded((value) => !value)}
-        className="flex min-h-11 w-full items-center gap-3 rounded-xl text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-      >
-        <Link2 aria-hidden="true" className="size-4 shrink-0 text-primary" />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-foreground">{copy.title}</span>
-          <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
-            {copy.description}
+    <section className="fl-evidence-bridge" aria-labelledby={`${id}-title`}>
+      <h3 id={`${id}-title`}>
+        <button
+          className="fl-evidence-toggle"
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={`${id}-content`}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <Link2 aria-hidden="true" />
+          <span>
+            {copy.title}
+            <small>{copy.description}</small>
           </span>
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className={`size-4 shrink-0 text-muted-foreground ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      <div id={contentId} hidden={!expanded} className="mt-3">
-        <p className="text-xs leading-relaxed text-muted-foreground">{copy.note}</p>
-        {query.isPending ? (
-          <p role="status" className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2
-              aria-hidden="true"
-              className="size-4 animate-spin motion-reduce:animate-none"
-            />
-            {copy.loading}
-          </p>
-        ) : null}
-        {query.isError ? (
-          <div role="alert" className="mt-3">
-            <p className="text-sm text-foreground">{copy.error}</p>
-            <button
-              type="button"
-              onClick={() => void query.refetch()}
-              disabled={query.isFetching}
-              className="mt-2 min-h-11 rounded-xl border border-border px-4 text-sm text-foreground disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              {copy.retry}
-            </button>
-          </div>
-        ) : query.data ? (
-          <div className="mt-3">
-            {counts ? (
-              <div className="flex flex-wrap gap-2">
-                {(Object.keys(counts) as CountKey[])
-                  .filter((key) => counts[key] > 0)
-                  .map((key) => (
-                    <span
-                      key={key}
-                      className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs text-foreground"
-                    >
-                      {copy.counts[key]}: {counts[key]}
-                    </span>
-                  ))}
-              </div>
-            ) : null}
-            {query.data.omittedCount > 0 ? (
-              <p role="status" className="mt-3 text-xs text-foreground">
-                {copy.omitted} {query.data.omittedCount}
-              </p>
-            ) : null}
-            {query.data.events.length === 0 && query.data.omittedCount === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">{copy.empty}</p>
+          <ChevronDown aria-hidden="true" />
+        </button>
+      </h3>
+      <div id={`${id}-content`} hidden={!expanded} className="fl-evidence-content">
+        {!interval.success ? (
+          <TwinLedgerState state="empty" title={copy.invalid} description={copy.invalidHelp} />
+        ) : query.isPending ? (
+          <TwinLedgerState state="loading" title={copy.loading} />
+        ) : query.isError ? (
+          <TwinLedgerState
+            state="error"
+            title={copy.error}
+            description={copy.errorHelp}
+            onRetry={() => void query.refetch()}
+            retrying={query.isFetching}
+          />
+        ) : data ? (
+          <>
+            {data.events.length === 0 ? (
+              <TwinLedgerState
+                state="empty"
+                title={data.omittedCount > 0 ? copy.excluded : copy.empty}
+                description={data.omittedCount > 0 ? copy.excludedHelp : copy.emptyHelp}
+              />
             ) : (
-              <ol className="mt-3 space-y-2" aria-label={copy.title}>
-                {query.data.events.map((event) => (
-                  <EventCard key={event.id} event={event} copy={copy} locale={locale} />
-                ))}
-              </ol>
+              <>
+                <dl className="fl-evidence-counts">
+                  {COUNT_KEYS.filter((key) => counts && counts[key] > 0).map((key) => (
+                    <div key={key}>
+                      <dt>{copy.counts[key]}</dt>
+                      <dd>{new Intl.NumberFormat(locale).format(counts?.[key] ?? 0)}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <ol className="fl-evidence-events" aria-label={copy.title}>
+                  {data.events.map((event) => (
+                    <EventCard key={event.id} event={event} copy={copy} locale={locale} />
+                  ))}
+                </ol>
+              </>
             )}
-            {query.data.hasMore ? (
-              <p className="mt-3 text-xs text-muted-foreground">{copy.more}</p>
+            {data.omittedCount > 0 || data.hasMore ? (
+              <aside className="fl-evidence-coverage">
+                {data.omittedCount > 0 ? (
+                  <p>
+                    {copy.omitted} {data.omittedCount}
+                  </p>
+                ) : null}
+                {data.hasMore ? <p>{copy.more}</p> : null}
+              </aside>
             ) : null}
-          </div>
+          </>
         ) : null}
+        <details className="fl-comparison-method">
+          <summary>
+            {copy.method}
+            <ChevronDown aria-hidden="true" />
+          </summary>
+          <p>{copy.note}</p>
+        </details>
       </div>
     </section>
   );

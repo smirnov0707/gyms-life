@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
-import { Logo, LangSwitch } from "@/components/AppShell";
+import { AuthFrame, PasswordInput } from "@/components/AuthFrame";
+import { Loader2, KeyRound, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/reset-password")({
@@ -38,11 +38,14 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (lock.current || loading || !user) return;
+    setFormError("");
     if (password !== confirm) {
+      setFormError(t("auth.mismatch"));
       toast.error(t("auth.mismatch"));
       return;
     }
@@ -55,7 +58,9 @@ function ResetPasswordPage() {
       toast.success(t("auth.updated"));
       navigate({ to: "/app" });
     } catch (err) {
-      toast.error(errorMessage(err, t("common.error")));
+      const message = errorMessage(err, t("common.error"));
+      setFormError(message);
+      toast.error(message);
     } finally {
       lock.current = false;
       setBusy(false);
@@ -63,38 +68,53 @@ function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Logo />
-        <LangSwitch />
-      </header>
-      <div className="mx-auto grid max-w-md gap-6 px-4 py-10">
-        <div>
-          <h1 className="text-5xl">{t("auth.resetTitle")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("auth.resetHint")}</p>
+    <AuthFrame
+      title={t("auth.resetTitle")}
+      description={
+        baseLang(lang) === "lt"
+          ? "Atkurk prieigą prie savo erdvės. Pasirink naują slaptažodį."
+          : "Return to your space. Choose a new password for your account."
+      }
+    >
+      {loading ? (
+        <div role="status" className="fl-auth-notice">
+          <Loader2 aria-hidden="true" className="animate-spin" />
+          {t("common.loading")}
         </div>
-        {loading ? (
-          <p role="status">{t("common.loading")}</p>
-        ) : !user ? (
-          <section role="alert" className="panel space-y-4 p-6">
+      ) : !user ? (
+        <div className="fl-auth-form">
+          <section role="alert" className="fl-auth-notice">
+            <KeyRound aria-hidden="true" />
             <p>
               {baseLang(lang) === "lt"
                 ? "Atidaryk slaptažodžio atkūrimo nuorodą iš el. laiško. Ši nuoroda gali būti pasibaigusi arba nenaudota šiame įrenginyje."
                 : "Open the password recovery link from your email. Your link may be missing or expired on this device."}
             </p>
-            <Button asChild>
-              <Link to="/auth" search={{ mode: "forgot" }}>
-                {t("auth.resetSend")}
-              </Link>
-            </Button>
           </section>
-        ) : (
-          <form onSubmit={submit} className="panel grid gap-4 p-6">
-            <div className="grid gap-2">
+          <Button asChild>
+            <Link to="/auth" search={{ mode: "forgot" }}>
+              {t("auth.resetSend")}
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <>
+          {formError && (
+            <div role="alert" id="reset-error" className="fl-auth-notice fl-auth-error">
+              <CircleAlert aria-hidden="true" />
+              <span>{formError}</span>
+            </div>
+          )}
+          <form
+            onSubmit={submit}
+            className="fl-auth-form"
+            aria-busy={busy}
+            aria-describedby={formError ? "reset-error" : undefined}
+          >
+            <div className="fl-auth-field">
               <Label htmlFor="pw">{t("auth.newPassword")}</Label>
-              <Input
+              <PasswordInput
                 id="pw"
-                type="password"
                 autoComplete="new-password"
                 disabled={busy}
                 maxLength={1024}
@@ -104,11 +124,10 @@ function ResetPasswordPage() {
                 required
               />
             </div>
-            <div className="grid gap-2">
+            <div className="fl-auth-field">
               <Label htmlFor="pw2">{t("auth.newPassword2")}</Label>
-              <Input
+              <PasswordInput
                 id="pw2"
-                type="password"
                 autoComplete="new-password"
                 disabled={busy}
                 maxLength={1024}
@@ -118,18 +137,16 @@ function ResetPasswordPage() {
                 required
               />
             </div>
-            <Button type="submit" disabled={busy} className="font-bold">
+            <Button type="submit" disabled={busy}>
+              {busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
               {t("auth.updatePassword")}
             </Button>
-            <Link
-              to="/auth"
-              className="text-center text-sm text-muted-foreground hover:text-foreground"
-            >
+            <Link to="/auth" className="fl-auth-link">
               {t("auth.backToSignin")}
             </Link>
           </form>
-        )}
-      </div>
-    </div>
+        </>
+      )}
+    </AuthFrame>
   );
 }

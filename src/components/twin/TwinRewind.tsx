@@ -1,71 +1,124 @@
 import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, History, Loader2, RotateCcw } from "lucide-react";
+import { ArrowUpRight, ChevronDown, History, Layers3, RotateCcw } from "lucide-react";
 import { TwinSnapshotView, twinCopyFor } from "@/components/TwinView";
-import { TwinChangeMap } from "@/components/twin/TwinChangeMap";
-import { TwinEvidenceBridge } from "@/components/twin/TwinEvidenceBridge";
+import { TwinChangeMap } from "./TwinChangeMap";
+import { TwinEvidenceBridge } from "./TwinEvidenceBridge";
+import { TwinLedgerState } from "./TwinLedgerState";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
+import { browserTimeZone } from "@/lib/local-day";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
 import { getTwinRewindHistory } from "@/lib/twin-rewind.functions";
 import {
   compareTwinRewindPoints,
-  type TwinRewindDelta,
   type TwinRewindMetrics,
   type TwinRewindPoint,
 } from "@/lib/twin-rewind";
+import "./TwinRewind.css";
 
 const KNOWN_MUSCLE_GROUP_SET = new Set<string>(KNOWN_MUSCLE_GROUPS);
-
+const METRICS = [
+  "readiness",
+  "sleepHours",
+  "sessionsLast7Days",
+  "totalVolumeLast28Days",
+  "weightKg",
+  "calories",
+  "proteinG",
+  "evidenceCount",
+] as const satisfies readonly (keyof TwinRewindMetrics)[];
 const COPY = {
   lt: {
-    title: "Twin Rewind",
-    description: "Peržiūrėk tikras anksčiau išsaugotas skaitmeninio dvynio būsenas.",
-    note: "Rewind nekuria tarpinių būsenų ir nenaudoja AI joms atspėti. Rodomi tik immutable Digital Athlete snapshot'ai. Palyginimai yra aritmetiniai slenkančių langų skirtumai, ne progreso ar priežasties įrodymai.",
+    eyebrow: "Twin istorija",
+    title: "Sugrįžk į savo istoriją.",
+    description:
+      "Pasirink išsaugotą būseną. Pamatyk to meto rodiklius ir tai, kas pasikeitė nuo ankstesnio įrašo.",
+    note: "Rodomos tik išsaugotos būsenos, be spėjamų tarpinių vaizdų. Skirtumai apibūdina skirtingus slenkančius laikotarpius; jie neįrodo progreso ar jo priežasties.",
     loading: "Įkeliamos išsaugotos būsenos…",
-    error: "Nepavyko įkelti Twin istorijos. Tai nereiškia, kad istorijos nėra.",
-    retry: "Bandyti dar kartą",
-    empty: "Dar nėra suderinamų išsaugotų Twin būsenų.",
-    open: "Atverti būseną",
-    selected: "Peržiūrima istorinė būsena",
-    incompatible:
-      "Ši būsena sukurta kita modelio arba schemos versija, todėl ji neperinterpretuojama dabartiniu Twin.",
-    omitted: "Dalies snapshot'ų nepavyko patikrinti ir jie nerodomi:",
-    older: "Yra ir senesnių snapshot'ų už šio riboto sąrašo.",
-    quality: "Duomenų būsena",
-    evidence: "Įrodymų skaičius",
-    comparison: "Skirtumas nuo ankstesnės suderinamos būsenos",
-    comparisonUnavailable: "Nėra ankstesnės suderinamos būsenos saugiam palyginimui.",
+    error: "Nepavyko įkelti Twin istorijos.",
+    errorHelp: "Šiuo metu negalime patikrinti būsenų. Pabandyk dar kartą.",
+    empty: "Dar nėra peržiūrai tinkamų būsenų.",
+    emptyHelp: "Istorija atsiras išsaugojus su dabartiniu Twin suderinamą būseną.",
+    choose: "Pasirink datą",
+    chooseHelp: "Atverk įrašą kairėje arba aukščiau ir apžiūrėk išsaugotus rodiklius.",
+    history: "Išsaugotos būsenos",
+    available: "Galima peržiūrėti",
+    latest: "Naujausia",
+    selected: "Pasirinkta būsena",
+    incompatible: "Ankstesnė versija · peržiūra negalima",
+    omitted: "Nepavyko patikrinti įrašų:",
+    incompatibleCount: "Su dabartiniu Twin nesuderinami įrašai:",
+    older: "Yra ir senesnių įrašų už šio įkelto sąrašo.",
+    evidence: "Įrašų",
+    previous: "Ankstesnė",
+    difference: "Skirtumas",
+    points: "p.",
+    comparison: "Palyginimas su ankstesne suderinama būsena",
+    comparisonUnavailable: "Šiame sąraše nėra ankstesnės suderinamos būsenos palyginimui.",
+    unknown: "— reiškia, kad rodiklis nežinomas arba jo negalima palyginti.",
+    body: "Atverti šios būsenos Twin",
+    regions: "Palyginti raumenų grupes",
+    method: "Kaip skaityti istoriją",
+    source: "Įrašo kilmė ir tikslūs rodikliai",
+    zone: "Laiko juosta",
+    window: "Šaltinių laikotarpis",
+    version: "Skaičiavimo versija",
+    schema: "Duomenų versija",
+    unavailable: "Nenurodyta",
     metrics: {
       sessionsLast7Days: "Treniruotės · 7 d.",
       totalVolumeLast28Days: "Krūvis · 28 d.",
-      readiness: "Readiness",
+      readiness: "Pasirengimas",
       sleepHours: "Miegas · 7 d. vid.",
       weightKg: "Svoris",
       calories: "Kalorijos · registruotos d.",
       proteinG: "Baltymai · registruotos d.",
-      evidenceCount: "Įrodymai",
+      evidenceCount: "Įrodymų įrašai",
     },
-    qualityLevels: { cold_start: "Pradžia", building: "Kaupiami duomenys", informed: "Informuota" },
+    qualityLevels: {
+      cold_start: "Pradiniai duomenys",
+      building: "Duomenys kaupiami",
+      informed: "Duomenimis pagrįsta",
+    },
   },
   en: {
-    title: "Twin Rewind",
-    description: "Inspect real previously stored Digital Twin states.",
-    note: "Rewind does not interpolate states or ask AI to guess them. Only immutable Digital Athlete snapshots are shown. Comparisons are arithmetic differences in rolling windows, not proof of progress or causation.",
-    loading: "Loading stored states…",
-    error: "Twin history could not be loaded. This does not mean no history exists.",
-    retry: "Try again",
-    empty: "There are no compatible stored Twin states yet.",
-    open: "Open state",
-    selected: "Viewing historical state",
-    incompatible:
-      "This state was created by another model or schema version, so the current Twin does not reinterpret it.",
-    omitted: "Some snapshots could not be validated and are not shown:",
-    older: "Older snapshots also exist outside this bounded list.",
-    quality: "Data state",
-    evidence: "Evidence count",
-    comparison: "Difference from previous compatible state",
-    comparisonUnavailable: "There is no previous compatible state for a safe comparison.",
+    eyebrow: "Twin history",
+    title: "Return to your story.",
+    description:
+      "Choose a saved state. See your readings at that moment and what changed from the previous record.",
+    note: "Only saved states are shown, without guessed frames in between. Differences describe rolling windows; they do not prove progress or explain its cause.",
+    loading: "Loading saved states…",
+    error: "Twin history could not be loaded.",
+    errorHelp: "We cannot verify these states right now. Please try again.",
+    empty: "No states are available to review yet.",
+    emptyHelp: "History will appear when a state compatible with the current Twin has been saved.",
+    choose: "Choose a date",
+    chooseHelp: "Open a record on the left or above to explore its saved readings.",
+    history: "Saved states",
+    available: "Available to review",
+    latest: "Latest",
+    selected: "Selected state",
+    incompatible: "Earlier version · preview unavailable",
+    omitted: "Records that could not be verified:",
+    incompatibleCount: "Records incompatible with the current Twin:",
+    older: "Older records exist beyond this loaded list.",
+    evidence: "Records",
+    previous: "Previous",
+    difference: "Difference",
+    points: "pt",
+    comparison: "Compared with the previous compatible state",
+    comparisonUnavailable: "This list contains no earlier compatible state to compare.",
+    unknown: "— means a reading is unknown or cannot be compared.",
+    body: "Open this state's Twin",
+    regions: "Compare muscle groups",
+    method: "How to read this history",
+    source: "Record source and exact readings",
+    zone: "Time zone",
+    window: "Source window",
+    version: "Calculation version",
+    schema: "Data version",
+    unavailable: "Not recorded",
     metrics: {
       sessionsLast7Days: "Sessions · 7d",
       totalVolumeLast28Days: "Volume · 28d",
@@ -74,15 +127,17 @@ const COPY = {
       weightKg: "Weight",
       calories: "Calories · logged days",
       proteinG: "Protein · logged days",
-      evidenceCount: "Evidence",
+      evidenceCount: "Evidence records",
     },
-    qualityLevels: { cold_start: "Cold start", building: "Building", informed: "Informed" },
+    qualityLevels: {
+      cold_start: "Initial data",
+      building: "Building evidence",
+      informed: "Evidence informed",
+    },
   },
 };
-
-type MetricKey = keyof TwinRewindMetrics;
 type Copy = (typeof COPY)[keyof typeof COPY];
-
+type MetricKey = keyof TwinRewindMetrics;
 const UNITS: Partial<Record<MetricKey, string>> = {
   totalVolumeLast28Days: "kg",
   readiness: "/100",
@@ -91,126 +146,189 @@ const UNITS: Partial<Record<MetricKey, string>> = {
   calories: "kcal",
   proteinG: "g",
 };
-
-function regionLabelFor(region: string, t: (key: TKey) => string): string {
+function regionLabelFor(region: string, t: (key: TKey) => string) {
   if (KNOWN_MUSCLE_GROUP_SET.has(region)) return t(`mg.${region}` as TKey);
   return region.charAt(0).toUpperCase() + region.slice(1).replaceAll("_", " ");
 }
-
-function formatTime(value: string, locale: string): string {
+function formatTime(value: string, locale: string, timeZone: string) {
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone,
   }).format(new Date(value));
 }
-
-function metricValue(value: number | null, unit?: string): string {
+function metricValue(
+  value: number | null,
+  key: MetricKey,
+  locale: string,
+  copy: Copy,
+  difference = false,
+  exact = false,
+) {
   if (value === null) return "—";
-  const rendered = new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(value);
-  return unit ? `${rendered} ${unit}` : rendered;
+  const number = new Intl.NumberFormat(locale, {
+    maximumFractionDigits: exact ? 20 : 1,
+    ...(difference ? { signDisplay: "exceptZero" as const } : {}),
+  }).format(value);
+  const unit = difference && key === "readiness" ? copy.points : UNITS[key];
+  return unit ? `${number} ${unit}` : number;
 }
 
-function deltaValue(value: number | null, unit?: string): string {
-  if (value === null) return "—";
-  const prefix = value > 0 ? "+" : "";
-  return `${prefix}${metricValue(value, unit)}`;
-}
-
-function Metrics({ metrics, copy }: { metrics: TwinRewindMetrics; copy: Copy }) {
-  const entries = (Object.keys(copy.metrics) as MetricKey[]).filter(
-    (key) => key !== "evidenceCount",
-  );
-  return (
-    <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-      {entries.map((key) => (
-        <div key={key} className="rounded-xl border border-border bg-surface px-3 py-2">
-          <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            {copy.metrics[key]}
-          </dt>
-          <dd className="mt-1 font-mono text-sm text-foreground">
-            {metricValue(metrics[key], UNITS[key])}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function DeltaGrid({ delta, copy }: { delta: TwinRewindDelta; copy: Copy }) {
-  const entries = (Object.keys(copy.metrics) as MetricKey[]).filter(
-    (key) => key !== "evidenceCount",
-  );
-  return (
-    <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
-      {entries.map((key) => (
-        <div key={key}>
-          <dt className="text-[10px] text-muted-foreground">{copy.metrics[key]}</dt>
-          <dd className="font-mono text-xs text-foreground">
-            {deltaValue(delta[key], UNITS[key])}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function RewindPointButton({
-  point,
+function SavedState({
   selected,
+  older,
   copy,
   locale,
-  onSelect,
+  timeZone,
 }: {
-  point: TwinRewindPoint;
-  selected: boolean;
+  selected: TwinRewindPoint;
+  older: TwinRewindPoint | undefined;
   copy: Copy;
   locale: string;
-  onSelect: () => void;
+  timeZone: string;
 }) {
+  const { lang, t } = useI18n();
+  const [bodyOpen, setBodyOpen] = useState(false);
+  const [regionsOpen, setRegionsOpen] = useState(false);
+  const comparison = compareTwinRewindPoints(older, selected);
+  const label = (region: string) => regionLabelFor(region, t);
+  const metrics = selected.metrics;
+  if (!metrics || !selected.twin) return null;
   return (
-    <button
-      type="button"
-      disabled={!point.compatible}
-      aria-pressed={selected}
-      onClick={onSelect}
-      className="min-h-11 w-full rounded-xl border border-border bg-surface px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-    >
-      <span className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-sm font-medium text-foreground">
-          {formatTime(point.computedAt, locale)}
-        </span>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {point.calculationVersion}
-        </span>
-      </span>
-      {point.compatible && point.metrics && point.dataQualityLevel ? (
-        <span className="mt-1 block text-xs text-muted-foreground">
-          {copy.quality}: {copy.qualityLevels[point.dataQualityLevel]} · {copy.evidence}:{" "}
-          {point.metrics.evidenceCount}
-        </span>
-      ) : (
-        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-          {copy.incompatible}
-        </span>
-      )}
-      {point.compatible && <span className="sr-only">{copy.open}</span>}
-    </button>
+    <article className="fl-rewind-selected">
+      <header className="fl-rewind-selected-heading">
+        <p>
+          <History aria-hidden="true" />
+          {copy.selected}
+        </p>
+        <h3>
+          <time dateTime={selected.computedAt}>
+            {formatTime(selected.computedAt, locale, timeZone)}
+          </time>
+        </h3>
+        {selected.dataQualityLevel ? (
+          <span>{copy.qualityLevels[selected.dataQualityLevel]}</span>
+        ) : null}
+      </header>
+      <div className="fl-rewind-comparison">
+        <p>{comparison && older ? copy.comparison : copy.comparisonUnavailable}</p>
+        {comparison && older ? (
+          <time dateTime={older.computedAt}>{formatTime(older.computedAt, locale, timeZone)}</time>
+        ) : null}
+      </div>
+      <dl className="fl-rewind-metrics">
+        {METRICS.map((key) => (
+          <div key={key} data-metric={key}>
+            <dt>{copy.metrics[key]}</dt>
+            <dd className="fl-rewind-value">{metricValue(metrics[key], key, locale, copy)}</dd>
+            {comparison && older?.metrics ? (
+              <dd className="fl-rewind-delta">
+                <span>
+                  {copy.previous}: {metricValue(older.metrics[key], key, locale, copy)}
+                </span>
+                <span>
+                  {copy.difference}:{" "}
+                  <strong>{metricValue(comparison[key], key, locale, copy, true)}</strong>
+                </span>
+              </dd>
+            ) : null}
+          </div>
+        ))}
+      </dl>
+      <p className="fl-rewind-unknown">{copy.unknown}</p>
+      <details
+        className="fl-rewind-disclosure"
+        onToggle={(event) => setBodyOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>
+            <Layers3 aria-hidden="true" />
+            {copy.body}
+          </span>
+          <ChevronDown aria-hidden="true" />
+        </summary>
+        {bodyOpen ? (
+          <div className="fl-rewind-body">
+            <TwinSnapshotView
+              data={selected.twin}
+              copy={twinCopyFor(lang)}
+              lang={lang}
+              label={label}
+            />
+          </div>
+        ) : null}
+      </details>
+      {comparison && older ? (
+        <>
+          <details
+            className="fl-rewind-disclosure"
+            onToggle={(event) => setRegionsOpen(event.currentTarget.open)}
+          >
+            <summary>
+              {copy.regions}
+              <ChevronDown aria-hidden="true" />
+            </summary>
+            {regionsOpen ? (
+              <TwinChangeMap older={older} newer={selected} lang={lang} regionLabel={label} />
+            ) : null}
+          </details>
+          <TwinEvidenceBridge older={older} newer={selected} lang={lang} />
+        </>
+      ) : null}
+      <details className="fl-rewind-disclosure fl-rewind-source">
+        <summary>
+          {copy.source}
+          <ChevronDown aria-hidden="true" />
+        </summary>
+        <dl>
+          <div>
+            <dt>{copy.zone}</dt>
+            <dd>{timeZone}</dd>
+          </div>
+          <div>
+            <dt>{copy.window}</dt>
+            <dd>
+              {selected.sourceWindowStart
+                ? formatTime(selected.sourceWindowStart, locale, timeZone)
+                : copy.unavailable}{" "}
+              —{" "}
+              {selected.sourceWindowEnd
+                ? formatTime(selected.sourceWindowEnd, locale, timeZone)
+                : copy.unavailable}
+            </dd>
+          </div>
+          <div>
+            <dt>{copy.version}</dt>
+            <dd>{selected.calculationVersion}</dd>
+          </div>
+          <div>
+            <dt>{copy.schema}</dt>
+            <dd>{selected.schemaVersion}</dd>
+          </div>
+          {METRICS.map((key) => (
+            <div key={key}>
+              <dt>{copy.metrics[key]}</dt>
+              <dd>{metricValue(metrics[key], key, locale, copy, false, true)}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
+    </article>
   );
 }
 
 export function TwinRewind() {
   const { user, loading: authLoading } = useAuth();
-  const { lang, t } = useI18n();
+  const { lang } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const contentId = useId();
-  const headingId = useId();
-  const language = baseLang(lang);
-  const copy = COPY[language];
-  const locale = formatLocale(lang);
+  const id = useId();
+  const copy = COPY[baseLang(lang)],
+    locale = formatLocale(lang),
+    timeZone = browserTimeZone();
   const query = useQuery({
     queryKey: ["twin-rewind", user?.id],
     enabled: expanded && Boolean(user) && !authLoading,
@@ -219,135 +337,138 @@ export function TwinRewind() {
     gcTime: 0,
     retry: 1,
   });
-
   if (!user || authLoading) return null;
-
-  const selected = query.data?.points.find((point) => point.id === selectedId) ?? null;
-  const selectedIndex = selected
-    ? (query.data?.points.findIndex((point) => point.id === selected.id) ?? -1)
-    : -1;
+  // A failed refresh must also withdraw the chosen state's metrics and renderers.
+  const data = query.isSuccess ? query.data : undefined;
+  const selected = data?.points.find((point) => point.compatible && point.id === selectedId);
+  const selectedIndex = selected && data ? data.points.indexOf(selected) : -1;
   const older =
     selectedIndex >= 0
-      ? query.data?.points.slice(selectedIndex + 1).find((point) => point.compatible)
-      : null;
-  const comparison = compareTwinRewindPoints(older, selected);
-  const compatibleCount = query.data?.points.filter((point) => point.compatible).length ?? 0;
-  const label = (region: string) => regionLabelFor(region, t);
-
+      ? data?.points.slice(selectedIndex + 1).find((point) => point.compatible)
+      : undefined;
+  const compatibleCount = data?.points.filter((point) => point.compatible).length ?? 0;
   return (
-    <section
-      aria-labelledby={headingId}
-      className="mt-6 rounded-3xl border border-border bg-surface-2 p-4 sm:p-6"
-    >
-      <h2 id={headingId}>
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={contentId}
-          onClick={() => setExpanded((value) => !value)}
-          className="flex min-h-11 w-full items-center gap-3 rounded-xl text-left text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-        >
-          <RotateCcw aria-hidden="true" className="size-5 shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{copy.title}</span>
-            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-              {copy.description}
-            </span>
-          </span>
-          <ChevronDown
-            aria-hidden="true"
-            className={`size-4 shrink-0 ${expanded ? "rotate-180" : ""}`}
+    <section className="fl-rewind" aria-labelledby={`${id}-title`}>
+      <header className="fl-rewind-heading">
+        <p className="fl-ledger-eyebrow">
+          <RotateCcw aria-hidden="true" />
+          {copy.eyebrow}
+        </p>
+        <h2 id={`${id}-title`}>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={`${id}-content`}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {copy.title}
+            <ChevronDown aria-hidden="true" />
+          </button>
+        </h2>
+        <p>{copy.description}</p>
+      </header>
+      <div id={`${id}-content`} className="fl-rewind-content" hidden={!expanded}>
+        {query.isPending ? (
+          <TwinLedgerState state="loading" title={copy.loading} />
+        ) : query.isError ? (
+          <TwinLedgerState
+            state="error"
+            title={copy.error}
+            description={copy.errorHelp}
+            onRetry={() => void query.refetch()}
+            retrying={query.isFetching}
           />
-        </button>
-      </h2>
-
-      <div id={contentId} hidden={!expanded} className="mt-4">
-        <p className="text-xs leading-relaxed text-muted-foreground">{copy.note}</p>
-        {query.isPending && (
-          <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2
-              aria-hidden="true"
-              className="size-4 animate-spin motion-reduce:animate-none"
-            />
-            {copy.loading}
-          </p>
-        )}
-        {query.isError ? (
-          <div role="alert" className="mt-4">
-            <p className="text-sm text-foreground">{copy.error}</p>
-            <button
-              type="button"
-              onClick={() => void query.refetch()}
-              disabled={query.isFetching}
-              className="mt-2 min-h-11 rounded-xl border border-border px-4 text-sm text-foreground disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              {copy.retry}
-            </button>
-          </div>
-        ) : query.data ? (
-          <div className="mt-4">
-            {query.data.omittedCount > 0 && (
-              <p role="status" className="mb-3 text-sm text-foreground">
-                {copy.omitted} {query.data.omittedCount}
-              </p>
-            )}
+        ) : data ? (
+          <>
             {compatibleCount === 0 ? (
-              <p className="text-sm text-muted-foreground">{copy.empty}</p>
+              <TwinLedgerState state="empty" title={copy.empty} description={copy.emptyHelp} />
             ) : null}
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {query.data.points.map((point) => (
-                <RewindPointButton
-                  key={point.id}
-                  point={point}
-                  selected={selectedId === point.id}
-                  copy={copy}
-                  locale={locale}
-                  onSelect={() => setSelectedId(point.id)}
-                />
-              ))}
-            </div>
-            {query.data.hasMore && (
-              <p className="mt-3 text-xs text-muted-foreground">{copy.older}</p>
-            )}
-          </div>
-        ) : null}
-
-        {selected?.compatible && selected.twin && selected.metrics ? (
-          <div className="mt-6 border-t border-border pt-6">
-            <div className="flex flex-wrap items-center gap-2">
-              <History aria-hidden="true" className="size-4 text-primary" />
-              <p className="text-sm font-semibold text-foreground">{copy.selected}</p>
-              <time
-                className="font-mono text-xs text-muted-foreground"
-                dateTime={selected.computedAt}
-              >
-                {formatTime(selected.computedAt, locale)}
-              </time>
-            </div>
-            <Metrics metrics={selected.metrics} copy={copy} />
-            <div className="mt-4 rounded-xl border border-border bg-surface p-3">
-              <p className="text-xs font-medium text-foreground">{copy.comparison}</p>
-              {comparison ? (
-                <DeltaGrid delta={comparison} copy={copy} />
-              ) : (
-                <p className="mt-1 text-xs text-muted-foreground">{copy.comparisonUnavailable}</p>
-              )}
-            </div>
-            {older ? (
-              <TwinChangeMap older={older} newer={selected} lang={lang} regionLabel={label} />
+            {data.points.length > 0 ? (
+              <div className="fl-rewind-workspace">
+                <nav className="fl-rewind-history" aria-label={copy.history}>
+                  <div className="fl-rewind-history-heading">
+                    <h3>{copy.history}</h3>
+                    <p>
+                      {copy.available}: <strong>{compatibleCount}</strong>
+                    </p>
+                  </div>
+                  <ol>
+                    {data.points.map((point, index) => (
+                      <li key={point.id}>
+                        <button
+                          type="button"
+                          disabled={!point.compatible}
+                          aria-pressed={selected?.id === point.id}
+                          onClick={() => setSelectedId(point.id)}
+                        >
+                          <span className="fl-rewind-point-index" aria-hidden="true">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                          <span className="fl-rewind-point-copy">
+                            <time dateTime={point.computedAt}>
+                              {formatTime(point.computedAt, locale, timeZone)}
+                            </time>
+                            {point.compatible && point.metrics ? (
+                              <small>
+                                {copy.evidence}:{" "}
+                                {new Intl.NumberFormat(locale).format(point.metrics.evidenceCount)}
+                                {index === 0 ? ` · ${copy.latest}` : ""}
+                              </small>
+                            ) : (
+                              <small>{copy.incompatible}</small>
+                            )}
+                          </span>
+                          <ArrowUpRight aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="fl-rewind-zone">
+                    {copy.zone}: {timeZone}
+                  </p>
+                </nav>
+                {selected ? (
+                  <SavedState
+                    key={`${user.id}:${selected.id}`}
+                    selected={selected}
+                    older={older}
+                    copy={copy}
+                    locale={locale}
+                    timeZone={timeZone}
+                  />
+                ) : compatibleCount > 0 ? (
+                  <div className="fl-rewind-prompt">
+                    <History aria-hidden="true" />
+                    <h3>{copy.choose}</h3>
+                    <p>{copy.chooseHelp}</p>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
-            {older ? <TwinEvidenceBridge older={older} newer={selected} lang={lang} /> : null}
-            <div className="mt-6">
-              <TwinSnapshotView
-                key={selected.id}
-                data={selected.twin}
-                copy={twinCopyFor(lang)}
-                lang={lang}
-                label={label}
-              />
-            </div>
-          </div>
+            {data.omittedCount > 0 || data.incompatibleCount > 0 || data.hasMore ? (
+              <aside className="fl-rewind-coverage">
+                {data.omittedCount > 0 ? (
+                  <p>
+                    {copy.omitted} {data.omittedCount}
+                  </p>
+                ) : null}
+                {data.incompatibleCount > 0 ? (
+                  <p>
+                    {copy.incompatibleCount} {data.incompatibleCount}
+                  </p>
+                ) : null}
+                {data.hasMore ? <p>{copy.older}</p> : null}
+              </aside>
+            ) : null}
+          </>
         ) : null}
+        <details className="fl-rewind-disclosure fl-rewind-method">
+          <summary>
+            {copy.method}
+            <ChevronDown aria-hidden="true" />
+          </summary>
+          <p>{copy.note}</p>
+        </details>
       </div>
     </section>
   );

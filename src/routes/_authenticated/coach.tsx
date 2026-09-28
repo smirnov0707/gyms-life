@@ -87,7 +87,7 @@ function CoachPage() {
   };
 
   return (
-    <div className="fl-world-page fl-page-enter mx-auto flex min-h-[calc(100dvh-9rem)] max-w-4xl flex-col">
+    <div className="fl-coach-page fl-world-page fl-page-enter mx-auto flex min-h-[calc(100dvh-9rem)] max-w-4xl flex-col">
       <header className="fl-world-header flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
           <p className="fl-world-kicker flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400 light:text-emerald-700">
@@ -104,27 +104,32 @@ function CoachPage() {
         </div>
       </header>
 
-      <div className="mb-4">
-        <SmartBrief compact />
-      </div>
+      <details className="fl-coach-brief fl-luxury-disclosure mb-3 border border-border bg-surface">
+        <summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-semibold text-muted-foreground">
+          {english ? "Today's context" : "Šiandienos kontekstas"}
+        </summary>
+        <div className="border-t border-border p-3">
+          <SmartBrief compact />
+        </div>
+      </details>
       <AiPersonalizationConsentCard />
 
-      <section className="fl-premium-stage relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706]">
+      <section className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
-            background: "radial-gradient(65% 65% at 50% 0%, rgba(16,185,129,.08), transparent 70%)",
+            background: "radial-gradient(65% 65% at 50% 0%, var(--primary-dim), transparent 70%)",
           }}
         />
 
         <div className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
           {messages.length === 0 && !busy ? (
-            <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
-              <span className="grid size-14 place-items-center rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-400">
+            <div className="fl-coach-empty flex min-h-[260px] flex-col items-center justify-center text-center">
+              <span className="grid size-14 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
                 <Sparkles className="size-5" />
               </span>
-              <p className="mt-5 max-w-md text-sm leading-relaxed text-neutral-500">
+              <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
                 {t("coach.sub")}
               </p>
               <div className="mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
@@ -133,7 +138,7 @@ function CoachPage() {
                     key={k}
                     type="button"
                     onClick={() => void run(t(k))}
-                    className="rounded-full border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-xs text-neutral-400 transition-colors hover:border-emerald-400/30 hover:bg-emerald-400/[0.04] hover:text-white"
+                    className="rounded-full border border-border bg-surface-2 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
                   >
                     {t(k)}
                   </button>
@@ -149,16 +154,16 @@ function CoachPage() {
                 className={cn(
                   "whitespace-pre-wrap text-sm leading-7",
                   m.role === "user"
-                    ? "ml-auto max-w-[82%] rounded-2xl bg-emerald-400 px-4 py-3 text-black"
-                    : "max-w-[92%] border-l border-emerald-400/20 pl-4 text-neutral-200",
+                    ? "ml-auto max-w-[82%] rounded-2xl bg-primary px-4 py-3 text-primary-foreground"
+                    : "max-w-[92%] border-l border-primary/30 pl-4 text-foreground",
                 )}
               >
                 {m.text}
               </div>
             ))}
             {busy ? (
-              <div className="flex items-center gap-2 border-l border-emerald-400/20 pl-4 text-sm text-neutral-500">
-                <Loader2 className="size-4 animate-spin text-emerald-400" /> {t("common.loading")}
+              <div className="flex items-center gap-2 border-l border-primary/30 pl-4 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin text-primary" /> {t("common.loading")}
               </div>
             ) : null}
           </div>
@@ -166,9 +171,9 @@ function CoachPage() {
 
         <form
           onSubmit={send}
-          className="relative border-t border-white/[0.06] bg-black/30 p-3 backdrop-blur-xl sm:p-4"
+          className="relative border-t border-border bg-surface-2/60 p-3 backdrop-blur-xl sm:p-4"
         >
-          <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-1.5 focus-within:border-emerald-400/30">
+          <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-border bg-surface-2 p-1.5 focus-within:border-primary/40">
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -262,7 +267,7 @@ function AiPersonalizationConsentCard() {
   };
 
   return (
-    <section className="fl-premium-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
+    <section className="fl-coach-consent fl-premium-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={cn(

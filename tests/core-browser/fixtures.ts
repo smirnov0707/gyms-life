@@ -81,3 +81,31 @@ export const profile = {
   dislikes: "mushrooms",
   meals_per_day: 4,
 };
+
+// Real media slugs, explicitly synthetic catalogue descriptions and account-independent rows.
+export const exercises: import("../../src/integrations/supabase/types").Database["public"]["Tables"]["exercises"]["Row"][] =
+  [
+    ["bench-press", "Bench press", "Spaudimas gulint", "chest", "barbell"],
+    ["squat", "Squat", "Pritūpimas", "legs", "barbell"],
+    ["push-up", "Push-up", "Atsispaudimas", "chest", "bodyweight"],
+    ["pull-up", "Pull-up", "Prisitraukimas", "back", "pullup_bar"],
+    ["plank", "Plank", "Lenta", "core", "bodyweight"],
+    ["triceps-pushdown", "Triceps pushdown", "Rankų tiesimas", "arms", "cable"],
+  ].map(([slug, name_en, name_lt, muscle_group, equipment], index) => ({
+    id: `synthetic-exercise-${index}`,
+    slug: slug!,
+    name_en: name_en!,
+    name_lt: name_lt!,
+    muscle_group: muscle_group!,
+    equipment: equipment!,
+    difficulty: "beginner",
+    location: "gym",
+    created_at: VERSION,
+    video_key: null,
+    instructions_en:
+      "Synthetic catalogue demonstration. Read the movement instructions before starting. Use a controlled range of motion.",
+    instructions_lt:
+      "Sintetinis katalogo pavyzdys. Prieš pradėdamas perskaityk pratimo aprašymą. Judesį atlik kontroliuojamai.",
+    mistakes_en: "Synthetic note: review your setup before each set.",
+    mistakes_lt: "Sintetinis patarimas: prieš kiekvieną seriją patikrink pradinę padėtį.",
+  }));

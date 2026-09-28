@@ -13,7 +13,7 @@ import {
   projectedEstimated1RM,
   type FutureMeHorizon,
 } from "@/lib/future-me-simulation";
-import { baseLang, useI18n } from "@/lib/i18n";
+import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
 import { buildFutureMeGovernance } from "@/lib/future-me-governance";
 
 const HORIZON_LABEL: Record<FutureMeHorizon, string> = {
@@ -24,14 +24,14 @@ const HORIZON_LABEL: Record<FutureMeHorizon, string> = {
 };
 
 const EVIDENCE_TONE: Record<DeterministicLiftForecast["evidenceStrength"], string> = {
-  low: "text-amber-300",
-  moderate: "text-cyan-300",
-  high: "text-emerald-300",
+  low: "text-amber-300 light:text-amber-800",
+  moderate: "text-cyan-300 light:text-cyan-800",
+  high: "text-emerald-300 light:text-emerald-800",
 };
 
-function signed(value: number | null): string {
+function signed(value: number | null, locale: string): string {
   if (value === null) return "—";
-  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+  return `${value > 0 ? "+" : ""}${value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
 function trendIcon(trend: DeterministicLiftForecast["trend"]) {
@@ -43,6 +43,7 @@ function trendIcon(trend: DeterministicLiftForecast["trend"]) {
 export function FutureMeSimulationDeck() {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
+  const locale = formatLocale(lang);
   const query = useStrengthForecast();
   const forecast = query.data ?? null;
   const loading = query.isFetching;
@@ -155,12 +156,14 @@ export function FutureMeSimulationDeck() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(96,54,170,.13),transparent_55%)]"
       />
       <div className="fl-page-content relative p-3.5 sm:p-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <header className="fl-future-heading flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
               GYMS.LIFE
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Future</h1>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+              {english ? "Future Me" : "Mano ateitis"}
+            </h1>
           </div>
           <div
             className="grid grid-cols-4 gap-1.5 sm:flex"
@@ -182,7 +185,7 @@ export function FutureMeSimulationDeck() {
         </header>
 
         {forecast?.status === "ready" && selectedLift && !failed ? (
-          <label className="mt-3 flex items-center justify-between gap-3 border-y border-border/60 py-2 text-[10px] text-muted-foreground">
+          <label className="fl-projection-target mt-3 flex items-center justify-between gap-3 border-y border-border/60 py-2 text-[10px] text-muted-foreground">
             <span className="shrink-0">{copy.select}</span>
             <select
               aria-label={copy.select}
@@ -199,7 +202,7 @@ export function FutureMeSimulationDeck() {
           </label>
         ) : null}
 
-        <div className="mt-3 grid items-center gap-3 lg:grid-cols-[.75fr_1.15fr_1fr] lg:gap-5">
+        <div className="fl-future-scene mt-3 grid items-center gap-3 lg:grid-cols-[.75fr_1.15fr_1fr] lg:gap-5">
           <div className="hidden lg:block">
             {selectedLift && !failed ? (
               <article className="rounded-xl border border-border bg-surface-2/45 p-4">
@@ -207,11 +210,11 @@ export function FutureMeSimulationDeck() {
                   {copy.current}
                 </p>
                 <p className="mt-2 font-mono text-3xl text-foreground">
-                  {selectedLift.currentEstimated1RMKg}
+                  {selectedLift.currentEstimated1RMKg.toLocaleString(locale)}
                   <span className="ml-1 text-xs text-muted-foreground">kg</span>
                 </p>
                 <p className="mt-3 flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <TrendIcon className="size-3.5 text-cyan-300" />
+                  <TrendIcon className="size-3.5 text-cyan-300 light:text-cyan-800" />
                   {copy.trend[selectedLift.trend]}
                 </p>
                 <p className="mt-3 border-t border-border pt-3 text-[10px] leading-relaxed text-muted-foreground">
@@ -231,7 +234,7 @@ export function FutureMeSimulationDeck() {
                   role="status"
                   className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"
                 >
-                  <Loader2 className="size-3.5 animate-spin text-violet-300" />
+                  <Loader2 className="size-3.5 animate-spin text-violet-300 light:text-violet-700" />
                   {copy.refreshing}
                 </p>
               ) : failed ? (
@@ -253,7 +256,7 @@ export function FutureMeSimulationDeck() {
                     <div className="flex justify-between gap-3 lg:hidden">
                       <dt className="text-muted-foreground">{copy.current}</dt>
                       <dd className="shrink-0 font-mono text-foreground">
-                        {selectedLift.currentEstimated1RMKg} kg
+                        {selectedLift.currentEstimated1RMKg.toLocaleString(locale)} kg
                       </dd>
                     </div>
                     {validated && projected !== null ? (
@@ -263,21 +266,21 @@ export function FutureMeSimulationDeck() {
                             {HORIZON_LABEL[horizon]} · {copy.projected}
                           </dt>
                           <dd className="shrink-0 font-mono text-violet-300 light:text-violet-700">
-                            {projected} kg
+                            {projected.toLocaleString(locale)} kg
                           </dd>
                         </div>
                         <div className="flex justify-between gap-3">
                           <dt className="text-muted-foreground">{copy.change}</dt>
                           <dd
-                            className={`font-mono ${change !== null && change < 0 ? "text-rose-300" : "text-emerald-300"}`}
+                            className={`font-mono ${change !== null && change < 0 ? "text-rose-300 light:text-rose-800" : "text-emerald-300 light:text-emerald-800"}`}
                           >
-                            {signed(change)}
+                            {signed(change, locale)}
                           </dd>
                         </div>
                       </>
                     ) : (
                       <div className="rounded-lg border border-amber-300/15 bg-amber-300/5 p-2.5">
-                        <dt className="flex items-center gap-1.5 text-[10px] text-amber-300">
+                        <dt className="flex items-center gap-1.5 text-[10px] text-amber-300 light:text-amber-800">
                           <LockKeyhole className="size-3" />
                           {copy.boundaryTitle}
                         </dt>
@@ -318,7 +321,7 @@ export function FutureMeSimulationDeck() {
               className="mt-2.5 rounded-lg bg-transparent"
             >
               <div className="px-3 py-2.5">
-                <p className="inline-flex rounded-full border border-violet-400/20 bg-violet-400/5 px-2 py-1 text-[9px] uppercase tracking-wider text-violet-300">
+                <p className="inline-flex rounded-full border border-violet-400/20 bg-violet-400/5 px-2 py-1 text-[9px] uppercase tracking-wider text-violet-300 light:text-violet-700">
                   {copy.governance}
                 </p>
                 <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">

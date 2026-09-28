@@ -1,3 +1,4 @@
+export { getLabOverview } from "./memory-fixtures";
 // Synthetic service fixtures; all simulated writes stay in the isolated test state.
 import { state, count, ids } from "./state";
 export async function getActivePlan() {
@@ -213,3 +214,99 @@ export async function syncOfflineWorkoutSet({
 export async function getMorningNightReview() {
   return { state: "not_run" as const };
 }
+
+export {
+  getAthleteModel,
+  getUserMemoryTransparency,
+  getProfileBody,
+  saveProfileBody,
+  getTrainingRhythm,
+  getHealthSource,
+  getOvernightWork,
+} from "./profile-functions";
+
+export { submitCheckin } from "./readiness-functions";
+
+export async function smartExerciseFilter({ data }: { data: { prompt: string } }) {
+  count("smartExerciseFilter");
+  return { group: "all", equipment: "all", level: "all", safety: "all", query: data.prompt };
+}
+
+export {
+  getSupplements,
+  addSupplements,
+  setSupplementActive,
+  removeSupplement,
+  scanMicronutrients,
+  analyzeSupplementCycles,
+  analyzeSupplementPhoto,
+} from "./supplement-functions";
+
+export async function getWorkoutHistory({ data }: { data: { limit: number } }) {
+  count("getWorkoutHistory");
+  state.last["getWorkoutHistory"] = data;
+  while (state.fail === "history-pending") await new Promise((resolve) => setTimeout(resolve, 100));
+  if (state.fail === "history") throw new Error("Synthetic history unavailable");
+  if (new URLSearchParams(location.search).get("scenario") === "empty") return { sessions: [] };
+  const now = new Date().toISOString();
+  return {
+    sessions: [
+      {
+        session: {
+          id: "ledger-session",
+          planId: null,
+          dayIndex: null,
+          title: "Synthetic upper-body session",
+          startedAt: now,
+          finishedAt: now,
+          durationSeconds: null,
+          totalVolume: 960,
+          adaptationModifier: 1,
+          workoutSnapshot: null,
+        },
+        sets: [
+          {
+            exerciseSlug: "press",
+            exerciseName: "Synthetic press",
+            done: true,
+            reps: 8,
+            weightKg: 40,
+            rpe: null,
+          },
+          {
+            exerciseSlug: "press",
+            exerciseName: "Synthetic press",
+            done: true,
+            reps: 8,
+            weightKg: 40,
+            rpe: 7,
+          },
+          {
+            exerciseSlug: "row",
+            exerciseName: "Synthetic row",
+            done: true,
+            reps: null,
+            weightKg: null,
+            rpe: null,
+          },
+          {
+            exerciseSlug: "unfinished",
+            exerciseName: "Unfinished exercise",
+            done: false,
+            reps: 12,
+            weightKg: 20,
+            rpe: 8,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export { getPerformanceOverview, getVolumeTrend, getStrengthTrend } from "./performance-functions";
+
+export { getWeeklyIntelligenceReview } from "./weekly-functions";
+
+export { getTwinTrendHistory, forecastProgress } from "./observed-functions";
+
+export { getTwinRewindHistory, getTwinEvidenceWindow } from "./rewind-fixtures";

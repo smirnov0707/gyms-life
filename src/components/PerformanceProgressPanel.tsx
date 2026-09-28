@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3, Dumbbell, Gauge, TrendingUp } from "lucide-react";
 import {
@@ -5,190 +6,361 @@ import {
   getStrengthTrend,
   getVolumeTrend,
 } from "@/lib/performance.functions";
-import { GlowCard } from "@/components/GlowCard";
-import { baseLang, useI18n, type Lang } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { baseLang, formatLocale, useI18n } from "@/lib/i18n";
+import { TwinLedgerState } from "@/components/twin/TwinLedgerState";
+import "./PerformanceProgressPanel.css";
 
-function Metric({
-  label,
-  value,
-  suffix,
-  icon: Icon,
+const COPY = {
+  en: {
+    eyebrow: "RECORDED PERFORMANCE",
+    title: "Your training, over time",
+    note: "Figures come from completed sessions and sets. Estimated 1RM is calculated from recorded load and repetitions; it is not a weight you actually lifted.",
+    workouts: "Workouts",
+    volume: "Total volume",
+    sets: "Completed sets",
+    rpe: "Average RPE",
+    loading: "Loading training progress…",
+    failed: "Training progress could not be loaded.",
+    empty: "Your progress starts with a completed workout",
+    emptyHint: "Recorded sessions and sets will appear here.",
+    volumeTitle: "Training volume",
+    volumeNote: "Up to 14 most recent completed sessions.",
+    strengthTitle: "Estimated 1RM",
+    strengthNote:
+      "Up to 14 most recent estimates for the selected exercise. Compare the same exercise over time.",
+    volumeLoading: "Loading training volume…",
+    volumeFailed: "Training volume is temporarily unavailable.",
+    volumeEmpty: "No completed sessions in this history",
+    strengthLoading: "Loading strength estimates…",
+    strengthFailed: "Strength estimates are temporarily unavailable.",
+    strengthEmpty: "No strength estimates yet",
+    strengthEmptyHint: "An estimate needs a completed set with recorded load and repetitions.",
+    exercise: "Exercise",
+    details: "View recorded values",
+    date: "Date",
+    entry: "Session / exercise",
+    value: "Value",
+    exercises: "Exercise records",
+    bestWeight: "Best recorded load",
+    sessions: "sessions",
+    reps: "reps",
+    noExercises: "No completed exercise sets yet",
+  },
+  lt: {
+    eyebrow: "UŽREGISTRUOTI REZULTATAI",
+    title: "Tavo treniruočių progresas",
+    note: "Rodikliai apskaičiuoti iš užbaigtų treniruočių ir atliktų setų. Apytikris 1RM skaičiuojamas pagal užregistruotą svorį ir pakartojimus; tai nėra faktiškai pakeltas svoris.",
+    workouts: "Treniruotės",
+    volume: "Bendra apimtis",
+    sets: "Atlikti setai",
+    rpe: "Vidutinis RPE",
+    loading: "Įkeliamas treniruočių progresas…",
+    failed: "Nepavyko įkelti treniruočių progreso.",
+    empty: "Progresas prasideda nuo užbaigtos treniruotės",
+    emptyHint: "Čia atsiras užregistruotos treniruotės ir atlikti setai.",
+    volumeTitle: "Treniruočių apimtis",
+    volumeNote: "Iki 14 naujausių užbaigtų treniruočių.",
+    strengthTitle: "Apytikris 1RM",
+    strengthNote:
+      "Iki 14 naujausių pasirinkto pratimo įverčių. Lygink to paties pratimo rezultatus laikui bėgant.",
+    volumeLoading: "Įkeliama treniruočių apimtis…",
+    volumeFailed: "Treniruočių apimtis laikinai nepasiekiama.",
+    volumeEmpty: "Šioje istorijoje nėra užbaigtų treniruočių",
+    strengthLoading: "Įkeliami jėgos įverčiai…",
+    strengthFailed: "Jėgos įverčiai laikinai nepasiekiami.",
+    strengthEmpty: "Jėgos įverčių dar nėra",
+    strengthEmptyHint: "Įverčiui reikia atlikto seto su užregistruotu svoriu ir pakartojimais.",
+    exercise: "Pratimas",
+    details: "Peržiūrėti užregistruotas reikšmes",
+    date: "Data",
+    entry: "Treniruotė / pratimas",
+    value: "Reikšmė",
+    exercises: "Pratimų rezultatai",
+    bestWeight: "Didžiausias užregistruotas svoris",
+    sessions: "treniruočių",
+    reps: "pakartojimų",
+    noExercises: "Atliktų pratimų setų dar nėra",
+  },
+};
+type Copy = typeof COPY.en;
+type Point = { id: string; date: string; label: string; value: number };
+
+function Trend({
+  points,
+  locale,
+  copy,
+  name,
 }: {
-  label: string;
-  value: string | number;
-  suffix?: string;
-  icon: typeof BarChart3;
+  points: Point[];
+  locale: string;
+  copy: Copy;
+  name: string;
 }) {
+  const visible = [...points].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(-14);
+  const latest = visible.at(-1);
+  const maximum = Math.max(1, ...visible.map((p) => p.value));
+  const date = (value: string) => new Date(value).toLocaleDateString(locale);
   return (
-    <GlowCard className="panel p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          {label}
-        </span>
-        <Icon className="size-4 text-primary" />
+    <>
+      <div className="fl-performance-plot" role="img" aria-label={name}>
+        <div aria-hidden="true" className="fl-performance-bars">
+          {visible.map((p) => (
+            <div key={p.id} className="fl-performance-column">
+              <div
+                className="fl-performance-bar-track"
+                title={`${p.label} · ${date(p.date)} · ${p.value.toLocaleString(locale)} kg`}
+              >
+                <span
+                  data-performance-bar
+                  data-value={p.value}
+                  style={{ height: `${(p.value / maximum) * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="fl-performance-axis" aria-hidden="true">
+          <span>{visible[0] ? date(visible[0].date) : ""}</span>
+          <span>{latest ? date(latest.date) : ""}</span>
+        </div>
       </div>
-      <div className="mt-3 text-3xl font-bold">
-        {value}
-        {suffix && <span className="ml-1 text-sm font-medium text-muted-foreground">{suffix}</span>}
-      </div>
-    </GlowCard>
+      <details className="fl-performance-values">
+        <summary>{copy.details}</summary>
+        <div role="region" aria-label={name + " · " + copy.details} tabIndex={0}>
+          <table>
+            <caption className="sr-only">{name}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{copy.date}</th>
+                <th scope="col">{copy.entry}</th>
+                <th scope="col">{copy.value}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((p) => (
+                <tr key={p.id}>
+                  <td>{date(p.date)}</td>
+                  <td>{p.label}</td>
+                  <td>{p.value.toLocaleString(locale)} kg</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </>
   );
-}
-
-type Copy = { loadFailed: string; tryAgain: string; note: string };
-
-function copyFor(lang: Lang): Copy {
-  if (baseLang(lang) === "en") {
-    return {
-      loadFailed: "Could not load performance data.",
-      tryAgain: "Try again in a moment.",
-      note: "Figures are calculated from finished sessions and completed sets. Estimated 1RM is a derived figure, not a weight actually lifted.",
-    };
-  }
-  return {
-    loadFailed: "Nepavyko įkelti performance duomenų.",
-    tryAgain: "Pabandyk dar kartą po akimirkos.",
-    note: "Rodikliai apskaičiuoti iš užbaigtų treniruočių ir atliktų setų. Estimated 1RM yra išvestinis rodiklis, o ne faktinis pakeltas svoris.",
-  };
 }
 
 export function PerformanceProgressPanel() {
   const { lang } = useI18n();
-  const copy = copyFor(lang);
+  const { user } = useAuth();
+  const copy = COPY[baseLang(lang)],
+    locale = formatLocale(lang);
+  const [selectedExercise, setSelectedExercise] = useState("");
   const overview = useQuery({
-    queryKey: ["performance-overview"],
+    queryKey: ["performance-overview", user?.id],
     queryFn: () => getPerformanceOverview(),
+    enabled: !!user,
     staleTime: 60_000,
   });
   const volume = useQuery({
-    queryKey: ["volume-trend"],
+    queryKey: ["volume-trend", user?.id],
     queryFn: () => getVolumeTrend(),
+    enabled: !!user,
     staleTime: 60_000,
   });
   const strength = useQuery({
-    queryKey: ["strength-trend"],
+    queryKey: ["strength-trend", user?.id],
     queryFn: () => getStrengthTrend(),
+    enabled: !!user,
     staleTime: 60_000,
   });
-
-  if (overview.isLoading)
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <GlowCard key={i} className="panel h-32 animate-pulse" />
-        ))}
-      </div>
-    );
-  if (overview.isError || !overview.data || overview.data.status !== "READY")
-    return (
-      <GlowCard className="panel p-6">
-        <p className="font-semibold">{copy.loadFailed}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{copy.tryAgain}</p>
-      </GlowCard>
-    );
-
-  const m = overview.data.metrics;
-  const maxVolume = Math.max(1, ...(volume.data?.points ?? []).map((p) => p.volume));
-  const strengthPoints = (strength.data?.points ?? []).slice(-14);
-  const maxStrength = Math.max(1, ...strengthPoints.map((p) => p.estimated1RMKg));
-
+  const exercises = Array.from(
+    new Map((strength.data?.points ?? []).map((p) => [p.exerciseSlug, p.exerciseName])),
+  );
+  const chosen = exercises.some(([slug]) => slug === selectedExercise)
+    ? selectedExercise
+    : exercises[0]?.[0];
+  const failed = overview.isError || (!!overview.data && overview.data.status !== "READY");
+  const m = !failed ? overview.data?.metrics : undefined;
+  const metrics = m
+    ? [
+        { label: copy.workouts, value: m.workouts, unit: "", icon: Dumbbell },
+        { label: copy.volume, value: m.totalVolume, unit: "kg", icon: BarChart3 },
+        { label: copy.sets, value: m.totalSets, unit: "", icon: Dumbbell },
+        { label: copy.rpe, value: m.averageRpe, unit: "", icon: Gauge },
+      ]
+    : [];
   return (
-    <section className="grid gap-6">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-primary">Performance</p>
-        <h2 className="mt-1 text-3xl">Real training progress</h2>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{copy.note}</p>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Workouts" value={m.workouts} icon={Dumbbell} />
-        <Metric
-          label="Total Volume"
-          value={m.totalVolume.toLocaleString()}
-          suffix="kg"
-          icon={BarChart3}
+    <section className="fl-performance">
+      <header className="fl-ledger-heading">
+        <span className="fl-ledger-eyebrow">
+          <TrendingUp aria-hidden="true" />
+          {copy.eyebrow}
+        </span>
+        <h2>{copy.title}</h2>
+        <p>{copy.note}</p>
+      </header>
+      {failed || !m ? (
+        <TwinLedgerState
+          state={failed ? "error" : "loading"}
+          title={failed ? copy.failed : copy.loading}
+          onRetry={
+            failed
+              ? () => {
+                  void overview.refetch();
+                }
+              : undefined
+          }
+          retrying={overview.isFetching}
         />
-        <Metric label="Total Sets" value={m.totalSets} icon={Dumbbell} />
-        <Metric label="Average RPE" value={m.averageRpe ?? "—"} icon={Gauge} />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <GlowCard className="panel p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                Volume Trend
-              </p>
-              <h3 className="mt-1 text-2xl">Training volume</h3>
-            </div>
-            <TrendingUp className="size-5 text-primary" />
-          </div>
-          <div className="mt-6 flex h-48 items-end gap-2">
-            {(volume.data?.points ?? []).slice(-14).map((p, i) => (
-              <div key={`${p.date}-${i}`} className="flex h-full flex-1 flex-col justify-end">
-                <div
-                  className="w-full rounded-t bg-primary/70"
-                  style={{ height: `${Math.max(4, (p.volume / maxVolume) * 100)}%` }}
-                  title={`${p.workout}: ${p.volume} kg`}
-                />
-                <span className="mt-2 truncate text-center text-[10px] text-muted-foreground">
-                  {new Date(p.date).toLocaleDateString()}
-                </span>
+      ) : (
+        <>
+          {m.workouts === 0 ? (
+            <TwinLedgerState state="empty" title={copy.empty} description={copy.emptyHint} />
+          ) : null}
+          <dl className="fl-performance-metrics">
+            {metrics.map(({ label, value, unit, icon: Icon }) => (
+              <div key={label}>
+                <dt>
+                  <Icon aria-hidden="true" />
+                  {label}
+                </dt>
+                <dd>
+                  {value === null ? "—" : value.toLocaleString(locale)}
+                  {unit ? <small> {unit}</small> : null}
+                </dd>
               </div>
             ))}
-          </div>
-        </GlowCard>
-        <GlowCard className="panel p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                Strength Trend
-              </p>
-              <h3 className="mt-1 text-2xl">Estimated 1RM</h3>
-            </div>
-            <TrendingUp className="size-5 text-primary" />
-          </div>
-          <div className="mt-6 flex h-48 items-end gap-2">
-            {strengthPoints.map((p, i) => (
-              <div
-                key={`${p.date}-${p.exerciseSlug}-${i}`}
-                className="flex h-full flex-1 flex-col justify-end"
-              >
-                <div
-                  className="w-full rounded-t bg-primary/70"
-                  style={{ height: `${Math.max(4, (p.estimated1RMKg / maxStrength) * 100)}%` }}
-                  title={`${p.exerciseName}: ${p.estimated1RMKg} kg e1RM`}
+          </dl>
+          <div className="fl-performance-trends">
+            <section className="fl-performance-trend" data-trend="volume">
+              <header>
+                <BarChart3 aria-hidden="true" />
+                <h3>{copy.volumeTitle}</h3>
+              </header>
+              <p>{copy.volumeNote}</p>
+              {volume.isError || (!!volume.data && volume.data.status !== "READY") ? (
+                <TwinLedgerState
+                  state="error"
+                  title={copy.volumeFailed}
+                  onRetry={() => {
+                    void volume.refetch();
+                  }}
+                  retrying={volume.isFetching}
                 />
-                <span className="mt-2 truncate text-center text-[10px] text-muted-foreground">
-                  {p.exerciseName}
-                </span>
-              </div>
-            ))}
+              ) : !volume.data ? (
+                <TwinLedgerState state="loading" title={copy.volumeLoading} />
+              ) : !volume.data.points.length ? (
+                <TwinLedgerState state="empty" title={copy.volumeEmpty} />
+              ) : (
+                <Trend
+                  name={copy.volumeTitle}
+                  locale={locale}
+                  copy={copy}
+                  points={volume.data.points.map((p, i) => ({
+                    id: `${p.date}-${i}`,
+                    date: p.date,
+                    label: p.workout ?? "—",
+                    value: p.volume,
+                  }))}
+                />
+              )}
+            </section>
+            <section className="fl-performance-trend" data-trend="strength">
+              <header>
+                <TrendingUp aria-hidden="true" />
+                <h3>{copy.strengthTitle}</h3>
+              </header>
+              <p>{copy.strengthNote}</p>
+              {strength.isError || (!!strength.data && strength.data.status !== "READY") ? (
+                <TwinLedgerState
+                  state="error"
+                  title={copy.strengthFailed}
+                  onRetry={() => {
+                    void strength.refetch();
+                  }}
+                  retrying={strength.isFetching}
+                />
+              ) : !strength.data ? (
+                <TwinLedgerState state="loading" title={copy.strengthLoading} />
+              ) : !strength.data.points.length ? (
+                <TwinLedgerState
+                  state="empty"
+                  title={copy.strengthEmpty}
+                  description={copy.strengthEmptyHint}
+                />
+              ) : (
+                <>
+                  <label className="fl-performance-select">
+                    {copy.exercise}
+                    <select value={chosen} onChange={(e) => setSelectedExercise(e.target.value)}>
+                      {exercises.map(([slug, name]) => (
+                        <option key={slug} value={slug}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Trend
+                    name={copy.strengthTitle}
+                    locale={locale}
+                    copy={copy}
+                    points={strength.data.points
+                      .filter((p) => p.exerciseSlug === chosen)
+                      .map((p, i) => ({
+                        id: `${p.date}-${i}`,
+                        date: p.date,
+                        label: p.exerciseName,
+                        value: p.estimated1RMKg,
+                      }))}
+                  />
+                </>
+              )}
+            </section>
           </div>
-        </GlowCard>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {overview.data.exercises.map((e) => (
-          <GlowCard key={e.exerciseSlug} className="panel p-5">
-            <h3 className="font-semibold">{e.exerciseName}</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {e.sessions} sessions · {e.totalSets} sets · {e.totalReps} reps
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-surface-2 p-3">
-                <div className="text-xs text-muted-foreground">Best weight</div>
-                <div className="mt-1 text-lg font-bold">{e.bestWeightKg ?? "—"} kg</div>
-              </div>
-              <div className="rounded-lg bg-surface-2 p-3">
-                <div className="text-xs text-muted-foreground">Estimated 1RM</div>
-                <div className="mt-1 text-lg font-bold">{e.bestEstimated1RMKg ?? "—"} kg</div>
-              </div>
-            </div>
-            <div className="mt-3 flex justify-between text-xs text-muted-foreground">
-              <span>Volume {e.totalVolume.toLocaleString()} kg</span>
-              <span>RPE {e.averageRpe ?? "—"}</span>
-            </div>
-          </GlowCard>
-        ))}
-      </div>
+          <section className="fl-performance-records">
+            <h3>{copy.exercises}</h3>
+            {!overview.data?.exercises.length ? (
+              <p className="fl-ledger-note">{copy.noExercises}</p>
+            ) : (
+              <ul>
+                {overview.data.exercises.map((e) => (
+                  <li key={e.exerciseSlug}>
+                    <h4>{e.exerciseName}</h4>
+                    <p>
+                      {e.sessions} {copy.sessions} · {e.totalSets} {copy.sets.toLowerCase()} ·{" "}
+                      {e.totalReps} {copy.reps}
+                    </p>
+                    <dl>
+                      <div>
+                        <dt>{copy.bestWeight}</dt>
+                        <dd>
+                          {e.bestWeightKg?.toLocaleString(locale) ?? "—"} <small>kg</small>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{copy.strengthTitle}</dt>
+                        <dd>
+                          {e.bestEstimated1RMKg?.toLocaleString(locale) ?? "—"} <small>kg</small>
+                        </dd>
+                      </div>
+                    </dl>
+                    <footer>
+                      <span>
+                        {copy.volume}: {e.totalVolume.toLocaleString(locale)} kg
+                      </span>
+                      <span>RPE {e.averageRpe?.toLocaleString(locale) ?? "—"}</span>
+                    </footer>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </section>
   );
 }

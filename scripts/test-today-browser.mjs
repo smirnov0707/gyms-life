@@ -39,6 +39,9 @@ const candidatePath =
 // Read before starting Vite or Chromium. A missing candidate must fail instead
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
+const expectedAnalysisSha = createHash("sha256")
+  .update(candidateBytes ?? (await readFile(path.join(root, "public/models/twin-selected-v1.glb"))))
+  .digest("hex");
 if (
   candidateBytes &&
   (candidateBytes.length < 12 ||
@@ -55,9 +58,11 @@ const candidatePlugin = {
       if (
         !candidateBytes ||
         !["GET", "HEAD"].includes(request.method) ||
-        !["/models/twin-body-v2.glb", "/models/twin-anatomy-v1.glb"].includes(
-          new URL(request.url, "http://localhost").pathname,
-        )
+        ![
+          "/models/twin-body-v2.glb",
+          "/models/twin-anatomy-v1.glb",
+          "/models/twin-selected-v1.glb",
+        ].includes(new URL(request.url, "http://localhost").pathname)
       )
         return next();
       response.setHeader("Content-Type", "model/gltf-binary");
@@ -210,10 +215,34 @@ try {
       ...options,
     });
     const page = await context.newPage();
+    // Align synthetic records with their September 8 epoch. The Playwright
+    // clock also replaces timers/rAF, which stalls actionability on GPU pages.
+    // Offset Date alone and let elapsed time and native scheduling keep running.
+    await page.addInitScript((epoch) => {
+      const NativeDate = Date;
+      const offset = epoch - NativeDate.now();
+      const now = () => NativeDate.now() + offset;
+      globalThis.Date = new Proxy(NativeDate, {
+        construct(target, args, newTarget) {
+          return Reflect.construct(target, args.length ? args : [now()], newTarget);
+        },
+        apply() {
+          return new NativeDate(now()).toString();
+        },
+        get(target, key, receiver) {
+          return key === "now" ? now : Reflect.get(target, key, receiver);
+        },
+      });
+    }, Date.parse("2026-09-08T06:05:00.000Z"));
     const errors = [];
+    const fontResponses = [];
+    page.on("response", (response) => {
+      if (response.request().resourceType() === "font")
+        fontResponses.push({ url: response.url(), status: response.status() });
+    });
     page.on("pageerror", (error) => errors.push(String(error)));
     await page.goto(`${origin}/index.html${query}`);
-    return { page, errors };
+    return { page, errors, fontResponses };
   };
 
   const openTodayEvidenceLayer = async (page) => {
@@ -269,6 +298,7 @@ try {
     // frame is valid. Bring it into view, then prove a real input is repainted.
     await canvas.scrollIntoViewIfNeeded();
     await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
+    await expect(canvas).toHaveAttribute("data-twin-asset-sha256", expectedAnalysisSha);
     if (candidate) expect(candidateRequests).toBeGreaterThan(0);
     await expect
       .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
@@ -292,12 +322,14 @@ try {
   // Capture the real route trees inside the real shell before legacy checks,
   // so downloadable design evidence survives a later regression failure.
   const references = [];
+  const referenceLayoutChecks = [];
+  const actionLayoutChecks = [];
   for (const viewport of [
     { name: "reference", width: 1280, height: 853 },
     { name: "desktop", width: 1440, height: 1000 },
     { name: "mobile", width: 390, height: 844 },
   ]) {
-    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal"]) {
+    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal", "coach"]) {
       if (viewport.name === "reference" && screen !== "today") continue;
       const shown = await openPanel(`?shell=1&screen=${screen}&scenario=reference`, {
         viewport: { width: viewport.width, height: viewport.height },
@@ -326,6 +358,24 @@ try {
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
         await expect(detail).toBeVisible();
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
+        const limits = detail.locator(".twin-detail-readout details");
+        await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
+        await limits.locator("summary").focus();
+        await shown.page.keyboard.press("Enter");
+        await expect(limits.getByText("Injury risk", { exact: true })).toBeVisible();
+        await expect(limits.getByText("Not assessed", { exact: true })).toBeVisible();
+        await expect(limits.getByText("Not modelled", { exact: true })).toHaveCount(2);
+        await shown.page.keyboard.press("Enter");
+        await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
+        const trainingHref = await detail
+          .getByRole("link", { name: "Open training", exact: true })
+          .getAttribute("href");
+        expect(trainingHref).not.toBeNull();
+        // The fixture router carries the actual app destination in `route`.
+        expect(new URL(trainingHref, origin).searchParams.get("route")).toBe("/training");
+        record(
+          `Muscle ${viewport.name} keeps training accessible and unsupported outcomes inside evidence limits`,
+        );
       }
       if (viewport.name === "mobile" && ["twin", "muscle"].includes(screen)) {
         const stage = shown.page.locator("[data-twin-stage]");
@@ -360,6 +410,93 @@ try {
         await expect(region).toBeEnabled();
         record(`${screen} mobile controls retain keyboard access, layers and 3D/2D rendering`);
       }
+      if (screen === "futureme") {
+        const summary = shown.page.locator(".fl-strength-summary");
+        await expect(summary.getByText("94.4 kg", { exact: true })).toBeVisible();
+        await shown.page.getByRole("button", { name: "12W", exact: true }).click();
+        await expect(summary.getByText("97.5 kg", { exact: true })).toBeVisible();
+        await shown.page.getByRole("button", { name: "180D", exact: true }).click();
+        await expect(summary.getByText("Long horizon intentionally locked")).toBeVisible();
+        await expect(summary.getByText("97.5 kg", { exact: true })).toHaveCount(0);
+        await shown.page.getByRole("button", { name: "4W", exact: true }).click();
+        await expect(summary.getByText("94.4 kg", { exact: true })).toBeVisible();
+        record(
+          `Future ${viewport.name} changes validated horizons without inventing a long-range result`,
+        );
+      }
+      if (screen === "journal") {
+        const journal = shown.page.locator(".fl-journal-page");
+        await expect(
+          journal,
+          "The Twin mounts one learning ledger, including inside history",
+        ).toHaveCount(1);
+        const filters = journal.getByRole("navigation", { name: "Timeline filters" });
+        await expect(filters).toBeVisible();
+        await filters.getByRole("button", { name: "Patterns", exact: true }).click();
+        await expect(
+          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          journal.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
+        ).toBeVisible();
+        await filters.getByRole("button", { name: "Decisions", exact: true }).click();
+        await expect(
+          journal.getByRole("heading", { name: "Recent decisions", exact: true }),
+        ).toBeVisible();
+        await filters.getByRole("button", { name: "All", exact: true }).click();
+        await expect(
+          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
+        ).toBeVisible();
+        if (viewport.name === "mobile") {
+          const labelLines = await filters.getByRole("button").evaluateAll((buttons) =>
+            buttons.map((button) => {
+              const range = document.createRange();
+              range.selectNodeContents(button);
+              return { label: button.textContent, lines: range.getClientRects().length };
+            }),
+          );
+          for (const label of labelLines)
+            expect(label.lines, `${label.label} remains readable without a split word`).toBe(1);
+        }
+        record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
+      }
+      if (screen === "lab") {
+        const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
+        await expect(domains).toBeVisible();
+        await expect(domains.getByRole("listitem")).toHaveCount(10);
+        await expect(
+          shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
+        ).toBeVisible();
+        const experiments = shown.page.locator(".fl-lab-experiments");
+        await expect(
+          experiments.getByText("No governed personal experiments yet.", { exact: true }),
+        ).toBeVisible();
+        const knowledge = shown.page.locator(".fl-lab-knowledge");
+        await expect(
+          knowledge.getByRole("heading", {
+            name: "What the Twin knows — and does not know",
+            exact: true,
+          }),
+        ).toBeHidden();
+        await knowledge.locator("summary").focus();
+        await shown.page.keyboard.press("Enter");
+        await expect(
+          knowledge.getByRole("heading", {
+            name: "What the Twin knows — and does not know",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await shown.page.keyboard.press("Enter");
+        await expect(
+          knowledge.getByRole("heading", {
+            name: "What the Twin knows — and does not know",
+            exact: true,
+          }),
+        ).toBeHidden();
+        record(
+          `Lab ${viewport.name} shows evidence domains, investigation and experiment state with accessible knowledge details`,
+        );
+      }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
         await illustration.scrollIntoViewIfNeeded();
         await expect
@@ -369,14 +506,86 @@ try {
           .toBe(true);
       }
       await shown.page.evaluate(() => window.scrollTo(0, 0));
+      await shown.page.evaluate(async () => {
+        await document.fonts.load('500 16px "Manrope"', "Ąžuolas Žygis");
+        await document.fonts.load('500 16px "Space Grotesk"', "Ąžuolas Žygis");
+        await document.fonts.ready;
+      });
+      const fontsReady = await shown.page.evaluate(
+        () =>
+          document.fonts.check('500 16px "Manrope"') &&
+          document.fonts.check('500 16px "Space Grotesk"'),
+      );
+      expect(fontsReady, "Both bundled fonts must render, including the Lithuanian sample").toBe(
+        true,
+      );
       await shown.page.waitForTimeout(700);
       const overflow = await shown.page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
       expect(overflow, `${screen} ${viewport.name} overflows`).toBeLessThanOrEqual(1);
       expect(shown.errors, `${screen} ${viewport.name} raised an error`).toEqual([]);
+      if (screen === "muscle") {
+        const action = await shown.page
+          .getByRole("link", { name: "Open training", exact: true })
+          .boundingBox();
+        const limits = await shown.page.locator(".twin-detail-readout summary").boundingBox();
+        const usableBottom =
+          viewport.name === "mobile"
+            ? (await shown.page.locator(".fl-mobile-navigation").boundingBox()).y
+            : viewport.height;
+        const stage = await shown.page.locator(".twin-detail-stage").boundingBox();
+        const readout = await shown.page.locator(".twin-detail-readout").boundingBox();
+        actionLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          action,
+          limits,
+          usableBottom,
+          stage,
+          readout,
+        });
+      }
+      if (screen === "lab" && viewport.name === "desktop") {
+        const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
+        const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
+        actionLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          investigation,
+          experiments,
+          usableBottom: viewport.height,
+        });
+      }
       const filename = `reference-${screen}-${viewport.name}.png`;
       await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
+      if (viewport.name !== "reference") {
+        await shown.page.screenshot({
+          path: path.join(artifacts, `reference-${screen}-${viewport.name}-viewport.png`),
+          fullPage: false,
+        });
+      }
+      if (viewport.name === "mobile" && ["futureme", "lab", "journal"].includes(screen)) {
+        const selector =
+          screen === "futureme"
+            ? ".fl-strength-summary > button"
+            : screen === "lab"
+              ? ".fl-investigation-card h2"
+              : ".fl-journal-filters";
+        const target = await shown.page.locator(selector).boundingBox();
+        const dock = await shown.page.locator(".fl-mobile-navigation").boundingBox();
+        referenceLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          selector,
+          target,
+          dockTop: dock.y,
+        });
+      }
+      if (viewport.name === "desktop" && screen === "twin") {
+        const target = await canvas.boundingBox();
+        referenceLayoutChecks.push({ screen, viewport: viewport.name, target });
+      }
       if (viewport.name === "reference") {
         await shown.page.screenshot({
           path: path.join(artifacts, "reference-today-1280x853.png"),
@@ -391,6 +600,53 @@ try {
         await writeFile(
           path.join(artifacts, "reference-layout.json"),
           JSON.stringify(layout, null, 2),
+        );
+        console.log("TODAY_REFERENCE_LAYOUT " + JSON.stringify(layout));
+        const footer = await shown.page.locator(".fl-dashboard-footer").boundingBox();
+        referenceLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          target: footer,
+          usableBottom: viewport.height,
+        });
+        const columns = await shown.page.evaluate(() =>
+          [
+            ".fl-left-rail",
+            ".fl-daily-column",
+            ".fl-body",
+            ".fl-laboratory",
+            ".fl-predictions",
+          ].map((selector) => {
+            const element = document.querySelector(selector);
+            const rect = element.getBoundingClientRect();
+            return {
+              selector,
+              x: rect.x,
+              right: rect.right,
+              width: rect.width,
+              overflow: element.scrollWidth - element.clientWidth,
+            };
+          }),
+        );
+        for (let i = 1; i < columns.length; i++)
+          expect(columns[i].x).toBeGreaterThanOrEqual(columns[i - 1].right);
+        for (const column of columns)
+          expect(column.overflow, column.selector).toBeLessThanOrEqual(1);
+        const canvasBounds = await canvas.boundingBox();
+        expect(canvasBounds.width).toBeGreaterThanOrEqual(220);
+        expect(canvasBounds.height).toBeGreaterThanOrEqual(380);
+        const insightSummary = shown.page.locator(".twin-cockpit-insights > summary");
+        await insightSummary.click();
+        const insights = shown.page.locator(".twin-cockpit-insights > section");
+        await expect(insights).toBeVisible();
+        const insightBounds = await insights.boundingBox();
+        expect(insightBounds.width).toBeGreaterThan(300);
+        expect(
+          await insights.evaluate((element) => element.scrollWidth - element.clientWidth),
+        ).toBeLessThanOrEqual(1);
+        await insightSummary.click();
+        record(
+          "Today reference columns preserve a full-height Twin and full-width expandable insights",
         );
       }
       await writeFile(
@@ -411,7 +667,63 @@ try {
     path.join(artifacts, "reference-screens.json"),
     JSON.stringify(references, null, 2),
   );
-  record("all six canonical world/detail views render inside the shell at 1440px and 390px");
+  record("all seven canonical world/detail views render inside the shell at 1440px and 390px");
+  // Preserve review images even when a later functional regression fails.
+  const { emitTwinUiReview } = await import("./emit-twin-ui-review.mjs");
+  if (!candidate) await emitTwinUiReview("world");
+  const { reviewVisualSystem } = await import("./test-visual-system.mjs");
+  await reviewVisualSystem({ openPanel, artifacts, record, assertInteractiveTwin });
+  if (!candidate) await emitTwinUiReview("design");
+  console.log("TWIN_ACTION_LAYOUT " + JSON.stringify(actionLayoutChecks));
+  await writeFile(
+    path.join(artifacts, "action-layout.json"),
+    JSON.stringify(actionLayoutChecks, null, 2),
+  );
+  for (const check of actionLayoutChecks) {
+    if (check.screen === "muscle") {
+      expect(
+        check.action.y + check.action.height,
+        `Muscle ${check.viewport} training action is above the fold`,
+      ).toBeLessThanOrEqual(check.usableBottom);
+      expect(
+        check.limits.y + check.limits.height,
+        `Muscle ${check.viewport} evidence access is above the fold`,
+      ).toBeLessThanOrEqual(check.usableBottom);
+      if (check.viewport === "desktop")
+        expect(check.readout.x).toBeGreaterThanOrEqual(check.stage.x + check.stage.width);
+    } else {
+      expect(check.experiments.x).toBeGreaterThanOrEqual(
+        check.investigation.x + check.investigation.width,
+      );
+      expect(check.experiments.y + check.experiments.height).toBeLessThanOrEqual(
+        check.usableBottom,
+      );
+    }
+  }
+  console.log("TWIN_WORLD_LAYOUT " + JSON.stringify(referenceLayoutChecks));
+  await writeFile(
+    path.join(artifacts, "world-layout.json"),
+    JSON.stringify(referenceLayoutChecks, null, 2),
+  );
+  for (const check of referenceLayoutChecks) {
+    if (check.viewport === "reference") {
+      expect(
+        check.target.y + check.target.height,
+        "Resting Today composition should fit the reference viewport",
+      ).toBeLessThanOrEqual(check.usableBottom);
+    } else if (check.viewport === "mobile") {
+      expect(
+        check.target.y + check.target.height,
+        `${check.screen} primary content remains above the mobile dock`,
+      ).toBeLessThanOrEqual(check.dockTop);
+    } else {
+      expect(check.target.y, "Desktop Twin starts near its view controls").toBeLessThan(310);
+      expect(check.target.height).toBeGreaterThanOrEqual(360);
+    }
+  }
+  record(
+    "Reference world layouts keep primary content above the mobile dock and the desktop Twin near its controls",
+  );
 
   for (const scenario of ["empty", "failure"]) {
     const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
@@ -423,6 +735,23 @@ try {
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
     expect(await sources.getByText(label, { exact: true }).count()).toBe(2);
+    const intelligence = checked.page.getByRole("region", { name: "Intelligence brief" });
+    if (scenario === "failure") {
+      await expect(
+        intelligence.getByText("Lab evidence is temporarily unavailable.", { exact: true }),
+      ).toHaveCount(2);
+      await expect(
+        intelligence.getByText("No hypothesis is currently awaiting more evidence.", {
+          exact: true,
+        }),
+      ).toHaveCount(0);
+    } else {
+      await expect(
+        intelligence.getByText("No hypothesis is currently awaiting more evidence.", {
+          exact: true,
+        }),
+      ).toBeVisible();
+    }
     expect(checked.errors).toEqual([]);
     await checked.page.screenshot({
       path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),
@@ -709,6 +1038,12 @@ try {
   await expect(
     lab.page.locator(".fl-lab-roster-tiles").getByText("Unknown", { exact: true }),
   ).toHaveCount(10);
+  await expect(
+    lab.page.getByText("Experiment history is unavailable.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    lab.page.getByText("No governed personal experiments yet.", { exact: true }),
+  ).toHaveCount(0);
   await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
   await lab.page.close();
   record("an unread lab shows unknown modules instead of ready ones");
@@ -780,8 +1115,7 @@ try {
   for (const label of ["Miegas", "Ramybės pulsas", "Aktyvi energija", "Kūno riebalai"]) {
     await expect(ltRail.getByText(label, { exact: true })).toBeVisible();
   }
-  const ltExecution = lt.page.getByText("Šiandienos vykdymas · Atidaryti sesiją", { exact: true });
-  await ltExecution.click();
+  // The plan is directly visible in the reference composition on mobile.
   await expect(lt.page.getByRole("region", { name: "Šiandienos planas" })).toBeVisible();
   // Every sentence on the screen has to be in the athlete's language. The Lab
   // card shipped its paragraph and its button in English only, so a Lithuanian
@@ -928,7 +1262,7 @@ try {
   await expect(baselineSummary).toBeVisible({ timeout: 30000 });
   await baselineSummary.click();
   await expect(
-    baselineMemory.page.getByText("A prior auditable baseline is not available yet", {
+    baselineMemory.page.getByText("There is no earlier saved observation to compare yet", {
       exact: false,
     }),
   ).toBeVisible();
@@ -947,8 +1281,10 @@ try {
   await expect(changedSummary).toBeVisible({ timeout: 30000 });
   await changedSummary.click();
   await expect(changedMemory.page.getByText("Strengthened", { exact: true })).toBeVisible();
-  await expect(changedMemory.page.getByText("+1 evidence", { exact: true })).toBeVisible();
-  await expect(changedMemory.page.getByText(/Comparison anchor: deterministic/)).toBeVisible();
+  await expect(
+    changedMemory.page.getByText("Observation change: +1", { exact: true }),
+  ).toBeVisible();
+  await expect(changedMemory.page.getByText(/Compared with/).last()).toBeVisible();
   await changedMemory.page.screenshot({
     path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
     fullPage: true,
@@ -1498,7 +1834,7 @@ try {
           sha256: createHash("sha256").update(candidateBytes).digest("hex"),
           bytes: candidateBytes.length,
           requests: candidateRequests,
-          servedAs: "/models/twin-anatomy-v1.glb",
+          servedAs: ["/models/twin-selected-v1.glb", "/models/twin-body-v2.glb"],
         },
         null,
         2,

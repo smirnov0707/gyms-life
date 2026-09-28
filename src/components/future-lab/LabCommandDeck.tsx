@@ -93,7 +93,23 @@ export function LabCommandDeck() {
         </span>
       </header>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+      <section
+        className="fl-lab-domains"
+        aria-label={english ? "Evidence domains" : "Duomenų sritys"}
+      >
+        <LabRosterRows
+          data={data}
+          status={query.isError ? "error" : data ? "ready" : "loading"}
+          tiles
+        />
+        <p className="mt-2 text-[9px] text-muted-foreground">
+          {english
+            ? "Roles describe the evidence and rules in GYMS.LIFE."
+            : "Vaidmenys apibūdina GYMS.LIFE duomenų sritis ir taisykles."}
+        </p>
+      </section>
+
+      <div className="fl-lab-workbench mt-3 grid items-start gap-3 lg:grid-cols-[1.15fr_1fr]">
         <FutureLabPanel
           className="fl-investigation-card"
           title={english ? "Current investigation" : "Dabartinis tyrimas"}
@@ -139,6 +155,12 @@ export function LabCommandDeck() {
           )}
         </FutureLabPanel>
 
+        <div className="fl-lab-experiments">
+          <ExperimentLedger english={english} />
+        </div>
+      </div>
+
+      <div className="mt-3 grid items-start gap-3 lg:grid-cols-2">
         <details className="fl-secondary-details self-start">
           <summary>
             {english ? "Prediction calibration" : "Prognozių kalibracija"} ·{" "}
@@ -222,34 +244,18 @@ export function LabCommandDeck() {
             </FutureLabPanel>
           </div>
         </details>
-      </div>
-
-      <div className="mt-3">
-        <EpistemicBoundary
-          lab={data ?? null}
-          forecast={forecastQuery.isError ? null : (forecastQuery.data ?? null)}
-          english={english}
-        />
-      </div>
-
-      <details className="fl-secondary-details mt-3">
-        <summary>{english ? "Evidence domains" : "Duomenų sritys"}</summary>
-        <div className="fl-disclosed-content">
-          <LabRosterRows
-            data={data}
-            status={query.isError ? "error" : data ? "ready" : "loading"}
-            tiles
-          />
-          <p className="mt-2 text-[9px] text-muted-foreground">
-            {english
-              ? "Roles describe the evidence and rules in GYMS.LIFE."
-              : "Vaidmenys apibūdina GYMS.LIFE duomenų sritis ir taisykles."}
-          </p>
-        </div>
-      </details>
-
-      <div className="mt-3">
-        <ExperimentLedger english={english} />
+        <details className="fl-secondary-details fl-lab-knowledge">
+          <summary>
+            {english ? "What the Twin knows — and does not know" : "Ką Twin žino — ir ko nežino"}
+          </summary>
+          <div className="fl-disclosed-content">
+            <EpistemicBoundary
+              lab={data ?? null}
+              forecast={forecastQuery.isError ? null : (forecastQuery.data ?? null)}
+              english={english}
+            />
+          </div>
+        </details>
       </div>
     </section>
   );

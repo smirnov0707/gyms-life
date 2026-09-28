@@ -6,6 +6,8 @@ on:
       - "tests/twin-browser/**"
       - "tests/today-browser/**"
       - "src/components/twin/**"
+      - "src/components/TwinView.tsx"
+      - "public/models/**"
       - "scripts/authoring/**"
       - "scripts/test-twin-*.mjs"
       - "scripts/test-today-browser.mjs"
@@ -32,8 +34,8 @@ jobs:
       - run: node --test scripts/authoring/audit-native-glb.selftest.mjs
       - name: Audit the exact native GLB used by the browser
         run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/native-geometry/intersections.audit.json
-      - name: Audit the exact sculpt candidate used by the browser
-        run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/native-geometry/sculpt-intersections.audit.json
+      - name: Audit the exact selected public model used by the application
+        run: node scripts/authoring/audit-native-glb.mjs public/models/twin-selected-v1.glb test-results/native-geometry/selected-intersections.audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

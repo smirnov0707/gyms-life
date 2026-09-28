@@ -1,14 +1,14 @@
 import { safeAuthNext } from "@/lib/auth-redirect";
 import { submitAuthForm } from "@/lib/auth-form.service";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, MailCheck, CircleAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { errorMessage } from "@/lib/error-message";
-import { Logo, LangSwitch } from "@/components/AppShell";
+import { AuthFrame, PasswordInput } from "@/components/AuthFrame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,6 +91,7 @@ function AuthPage() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [confirmation, setConfirmation] = useState(false);
+  const [formError, setFormError] = useState("");
   const actionLock = useRef(false);
   const navigated = useRef(false);
   const next = safeAuthNext(search.next);
@@ -115,6 +116,7 @@ function AuthPage() {
       setMode(search.mode ?? "in");
       setSent(false);
       setConfirmation(false);
+      setFormError("");
     }
   }, [search.mode]);
 
@@ -123,7 +125,9 @@ function AuthPage() {
     if (actionLock.current) return;
     actionLock.current = true;
     setBusy(true);
+    setSent(false);
     setConfirmation(false);
+    setFormError("");
     try {
       const result = await submitAuthForm(supabase.auth, {
         mode,
@@ -153,9 +157,14 @@ function AuthPage() {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       if (ready) goNext();
-      else toast.error(copy.session);
+      else {
+        setFormError(copy.session);
+        toast.error(copy.session);
+      }
     } catch (error) {
-      toast.error(errorMessage(error, t("common.error")));
+      const message = errorMessage(error, t("common.error"));
+      setFormError(message);
+      toast.error(message);
     } finally {
       actionLock.current = false;
       setBusy(false);
@@ -165,6 +174,7 @@ function AuthPage() {
     if (actionLock.current) return;
     actionLock.current = true;
     setGoogleBusy(true);
+    setFormError("");
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -177,7 +187,9 @@ function AuthPage() {
     } catch (error) {
       actionLock.current = false;
       setGoogleBusy(false);
-      toast.error(errorMessage(error, t("common.error")));
+      const message = errorMessage(error, t("common.error"));
+      setFormError(message);
+      toast.error(message);
     }
   };
 
@@ -185,154 +197,154 @@ function AuthPage() {
     mode === "in" ? t("auth.title") : mode === "up" ? t("l3.auth.title") : t("auth.resetTitle");
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Logo />
-        <LangSwitch />
-      </header>
-      <div className="mx-auto grid max-w-md gap-6 px-4 py-10">
-        <div>
-          <h1 className="text-5xl">{title}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "forgot"
-              ? t("auth.resetHint")
-              : mode === "up"
-                ? t("l3.auth.sub")
-                : t("landing.sub")}
-          </p>
+    <AuthFrame
+      title={title}
+      description={
+        mode === "forgot"
+          ? t("auth.resetHint")
+          : mode === "up"
+            ? t("l3.auth.sub")
+            : baseLang(lang) === "lt"
+              ? "Tavo erdvė laukia. Prisijunk ir tęsk nuo ten, kur sustojai."
+              : "Your space is ready. Sign in and pick up where you left off."
+      }
+    >
+      {confirmation && (
+        <div role="status" className="fl-auth-notice">
+          <MailCheck aria-hidden="true" />
+          <span>{copy.confirmation}</span>
         </div>
-
-        {confirmation && (
-          <p role="status" className="panel p-4 text-sm">
-            {copy.confirmation}
-          </p>
-        )}
-        <form onSubmit={submit} className="panel grid gap-4 p-6">
-          {mode === "up" && (
-            <div className="grid gap-2">
-              <Label htmlFor="name">{t("auth.name")}</Label>
-              <Input
-                disabled={busy || googleBusy}
-                maxLength={120}
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="email">{t("auth.email")}</Label>
+      )}
+      {formError && (
+        <div role="alert" id="auth-error" className="fl-auth-notice fl-auth-error">
+          <CircleAlert aria-hidden="true" />
+          <span>{formError}</span>
+        </div>
+      )}
+      <form
+        onSubmit={submit}
+        className="fl-auth-form"
+        aria-busy={busy || googleBusy}
+        aria-describedby={formError ? "auth-error" : undefined}
+      >
+        {mode === "up" && (
+          <div className="fl-auth-field">
+            <Label htmlFor="name">{t("auth.name")}</Label>
             <Input
               disabled={busy || googleBusy}
-              maxLength={254}
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              maxLength={120}
+              id="name"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               required
             />
           </div>
-          {mode !== "forgot" && (
-            <div className="grid gap-2">
-              <Label htmlFor="password">{t("auth.password")}</Label>
-              <Input
-                disabled={busy || googleBusy}
-                maxLength={1024}
-                id="password"
-                type="password"
-                autoComplete={mode === "in" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={6}
-                required
-              />
-            </div>
-          )}
-          {mode === "up" && (
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              {t("l3.auth.trial")}
-            </p>
-          )}
-          <Button type="submit" disabled={busy || googleBusy} className="font-bold">
-            {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            {mode === "in"
-              ? t("auth.signin")
-              : mode === "up"
-                ? t("auth.signup")
-                : t("auth.resetSend")}
-          </Button>
-
-          {mode === "forgot" ? (
-            <>
-              {sent && <p className="text-sm text-primary">{t("auth.resetSent")}</p>}
-              <button
-                type="button"
-                disabled={busy || googleBusy}
-                onClick={() => {
-                  setMode("in");
-                  setSent(false);
-                  setConfirmation(false);
-                }}
-                className="text-sm text-primary underline-offset-4 hover:underline"
-              >
-                {t("auth.backToSignin")}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 text-xs uppercase text-muted-foreground">
-                <span className="h-px flex-1 bg-border" />
-                {t("auth.or")}
-                <span className="h-px flex-1 bg-border" />
+        )}
+        <div className="fl-auth-field">
+          <Label htmlFor="email">{t("auth.email")}</Label>
+          <Input
+            disabled={busy || googleBusy}
+            maxLength={254}
+            id="email"
+            type="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setSent(false);
+            }}
+            required
+          />
+        </div>
+        {mode !== "forgot" && (
+          <div className="fl-auth-field">
+            <Label htmlFor="password">{t("auth.password")}</Label>
+            <PasswordInput
+              key={mode}
+              disabled={busy || googleBusy}
+              maxLength={1024}
+              id="password"
+              autoComplete={mode === "in" ? "current-password" : "new-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
+              required
+            />
+          </div>
+        )}
+        {mode === "up" && <p className="fl-auth-note">{t("l3.auth.trial")}</p>}
+        <Button type="submit" disabled={busy || googleBusy}>
+          {busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+          {mode === "in"
+            ? t("auth.signin")
+            : mode === "up"
+              ? t("auth.signup")
+              : t("auth.resetSend")}
+        </Button>
+        {mode === "forgot" ? (
+          <>
+            {sent && (
+              <div role="status" className="fl-auth-notice">
+                <MailCheck aria-hidden="true" />
+                <span>{t("auth.resetSent")}</span>
               </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || googleBusy}
-                onClick={google}
-                className="flex items-center justify-center gap-2.5 h-11 font-semibold rounded-xl bg-surface hover:bg-surface-2 border-border"
-              >
-                {googleBusy ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <GoogleIcon className="size-4.5" />
-                )}
-                <span>{t("auth.google")}</span>
-              </Button>
-
+            )}
+            <button
+              type="button"
+              className="fl-auth-link"
+              disabled={busy || googleBusy}
+              onClick={() => {
+                setMode("in");
+                setSent(false);
+                setConfirmation(false);
+                setFormError("");
+              }}
+            >
+              {t("auth.backToSignin")}
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="fl-auth-divider">{t("auth.or")}</div>
+            <Button type="button" variant="outline" disabled={busy || googleBusy} onClick={google}>
+              {googleBusy ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <GoogleIcon className="size-4" />
+              )}
+              <span>{t("auth.google")}</span>
+            </Button>
+            <button
+              type="button"
+              className="fl-auth-link"
+              disabled={busy || googleBusy}
+              onClick={() => {
+                setMode(mode === "in" ? "up" : "in");
+                setConfirmation(false);
+                setFormError("");
+              }}
+            >
+              {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
+            </button>
+            {mode === "in" && (
               <button
                 type="button"
+                className="fl-auth-link"
                 disabled={busy || googleBusy}
                 onClick={() => {
-                  setMode(mode === "in" ? "up" : "in");
-                  setConfirmation(false);
+                  setMode("forgot");
+                  setFormError("");
                 }}
-                className="text-sm text-primary underline-offset-4 hover:underline"
               >
-                {mode === "in" ? t("auth.toSignup") : t("auth.toSignin")}
+                {t("auth.forgot")}
               </button>
-
-              {mode === "in" && (
-                <button
-                  type="button"
-                  disabled={busy || googleBusy}
-                  onClick={() => setMode("forgot")}
-                  className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  {t("auth.forgot")}
-                </button>
-              )}
-            </>
-          )}
-        </form>
-
-        <Link to="/" className="text-center text-sm text-muted-foreground hover:text-foreground">
-          {t("rt.backToHome")}
-        </Link>
-      </div>
-    </div>
+            )}
+          </>
+        )}
+      </form>
+    </AuthFrame>
   );
 }

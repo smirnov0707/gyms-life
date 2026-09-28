@@ -1,6 +1,9 @@
 import { useId, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ChevronDown, Loader2 } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight, ChevronDown, Minus } from "lucide-react";
+import { TwinLedgerState } from "./TwinLedgerState";
+import { browserTimeZone } from "@/lib/local-day";
+import "./TwinTrendLens.css";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
 import { KNOWN_MUSCLE_GROUPS } from "@/lib/muscle-load.schema";
@@ -19,15 +22,26 @@ const KNOWN_MUSCLE_GROUP_SET = new Set<string>(KNOWN_MUSCLE_GROUPS);
 
 const COPY = {
   lt: {
-    title: "Twin Trend Lens",
-    description: "Stebimų Twin reikšmių seka per realiai išsaugotas būsenas.",
+    eyebrow: "Twin dinamika",
+    title: "Tavo rodiklių istorija.",
+    description: "Žvelk į visumą arba vienos raumenų grupės istoriją.",
     note: `Kryptis rodoma tik turint bent ${TWIN_TREND_MIN_POINTS} tinkamas reikšmes per bent ${TWIN_TREND_MIN_SPAN_HOURS / 24} paras. Ji reiškia tik naujausios ir ankstyviausios saugomos reikšmės santykį — ne statistinį reikšmingumą, progresą ar priežastį. Linija tik sujungia išsaugotus taškus; tarpinės būsenos nekuriamos.`,
     loading: "Įkeliama Twin dinamika…",
     error: "Nepavyko įkelti Twin dinamikos. Tai nereiškia, kad duomenų nėra.",
-    retry: "Bandyti dar kartą",
-    empty: "Dar nėra suderinamų Twin snapshot'ų dinamikai.",
-    global: "Bendra metrika",
-    regional: "Kūno regionas",
+    method: "Kaip skaityti šią istoriją",
+    exact: "Tikslios reikšmės",
+    date: "Išsaugota",
+    value: "Reikšmė",
+    zone: "Laiko juosta",
+    scale: "Skalė pritaikyta stebėtoms reikšmėms.",
+    missing: "Įrašai be šio rodiklio reikšmės:",
+    noValues: "Šiam rodikliui dar nėra tinkamų reikšmių.",
+    emptyHelp: "Istorija atsiras, kai bus išsaugotos palyginamos Twin būsenos.",
+    points: "p.",
+    percentagePoints: "proc. p.",
+    empty: "Dar nėra palyginamos istorijos.",
+    global: "Bendras rodiklis",
+    regional: "Raumenų grupė",
     recovery: "Atsistatymo įvertis",
     volume: "Registruotas krūvis",
     observations: "Stebėjimai",
@@ -42,13 +56,13 @@ const COPY = {
     higher: "Naujausia reikšmė aukštesnė už ankstyviausią",
     lower: "Naujausia reikšmė žemesnė už ankstyviausią",
     unchanged: "Naujausia reikšmė sutampa su ankstyviausia",
-    incomplete: "Dalies snapshot'ų nepavyko patikrinti:",
-    incompatible: "Nesuderinamų senesnės modelio/schemos versijos snapshot'ų:",
-    older: "Yra ir senesnių snapshot'ų už šio riboto 60 įrašų lango.",
+    incomplete: "Nepavyko patikrinti įrašų:",
+    incompatible: "Neįtraukti kitaip apskaičiuoti įrašai:",
+    older: "Yra senesnių įrašų. Ši peržiūra apima iki 60 naujausių saugomų būsenų.",
     metrics: {
       sessionsLast7Days: "Treniruotės · 7 d.",
       totalVolumeLast28Days: "Krūvis · 28 d.",
-      readiness: "Readiness",
+      readiness: "Pasiruošimas",
       sleepHours: "Miegas · 7 d. vid.",
       weightKg: "Svoris",
       calories: "Kalorijos · registruotos d.",
@@ -56,15 +70,26 @@ const COPY = {
     },
   },
   en: {
-    title: "Twin Trend Lens",
-    description: "A sequence of observed Twin values across real stored states.",
+    eyebrow: "Twin dynamics",
+    title: "Your rhythm, over time.",
+    description: "Explore the bigger picture or one muscle group’s history.",
     note: `Direction is shown only with at least ${TWIN_TREND_MIN_POINTS} valid values spanning at least ${TWIN_TREND_MIN_SPAN_HOURS / 24} days. It only describes latest versus earliest stored value — not statistical significance, progress or causation. The line only connects stored points; no intermediate states are created.`,
     loading: "Loading Twin dynamics…",
     error: "Twin dynamics could not be loaded. This does not mean no data exists.",
-    retry: "Try again",
-    empty: "There are no compatible Twin snapshots for dynamics yet.",
-    global: "Global metric",
-    regional: "Body region",
+    method: "How to read this history",
+    exact: "Exact values",
+    date: "Saved",
+    value: "Value",
+    zone: "Time zone",
+    scale: "Scale follows the observed values.",
+    missing: "Records without a value for this metric:",
+    noValues: "There are no valid values for this metric yet.",
+    emptyHelp: "History will appear when comparable Twin states have been saved.",
+    points: "pt",
+    percentagePoints: "pp",
+    empty: "No comparable history yet.",
+    global: "Overall metric",
+    regional: "Muscle group",
     recovery: "Recovery estimate",
     volume: "Logged volume",
     observations: "Observations",
@@ -79,9 +104,9 @@ const COPY = {
     higher: "Latest value is higher than the earliest",
     lower: "Latest value is lower than the earliest",
     unchanged: "Latest value matches the earliest",
-    incomplete: "Snapshots that could not be validated:",
-    incompatible: "Older model/schema snapshots not reinterpreted:",
-    older: "Older snapshots exist outside this bounded 60-record window.",
+    incomplete: "Records that could not be checked:",
+    incompatible: "Excluded records calculated differently:",
+    older: "Older records exist. This view covers up to 60 of the latest stored states.",
     metrics: {
       sessionsLast7Days: "Sessions · 7d",
       totalVolumeLast28Days: "Volume · 28d",
@@ -110,9 +135,14 @@ function regionLabelFor(region: string, t: (key: TKey) => string): string {
   return region.charAt(0).toUpperCase() + region.slice(1).replaceAll("_", " ");
 }
 
-function formatValue(value: number | null, locale: string, unit?: string): string {
+function formatValue(
+  value: number | null,
+  locale: string,
+  unit?: string,
+  maximumFractionDigits = 1,
+): string {
   if (value === null) return "—";
-  const rendered = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
+  const rendered = new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
   return unit ? `${rendered} ${unit}` : rendered;
 }
 
@@ -121,60 +151,85 @@ function signed(value: number | null, locale: string, unit?: string): string {
   return `${value > 0 ? "+" : ""}${formatValue(value, locale, unit)}`;
 }
 
-/**
- * The line for one series.
- *
- * Only ever called for an `available` series, and it says so rather than
- * trusting the caller: with fewer than two samples there is no span to place
- * points along, and everything collapses onto the left edge.
- */
-function Sparkline({ series, label }: { series: TwinTrendSeries; label: string }) {
-  if (series.samples.length < 2) return null;
-  const width = 520;
-  const height = 112;
-  const pad = 10;
-  const values = series.samples.map((sample) => sample.value);
-  const min = values.length > 0 ? Math.min(...values) : 0;
-  const max = values.length > 0 ? Math.max(...values) : 0;
-  const start = series.samples[0] ? Date.parse(series.samples[0].computedAt) : 0;
-  const end = series.samples.at(-1) ? Date.parse(series.samples.at(-1)!.computedAt) : start;
-  const timeSpan = Math.max(1, end - start);
-  const valueSpan = Math.max(1e-9, max - min);
-  const points = series.samples.map((sample) => {
-    const x = pad + ((Date.parse(sample.computedAt) - start) / timeSpan) * (width - pad * 2);
-    const y =
-      max === min ? height / 2 : pad + ((max - sample.value) / valueSpan) * (height - pad * 2);
-    return { x, y, sample };
-  });
+function dateLabel(value: string, locale: string, timeZone: string, withTime = false) {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    ...(withTime ? ({ hour: "2-digit", minute: "2-digit", second: "2-digit" } as const) : {}),
+    timeZone,
+  }).format(new Date(value));
+}
 
+function Sparkline({
+  series,
+  label,
+  unit,
+  copy,
+  locale,
+  timeZone,
+}: {
+  series: TwinTrendSeries;
+  label: string;
+  unit: string | undefined;
+  copy: Copy;
+  locale: string;
+  timeZone: string;
+}) {
+  const first = series.samples[0],
+    last = series.samples.at(-1);
+  const min = series.minValue,
+    max = series.maxValue;
+  // The chart and its direction share the engine's four-observation/72-hour gate.
+  if (series.availability !== "available" || !first || !last || min === null || max === null)
+    return null;
+  const start = Date.parse(first.computedAt),
+    duration = Date.parse(last.computedAt) - start;
+  if (duration <= 0) return null;
+  const points = series.samples.map((sample) => ({
+    x: 8 + ((Date.parse(sample.computedAt) - start) / duration) * 504,
+    y: max === min ? 72 : 8 + ((max - sample.value) / (max - min)) * 128,
+    sample,
+  }));
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label={label}
-      className="mt-3 h-28 w-full text-primary"
-      preserveAspectRatio="none"
-    >
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-        points={points.map((point) => `${point.x},${point.y}`).join(" ")}
-      />
-      {points.map((point) => (
-        <circle
-          key={point.sample.snapshotId}
-          cx={point.x}
-          cy={point.y}
-          r="3"
-          fill="currentColor"
+    <figure className="fl-trend-chart">
+      <div className="fl-trend-scale" aria-hidden="true">
+        <span>{formatValue(max, locale, unit)}</span>
+        {max !== min ? <span>{formatValue(min, locale, unit)}</span> : null}
+      </div>
+      <svg
+        viewBox="0 0 520 144"
+        role="img"
+        aria-label={`${label}. ${copy.range}: ${formatValue(min, locale, unit)} – ${formatValue(max, locale, unit)}. ${copy.scale}`}
+        preserveAspectRatio="none"
+      >
+        {[8, 72, 136].map((y) => (
+          <path key={y} d={`M8 ${y}H512`} className="fl-trend-gridline" />
+        ))}
+        <polyline
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
+          points={points.map((p) => `${p.x},${p.y}`).join(" ")}
         />
-      ))}
-    </svg>
+        {points.map((p) => (
+          <circle key={p.sample.snapshotId} cx={p.x} cy={p.y} r="3" fill="currentColor">
+            <title>
+              {dateLabel(p.sample.computedAt, locale, timeZone, true)} ·{" "}
+              {formatValue(p.sample.value, locale, unit)}
+            </title>
+          </circle>
+        ))}
+      </svg>
+      <div className="fl-trend-dates">
+        <time dateTime={first.computedAt}>{dateLabel(first.computedAt, locale, timeZone)}</time>
+        <time dateTime={last.computedAt}>{dateLabel(last.computedAt, locale, timeZone)}</time>
+      </div>
+      <figcaption>{copy.scale}</figcaption>
+    </figure>
   );
 }
 
@@ -182,73 +237,141 @@ function SeriesCard({
   series,
   label,
   unit,
+  deltaUnit = unit,
+  totalCount,
   copy,
   locale,
+  timeZone,
 }: {
   series: TwinTrendSeries;
   label: string;
   unit: string | undefined;
+  deltaUnit?: string | undefined;
+  totalCount: number;
   copy: Copy;
   locale: string;
+  timeZone: string;
 }) {
-  const direction =
+  const direction = series.direction ? copy[series.direction] : null;
+  const DirectionIcon =
     series.direction === "higher"
-      ? copy.higher
+      ? ArrowUpRight
       : series.direction === "lower"
-        ? copy.lower
-        : series.direction === "unchanged"
-          ? copy.unchanged
-          : null;
-  const spanDays = series.spanHours / 24;
+        ? ArrowDownRight
+        : Minus;
+  const latest = series.samples.at(-1);
+  const missing = totalCount - series.pointCount;
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">{label}</h3>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {copy.observations}: {series.pointCount} · {copy.span}: {formatValue(spanDays, locale)}{" "}
-          {copy.days}
+    <div className="fl-trend-series" data-availability={series.availability}>
+      <header>
+        <h3>{label}</h3>
+        <p className="fl-trend-latest">
+          {formatValue(series.latestValue, locale)}
+          {series.latestValue !== null && unit ? <small>{unit}</small> : null}
+        </p>
+        <p className="fl-trend-stamp">
+          {copy.latest}
+          {latest ? (
+            <>
+              {" "}
+              ·{" "}
+              <time dateTime={latest.computedAt}>
+                {dateLabel(latest.computedAt, locale, timeZone, true)}
+              </time>
+            </>
+          ) : null}
+        </p>
+      </header>
+      <div className="fl-trend-meta">
+        <span>
+          {copy.observations} <strong>{formatValue(series.pointCount, locale)}</strong>
+        </span>
+        <span>
+          {copy.span}{" "}
+          <strong>
+            {formatValue(series.spanHours / 24, locale)} {copy.days}
+          </strong>
         </span>
       </div>
-      {/* Only a series the engine will actually speak about gets a line. A
-          single stored state used to slip through `length > 0` and draw a lone
-          dot pinned to the left edge of a 520-unit chart, under a heading that
-          then said there were not enough points to say anything — the picture
-          claiming what the sentence below it withheld. */}
-      {series.availability === "available" ? <Sparkline series={series} label={label} /> : null}
-      {series.availability === "insufficient_points" ? (
-        <p className="mt-3 text-xs text-muted-foreground">{copy.insufficientPoints}</p>
-      ) : series.availability === "insufficient_span" ? (
-        <p className="mt-3 text-xs text-muted-foreground">{copy.insufficientSpan}</p>
-      ) : (
-        <p className="mt-3 text-xs font-medium text-foreground">{direction}</p>
-      )}
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+      <Sparkline
+        series={series}
+        label={label}
+        unit={unit}
+        copy={copy}
+        locale={locale}
+        timeZone={timeZone}
+      />
+      <p className="fl-trend-direction" data-available={series.availability === "available"}>
+        {direction ? (
+          <>
+            <DirectionIcon aria-hidden="true" />
+            {direction}
+          </>
+        ) : series.pointCount === 0 ? (
+          copy.noValues
+        ) : series.availability === "insufficient_points" ? (
+          copy.insufficientPoints
+        ) : (
+          copy.insufficientSpan
+        )}
+      </p>
+      <dl className="fl-trend-summary">
         <div>
-          <dt className="text-muted-foreground">{copy.earliest}</dt>
-          <dd className="mt-1 font-mono text-foreground">
-            {formatValue(series.earliestValue, locale, unit)}
-          </dd>
+          <dt>{copy.earliest}</dt>
+          <dd>{formatValue(series.earliestValue, locale, unit)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">{copy.latest}</dt>
-          <dd className="mt-1 font-mono text-foreground">
-            {formatValue(series.latestValue, locale, unit)}
-          </dd>
+          <dt>{copy.net}</dt>
+          <dd>{signed(series.netChange, locale, deltaUnit)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">{copy.net}</dt>
-          <dd className="mt-1 font-mono text-foreground">
-            {signed(series.netChange, locale, unit)}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">{copy.range}</dt>
-          <dd className="mt-1 font-mono text-foreground">
-            {formatValue(series.minValue, locale, unit)}–
-            {formatValue(series.maxValue, locale, unit)}
+          <dt>{copy.range}</dt>
+          <dd>
+            {series.minValue === null
+              ? "—"
+              : `${formatValue(series.minValue, locale)}–${formatValue(series.maxValue, locale, unit)}`}
           </dd>
         </div>
       </dl>
+      {missing > 0 ? (
+        <p className="fl-trend-missing">
+          {copy.missing} {formatValue(missing, locale)}
+        </p>
+      ) : null}
+      {series.samples.length > 0 ? (
+        <details className="fl-trend-values">
+          <summary>
+            {copy.exact}
+            <ChevronDown aria-hidden="true" />
+          </summary>
+          <p>
+            {copy.zone}: {timeZone}
+          </p>
+          <table>
+            <caption className="sr-only">
+              {label} · {copy.exact}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">{copy.date}</th>
+                <th scope="col">{copy.value}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {series.samples.map((sample) => (
+                <tr key={sample.snapshotId}>
+                  <td>
+                    <time dateTime={sample.computedAt}>
+                      {dateLabel(sample.computedAt, locale, timeZone, true)}
+                    </time>
+                  </td>
+                  <td>{formatValue(sample.value, locale, unit, 20)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      ) : null}
     </div>
   );
 }
@@ -256,17 +379,20 @@ function SeriesCard({
 export function TwinTrendLens({
   initialRegion = null,
   initiallyExpanded = false,
-}: { initialRegion?: string | null; initiallyExpanded?: boolean } = {}) {
+}: {
+  initialRegion?: string | null;
+  initiallyExpanded?: boolean;
+} = {}) {
   const { user, loading: authLoading } = useAuth();
   const { lang, t } = useI18n();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const [metric, setMetric] = useState<TwinTrendMetricKey>("readiness");
   const [regionMetric, setRegionMetric] = useState<"recoveryPct" | "volumeKg">("recoveryPct");
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(initialRegion);
-  const contentId = useId();
-  const headingId = useId();
-  const copy = COPY[baseLang(lang)];
-  const locale = formatLocale(lang);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const id = useId();
+  const copy = COPY[baseLang(lang)],
+    locale = formatLocale(lang),
+    timeZone = browserTimeZone();
   const query = useQuery({
     queryKey: ["twin-trend", user?.id],
     enabled: expanded && Boolean(user) && !authLoading,
@@ -275,182 +401,176 @@ export function TwinTrendLens({
     gcTime: 0,
     retry: 1,
   });
+  // Failed refreshes withdraw cached readings and their coverage together.
+  const data = query.isSuccess ? query.data : undefined;
   const regions = useMemo(
     () =>
-      query.data
+      data
         ? [
             ...new Set(
-              query.data.points.flatMap((point) => point.regions.map((region) => region.region)),
+              data.points.flatMap((point) => point.regions.map((region) => region.region)),
             ),
           ].sort()
         : [],
-    [query.data],
+    [data],
   );
-  // A requested region with no observations must stay that region; choosing
-  // the first available one would show another muscle's history in its detail.
-  const activeRegion = selectedRegion ?? regions[0] ?? null;
-
+  // A requested muscle must never silently borrow another muscle's history.
+  const activeRegion = initialRegion ?? selectedRegion ?? regions[0] ?? null;
   if (!user || authLoading) return null;
-
-  const metricSeries = query.data ? buildTwinMetricTrend(query.data, metric) : null;
+  const metricSeries = data ? buildTwinMetricTrend(data, metric) : null;
   const regionSeries =
-    query.data && activeRegion
-      ? buildTwinRegionTrend(query.data, activeRegion, regionMetric)
-      : null;
-  const regionUnit = regionMetric === "recoveryPct" ? "%" : "kg";
-
+    data && activeRegion ? buildTwinRegionTrend(data, activeRegion, regionMetric) : null;
   return (
-    <section
-      aria-labelledby={headingId}
-      className="mt-6 rounded-3xl border border-border bg-surface-2 p-4 sm:p-6"
-    >
-      <h2 id={headingId}>
-        <button
-          type="button"
-          aria-expanded={expanded}
-          aria-controls={contentId}
-          onClick={() => setExpanded((value) => !value)}
-          className="flex min-h-11 w-full items-center gap-3 rounded-xl text-left text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-        >
-          <Activity aria-hidden="true" className="size-5 shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block font-semibold">{copy.title}</span>
-            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-              {copy.description}
-            </span>
-          </span>
-          <ChevronDown
-            aria-hidden="true"
-            className={`size-4 shrink-0 ${expanded ? "rotate-180" : ""}`}
-          />
-        </button>
-      </h2>
-
-      <div id={contentId} hidden={!expanded} className="mt-4">
-        <p className="text-xs leading-relaxed text-muted-foreground">{copy.note}</p>
+    <section className="fl-trend-lens" aria-labelledby={`${id}-title`}>
+      <header className="fl-trend-heading">
+        <span className="fl-ledger-eyebrow">
+          <Activity aria-hidden="true" />
+          {copy.eyebrow}
+        </span>
+        <h2>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={`${id}-content`}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            <span id={`${id}-title`}>{copy.title}</span>
+            <ChevronDown aria-hidden="true" />
+          </button>
+        </h2>
+        <p>{copy.description}</p>
+      </header>
+      <div id={`${id}-content`} hidden={!expanded} className="fl-trend-content">
         {query.isPending ? (
-          <p role="status" className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2
-              aria-hidden="true"
-              className="size-4 animate-spin motion-reduce:animate-none"
-            />
-            {copy.loading}
-          </p>
+          <TwinLedgerState state="loading" title={copy.loading} />
         ) : query.isError ? (
-          <div role="alert" className="mt-4">
-            <p className="text-sm text-foreground">{copy.error}</p>
-            <button
-              type="button"
-              onClick={() => void query.refetch()}
-              disabled={query.isFetching}
-              className="mt-2 min-h-11 rounded-xl border border-border px-4 text-sm text-foreground disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            >
-              {copy.retry}
-            </button>
-          </div>
-        ) : query.data ? (
-          <div className="mt-4 space-y-5">
-            {query.data.points.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{copy.empty}</p>
+          <TwinLedgerState
+            state="error"
+            title={copy.error}
+            onRetry={() => void query.refetch()}
+            retrying={query.isFetching}
+          />
+        ) : data ? (
+          <>
+            {data.points.length === 0 ? (
+              <TwinLedgerState state="empty" title={copy.empty} description={copy.emptyHelp} />
             ) : (
-              <>
-                {!initialRegion ? (
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">{copy.global}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {TWIN_TREND_METRIC_KEYS.map((key) => (
-                        <button
-                          key={key}
-                          type="button"
-                          aria-pressed={metric === key}
-                          onClick={() => setMetric(key)}
-                          className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                        >
-                          {copy.metrics[key]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+              <div className="fl-trend-panels">
                 {!initialRegion && metricSeries ? (
-                  <SeriesCard
-                    series={metricSeries}
-                    label={copy.metrics[metric]}
-                    unit={UNITS[metric]}
-                    copy={copy}
-                    locale={locale}
-                  />
-                ) : null}
-
-                {activeRegion ? (
-                  <div className="border-t border-border pt-5">
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">
-                      {copy.regional}
-                    </p>
-                    {!initialRegion ? (
-                      <div className="flex flex-wrap gap-2">
-                        {regions.map((region) => (
-                          <button
-                            key={region}
-                            type="button"
-                            aria-pressed={activeRegion === region}
-                            onClick={() => setSelectedRegion(region)}
-                            className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                          >
-                            {regionLabelFor(region, t)}
-                          </button>
+                  <article className="fl-trend-panel" data-scope="overall">
+                    <div className="fl-trend-controls">
+                      <label htmlFor={`${id}-metric`}>{copy.global}</label>
+                      <select
+                        id={`${id}-metric`}
+                        value={metric}
+                        onChange={(event) => {
+                          const key = TWIN_TREND_METRIC_KEYS.find(
+                            (key) => key === event.target.value,
+                          );
+                          if (key) setMetric(key);
+                        }}
+                      >
+                        {TWIN_TREND_METRIC_KEYS.map((key) => (
+                          <option key={key} value={key}>
+                            {copy.metrics[key]}
+                          </option>
                         ))}
-                      </div>
-                    ) : null}
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        aria-pressed={regionMetric === "recoveryPct"}
-                        onClick={() => setRegionMetric("recoveryPct")}
-                        className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                      >
-                        {copy.recovery}
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={regionMetric === "volumeKg"}
-                        onClick={() => setRegionMetric("volumeKg")}
-                        className="min-h-11 rounded-xl border border-border px-3 text-xs text-foreground aria-pressed:bg-foreground/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                      >
-                        {copy.volume}
-                      </button>
+                      </select>
                     </div>
-                    {regionSeries ? (
-                      <div className="mt-3">
-                        <SeriesCard
-                          series={regionSeries}
-                          label={`${regionLabelFor(activeRegion, t)} · ${regionMetric === "recoveryPct" ? copy.recovery : copy.volume}`}
-                          unit={regionUnit}
-                          copy={copy}
-                          locale={locale}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
+                    <SeriesCard
+                      series={metricSeries}
+                      label={copy.metrics[metric]}
+                      unit={UNITS[metric]}
+                      deltaUnit={metric === "readiness" ? copy.points : UNITS[metric]}
+                      totalCount={data.points.length}
+                      copy={copy}
+                      locale={locale}
+                      timeZone={timeZone}
+                    />
+                  </article>
                 ) : null}
-              </>
+                {activeRegion && regionSeries ? (
+                  <article className="fl-trend-panel" data-scope="region">
+                    <div className="fl-trend-controls">
+                      {initialRegion ? (
+                        <p className="fl-trend-region-label">
+                          {copy.regional} · {regionLabelFor(activeRegion, t)}
+                        </p>
+                      ) : (
+                        <>
+                          <label htmlFor={`${id}-region`}>{copy.regional}</label>
+                          <select
+                            id={`${id}-region`}
+                            value={activeRegion}
+                            onChange={(event) => setSelectedRegion(event.target.value)}
+                          >
+                            {regions.map((region) => (
+                              <option key={region} value={region}>
+                                {regionLabelFor(region, t)}
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      )}
+                      <div
+                        className="fl-trend-toggle"
+                        role="group"
+                        aria-label={regionLabelFor(activeRegion, t)}
+                      >
+                        <button
+                          type="button"
+                          aria-pressed={regionMetric === "recoveryPct"}
+                          onClick={() => setRegionMetric("recoveryPct")}
+                        >
+                          {copy.recovery}
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={regionMetric === "volumeKg"}
+                          onClick={() => setRegionMetric("volumeKg")}
+                        >
+                          {copy.volume}
+                        </button>
+                      </div>
+                    </div>
+                    <SeriesCard
+                      series={regionSeries}
+                      label={`${regionLabelFor(activeRegion, t)} · ${regionMetric === "recoveryPct" ? copy.recovery : copy.volume}`}
+                      unit={regionMetric === "recoveryPct" ? "%" : "kg"}
+                      deltaUnit={regionMetric === "recoveryPct" ? copy.percentagePoints : "kg"}
+                      totalCount={data.points.length}
+                      copy={copy}
+                      locale={locale}
+                      timeZone={timeZone}
+                    />
+                  </article>
+                ) : null}
+              </div>
             )}
-
-            {query.data.omittedCount > 0 ? (
-              <p role="status" className="text-xs text-muted-foreground">
-                {copy.incomplete} {query.data.omittedCount}
-              </p>
+            {data.omittedCount > 0 || data.incompatibleCount > 0 || data.hasMore ? (
+              <aside className="fl-trend-coverage">
+                {data.omittedCount > 0 ? (
+                  <p>
+                    {copy.incomplete} {formatValue(data.omittedCount, locale)}
+                  </p>
+                ) : null}
+                {data.incompatibleCount > 0 ? (
+                  <p>
+                    {copy.incompatible} {formatValue(data.incompatibleCount, locale)}
+                  </p>
+                ) : null}
+                {data.hasMore ? <p>{copy.older}</p> : null}
+              </aside>
             ) : null}
-            {query.data.incompatibleCount > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {copy.incompatible} {query.data.incompatibleCount}
-              </p>
-            ) : null}
-            {query.data.hasMore ? (
-              <p className="text-xs text-muted-foreground">{copy.older}</p>
-            ) : null}
-          </div>
+          </>
         ) : null}
+        <details className="fl-trend-method">
+          <summary>
+            {copy.method}
+            <ChevronDown aria-hidden="true" />
+          </summary>
+          <p>{copy.note}</p>
+        </details>
       </div>
     </section>
   );

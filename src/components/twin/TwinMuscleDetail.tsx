@@ -22,7 +22,7 @@ const COPY = {
     status: "Status",
     history: "History",
     impact: "Impact",
-    details: "View evidence",
+    details: "Evidence & limits",
     lastSession: "Latest completed session",
     absent: "No logged sets in this session are attributed to this region.",
     sets: "Completed sets",
@@ -34,7 +34,7 @@ const COPY = {
     status: "Būsena",
     history: "Istorija",
     impact: "Poveikis",
-    details: "Peržiūrėti duomenis",
+    details: "Duomenys ir ribos",
     lastSession: "Paskutinė užbaigta treniruotė",
     absent: "Šioje treniruotėje šiam regionui nėra priskirtų registruotų setų.",
     sets: "Užbaigti setai",
@@ -132,7 +132,9 @@ export function TwinMuscleDetail({
             <Loader2 className="animate-spin" size={16} /> {twin.loading}
           </p>
         ) : (
-          <>
+          <div
+            className={`twin-detail-status ${isAnatomicalRegion(regionId) ? "has-anatomy" : ""}`}
+          >
             {isAnatomicalRegion(regionId) ? (
               <div className="twin-detail-stage">
                 <TwinStage
@@ -219,24 +221,7 @@ export function TwinMuscleDetail({
                         : "Not a priority region"}
                   </dd>
                 </div>
-                <div>
-                  <dt>{language === "lt" ? "Augimo signalas" : "Growth signal"}</dt>
-                  <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
-                </div>
-                <div>
-                  <dt>{language === "lt" ? "Traumos rizika" : "Injury risk"}</dt>
-                  <dd>{language === "lt" ? "Nevertinta" : "Not assessed"}</dd>
-                </div>
-                <div>
-                  <dt>{language === "lt" ? "Būsimas jėgos pokytis" : "Future strength impact"}</dt>
-                  <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
-                </div>
               </dl>
-              <p className="twin-detail-note">
-                {language === "lt"
-                  ? "Registruotas krūvis nėra išmatuotas raumens augimas ar klinikinis traumos rizikos vertinimas."
-                  : "Logged load is not measured muscle growth or a clinical injury-risk assessment."}
-              </p>
               <Link
                 to="/training"
                 className="fl-card-action inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm"
@@ -245,13 +230,34 @@ export function TwinMuscleDetail({
               </Link>
               <details>
                 <summary>{copy.details}</summary>
+                <dl>
+                  <div>
+                    <dt>{language === "lt" ? "Augimo signalas" : "Growth signal"}</dt>
+                    <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
+                  </div>
+                  <div>
+                    <dt>{language === "lt" ? "Traumos rizika" : "Injury risk"}</dt>
+                    <dd>{language === "lt" ? "Nevertinta" : "Not assessed"}</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      {language === "lt" ? "Būsimas jėgos pokytis" : "Future strength impact"}
+                    </dt>
+                    <dd>{language === "lt" ? "Nemodeliuojama" : "Not modelled"}</dd>
+                  </div>
+                </dl>
+                <p>
+                  {language === "lt"
+                    ? "Registruotas krūvis nėra išmatuotas raumens augimas ar klinikinis traumos rizikos vertinimas."
+                    : "Logged load is not measured muscle growth or a clinical injury-risk assessment."}
+                </p>
                 <p>
                   {twin.estimateNote} {twin.sourceNote}
                 </p>
                 <p>{twin.evidenceWindow(twinSnapshot.evidenceWindowDays)}</p>
               </details>
             </div>
-          </>
+          </div>
         )
       ) : tab === "history" ? (
         <TwinTrendLens key={regionId} initialRegion={regionId} initiallyExpanded />

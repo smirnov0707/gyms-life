@@ -13,10 +13,9 @@ import {
  * Loads the anatomical human and presents it with the same shape the scene
  * already consumes, so the renderer does not learn a second way to hold a body.
  *
- * The figure is a cadaveric anatomical atlas (see
- * public/models/twin-anatomy.manifest.json). It carries no skin texture: this
- * is a real human form, not a photograph of one, and nothing here pretends
- * otherwise.
+ * Analysis uses the explicitly selected MakeHuman presentation surface; Body
+ * retains the separate continuous-skin shell. Both are generic models. Their
+ * exact registered bytes determine provenance and review status.
  */
 
 /** Region names ride on material names, since glTF primitives have none. */
@@ -72,19 +71,12 @@ export type TwinBodyModel = {
 export type TwinHumanVariant = "male" | "female";
 export type TwinVisualAppearance = "analysis" | "realistic";
 
-/**
- * The anatomical figure, which is one body rather than two.
- *
- * The old asset shipped a male and a female base mesh, and the profile chose
- * between them. This atlas is a single cadaveric body — there is no second
- * one to offer — so the variant is accepted and ignored rather than the call
- * sites all being changed to stop passing it.
- */
+/** Generic presentation surfaces: the variant does not imply a personal body scan. */
 export function twinHumanUrl(
   _variant: TwinHumanVariant,
   appearance: TwinVisualAppearance = "analysis",
 ): string {
-  return appearance === "realistic" ? "/models/twin-body-v2.glb" : "/models/twin-anatomy-v1.glb";
+  return appearance === "realistic" ? "/models/twin-body-v2.glb" : "/models/twin-selected-v1.glb";
 }
 
 /**

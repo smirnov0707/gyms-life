@@ -13,10 +13,10 @@ export function NutritionStudioNav() {
   const english = baseLang(lang) === "en";
   const location = useLocation();
   return (
-    <section className="rounded-[2rem] border border-border bg-surface/85 p-3 sm:p-4">
-      <div className="flex items-center justify-between gap-3 px-2 pb-3">
+    <section className="fl-nutrition-nav">
+      <div className="fl-nutrition-nav-label">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-emerald-400">
+          <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
             NUTRITION INTELLIGENCE
           </p>
           <p className="mt-1 text-xs text-muted-foreground">

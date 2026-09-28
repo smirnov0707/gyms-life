@@ -1,0 +1,61 @@
+name: Twin shader visual comparison
+on:
+  pull_request:
+    paths:
+      - "src/components/twin/twin-anatomy.material.ts"
+      - ".github/workflows/twin-shader-review.yml"
+permissions:
+  contents: read
+concurrency:
+  group: twin-shader-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_COMMIT: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Render identical geometry, cameras and lighting before and after
+        shell: bash
+        run: |
+          set -euo pipefail
+          material=src/components/twin/twin-anatomy.material.ts
+          cp "$material" "$RUNNER_TEMP/twin-material-proposed.ts"
+          git show "$BASE_COMMIT:$material" > "$material"
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/shader-review/before
+          cp "$RUNNER_TEMP/twin-material-proposed.ts" "$material"
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/shader-review/after
+      - name: Emit lossless synthetic review previews for connector inspection
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          for (const version of ['before', 'after']) {
+            const dir = `test-results/shader-review/${version}`;
+            const evidence = JSON.parse(readFileSync(`${dir}/render-evidence.json`, 'utf8'));
+            console.log('TWIN_REVIEW_EVIDENCE ' + JSON.stringify({ version, ...evidence }));
+            const bytes = readFileSync(`${dir}/torso-regions.png`);
+            if (bytes.length > 1024 * 1024) throw new Error('Preview exceeds bounded log size');
+            console.log('TWIN_REVIEW_BEGIN ' + JSON.stringify({version, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex')}));
+            const encoded = bytes.toString('base64');
+            for (let i = 0; i < encoded.length; i += 4096) console.log('TWIN_REVIEW_CHUNK ' + encoded.slice(i, i + 4096));
+            console.log('TWIN_REVIEW_END ' + version);
+          }
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-shader-before-after
+          path: test-results/shader-review
+          retention-days: 14

@@ -39,9 +39,11 @@ const candidatePlugin = {
       if (
         !candidateBytes ||
         !["GET", "HEAD"].includes(request.method) ||
-        !["/models/twin-body-v2.glb", "/models/twin-anatomy-v1.glb"].includes(
-          new URL(request.url, "http://localhost").pathname,
-        )
+        ![
+          "/models/twin-body-v2.glb",
+          "/models/twin-anatomy-v1.glb",
+          "/models/twin-selected-v1.glb",
+        ].includes(new URL(request.url, "http://localhost").pathname)
       )
         return next();
       response.setHeader("Content-Type", "model/gltf-binary");
@@ -139,43 +141,48 @@ try {
   await loaded(page);
   await preset(page, "Front");
   await stopMotion(page);
-  const expectedSource = ["muscular", "sculpt"].includes(candidateMode)
-    ? "makehuman"
-    : "bodyparts3d";
-  const expectedCredit = ["muscular", "sculpt"].includes(candidateMode)
-    ? "MakeHuman graphical assets (CC0)"
-    : "BodyParts3D";
-  const expectedBodyBytes =
-    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-body-v2.glb")));
-  const expectedBodySha = createHash("sha256").update(expectedBodyBytes).digest("hex");
-  await expect(page.locator("canvas")).toHaveAttribute("data-twin-asset-sha256", expectedBodySha);
+  const expectedSource =
+    !candidate || ["muscular", "sculpt"].includes(candidateMode) ? "makehuman" : "bodyparts3d";
+  const expectedCredit =
+    !candidate || ["muscular", "sculpt"].includes(candidateMode)
+      ? "MakeHuman graphical assets (CC0)"
+      : "BodyParts3D";
+  const expectedAnalysisBytes =
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-selected-v1.glb")));
+  const expectedAnalysisSha = createHash("sha256").update(expectedAnalysisBytes).digest("hex");
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-twin-asset-sha256",
+    expectedAnalysisSha,
+  );
   await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
     "data-twin-source",
     expectedSource,
   );
   await expect(page.locator("[data-twin-credit]")).toContainText(expectedCredit);
-  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
   record("visible model source and review status match the exact downloaded GLB");
 
   const stage = page.locator("[data-twin-stage]").first();
-  await expect(stage).toHaveAttribute("data-twin-appearance", "realistic");
-  await page.getByRole("button", { name: "Muscles", exact: true }).click();
   await expect(stage).toHaveAttribute("data-twin-appearance", "analysis");
-  await expect(stage).toHaveAttribute("data-twin-stage", "3d");
-  if (!candidate) {
-    const expectedAnalysisBytes = await readFile(
-      path.join(root, "public/models/twin-anatomy-v1.glb"),
-    );
-    const expectedAnalysisSha = createHash("sha256").update(expectedAnalysisBytes).digest("hex");
-    await expect(page.locator("canvas")).toHaveAttribute(
-      "data-twin-asset-sha256",
-      expectedAnalysisSha,
-    );
-  }
   await page.getByRole("button", { name: "Body", exact: true }).click();
   await expect(stage).toHaveAttribute("data-twin-appearance", "realistic");
   await expect(stage).toHaveAttribute("data-twin-stage", "3d");
-  record("Body and Muscles appearances switch without replacing the Twin renderer");
+  const expectedBodyBytes =
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-body-v2.glb")));
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-twin-asset-sha256",
+    createHash("sha256").update(expectedBodyBytes).digest("hex"),
+  );
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
+  await page.getByRole("button", { name: "Muscles", exact: true }).click();
+  await expect(stage).toHaveAttribute("data-twin-appearance", "analysis");
+  await expect(stage).toHaveAttribute("data-twin-stage", "3d");
+  await expect(page.locator("canvas")).toHaveAttribute(
+    "data-twin-asset-sha256",
+    expectedAnalysisSha,
+  );
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
+  record("selected Muscles is the default; Body and Muscles retain distinct verified assets");
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(artifacts, "desktop-front.png"), fullPage: true });
   const canvas = page.locator("canvas");
@@ -453,7 +460,7 @@ try {
     artifacts,
     expectedSource,
     expectedCredit,
-    expectedSha: expectedBodySha,
+    expectedSha: expectedAnalysisSha,
     record,
   });
   await context.close();
@@ -737,7 +744,7 @@ try {
           sha256: createHash("sha256").update(candidateBytes).digest("hex"),
           bytes: candidateBytes.length,
           requests: candidateRequests,
-          servedAs: "/models/twin-anatomy-v1.glb",
+          servedAs: ["/models/twin-selected-v1.glb", "/models/twin-body-v2.glb"],
         },
         null,
         2,

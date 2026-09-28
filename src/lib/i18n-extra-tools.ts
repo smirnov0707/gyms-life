@@ -37,27 +37,24 @@ export const extra_tools = {
   "tl.heat.fatigued": { lt: "Didelis nuovargis", en: "High fatigue" },
 
   // TransformationCalculator
-  "tl.tc.badge": { lt: "Rezultatų Prognozė", en: "Results Forecast" },
-  "tl.tc.title": { lt: "Kur Būsi Su GYMS.LIFE?", en: "Where will you be with GYMS.LIFE?" },
+  "tl.tc.badge": { lt: "TAVO RITMAS", en: "YOUR RHYTHM" },
+  "tl.tc.title": { lt: "Maži žingsniai. Nuoseklus ritmas.", en: "Small steps. A steady rhythm." },
   "tl.tc.subtitle": {
-    lt: "Pasirink savo planuojamą laikotarpį ir pamatyk realią transformacijos prognozę.",
-    en: "Pick your planned timeframe and see a realistic transformation forecast.",
+    lt: "Pasirink laikotarpį ir treniruočių dažnį. Pamatyk, kiek treniruočių suplanuotum.",
+    en: "Choose a timeframe and weekly frequency. See how many sessions you would plan.",
   },
-  "tl.tc.duration": { lt: "Programos trukmė:", en: "Program duration:" },
+  "tl.tc.duration": { lt: "Laikotarpis", en: "Timeframe" },
   "tl.tc.durationWeeks": { lt: "{n} savaičių", en: "{n} weeks" },
-  "tl.tc.frequency": { lt: "Treniruočių dažnumas:", en: "Training frequency:" },
+  "tl.tc.frequency": { lt: "Treniruotės per savaitę", en: "Sessions per week" },
   "tl.tc.frequencyPerWeek": { lt: "{n} k. / savaitę", en: "{n}x / week" },
-  "tl.tc.strengthGain": { lt: "Prognozuojamas jėgos progresas", en: "Projected strength progress" },
-  "tl.tc.strengthGainSub": {
-    lt: "vertinimas pagal pasirinktą trukmę ir dažnumą",
-    en: "estimate based on your chosen length and frequency",
+  "tl.tc.sessions": { lt: "Planuojamos treniruotės", en: "Planned sessions" },
+  "tl.tc.formula": {
+    lt: "{weeks} sav. × {days} treniruotės",
+    en: "{weeks} weeks × {days} sessions",
   },
-  "tl.tc.kcalBurned": { lt: "Sudeginta energija", en: "Energy burned" },
-  "tl.tc.kcalBurnedSub": { lt: "aktyvių kcal", en: "active kcal" },
-  "tl.tc.goalProbability": { lt: "Progreso prognozė", en: "Progress forecast" },
-  "tl.tc.goalProbabilitySub": {
-    lt: "orientacinis nuoseklumo rodiklis, ne garantija",
-    en: "an indicative consistency score, not a guarantee",
+  "tl.tc.notSaved": {
+    lt: "Planavimo pavyzdys. Planas neišsaugomas, rezultatai neprognozuojami.",
+    en: "Planning illustration. No plan is saved and no results are predicted.",
   },
 
   // SmartExerciseSwap

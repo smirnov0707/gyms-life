@@ -1,0 +1,512 @@
+/* Future Lab visual language. Layout, live values and Twin materials remain owned
+   by their components. Specific shell scope makes lazy CSS import order harmless. */
+.future-lab-app {
+  --fl-violet-aura: color-mix(in srgb, var(--primary) 12%, transparent);
+  --fl-cyan-aura: color-mix(in srgb, var(--accent) 7%, transparent);
+  background:
+    radial-gradient(65rem 45rem at -15% -20%, var(--fl-violet-aura), transparent 72%),
+    radial-gradient(55rem 40rem at 105% 25%, var(--fl-cyan-aura), transparent 70%),
+    var(--background);
+  font-feature-settings: "ss01";
+}
+
+.future-lab-app::before {
+  opacity: 0.35;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--foreground) 16%, transparent) 0.5px,
+    transparent 0.5px
+  );
+  background-size: 24px 24px;
+  mask-image: linear-gradient(black, transparent 65%);
+}
+
+.future-lab-app .fl-shell-header {
+  background: var(--fl-header);
+  border-bottom-color: var(--border);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.future-lab-app .fl-brand-mark {
+  filter: drop-shadow(0 0 12px var(--primary-dim));
+}
+
+.future-lab-app .fl-brand-wordmark > span {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+}
+
+.future-lab-app .fl-brand-wordmark small {
+  color: var(--muted-foreground);
+  font-weight: 650;
+  letter-spacing: 0.2em;
+}
+
+.future-lab-app .fl-desktop-navigation {
+  height: auto;
+  align-self: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.future-lab-app .fl-desktop-navigation a {
+  position: relative;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+}
+
+.future-lab-app .fl-desktop-navigation a[aria-current="page"] {
+  color: var(--foreground);
+  border-color: var(--fl-active-border);
+  background: linear-gradient(130deg, var(--primary-dim), transparent), var(--surface-2);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
+.future-lab-app .fl-desktop-navigation a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 30%;
+  right: 30%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-night-status) {
+  border-radius: 12px;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+}
+
+.future-lab-app .fl-profile-avatar {
+  background: var(--primary-dim);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.fl-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 12px;
+  z-index: 100;
+  transform: translateY(-150%);
+  clip-path: inset(50%);
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 700;
+}
+
+.fl-skip-link:focus {
+  transform: translateY(0);
+  clip-path: none;
+}
+
+.future-lab-app
+  :is(
+    .fl-panel,
+    .fl-surface,
+    .fl-live-signals,
+    .fl-todays-plan,
+    .fl-sleep-analysis,
+    .fl-evidence,
+    .fl-outlook,
+    .fl-intelligence-card,
+    .fl-brief > section
+  ) {
+  border-color: var(--border);
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--foreground) 2.5%, transparent),
+      transparent 55%
+    ),
+    color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+
+.future-lab-app
+  :is(.fl-premium-card, .fl-context-heading, .fl-context-hero, .fl-luxury-disclosure) {
+  border-color: var(--border);
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+
+.future-lab-app :is(.fl-world-title, .fl-context-title) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.05em !important;
+  line-height: 1.08;
+}
+
+.future-lab-app :is(.fl-page-heading h1, .fl-future-heading h1) {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.5vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+.future-lab-app :is(.fl-page-eyebrow, .fl-world-kicker) {
+  color: var(--primary);
+  letter-spacing: 0.16em;
+  font-weight: 700;
+}
+
+.future-lab-app .fl-dashboard .fl-greeting h1 {
+  font-family: var(--font-display);
+  font-size: clamp(21px, 1.65vw, 27px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+}
+
+.future-lab-app .fl-dashboard .fl-greeting > p:last-child {
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.future-lab-app .fl-dashboard :is(.fl-eyebrow, .fl-live-signals h2, .fl-todays-plan h2) {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.075em;
+  color: var(--muted-foreground);
+}
+
+.future-lab-app .fl-dashboard .fl-readiness-summary {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  background:
+    radial-gradient(
+      ellipse at 100% 0,
+      color-mix(in srgb, var(--accent) 9%, transparent),
+      transparent 80%
+    ),
+    var(--surface);
+}
+
+.future-lab-app .fl-dashboard .fl-live-signals li > span:first-child {
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.future-lab-app .fl-dashboard .fl-live-signals li > span:last-child > span:first-child {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.future-lab-app .fl-dashboard :is(.fl-bottom-deck h2, .fl-intelligence-card h3) {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.future-lab-app :is(.fl-card-action, .fl-plan-start, .fl-action) {
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  border-radius: 9px;
+  background: linear-gradient(115deg, var(--action-start), var(--action-end));
+  color: var(--primary-foreground);
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 5px 16px -10px var(--primary-glow);
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms var(--ease-out);
+}
+
+.future-lab-app .fl-dashboard .fl-bottom-deck .fl-card-action {
+  min-height: 30px;
+  font-size: 10px;
+}
+
+.future-lab-app .fl-dashboard .fl-data-sources {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+}
+
+.future-lab-app .fl-lab-domains .fl-lab-roster-tiles > li {
+  position: relative;
+  border-radius: 14px;
+  border-color: var(--border);
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--primary) 12%, var(--surface-2)),
+    var(--surface-2) 72%
+  );
+}
+
+.future-lab-app .fl-lab-domains .fl-role-icon {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--primary);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+.future-lab-app .fl-lab-domains .fl-role-name {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.future-lab-app .fl-journal-stats > div {
+  border-radius: 14px;
+  border-color: var(--border);
+  background: linear-gradient(150deg, var(--primary-dim), transparent 75%), var(--surface-2);
+}
+
+.future-lab-app .fl-journal-stats p.font-mono {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+.future-lab-app
+  :is(
+    .fl-journal-filters button,
+    .fl-segmented-nav [role="tab"],
+    .twin-screen > [role="tablist"] [role="tab"]
+  ) {
+  border-radius: 10px;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.future-lab-app :is(.fl-segmented-nav, .twin-screen > [role="tablist"]) {
+  border-radius: 14px;
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-panel);
+}
+
+.future-lab-app .fl-strength-summary {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: linear-gradient(150deg, var(--primary-dim), transparent 62%), var(--surface-2);
+}
+
+/* Intentional dark media stages retain their own contrast in either theme. */
+.future-lab-app :is(.twin-home--cockpit, .twin-screen [data-twin-cockpit], .twin-muscle-detail) {
+  --foreground: #edf2fc;
+  --muted-foreground: #a3b0c9;
+  --surface: #0e1625;
+  --surface-2: #151f32;
+  --primary: #baa5ff;
+  --primary-foreground: #191329;
+  --action-start: #c0acff;
+  --action-end: #96b6ff;
+  --border: rgb(164 186 231 / 20%);
+  border-radius: 20px;
+  border-color: rgb(157 184 239 / 22%);
+  box-shadow:
+    0 18px 50px -30px rgb(0 0 0 / 65%),
+    inset 0 1px 0 rgb(180 202 255 / 6%);
+}
+
+.future-lab-app .twin-home--cockpit {
+  background: radial-gradient(ellipse at 20% 30%, rgb(37 48 92 / 30%), transparent 65%), #060d1a;
+}
+
+.future-lab-app :is(.twin-cockpit-load p.tabular-nums, .twin-detail-score strong) {
+  font-family: var(--font-display);
+  letter-spacing: -0.045em;
+}
+
+.future-lab-app .twin-detail-tabs button[aria-pressed="true"] {
+  background: linear-gradient(125deg, #503776, #334368);
+  color: #f0eaff;
+}
+
+.future-lab-app .twin-detail-readout {
+  background: linear-gradient(140deg, #1a2340, #0e192b);
+  border-color: rgb(169 146 234 / 26%);
+}
+
+.future-lab-app .twin-detail-readout a {
+  border-radius: 10px;
+}
+
+.future-lab-app .fl-coach-conversation {
+  background:
+    radial-gradient(ellipse at 50% 0, var(--primary-dim), transparent 65%), var(--surface);
+  border-radius: 26px;
+}
+
+.future-lab-app .fl-coach-conversation form {
+  flex-shrink: 0;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface-2) 75%, transparent);
+}
+
+.future-lab-app .fl-coach-conversation > .relative {
+  min-height: 0;
+}
+
+.future-lab-app .fl-coach-consent {
+  flex-wrap: nowrap;
+}
+
+.future-lab-app .fl-coach-consent > div {
+  flex: 1;
+}
+
+.future-lab-app .fl-coach-consent > button {
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+.future-lab-app .fl-coach-conversation form input {
+  min-height: 44px;
+  background: transparent;
+}
+
+.future-lab-app .fl-coach-conversation form button {
+  width: 44px;
+  height: 44px;
+}
+
+@media (min-width: 1200px) {
+  .future-lab-app .fl-dashboard {
+    gap: 6px;
+  }
+  .future-lab-app .fl-dashboard .fl-bottom-deck > .fl-panel {
+    padding: 8px;
+  }
+}
+
+@media (min-width: 640px) {
+  .future-lab-app .fl-lab-domains .fl-lab-roster-tiles > li {
+    padding-block: 14px;
+  }
+  .future-lab-app .fl-lab-domains .fl-role-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 8px;
+  }
+  .future-lab-app .fl-lab-domains .fl-role-name {
+    font-size: 11px;
+  }
+  .future-lab-app .fl-lab-domains .fl-role-status {
+    font-size: 10px;
+  }
+  .future-lab-app .fl-journal-stats p.font-mono {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 959px) {
+  .future-lab-app .fl-mobile-navigation {
+    left: max(10px, var(--sal, 0px));
+    right: max(10px, var(--sar, 0px));
+    bottom: max(8px, var(--sab, 0px));
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 21px;
+    background: color-mix(in srgb, var(--surface) 91%, transparent);
+    box-shadow:
+      0 8px 30px rgb(0 0 0 / 22%),
+      inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+  }
+  .future-lab-app .fl-mobile-navigation a {
+    border-radius: 16px;
+    min-height: 49px;
+    gap: 4px;
+  }
+  .future-lab-app .fl-mobile-navigation a > span {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+  }
+  .future-lab-app .fl-mobile-navigation a[aria-current="page"] {
+    color: var(--foreground);
+    background: linear-gradient(130deg, var(--primary-dim), transparent), var(--surface-2);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+  .future-lab-app .fl-mobile-navigation a[aria-current="page"] svg {
+    color: var(--primary);
+  }
+  .future-lab-app .fl-mobile-navigation a[aria-current="page"]::before {
+    display: none;
+  }
+  .future-lab-app .fl-shell-main {
+    padding-bottom: calc(90px + var(--sab, 0px));
+  }
+  .future-lab-app .fl-shell-actions {
+    gap: 4px;
+  }
+  .future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-night-status) {
+    width: 40px;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 639px) {
+  .future-lab-app .fl-future-page .fl-future-heading > div:first-child > h1 {
+    font-size: 21px;
+    line-height: 1.15;
+  }
+  .future-lab-app .fl-coach-page .fl-world-header {
+    padding-block: 6px 12px;
+  }
+  .future-lab-app .fl-coach-page .fl-world-subtitle {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .future-lab-app .fl-coach-conversation {
+    min-height: 0;
+    height: clamp(280px, calc(100svh - 470px), 500px);
+    flex: none;
+  }
+  .future-lab-app .fl-coach-empty {
+    min-height: 100%;
+  }
+  .future-lab-app :is(.fl-page-heading h1, .fl-future-heading h1) {
+    font-size: 21px;
+    line-height: 1.15;
+  }
+  .future-lab-app .fl-dashboard .fl-greeting h1 {
+    font-size: 28px;
+  }
+  .future-lab-app :is(.fl-lab-page, .fl-journal-page, .fl-future-page) {
+    border-radius: 20px;
+  }
+  .future-lab-app .fl-lab-domains .fl-lab-roster-tiles > li {
+    border-radius: 11px;
+  }
+  .future-lab-app .fl-journal-filters button {
+    font-size: 11px;
+  }
+  .future-lab-app .fl-lab-page .fl-panel {
+    border-radius: 14px;
+  }
+  .future-lab-app .twin-detail-stage [data-twin-viewport] {
+    height: clamp(210px, calc(100svh - 610px), 270px);
+  }
+  .future-lab-app .fl-dashboard .fl-card-action {
+    min-height: 44px;
+  }
+}
+
+@media (hover: hover) {
+  .future-lab-app :is(.fl-card-action, .fl-plan-start, .fl-action):hover {
+    box-shadow:
+      0 8px 22px -10px var(--primary-glow),
+      inset 0 1px 0 rgb(255 255 255 / 30%);
+    transform: translateY(-1px);
+  }
+}

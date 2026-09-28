@@ -55,7 +55,9 @@ export function EvidenceAcquisitionPrompt({
       </p>
       <div className="mt-2 flex items-center justify-between gap-3">
         <span className="text-[9px] text-muted-foreground">
-          {english ? "Decision authority: none" : "Sprendimo teisė: nėra"}
+          {english
+            ? "Adds an observation; does not change your plan."
+            : "Papildo stebėjimus; tavo plano nekeičia."}
         </span>
         <Link
           to={recommendation.route}

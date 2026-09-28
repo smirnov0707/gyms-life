@@ -23,7 +23,7 @@ const calculatedMemory = UserMemoryTransparencyItemResultSchema.parse({
 describe("user-memory presentation", () => {
   it("localizes a calculated statement and its evidence from the validated value", () => {
     expect(displayedMemoryContent(calculatedMemory, "lt")).toBe(
-      "Per pastarąsias 28 dienas atlikai 10 treniruotes.",
+      "Baigtos treniruotės per pastarąsias 28 dienas: 10.",
     );
     expect(memoryEvidenceSummary(calculatedMemory, "en")).toBe(
       "Evidence: 10 completed workout records across 28 days.",
@@ -64,5 +64,40 @@ describe("user-memory presentation", () => {
     expect(memoryEvidenceSummary(rhythmMemory, "lt")).toBe(
       "Įrodymai: 8 baigtos treniruočių dienos sutapo su tavo pasirinktu ritmu per 28 užbaigtas dienas.",
     );
+  });
+  it("localizes decimal values and uses app-owned English for supplemental locales", () => {
+    const recovery = UserMemoryTransparencyItemResultSchema.parse({
+      ...calculatedMemory,
+      type: "recovery_pattern",
+      content: "UNTRUSTED STORED PROSE",
+      calculatedValue: {
+        kind: "recovery_low_7d",
+        averageReadiness: 52.5,
+        checkinsLast7Days: 4,
+        windowDays: 7,
+      },
+    });
+    expect(displayedMemoryContent(recovery, "lt")).toContain("52,5/100");
+    expect(memoryEvidenceSummary(recovery, "lt")).toBe(
+      "Įrodymai: pasiruošimo patikrų per 7 dienas — 4.",
+    );
+    for (const lang of ["de", "es", "fr", "pl", "ru", "uk"]) {
+      expect(displayedMemoryContent(recovery, lang)).toBe(
+        "Your average readiness was 52.5/100 in the last 7 days.",
+      );
+      expect(memoryEvidenceSummary(recovery, lang)).toContain("4 readiness check-ins");
+    }
+    const weight = UserMemoryTransparencyItemResultSchema.parse({
+      ...calculatedMemory,
+      type: "pattern",
+      calculatedValue: {
+        kind: "weight_change_30d",
+        weightChangeKg: -1.5,
+        measurementsLast30Days: 3,
+        windowDays: 30,
+      },
+    });
+    expect(displayedMemoryContent(weight, "lt")).toContain("−1,5 kg");
+    expect(displayedMemoryContent(weight, "en")).toContain("-1.5 kg");
   });
 });

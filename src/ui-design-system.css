@@ -1,0 +1,77 @@
+/* Shared controls also cover authentication, settings, Coach and portalled UI. */
+.ui-button {
+  border-radius: 12px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms var(--ease-out);
+}
+
+.ui-button-primary {
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  background: linear-gradient(115deg, var(--action-start), var(--action-end));
+  color: var(--primary-foreground);
+  box-shadow:
+    0 5px 18px -9px var(--primary-glow),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.ui-card {
+  border-color: var(--border);
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 60%),
+    var(--card);
+  box-shadow: var(--shadow-panel);
+}
+
+.ui-input {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 3%);
+}
+
+.ui-input:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-dim);
+}
+
+::selection {
+  background: var(--primary-dim);
+  color: var(--foreground);
+}
+
+:where(button, a, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .ui-button:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+  .ui-button-primary:not(:disabled):hover {
+    box-shadow:
+      0 8px 24px -10px var(--primary-glow),
+      inset 0 1px 0 rgb(255 255 255 / 30%);
+  }
+}
+
+.ui-button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* Applies to older utilities and dialog animations as well as the new shell. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

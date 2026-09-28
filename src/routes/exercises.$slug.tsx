@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, AlertTriangle, ListChecks, Dumbbell } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ListChecks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { useI18n, baseLang, type TKey } from "@/lib/i18n";
 import { AppShell } from "@/components/AppShell";
 import { ExerciseVideo } from "@/components/ExerciseVideo";
 import { MuscleTargetVisualizer } from "@/components/MuscleTargetVisualizer";
@@ -65,7 +65,7 @@ function ExerciseDetail() {
             the other half of that fix. Until now the error state fell through
             to "not found", so an outage told the athlete the exercise does
             not exist — the very answer the read was changed to avoid. */}
-        <div className="panel p-12 text-center text-sm text-muted-foreground">
+        <div role={isError ? "alert" : "status"} className="fl-workspace-panel fl-library-state">
           {isLoading ? (
             t("common.loading")
           ) : isError ? (
@@ -87,120 +87,129 @@ function ExerciseDetail() {
     );
   }
 
-  const name = (lang === "lt" ? ex.name_lt : ex.name_en) || ex.name_en || ex.name_lt || ex.slug;
+  const name =
+    (baseLang(lang) === "lt" ? ex.name_lt : ex.name_en) || ex.name_en || ex.name_lt || ex.slug;
   const instructions =
-    (lang === "lt" ? ex.instructions_lt : ex.instructions_en) ||
+    (baseLang(lang) === "lt" ? ex.instructions_lt : ex.instructions_en) ||
     ex.instructions_en ||
     ex.instructions_lt ||
     "";
   const mistakes =
-    (lang === "lt" ? ex.mistakes_lt : ex.mistakes_en) || ex.mistakes_en || ex.mistakes_lt || "";
+    (baseLang(lang) === "lt" ? ex.mistakes_lt : ex.mistakes_en) ||
+    ex.mistakes_en ||
+    ex.mistakes_lt ||
+    "";
 
   const steps = instructions
     .split(/\n+|(?<=\.)\s+(?=[A-ZĄČĘĖĮŠŲŪŽ0-9])/)
     .map((s2) => s2.trim())
-    .filter((s2) => s2.length > 3)
-    .slice(0, 12);
+    .filter(Boolean);
 
   return (
     <AppShell>
-      {/* Schema.org structured data: ExercisePlan + VideoObject + HowTo */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@graph": [
-              {
-                "@type": "ExercisePlan",
-                name,
-                exerciseType: ex.muscle_group,
-                description: instructions,
-              },
-              {
-                "@type": "VideoObject",
-                name: `${name} — technika`,
-                description: instructions || `${name} technikos demonstracija.`,
-                thumbnailUrl: exerciseVideoPoster(ex.slug)
-                  ? `https://gyms.life${exerciseVideoPoster(ex.slug)}`
-                  : undefined,
-                contentUrl: exerciseVideo(ex.slug)
-                  ? `https://gyms.life${exerciseVideo(ex.slug)}`
-                  : undefined,
-                uploadDate: ex.created_at ?? undefined,
-              },
-              ...(steps.length
-                ? [
-                    {
-                      "@type": "HowTo",
-                      name: `Kaip atlikti: ${name}`,
-                      description: instructions,
-                      tool: ex.equipment
-                        ? [{ "@type": "HowToTool", name: ex.equipment }]
-                        : undefined,
-                      step: steps.map((s, i) => ({
-                        "@type": "HowToStep",
-                        position: i + 1,
-                        text: s,
-                      })),
-                    },
-                  ]
-                : []),
-            ],
-          }),
-        }}
-      />
-      <Link
-        to="/exercises"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" /> {t("ex.title")}
-      </Link>
+      <div className="fl-context-route fl-workspace fl-movement-workspace">
+        {/* Schema.org structured data: ExercisePlan + VideoObject + HowTo */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "ExercisePlan",
+                  name,
+                  exerciseType: ex.muscle_group,
+                  description: instructions,
+                },
+                {
+                  "@type": "VideoObject",
+                  name: `${name} — technika`,
+                  description: instructions || `${name} technikos demonstracija.`,
+                  thumbnailUrl: exerciseVideoPoster(ex.slug)
+                    ? `https://gyms.life${exerciseVideoPoster(ex.slug)}`
+                    : undefined,
+                  contentUrl: exerciseVideo(ex.slug)
+                    ? `https://gyms.life${exerciseVideo(ex.slug)}`
+                    : undefined,
+                  uploadDate: ex.created_at ?? undefined,
+                },
+                ...(steps.length
+                  ? [
+                      {
+                        "@type": "HowTo",
+                        name: `Kaip atlikti: ${name}`,
+                        description: instructions,
+                        tool: ex.equipment
+                          ? [{ "@type": "HowToTool", name: ex.equipment }]
+                          : undefined,
+                        step: steps.map((s, i) => ({
+                          "@type": "HowToStep",
+                          position: i + 1,
+                          text: s,
+                        })),
+                      },
+                    ]
+                  : []),
+              ],
+            }),
+          }}
+        />
+        <Link
+          to="/exercises"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" /> {t("ex.title")}
+        </Link>
 
-      <div className="mt-4 grid gap-8 lg:grid-cols-[3fr_2fr]">
-        <div>
-          <ExerciseVideo slug={ex.slug} title={name} />
-        </div>
-        <div>
-          <h1 className="text-4xl sm:text-5xl font-black">{name}</h1>
-          <div className="mt-4 grid gap-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">{t("ex.muscle")}: </span>
-              <span className="font-semibold text-primary">
-                {t(`mg.${ex.muscle_group}` as TKey)}
-              </span>
-            </p>
-            <p>
-              <span className="text-muted-foreground">{t("ex.equipment")}: </span>
-              <span className="font-semibold">{ex.equipment}</span>
-            </p>
-            <p>
-              <span className="text-muted-foreground">{t("ex.level")}: </span>
-              <span className="font-semibold">{ex.difficulty}</span>
-            </p>
-          </div>
-
-          {instructions && (
-            <div className="panel mt-6 p-5">
-              <h2 className="flex items-center gap-2 text-2xl">
-                <ListChecks className="size-5 text-primary" /> {t("ex.technique")}
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{instructions}</p>
+        <header className="fl-workspace-hero">
+          <p className="fl-workspace-eyebrow">GYMS.LIFE / {t("ex.technique")}</p>
+          <h1 className="fl-workspace-title mt-3">{name}</h1>
+          <dl className="fl-movement-metadata">
+            <div>
+              <dt>{t("ex.muscle")}</dt>
+              <dd>{t(`mg.${ex.muscle_group}` as TKey)}</dd>
             </div>
-          )}
-
-          <div className="mt-4">
-            <MuscleTargetVisualizer muscleGroup={ex.muscle_group} />
-          </div>
-
-          {mistakes && (
-            <div className="panel mt-4 p-5">
-              <h2 className="flex items-center gap-2 text-2xl">
-                <AlertTriangle className="size-5 text-accent" /> {t("ex.mistakes")}
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{mistakes}</p>
+            <div>
+              <dt>{t("ex.equipment")}</dt>
+              <dd>{t(`eq.${ex.equipment}` as TKey)}</dd>
             </div>
-          )}
+            <div>
+              <dt>{t("ex.level")}</dt>
+              <dd>{t(`ex.level.${ex.difficulty}` as TKey)}</dd>
+            </div>
+          </dl>
+        </header>
+        <div className="fl-movement-layout">
+          <div className="fl-movement-demonstration">
+            <ExerciseVideo slug={ex.slug} title={name} />
+            <MuscleTargetVisualizer slug={ex.slug} muscleGroup={ex.muscle_group} />
+          </div>
+          <div className="fl-movement-guidance">
+            {instructions && (
+              <div className="fl-workspace-panel p-6">
+                <h2 className="flex items-center gap-2 text-2xl">
+                  <ListChecks className="size-5 text-primary" /> {t("ex.technique")}
+                </h2>
+                <ol className="fl-movement-steps">
+                  {steps.map((text, index) => (
+                    <li key={index}>
+                      <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                      <p>{text}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {mistakes && (
+              <div className="fl-workspace-panel p-6">
+                <h2 className="flex items-center gap-2 text-2xl">
+                  <AlertTriangle className="size-5 text-accent" /> {t("ex.mistakes")}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{mistakes}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </AppShell>
