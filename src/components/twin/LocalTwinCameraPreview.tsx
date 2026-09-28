@@ -6,11 +6,8 @@ import {
   averageFrameLuminance,
   type TwinCaptureQuality,
 } from "@/lib/personalized-twin.capture-quality";
-import {
-  claimOpenedCamera,
-  closeLocalTwinCamera,
-  openLocalTwinCamera,
-} from "@/lib/personalized-twin.camera";
+import { claimOpenedCamera } from "@/lib/camera-claim";
+import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
 import {
   confirmManualTwinGuideCheckpoint,
   INITIAL_MANUAL_TWIN_GUIDE_STATE,

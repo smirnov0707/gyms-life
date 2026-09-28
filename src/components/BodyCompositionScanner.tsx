@@ -18,6 +18,7 @@ import { Input } from "./ui/input";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { analyzeBodyScan } from "@/lib/body-scan.functions";
+import { claimOpenedCamera } from "@/lib/camera-claim";
 import { errorMessage } from "@/lib/error-message";
 
 type Result = {
@@ -179,6 +180,16 @@ export const BodyCompositionScanner: React.FC<{
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
+  /**
+   * Which request the camera is being opened for.
+   *
+   * `stopCamera` can only stop a camera that has already opened, and this one
+   * takes its time: a permission prompt, a high-resolution `getUserMedia`, a
+   * second one if that is refused, then `applyConstraints`. Retiring the
+   * request is what makes leaving the screen mid-start actually stop the
+   * camera instead of adopting it into a component that is gone.
+   */
+  const cameraRequestRef = useRef(0);
 
   const [cameraOn, setCameraOn] = useState(false);
   const [shots, setShots] = useState<string[]>([]);
@@ -198,6 +209,7 @@ export const BodyCompositionScanner: React.FC<{
   } | null>(null);
 
   const stopCamera = useCallback(() => {
+    cameraRequestRef.current += 1;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setCameraOn(false);
@@ -341,6 +353,7 @@ export const BodyCompositionScanner: React.FC<{
     if (shots.length >= MAX_PHOTOS) {
       setShots((s) => s.slice(0, MAX_PHOTOS - 1));
     }
+    const request = ++cameraRequestRef.current;
     try {
       // Ask for the widest / highest-resolution frame the device can give.
       let stream: MediaStream | null = null;
@@ -371,6 +384,14 @@ export const BodyCompositionScanner: React.FC<{
           .applyConstraints({ advanced: [{ zoom: caps.zoom.min } as MediaTrackConstraintSet] })
           .catch(() => {});
       }
+      // Nobody is waiting for this camera any more. `stopCamera` could not have
+      // stopped it — it was not open yet when the screen was left — so the
+      // claim has to be checked here, before the stream is stored anywhere.
+      const claimed = claimOpenedCamera(stream, {
+        openedFor: request,
+        current: cameraRequestRef.current,
+      });
+      if (!claimed) return;
       streamRef.current = stream;
       setResult(null);
       setRejected(null);
