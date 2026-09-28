@@ -7,14 +7,14 @@ import { FutureLabLanding } from "@/components/FutureLabLanding";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GYMS.LIFE — Your personal Future Lab" },
+      { title: "GYMS.LIFE — Tavo asmeninė Future Lab" },
       {
         name: "description",
         content:
-          "Bring your training, Digital Twin, insights and AI coach together. Build a routine, record your sessions and explore your progress with GYMS.LIFE.",
+          "Tavo treniruotės. Tavo skaitmeninis dvynys. Tavo kitas žingsnis su GYMS.LIFE Future Lab.",
       },
-      { property: "og:title", content: "GYMS.LIFE — Your personal Future Lab" },
-      { property: "og:description", content: "Your training. Your Digital Twin. Your next step." },
+      { property: "og:title", content: "GYMS.LIFE — Tavo asmeninė Future Lab" },
+      { property: "og:description", content: "Tavo treniruotės. Tavo skaitmeninis dvynys. Tavo kitas žingsnis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
