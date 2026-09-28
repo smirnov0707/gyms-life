@@ -6,7 +6,11 @@ import {
   averageFrameLuminance,
   type TwinCaptureQuality,
 } from "@/lib/personalized-twin.capture-quality";
-import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
+import {
+  claimOpenedCamera,
+  closeLocalTwinCamera,
+  openLocalTwinCamera,
+} from "@/lib/personalized-twin.camera";
 import {
   confirmManualTwinGuideCheckpoint,
   INITIAL_MANUAL_TWIN_GUIDE_STATE,
@@ -187,6 +191,11 @@ export function LocalTwinCameraPreview({
 
   useEffect(
     () => () => {
+      // Retiring the attempt is the half that used to be missing. Stopping the
+      // tracks below only reaches a camera that has already opened; a
+      // `getUserMedia` still in flight resolves after this runs, and without
+      // this line its stream would be adopted by a component that is gone.
+      attemptRef.current += 1;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       detectorRef.current?.close();
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -301,7 +310,14 @@ export function LocalTwinCameraPreview({
     stopDetection();
     setCameraState("requesting");
     try {
-      const stream = await openLocalTwinCamera(navigator.mediaDevices);
+      const opened = await openLocalTwinCamera(navigator.mediaDevices);
+      // Nobody is waiting for this camera any more — the screen was left, or a
+      // newer attempt superseded this one. `claimOpenedCamera` closes it.
+      const stream = claimOpenedCamera(opened, {
+        openedFor: attempt,
+        current: attemptRef.current,
+      });
+      if (!stream) return;
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
