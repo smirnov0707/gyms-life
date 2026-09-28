@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { stopCaptureStream } from "@/lib/media-capture";
 import { Button } from "./ui/button";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { parseVoiceWorkoutLog } from "@/lib/voice-logger.functions";
@@ -42,7 +43,7 @@ export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
         recorder.current.onstop = null;
         if (recorder.current.state !== "inactive") recorder.current.stop();
       }
-      stream.current?.getTracks().forEach((track) => track.stop());
+      stopCaptureStream(stream.current);
     };
   }, []);
   const stop = () => {
@@ -63,7 +64,7 @@ export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
       if (!mimeType) throw new Error("MEDIA_UNAVAILABLE");
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (!active.current) {
-        audioStream.getTracks().forEach((track) => track.stop());
+        stopCaptureStream(audioStream);
         return;
       }
       stream.current = audioStream;
@@ -80,7 +81,7 @@ export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
       };
       current.onerror = () => {
         current.onstop = null;
-        audioStream.getTracks().forEach((track) => track.stop());
+        stopCaptureStream(audioStream);
         if (timer.current) clearTimeout(timer.current);
         lock.current = false;
         if (active.current) {
@@ -90,7 +91,7 @@ export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
       };
       current.onstop = () => {
         if (timer.current) clearTimeout(timer.current);
-        audioStream.getTracks().forEach((track) => track.stop());
+        stopCaptureStream(audioStream);
         if (!active.current) return;
         setPhase("processing");
         void (async () => {
@@ -115,7 +116,7 @@ export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
       setPhase("recording");
       timer.current = setTimeout(stop, 60_000);
     } catch {
-      stream.current?.getTracks().forEach((track) => track.stop());
+      stopCaptureStream(stream.current);
       lock.current = false;
       if (active.current) {
         setPhase("idle");

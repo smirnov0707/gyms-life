@@ -18,7 +18,7 @@ import { Input } from "./ui/input";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { analyzeBodyScan } from "@/lib/body-scan.functions";
-import { claimOpenedCamera } from "@/lib/camera-claim";
+import { claimOpenedCapture, stopCaptureStream } from "@/lib/media-capture";
 import { errorMessage } from "@/lib/error-message";
 
 type Result = {
@@ -210,7 +210,7 @@ export const BodyCompositionScanner: React.FC<{
 
   const stopCamera = useCallback(() => {
     cameraRequestRef.current += 1;
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    stopCaptureStream(streamRef.current);
     streamRef.current = null;
     setCameraOn(false);
   }, []);
@@ -387,11 +387,7 @@ export const BodyCompositionScanner: React.FC<{
       // Nobody is waiting for this camera any more. `stopCamera` could not have
       // stopped it — it was not open yet when the screen was left — so the
       // claim has to be checked here, before the stream is stored anywhere.
-      const claimed = claimOpenedCamera(stream, {
-        openedFor: request,
-        current: cameraRequestRef.current,
-      });
-      if (!claimed) return;
+      if (!claimOpenedCapture(stream, request === cameraRequestRef.current)) return;
       streamRef.current = stream;
       setResult(null);
       setRejected(null);

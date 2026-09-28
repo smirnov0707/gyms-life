@@ -6,7 +6,7 @@ import {
   averageFrameLuminance,
   type TwinCaptureQuality,
 } from "@/lib/personalized-twin.capture-quality";
-import { claimOpenedCamera } from "@/lib/camera-claim";
+import { claimOpenedCapture, stopCaptureStream } from "@/lib/media-capture";
 import { closeLocalTwinCamera, openLocalTwinCamera } from "@/lib/personalized-twin.camera";
 import {
   confirmManualTwinGuideCheckpoint,
@@ -195,7 +195,7 @@ export function LocalTwinCameraPreview({
       attemptRef.current += 1;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       detectorRef.current?.close();
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      stopCaptureStream(streamRef.current);
       streamRef.current = null;
     },
     [],
@@ -310,10 +310,7 @@ export function LocalTwinCameraPreview({
       const opened = await openLocalTwinCamera(navigator.mediaDevices);
       // Nobody is waiting for this camera any more — the screen was left, or a
       // newer attempt superseded this one. `claimOpenedCamera` closes it.
-      const stream = claimOpenedCamera(opened, {
-        openedFor: attempt,
-        current: attemptRef.current,
-      });
+      const stream = claimOpenedCapture(opened, attempt === attemptRef.current);
       if (!stream) return;
       streamRef.current = stream;
       if (videoRef.current) {

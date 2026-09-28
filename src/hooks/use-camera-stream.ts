@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { stopCaptureStream } from "@/lib/media-capture";
 
 /** Owns permission requests and tracks independently of a video DOM node. */
 export function useCameraStream(videoRef: RefObject<HTMLVideoElement | null>) {
@@ -10,7 +11,7 @@ export function useCameraStream(videoRef: RefObject<HTMLVideoElement | null>) {
 
   const release = useCallback(() => {
     generation.current++;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    stopCaptureStream(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
   }, [videoRef]);
@@ -49,7 +50,7 @@ export function useCameraStream(videoRef: RefObject<HTMLVideoElement | null>) {
         });
         const video = videoRef.current;
         if (!current() || !video?.isConnected) {
-          stream.getTracks().forEach((track) => track.stop());
+          stopCaptureStream(stream);
           return false;
         }
         streamRef.current = stream;

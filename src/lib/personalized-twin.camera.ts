@@ -1,4 +1,4 @@
-import { stopCameraStream } from "./camera-claim";
+import { stopCaptureStream } from "./media-capture";
 
 export type TwinCameraMediaDevices = {
   getUserMedia(constraints: MediaStreamConstraints): Promise<MediaStream>;
@@ -15,5 +15,5 @@ export async function openLocalTwinCamera(
 }
 
 export function closeLocalTwinCamera(stream: Pick<MediaStream, "getTracks"> | null): void {
-  stopCameraStream(stream);
+  stopCaptureStream(stream);
 }

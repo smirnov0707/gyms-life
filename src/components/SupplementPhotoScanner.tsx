@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, ScanLine, SwitchCamera, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { stopCaptureStream } from "@/lib/media-capture";
 import { analyzeSupplementPhoto } from "@/lib/supplement-vision.functions";
 import { addSupplements } from "@/lib/supplements.functions";
 import { useAuth } from "@/lib/auth";
@@ -63,7 +64,7 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
 
   const stopCamera = useCallback(() => {
     requestRef.current += 1;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    stopCaptureStream(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraStarting(false);
@@ -80,7 +81,7 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
     return () => {
       activeRef.current = false;
       requestRef.current += 1;
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      stopCaptureStream(streamRef.current);
       streamRef.current = null;
     };
   }, [active, stopCamera]);
@@ -122,10 +123,10 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
         !video?.isConnected ||
         video.closest("details:not([open])")
       ) {
-        stream.getTracks().forEach((track) => track.stop());
+        stopCaptureStream(stream);
         return;
       }
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      stopCaptureStream(streamRef.current);
       streamRef.current = stream;
       video.srcObject = stream;
       void video.play().catch(() => undefined);
