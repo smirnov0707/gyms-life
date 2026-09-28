@@ -18,7 +18,7 @@ Visi 25 įrašai sutikrinti su mūsų 175 pratimų inventorizacija: 12 pavadinim
 
 Originalūs klipai neįkelti į viešą GitHub repo ir neplatinami ZIP kaip atskira biblioteka. Peržiūra nebuvo pristatyta kaip kvalifikuoto trenerio sertifikavimas. Pradinio registro generatorius ir runtime parinkimas nepakeisti.
 
-Žr. `free-media-pilot-20260914.json` ir septynis `free-media-pilot.test.mjs` atrankos nuoseklumo testus.
+Žr. `free-media-pilot-20260914.json` ir septynis `free-media-pilot.node-test.mjs` atrankos nuoseklumo testus.
 
 ## Licencijų ribos
 
