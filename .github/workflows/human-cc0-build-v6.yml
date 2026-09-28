@@ -1,0 +1,143 @@
+name: Build CC0 GYMS.LIFE digital human v6
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-build-v6.yml]
+permissions:
+  contents: read
+jobs:
+  build-human:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Clone MakeHuman authoring tooling
+        run: git clone --depth 1 https://github.com/vidya-hub/makehuman-core.git "$RUNNER_TEMP/makehuman-core"
+      - name: Install authoring dependencies
+        run: |
+          python -m pip install -e "$RUNNER_TEMP/makehuman-core"
+          python -m pip install pillow numpy
+      - name: Author Digital Human v6
+        env:
+          MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image, ImageDraw, ImageFilter, ImageOps
+          import mhcore
+
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v6'; root.mkdir(parents=True,exist_ok=True); data=Path(os.environ['MHCORE_DATA'])
+
+          def graphite_suit(path: Path):
+              img=Image.open(path).convert('RGBA'); alpha=img.getchannel('A'); grey=ImageOps.grayscale(img.convert('RGB')).filter(ImageFilter.GaussianBlur(1.45)); shirt=ImageOps.colorize(grey,black='#091016',white='#5c696f'); pants=ImageOps.colorize(grey,black='#04080c',white='#34434b'); ymask=Image.new('L',img.size,0);d=ImageDraw.Draw(ymask);d.rectangle((0,int(img.height*.40),img.width,img.height),fill=255);ymask=ymask.filter(ImageFilter.GaussianBlur(max(4,img.height//155)));toned=Image.composite(pants,shirt,ymask);smooth=toned.filter(ImageFilter.GaussianBlur(max(10,img.width//68)));mask=Image.new('L',img.size,0);d=ImageDraw.Draw(mask)
+              for box in [(.13,.04,.75,.28),(.81,.89,1,1)]: d.rectangle(tuple(int(v*s) for v,s in zip(box,(img.width,img.height,img.width,img.height))),fill=255)
+              mask=mask.filter(ImageFilter.GaussianBlur(max(11,img.width//52)));toned=Image.composite(smooth,toned,mask);toned.putalpha(alpha);toned.save(path,optimize=True)
+          def recolor_folder(folder: Path,black,white):
+              for p in folder.iterdir():
+                  if p.suffix.lower() not in {'.png','.jpg','.jpeg'} or 'diffuse' not in p.name.lower(): continue
+                  img=Image.open(p).convert('RGBA'); a=img.getchannel('A'); out=ImageOps.colorize(ImageOps.grayscale(img.convert('RGB')),black=black,white=white);out.putalpha(a);out.save(p,optimize=True)
+          def naturalize_eyes():
+              for path in data.rglob('brown_eye.png'):
+                  img=Image.open(path).convert('RGBA');arr=np.asarray(img).copy();h,w=arr.shape[:2];yy,xx=np.ogrid[:h,:w];mask=np.zeros((h,w),dtype=bool)
+                  for cx,cy,r in [(0.31,0.69,.145),(0.71,0.31,.145)]:mask|=(xx-w*cx)**2+(yy-h*cy)**2<=(w*r)**2
+                  rgb=arr[...,:3].astype(np.float32)/255.;mx=rgb.max(-1);mn=rgb.min(-1);iris=mask&((mx-mn)>.14)&(mx<.84);lum=rgb[...,0]*.28+rgb[...,1]*.56+rgb[...,2]*.16
+                  vals=(np.clip(.11+lum*.40,0,1),np.clip(.065+lum*.27,0,1),np.clip(.03+lum*.12,0,1))
+                  for c,new in enumerate(vals):rgb[...,c][iris]=new[iris]
+                  sclera=mask&~iris&(mx>.42);avg=rgb.mean(-1);rgb[...,0][sclera]=rgb[...,0][sclera]*.58+avg[sclera]*.42;rgb[...,1][sclera]=rgb[...,1][sclera]*.78+avg[sclera]*.22;arr[...,:3]=np.clip(rgb*255,0,255).astype(np.uint8);Image.fromarray(arr,'RGBA').save(path,optimize=True);break
+
+          graphite_suit(data/'clothes/male_casualsuit06/male_casualsuit06_diffuse.png');recolor_folder(data/'clothes/shoes01','#020609','#48545b');naturalize_eyes();recolor_folder(data/'hair/short02','#070606','#4a3329')
+          h=mhcore.new_human();h.set_gender(1.0).set_age(.47).set_weight(.52).set_muscle(.63).set_height(.62)
+          adjustments=[('head/head-oval',.06),('head/head-rectangular',.06),('nose/nose-scale-vert-decr|incr',.025),('chin/chin-jaw-drop-decr|incr',-.46),('chin/chin-width-decr|incr',.10),('chin/chin-bones-decr|incr',.05),('mouth/mouth-scale-vert-decr|incr',-.14),('mouth/mouth-lowerlip-volume-decr|incr',-.055),('mouth/mouth-upperlip-volume-decr|incr',-.045),('eyes/r-eye-scale-decr|incr',-.05),('eyes/l-eye-scale-decr|incr',-.05)]
+          applied=[]
+          for name,value in adjustments:
+              try:h.apply_modifier(name,value);applied.append([name,value])
+              except Exception as exc:print('modifier skipped',name,type(exc).__name__)
+          def pick(kind,token):
+              m=[p for p in h.list_available(kind) if token.lower() in str(p).lower()]
+              if not m:raise RuntimeError(f'Missing {kind}: {token}')
+              return m[0]
+          h.set_skin(pick('skins','young_caucasian_male2'));h.equip_hair(pick('hair','short02'));h.equip_eyes(pick('eyes','high-poly'));h.equip_eyebrows(pick('eyebrows','eyebrow001'));h.equip_teeth(pick('teeth','teeth_base'));h.equip_clothes(pick('clothes','male_casualsuit06'));h.equip_clothes(pick('clothes','shoes01'));h.save_mhm(str(root/'gyms-digital-human-v6.mhm'))
+          obj=Path(h.export(str(root/'gyms-digital-human-v6.obj')));mtl=obj.with_suffix('.mtl')
+
+          # Local occlusion fix only under trousers: pull the central base-body pelvis slightly inward.
+          lines=obj.read_text(errors='replace').splitlines();body=set();group='';vcount=0
+          for line in lines:
+              if line.startswith('v '):vcount+=1
+              elif line.startswith('g '):group=line[2:].strip()
+              elif line.startswith('f ') and group=='base.obj':
+                  for token in line.split()[1:]:
+                      raw=int(token.split('/')[0]);body.add(raw-1 if raw>0 else vcount+raw)
+          out=[];vi=0;adjusted=0
+          for line in lines:
+              if line.startswith('v '):
+                  parts=line.split();x,y,z=map(float,parts[1:4])
+                  if vi in body and .61<=y<=1.02 and abs(x)<.235:
+                      z=.02+(z-.02)*.62;x*=.965;adjusted+=1;line=f'v {x:.6f} {y:.6f} {z:.6f}'
+                  vi+=1
+              out.append(line)
+          obj.write_text('\n'.join(out)+'\n');print('locally inset body vertices',adjusted)
+
+          def locate(raw):
+              p=Path(raw)
+              if not p.is_absolute():p=(mtl.parent/p).resolve()
+              if p.exists():return p
+              m=list(data.rglob(Path(raw).name));return m[0] if m else None
+          def optimize(src):
+              img=Image.open(src).convert('RGBA');name=src.name.lower();limit=2048 if ('skin' in name or 'young_light' in name) else 1024
+              if max(img.size)>limit:
+                  s=limit/max(img.size);img=img.resize((max(1,round(img.width*s)),max(1,round(img.height*s))),Image.Resampling.LANCZOS)
+              alpha=img.getchannel('A');stem=src.stem.replace(' ','_')
+              if alpha.getextrema()[0]<250:dst=root/f'{stem}.png';img.save(dst,optimize=True,compress_level=9)
+              else:dst=root/f'{stem}.jpg';img.convert('RGB').save(dst,quality=90 if limit==2048 else 87,optimize=True,progressive=True,subsampling=0)
+              return dst
+          rewritten=[];skin=None
+          for line in mtl.read_text(errors='replace').splitlines():
+              st=line.strip();prefixes=('map_Kd ','map_Bump ','bump ','map_Ks ','map_d ')
+              if st.startswith('map_D '):continue
+              if st.startswith(prefixes):
+                  p=st.split();src=locate(p[-1])
+                  if src:
+                      dst=optimize(src);line=' '.join(p[:-1]+[dst.name]);
+                      if p[0]=='map_Kd' and ('young_light' in src.name.lower() or 'skin' in src.name.lower()):skin=dst
+              rewritten.append(line)
+          mtl.write_text('\n'.join(rewritten)+'\n')
+          if skin and skin.exists():
+              img=Image.open(skin).convert('RGB').resize((1024,1024),Image.Resampling.LANCZOS);grey=np.asarray(ImageOps.grayscale(img),dtype=np.float32)/255.;low=np.asarray(ImageOps.grayscale(img).filter(ImageFilter.GaussianBlur(3)),dtype=np.float32)/255.;gy,gx=np.gradient(grey-low);strength=2.05;nx,ny,nz=-gx*strength,gy*strength,np.ones_like(gx);norm=np.sqrt(nx*nx+ny*ny+nz*nz);arr=np.stack([nx/norm*.5+.5,ny/norm*.5+.5,nz/norm*.5+.5],-1);normal=root/'skin_detail_normal.jpg';Image.fromarray(np.clip(arr*255,0,255).astype(np.uint8),'RGB').save(normal,quality=87,optimize=True,progressive=True,subsampling=0);ls=mtl.read_text().splitlines();o=[]
+              for line in ls:
+                  o.append(line)
+                  if line.startswith('map_Kd ') and skin.name in line:o.append(f'map_Bump {normal.name}')
+              mtl.write_text('\n'.join(o)+'\n')
+          manifest={'name':'GYMS.LIFE Digital Human v6 candidate','authorship':'GYMS.LIFE-authored adult parameters, neutral facial treatment, graphite clothing, local pelvis occlusion inset and derived skin normal','base':'MakeHuman core/system graphical assets','license':'CC0-1.0 graphical asset derivative; external authoring tooling not redistributed','sources':['https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','https://static.makehumancommunity.org/makehuman/faq/can_i_sell_models_created_with_makehuman.html'],'body_parameters':{'gender':1.0,'age':.47,'weight':.52,'muscle':.63,'height':.62},'modifiers':applied,'assets':['young_caucasian_male2','short02','high-poly eyes','eyebrow001','teeth_base','male_casualsuit06','shoes01'],'local_occlusion_inset':{'y':[.61,1.02],'absX_lt':.235,'depth_scale':.62},'personal_scan':False,'identity_claim':False,'visual_acceptance':False};(root/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Convert v6 to self-contained GLB
+        run: |
+          cd "$RUNNER_TEMP/gyms-human-v6"
+          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v6.obj -o gyms-digital-human-v6.glb -b --secure --checkTransparency
+      - name: Audit exact v6 binary
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v6';glb=root/'gyms-digital-human-v6.glb';sha=hashlib.sha256(glb.read_bytes()).hexdigest();rights={'assetSha256':sha,'creator':'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets','sourceUrl':'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','licenseName':'CC0-1.0-derived','evidenceReference':'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ','permissions':{'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}};(root/'rights.json').write_text(json.dumps(rights,indent=2));print('v6 GLB',glb.stat().st_size,'SHA256',sha)
+          PY
+          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/gyms-human-v6/gyms-digital-human-v6.glb" "$RUNNER_TEMP/gyms-human-v6/rights.json" "$RUNNER_TEMP/gyms-human-v6/intake-report.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v6-review
+          path: |
+            ${{ runner.temp }}/gyms-human-v6/gyms-digital-human-v6.glb
+            ${{ runner.temp }}/gyms-human-v6/SOURCE_MANIFEST.json
+            ${{ runner.temp }}/gyms-human-v6/rights.json
+            ${{ runner.temp }}/gyms-human-v6/intake-report.json
+          retention-days: 3
+          if-no-files-found: error

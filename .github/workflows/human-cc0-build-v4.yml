@@ -1,0 +1,211 @@
+name: Build CC0 GYMS.LIFE digital human v4
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-build-v4.yml]
+permissions:
+  contents: read
+jobs:
+  build-human:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Clone MakeHuman authoring tooling
+        run: git clone --depth 1 https://github.com/vidya-hub/makehuman-core.git "$RUNNER_TEMP/makehuman-core"
+      - name: Install authoring dependencies
+        run: |
+          python -m pip install -e "$RUNNER_TEMP/makehuman-core"
+          python -m pip install pillow numpy
+      - name: Author natural CC0 Digital Human v4
+        env:
+          MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
+        run: |
+          python - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image, ImageDraw, ImageFilter, ImageOps
+          import mhcore
+
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v4'; root.mkdir(parents=True,exist_ok=True)
+          data=Path(os.environ['MHCORE_DATA'])
+
+          def graphite_suit(path: Path):
+              img=Image.open(path).convert('RGBA'); alpha=img.getchannel('A'); rgb=img.convert('RGB')
+              grey=ImageOps.grayscale(rgb).filter(ImageFilter.GaussianBlur(1.4))
+              shirt=ImageOps.colorize(grey,black='#0d1217',white='#69767b')
+              pants=ImageOps.colorize(grey,black='#060a0d',white='#3f4b52')
+              ymask=Image.new('L',img.size,0); d=ImageDraw.Draw(ymask); d.rectangle((0,int(img.height*.40),img.width,img.height),fill=255)
+              ymask=ymask.filter(ImageFilter.GaussianBlur(max(4,img.height//160)))
+              toned=Image.composite(pants,shirt,ymask)
+              # Remove baked MakeHuman shirt marks while retaining broad garment folds.
+              smooth=toned.filter(ImageFilter.GaussianBlur(max(10,img.width//70)))
+              mask=Image.new('L',img.size,0); d=ImageDraw.Draw(mask)
+              for box in [(.16,.07,.35,.22),(.39,.06,.72,.25),(.82,.91,1.0,1.0)]:
+                  d.rectangle(tuple(int(v*s) for v,s in zip(box,(img.width,img.height,img.width,img.height))),fill=255)
+              mask=mask.filter(ImageFilter.GaussianBlur(max(12,img.width//55)))
+              toned=Image.composite(smooth,toned,mask); toned.putalpha(alpha); toned.save(path,optimize=True)
+
+          def graphite_shoes(folder: Path):
+              candidates=[p for p in folder.iterdir() if p.suffix.lower() in {'.png','.jpg','.jpeg'} and 'diffuse' in p.name.lower()]
+              for path in candidates:
+                  img=Image.open(path).convert('RGBA'); alpha=img.getchannel('A'); grey=ImageOps.grayscale(img.convert('RGB'))
+                  out=ImageOps.colorize(grey,black='#05070a',white='#515b60'); out.putalpha(alpha); out.save(path,optimize=True)
+
+          def naturalize_eyes():
+              for path in data.rglob('brown_eye.png'):
+                  img=Image.open(path).convert('RGBA'); arr=np.asarray(img).copy(); h,w=arr.shape[:2]
+                  yy,xx=np.ogrid[:h,:w]; mask=np.zeros((h,w),dtype=bool)
+                  for cx,cy,r in [(0.31,0.69,0.145),(0.71,0.31,0.145)]:
+                      mask |= (xx-w*cx)**2 + (yy-h*cy)**2 <= (w*r)**2
+                  rgb=arr[...,:3].astype(np.float32)/255.0
+                  mx=rgb.max(-1); mn=rgb.min(-1); sat=mx-mn; iris=mask & (sat>.16) & (mx<.82)
+                  lum=(rgb[...,0]*.28+rgb[...,1]*.56+rgb[...,2]*.16)
+                  # Dark neutral brown/hazel; preserve photographed radial detail through luminance.
+                  nr=np.clip(.16+lum*.44,0,1); ng=np.clip(.09+lum*.31,0,1); nb=np.clip(.045+lum*.16,0,1)
+                  for c,new in enumerate((nr,ng,nb)): rgb[...,c][iris]=new[iris]
+                  # Quiet the sclera redness slightly, without making the eye paper-white.
+                  sclera=mask & ~iris & (mx>.45)
+                  avg=rgb.mean(-1)
+                  rgb[...,0][sclera]=rgb[...,0][sclera]*.72+avg[sclera]*.28
+                  rgb[...,1][sclera]=rgb[...,1][sclera]*.82+avg[sclera]*.18
+                  arr[...,:3]=np.clip(rgb*255,0,255).astype(np.uint8); Image.fromarray(arr,'RGBA').save(path,optimize=True)
+                  break
+
+          def darken_hair(folder: Path):
+              for path in folder.iterdir():
+                  if path.suffix.lower() not in {'.png','.jpg','.jpeg'} or 'diffuse' not in path.name.lower(): continue
+                  img=Image.open(path).convert('RGBA'); alpha=img.getchannel('A'); grey=ImageOps.grayscale(img.convert('RGB'))
+                  out=ImageOps.colorize(grey,black='#0a0807',white='#5b4031'); out.putalpha(alpha); out.save(path,optimize=True)
+
+          graphite_suit(data/'clothes/male_casualsuit06/male_casualsuit06_diffuse.png')
+          graphite_shoes(data/'clothes/shoes01')
+          naturalize_eyes()
+          darken_hair(data/'hair/short02')
+
+          h=mhcore.new_human()
+          h.set_gender(1.0).set_age(0.47).set_weight(0.51).set_muscle(0.62).set_height(0.62)
+          adjustments=[
+            ('head/head-oval',0.12),
+            ('nose/nose-scale-vert-decr|incr',0.04),
+            ('chin/chin-height-decr|incr',0.02),
+            ('chin/chin-jaw-drop-decr|incr',-0.13),
+            ('mouth/mouth-scale-vert-decr|incr',-0.06),
+            ('mouth/mouth-lowerlip-volume-decr|incr',-0.025),
+            ('mouth/mouth-upperlip-volume-decr|incr',-0.02),
+            ('eyes/r-eye-scale-decr|incr',-0.035),
+            ('eyes/l-eye-scale-decr|incr',-0.035),
+            ('eyebrows/eyebrows-angle-down|up',-0.035),
+          ]
+          applied=[]
+          for name,value in adjustments:
+              try: h.apply_modifier(name,value); applied.append([name,value])
+              except Exception as exc: print('modifier skipped',name,type(exc).__name__)
+
+          def pick(kind,token):
+              matches=[p for p in h.list_available(kind) if token.lower() in str(p).lower()]
+              if not matches: raise RuntimeError(f'Missing {kind}: {token}')
+              return matches[0]
+          h.set_skin(pick('skins','young_caucasian_male2'))
+          h.equip_hair(pick('hair','short02'))
+          h.equip_eyes(pick('eyes','high-poly'))
+          h.equip_eyebrows(pick('eyebrows','eyebrow006'))
+          h.equip_eyelashes(pick('eyelashes','eyelashes03'))
+          h.equip_teeth(pick('teeth','teeth_base'))
+          h.equip_clothes(pick('clothes','male_casualsuit06'))
+          h.equip_clothes(pick('clothes','shoes01'))
+
+          h.save_mhm(str(root/'gyms-digital-human-v4.mhm'))
+          obj=Path(h.export(str(root/'gyms-digital-human-v4.obj'))); mtl=obj.with_suffix('.mtl')
+          if not obj.exists() or not mtl.exists(): raise RuntimeError('MakeHuman export missing')
+
+          def locate(raw):
+              p=Path(raw)
+              if not p.is_absolute(): p=(mtl.parent/p).resolve()
+              if p.exists(): return p
+              matches=list(data.rglob(Path(raw).name)); return matches[0] if matches else None
+
+          def optimize(src: Path):
+              img=Image.open(src).convert('RGBA'); name=src.name.lower()
+              limit=2048 if ('skin' in name or 'young_light' in name) else 1024
+              if max(img.size)>limit:
+                  scale=limit/max(img.size); img=img.resize((max(1,round(img.width*scale)),max(1,round(img.height*scale))),Image.Resampling.LANCZOS)
+              alpha=img.getchannel('A'); has_alpha=alpha.getextrema()[0]<250; stem=src.stem.replace(' ','_')
+              if has_alpha:
+                  dst=root/f'{stem}.png'; img.save(dst,optimize=True,compress_level=9)
+              else:
+                  dst=root/f'{stem}.jpg'; img.convert('RGB').save(dst,quality=90 if limit==2048 else 87,optimize=True,progressive=True,subsampling=0)
+              return dst
+
+          rewritten=[]; skin_albedo=None
+          for line in mtl.read_text(errors='replace').splitlines():
+              stripped=line.strip(); prefixes=('map_Kd ','map_Bump ','bump ','map_Ks ','map_d ')
+              if stripped.startswith('map_D '):
+                  continue
+              if stripped.startswith(prefixes):
+                  parts=stripped.split(); src=locate(parts[-1])
+                  if src:
+                      dst=optimize(src); line=' '.join(parts[:-1]+[dst.name])
+                      if parts[0]=='map_Kd' and ('young_light' in src.name.lower() or 'skin' in src.name.lower()): skin_albedo=dst
+              rewritten.append(line)
+          mtl.write_text('\n'.join(rewritten)+'\n')
+
+          if skin_albedo and skin_albedo.exists():
+              img=Image.open(skin_albedo).convert('RGB').resize((1024,1024),Image.Resampling.LANCZOS)
+              grey=np.asarray(ImageOps.grayscale(img),dtype=np.float32)/255.0
+              low=np.asarray(ImageOps.grayscale(img).filter(ImageFilter.GaussianBlur(2.8)),dtype=np.float32)/255.0
+              gy,gx=np.gradient(grey-low); strength=2.35; nx,ny,nz=-gx*strength,gy*strength,np.ones_like(gx)
+              norm=np.sqrt(nx*nx+ny*ny+nz*nz); arr=np.stack([nx/norm*.5+.5,ny/norm*.5+.5,nz/norm*.5+.5],axis=-1)
+              normal=root/'skin_detail_normal.jpg'; Image.fromarray(np.clip(arr*255,0,255).astype(np.uint8),'RGB').save(normal,quality=88,optimize=True,progressive=True,subsampling=0)
+              lines=mtl.read_text().splitlines(); out=[]
+              for line in lines:
+                  out.append(line)
+                  if line.startswith('map_Kd ') and skin_albedo.name in line: out.append(f'map_Bump {normal.name}')
+              mtl.write_text('\n'.join(out)+'\n')
+
+          manifest={
+            'name':'GYMS.LIFE Digital Human v4 candidate',
+            'authorship':'GYMS.LIFE-authored character parameters, natural eye treatment, brandless graphite clothing treatment and derived skin normal',
+            'base':'MakeHuman core/system graphical assets',
+            'license':'CC0-1.0 graphical asset derivative; external authoring tooling not redistributed',
+            'sources':['https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','https://static.makehumancommunity.org/makehuman/faq/can_i_sell_models_created_with_makehuman.html'],
+            'body_parameters':{'gender':1.0,'age':0.47,'weight':0.51,'muscle':0.62,'height':0.62},
+            'modifiers':applied,
+            'assets':['young_caucasian_male2','short02','high-poly eyes','eyebrow006','eyelashes03','teeth_base','male_casualsuit06','shoes01'],
+            'personal_scan':False,'identity_claim':False,'visual_acceptance':False
+          }
+          (root/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Convert v4 to self-contained GLB
+        run: |
+          cd "$RUNNER_TEMP/gyms-human-v4"
+          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v4.obj -o gyms-digital-human-v4.glb -b --secure --checkTransparency
+      - name: Audit exact v4 binary
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v4'; glb=root/'gyms-digital-human-v4.glb'; sha=hashlib.sha256(glb.read_bytes()).hexdigest()
+          rights={'assetSha256':sha,'creator':'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets','sourceUrl':'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','licenseName':'CC0-1.0-derived','evidenceReference':'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ','permissions':{'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}}
+          (root/'rights.json').write_text(json.dumps(rights,indent=2)); print('v4 GLB',glb.stat().st_size,'SHA256',sha)
+          PY
+          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/gyms-human-v4/gyms-digital-human-v4.glb" "$RUNNER_TEMP/gyms-human-v4/rights.json" "$RUNNER_TEMP/gyms-human-v4/intake-report.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v4-review
+          path: |
+            ${{ runner.temp }}/gyms-human-v4/gyms-digital-human-v4.glb
+            ${{ runner.temp }}/gyms-human-v4/SOURCE_MANIFEST.json
+            ${{ runner.temp }}/gyms-human-v4/rights.json
+            ${{ runner.temp }}/gyms-human-v4/intake-report.json
+          retention-days: 3
+          if-no-files-found: error

@@ -1,0 +1,131 @@
+name: Build CC0 GYMS.LIFE digital human v7
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-build-v7.yml]
+permissions:
+  contents: read
+jobs:
+  build-human:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Clone MakeHuman authoring tooling
+        run: git clone --depth 1 https://github.com/vidya-hub/makehuman-core.git "$RUNNER_TEMP/makehuman-core"
+      - name: Install authoring dependencies
+        run: |
+          python -m pip install -e "$RUNNER_TEMP/makehuman-core"
+          python -m pip install pillow numpy
+      - name: Author single-surface Future Lab human v7
+        env:
+          MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          import numpy as np
+          from PIL import Image, ImageFilter, ImageOps
+          import mhcore
+
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v7';root.mkdir(parents=True,exist_ok=True);data=Path(os.environ['MHCORE_DATA'])
+
+          # Turn the CC0 special-suit texture into a restrained GYMS.LIFE Future Lab surface.
+          suit=data/'skins/young_caucasian_male_special_suit/young_caucasian_male_special_suit.png'
+          img=Image.open(suit).convert('RGBA');arr=np.asarray(img).copy();rgb=arr[...,:3].astype(np.float32)/255.
+          mx=rgb.max(-1);mn=rgb.min(-1);sat=mx-mn
+          # Detect the high-saturation orange guide/accent pixels and convert them to muted warm-silver.
+          orange=(rgb[...,0]>.55)&(rgb[...,1]>.16)&(rgb[...,1]<.58)&(rgb[...,2]<.18)&(sat>.32)
+          lum=rgb[...,0]*.28+rgb[...,1]*.58+rgb[...,2]*.14
+          for c,base in enumerate((.54,.59,.60)): rgb[...,c][orange]=np.clip(base+lum[orange]*.10,0,1)
+          # Dark suit pixels retain texture but become graphite, while face/hands stay untouched.
+          dark=(mx<.46)&(~orange)
+          grey=rgb.mean(-1); targets=(.055+grey*.20,.075+grey*.24,.09+grey*.27)
+          for c,t in enumerate(targets): rgb[...,c][dark]=t[dark]
+          arr[...,:3]=np.clip(rgb*255,0,255).astype(np.uint8);Image.fromarray(arr,'RGBA').save(suit,optimize=True)
+
+          # Naturalize brown eye material globally; eyes remain separate geometry for corneal catchlight.
+          for path in data.rglob('brown_eye.png'):
+              eye=Image.open(path).convert('RGBA');a=np.asarray(eye).copy();h,w=a.shape[:2];yy,xx=np.ogrid[:h,:w];mask=np.zeros((h,w),bool)
+              for cx,cy,r in [(0.31,0.69,.145),(0.71,0.31,.145)]:mask|=(xx-w*cx)**2+(yy-h*cy)**2<=(w*r)**2
+              ergb=a[...,:3].astype(np.float32)/255.;emx=ergb.max(-1);emn=ergb.min(-1);iris=mask&((emx-emn)>.14)&(emx<.86);elum=ergb[...,0]*.28+ergb[...,1]*.56+ergb[...,2]*.16
+              vals=(np.clip(.10+elum*.38,0,1),np.clip(.06+elum*.25,0,1),np.clip(.025+elum*.11,0,1))
+              for c,v in enumerate(vals):ergb[...,c][iris]=v[iris]
+              sclera=mask&~iris&(emx>.42);avg=ergb.mean(-1);ergb[...,0][sclera]=ergb[...,0][sclera]*.56+avg[sclera]*.44;ergb[...,1][sclera]=ergb[...,1][sclera]*.77+avg[sclera]*.23;a[...,:3]=np.clip(ergb*255,0,255).astype(np.uint8);Image.fromarray(a,'RGBA').save(path,optimize=True);break
+
+          h=mhcore.new_human();h.set_gender(1.0).set_age(.46).set_weight(.52).set_muscle(.64).set_height(.62)
+          adjustments=[('head/head-oval',.04),('head/head-rectangular',.065),('head/head-scale-depth-decr|incr',.015),('nose/nose-scale-vert-decr|incr',.02),('nose/nose-width2-decr|incr',.025),('chin/chin-jaw-drop-decr|incr',-.56),('chin/chin-width-decr|incr',.11),('chin/chin-bones-decr|incr',.07),('mouth/mouth-scale-vert-decr|incr',-.16),('mouth/mouth-scale-horiz-decr|incr',.015),('mouth/mouth-lowerlip-volume-decr|incr',-.055),('mouth/mouth-upperlip-volume-decr|incr',-.05),('eyes/r-eye-scale-decr|incr',-.055),('eyes/l-eye-scale-decr|incr',-.055)]
+          applied=[]
+          for name,value in adjustments:
+              try:h.apply_modifier(name,value);applied.append([name,value])
+              except Exception as exc:print('modifier skipped',name,type(exc).__name__)
+          def pick(kind,token):
+              m=[p for p in h.list_available(kind) if token.lower() in str(p).lower()]
+              if not m:raise RuntimeError(f'Missing {kind}: {token}')
+              return m[0]
+          h.set_skin(pick('skins','young_caucasian_male_special_suit'));h.equip_eyes(pick('eyes','high-poly'))
+          # Do not equip hair, eyebrows, eyelashes, teeth or clothes: the photographic skin already carries hair/brows and a suit.
+          h.save_mhm(str(root/'gyms-digital-human-v7.mhm'));obj=Path(h.export(str(root/'gyms-digital-human-v7.obj')));mtl=obj.with_suffix('.mtl')
+
+          def locate(raw):
+              p=Path(raw)
+              if not p.is_absolute():p=(mtl.parent/p).resolve()
+              if p.exists():return p
+              m=list(data.rglob(Path(raw).name));return m[0] if m else None
+          def optimize(src):
+              im=Image.open(src).convert('RGBA');name=src.name.lower();limit=2048 if ('special_suit' in name or 'skin' in name) else 1024
+              if max(im.size)>limit:
+                  s=limit/max(im.size);im=im.resize((max(1,round(im.width*s)),max(1,round(im.height*s))),Image.Resampling.LANCZOS)
+              alpha=im.getchannel('A');stem=src.stem.replace(' ','_')
+              if alpha.getextrema()[0]<250:dst=root/f'{stem}.png';im.save(dst,optimize=True,compress_level=9)
+              else:dst=root/f'{stem}.jpg';im.convert('RGB').save(dst,quality=91 if limit==2048 else 88,optimize=True,progressive=True,subsampling=0)
+              return dst
+          rewritten=[];skin=None
+          for line in mtl.read_text(errors='replace').splitlines():
+              st=line.strip();prefixes=('map_Kd ','map_Bump ','bump ','map_Ks ','map_d ')
+              if st.startswith('map_D '):continue
+              if st.startswith(prefixes):
+                  p=st.split();src=locate(p[-1])
+                  if src:
+                      dst=optimize(src);line=' '.join(p[:-1]+[dst.name]);
+                      if p[0]=='map_Kd' and 'special_suit' in src.name.lower():skin=dst
+              rewritten.append(line)
+          mtl.write_text('\n'.join(rewritten)+'\n')
+          if skin and skin.exists():
+              sim=Image.open(skin).convert('RGB').resize((1024,1024),Image.Resampling.LANCZOS);grey=np.asarray(ImageOps.grayscale(sim),dtype=np.float32)/255.;low=np.asarray(ImageOps.grayscale(sim).filter(ImageFilter.GaussianBlur(3)),dtype=np.float32)/255.;gy,gx=np.gradient(grey-low);strength=1.75;nx,ny,nz=-gx*strength,gy*strength,np.ones_like(gx);norm=np.sqrt(nx*nx+ny*ny+nz*nz);normal=root/'surface_detail_normal.jpg';narr=np.stack([nx/norm*.5+.5,ny/norm*.5+.5,nz/norm*.5+.5],-1);Image.fromarray(np.clip(narr*255,0,255).astype(np.uint8),'RGB').save(normal,quality=88,optimize=True,progressive=True,subsampling=0);ls=mtl.read_text().splitlines();o=[]
+              for line in ls:
+                  o.append(line)
+                  if line.startswith('map_Kd ') and skin.name in line:o.append(f'map_Bump {normal.name}')
+              mtl.write_text('\n'.join(o)+'\n')
+          manifest={'name':'GYMS.LIFE Digital Human v7 candidate','authorship':'GYMS.LIFE-authored adult morphology and graphite transformation of MakeHuman CC0 special-suit skin','base':'MakeHuman core/system graphical assets','license':'CC0-1.0 graphical asset derivative; external authoring tooling not redistributed','sources':['https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','https://static.makehumancommunity.org/makehuman/faq/can_i_sell_models_created_with_makehuman.html'],'body_parameters':{'gender':1.0,'age':.46,'weight':.52,'muscle':.64,'height':.62},'modifiers':applied,'assets':['young_caucasian_male_special_suit','high-poly eyes'],'single_surface_suit':True,'personal_scan':False,'identity_claim':False,'visual_acceptance':False};(root/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest,indent=2))
+          PY
+      - name: Convert v7 to self-contained GLB
+        run: |
+          cd "$RUNNER_TEMP/gyms-human-v7"
+          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v7.obj -o gyms-digital-human-v7.glb -b --secure --checkTransparency
+      - name: Audit exact v7 binary
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'gyms-human-v7';glb=root/'gyms-digital-human-v7.glb';sha=hashlib.sha256(glb.read_bytes()).hexdigest();rights={'assetSha256':sha,'creator':'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets','sourceUrl':'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','licenseName':'CC0-1.0-derived','evidenceReference':'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ','permissions':{'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}};(root/'rights.json').write_text(json.dumps(rights,indent=2));print('v7 GLB',glb.stat().st_size,'SHA256',sha)
+          PY
+          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/gyms-human-v7/gyms-digital-human-v7.glb" "$RUNNER_TEMP/gyms-human-v7/rights.json" "$RUNNER_TEMP/gyms-human-v7/intake-report.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v7-review
+          path: |
+            ${{ runner.temp }}/gyms-human-v7/gyms-digital-human-v7.glb
+            ${{ runner.temp }}/gyms-human-v7/SOURCE_MANIFEST.json
+            ${{ runner.temp }}/gyms-human-v7/rights.json
+            ${{ runner.temp }}/gyms-human-v7/intake-report.json
+          retention-days: 3
+          if-no-files-found: error

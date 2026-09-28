@@ -1,0 +1,125 @@
+name: Compare CC0 Digital Human face bases
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-face-ab.yml]
+permissions:
+  contents: read
+jobs:
+  face-ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: young1
+            skin: young_caucasian_male
+            age: '0.46'
+          - key: middle
+            skin: middleage_caucasian_male
+            age: '0.55'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install authoring and browser dependencies
+        run: |
+          git clone --depth 1 https://github.com/vidya-hub/makehuman-core.git "$RUNNER_TEMP/makehuman-core"
+          python -m pip install -e "$RUNNER_TEMP/makehuman-core"
+          python -m pip install pillow numpy
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Build face candidate ${{ matrix.key }}
+        env:
+          MHCORE_DATA: ${{ runner.temp }}/makehuman-core/data
+          SKIN: ${{ matrix.skin }}
+          AGE: ${{ matrix.age }}
+          KEY: ${{ matrix.key }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from PIL import Image
+          import numpy as np
+          import mhcore
+          root=Path(os.environ['RUNNER_TEMP'])/('face-'+os.environ['KEY']);root.mkdir(parents=True,exist_ok=True);data=Path(os.environ['MHCORE_DATA'])
+          for path in data.rglob('brown_eye.png'):
+              img=Image.open(path).convert('RGBA');a=np.asarray(img).copy();h,w=a.shape[:2];yy,xx=np.ogrid[:h,:w];mask=np.zeros((h,w),bool)
+              for cx,cy,r in [(0.31,0.69,.145),(0.71,0.31,.145)]:mask|=(xx-w*cx)**2+(yy-h*cy)**2<=(w*r)**2
+              rgb=a[...,:3].astype(np.float32)/255.;mx=rgb.max(-1);mn=rgb.min(-1);iris=mask&((mx-mn)>.14)&(mx<.86);lum=rgb[...,0]*.28+rgb[...,1]*.56+rgb[...,2]*.16
+              vals=(np.clip(.10+lum*.38,0,1),np.clip(.06+lum*.25,0,1),np.clip(.025+lum*.11,0,1))
+              for c,v in enumerate(vals):rgb[...,c][iris]=v[iris]
+              scl=mask&~iris&(mx>.42);avg=rgb.mean(-1);rgb[...,0][scl]=rgb[...,0][scl]*.56+avg[scl]*.44;rgb[...,1][scl]=rgb[...,1][scl]*.77+avg[scl]*.23;a[...,:3]=np.clip(rgb*255,0,255).astype(np.uint8);Image.fromarray(a,'RGBA').save(path,optimize=True);break
+          h=mhcore.new_human();h.set_gender(1.0).set_age(float(os.environ['AGE'])).set_weight(.52).set_muscle(.63).set_height(.62)
+          for name,value in [('head/head-oval',.03),('head/head-rectangular',.07),('nose/nose-scale-vert-decr|incr',.02),('nose/nose-width2-decr|incr',.03),('chin/chin-jaw-drop-decr|incr',-.58),('chin/chin-width-decr|incr',.12),('chin/chin-bones-decr|incr',.08),('cheek/l-cheek-bones-decr|incr',.035),('cheek/r-cheek-bones-decr|incr',.035),('mouth/mouth-scale-vert-decr|incr',-.17),('mouth/mouth-lowerlip-volume-decr|incr',-.055),('mouth/mouth-upperlip-volume-decr|incr',-.05),('eyes/r-eye-scale-decr|incr',-.06),('eyes/l-eye-scale-decr|incr',-.06)]:
+              try:h.apply_modifier(name,value)
+              except Exception:pass
+          def pick(kind,token):
+              available=list(h.list_available(kind))
+              if kind=='skins':
+                  exact=[p for p in available if Path(p).parent.name.lower()==token.lower()]
+                  if exact:return exact[0]
+              exact=[p for p in available if Path(p).stem.lower()==token.lower()]
+              if exact:return exact[0]
+              raise RuntimeError(f'missing exact {kind} {token}: {[str(p) for p in available]}')
+          skin=pick('skins',os.environ['SKIN']);print('selected skin',skin)
+          h.set_skin(skin);h.equip_eyes(pick('eyes','high-poly'))
+          obj=Path(h.export(str(root/'human.obj')));mtl=obj.with_suffix('.mtl')
+          def locate(raw):
+              p=Path(raw)
+              if not p.is_absolute():p=(mtl.parent/p).resolve()
+              if p.exists():return p
+              m=list(data.rglob(Path(raw).name));return m[0] if m else None
+          out=[]
+          for line in mtl.read_text(errors='replace').splitlines():
+              st=line.strip()
+              if st.startswith('map_D '):continue
+              if st.startswith(('map_Kd ','map_Bump ','bump ','map_Ks ','map_d ')):
+                  parts=st.split();src=locate(parts[-1])
+                  if src:
+                      img=Image.open(src).convert('RGBA');limit=2048 if 'male' in src.name.lower() else 1024
+                      if max(img.size)>limit:
+                          s=limit/max(img.size);img=img.resize((round(img.width*s),round(img.height*s)),Image.Resampling.LANCZOS)
+                      alpha=img.getchannel('A');stem=src.stem
+                      if alpha.getextrema()[0]<250:dst=root/f'{stem}.png';img.save(dst,optimize=True,compress_level=9)
+                      else:dst=root/f'{stem}.jpg';img.convert('RGB').save(dst,quality=92,optimize=True,progressive=True,subsampling=0)
+                      line=' '.join(parts[:-1]+[dst.name])
+              out.append(line)
+          mtl.write_text('\n'.join(out)+'\n')
+          PY
+          cd "$RUNNER_TEMP/face-${KEY}"
+          npx --yes obj2gltf@3.2.0 -i human.obj -o human.glb -b --secure --checkTransparency
+      - name: Render identical studio face
+        env:
+          KEY: ${{ matrix.key }}
+        run: |
+          mkdir -p public/__face_ab
+          cp "$RUNNER_TEMP/face-${KEY}/human.glb" public/__face_ab/human.glb
+          cat > face-ab.html <<'HTML'
+          <!doctype html><html><head><style>html,body,#a{margin:0;width:100%;height:100%;background:#080c0f}canvas{display:block}</style></head><body><div id="a"></div><script type="module" src="/face-ab.js"></script></body></html>
+          HTML
+          cat > face-ab.js <<'JS'
+          import * as THREE from 'three';import{GLTFLoader}from'three/addons/loaders/GLTFLoader.js';import{RoomEnvironment}from'three/addons/environments/RoomEnvironment.js';const r=new THREE.WebGLRenderer({antialias:true});r.setSize(innerWidth,innerHeight);r.setPixelRatio(1);r.outputColorSpace=THREE.SRGBColorSpace;r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=.9;document.querySelector('#a').append(r.domElement);const s=new THREE.Scene();s.background=new THREE.Color('#080c0f');const pm=new THREE.PMREMGenerator(r);s.environment=pm.fromScene(new RoomEnvironment(),.035).texture;const c=new THREE.PerspectiveCamera(25,innerWidth/innerHeight,.01,20);s.add(new THREE.HemisphereLight(0xfff3e7,0x182832,.82));const k=new THREE.DirectionalLight(0xffe5d2,2.35);k.position.set(3.2,4.7,4.2);s.add(k);const f=new THREE.DirectionalLight(0xc8e2ff,.62);f.position.set(-3.8,2.6,3.4);s.add(f);new GLTFLoader().load('/__face_ab/human.glb',g=>{const m=g.scene;s.add(m);m.traverse(o=>{if(o.isMesh&&o.material){const n=(o.material.name||'').toLowerCase();o.material.metalness=0;o.material.roughness=n.includes('eye')?.12:.56;o.material.envMapIntensity=n.includes('eye')?1.55:.52;o.material.needsUpdate=true}});const b=new THREE.Box3().setFromObject(m),z=b.getSize(new THREE.Vector3()),ctr=b.getCenter(new THREE.Vector3());m.position.sub(ctr);m.position.y+=z.y/2;const H=z.y;c.position.set(0,H*.86,H*.50);c.lookAt(0,H*.87,0);r.render(s,c);requestAnimationFrame(()=>{r.render(s,c);window.ready=true})});
+          JS
+          cat > face-vite.config.mjs <<'JS'
+          import{defineConfig}from'vite';export default defineConfig({root:process.cwd(),publicDir:'public',plugins:[],server:{host:'127.0.0.1',port:4181,strictPort:true}})
+          JS
+          npx vite --config face-vite.config.mjs > "$RUNNER_TEMP/vite-${KEY}.log" 2>&1 &
+          for i in {1..40};do curl -fsS http://127.0.0.1:4181/face-ab.html >/dev/null&&break;sleep 1;done
+          node --input-type=module <<'JS'
+          import{chromium}from'@playwright/test';const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:900,height:1200}});await p.goto('http://127.0.0.1:4181/face-ab.html');await p.waitForFunction(()=>window.ready===true,{timeout:30000});await p.waitForTimeout(300);await p.screenshot({path:process.env.RUNNER_TEMP+'/face-'+process.env.KEY+'.png'});await b.close();
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: face-${{ matrix.key }}
+          path: ${{ runner.temp }}/face-${{ matrix.key }}.png
+          retention-days: 2
+          if-no-files-found: error
