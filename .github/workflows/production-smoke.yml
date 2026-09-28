@@ -17,7 +17,9 @@ concurrency:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 16 attempts × 45s of sleep is 12 minutes on its own, and a release has to
+    # outwait a Netlify build that has not started when this job does.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,14 +29,34 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          for attempt in {1..8}; do
-            echo "Production smoke attempt ${attempt}/8"
+
+          # Only a commit carrying the release marker is expected to reach
+          # production; `scripts/netlify-ignore-build.mjs` skips every other
+          # one. So only a release asserts which commit is live — demanding it
+          # of an ordinary merge would fail for doing exactly what it should.
+          #
+          # This is the check that was missing when `cdcfc27` merged the Future
+          # Lab visual system without the marker: the build was skipped in
+          # silence, every page still answered 200, and this workflow called it
+          # healthy for a day.
+          attempts=8
+          if git log -1 --format=%B | grep -qF "[release production]"; then
+            export GYMSLIFE_EXPECTED_COMMIT="${GITHUB_SHA}"
+            # A release also has to wait for a build that has not started yet.
+            attempts=16
+            echo "Release commit: requiring ${GITHUB_SHA} to be the live commit."
+          else
+            echo "Not a release commit: reporting the live commit without requiring it."
+          fi
+
+          for attempt in $(seq 1 "$attempts"); do
+            echo "Production smoke attempt ${attempt}/${attempts}"
             if npm run smoke:production; then
               exit 0
             fi
-            if [ "$attempt" -lt 8 ]; then
+            if [ "$attempt" -lt "$attempts" ]; then
               sleep 45
             fi
           done
-          echo "Production remained unavailable or unhealthy after retries."
+          echo "Production remained unavailable, unhealthy, or not running the released commit."
           exit 1

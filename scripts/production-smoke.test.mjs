@@ -3,18 +3,33 @@ import { runProductionSmoke } from "./production-smoke.checks.mjs";
 
 const dispatch = "/api/internal/night-lab";
 const schedule = "/.netlify/functions/night-lab";
+const identity = "/api/public/environment";
 const html = "<!doctype html><html><title>GYMS.LIFE</title></html>";
+const RELEASED = "a".repeat(40);
+const OTHER = "b".repeat(40);
+
+const identityBody = (overrides = {}) => ({
+  schema: "gyms-environment.v1",
+  status: "compatible",
+  target: "production",
+  buildContext: "production",
+  sourceCommit: RELEASED,
+  issue: null,
+  ...overrides,
+});
+
 function fixture(overrides = {}) {
   return vi.fn(async (url) => {
     const path = url.pathname;
     if (Object.hasOwn(overrides, path)) return overrides[path]();
     if (path === dispatch) return new Response("Unauthorized", { status: 401 });
     if (path === schedule) return new Response(null, { status: 403 });
+    if (path === identity) return Response.json(identityBody());
     return new Response(html, { headers: { "content-type": "text/html" } });
   });
 }
-function run(transport) {
-  return runProductionSmoke({ base: "https://synthetic.invalid", transport });
+function run(transport, options = {}) {
+  return runProductionSmoke({ base: "https://synthetic.invalid", transport, ...options });
 }
 
 describe("production smoke fails closed", () => {
@@ -22,7 +37,7 @@ describe("production smoke fails closed", () => {
     const report = await run(fixture());
     expect(report.ok).toBe(true);
     expect(report.executionVerified).toBe(false);
-    expect(report.results).toHaveLength(9);
+    expect(report.results).toHaveLength(10);
   });
 
   it("detects missing cron configuration even while every page and schedule guard pass", async () => {
@@ -114,9 +129,63 @@ describe("production smoke fails closed", () => {
     });
     const report = await run(transport);
     expect(report.ok).toBe(false);
-    expect(transport).toHaveBeenCalledTimes(9);
+    expect(transport).toHaveBeenCalledTimes(10);
     expect(report.results[0].reason).toBe("request_failed_or_timed_out");
     expect(JSON.stringify(report)).not.toContain("PRIVATE_SENTINEL");
+  });
+
+  it("reports the live commit even when nothing was expected", async () => {
+    const report = await run(fixture());
+    expect(report.liveCommit).toBe(RELEASED);
+    // Reported is not verified, and the run must not imply otherwise.
+    expect(report.commitVerified).toBe(false);
+    expect(report.ok).toBe(true);
+  });
+
+  it("passes when the live commit is the one that was released", async () => {
+    const report = await run(fixture(), { expectedCommit: RELEASED });
+    expect(report.ok).toBe(true);
+    expect(report.commitVerified).toBe(true);
+  });
+
+  it("fails a release whose commit never reached production", async () => {
+    // The `cdcfc27` case exactly: every page answers 200, every guard is
+    // correct, and the build being served is the previous one.
+    const report = await run(fixture(), { expectedCommit: OTHER });
+    expect(report.ok).toBe(false);
+    expect(report.commitVerified).toBe(false);
+    expect(report.results.find((result) => result.name === "deployment-identity")).toMatchObject({
+      ok: false,
+      reason: "deployed_commit_is_not_the_released_commit",
+    });
+  });
+
+  it.each([
+    [{ status: "blocked" }, "deployment_environment_blocked"],
+    [{ target: "staging" }, "deployment_target_mismatch"],
+    [{ sourceCommit: "not-a-sha" }, "deployment_identity_unreadable"],
+    [{ schema: "something-else" }, "deployment_identity_unreadable"],
+  ])("refuses a deployment that describes itself as %o", async (overrides, reason) => {
+    const report = await run(fixture({ [identity]: () => Response.json(identityBody(overrides)) }));
+    expect(report.ok).toBe(false);
+    expect(report.results.find((result) => result.name === "deployment-identity")).toMatchObject({
+      ok: false,
+      reason,
+    });
+  });
+
+  it("treats a build that cannot name itself as unverified, not as healthy", async () => {
+    const report = await run(fixture({ [identity]: () => new Response(html, { status: 404 }) }));
+    expect(report.ok).toBe(false);
+    expect(report.liveCommit).toBeNull();
+  });
+
+  it("rejects an expected commit that is not a commit, before making requests", async () => {
+    const transport = fixture();
+    await expect(runProductionSmoke({ transport, expectedCommit: "main" })).rejects.toThrow(
+      "SMOKE_EXPECTED_COMMIT_INVALID",
+    );
+    expect(transport).not.toHaveBeenCalled();
   });
 
   it.each([0, -1, NaN, 1.5, 120001])(
