@@ -35,10 +35,7 @@ export function buildRegistry(audit) {
   const digest = createHash("md5")
     .update(audit.catalog.map((row) => row.join("|")).join("\n"))
     .digest("hex");
-  requireThat(
-    digest === audit.catalog_md5,
-    "Catalogue differs from observed database digest.",
-  );
+  requireThat(digest === audit.catalog_md5, "Catalogue differs from observed database digest.");
   const slugDigest = createHash("sha256")
     .update([...slugs].sort().join("\n") + "\n")
     .digest("hex");
@@ -61,8 +58,7 @@ export function buildRegistry(audit) {
     "Invalid measured frame dimensions.",
   );
   requireThat(
-    measurements.measured_exceptions &&
-      typeof measurements.measured_exceptions === "object",
+    measurements.measured_exceptions && typeof measurements.measured_exceptions === "object",
     "Missing measured exceptions.",
   );
   for (const [slug, dimensions] of Object.entries(measurements.measured_exceptions)) {
@@ -132,15 +128,11 @@ export function buildRegistry(audit) {
       frames,
       original_creator: null,
       original_source: null,
-      upload_provenance:
-        "Present in the existing repository; original uploader not established.",
+      upload_provenance: "Present in the existing repository; original uploader not established.",
       filmed_human_origin: video?.filmed_human_origin ?? "unverified",
       observed_content_lt: video?.observed_content_lt ?? null,
       content_review_status: video ? "sampled_frames_only" : "not_reviewed",
-      review_flags: video?.review_flags ?? [
-        "no_direct_video",
-        "frame_content_not_reviewed",
-      ],
+      review_flags: video?.review_flags ?? ["no_direct_video", "frame_content_not_reviewed"],
       commercial_use_permission: "unverified",
       self_host_permission: "unverified",
       license_evidence: [],
