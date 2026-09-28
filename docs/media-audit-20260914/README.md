@@ -36,14 +36,14 @@ Keliuose kituose klipuose dalis kūno arba įrangos nepatenka į kadrą. Atskiro
 
 `build-registry.mjs` — be papildomų paketų ir be tinklo išplečia šiuos duomenis į 175 išsamius įrašus. Kiekvienas įrašas turi konkrečius failų kelius, tikėtiną pratimą iš katalogo, raišką, turinio / kilmės / licencijų būsenas. Nežinomas tikslus judesys ir pirminis autorius lieka `null`, leidimai — `unverified`; niekas nepatvirtinama automatiškai.
 
-`build-registry.test.mjs` — 12 atskirų registro tikrinimo testų. Jie nepakeičia visos aplikacijos testų, realaus video atkūrimo ar licencijų patikros.
+`build-registry.node-test.mjs` — 12 atskirų registro tikrinimo testų. Jie nepakeičia visos aplikacijos testų, realaus video atkūrimo ar licencijų patikros.
 
 ## Atkurti registrą
 
 Reikia Node.js 22 arba naujesnio. Iš šio katalogo:
 
 ```sh
-node --test build-registry.test.mjs
+node --test build-registry.node-test.mjs
 node build-registry.mjs exercise-media-audit-20260914.json /tmp/exercise-media-registry-20260914.json
 ```
 
