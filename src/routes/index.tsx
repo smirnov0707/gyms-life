@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "GYMS.LIFE — Your personal Future Lab" },
       { property: "og:description", content: "Your training. Your Digital Twin. Your next step." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Landing,

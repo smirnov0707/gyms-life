@@ -44,7 +44,7 @@ export const Route = createFileRoute("/_authenticated/nutrition")({
       { property: "og:title", content: "Mitybos dienoraštis — GYMS.LIFE" },
       { property: "og:description", content: "Kalorijos ir makro elementai iš vieno sakinio." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: NutritionPage,

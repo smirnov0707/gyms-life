@@ -49,7 +49,7 @@ export const Route = createFileRoute("/_authenticated/supplements")({
         content: "Išmanus papildų paskirstymas per dieną pagal įsisavinimą ir treniruotės laiką.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SupplementsPage,

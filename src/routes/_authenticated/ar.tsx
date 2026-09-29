@@ -65,7 +65,7 @@ export const Route = createFileRoute("/_authenticated/ar")({
         content: "Automatinis pratimo atpažinimas, pakartojimų kokybės balas ir serijos santrauka.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ArMode,

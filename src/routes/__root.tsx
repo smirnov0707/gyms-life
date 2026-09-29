@@ -87,7 +87,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "GYMS.LIFE" },
       { name: "google-site-verification", content: "b1zYHPUG4ttUt9kbOSgIHLPi5OQ3qqplDXfUNFna1f4" },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      // `summary`, not `summary_large_image`: nothing here sets `og:image` or
+      // `twitter:image`, and there is no branded share card in `public/` to
+      // point one at. A large-image card with no image renders as a broken
+      // preview — the card type is a promise about what the page provides, and
+      // claiming the larger one bought a worse link than the honest one.
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

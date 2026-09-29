@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/meal-plan")({
         content: "Receptai, makro elementai ir vienas savaitės pirkinių sąrašas.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: MealPlanPage,
