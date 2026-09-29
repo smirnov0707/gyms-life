@@ -27,8 +27,16 @@
  * Pure and total.
  */
 
-/** The jobs this system knows how to run. */
-export const JOB_NAMES = ["night_lab"] as const;
+/**
+ * The jobs this system knows how to run.
+ *
+ * `night_lab_dispatch` is the schedule's own attempt to hand work to the
+ * worker, ledgered separately from the work itself. It has to be separate: a
+ * refusal recorded under `night_lab` would occupy that night's run key and make
+ * `claimDecision` skip a later retry of the actual job, so the record of a
+ * failure would prevent the recovery from it.
+ */
+export const JOB_NAMES = ["night_lab", "night_lab_dispatch"] as const;
 export type JobName = (typeof JOB_NAMES)[number];
 
 /**

@@ -1,4 +1,4 @@
-import { currentNightLabTarget } from "../../src/lib/night-lab.dispatch.server";
+import { resolveNightLabTarget } from "../../src/lib/night-lab.dispatch.server";
 import type { Config, Context } from "@netlify/functions";
 import { authenticateCronRequest } from "../../src/integrations/supabase/cron-auth";
 /** Same domain modules as the application, bundled once for a longer-lived worker. */
@@ -13,7 +13,14 @@ export default async function nightLabWorker(
     return rejection;
   }
   if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
-  if (!currentNightLabTarget(() => context)) throw new Error("NIGHT_LAB_ENVIRONMENT_UNSAFE");
+  // Named rather than collapsed to a boolean: this refusal and the dispatcher's
+  // are the two ends of the same handshake, and "the deployment could not be
+  // identified" and "it points at the wrong database" need different fixes.
+  const target = resolveNightLabTarget(() => context);
+  if (!target.ok) {
+    console.error("NIGHT_LAB_WORKER_ENVIRONMENT_UNSAFE", target.reason);
+    throw new Error("NIGHT_LAB_ENVIRONMENT_UNSAFE");
+  }
   const { runNightLab } = await import("../../src/lib/night-lab.server");
   const report = await runNightLab();
   if (

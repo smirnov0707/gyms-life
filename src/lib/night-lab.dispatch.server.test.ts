@@ -76,7 +76,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
         settings,
         send,
       ),
-    ).toEqual({ status: "unavailable" });
+    ).toEqual({ status: "unavailable", reason: "TARGET_RESOLUTION_THREW" });
     expect(settings).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
   });
@@ -94,6 +94,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
       send = vi.fn();
     expect(await dispatchCurrentNightLab(() => value, settings, send)).toEqual({
       status: "unavailable",
+      reason: "TARGET_DEPLOYMENT_UNIDENTIFIED",
     });
     expect(settings).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
@@ -118,6 +119,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
     expect(nightLabRuntimeTarget(value)).toBeNull();
     expect(await dispatchCurrentNightLab(() => value, settings, send)).toEqual({
       status: "unavailable",
+      reason: "TARGET_DEPLOYMENT_UNIDENTIFIED",
     });
     expect(send).not.toHaveBeenCalled();
   });
@@ -129,6 +131,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
       const send = vi.fn();
       expect(await dispatchCurrentNightLab(() => value, read(), send)).toEqual({
         status: "unavailable",
+        reason: "TARGET_DEPLOYMENT_UNIDENTIFIED",
       });
       expect(send).not.toHaveBeenCalled();
     },
@@ -143,7 +146,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
       const settings = read(database),
         send = vi.fn();
       expect(await dispatchCurrentNightLab(() => context(kind, published), settings, send)).toEqual(
-        { status: "unavailable" },
+        { status: "unavailable", reason: "TARGET_DATABASE_MISMATCH" },
       );
       expect(settings.mock.calls.map((row) => row[0])).toEqual(["SUPABASE_URL"]);
       expect(send).not.toHaveBeenCalled();
@@ -173,10 +176,13 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
         () => undefined,
         send,
       ),
-    ).toEqual({ status: "unavailable" });
+      // No SUPABASE_URL to compare against is a database mismatch, not a
+      // missing secret: the target is refused before the secret is read.
+    ).toEqual({ status: "unavailable", reason: "TARGET_DATABASE_MISMATCH" });
     vi.stubGlobal("Netlify", undefined);
     expect(await dispatchCurrentNightLab(() => context(), undefined, send)).toEqual({
       status: "unavailable",
+      reason: "TARGET_RESOLUTION_THREW",
     });
     expect(send).not.toHaveBeenCalled();
   });

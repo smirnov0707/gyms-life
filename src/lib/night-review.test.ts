@@ -3,7 +3,7 @@ import { DigitalAthleteSourcesSchema } from "./digital-athlete.schema";
 import { buildDigitalAthleteState } from "./digital-athlete.service";
 import { buildNightReview } from "./night-review.engine";
 import { NightReviewSchema } from "./night-review.schema";
-import { dispatchNightLab } from "./night-lab.dispatch";
+import { dispatchNightLab, DISPATCH_REFUSALS } from "./night-lab.dispatch";
 const NOW = new Date("2026-09-09T06:00:00Z"),
   SNAP = "11111111-1111-4111-8111-111111111111";
 const availability = Object.fromEntries(
@@ -193,29 +193,44 @@ describe("short schedule dispatch, never completion", () => {
     expect(options.signal).toBeInstanceOf(AbortSignal);
   });
   it.each([200, 401, 500, 503])("HTTP %s cannot masquerade as queued work", async (status) => {
+    // The worker's own status is kept: 401 says the two halves disagree about
+    // the secret, 404 says the background function is not deployed. Three weeks
+    // of nightly silence is what having neither costs.
     expect(
       await dispatchNightLab(
         { origin: "https://synthetic.example", secret: "synthetic" },
         vi.fn().mockResolvedValue(new Response(null, { status })),
       ),
-    ).toEqual({ status: "unavailable" });
+    ).toEqual({ status: "unavailable", reason: "DISPATCH_WORKER_REFUSED", workerStatus: status });
   });
   it.each([
-    {},
-    { origin: "https://synthetic.example" },
-    { origin: "http://synthetic.example", secret: "synthetic" },
-    { origin: "https://user:secret@synthetic.example", secret: "synthetic" },
-  ])("rejects missing/unsafe dispatcher configuration %j", async (env) => {
+    [{}, "DISPATCH_SECRET_MISSING"],
+    [{ origin: "https://synthetic.example" }, "DISPATCH_SECRET_MISSING"],
+    [{ secret: "syn thetic", origin: "https://synthetic.example" }, "DISPATCH_SECRET_MALFORMED"],
+    [{ secret: "synthetic" }, "DISPATCH_ORIGIN_MISSING"],
+    [{ origin: "http://synthetic.example", secret: "synthetic" }, "DISPATCH_ORIGIN_UNSAFE"],
+    [
+      { origin: "https://user:secret@synthetic.example", secret: "synthetic" },
+      "DISPATCH_ORIGIN_UNSAFE",
+    ],
+  ])("rejects missing/unsafe dispatcher configuration %j", async (env, reason) => {
     const transport = vi.fn();
-    expect(await dispatchNightLab(env, transport)).toEqual({ status: "unavailable" });
+    expect(await dispatchNightLab(env, transport)).toEqual({ status: "unavailable", reason });
     expect(transport).not.toHaveBeenCalled();
   });
   it("a transport failure remains unavailable without leaking endpoint details", async () => {
-    expect(
-      await dispatchNightLab(
-        { origin: "https://synthetic.example", secret: "synthetic" },
-        vi.fn().mockRejectedValue(new Error("private")),
-      ),
-    ).toEqual({ status: "unavailable" });
+    const result = await dispatchNightLab(
+      { origin: "https://synthetic.example", secret: "synthetic" },
+      vi.fn().mockRejectedValue(new Error("private")),
+    );
+    expect(result).toEqual({ status: "unavailable", reason: "DISPATCH_TRANSPORT_FAILED" });
+    // Naming the gate must not become a way of naming the cause.
+    expect(JSON.stringify(result)).not.toContain("private");
+  });
+
+  it("names every refusal with a code the ledger will accept", () => {
+    // A code the check constraint rejects fails the closing write and leaves
+    // the row `running` — a reported failure turned back into a silent one.
+    for (const refusal of DISPATCH_REFUSALS) expect(refusal).toMatch(/^[A-Z][A-Z0-9_]{2,63}$/);
   });
 });
