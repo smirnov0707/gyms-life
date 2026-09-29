@@ -14,4 +14,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://gyms.life/sitemap.xml
-Sitemap: https://gyms.life/sitemap.xml
