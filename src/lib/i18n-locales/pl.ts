@@ -382,7 +382,7 @@ export const locale: Record<string, string> = {
   "lg.terms.p9":
     "W przypadku pytań dotyczących niniejszych warunków skontaktuj się: Aleksandr Smirnov, za pośrednictwem kanałów pomocy w aplikacji.",
   "lg.privacy.title": "Polityka prywatności",
-  "lg.privacy.updated": "Ostatnia aktualizacja: 26 sierpnia 2026",
+  "lg.privacy.updated": "Ostatnia aktualizacja: 29 września 2026",
   "lg.privacy.h1": "1. Administrator danych",
   "lg.privacy.p1":
     "Administratorem Twoich danych osobowych jest Aleksandr Smirnov, dostawca usługi GYMS.LIFE.",
@@ -393,6 +393,8 @@ export const locale: Record<string, string> = {
   "lg.privacy.li2c":
     "Dane dotyczące aktywności: dzienniki treningów i odżywiania, wpisy o samopoczuciu, wskaźniki zdrowotne (jeśli zostały zaimportowane).",
   "lg.privacy.li2d": "Dane techniczne: identyfikatory urządzeń, adres IP, telemetria użytkowania.",
+  "lg.privacy.li2e":
+    "Zdjęcia i nagrania głosowe: zdjęcia ciała, posiłków, etykiet suplementów i techniki oraz nagrania głosowe przesyłane do analizy.",
   "lg.privacy.h3": "3. Jak wykorzystujemy dane",
   "lg.privacy.li3a": "W celu utworzenia konta i świadczenia usługi (wykonanie umowy).",
   "lg.privacy.li3b":
@@ -407,6 +409,8 @@ export const locale: Record<string, string> = {
     "Paddle – naszemu Merchant of Record, który obsługuje subskrypcje, płatności, podatki i faktury.",
   "lg.privacy.li4c": "Profesjonalnym doradcom (prawnicy, księgowi).",
   "lg.privacy.li4d": "Organom państwowym, gdy wymaga tego prawo.",
+  "lg.privacy.li4e":
+    "Dostawcami usług AI (Google, Groq, OpenAI, OpenRouter), którzy otrzymują kontekst zapytania — dane profilu i treningów, a przy korzystaniu z funkcji zdjęć lub głosu również przesłane zdjęcia i nagrania. Dostawcy ci znajdują się poza EOG; obowiązują zabezpieczenia z sekcji 7.",
   "lg.privacy.h5": "5. Przechowywanie danych",
   "lg.privacy.p5":
     "Przechowujemy dane tak długo, jak jest to konieczne do świadczenia usługi oraz zgodnie z wymogami prawa; dane, które nie są już potrzebne, są usuwane lub anonimizowane.",
@@ -421,7 +425,7 @@ export const locale: Record<string, string> = {
     "Stosujemy odpowiednie środki techniczne i organizacyjne: szyfrowanie, kontrolę dostępu, monitorowanie.",
   "lg.privacy.h9": "9. Pliki cookie",
   "lg.privacy.p9":
-    "Używamy niezbędnych plików cookie (sesja, uwierzytelnianie). Możesz zmienić ustawienia w swojej przeglądarce.",
+    "Używamy niezbędnych plików cookie (sesja, uwierzytelnianie) oraz pamięci przeglądarki (localStorage, IndexedDB) do zapisania ustawień języka i motywu oraz zarejestrowanych serii, gdy jesteś offline. Ustawienia możesz zmienić w przeglądarce.",
   "lg.refund.title": "Polityka zwrotów",
   "lg.refund.updated": "Ostatnia aktualizacja: 26 sierpnia 2026",
   "lg.refund.h1": "30-dniowa gwarancja",

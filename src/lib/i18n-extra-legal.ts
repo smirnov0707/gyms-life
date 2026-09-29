@@ -61,8 +61,8 @@ export const extra_legal = {
   // Privacy
   "lg.privacy.title": { lt: "Privatumo politika", en: "Privacy Policy" },
   "lg.privacy.updated": {
-    lt: "Paskutinį kartą atnaujinta: 2026 m. rugpjūčio 26 d.",
-    en: "Last updated: August 26, 2026",
+    lt: "Paskutinį kartą atnaujinta: 2026 m. rugsėjo 29 d.",
+    en: "Last updated: September 29, 2026",
   },
   "lg.privacy.h1": { lt: "1. Duomenų valdytojas", en: "1. Data Controller" },
   "lg.privacy.p1": {
@@ -81,6 +81,10 @@ export const extra_legal = {
   "lg.privacy.li2c": {
     lt: "Veiklos duomenys: treniruočių ir mitybos žurnalai, savijautos įvestys, sveikatos rodikliai (jei importuojate).",
     en: "Activity data: workout and nutrition logs, wellbeing entries, health metrics (if imported).",
+  },
+  "lg.privacy.li2e": {
+    lt: "Nuotraukos ir garso įrašai: kūno, maisto, papildų etikečių ir technikos nuotraukos bei balso įrašai, kuriuos pateikiate analizei.",
+    en: "Photos and voice recordings: images of your body, meals, supplement labels and lifting technique, and voice recordings you submit for analysis.",
   },
   "lg.privacy.li2d": {
     lt: "Techniniai duomenys: įrenginio identifikatoriai, IP adresas, naudojimosi telemetrija.",
@@ -116,6 +120,10 @@ export const extra_legal = {
     lt: "Paddle – mūsų įgaliotuoju pardavėju (Merchant of Record), kuris tvarko prenumeratas, mokėjimus, mokesčius ir sąskaitas.",
     en: "Paddle – our Merchant of Record, which handles subscriptions, payments, taxes and invoices.",
   },
+  "lg.privacy.li4e": {
+    lt: "Dirbtinio intelekto paslaugų teikėjais (Google, Groq, OpenAI, OpenRouter), kuriems perduodamas užklausos kontekstas — profilio ir treniruočių duomenys, o naudojantis nuotraukų ar balso funkcijomis, ir pateiktos nuotraukos bei garso įrašai. Šie teikėjai yra už EEE ribų; taikomos 7 skyriaus apsaugos priemonės.",
+    en: "AI service providers (Google, Groq, OpenAI, OpenRouter), which receive the context of a request — profile and training data, and, when you use the photo or voice features, the images and audio you submit. These providers are outside the EEA; the safeguards in section 7 apply.",
+  },
   "lg.privacy.li4c": {
     lt: "Profesionaliais patarėjais (teisininkai, buhalteriai).",
     en: "Professional advisors (lawyers, accountants).",
@@ -146,8 +154,8 @@ export const extra_legal = {
   },
   "lg.privacy.h9": { lt: "9. Slapukai", en: "9. Cookies" },
   "lg.privacy.p9": {
-    lt: "Naudojame būtinus slapukus (seansas, autentifikacija). Nustatymus galite keisti naršyklėje.",
-    en: "We use essential cookies (session, authentication). You can change settings in your browser.",
+    lt: "Naudojame būtinus slapukus (seansas, autentifikacija) ir naršyklės saugyklą (localStorage, IndexedDB) — kalbos bei temos nustatymams ir treniruotės įrašams išsaugoti, kai nutrūksta ryšys. Nustatymus galite keisti naršyklėje.",
+    en: "We use essential cookies (session, authentication) and browser storage (localStorage, IndexedDB) to keep your language and theme settings and to hold logged sets while you are offline. You can change settings in your browser.",
   },
 
   // Refund

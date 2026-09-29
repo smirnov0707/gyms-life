@@ -385,7 +385,7 @@ export const locale: Record<string, string> = {
   "lg.terms.p9":
     "Pour toute question concernant ces conditions, contactez : Aleksandr Smirnov, via les canaux d'assistance de l'application.",
   "lg.privacy.title": "Politique de confidentialité",
-  "lg.privacy.updated": "Dernière mise à jour : 26 août 2026",
+  "lg.privacy.updated": "Dernière mise à jour : 29 septembre 2026",
   "lg.privacy.h1": "1. Responsable du traitement",
   "lg.privacy.p1":
     "Le responsable du traitement de vos données personnelles est Aleksandr Smirnov, éditeur du service GYMS.LIFE.",
@@ -397,6 +397,8 @@ export const locale: Record<string, string> = {
     "Données d'activité : journaux d'entraînement et de nutrition, entrées de bien-être, indicateurs de santé (si importés).",
   "lg.privacy.li2d":
     "Données techniques : identifiants de l'appareil, adresse IP, télémétrie d'utilisation.",
+  "lg.privacy.li2e":
+    "Photos et enregistrements vocaux : images de votre corps, de vos repas, des étiquettes de compléments et de votre technique, ainsi que les enregistrements vocaux que vous soumettez pour analyse.",
   "lg.privacy.h3": "3. Utilisation des données",
   "lg.privacy.li3a": "Créer un compte et fournir le service (exécution du contrat).",
   "lg.privacy.li3b":
@@ -410,6 +412,8 @@ export const locale: Record<string, string> = {
     "Paddle – notre marchand officiel, qui gère les abonnements, les paiements, les taxes et la facturation.",
   "lg.privacy.li4c": "Conseillers professionnels (avocats, experts-comptables).",
   "lg.privacy.li4d": "Autorités publiques, lorsque la loi l'exige.",
+  "lg.privacy.li4e":
+    "Fournisseurs de services d'IA (Google, Groq, OpenAI, OpenRouter), qui reçoivent le contexte d'une demande — données de profil et d'entraînement et, lors de l'utilisation des fonctions photo ou vocale, les images et les enregistrements audio soumis. Ces fournisseurs sont situés hors de l'EEE ; les garanties de la section 7 s'appliquent.",
   "lg.privacy.h5": "5. Conservation",
   "lg.privacy.p5":
     "Nous conservons les données aussi longtemps que nécessaire pour fournir le service et respecter nos obligations légales ; les données devenues inutiles sont supprimées ou anonymisées.",
@@ -424,7 +428,7 @@ export const locale: Record<string, string> = {
     "Nous mettons en œuvre des mesures techniques et organisationnelles adaptées : chiffrement, contrôle des accès, surveillance.",
   "lg.privacy.h9": "9. Cookies",
   "lg.privacy.p9":
-    "Nous utilisons des cookies essentiels (session, authentification). Vous pouvez modifier vos préférences dans votre navigateur.",
+    "Nous utilisons des cookies essentiels (session, authentification) et le stockage du navigateur (localStorage, IndexedDB) pour conserver vos préférences de langue et de thème et les séries enregistrées lorsque vous êtes hors ligne. Vous pouvez modifier les paramètres dans votre navigateur.",
   "lg.refund.title": "Politique de remboursement",
   "lg.refund.updated": "Dernière mise à jour : 26 août 2026",
   "lg.refund.h1": "Garantie de 30 jours",

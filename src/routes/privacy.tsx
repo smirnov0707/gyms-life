@@ -45,6 +45,7 @@ function PrivacyPage() {
         <li>{t("lg.privacy.li2b")}</li>
         <li>{t("lg.privacy.li2c")}</li>
         <li>{t("lg.privacy.li2d")}</li>
+        <li>{t("lg.privacy.li2e")}</li>
       </ul>
 
       <h2 id="section-3">{t("lg.privacy.h3")}</h2>
@@ -62,6 +63,7 @@ function PrivacyPage() {
         <li>{t("lg.privacy.li4b")}</li>
         <li>{t("lg.privacy.li4c")}</li>
         <li>{t("lg.privacy.li4d")}</li>
+        <li>{t("lg.privacy.li4e")}</li>
       </ul>
 
       <h2 id="section-5">{t("lg.privacy.h5")}</h2>
