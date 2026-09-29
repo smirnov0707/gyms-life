@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -38,6 +39,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 const { exerciseHeadMeta, readExerciseName } = await import("./exercise-head");
+const { getExerciseMedia } = await import("./exercise-media");
 
 const titleOf = (meta: ReturnType<typeof exerciseHeadMeta>) =>
   meta.find((entry) => "title" in entry)?.title ?? "";
@@ -95,7 +97,7 @@ describe("the name an exercise page titles itself with", () => {
 describe("the head an exercise page writes", () => {
   it("names the exercise in the tab, the search snippet and the shared link", () => {
     const meta = exerciseHeadMeta("ab-wheel", "Ratukas presui");
-    expect(titleOf(meta)).toBe("Ratukas presui — pratimo technika ir video | GYMS.LIFE");
+    expect(titleOf(meta)).toContain("Ratukas presui");
     expect(contentOf(meta, "description")).toContain("Ratukas presui");
     expect(contentOf(meta, "og:title")).toContain("Ratukas presui");
     expect(contentOf(meta, "og:description")).toContain("Ratukas presui");
@@ -113,7 +115,61 @@ describe("the head an exercise page writes", () => {
 
   it("still titles the page when the name is missing, with the slug it had before", () => {
     const meta = exerciseHeadMeta("ab-wheel", null);
-    expect(titleOf(meta)).toBe("ab-wheel — pratimo technika ir video | GYMS.LIFE");
+    expect(titleOf(meta)).toMatch(/^ab-wheel — /);
+  });
+});
+
+describe("the demonstration an exercise page promises before you arrive", () => {
+  // Real slugs, read through the real media map, because the defect was the
+  // head disagreeing with what the page then rendered. A mock here could only
+  // reproduce the agreement it is supposed to be checking.
+  const HAS_VIDEO = "squat";
+  const HAS_FRAMES = "ab-wheel";
+
+  it("says video only where a video exists", () => {
+    expect(getExerciseMedia(HAS_VIDEO).type).toBe("video");
+    const meta = exerciseHeadMeta(HAS_VIDEO, "Pritūpimai");
+    expect(titleOf(meta)).toContain("vaizdo demonstracija");
+    expect(contentOf(meta, "og:description")).toContain("vaizdo demonstracija");
+  });
+
+  it("never says video for the 165 exercises that are two still frames", () => {
+    // The defect. `ab-wheel` renders an <img> with `Kadras 1` / `Kadras 2`
+    // controls — the page was always honest once you were on it. The tab, the
+    // search snippet and the shared link were not.
+    expect(getExerciseMedia(HAS_FRAMES).type).toBe("frames");
+    for (const entry of exerciseHeadMeta(HAS_FRAMES, "Ratukas presui")) {
+      expect(String(entry.title ?? entry.content)).not.toMatch(/video|vaizdo/i);
+    }
+  });
+
+  it("promises no demonstration at all where there is none", () => {
+    for (const entry of exerciseHeadMeta("slug-with-no-media-at-all", "Nežinomas")) {
+      expect(String(entry.title ?? entry.content)).not.toMatch(/video|vaizdo|kadr/i);
+    }
+  });
+
+  it("answers differently for all three kinds, not just exhaustively", () => {
+    // `Record<MediaType, …>` makes the compiler demand three entries. It cannot
+    // demand that they differ, and three identical entries would be the same
+    // defect with the types satisfied.
+    const titles = [HAS_VIDEO, HAS_FRAMES, "slug-with-no-media-at-all"].map((slug) =>
+      titleOf(exerciseHeadMeta(slug, "X")),
+    );
+    expect(new Set(titles).size).toBe(3);
+  });
+
+  it("is a claim the library index does not make on their behalf either", () => {
+    // The index said "175+ pratimų su technikos video" — wrong about the video
+    // for 165 of them, and with no slack at all above 175.
+    const source = readFileSync(new URL("../routes/exercises.index.tsx", import.meta.url), "utf8");
+    const head = /head:\s*\(\)\s*=>\s*\(\{([\s\S]*?)\n {2}\}\),/.exec(source)?.[1] ?? "";
+    expect(head).not.toBe("");
+    const claims = [...head.matchAll(/(?:title|content):\s*\n?\s*"([^"]+)"/g)].map(
+      (m) => m[1] ?? "",
+    );
+    expect(claims.length).toBeGreaterThanOrEqual(4);
+    for (const claim of claims) expect(claim).not.toMatch(/\bvideo\b/i);
   });
 });
 

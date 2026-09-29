@@ -22,16 +22,21 @@ import { ExerciseVideo } from "@/components/ExerciseVideo";
 export const Route = createFileRoute("/exercises/")({
   head: () => ({
     meta: [
-      { title: "Pratimų biblioteka: 175+ pratimų su technikos video — GYMS.LIFE" },
+      // Ten of the 175 exercises have a video; the rest are frame sequences,
+      // which the cards and the detail pages label as such. "175+ pratimų su
+      // technikos video" was wrong twice over — the count has no slack above
+      // 175, and the video belonged to 6% of them.
+      { title: "Pratimų biblioteka: technika, klaidos ir demonstracijos — GYMS.LIFE" },
       {
         name: "description",
         content:
-          "175+ pratimų su technikos vaizdo demonstracijomis. Filtruok pagal kūno dalį, sudėtingumą ir įrangą: štanga, hanteliai, guma, treniruokliai, skersinis, TRX ir kt.",
+          "Pratimų technika žingsnis po žingsnio su judesio kadrais, o pagrindiniams pratimams — vaizdo demonstracijomis. Filtruok pagal kūno dalį, sudėtingumą ir įrangą: štanga, hanteliai, guma, treniruokliai, skersinis, TRX ir kt.",
       },
-      { property: "og:title", content: "Pratimų biblioteka: 175+ pratimai — GYMS.LIFE" },
+      { property: "og:title", content: "Pratimų biblioteka — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Technikos video, klaidų analizė ir filtrai pagal įrangą bei sudėtingumą.",
+        content:
+          "Technikos demonstracijos, klaidų analizė ir filtrai pagal įrangą bei sudėtingumą.",
       },
     ],
   }),

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getExerciseMedia, type MediaType } from "@/lib/exercise-media";
 
 /**
  * What a crawler, a chat preview and a browser tab are told an exercise page is.
@@ -63,21 +64,56 @@ export interface HeadMetaEntry {
   content?: string;
 }
 
+/**
+ * What each kind of demonstration may be called before anybody has seen it.
+ *
+ * `getExerciseMedia` answers `video`, `frames` or `fallback`, and of the 175
+ * exercises in the catalogue exactly 10 answer `video`. The other 165 are two
+ * JPEGs the page cross-fades, labelled `Kadras 1` / `Kadras 2` — which the page
+ * itself has always been honest about, in the caption, once you are on it. The
+ * head was not: every one of those 165 pages promised `video` in the tab, the
+ * search snippet and the shared link, and the library index promised "175+
+ * pratimų su technikos video" on top.
+ *
+ * `Record<MediaType, …>` makes the compiler ask for all three. It cannot ask
+ * that they differ, which is exactly what went wrong, so that is tested.
+ */
+const DEMONSTRATION: Record<MediaType, { title: string; description: string; share: string }> = {
+  video: {
+    title: "technika ir vaizdo demonstracija",
+    description: "dažniausios klaidos ir vaizdo demonstracija",
+    share: "vaizdo demonstracija ir patarimai",
+  },
+  frames: {
+    title: "technika žingsnis po žingsnio",
+    description: "dažniausios klaidos ir judesio kadrai",
+    share: "judesio kadrai ir patarimai",
+  },
+  fallback: {
+    title: "pratimo technika",
+    description: "dažniausios klaidos ir technikos patarimai",
+    share: "technikos patarimai ir dažniausios klaidos",
+  },
+};
+
 /** The head for one exercise page, from its slug and whatever name was read. */
 export function exerciseHeadMeta(slug: string, name: ExerciseName): HeadMetaEntry[] {
   // Falling back to the slug keeps the page titled with something rather than
   // nothing; it is the old behaviour, now reached only when the read failed.
   const label = name ?? slug;
+  // The media lives in a static map keyed by slug, so this needs no read and
+  // cannot disagree with what the page will actually render.
+  const demo = DEMONSTRATION[getExerciseMedia(slug).type];
   return [
-    { title: `${label} — pratimo technika ir video | GYMS.LIFE` },
+    { title: `${label} — ${demo.title} | GYMS.LIFE` },
     {
       name: "description",
-      content: `${label}: technika žingsnis po žingsnio, dažniausios klaidos ir vaizdo demonstracija.`,
+      content: `${label}: technika žingsnis po žingsnio, ${demo.description}.`,
     },
     { property: "og:title", content: `${label} — pratimo technika | GYMS.LIFE` },
     {
       property: "og:description",
-      content: `Kaip taisyklingai atlikti pratimą „${label}“ — video ir patarimai.`,
+      content: `Kaip taisyklingai atlikti pratimą „${label}“ — ${demo.share}.`,
     },
   ];
 }
