@@ -3,9 +3,10 @@ import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles, Timer, Dumbbell, ChevronRight, Flame, Wind } from "lucide-react";
 import { toast } from "sonner";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { buildRequestedWorkout, type RequestedWorkout } from "@/lib/workout-request.functions";
+import { exerciseLinkLabel } from "@/lib/exercise-link-label";
 
 type Labels = {
   title: string;
@@ -21,12 +22,11 @@ type Labels = {
   tips: string;
   sets: string;
   rest: string;
-  open: string;
   signIn: string;
   examples: string[];
 };
 
-const L: Record<string, Labels> = {
+const L: Record<"lt" | "en", Labels> = {
   lt: {
     title: "Parašyk, ką nori treniruoti",
     subtitle: "Treneris sudarys pratimų sąrašą su serijomis, kartojimais, poilsiu ir trukme.",
@@ -41,7 +41,6 @@ const L: Record<string, Labels> = {
     tips: "Patarimai",
     sets: "serijos",
     rest: "poilsis",
-    open: "Žiūrėti video",
     signIn: "Prisijunk, kad Treneris sudarytų treniruotę pagal tavo profilį",
     examples: [
       "Presas ir liemuo namie, 20 min",
@@ -63,7 +62,6 @@ const L: Record<string, Labels> = {
     tips: "Tips",
     sets: "sets",
     rest: "rest",
-    open: "Watch video",
     signIn: "Sign in so the Coach can build a workout from your profile",
     examples: [
       "Abs and core at home, 20 min",
@@ -75,7 +73,9 @@ const L: Record<string, Labels> = {
 
 export function WorkoutRequestBuilder() {
   const { lang } = useI18n();
-  const l = L[lang] ?? L["en"]!;
+  // Through `baseLang`: six of the eight shipped locales have no branch here
+  // and must land on English rather than on Lithuanian.
+  const l = L[baseLang(lang)];
   const { user } = useAuth();
   const build = useServerFn(buildRequestedWorkout);
   const [request, setRequest] = useState("");
@@ -220,7 +220,7 @@ export function WorkoutRequestBuilder() {
                       params={{ slug: b.slug }}
                       className="press flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1 text-xs font-semibold hover:bg-surface-2"
                     >
-                      {l.open} <ChevronRight className="size-3" />
+                      {exerciseLinkLabel(lang, b.slug)} <ChevronRight className="size-3" />
                     </Link>
                   )}
                 </li>
