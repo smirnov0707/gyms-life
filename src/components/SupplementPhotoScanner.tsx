@@ -14,6 +14,7 @@ import { tactileClick } from "@/lib/tactile";
 import { cn } from "@/lib/utils";
 import { aiErrorMessage } from "@/lib/ai-error";
 import { errorMessage } from "@/lib/error-message";
+import { AiMediaDisclosure } from "@/components/AiMediaDisclosure";
 
 const CATEGORIES = [
   "protein",
@@ -443,6 +444,7 @@ export function SupplementPhotoScanner({ active = true }: { active?: boolean }) 
           </div>
         </div>
       )}
+      <AiMediaDisclosure />
     </section>
   );
 }

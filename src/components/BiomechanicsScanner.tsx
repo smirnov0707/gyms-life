@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { useI18n, baseLang } from "../lib/i18n";
 import { analyzeExerciseForm, type ExerciseFormAnalysis } from "../lib/biomechanics.functions";
 import { errorMessage } from "../lib/error-message";
+import { AiMediaDisclosure } from "@/components/AiMediaDisclosure";
 
 export const BiomechanicsScanner: React.FC = () => {
   const { lang } = useI18n();
@@ -160,6 +161,7 @@ export const BiomechanicsScanner: React.FC = () => {
           )}
         </div>
       )}
+      <AiMediaDisclosure />
     </div>
   );
 };

@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { aiErrorMessage } from "@/lib/ai-error";
 import { errorMessage } from "@/lib/error-message";
+import { AiMediaDisclosure } from "@/components/AiMediaDisclosure";
 
 type Result = {
   score: number;
@@ -339,6 +340,7 @@ export function FormScanner() {
           </div>
         </div>
       )}
+      <AiMediaDisclosure />
     </div>
   );
 }

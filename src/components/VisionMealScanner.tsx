@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { analyzeMealPhoto, savePhotoMeal, type MealAnalysis } from "@/lib/food-vision.functions";
 import { errorMessage } from "@/lib/error-message";
 import { browserTimeZone } from "@/lib/local-day";
+import { AiMediaDisclosure } from "@/components/AiMediaDisclosure";
 
 const SUPPORTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -343,6 +344,7 @@ export const VisionMealScanner: React.FC = () => {
           )}
         </div>
       )}
+      <AiMediaDisclosure />
     </div>
   );
 };

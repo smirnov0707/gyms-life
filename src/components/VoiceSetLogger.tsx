@@ -8,6 +8,7 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { parseVoiceWorkoutLog } from "@/lib/voice-logger.functions";
 import { chooseAudioRecordingType, type VoiceSetDraft } from "@/lib/voice-log.schema";
 import { aiErrorMessage } from "@/lib/ai-error";
+import { AiMediaDisclosure } from "@/components/AiMediaDisclosure";
 export interface VoiceSetLoggerProps {
   onSetLogged?: (data: VoiceSetDraft) => void;
 }
@@ -183,6 +184,7 @@ export function VoiceSetLogger({ onSetLogged }: VoiceSetLoggerProps) {
           )}
         </div>
       )}
+      <AiMediaDisclosure kind="audio" />
     </section>
   );
 }

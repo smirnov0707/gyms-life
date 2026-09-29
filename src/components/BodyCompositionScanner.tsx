@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth";
 import { analyzeBodyScan } from "@/lib/body-scan.functions";
 import { claimOpenedCapture, stopCaptureStream } from "@/lib/media-capture";
 import { errorMessage } from "@/lib/error-message";
+import { AiMediaDisclosure } from "@/components/AiMediaDisclosure";
 
 type Result = {
   /** Null when nothing supported a confidence figure; shown as unknown. */
@@ -784,6 +785,7 @@ export const BodyCompositionScanner: React.FC<{
           </p>
         </div>
       )}
+      <AiMediaDisclosure />
     </div>
   );
 };
