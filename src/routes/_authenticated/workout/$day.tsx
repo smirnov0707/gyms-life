@@ -92,6 +92,9 @@ type Copy = {
   logFailed: string;
   offlineQueueFull: string;
   offlineStorageFull: string;
+  offlineStorageUnavailable: string;
+  offlineIdentityChanged: string;
+  offlineQueueUnreadable: string;
   reconnectBeforeFinish: string;
   reconnectBeforeStart: string;
   finished: string;
@@ -186,6 +189,12 @@ function copyFor(lang: Lang): Copy {
         "This device is holding as many offline sets as it can. Your earlier sets are safe — reconnect to send them, then log this one.",
       offlineStorageFull:
         "This device has no room left to store the set. Your earlier sets are safe — free some space or reconnect to send them.",
+      offlineStorageUnavailable:
+        "This device's storage would not open, so the set was not saved here. Another tab of GYMS.LIFE may be holding it — close the others and try again, or reconnect and log the set online.",
+      offlineIdentityChanged:
+        "The signed-in account changed while the set was being saved, so it was not written. Sets already on this device belong to the account that logged them and were not touched. Check who is signed in, then log the set again.",
+      offlineQueueUnreadable:
+        "Some sets stored on this device could not be read, so this workout will not be shown as up to date. Nothing was deleted. Reconnect so the readable ones can be sent.",
       reconnectBeforeFinish: "Reconnect so your sets are saved before finishing the workout.",
       reconnectBeforeStart:
         "Reconnect to start or resume your workout. A started workout can record sets on this device.",
@@ -288,6 +297,12 @@ function copyFor(lang: Lang): Copy {
       "Šis įrenginys nebetalpina daugiau neprisijungus įrašytų serijų. Ankstesnės serijos išsaugotos – atkurkite ryšį, kad jos būtų persiųstos, ir tada įrašykite šią.",
     offlineStorageFull:
       "Šiame įrenginyje nebėra vietos serijai išsaugoti. Ankstesnės serijos išsaugotos – atlaisvinkite vietos arba atkurkite ryšį, kad jos būtų persiųstos.",
+    offlineStorageUnavailable:
+      "Šio įrenginio saugykla neatsidarė, tad serija čia neišsaugota. Gali būti, kad ją laiko kitas atidarytas GYMS.LIFE langas – uždaryk kitus ir bandyk dar kartą arba atkurk ryšį ir įrašyk seriją prisijungęs.",
+    offlineIdentityChanged:
+      "Saugant seriją pasikeitė prisijungusi paskyra, tad ji nebuvo įrašyta. Šiame įrenginyje jau esančios serijos priklauso jas įrašiusiai paskyrai ir nebuvo paliestos. Patikrink, kas prisijungęs, ir įrašyk seriją iš naujo.",
+    offlineQueueUnreadable:
+      "Kai kurių šiame įrenginyje išsaugotų serijų nepavyko perskaityti, tad ši treniruotė nebus rodoma kaip pilnai išsaugota. Niekas neištrinta. Atkurk ryšį, kad perskaitomos serijos būtų persiųstos.",
     reconnectBeforeFinish:
       "Atkurkite ryšį, kad prieš užbaigiant treniruotę būtų išsaugotos serijos.",
     reconnectBeforeStart:
@@ -527,7 +542,9 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
       if (!stillCurrent()) return;
       const saved = await getOfflineQueue(ownerId);
       if (!stillCurrent()) return;
-      if (saved.invalidCount) throw new AthleteFacingError(copy.offlineStorageFull);
+      // Unreadable rows are not a full device, and the athlete can do nothing
+      // about them by deleting photos.
+      if (saved.invalidCount) throw new AthleteFacingError(copy.offlineQueueUnreadable);
       const localQueue = saved.items;
       setSessionId(result.session.id);
       setActiveWorkout(result.workout);
@@ -589,9 +606,17 @@ function WorkoutPage({ ownerId }: { ownerId: string }) {
       await queueWorkoutSet(input, ownerId);
     } catch (error) {
       if (!(error instanceof OfflineQueueError)) throw error;
-      throw new AthleteFacingError(
-        error.reason === "queue_full" ? copy.offlineQueueFull : copy.offlineStorageFull,
-      );
+      // One message per reason. The contract models four, and collapsing them
+      // to two told an athlete whose storage would not open, and one whose
+      // account had changed, to go and free disk space — advice that cannot
+      // work, given to somebody mid-workout.
+      const OFFLINE_COPY: Record<typeof error.reason, string> = {
+        queue_full: copy.offlineQueueFull,
+        storage_rejected: copy.offlineStorageFull,
+        storage_unavailable: copy.offlineStorageUnavailable,
+        identity_changed: copy.offlineIdentityChanged,
+      };
+      throw new AthleteFacingError(OFFLINE_COPY[error.reason]);
     }
   };
 
