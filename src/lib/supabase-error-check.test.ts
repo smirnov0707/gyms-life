@@ -54,6 +54,25 @@ function walk(dir: string): string[] {
 const discardsError = () => /const \{ data(?::\s*\w+)? \} = await supabase/g;
 
 /**
+ * The same defect on a client that is not called `supabase`.
+ *
+ * Fifteen reads in this codebase go through a client handed in as an argument —
+ * `client.rpc(...)`, `input.client.from(...)`, `context.supabase.from(...)` —
+ * and the rule above, anchored to the literal name, looks straight past every
+ * one of them. They are all correct today. That is not the same as being
+ * guarded, and this file's own history is the argument: the defect kept coming
+ * back because each fix was applied to the call site that happened to be
+ * noticed, and a rule that only watches one spelling is a rule that watches one
+ * spelling.
+ *
+ * Anchored on `.from(` or `.rpc(` within the same statement rather than on the
+ * receiver's name, so a TanStack `fetchQuery` or an HTTP client destructuring
+ * `data` is not accused of being a Supabase read.
+ */
+const clientDiscardsError = () =>
+  /const \{ data(?::\s*\w+)? \}\s*=\s*await\s+[^;]{0,120}?\.(?:from|rpc)\(/g;
+
+/**
  * The same defect wearing a different shape:
  *
  *     const [{ data: a }, { data: b }] = await Promise.all([...])
@@ -138,7 +157,7 @@ function resultBatchOffenders(source: string): number[] {
  * written — and Paddle does not retry an event it was told arrived.
  */
 const unboundWrite = () =>
-  /(?<![=\w])\n\s*await\s+[A-Za-z_$][\w$]*(?:\([^()]*\))?\s*\n?\s*\.from\(/g;
+  /(?<![=\w])\n\s*await\s+[A-Za-z_$][\w$.]*(?:\([^()]*\))?\s*\n?\s*\.(?:from|rpc)\(/g;
 
 function unboundWriteOffenders(source: string): number[] {
   if (!source.includes("supabase")) return [];
@@ -149,28 +168,59 @@ function unboundWriteOffenders(source: string): number[] {
 
 describe("Supabase reads", () => {
   it("never discards the error", () => {
-    const offenders: string[] = [];
+    // A set, because the two destructuring rules overlap on a client named
+    // `supabase`: one line reported twice reads as two defects.
+    const offenders = new Set<string>();
 
     for (const file of walk(SRC)) {
       const relative = path.relative(SRC, file).split(path.sep).join("/");
       if (ALLOWED.has(relative)) continue;
       const source = readFileSync(file, "utf8");
-      for (const match of source.matchAll(discardsError())) {
-        const line = source.slice(0, match.index).split("\n").length;
-        offenders.push(`${relative}:${line}`);
+      for (const pattern of [discardsError(), clientDiscardsError()]) {
+        for (const match of source.matchAll(pattern)) {
+          offenders.add(`${relative}:${source.slice(0, match.index).split("\n").length}`);
+        }
       }
       for (const line of batchOffenders(source)) {
-        offenders.push(`${relative}:${line}`);
+        offenders.add(`${relative}:${line}`);
       }
       for (const line of resultBatchOffenders(source)) {
-        offenders.push(`${relative}:${line}`);
+        offenders.add(`${relative}:${line}`);
       }
       for (const line of unboundWriteOffenders(source)) {
-        offenders.push(`${relative}:${line}`);
+        offenders.add(`${relative}:${line}`);
       }
     }
 
-    expect(offenders).toEqual([]);
+    expect([...offenders]).toEqual([]);
+  });
+
+  it("sees a read on a client it was not named after", () => {
+    // The blind spot. Every one of these is the codebase's most repeated
+    // defect wearing a different receiver.
+    for (const dropped of [
+      'const { data } = await client.rpc("commit_night_lab_review", {});',
+      'const { data: rows } = await input.client.from("x").select();',
+      'const { data } = await context.supabase.from("profiles").select();',
+      'const { data } = await supabaseAdmin\n  .from("x")\n  .select();',
+    ]) {
+      expect(clientDiscardsError().test(dropped)).toBe(true);
+    }
+  });
+
+  it("does not accuse a read that is not a Supabase read", () => {
+    // Anchored on `.from(`/`.rpc(`, so destructuring `data` from a query cache,
+    // an HTTP client or a server function stays untouched. A false accusation
+    // here costs a correct file a failing build, which is how a guard gets
+    // weakened rather than obeyed.
+    for (const innocent of [
+      "const { data } = await qc.fetchQuery(options);",
+      'const { data } = await http.get("/x");',
+      'const { data, error } = await client.rpc("x", {});',
+      'const { data } = await loadSomething({ from: "x" });',
+    ]) {
+      expect(clientDiscardsError().test(innocent)).toBe(false);
+    }
   });
 
   it("recognises the shape it is looking for, and the shape that is fine", () => {
@@ -196,6 +246,27 @@ describe("Supabase reads", () => {
     const bound =
       'const go = async () => {\n  const { error } = await supabase.from("x").update({ a: 1 }).eq("id", 1);\n};';
     expect(unboundWriteOffenders(bound)).toEqual([]);
+  });
+
+  it("sees an unbound write through a stored procedure or a passed-in client", () => {
+    // Same two blind spots as the read rule: the receiver's name, and the
+    // assumption that a write goes through `.from(`. Every RPC in this
+    // codebase is a write that changes a row — a quota consumed, a plan
+    // activated, a subscription applied — so an unbound one is the shape that
+    // told Paddle `{received: true}` for a subscription never written.
+    for (const dropped of [
+      'const go = async () => {\n  await client.rpc("activate_training_plan", {});\n};',
+      'const go = async () => {\n  await input.client.from("x").delete().eq("id", 1);\n};',
+      'const go = async () => {\n  await supabaseAdmin.rpc("consume_ai_quota", {});\n};',
+    ]) {
+      expect(unboundWriteOffenders(`supabase\n${dropped}`)).toHaveLength(1);
+    }
+    // And a query cache still is not a database.
+    expect(
+      unboundWriteOffenders(
+        "supabase\nconst go = async () => {\n  await qc.invalidateQueries({});\n};",
+      ),
+    ).toEqual([]);
   });
 
   it("keeps the allowlist honest", () => {
