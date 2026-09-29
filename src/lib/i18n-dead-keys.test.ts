@@ -67,4 +67,36 @@ describe("translation dictionary", () => {
 
     expect(orphans).toEqual([]);
   });
+
+  /**
+   * The rule above excludes `i18n-locales/` — correctly, because a locale pack
+   * is a translation, not a call site, and counting it as a use would keep
+   * every dead key alive forever. The cost was that nothing checked the packs
+   * themselves, and six of them carried 27 keys each that the base dictionary
+   * no longer defines: a dashboard replaced by Today, navigation labels dropped
+   * in the nav restructure, a fasting-window and TDEE screen that no longer
+   * exist. 162 strings, unreachable by construction — `TKey` is
+   * `keyof typeof dict`, so a key only a locale pack knows can never be asked
+   * for — and shipped in the language chunk a German or Ukrainian athlete
+   * downloads.
+   */
+  it("translates no key the dictionary does not define", () => {
+    const localeDir = path.join(SRC, "lib", "i18n-locales");
+    const defined = new Set<string>();
+    for (const file of walk(SRC)) {
+      if (!/i18n-extra-.*\.ts$|i18n\.tsx$/.test(file)) continue;
+      for (const match of readFileSync(file, "utf8").matchAll(DEFINITION)) defined.add(match[1]!);
+    }
+    expect(defined.size).toBeGreaterThan(900);
+
+    const untranslatable = readdirSync(localeDir)
+      .filter((name) => name.endsWith(".ts"))
+      .flatMap((name) =>
+        [...readFileSync(path.join(localeDir, name), "utf8").matchAll(/^\s*"([^"]+)"\s*:/gm)]
+          .map((match) => match[1]!)
+          .filter((key) => !defined.has(key))
+          .map((key) => `${name}: ${key}`),
+      );
+    expect(untranslatable).toEqual([]);
+  });
 });
