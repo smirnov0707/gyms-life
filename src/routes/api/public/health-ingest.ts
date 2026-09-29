@@ -102,10 +102,25 @@ export const Route = createFileRoute("/api/public/health-ingest")({
           }
         }
 
+        // The athlete's *other* days. `recoveryScore` refuses to score HRV or
+        // resting heart rate without a baseline, because "comparing a reading
+        // against itself is not a neutral result — it lands mid-scale and looks
+        // like a finding". This read did not exclude the day being written, so
+        // a phone re-syncing today — which Apple Health does all day — compared
+        // today against a baseline that already contained today. With a long
+        // history that is one row in thirty and harmless. With one or two
+        // samples it is the whole baseline, and the athlete least able to judge
+        // a readiness number is the one who gets a score anchored to their own
+        // first reading.
+        //
+        // Excluded rather than weighted down: a baseline of nothing makes
+        // `recoveryScore` withhold those components, which is the answer its own
+        // comment asks for, and `healthLoadModifier(null)` leaves the plan alone.
         const { data: history, error: historyError } = await supabaseAdmin
           .from("health_samples")
           .select("resting_hr, hrv_ms")
           .eq("user_id", userId)
+          .neq("sample_on", sampleOn)
           .order("sample_on", { ascending: false })
           .limit(30);
 

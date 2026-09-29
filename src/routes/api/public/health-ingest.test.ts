@@ -19,6 +19,14 @@ let script: Record<string, Answer[]>;
 let touched: string[];
 /** Every row handed to `upsert`, so a test can assert what was written. */
 let written: Record<string, Record<string, unknown>[]>;
+/**
+ * Every filter a read was narrowed by, as `table.method(column, value)`.
+ *
+ * Which rows a read excludes is part of what it means — the readiness baseline
+ * is wrong if it contains the day being scored — and that is invisible in the
+ * answer the mock hands back.
+ */
+let filtered: string[];
 
 function builder(table: string) {
   const answer = () => {
@@ -28,8 +36,14 @@ function builder(table: string) {
     return Promise.resolve({ data: next.data ?? null, error: next.error ?? null });
   };
   const chain: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "order", "limit", "not", "gte", "lt"]) {
+  for (const method of ["select", "order", "not", "gte", "lt"]) {
     chain[method] = () => chain;
+  }
+  for (const method of ["eq", "neq"]) {
+    chain[method] = (column: string, value: unknown) => {
+      filtered.push(`${table}.${method}(${column},${String(value)})`);
+      return chain;
+    };
   }
   chain["maybeSingle"] = answer;
   chain["limit"] = answer;
@@ -70,6 +84,7 @@ describe("public health ingest", () => {
     script = {};
     touched = [];
     written = {};
+    filtered = [];
   });
 
   it("refuses a body that is not JSON without reading anything", async () => {
@@ -142,6 +157,41 @@ describe("public health ingest", () => {
     expect(body["stored"]).toMatchObject({ resting_hr: 52, steps: 8000 });
     // A sample dated today also becomes today's check-in.
     expect(touched).toEqual(["profiles", "health_samples", "health_samples", "daily_checkins"]);
+  });
+
+  it("builds the readiness baseline from the athlete's other days, not this one", async () => {
+    // `recoveryScore` refuses to score HRV or resting heart rate without a
+    // baseline, because comparing a reading against itself lands mid-scale and
+    // looks like a finding. This read did not exclude the day being written, so
+    // a phone re-syncing today — which Apple Health does all day — scored today
+    // against a baseline that already held today. One row in thirty is
+    // harmless; with one or two samples it is the whole baseline.
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    const { status } = await post({ token: TOKEN, date: "2026-09-20", hrv_ms: 60 });
+    expect(status).toBe(200);
+    expect(filtered).toContain("health_samples.neq(sample_on,2026-09-20)");
+    // And still scoped to the one athlete.
+    expect(filtered).toContain("health_samples.eq(user_id,u1)");
+  });
+
+  it("withholds a score rather than scoring a first reading against itself", async () => {
+    // The consequence of the exclusion, on the athlete least able to judge the
+    // number: no other days means no baseline, so HRV and resting heart rate
+    // are not measured, and a score built on too little is withheld entirely.
+    // `healthLoadModifier(null)` then leaves the plan alone.
+    script = {
+      profiles: [{ data: { id: "u1", time_zone: "UTC" } }],
+      health_samples: [{ data: [] }, {}],
+      daily_checkins: [{}],
+    };
+    const { body } = await post({ token: TOKEN, hrv_ms: 60, resting_hr: 52 });
+    expect(body["recovery_score"]).toBeNull();
+    expect(body["load_modifier"]).toBe(1);
+    expect(body["readiness_measured"]).toEqual([]);
   });
 
   it("stores sleep stages, and leaves the ones nobody reported null", async () => {
