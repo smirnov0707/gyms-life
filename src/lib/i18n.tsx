@@ -729,6 +729,17 @@ export function LangProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // `__root.tsx` serves `<html lang="lt">`, which is correct for what the server
+  // renders — the first paint is Lithuanian for everybody. Nothing corrected it
+  // afterwards, so a German, Spanish, Polish, Russian or Ukrainian athlete read
+  // their own language inside a document still declaring Lithuanian, and a
+  // screen reader pronounced every word of it with Lithuanian rules. The theme
+  // already solves its half of this problem before paint; the language half was
+  // never connected.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
     window.localStorage.setItem("forma_lang", l);
