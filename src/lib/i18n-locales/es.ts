@@ -464,7 +464,7 @@ export const locale: Record<string, string> = {
   "lg.pricing.plan.yearly.per": "/ año",
   "lg.pricing.plan.yearly.tagline": "€4,08 / mes · ahorras €95",
   "lg.pricing.feature.plans": "Planes de entrenamiento personalizados según tu objetivo",
-  "lg.pricing.feature.library": "Biblioteca de 175+ ejercicios con vídeos de técnica",
+  "lg.pricing.feature.library": "Biblioteca de 170+ ejercicios con demostraciones de técnica",
   "lg.pricing.feature.meals": "Planes de alimentación con recetas y listas de compras",
   "lg.pricing.feature.camera": "Análisis de técnica con cámara e indicaciones por voz",
   "lg.pricing.feature.supplements": "Programación inteligente de suplementos",
@@ -559,7 +559,7 @@ export const locale: Record<string, string> = {
   "rt.ex.proLibrary": "BIBLIOTECA PRO DE GYMS.LIFE",
   "rt.ex.myFavorites": "Mis favoritos ({n})",
   "rt.ex.searchPlaceholder":
-    "Buscar más de 175 ejercicios (p. ej., sentadillas, press de banca, mancuernas...)",
+    "Buscar más de 170 ejercicios (p. ej., sentadillas, press de banca, mancuernas...)",
   "rt.ex.muscleGroup": "Grupo muscular:",
   "rt.ex.equipment": "Equipamiento:",
   "rt.ex.all2": "Todos",

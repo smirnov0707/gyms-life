@@ -57,6 +57,14 @@ because the fix was applied to one call site instead of the pattern.
   space, which cannot help either of them. `Record<Union, string>` makes the
   compiler demand an entry per member — it cannot demand that they differ, so
   test that too.
+- What a surface promises before you reach it is checked nowhere. The page that
+  renders two JPEGs captions them `Kadras 1` / `Kadras 2` and always has; the
+  tab title, the search snippet, the shared link and the button that sends you
+  there all said "video", for 165 of the 175 exercises that have none. Copy
+  written next to the data is kept honest by the data; copy written in a
+  `head()`, a label table or a landing page is a claim nobody rechecks. Derive
+  it from the same source the surface renders from — `exerciseLinkLabel` and
+  `exerciseHeadMeta` both read `getExerciseMedia` — so the two cannot disagree.
 - A guard that watches one spelling guards one spelling. The Supabase
   `.error` rule was written for a client named `supabase` and looked straight
   past fifteen reads through a client passed in as an argument. Anchor a scan on

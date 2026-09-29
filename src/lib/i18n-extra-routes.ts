@@ -20,8 +20,8 @@ export const extra_routes = {
   "rt.ex.proLibrary": { lt: "GYMS.LIFE PRO MEDIATEKA", en: "GYMS.LIFE PRO LIBRARY" },
   "rt.ex.myFavorites": { lt: "Mano Mėgstamiausi ({n})", en: "My Favorites ({n})" },
   "rt.ex.searchPlaceholder": {
-    lt: "Ieškoti iš 175+ pratimų (pvz., Pritūpimai, Bench Press, Dumbbell...)",
-    en: "Search 175+ exercises (e.g. Squats, Bench Press, Dumbbell...)",
+    lt: "Ieškoti iš 170+ pratimų (pvz., Pritūpimai, Bench Press, Dumbbell...)",
+    en: "Search 170+ exercises (e.g. Squats, Bench Press, Dumbbell...)",
   },
   "rt.ex.muscleGroup": { lt: "Raumenų grupė:", en: "Muscle group:" },
   "rt.ex.equipment": { lt: "Įranga:", en: "Equipment:" },

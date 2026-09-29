@@ -235,8 +235,8 @@ export const extra_legal = {
     en: "Personal training plans built around your goal",
   },
   "lg.pricing.feature.library": {
-    lt: "175+ pratimų biblioteka su technikos video",
-    en: "175+ exercise library with technique videos",
+    lt: "170+ pratimų biblioteka su technikos demonstracijomis",
+    en: "170+ exercise library with technique demonstrations",
   },
   "lg.pricing.feature.meals": {
     lt: "Mitybos planas su receptais ir pirkinių sąrašu",
