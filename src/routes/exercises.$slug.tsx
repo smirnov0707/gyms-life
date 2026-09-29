@@ -7,22 +7,16 @@ import { AppShell } from "@/components/AppShell";
 import { ExerciseVideo } from "@/components/ExerciseVideo";
 import { MuscleTargetVisualizer } from "@/components/MuscleTargetVisualizer";
 import { exerciseVideo, exerciseVideoPoster } from "@/lib/exercise-media";
+import { exerciseHeadMeta, readExerciseName } from "@/lib/exercise-head";
 
 export const Route = createFileRoute("/exercises/$slug")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `${params.slug} — pratimo technika ir video | GYMS.LIFE` },
-      {
-        name: "description",
-        content:
-          "Pratimo technika žingsnis po žingsnio, dažniausios klaidos ir vaizdo demonstracija.",
-      },
-      { property: "og:title", content: `${params.slug} — pratimo technika | GYMS.LIFE` },
-      {
-        property: "og:description",
-        content: "Kaip taisyklingai atlikti šį pratimą — video ir patarimai.",
-      },
-    ],
+  // The head needs the exercise's name, and `head()` is handed params only.
+  // This is the one read that has to happen before the document is written;
+  // the component keeps its own, because that one has error states this does
+  // not need and must not inherit.
+  loader: async ({ params }) => ({ name: await readExerciseName(params.slug) }),
+  head: ({ params, loaderData }) => ({
+    meta: exerciseHeadMeta(params.slug, loaderData?.name ?? null),
   }),
   component: ExerciseDetail,
 });
