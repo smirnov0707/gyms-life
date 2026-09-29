@@ -10,7 +10,12 @@ describe("the AI feature map must match executable source", () => {
       .sort();
     expect(tasks).toEqual([...EXECUTABLE_AI_TASKS].sort());
     expect(tasks).toEqual(Object.keys(AI_TASK_CONTEXT_SCOPE).sort());
-    expect(EXECUTABLE_AI_TASKS).toHaveLength(24);
+    // 24 until `motivation` was removed: the Future Lab landing rewrite
+    // (`afcc9b0`) dropped its only caller, leaving an authenticated endpoint
+    // spending AI quota on copy no page showed. The two set comparisons above
+    // are the real check; this literal is the tripwire against silent drift, so
+    // it moves only when a task is deliberately added or removed.
+    expect(EXECUTABLE_AI_TASKS).toHaveLength(23);
     expect(EXECUTABLE_AI_TASKS.filter(isVisionTask)).toHaveLength(5);
   });
   it("keeps the published inventory generated from the current sources", () => {

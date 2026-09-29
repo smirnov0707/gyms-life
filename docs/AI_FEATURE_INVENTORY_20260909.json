@@ -1,8 +1,8 @@
 {
   "scope": "Source inventory, not evidence of live provider execution or autonomous agents",
-  "llmTaskCount": 24,
+  "llmTaskCount": 23,
   "transcriptionAdapters": 1,
-  "callsiteCount": 26,
+  "callsiteCount": 25,
   "tasks": [
     {
       "task": "biomechanics",
@@ -183,17 +183,6 @@
           "entryPoint": "generateOrchestratedJson",
           "file": "src/lib/micronutrient.functions.ts",
           "line": 79
-        }
-      ]
-    },
-    {
-      "task": "motivation",
-      "callsites": [
-        {
-          "task": "motivation",
-          "entryPoint": "generateOrchestratedJson",
-          "file": "src/lib/motivation.functions.ts",
-          "line": 35
         }
       ]
     },

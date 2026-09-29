@@ -44,7 +44,6 @@ export const AI_TASK_CONTEXT_SCOPE = {
   "meal-translation": "none",
   "medical-report": "none",
   micronutrients: "personalized",
-  motivation: "personalized",
   "nutrition-analysis": "personalized",
   "plan-translation": "none",
   "supplement-cycle": "personalized",

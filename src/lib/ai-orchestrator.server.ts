@@ -55,7 +55,6 @@ const AI_TASK_POLICIES = {
   "meal-translation": { model: "google/gemini-3.1-flash-lite" },
   "medical-report": { model: "google/gemini-3.1-flash-lite" },
   micronutrients: { model: "google/gemini-3.1-flash-lite" },
-  motivation: { model: "google/gemini-3.1-flash-lite" },
   "nutrition-analysis": { model: "google/gemini-3.1-flash-lite" },
   "plan-translation": { model: "google/gemini-3.1-flash-lite" },
   "supplement-cycle": { model: "google/gemini-3.1-flash-lite" },
