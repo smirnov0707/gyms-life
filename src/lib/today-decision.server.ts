@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { captureShadowPredictionQuietly } from "./shadow-capture.server";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { refreshAthleteStateSnapshot } from "./athlete-state-snapshot.server";
@@ -114,24 +115,28 @@ export async function getOrCreateTodayDecision(
 
   // Capture once, null-only and fail-open. The public Today contract below is
   // intentionally unchanged and does not expose or consume this prediction.
-  await captureWorkoutCompletionShadowPrediction({
-    userId,
-    decisionId: parsedRecord.data.id,
-    decisionOn: parsedRecord.data.decision_on,
-    action: parsedRecord.data.action,
-    timeZone: zone,
-    athleteStateSnapshotId: parsedRecord.data.athlete_state_snapshot_id,
-    state: athlete.state,
-    now,
-  }).catch(() => false);
+  await captureShadowPredictionQuietly({ capture: "workout_completion", userId }, () =>
+    captureWorkoutCompletionShadowPrediction({
+      userId,
+      decisionId: parsedRecord.data.id,
+      decisionOn: parsedRecord.data.decision_on,
+      action: parsedRecord.data.action,
+      timeZone: zone,
+      athleteStateSnapshotId: parsedRecord.data.athlete_state_snapshot_id,
+      state: athlete.state,
+      now,
+    }),
+  );
   const { capturePersonalCompletionShadowPrediction } =
     await import("./personal-completion-prediction.server");
-  await capturePersonalCompletionShadowPrediction({
-    client: supabaseAdmin,
-    userId,
-    decisionId: parsedRecord.data.id,
-    decisionOn: parsedRecord.data.decision_on,
-  }).catch(() => undefined);
+  await captureShadowPredictionQuietly({ capture: "personal_completion", userId }, () =>
+    capturePersonalCompletionShadowPrediction({
+      client: supabaseAdmin,
+      userId,
+      decisionId: parsedRecord.data.id,
+      decisionOn: parsedRecord.data.decision_on,
+    }),
+  );
 
   const { error: evidenceError } = await supabaseAdmin.from("decision_evidence").upsert(
     proposal.evidence.map((item) => ({

@@ -23,6 +23,19 @@ const ObservabilityEventNameSchema = z.enum([
   "user_memory.forget",
   "user_memory.mark_incorrect",
   "user_memory.reconcile",
+  /**
+   * A shadow forecast that could not be captured.
+   *
+   * Both capture calls on the Today path are fail-open, and correctly so: the
+   * athlete's decision must not break because an audit ledger did. They were
+   * also fail-silent, and those are different things. Production holds 98
+   * decisions and 42 predictions, and nothing in the system can say whether the
+   * other 56 declined for a good reason — no model artifact, an unusable
+   * baseline, a day already captured — or threw and were swallowed. The
+   * timeline writer failed 233 times before anyone noticed, and the only reason
+   * anyone ever did is that it wrote those failures down.
+   */
+  "shadow_prediction.capture",
 ]);
 
 const SafeMetadataValueSchema = z.union([
