@@ -30,3 +30,36 @@ because the fix was applied to one call site instead of the pattern.
 - Component copy falls back through `baseLang`, not `lang === "en"`. Six of the
   eight shipped locales have no copy branch of their own, and the wrong test
   handed all six Lithuanian.
+- Fail-open is not fail-silent. A path that must never break the athlete still
+  has to write down that it broke: `personal_timeline_events` failed 233
+  consecutive times and was only ever found because it recorded them, while the
+  Night Lab recorded nothing and three weeks of not running looked exactly like
+  an athlete who had not trained. Swallow the error, keep the reason —
+  `captureShadowPredictionQuietly` and `runNightLabDispatch` are the shape.
+- An upsert's conflict target and its index are one decision, and no file holds
+  both. `personal_timeline_events` had a correct four-column `onConflict` and a
+  correct four-column index that happened to be partial; PostgREST emits a bare
+  `on conflict (cols)`, Postgres answered 42P10 every time, and neither file was
+  wrong on its own. `upsert-conflict-target.test.ts` reads the pair.
+- A count is not variation. Thresholds that wait for "enough" evidence are
+  satisfied by one observation repeated: 42 shadow forecasts of `probability: 0`
+  against 41 outcomes of `false` scored a calibration gap of 0 and a Brier score
+  of 0.000 — the best values either can take — for a model that had never made a
+  distinction. Before scoring anything, ask whether the inputs varied.
+- A camera or microphone opened across an `await` must be claimed, not assumed.
+  `getUserMedia` resolves after a permission prompt and a device start-up; a
+  component that unmounts in that window has already run its cleanup, and in a
+  single-page app nothing else will ever stop the stream. Go through
+  `media-capture.ts`.
+- A union with four members needs four answers where it reaches the athlete.
+  `OfflineQueueFailure` models a full queue, a refused write, storage that would
+  not open, and a changed account; one ternary sent the last two to free disk
+  space, which cannot help either of them. `Record<Union, string>` makes the
+  compiler demand an entry per member — it cannot demand that they differ, so
+  test that too.
+- A guard that watches one spelling guards one spelling. The Supabase
+  `.error` rule was written for a client named `supabase` and looked straight
+  past fifteen reads through a client passed in as an argument. Anchor a scan on
+  what the code _does_ — `.from(`, `.rpc(` — not on what a variable is called,
+  and assert the scan still matches something: a source scan that quietly finds
+  nothing passes forever.
