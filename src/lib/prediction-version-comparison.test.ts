@@ -28,6 +28,7 @@ function model(version: string, brier: number | null, gap: number | null, evalua
     observedCompletionRate: brier === null ? null : 0.6,
     calibrationGap: gap,
     brierScore: brier,
+    metricsWithheldBecause: brier === null ? ("insufficient_evidence" as const) : ("none" as const),
   };
 }
 describe("prediction version comparison", () => {

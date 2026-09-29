@@ -2,6 +2,7 @@ import { AthletePredictionSchema, type AthletePrediction } from "./prediction.sc
 import {
   MINIMUM_EVALUATED_PREDICTIONS_FOR_CALIBRATION,
   PredictionCalibrationSchema,
+  type CalibrationWithholding,
   type PredictionCalibration,
   type PredictionCalibrationModel,
 } from "./prediction-calibration.schema";
@@ -78,9 +79,22 @@ function buildModelCalibration(predictions: AthletePrediction[]): PredictionCali
   const captured = predictions.length;
   const evaluatedCount = evaluated.length;
   const pending = captured - evaluatedCount;
-  const enoughEvidence = evaluatedCount >= MINIMUM_EVALUATED_PREDICTIONS_FOR_CALIBRATION;
 
-  if (!enoughEvidence) {
+  // The threshold counts observations, and a count is not variation. A forecast
+  // that never moved has no behaviour to score, and an outcome that never
+  // varied can be scored perfectly by predicting the constant — in both cases
+  // the arithmetic returns a flawless number that measures nothing.
+  const distinct = <T>(values: readonly T[]) => new Set(values).size;
+  const withheldBecause: CalibrationWithholding =
+    evaluatedCount < MINIMUM_EVALUATED_PREDICTIONS_FOR_CALIBRATION
+      ? "insufficient_evidence"
+      : distinct(evaluated.map((item) => item.predicted)) < 2
+        ? "constant_forecast"
+        : distinct(evaluated.map((item) => item.actual)) < 2
+          ? "constant_outcome"
+          : "none";
+
+  if (withheldBecause !== "none") {
     return {
       modelId: first.modelId,
       modelVersion: first.modelVersion,
@@ -92,6 +106,7 @@ function buildModelCalibration(predictions: AthletePrediction[]): PredictionCali
       observedCompletionRate: null,
       calibrationGap: null,
       brierScore: null,
+      metricsWithheldBecause: withheldBecause,
     };
   }
 
@@ -111,6 +126,7 @@ function buildModelCalibration(predictions: AthletePrediction[]): PredictionCali
     observedCompletionRate: roundMetric(observedRate),
     calibrationGap: roundMetric(Math.abs(meanPredicted - observedRate)),
     brierScore: roundMetric(brier),
+    metricsWithheldBecause: "none",
   };
 }
 

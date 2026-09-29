@@ -4,6 +4,11 @@ import type { PredictionCalibration } from "./prediction-calibration.schema";
 export const PredictionPromotionBlockerSchema = z.enum([
   "insufficient_evaluated_outcomes",
   "calibration_metrics_withheld",
+  // Named separately because it is the one a reviewer would otherwise never
+  // guess: enough outcomes, no missing data, and nothing to learn from. The
+  // shadow model in production has answered `probability: 0` forty-two times.
+  "forecast_never_varied",
+  "outcome_never_varied",
 ]);
 
 export const PredictionPromotionReviewSchema = z
@@ -34,6 +39,9 @@ export function buildPredictionPromotionReviews(
 
     if (!enoughOutcomes) blockers.push("insufficient_evaluated_outcomes");
     if (!metricsAvailable) blockers.push("calibration_metrics_withheld");
+    if (model.metricsWithheldBecause === "constant_forecast")
+      blockers.push("forecast_never_varied");
+    if (model.metricsWithheldBecause === "constant_outcome") blockers.push("outcome_never_varied");
 
     return PredictionPromotionReviewSchema.parse({
       modelId: model.modelId,

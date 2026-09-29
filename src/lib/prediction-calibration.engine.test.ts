@@ -153,3 +153,66 @@ describe("shadow model maturity", () => {
     expect(calibrationMaturityPercent(at(Number.NaN, 8))).toBeNull();
   });
 });
+
+describe("a forecast that never varied", () => {
+  const day = (index: number) => `2026-09-${String(index + 1).padStart(2, "0")}`;
+
+  it("is not scored, however many outcomes it accumulates", () => {
+    // Exactly what production holds: the shadow model answered
+    // `probability: 0` every time, and every observed outcome was `false`.
+    // Brier works out to 0.000 and the calibration gap to 0 — the best values
+    // either can take — for a model that has never made a distinction. The
+    // panel prints that under "0 means perfectly scored probability forecasts".
+    const constant = Array.from({ length: 12 }, (_, index) =>
+      prediction({ id: index, day: day(index), probability: 0, actual: false }),
+    );
+    const [model] = buildPredictionCalibration(constant).models;
+
+    expect(model?.evaluated).toBe(12);
+    expect(model?.evaluated).toBeGreaterThanOrEqual(MINIMUM_EVALUATED_PREDICTIONS_FOR_CALIBRATION);
+    expect(model?.brierScore).toBeNull();
+    expect(model?.calibrationGap).toBeNull();
+    expect(model?.metricsWithheldBecause).toBe("constant_forecast");
+  });
+
+  it("is still counted, because the evidence is real even when the score is not", () => {
+    const constant = Array.from({ length: 12 }, (_, index) =>
+      prediction({ id: index, day: day(index), probability: 0, actual: false }),
+    );
+    const report = buildPredictionCalibration(constant);
+    expect(report.totalEvaluated).toBe(12);
+    expect(report.totalPending).toBe(0);
+  });
+
+  it("withholds a score when the outcome never varied either", () => {
+    // A varying forecast against an unchanging world. Predicting the constant
+    // scores perfectly and says nothing about the forecast.
+    const varied = Array.from({ length: 12 }, (_, index) =>
+      prediction({
+        id: index,
+        day: day(index),
+        probability: index % 2 === 0 ? 0.2 : 0.8,
+        actual: false,
+      }),
+    );
+    const [model] = buildPredictionCalibration(varied).models;
+    expect(model?.metricsWithheldBecause).toBe("constant_outcome");
+    expect(model?.brierScore).toBeNull();
+  });
+
+  it("scores a model that actually moved against a world that actually varied", () => {
+    // The case the metrics were written for must keep working.
+    const real = Array.from({ length: 12 }, (_, index) =>
+      prediction({
+        id: index,
+        day: day(index),
+        probability: index % 3 === 0 ? 0.3 : 0.7,
+        actual: index % 2 === 0,
+      }),
+    );
+    const [model] = buildPredictionCalibration(real).models;
+    expect(model?.metricsWithheldBecause).toBe("none");
+    expect(model?.brierScore).not.toBeNull();
+    expect(model?.calibrationGap).not.toBeNull();
+  });
+});

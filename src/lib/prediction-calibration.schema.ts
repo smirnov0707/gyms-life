@@ -2,6 +2,31 @@ import { z } from "zod";
 
 export const MINIMUM_EVALUATED_PREDICTIONS_FOR_CALIBRATION = 8;
 
+/**
+ * Why a model's calibration metrics are not shown.
+ *
+ * The threshold above counts observations, and a count is not variation.
+ * Production holds 42 shadow forecasts for `workout_completion`, every one of
+ * them `probability: 0`, against 41 evaluated outcomes, every one of them
+ * `false`. That is one observation repeated 41 times. It scores a calibration
+ * gap of 0 and a Brier score of 0.000 — the best values either metric can take
+ * — and the panel prints them under the words "0 means perfectly scored
+ * probability forecasts", for a model that has never once made a distinction.
+ *
+ * Both metrics are arithmetically correct and neither measures skill: a
+ * constant forecast has no behaviour to score, and a constant outcome can be
+ * scored perfectly by predicting the constant. PART LXXV calls fabricated
+ * confidence out by name, and a perfect score nobody earned is exactly that.
+ */
+export const CalibrationWithholdingSchema = z.enum([
+  "none",
+  "insufficient_evidence",
+  "constant_forecast",
+  "constant_outcome",
+]);
+
+export type CalibrationWithholding = z.infer<typeof CalibrationWithholdingSchema>;
+
 export const PredictionCalibrationModelSchema = z
   .object({
     modelId: z.string().trim().min(1).max(120),
@@ -14,6 +39,7 @@ export const PredictionCalibrationModelSchema = z
     observedCompletionRate: z.number().min(0).max(1).nullable(),
     calibrationGap: z.number().min(0).max(1).nullable(),
     brierScore: z.number().min(0).max(1).nullable(),
+    metricsWithheldBecause: CalibrationWithholdingSchema,
   })
   .strict()
   .superRefine((value, context) => {
@@ -45,6 +71,18 @@ export const PredictionCalibrationModelSchema = z
         code: "custom",
         message: "Calibration metrics must be withheld below the evidence threshold.",
         path: ["evaluated"],
+      });
+    }
+    // The reason and the numbers must agree. A model reporting a score while
+    // naming a reason it cannot be scored is worse than either alone, and a
+    // model withholding its score for no stated reason is the silence this
+    // whole field exists to remove.
+    if (metricsWithheld !== (value.metricsWithheldBecause !== "none")) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Withheld calibration metrics must name a reason, and a reason must withhold them.",
+        path: ["metricsWithheldBecause"],
       });
     }
   });

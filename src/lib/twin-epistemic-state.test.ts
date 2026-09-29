@@ -46,6 +46,7 @@ function labOverview() {
           observedCompletionRate: null,
           calibrationGap: null,
           brierScore: null,
+          metricsWithheldBecause: "insufficient_evidence",
         },
       ],
     },

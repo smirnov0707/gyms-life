@@ -11,6 +11,8 @@ type Copy = {
   evaluatedOf: (evaluated: number, captured: number) => string;
   pending: (count: number) => string;
   needMore: (needed: number) => string;
+  constantForecast: (evaluated: number) => string;
+  constantOutcome: (evaluated: number) => string;
   predicted: string;
   observed: string;
   gap: string;
@@ -31,6 +33,10 @@ function copyFor(lang: Lang): Copy {
       pending: (count) => `${count} pending`,
       needMore: (needed) =>
         `Metrics stay hidden until at least ${needed} evaluated prediction-days exist for this model version.`,
+      constantForecast: (evaluated) =>
+        `This model returned the same forecast all ${evaluated} times. A forecast that never varies has no behaviour to score, so a calibration gap and a Brier score would read as perfect while measuring nothing.`,
+      constantOutcome: (evaluated) =>
+        `All ${evaluated} observed outcomes were the same. An outcome that never varies can be scored perfectly by always predicting it, so these metrics would say nothing about the forecast.`,
       predicted: "Mean forecast",
       observed: "Observed completion",
       gap: "Calibration gap",
@@ -50,6 +56,10 @@ function copyFor(lang: Lang): Copy {
     pending: (count) => `${count} laukia rezultato`,
     needMore: (needed) =>
       `Metrikos slepiamos, kol šiai modelio versijai nesukaupta bent ${needed} įvertintų prognozės dienų.`,
+    constantForecast: (evaluated) =>
+      `Šis modelis visus ${evaluated} kartus grąžino tą pačią prognozę. Nekintanti prognoza neturi elgsenos, kurią būtų galima vertinti, tad kalibracijos skirtumas ir Brier balas atrodytų tobuli nieko nematuodami.`,
+    constantOutcome: (evaluated) =>
+      `Visi ${evaluated} stebėti rezultatai buvo vienodi. Nekintantį rezultatą galima tobulai atspėti visada prognozuojant tą patį, tad šios metrikos apie prognozę nieko nepasakytų.`,
     predicted: "Vidutinė prognozė",
     observed: "Faktinis atlikimas",
     gap: "Kalibracijos skirtumas",
@@ -123,7 +133,11 @@ export function PredictionCalibrationPanel({ data }: { data: PredictionCalibrati
 
                   {!metricsAvailable ? (
                     <p className="mt-4 rounded-xl bg-foreground/[0.03] px-3 py-3 text-xs leading-relaxed text-muted-foreground">
-                      {copy.needMore(model.minimumEvaluated)}
+                      {model.metricsWithheldBecause === "constant_forecast"
+                        ? copy.constantForecast(model.evaluated)
+                        : model.metricsWithheldBecause === "constant_outcome"
+                          ? copy.constantOutcome(model.evaluated)
+                          : copy.needMore(model.minimumEvaluated)}
                     </p>
                   ) : (
                     <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
