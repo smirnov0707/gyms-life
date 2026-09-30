@@ -6,8 +6,8 @@ import { useI18n, baseLang, type TKey } from "@/lib/i18n";
 import { AppShell } from "@/components/AppShell";
 import { ExerciseVideo } from "@/components/ExerciseVideo";
 import { MuscleTargetVisualizer } from "@/components/MuscleTargetVisualizer";
-import { exerciseVideo, exerciseVideoPoster } from "@/lib/exercise-media";
 import { exerciseHeadMeta, readExerciseName } from "@/lib/exercise-head";
+import { exerciseStructuredData } from "@/lib/exercise-structured-data";
 
 export const Route = createFileRoute("/exercises/$slug")({
   // The head needs the exercise's name, and `head()` is handed params only.
@@ -106,46 +106,7 @@ function ExerciseDetail() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "ExercisePlan",
-                  name,
-                  exerciseType: ex.muscle_group,
-                  description: instructions,
-                },
-                {
-                  "@type": "VideoObject",
-                  name: `${name} — technika`,
-                  description: instructions || `${name} technikos demonstracija.`,
-                  thumbnailUrl: exerciseVideoPoster(ex.slug)
-                    ? `https://gyms.life${exerciseVideoPoster(ex.slug)}`
-                    : undefined,
-                  contentUrl: exerciseVideo(ex.slug)
-                    ? `https://gyms.life${exerciseVideo(ex.slug)}`
-                    : undefined,
-                  uploadDate: ex.created_at ?? undefined,
-                },
-                ...(steps.length
-                  ? [
-                      {
-                        "@type": "HowTo",
-                        name: `Kaip atlikti: ${name}`,
-                        description: instructions,
-                        tool: ex.equipment
-                          ? [{ "@type": "HowToTool", name: ex.equipment }]
-                          : undefined,
-                        step: steps.map((s, i) => ({
-                          "@type": "HowToStep",
-                          position: i + 1,
-                          text: s,
-                        })),
-                      },
-                    ]
-                  : []),
-              ],
-            }),
+            __html: JSON.stringify(exerciseStructuredData(ex, name, instructions, steps)),
           }}
         />
         <Link
