@@ -4,7 +4,25 @@ import { runProductionSmoke } from "./production-smoke.checks.mjs";
 const dispatch = "/api/internal/night-lab";
 const schedule = "/.netlify/functions/night-lab";
 const identity = "/api/public/environment";
-const html = "<!doctype html><html><title>GYMS.LIFE</title></html>";
+/**
+ * One title per path, because the checks now verify which page answered.
+ *
+ * The old fixture served a single document for all seven page paths, which is
+ * exactly what production did: five authenticated routes and two redirects all
+ * satisfied "same-origin HTML containing GYMS.LIFE". A fixture that cannot tell
+ * the pages apart cannot notice a check that cannot either.
+ */
+const TITLES = {
+  "/": "GYMS.LIFE — Your personal Future Lab",
+  "/auth": "Prisijungimas — GYMS.LIFE treniruočių programėlė",
+  "/app": "Today — GYMS.LIFE",
+  "/twin": "My Twin — GYMS.LIFE",
+  "/lab": "Lab — GYMS.LIFE FUTURE LAB",
+};
+const REDIRECTS = { "/progress": "/twin?view=future", "/history": "/twin?view=journal" };
+
+const page = (title) => `<!doctype html><html><title>${title}</title></html>`;
+const html = page("GYMS.LIFE");
 const RELEASED = "a".repeat(40);
 const OTHER = "b".repeat(40);
 
@@ -25,7 +43,11 @@ function fixture(overrides = {}) {
     if (path === dispatch) return new Response("Unauthorized", { status: 401 });
     if (path === schedule) return new Response(null, { status: 403 });
     if (path === identity) return Response.json(identityBody());
-    return new Response(html, { headers: { "content-type": "text/html" } });
+    if (Object.hasOwn(REDIRECTS, path))
+      return new Response(null, { status: 307, headers: { location: REDIRECTS[path] } });
+    return new Response(page(TITLES[path] ?? "GYMS.LIFE"), {
+      headers: { "content-type": "text/html" },
+    });
   });
 }
 function run(transport, options = {}) {
@@ -96,7 +118,7 @@ describe("production smoke fails closed", () => {
     const report = await run(
       fixture({
         "/": () =>
-          new Response(html + "Environment safety check", {
+          new Response(page(TITLES["/"]) + "Environment safety check", {
             headers: { "content-type": "text/html" },
           }),
       }),
@@ -211,7 +233,9 @@ describe("production smoke fails closed", () => {
   );
 
   it("rejects a page redirected to another origin", async () => {
-    const response = new Response(html, { headers: { "content-type": "text/html" } });
+    const response = new Response(page(TITLES["/"]), {
+      headers: { "content-type": "text/html" },
+    });
     Object.defineProperty(response, "url", { value: "https://foreign.invalid/auth" });
     const report = await run(fixture({ "/": () => response }));
     expect(report.results[0].ok).toBe(false);
@@ -228,5 +252,55 @@ describe("production smoke fails closed", () => {
       reason: "request_failed_or_timed_out",
     });
     expect(JSON.stringify(report)).not.toContain("PRIVATE_SENTINEL");
+  });
+  it("no longer passes a page check on any page that happens to load", async () => {
+    // The defect. /twin answering on /lab's URL was a PASS: same origin, HTML,
+    // the string GYMS.LIFE somewhere in it.
+    const report = await run(
+      fixture({
+        "/lab": () =>
+          new Response(page(TITLES["/twin"]), {
+            headers: { "content-type": "text/html" },
+          }),
+      }),
+    );
+    expect(report.ok).toBe(false);
+    expect(report.results.find((result) => result.name === "/lab")).toMatchObject({
+      ok: false,
+      reason: "page_served_is_not_the_page_requested",
+    });
+  });
+
+  it("checks the redirects as redirects, not as a third reading of /twin", async () => {
+    const report = await run(fixture());
+    expect(report.results.find((result) => result.name === "/progress")).toMatchObject({
+      ok: true,
+      status: 307,
+    });
+  });
+
+  it("notices a redirect that has been retargeted or removed", async () => {
+    for (const broken of [
+      () => new Response(null, { status: 307, headers: { location: "/twin?view=journal" } }),
+      () =>
+        new Response(null, { status: 307, headers: { location: "https://elsewhere.invalid/" } }),
+      () => new Response(page(TITLES["/twin"]), { headers: { "content-type": "text/html" } }),
+    ]) {
+      const report = await run(fixture({ "/progress": broken }));
+      expect(report.ok).toBe(false);
+      expect(report.results.find((result) => result.name === "/progress")).toMatchObject({
+        ok: false,
+        reason: "redirect_missing_or_retargeted",
+      });
+    }
+  });
+
+  it("never follows the redirects, so the destination is asserted rather than visited", async () => {
+    const transport = fixture();
+    await run(transport);
+    for (const path of Object.keys(REDIRECTS)) {
+      const call = transport.mock.calls.find(([url]) => url.pathname === path);
+      expect(call?.[1]).toMatchObject({ redirect: "manual" });
+    }
   });
 });

@@ -1,9 +1,36 @@
-const pages = ["/", "/auth", "/app", "/twin", "/lab", "/progress", "/history"];
+/**
+ * Each page is checked against the title it serves, not against "some page".
+ *
+ * These five render their own `head()` before authentication, so an
+ * unauthenticated GET names the route that matched even though the body is a
+ * spinner. Without the title, all five passed on any same-origin HTML document
+ * containing the string GYMS.LIFE — which is every page on the site, including
+ * the one you get when the router falls over.
+ */
+const pages = [
+  { path: "/", title: "GYMS.LIFE — Your personal Future Lab" },
+  { path: "/auth", title: "Prisijungimas — GYMS.LIFE treniruočių programėlė" },
+  { path: "/app", title: "Today — GYMS.LIFE" },
+  { path: "/twin", title: "My Twin — GYMS.LIFE" },
+  { path: "/lab", title: "Lab — GYMS.LIFE FUTURE LAB" },
+];
+
+/**
+ * These two are redirects, and were checked as pages with `redirect: "follow"`.
+ * Both land on /twin, so two of the seven page results were a third and fourth
+ * reading of the Twin page reported under another name. Checked here as what
+ * they are: the destination is the thing that can break.
+ */
+const redirects = [
+  { path: "/progress", to: "/twin?view=future" },
+  { path: "/history", to: "/twin?view=journal" },
+];
 
 const COMMIT_PATTERN = /^[a-f0-9]{40}$/;
 
 const checks = [
-  ...pages.map((path) => ({ name: path, path, method: "GET", kind: "page" })),
+  ...pages.map(({ path, title }) => ({ name: path, path, method: "GET", kind: "page", title })),
+  ...redirects.map(({ path, to }) => ({ name: path, path, method: "GET", kind: "redirect", to })),
   {
     // Every page can answer 200 while serving a build from three weeks ago.
     // `cdcfc27` merged the Future Lab visual system into main without the
@@ -70,8 +97,12 @@ export async function runProductionSmoke({
           sameOrigin &&
           /text\/html/i.test(contentType) &&
           /<!doctype html>/i.test(body) &&
-          /GYMS\.LIFE/i.test(body) &&
+          documentTitle(body) === check.title &&
           !/Environment safety check/i.test(body);
+      } else if (check.kind === "redirect") {
+        ok =
+          [301, 302, 307, 308].includes(response.status) &&
+          redirectTarget(response, origin) === check.to;
       } else if (check.kind === "schedule") {
         ok = response.status === 401 || response.status === 403;
       } else if (check.kind === "identity") {
@@ -136,7 +167,34 @@ function readIdentity(body) {
   }
 }
 
+/** The document's own title, or null when it has none. */
+function documentTitle(body) {
+  return /<title[^>]*>([^<]*)<\/title>/i.exec(body)?.[1]?.trim() ?? null;
+}
+
+/** Where a redirect points, as a same-origin path and query. */
+function redirectTarget(response, origin) {
+  const location = response.headers.get("location");
+  if (!location) return null;
+  try {
+    const target = new URL(location, origin);
+    return target.origin === origin.origin ? `${target.pathname}${target.search}` : null;
+  } catch {
+    return null;
+  }
+}
+
 function failureReason(kind, status, body) {
+  if (kind === "redirect") return "redirect_missing_or_retargeted";
+  // A page carrying the environment safety error is diagnosed below, before
+  // the title is blamed: the block is the reason the wrong page was served.
+  if (
+    kind === "page" &&
+    status === 200 &&
+    documentTitle(body) !== null &&
+    !/Environment safety check/i.test(body)
+  )
+    return "page_served_is_not_the_page_requested";
   if (kind === "identity") {
     const identity = readIdentity(body);
     if (identity === null) return "deployment_identity_unreadable";
