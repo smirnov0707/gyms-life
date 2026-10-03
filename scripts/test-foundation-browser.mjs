@@ -107,12 +107,26 @@ export async function verifyFoundationMerge({ open, record, artifacts }) {
     );
     await context.setOffline(true);
     await page.getByRole("button", { name: "Log set", exact: true }).click();
+    // `rejectWrites()` makes `db.transaction(..., "readwrite")` throw, and
+    // `offline-database.ts` turns exactly that into
+    // `OfflineQueueError("storage_unavailable")` — storage that would not open,
+    // not storage that is full. This check expected the disk-space message,
+    // because every reason but `queue_full` used to produce it; that was the
+    // defect `offline-failure-copy.test.ts` was written for, and this is the
+    // path it was written about. The second assertion is the one that matters:
+    // the two answers must never collapse into one again.
+    await expect(
+      page.getByText(
+        "This device's storage would not open, so the set was not saved here. Another tab of GYMS.LIFE may be holding it — close the others and try again, or reconnect and log the set online.",
+        { exact: true },
+      ),
+    ).toBeVisible();
     await expect(
       page.getByText(
         "This device has no room left to store the set. Your earlier sets are safe — free some space or reconnect to send them.",
         { exact: true },
       ),
-    ).toBeVisible();
+    ).toHaveCount(0);
     expect(await page.evaluate((key) => localStorage.getItem(key), key)).toBe(original);
     expect(JSON.stringify(await page.evaluate(() => window.__offlineFixture.read()))).toBe(
       originalOwned,
