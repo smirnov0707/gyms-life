@@ -55,9 +55,38 @@ export async function verifyIntakeDesign({ open, record, artifacts }) {
           await expect(workspace.locator("h1")).toHaveText("Bench press");
           await expect(page.locator(".fl-movement-steps li")).toHaveCount(3);
           await expect(page.locator("video")).toHaveAttribute("controls", "");
-          await expect
-            .poll(() => page.locator("video").evaluate((el) => el.readyState))
-            .toBeGreaterThanOrEqual(2);
+          // Playwright's Chromium ships without proprietary codecs: an H.264
+          // mp4 cannot be decoded in it at all, so `readyState` stays 0 and the
+          // element reports DEMUXER_ERROR_NO_SUPPORTED_STREAMS. Asserting
+          // readyState unconditionally made this check impossible to pass in
+          // such a build, and the failure read as a defect in the page — it
+          // cost a wrong diagnosis before anybody looked at `video.error`.
+          //
+          // Where the codec is present the assertion is exactly as it was.
+          // Where it is not, what can still be verified is verified — the real
+          // local file is wired and the refusal is the codec, not a missing or
+          // broken asset — and the report says decode was not verified instead
+          // of implying it was.
+          const decodes = await page.evaluate(() =>
+            Boolean(document.createElement("video").canPlayType('video/mp4; codecs="avc1.42E01E"')),
+          );
+          if (decodes) {
+            await expect
+              .poll(() => page.locator("video").evaluate((el) => el.readyState))
+              .toBeGreaterThanOrEqual(2);
+          } else {
+            const media = await page.locator("video").evaluate((el) => ({
+              currentSrc: el.currentSrc,
+              code: el.error?.code ?? null,
+              message: el.error?.message ?? "",
+            }));
+            expect(media.currentSrc).toContain("/assets/videos/exercise-bench.mp4");
+            expect(media.code).toBe(4); // MEDIA_ERR_SRC_NOT_SUPPORTED
+            expect(media.message).toContain("DEMUXER_ERROR_NO_SUPPORTED_STREAMS");
+            record(
+              "movement: local video is wired and served, decode NOT verified — this browser build has no H.264",
+            );
+          }
           expect(await page.locator("video").evaluate((el) => el.paused)).toBe(true);
           await expect(workspace).not.toContainText("AI OPTIMIZED");
           await expect(workspace).not.toContainText("VECT:");
