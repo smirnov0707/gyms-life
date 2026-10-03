@@ -102,6 +102,24 @@ const record = (name) => {
   results.push({ name, status: "passed" });
   console.log("PASS", name);
 };
+/**
+ * Runs one verifier and insists it recorded something.
+ *
+ * `errors` being empty is not evidence that anything was checked. A verifier
+ * that returns early — a renamed fixture, a guard clause that stops matching, a
+ * `return` left behind while debugging — records no checks, raises no errors,
+ * and the suite exits 0 looking greener than before. The count is written into
+ * results.json, but nothing compared it with anything.
+ *
+ * Per verifier rather than one total, because a total has to be a magic number
+ * that somebody updates to whatever the run produced. "This module checked at
+ * least one thing" needs no maintenance and names the module that went quiet.
+ */
+const ran = async (label, verify) => {
+  const before = results.length;
+  await verify();
+  if (results.length === before) throw new Error(`BROWSER_VERIFIER_RECORDED_NOTHING:${label}`);
+};
 try {
   await server.listen();
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
@@ -130,17 +148,17 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
-  await verifyComparisonDesign({ open, record, artifacts });
-  await verifyRewindDesign({ open, record, artifacts });
-  await verifyTrendDesign({ open, record, artifacts });
-  await verifyMemoryDesign({ open, record, artifacts });
-  await verifySupplementDesign({ open, record, artifacts });
-  await verifyRiskDesign({ open, record, artifacts });
-  await verifyObservedDesign({ open, record, artifacts });
-  await verifyWeeklyDesign({ open, record, artifacts });
-  await verifyPerformanceDesign({ open, record, artifacts });
-  await verifyLedgerDesign({ open, record, artifacts });
-  await verifyCameraDesign({ open, record, artifacts });
+  await ran("comparison-design", () => verifyComparisonDesign({ open, record, artifacts }));
+  await ran("rewind-design", () => verifyRewindDesign({ open, record, artifacts }));
+  await ran("trend-design", () => verifyTrendDesign({ open, record, artifacts }));
+  await ran("memory-design", () => verifyMemoryDesign({ open, record, artifacts }));
+  await ran("supplement-design", () => verifySupplementDesign({ open, record, artifacts }));
+  await ran("risk-design", () => verifyRiskDesign({ open, record, artifacts }));
+  await ran("observed-design", () => verifyObservedDesign({ open, record, artifacts }));
+  await ran("weekly-design", () => verifyWeeklyDesign({ open, record, artifacts }));
+  await ran("performance-design", () => verifyPerformanceDesign({ open, record, artifacts }));
+  await ran("ledger-design", () => verifyLedgerDesign({ open, record, artifacts }));
+  await ran("camera-design", () => verifyCameraDesign({ open, record, artifacts }));
   if (!process.argv.includes("--design-only")) {
     {
       const { page, context } = await open("screen=training");
@@ -251,10 +269,10 @@ try {
         "quick onboarding includes equipment, retains stored body/limitations, and does not auto-pick a goal from a photo",
       );
     }
-    await verifyCoreActions({ open, record });
-    await verifyPlanIntegrity({ open, record });
-    await verifyAiUi({ open, record, artifacts });
-    await verifyFoundationMerge({ open, record, artifacts });
+    await ran("core-actions", () => verifyCoreActions({ open, record }));
+    await ran("plan-integrity", () => verifyPlanIntegrity({ open, record }));
+    await ran("ai-ui", () => verifyAiUi({ open, record, artifacts }));
+    await ran("foundation-merge", () => verifyFoundationMerge({ open, record, artifacts }));
     for (const screen of ["meals", "nutrition", "training", "onboarding", "workout"])
       for (const lang of ["lt", "en"])
         for (const width of [320, 390]) {
@@ -276,9 +294,9 @@ try {
           );
         }
   }
-  await verifyCoreDesign({ open, record, artifacts });
-  await verifySessionDesign({ open, record, artifacts });
-  await verifyIntakeDesign({ open, record, artifacts });
+  await ran("core-design", () => verifyCoreDesign({ open, record, artifacts }));
+  await ran("session-design", () => verifySessionDesign({ open, record, artifacts }));
+  await ran("intake-design", () => verifyIntakeDesign({ open, record, artifacts }));
   expect(errors).toEqual([]);
 } catch (error) {
   // Controlled fixtures only: retain the observed failure instead of hiding it with a retry.
@@ -314,6 +332,9 @@ try {
       {
         scope:
           "Real route components with controlled synthetic read/write responses. Real AI providers and production database transactions are not certified by this suite.",
+        // How many checks actually ran. A report that says only "no errors"
+        // reads the same whether 354 checks passed or none were reached.
+        checks: results.length,
         results,
         errors,
       },
