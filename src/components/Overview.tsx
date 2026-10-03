@@ -167,9 +167,13 @@ export function Overview() {
         <div className="fl-daily-column">
           <header className="fl-greeting">
             <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
+            {/* The waving hand went with the greeting. On a screen whose job is
+                to show an athlete their own measurements and send them into a
+                session, a cartoon wave is the one element that reads as a
+                consumer app rather than an instrument. */}
             <h1>
               {greeting}
-              {firstName ? `, ${firstName}` : ""} <span aria-hidden="true">👋</span>
+              {firstName ? `, ${firstName}` : ""}
             </h1>
             <p>
               {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}

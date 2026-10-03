@@ -322,7 +322,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
                 type="button"
                 aria-pressed={visualAppearance === option}
                 onClick={() => setVisualAppearance(option)}
-                className={`min-h-9 rounded-full px-3 text-[10px] font-semibold transition ${visualAppearance === option ? "bg-white/12 text-white" : "text-neutral-400"}`}
+                className={`min-h-9 rounded-full px-3 text-xs font-semibold transition ${visualAppearance === option ? "bg-white/12 text-white" : "text-neutral-400"}`}
               >
                 {option === "realistic"
                   ? language === "lt"

@@ -238,13 +238,16 @@
 .fl-readiness-summary svg {
   color: #26cfb7;
 }
+/* 28px tall with 9px of type for the control that opens the readiness
+   adjustment — the markup asked for `text-xs` and this overrode it. Its column
+   ends well above the fold, so the height costs the composition nothing. */
 .fl-readiness-card > button {
-  min-height: 28px;
-  height: 28px;
+  min-height: 36px;
+  height: auto;
   padding: 0;
-  font-size: 9px;
-  border-radius: 5px;
-  margin-top: 3px;
+  font-size: 12px;
+  border-radius: 7px;
+  margin-top: 5px;
   color: var(--muted-foreground);
 }
 .fl-readiness-card > p {
@@ -255,12 +258,15 @@
   margin-top: 8px;
   font-size: 12px;
 }
+/* Shared by the dashboard's inline links ("Explore muscles", "Why this
+   action", "Recovery estimates"). 10px is a footnote; these are where the
+   athlete goes next. The 44px target was already there. */
 .fl-text-link {
   display: inline-flex;
   gap: 5px;
   padding-block: 8px;
   color: var(--primary);
-  font-size: 10px;
+  font-size: 12px;
 }
 .fl-smart-brief header {
   display: flex;

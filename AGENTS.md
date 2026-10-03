@@ -70,4 +70,32 @@ because the fix was applied to one call site instead of the pattern.
   past fifteen reads through a client passed in as an argument. Anchor a scan on
   what the code _does_ — `.from(`, `.rpc(` — not on what a variable is called,
   and assert the scan still matches something: a source scan that quietly finds
-  nothing passes forever.
+  nothing passes forever. The same scan written for colour listed six banned
+  hexes, all of them ones a sweep had already found, so it asserted that the
+  sweep had happened rather than that the app was clean — and read past the
+  lavender logo on every page, plus fifteen more, four hidden behind an
+  eight-digit alpha hex its word boundary could not reach. Convert the value and
+  judge that: `palette-contract.test.ts` turns every hex and `rgb()` into a hue
+  and rejects a band, so a colour cannot return under a name the test has
+  not met.
+- A CSS rule that reads correctly is not a CSS rule that applies, and no source
+  scan can tell them apart. Three times in one session a declaration was simply
+  losing: the landing headline rendered at weight 500 while the rule asking for
+  700 sat in a file imported earlier at equal specificity; `.fl-live-signals li`
+  was edited twice for height that a `.fl-dashboard .fl-live-signals li` one
+  step higher had been setting all along; and the navigation's font size was
+  declared in `future-lab-shell.css` and overridden by
+  `future-lab-visual-system.css`. Each file was right on its own. What was wrong
+  was which one won, and only the rendered page knows that. So measure the page:
+  `test-today-browser.mjs` reads `getComputedStyle` and `getBoundingClientRect`
+  for the sizes and grounds that carry meaning. When a layout rule is load-
+  bearing — the primary action is the largest control, Today rests inside the
+  reference viewport — assert it there, not against the stylesheet.
+- Where the eye goes is a decision, and sharing one rule makes it by accident.
+  `.fl-plan-start`, `.fl-card-action` and `.fl-action` were styled together, so
+  Today carried five equally loud volt bars; the wide-desktop rules then sized
+  the primary action down until each of the four card links was physically
+  larger than the button the athlete opened the app to press. The palette says
+  volt means action, so exactly one control wears it filled and everything else
+  wears it as text. A second place that spends the accent is not a weaker
+  hierarchy, it is no hierarchy.
