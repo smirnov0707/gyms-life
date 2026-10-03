@@ -52,12 +52,20 @@
   background: color-mix(in srgb, var(--surface) 78%, transparent);
 }
 
+/* The four labels the whole app navigates by, at 10px: caption type doing a
+   signpost's job, in a header with room to spare.
+
+   This is the rule that binds — `future-lab-shell.css` sets the same property
+   one specificity step lower, so the size there is a statement of intent that
+   never reached the screen. The third time this session that a correct-looking
+   rule was losing silently, and the third time only measuring the rendered page
+   showed which file to open. */
 .future-lab-app .fl-desktop-navigation a {
   position: relative;
   border-radius: 10px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.055em;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
 }
 
 .future-lab-app .fl-desktop-navigation a[aria-current="page"] {

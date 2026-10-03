@@ -7,8 +7,9 @@
 
 .twin-screen > [role="tablist"] [role="tab"] {
   border-radius: 7px;
-  font-size: 10px;
-  letter-spacing: 0.045em;
+  /* The Twin's four sections, at 10px. The markup asked for 11 and this won. */
+  font-size: 13px;
+  letter-spacing: 0.02em;
 }
 
 .twin-screen > [role="tablist"] [aria-selected="true"] {
@@ -346,9 +347,9 @@
        The tablist can scroll instead of clipping text inside equal thirds. */
     flex: 1 0 auto;
     min-width: max-content;
-    padding-inline: 5px;
+    padding-inline: 9px;
     gap: 4px;
-    font-size: 9px;
+    font-size: 12px;
     letter-spacing: 0;
   }
 
