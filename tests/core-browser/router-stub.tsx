@@ -59,12 +59,43 @@ export const useRouter = () => ({
   navigate: ({ to }: { to: string }) => location.assign(href(to)),
   invalidate: async () => {},
 });
+/**
+ * A route in this fixture, including the loader data a real `Route` exposes.
+ *
+ * The stub had `useSearch` and `useParams` and no `useLoaderData`, which is not
+ * a missing convenience: the moment a route read it, the component threw, the
+ * whole tree unmounted, and the synthetic watermark never appeared. That is how
+ * `TypeError: Route.useLoaderData is not a function` showed up — after 362
+ * checks had passed — rather than as a failed assertion about anything.
+ *
+ * The real router awaits the loader before it renders the component, so this
+ * suspends until the loader resolves. `fixture.tsx` holds the boundary, with
+ * the watermark outside it.
+ */
 export const createFileRoute =
-  () => (options: { component: ComponentType; [key: string]: unknown }) => ({
-    options,
-    useSearch: () => ({}),
-    useParams: () => ({
+  () =>
+  (options: {
+    component: ComponentType;
+    loader?: (context: { params: Record<string, string> }) => unknown;
+    [key: string]: unknown;
+  }) => {
+    const params = () => ({
       day: new URLSearchParams(location.search).get("day") ?? "1",
       slug: new URLSearchParams(location.search).get("slug") ?? "bench-press",
-    }),
-  });
+    });
+    let settled: { value: unknown } | undefined;
+    let running: Promise<unknown> | undefined;
+    return {
+      options,
+      useSearch: () => ({}),
+      useParams: params,
+      useLoaderData: () => {
+        if (!options.loader) return {} as never;
+        running ??= Promise.resolve(options.loader({ params: params() })).then((value) => {
+          settled = { value };
+        });
+        if (!settled) throw running;
+        return settled.value as never;
+      },
+    };
+  };

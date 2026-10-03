@@ -19,7 +19,7 @@ import { Route as ReadinessRoute } from "@/routes/_authenticated/readiness";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";
 /* eslint-disable react-refresh/only-export-components -- isolated executable fixture */
-import { StrictMode } from "react";
+import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -157,17 +157,23 @@ createRoot(document.getElementById("root")!).render(
             <aside data-testid="synthetic-watermark" style={{ padding: 12, fontSize: 12 }}>
               SYNTHETIC TEST FIXTURE — NOT USER DATA
             </aside>
-            {["exercises", "movement"].includes(query.get("screen") ?? "") ? (
-              <Panel />
-            ) : query.get("shell") === "1" ? (
-              <AppShell>
+            {/* The real router awaits a route's loader before rendering it, so
+                the stub suspends. The watermark stays outside this boundary:
+                every check waits for it, and a screen still loading its data
+                must not look like a screen that failed to mount. */}
+            <Suspense fallback={<p data-testid="synthetic-loading">Loading synthetic route…</p>}>
+              {["exercises", "movement"].includes(query.get("screen") ?? "") ? (
                 <Panel />
-              </AppShell>
-            ) : (
-              <main style={{ padding: 16, maxWidth: 1180, margin: "auto" }}>
-                <Panel />
-              </main>
-            )}
+              ) : query.get("shell") === "1" ? (
+                <AppShell>
+                  <Panel />
+                </AppShell>
+              ) : (
+                <main style={{ padding: 16, maxWidth: 1180, margin: "auto" }}>
+                  <Panel />
+                </main>
+              )}
+            </Suspense>
             <Toaster position="top-center" />
           </ReminderProvider>
         </ThemeProvider>
