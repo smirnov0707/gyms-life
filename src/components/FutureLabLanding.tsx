@@ -19,14 +19,14 @@ const LandingTwin = lazy(() => import("./LandingTwin"));
 
 const copy = {
   en: {
-    eyebrow: "HUMAN POTENTIAL, REIMAGINED",
-    title: "A stronger you.",
-    accent: "One day at a time.",
+    eyebrow: "TRAINING YOU CAN CHECK",
+    title: "Train on the record.",
+    accent: "Not on a guess.",
     intro:
-      "Meet your personal Future Lab. A place to train with purpose, understand your body and make your next move count.",
+      "175 exercises with technique and the mistakes to avoid, sets that survive a dead signal, and a body map built only from what you actually logged. Free while GYMS.LIFE is in beta.",
     start: "Build my routine",
     explore: "Explore the experience",
-    note: "Your goals. Your pace. Your next chapter.",
+    note: "No subscription yet. Nothing invented about your body.",
     preview: "EXPLORE YOUR DIGITAL TWIN",
     demo: "Interactive anatomy demo",
     loading: "Preparing your anatomy preview…",
@@ -51,9 +51,9 @@ const copy = {
       },
       {
         title: "Lab",
-        kicker: "ASK BETTER QUESTIONS",
-        text: "Review observations and experiments. See what the evidence supports and what still needs more data.",
-        detail: "Observations · Experiments · Evidence",
+        kicker: "SEE WHAT HELD UP",
+        text: "Every suggestion the app made is written down with what happened next. When the evidence is too thin to tell, the Lab says so instead of scoring itself.",
+        detail: "Proposed · Outcome · Still unknown",
       },
       {
         title: "Coach",
@@ -83,11 +83,11 @@ const copy = {
     libraryTag: "MOVE WITH INTENTION",
     libraryTitle: "Good technique.\nA better starting point.",
     libraryText:
-      "Explore exercises by muscle group and equipment. Keep movement guidance close when you train.",
+      "175 exercises by muscle group and equipment, each with step-by-step technique, the mistakes people actually make, and a motion demonstration — video for the main lifts, frame sequences for the rest.",
     libraryLink: "Open the exercise library",
     trustTitle: "Your progress deserves context.",
     trustText:
-      "Missing data stays missing. Training estimates are labelled, and your Digital Twin is a guide to your records — not a diagnosis.",
+      "Missing data stays missing — no filled-in weight, height or age behind a number you read as your own. Estimates are labelled as estimates. Photos you submit for analysis go to an AI provider, and the screen says so before you press the button. Your Twin is a reading of your records, not a diagnosis.",
     faqTag: "A LITTLE MORE CLARITY",
     faqTitle: "Before you begin.",
     faqs: [
@@ -105,7 +105,15 @@ const copy = {
       },
       {
         q: "Where can I check access and pricing?",
-        a: "The pricing page shows available access options and billing status. You can review it before creating an account.",
+        a: "Payments are not switched on yet: every feature is available without a subscription while GYMS.LIFE is in beta. The pricing page shows the plans being prepared and says the same thing.",
+      },
+      {
+        q: "Can I delete my account and everything in it?",
+        a: "Yes, from your profile, and it is immediate rather than a request someone processes. It erases your sessions, sets, measurements, nutrition logs, check-ins, plans and photo sets. Payment records held by our reseller stay, because statute requires it, and technical event logs keep no identifier of yours.",
+      },
+      {
+        q: "What does the app not know about me?",
+        a: "Whatever you have not told it. There is no nightly model learning your body in the background yet — the Lab shows what was proposed and what happened, and says plainly where there is too little evidence to judge.",
       },
     ],
     pricing: "View pricing",
@@ -114,14 +122,14 @@ const copy = {
     finalText: "Bring your intention. Start with one step.",
   },
   lt: {
-    eyebrow: "NAUJAS ŽVILGSNIS Į TAVO GALIMYBES",
-    title: "Stipresnis tu.",
-    accent: "Diena po dienos.",
+    eyebrow: "TRENIRUOTĖS, KURIAS GALIMA PATIKRINTI",
+    title: "Treniruokis pagal įrašą.",
+    accent: "Ne pagal spėjimą.",
     intro:
-      "Tavo asmeninė Future Lab erdvė. Treniruokis kryptingai, geriau pažink savo kūną ir atrask kitą prasmingą žingsnį.",
+      "175 pratimai su technika ir dažniausiomis klaidomis, serijos, kurios išlieka nutrūkus ryšiui, ir kūno žemėlapis, sudėtas tik iš to, ką tikrai užregistravai. Beta etape — be mokėjimo.",
     start: "Sukurti savo rutiną",
     explore: "Atrasti galimybes",
-    note: "Tavo tikslai. Tavo tempas. Tavo nauja pradžia.",
+    note: "Prenumeratos dar nėra. Apie tavo kūną nieko neišgalvojama.",
     preview: "PAŽINK SAVO SKAITMENINĮ DVYNĮ",
     demo: "Interaktyvi anatomijos demonstracija",
     loading: "Ruošiama anatomijos peržiūra…",
@@ -145,9 +153,9 @@ const copy = {
       },
       {
         title: "Lab",
-        kicker: "KELK TIKSLINGUS KLAUSIMUS",
-        text: "Peržiūrėk pastebėjimus ir eksperimentus. Matyk, ką pagrindžia duomenys ir kam jų dar trūksta.",
-        detail: "Pastebėjimai · Eksperimentai · Duomenys",
+        kicker: "MATYK, KAS PASITVIRTINO",
+        text: "Kiekvienas programos pasiūlymas užrašomas kartu su tuo, kas nutiko toliau. Kai duomenų per mažai, kad būtų galima spręsti, Lab tai pasako, o ne vertina save.",
+        detail: "Pasiūlyta · Rezultatas · Dar nežinoma",
       },
       {
         title: "Treneris",
@@ -177,11 +185,11 @@ const copy = {
     libraryTag: "JUDĖK KRYPTINGAI",
     libraryTitle: "Taisyklinga technika.\nTvirtesnė pradžia.",
     libraryText:
-      "Atrask pratimus pagal raumenų grupes ir įrangą. Judesio instrukcijos visada šalia tavo treniruotės.",
+      "175 pratimai pagal raumenų grupes ir įrangą, kiekvienas su technika žingsnis po žingsnio, dažniausiomis klaidomis ir judesio demonstracija — pagrindiniams pratimams vaizdo įrašas, likusiems judesio kadrai.",
     libraryLink: "Atverti pratimų biblioteką",
     trustTitle: "Tavo progresui reikia konteksto.",
     trustText:
-      "Trūkstami duomenys lieka trūkstami. Treniruočių įverčiai pažymėti, o skaitmeninis dvynys padeda suprasti tavo įrašus — tai nėra diagnozė.",
+      "Trūkstami duomenys lieka trūkstami — joks svoris, ūgis ar amžius nėra užpildomas už tave, kad paskui skaitytum tai kaip savo. Įverčiai pažymėti kaip įverčiai. Nuotraukos, kurias pateiki analizei, keliauja dirbtinio intelekto paslaugos teikėjui, ir ekranas tai pasako prieš paspaudimą. Dvynys yra tavo įrašų skaitymas, ne diagnozė.",
     faqTag: "DAUGIAU AIŠKUMO",
     faqTitle: "Prieš pradedant.",
     faqs: [
@@ -199,7 +207,15 @@ const copy = {
       },
       {
         q: "Kur patikrinti prieigą ir kainas?",
-        a: "Kainodaros puslapyje pateikiamos prieigos galimybės ir mokėjimų būsena. Jį gali peržiūrėti dar prieš kurdamas paskyrą.",
+        a: "Mokėjimai dar neįjungti: beta etape visos funkcijos prieinamos be prenumeratos. Kainodaros puslapyje matomi ruošiami planai ir pasakyta tas pats.",
+      },
+      {
+        q: "Ar galiu ištrinti paskyrą ir visus duomenis?",
+        a: "Taip, savo profilyje, ir tai įvyksta iškart, o ne kaip prašymas, kurį kas nors tvarko. Ištrinamos treniruotės, serijos, matavimai, mitybos žurnalai, savijautos įvestys, planai ir nuotraukų rinkiniai. Lieka tik mokėjimų įrašai, kuriuos saugo mūsų pardavėjas, nes to reikalauja įstatymas, o techniniuose veiklos įrašuose tavo identifikatoriaus nebelieka.",
+      },
+      {
+        q: "Ko programa apie mane nežino?",
+        a: "Visko, ko jai nepasakei. Kol kas nėra nakties modelio, kuris fone mokytųsi tavo kūno — Lab parodo, kas buvo pasiūlyta ir kas nutiko, ir tiesiai pasako, kur duomenų per mažai, kad būtų galima spręsti.",
       },
     ],
     pricing: "Peržiūrėti kainodarą",
