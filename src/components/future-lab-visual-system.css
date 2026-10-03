@@ -1,10 +1,10 @@
 /* Future Lab visual language. Layout, live values and Twin materials remain owned
    by their components. Specific shell scope makes lazy CSS import order harmless. */
 .future-lab-app {
-  --fl-violet-aura: color-mix(in srgb, var(--primary) 12%, transparent);
+  --fl-volt-aura: color-mix(in srgb, var(--primary) 12%, transparent);
   --fl-cyan-aura: color-mix(in srgb, var(--accent) 7%, transparent);
   background:
-    radial-gradient(65rem 45rem at -15% -20%, var(--fl-violet-aura), transparent 72%),
+    radial-gradient(65rem 45rem at -15% -20%, var(--fl-volt-aura), transparent 72%),
     radial-gradient(55rem 40rem at 105% 25%, var(--fl-cyan-aura), transparent 70%),
     var(--background);
   font-feature-settings: "ss01";
@@ -302,20 +302,20 @@
 
 /* Intentional dark media stages retain their own contrast in either theme. */
 .future-lab-app :is(.twin-home--cockpit, .twin-screen [data-twin-cockpit], .twin-muscle-detail) {
-  --foreground: #edf2fc;
-  --muted-foreground: #a3b0c9;
-  --surface: #0e1625;
-  --surface-2: #151f32;
-  --primary: #baa5ff;
-  --primary-foreground: #191329;
-  --action-start: #c0acff;
-  --action-end: #96b6ff;
-  --border: rgb(164 186 231 / 20%);
+  --foreground: #f4f6f4;
+  --muted-foreground: #a0a7a4;
+  --surface: #101216;
+  --surface-2: #181b21;
+  --primary: #c8fa3c;
+  --primary-foreground: #0b0f03;
+  --action-start: #d2fe52;
+  --action-end: #9fe016;
+  --border: rgb(226 236 226 / 18%);
   border-radius: 20px;
-  border-color: rgb(157 184 239 / 22%);
+  border-color: rgb(226 236 226 / 20%);
   box-shadow:
-    0 18px 50px -30px rgb(0 0 0 / 65%),
-    inset 0 1px 0 rgb(180 202 255 / 6%);
+    0 18px 50px -30px rgb(0 0 0 / 72%),
+    inset 0 1px 0 rgb(240 255 220 / 6%);
 }
 
 .future-lab-app .twin-home--cockpit {
@@ -328,13 +328,13 @@
 }
 
 .future-lab-app .twin-detail-tabs button[aria-pressed="true"] {
-  background: linear-gradient(125deg, #503776, #334368);
-  color: #f0eaff;
+  background: linear-gradient(125deg, #35470f, #1d3340);
+  color: #eef7e2;
 }
 
 .future-lab-app .twin-detail-readout {
   background: linear-gradient(140deg, #1a2340, #0e192b);
-  border-color: rgb(169 146 234 / 26%);
+  border-color: rgb(200 250 60 / 28%);
 }
 
 .future-lab-app .twin-detail-readout a {

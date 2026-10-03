@@ -19,7 +19,7 @@ export function FutureLabPanel({
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/45 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent"
       />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">

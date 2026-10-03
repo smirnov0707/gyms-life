@@ -9,7 +9,7 @@ export function IllustrativeAthlete({ compact = false }: { compact?: boolean }) 
       className={`fl-illustrative-athlete relative flex min-w-0 flex-col items-center ${compact ? "" : "self-center"}`}
     >
       <div
-        className="pointer-events-none absolute inset-x-[12%] bottom-9 h-16 rounded-full bg-violet-500/10 blur-2xl"
+        className="pointer-events-none absolute inset-x-[12%] bottom-9 h-16 rounded-full bg-accent/10 blur-2xl"
         aria-hidden="true"
       />
       <img
@@ -17,7 +17,7 @@ export function IllustrativeAthlete({ compact = false }: { compact?: boolean }) 
         alt={english ? "Illustrative athlete" : "Iliustracinis atletas"}
         loading={compact ? "lazy" : "eager"}
         decoding="async"
-        className={`relative w-auto max-w-full object-contain drop-shadow-[0_0_24px_rgba(102,75,210,.15)] ${compact ? "h-[104px]" : "h-[238px] sm:h-[330px] lg:h-[410px]"}`}
+        className={`relative w-auto max-w-full object-contain drop-shadow-[0_0_24px_rgba(120,220,229,.16)] ${compact ? "h-[104px]" : "h-[238px] sm:h-[330px] lg:h-[410px]"}`}
       />
       <figcaption
         className={`relative mt-1.5 max-w-[250px] text-center leading-snug text-muted-foreground ${compact ? "text-[8px]" : "text-[9px]"}`}

@@ -47,7 +47,7 @@ export function EvidenceAcquisitionPrompt({
           : "mt-4 rounded-2xl border border-border/70 bg-surface-2/40 p-3"
       }
     >
-      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-violet-300">
+      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-accent">
         {english ? "WHAT WOULD REDUCE UNCERTAINTY" : "KAS SUMAŽINTŲ NEŽINOMYBĘ"}
       </p>
       <p className="mt-2 text-xs leading-relaxed text-foreground">
@@ -61,7 +61,7 @@ export function EvidenceAcquisitionPrompt({
         </span>
         <Link
           to={recommendation.route}
-          className="inline-flex min-h-11 items-center text-xs font-medium text-violet-300"
+          className="inline-flex min-h-11 items-center text-xs font-medium text-accent"
         >
           {english ? "Add evidence" : "Pridėti įrodymą"} →
         </Link>

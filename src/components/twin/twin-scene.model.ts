@@ -33,28 +33,38 @@ export type TwinDisplayTone =
   | "volume_high"
   | "in_session"
   | "not_in_session";
+/**
+ * Literal hexes, and they have to be: this is a WebGL figure, not a DOM tree,
+ * so a `var(--primary)` here parses as nothing. A sweep that moved the app's
+ * hardcoded colours onto tokens put one in this map and the ramp lost a step —
+ * the canvas is one of the deliberate dark stages AGENTS.md carves out, and it
+ * pays for that with literals that have to be kept in step by hand.
+ *
+ * They are saturated because the body underneath is a near-black instrument:
+ * on skin a strong colour reads as clothing, on this figure it reads as a lit
+ * muscle, which is the whole point of the screen.
+ */
 export const TWIN_DISPLAY_COLORS: Record<TwinDisplayTone, string> = {
-  // The screen's own legend, hue for hue: ready is violet, mid is cyan, and
-  // the state that wants attention is amber. They are saturated because the
-  // body underneath is a near-black instrument — on skin a strong colour reads
-  // as clothing, but on this figure it reads as a lit muscle, which is the
-  // whole point of the screen.
-  fresh: "#a855f7",
-  moderate: "#38bdf8",
-  fatigued: "#f97316",
-  // The volume layer runs the same violet ramp, low to high, so a glance tells
-  // the athlete which end of it a region sits at without reading a number.
-  volume_low: "#4f7ce8",
-  volume_medium: "#8b5cf6",
-  volume_high: "#c026d3",
-  // This layer is not a measurement, it is the list of what to do, so it takes
-  // the strongest colour on the figure. Everything not on it recedes rather
-  // than competing.
-  in_session: "#d946ef",
+  // The state layer speaks the app's three accents, in their app meanings:
+  // volt is ready to go, ice is a measurement sitting mid-range, ember is heat
+  // that wants attention. Nothing here is red, because none of it is an error.
+  fresh: "#c8fa3c",
+  moderate: "#58cfe0",
+  fatigued: "#ff6b2c",
+  // The volume layer is one hue by brightness rather than a second set of
+  // hues. A ramp that borrowed the state colours would make "a lot of volume"
+  // look like "ready", and the athlete reads both layers on one figure.
+  volume_low: "#215364",
+  volume_medium: "#58cfe0",
+  volume_high: "#b8f4ff",
+  // Not a measurement — the list of what to do today. It takes the strongest
+  // colour on the figure, and everything off the list recedes instead of
+  // competing with it.
+  in_session: "#d9ff52",
   // The two that mean nothing is being said sit at the body's own colour, so
   // they read as unlit rather than as a state of their own.
-  unknown: "#0e1826",
-  not_in_session: "#0b1420",
+  unknown: "#0e1014",
+  not_in_session: "#0a0c0f",
 };
 
 /**

@@ -256,7 +256,7 @@ export function PersonalizedTwinSetup({
               type="checkbox"
               checked={consent}
               onChange={(event) => setConsent(event.target.checked)}
-              className="mt-0.5 size-5 shrink-0 accent-violet-500"
+              className="mt-0.5 size-5 shrink-0 accent-accent"
             />
             <span>{copy.consent}</span>
           </label>

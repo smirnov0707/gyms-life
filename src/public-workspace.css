@@ -45,7 +45,7 @@
   padding: 10px 20px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   background: var(--surface);
 }
@@ -97,7 +97,10 @@
   gap: 32px;
   border-top: 1px solid var(--border);
   padding: 34px 0 40px;
-  font-size: 11px;
+  /* 11px for the links to the privacy policy, the terms and the refund terms:
+     the three pages a visitor is most likely to be squinting at, set smaller
+     than anything else on the page. The tap target was already 44px. */
+  font-size: 13px;
   color: var(--muted-foreground);
 }
 .fl-public-footer strong {
@@ -645,9 +648,11 @@
   .fl-public-entry {
     grid-column: 2;
     grid-row: 1;
-    padding: 8px 12px;
+    padding: 8px 14px;
     gap: 8px;
-    font-size: 11px;
+    /* The phone is where this button is actually used, and it was the one
+       place it shrank to 11px. */
+    font-size: 13px;
     min-height: 44px;
   }
   .fl-public-heading {

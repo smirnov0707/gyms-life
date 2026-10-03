@@ -196,14 +196,14 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
 
                 <div className="h-1.5 w-full rounded-full bg-surface-2 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-rose-500 transition-all"
+                    className="h-full rounded-full bg-gradient-to-r from-accent to-rose-500 transition-all"
                     style={{ width: `${d.gapPercent}%` }}
                   />
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">{d.reason}</p>
                 {d.evidence && (
-                  <p className="text-[11px] text-foreground/70 border-l-2 border-violet-500/50 pl-2">
+                  <p className="text-[11px] text-foreground/70 border-l-2 border-accent/50 pl-2">
                     {d.evidence}
                   </p>
                 )}
@@ -284,7 +284,7 @@ export const MicronutrientDeficiencyScanner: React.FC = () => {
               className={`w-full font-bold rounded-2xl transition-all ${
                 allApplied
                   ? "bg-emerald-500/10 border border-emerald-500/40 text-primary"
-                  : "bg-gradient-to-r from-violet-500 to-indigo-600 hover:opacity-90 text-foreground shadow-lg shadow-violet-500/20"
+                  : "bg-gradient-to-r from-accent to-primary hover:opacity-90 text-foreground shadow-lg shadow-accent/20"
               }`}
             >
               {allApplied ? (

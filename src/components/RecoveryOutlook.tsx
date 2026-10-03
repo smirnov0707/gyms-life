@@ -57,7 +57,7 @@ export function RecoveryOutlook({ compact = false }: { compact?: boolean }) {
 
   if (compact) {
     const entries = outlook?.status === "projected" ? outlook.recovering.slice(0, 3) : [];
-    const colors = ["#39c4db", "#a16bf5", "#5378e8"];
+    const colors = ["#78dce5", "#c8fa3c", "#8fa6ff"];
     return (
       <section aria-label={t("ro.title")} className="fl-outlook">
         <p className="fl-eyebrow uppercase">{t("ro.title")}</p>

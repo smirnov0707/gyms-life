@@ -53,12 +53,12 @@ export function TwinPulse() {
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-violet-300">
+          <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-accent">
             TWIN PULSE
           </p>
           <h2 className="mt-1 text-xl font-semibold text-foreground">{state}</h2>
         </div>
-        <Activity aria-hidden="true" className="size-5 text-violet-300" />
+        <Activity aria-hidden="true" className="size-5 text-accent" />
       </div>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
         {query.isError
@@ -88,7 +88,7 @@ export function TwinPulse() {
                     : ArrowRight;
               return (
                 <li key={change.id} className="flex items-center gap-2 text-xs text-foreground">
-                  <Icon aria-hidden="true" className="size-3.5 text-violet-300" />
+                  <Icon aria-hidden="true" className="size-3.5 text-accent" />
                   <span>{LABELS[change.id][english ? 1 : 0]}</span>
                   <span className="ml-auto tabular-nums text-muted-foreground">
                     {change.delta > 0 ? "+" : ""}

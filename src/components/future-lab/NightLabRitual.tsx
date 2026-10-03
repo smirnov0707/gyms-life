@@ -37,12 +37,12 @@ export function NightLabRitual() {
     r.hypotheses.status === "completed" ? r.hypotheses.result.transitions.length : null;
   return (
     <section
-      className="rounded-2xl border border-violet-300/20 bg-surface/85 p-4 sm:p-5"
+      className="rounded-2xl border border-accent/20 bg-surface/85 p-4 sm:p-5"
       aria-label="Night Lab"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.18em] text-violet-300">
+          <p className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.18em] text-accent">
             <MoonStar aria-hidden="true" className="size-3.5" /> NIGHT LAB ·{" "}
             {new Date(r.reviewedAt).toLocaleTimeString(formatLocale(lang), {
               hour: "2-digit",
@@ -85,7 +85,7 @@ export function NightLabRitual() {
       </p>
       <Link
         to="/lab"
-        className="mt-3 inline-flex min-h-11 items-center text-xs font-medium text-violet-300"
+        className="mt-3 inline-flex min-h-11 items-center text-xs font-medium text-accent"
       >
         {english ? "See the laboratory record" : "Peržiūrėti laboratorijos įrašą"} →
       </Link>

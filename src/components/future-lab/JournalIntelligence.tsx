@@ -188,7 +188,7 @@ export function JournalIntelligence() {
       value: counted ? (data?.hypotheses.length ?? 0) : null,
       label: copy.hypotheses,
       icon: Microscope,
-      tone: "text-violet-300",
+      tone: "text-accent",
     },
     {
       value: counted ? supported.length : null,
@@ -225,11 +225,11 @@ export function JournalIntelligence() {
     <section className="fl-journal-page fl-panel relative overflow-hidden rounded-2xl border border-border bg-surface/90">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(124,58,237,.20),transparent_31%),radial-gradient(circle_at_8%_90%,rgba(6,182,212,.08),transparent_30%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(200,250,60,.16),transparent_31%),radial-gradient(circle_at_8%_90%,rgba(6,182,212,.08),transparent_30%)]"
       />
       <div className="fl-page-content relative p-4 sm:p-5">
         <header className="fl-page-heading">
-          <p className="fl-page-eyebrow flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-violet-300">
+          <p className="fl-page-eyebrow flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-accent">
             <BrainCircuit className="size-4" /> {copy.eyebrow}
           </p>
           <h1 className="mt-2 max-w-4xl text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
@@ -295,7 +295,7 @@ export function JournalIntelligence() {
                   onClick={() => setTab(item.id)}
                   className={`min-h-11 shrink-0 rounded-lg border px-3 text-[9px] font-bold uppercase tracking-[0.14em] transition-colors ${
                     tab === item.id
-                      ? "border-violet-400/50 bg-violet-500/15 text-foreground"
+                      ? "border-accent/50 bg-accent/15 text-foreground"
                       : "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -419,9 +419,9 @@ export function JournalIntelligence() {
               </div>
             )}
 
-            <div className="mt-3 rounded-xl border border-violet-400/10 bg-violet-400/[0.025] px-3 py-2.5">
+            <div className="mt-3 rounded-xl border border-accent/10 bg-accent/[0.025] px-3 py-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
-                <span className="font-semibold uppercase tracking-[0.12em] text-violet-300">
+                <span className="font-semibold uppercase tracking-[0.12em] text-accent">
                   {copy.weekChanged}
                 </span>
                 <span className="font-mono text-muted-foreground">{learningWeek.total}</span>
@@ -463,11 +463,11 @@ export function JournalIntelligence() {
                       return (
                         <article
                           key={`${entry.hypothesisId}-${entry.occurredAt}`}
-                          className="relative border-l border-violet-400/20 pl-4"
+                          className="relative border-l border-accent/20 pl-4"
                         >
-                          <span className="absolute -left-1 top-1 size-2 rounded-full bg-violet-400" />
+                          <span className="absolute -left-1 top-1 size-2 rounded-full bg-accent" />
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-300">
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">
                               {changeLabel}
                             </span>
                             <span className="font-mono text-[9px] text-muted-foreground">

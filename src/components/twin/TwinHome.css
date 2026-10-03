@@ -32,7 +32,7 @@
 
 .twin-cockpit-header > p {
   margin: 0 0 4px;
-  color: #9e8de0;
+  color: var(--accent);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.19em;
@@ -72,8 +72,8 @@
 }
 
 .twin-home--cockpit [data-twin-layer-controls] button[aria-pressed="true"] {
-  color: #d8c5ff;
-  box-shadow: inset 0 -2px #9270f4;
+  color: var(--primary);
+  box-shadow: inset 0 -2px var(--primary);
 }
 
 .twin-home--cockpit [data-twin-toolbar] > p {
@@ -124,7 +124,7 @@
 .twin-cockpit-insights > summary {
   min-height: 32px;
   padding: 8px 0;
-  color: #bca7ef;
+  color: var(--accent);
   cursor: pointer;
   font-size: 10px;
 }
@@ -232,7 +232,7 @@
 }
 
 .twin-cockpit-load [role="img"] > span {
-  background: linear-gradient(to top, #515dc5, #a077f2);
+  background: linear-gradient(to top, #58cfe0, #c8fa3c);
 }
 
 .twin-cockpit-load [role="img"] > span.bg-border {

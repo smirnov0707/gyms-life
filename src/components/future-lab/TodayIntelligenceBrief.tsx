@@ -62,7 +62,7 @@ function Row({
           : "grid gap-3 border-t border-border/70 py-4 first:border-t-0 first:pt-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
       }
     >
-      <span className="grid size-9 place-items-center rounded-xl border border-violet-400/20 bg-violet-500/[0.06] text-violet-300">
+      <span className="grid size-9 place-items-center rounded-xl border border-accent/20 bg-accent/[0.06] text-accent">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">
@@ -80,7 +80,7 @@ function Row({
         className={
           card
             ? "fl-card-action"
-            : "inline-flex min-h-11 items-center text-xs font-medium text-violet-300 sm:justify-self-end"
+            : "inline-flex min-h-11 items-center text-xs font-medium text-accent sm:justify-self-end"
         }
       >
         {cta} →
@@ -202,7 +202,7 @@ export function TodayIntelligenceBrief({
       aria-label={english ? "Intelligence brief" : "Intelligence santrauka"}
     >
       <header className={cards ? "sr-only" : "mb-2"}>
-        <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-violet-300">
+        <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-accent">
           GYMS.LIFE INTELLIGENCE
         </p>
         <h2 className="mt-1 text-lg font-semibold text-foreground">

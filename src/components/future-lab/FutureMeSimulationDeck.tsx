@@ -153,7 +153,7 @@ export function FutureMeSimulationDeck() {
     <section className="fl-future-page fl-panel relative overflow-hidden rounded-xl border border-border bg-surface/90">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(96,54,170,.13),transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(200,250,60,.10),transparent_55%)]"
       />
       <div className="fl-page-content relative p-3.5 sm:p-5">
         <header className="fl-future-heading flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -175,7 +175,7 @@ export function FutureMeSimulationDeck() {
                 type="button"
                 aria-pressed={horizon === option}
                 onClick={() => setHorizon(option)}
-                className={`relative flex min-h-9 items-center justify-center gap-1 rounded-lg border px-3 text-[10px] font-medium transition-colors ${horizon === option ? "border-violet-400/60 bg-violet-500/20 text-foreground shadow-[0_0_18px_rgba(124,58,237,.12)]" : "border-border bg-surface-2/30 text-muted-foreground"}`}
+                className={`relative flex min-h-9 items-center justify-center gap-1 rounded-lg border px-3 text-[10px] font-medium transition-colors ${horizon === option ? "border-accent/60 bg-accent/20 text-foreground shadow-[0_0_18px_rgba(120,220,229,.14)]" : "border-border bg-surface-2/30 text-muted-foreground"}`}
               >
                 {HORIZON_LABEL[option]}
                 {!isValidatedFutureMeHorizon(option) ? <LockKeyhole className="size-2.5" /> : null}
@@ -227,14 +227,14 @@ export function FutureMeSimulationDeck() {
           <IllustrativeAthlete />
 
           <div className="min-w-0">
-            <article className="fl-strength-summary rounded-xl border border-violet-400/20 bg-surface-2/70 p-3.5">
+            <article className="fl-strength-summary rounded-xl border border-accent/20 bg-surface-2/70 p-3.5">
               <h2 className="text-xs font-medium text-foreground">{copy.title}</h2>
               {!forecast && !failed ? (
                 <p
                   role="status"
                   className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"
                 >
-                  <Loader2 className="size-3.5 animate-spin text-violet-300 light:text-violet-700" />
+                  <Loader2 className="size-3.5 animate-spin text-accent light:text-accent" />
                   {copy.refreshing}
                 </p>
               ) : failed ? (
@@ -243,9 +243,7 @@ export function FutureMeSimulationDeck() {
                 </p>
               ) : forecast?.status === "learning" ? (
                 <>
-                  <p className="mt-2 text-xs text-violet-300 light:text-violet-700">
-                    {copy.learningTitle}
-                  </p>
+                  <p className="mt-2 text-xs text-accent light:text-accent">{copy.learningTitle}</p>
                   <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
                     {copy.learningBody(forecast.minimumSessionCount, forecast.minimumSpanDays)}
                   </p>
@@ -265,7 +263,7 @@ export function FutureMeSimulationDeck() {
                           <dt className="text-muted-foreground">
                             {HORIZON_LABEL[horizon]} · {copy.projected}
                           </dt>
-                          <dd className="shrink-0 font-mono text-violet-300 light:text-violet-700">
+                          <dd className="shrink-0 font-mono text-accent light:text-accent">
                             {projected.toLocaleString(locale)} kg
                           </dd>
                         </div>
@@ -306,7 +304,7 @@ export function FutureMeSimulationDeck() {
               <Button
                 onClick={() => void load()}
                 disabled={loading}
-                className="mt-3 min-h-10 w-full rounded-lg border border-violet-400/30 bg-gradient-to-r from-violet-700 to-violet-600/60 px-2 text-[10px] font-medium text-white hover:from-violet-600 hover:to-violet-500/60"
+                className="mt-3 min-h-10 w-full rounded-lg border border-accent/30 bg-gradient-to-r from-accent to-accent/60 px-2 text-[10px] font-medium text-white hover:from-accent hover:to-accent/60"
               >
                 {loading ? (
                   <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -321,7 +319,7 @@ export function FutureMeSimulationDeck() {
               className="mt-2.5 rounded-lg bg-transparent"
             >
               <div className="px-3 py-2.5">
-                <p className="inline-flex rounded-full border border-violet-400/20 bg-violet-400/5 px-2 py-1 text-[9px] uppercase tracking-wider text-violet-300 light:text-violet-700">
+                <p className="inline-flex rounded-full border border-accent/20 bg-accent/5 px-2 py-1 text-[9px] uppercase tracking-wider text-accent light:text-accent">
                   {copy.governance}
                 </p>
                 <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">

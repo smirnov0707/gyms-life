@@ -50,7 +50,7 @@ export function NightLabPanel() {
       aria-label={t("nl.title")}
       className="rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4"
     >
-      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-indigo-300">
+      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-primary">
         <MoonStar aria-hidden="true" className="size-3" /> {t("nl.title")}
       </p>
       <p className="mt-1.5 text-[11px] text-slate-400">{t("nl.subtitle")}</p>

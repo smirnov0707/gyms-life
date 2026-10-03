@@ -5,8 +5,12 @@ const CONTENT_SECURITY_POLICY = [
   "frame-ancestors 'none'",
   "form-action 'self'",
   "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.paddle.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  // Both faces are self-hosted variable TTFs under the OFL, with their licences
+  // in `public/fonts`. The Google Fonts hosts stood in this policy for a
+  // request nothing makes, which is an allowance an injected stylesheet could
+  // use and the athlete's own font requests never would.
+  "font-src 'self' data:",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://cdn.jsdelivr.net https://storage.googleapis.com",

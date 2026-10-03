@@ -3,11 +3,18 @@
   width: min(1184px, calc(100% - 64px));
   margin: auto;
 }
+/* Weight 700, and the reason it is written here rather than in
+   `ui-design-system.css`: that file's `.fl-landing-hero h1` sets the same
+   property at the same specificity, and this stylesheet is imported after it,
+   so the lighter weight won every time. The headline measured 500 in the
+   browser while the rule asking for 700 sat three files away looking correct.
+   Space Grotesk's upper master is 700; at display sizes that is the difference
+   between a wordmark and a shout. */
 .fl-landing h1,
 .fl-landing h2,
 .fl-landing h3 {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: -0.045em;
   text-wrap: balance;
 }
@@ -64,21 +71,43 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  min-height: 48px;
+  min-height: 52px;
   padding: 12px 0;
-  font-size: 13px;
+  /* 13px on the page's primary action, measured in the browser. The button was
+     drawn large and then labelled in caption type, which reads as a chip rather
+     than as the thing the whole page is asking you to do. */
+  font-size: 15px;
   font-weight: 750;
+  letter-spacing: -0.01em;
   text-decoration: none;
 }
 .fl-landing-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--action-start), var(--action-end));
   color: var(--primary-foreground);
   border-radius: 14px;
-  padding: 15px 22px;
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--primary) 12%, transparent);
+  padding: 16px 26px;
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--primary) 18%, transparent);
+  transition:
+    filter 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 .fl-landing-primary:hover {
   filter: brightness(1.08);
+  box-shadow: 0 10px 38px color-mix(in srgb, var(--primary) 26%, transparent);
+  transform: translateY(-1px);
+}
+.fl-landing-primary:active {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl-landing-primary {
+    transition: none;
+  }
+  .fl-landing-primary:hover,
+  .fl-landing-primary:active {
+    transform: none;
+  }
 }
 .fl-landing-secondary {
   color: var(--foreground);
@@ -90,8 +119,21 @@
   font-size: 11px;
   color: var(--muted-foreground);
 }
-/* The anatomical media stage deliberately stays dark in both page themes. */
+/* A deliberate dark stage: the anatomical media panel stays dark in both page
+   themes, the way a camera feed or a player does.
+
+   Which means it has to carry its own accents. The light theme sets
+   `--primary` to a dark olive so the colour reads on paper, and a descendant
+   here asking for `var(--primary)` got that olive painted onto near-black — the
+   panel's eyebrow and its selected-region label were invisible in light mode,
+   and only looking at the rendered page in both themes showed it. Pinning the
+   onyx values on the stage itself is what lets everything inside keep using the
+   tokens instead of hardcoding a hue again. */
 .fl-landing-preview {
+  --primary: #c8fa3c;
+  --accent: #78dce5;
+  --muted-foreground: #9aaac2;
+
   min-width: 0;
   background: radial-gradient(ellipse at 50% 30%, #172442, #070d19 72%);
   color: #edf2fc;
@@ -105,7 +147,7 @@
   gap: 10px;
   align-items: center;
   padding: 20px 22px;
-  color: #c2b1f5;
+  color: var(--primary);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -131,7 +173,7 @@
   font-size: 11px;
 }
 .fl-landing-region strong {
-  color: #c2b1f5;
+  color: var(--primary);
   font-size: 13px;
 }
 .fl-landing-region span {
@@ -287,7 +329,7 @@
   min-height: 320px;
   border-radius: 18px;
   background: radial-gradient(circle, #233254, #0b1424 72%);
-  color: #bca6ff;
+  color: var(--accent);
 }
 .fl-landing-library-art > div {
   display: grid;

@@ -124,7 +124,7 @@ export function PredictionEvidencePanel({ compact = false }: { compact?: boolean
       aria-label={t("ev.title")}
       className="rounded-[1.35rem] border border-[#182846] bg-[#07111d]/88 p-4"
     >
-      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-violet-300">
+      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-accent">
         <Gauge aria-hidden="true" className="size-3" /> {t("ev.title")}
       </p>
       <p className="mt-1.5 text-[11px] text-slate-400">{t("ev.subtitle")}</p>

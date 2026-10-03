@@ -75,3 +75,61 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Onyx & Volt typography.
+ *
+ * The two faces are fixed: Manrope and Space Grotesk, self-hosted under the
+ * OFL with their licences beside them, and no remote font request is allowed.
+ * So the athletic character has to come from how they are set rather than from
+ * a third face — weight, tracking, scale and tabular figures. Space Grotesk at
+ * 700 with negative tracking is a different voice from Space Grotesk at 500,
+ * and that difference is the whole treatment.
+ */
+
+/* Display: headlines and brand. Tight, heavy, no apology. */
+.fl-display,
+.fl-workspace-hero h1,
+.fl-landing-hero h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  text-wrap: balance;
+}
+
+/*
+ * Metrics: a number an athlete reads at arm's length, mid-set.
+ *
+ * `tabular-nums` so a weight that ticks 95 → 100 does not shift the layout,
+ * which is the difference between an instrument and a web page.
+ */
+.fl-metric {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* The label above a metric. Small, wide, quiet — it names, it does not shout. */
+.fl-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/*
+ * Every digit in the app lines up, not only the ones inside `.fl-metric`.
+ * A set counter, a rest timer and a load column are all columns of numbers
+ * that must not jitter as they change.
+ */
+table,
+time,
+[data-metric],
+.fl-metric-grid {
+  font-variant-numeric: tabular-nums;
+}

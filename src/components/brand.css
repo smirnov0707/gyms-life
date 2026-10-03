@@ -8,13 +8,34 @@
   text-decoration: none;
 }
 .fl-brand-mark {
+  /* Volt into ice. Declared here rather than in the SVG because the mark is on
+     every page in both themes, and volt at full strength on paper is unreadable
+     — the light pair below is the `light:` shade AGENTS.md asks for beside an
+     accent that only reads on onyx. */
+  --fl-brand-a: #d9ff52;
+  --fl-brand-b: #c8fa3c;
+  --fl-brand-c: #78dce5;
+  --fl-brand-d: #b8f4ff;
+
   width: 33px;
   height: 33px;
-  filter: drop-shadow(0 0 8px rgb(123 78 232 / 18%));
+  filter: drop-shadow(0 0 8px rgb(200 250 60 / 18%));
+}
+.light .fl-brand-mark {
+  --fl-brand-a: #5c8410;
+  --fl-brand-b: #42600a;
+  --fl-brand-c: #0f6373;
+  --fl-brand-d: #14788c;
+
+  filter: drop-shadow(0 0 8px rgb(66 96 10 / 14%));
 }
 .fl-brand-mark-frame {
-  fill: rgb(113 68 207 / 8%);
-  stroke: rgb(151 120 225 / 20%);
+  fill: rgb(200 250 60 / 8%);
+  stroke: rgb(200 250 60 / 20%);
+}
+.light .fl-brand-mark-frame {
+  fill: rgb(66 96 10 / 6%);
+  stroke: rgb(66 96 10 / 22%);
 }
 .fl-brand-wordmark {
   display: flex;
@@ -44,13 +65,17 @@
   background: var(--surface);
 }
 .fl-language-switch button {
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0 5px;
-  border-radius: 4px;
+  /* 28px square with 9px type: a thumb-sized control at a third of a thumb.
+     Measuring the rendered page is what found it — it reads fine in a
+     screenshot and is a miss on a phone at the gym. */
+  min-width: 44px;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 5px;
   color: var(--muted-foreground);
-  font-size: 9px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   cursor: pointer;
 }
 .fl-language-switch button[aria-pressed="true"] {

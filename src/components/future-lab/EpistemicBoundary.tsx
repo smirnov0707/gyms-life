@@ -73,7 +73,7 @@ export function EpistemicBoundary({
           </p>
         </article>
         <article className="rounded-xl border border-border/70 bg-surface-2/45 p-3">
-          <FlaskConical aria-hidden="true" className="size-4 text-violet-300" />
+          <FlaskConical aria-hidden="true" className="size-4 text-accent" />
           <p className="mt-2 text-[9px] uppercase tracking-wider text-muted-foreground">
             {english ? "Hypotheses" : "Hipotezės"}
           </p>

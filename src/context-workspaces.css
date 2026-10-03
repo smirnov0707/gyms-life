@@ -1357,10 +1357,10 @@
   width: 60px;
   height: 60px;
   margin: 0 auto 20px;
-  border: 1px solid #baa5ff45;
+  border: 1px solid color-mix(in srgb, var(--primary) 27%, transparent);
   border-radius: 20px;
-  background: #baa5ff10;
-  color: #cbbcff;
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  color: var(--primary);
 }
 .fl-camera-idle-icon svg {
   width: 25px;
@@ -1387,9 +1387,9 @@
   color: #94a7c6;
 }
 .fl-camera-idle .ui-button {
-  background: #baa5ff;
+  background: var(--primary);
   color: #20143d;
-  border-color: #baa5ff;
+  border-color: var(--primary);
   box-shadow: none;
 }
 .fl-camera-cancel {

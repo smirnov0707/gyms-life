@@ -219,7 +219,17 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // scheduler: checks every 30 s, fires slots whose time has passed (once per slot per day)
+  //
+  // Gated on a signed-in athlete, and that is not a tidiness point: the
+  // provider wraps the whole router, so a visitor who had never signed in was
+  // shown "Valgymo laikas · Suvalgyk suplanuotą patiekalą" over the landing
+  // page's header, in Lithuanian, about meals in a plan they did not have. The
+  // defaults are all `on`, so it fired for everyone. The hydration read three
+  // lines up was already gated `enabled: !!user` — the guard existed and
+  // covered one call site instead of the feature, which is the oldest shape in
+  // AGENTS.md.
   useEffect(() => {
+    if (!user) return;
     const tick = () => {
       const s = settingsRef.current;
       if (!s.enabled) return;
@@ -251,7 +261,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     tick();
     const id = window.setInterval(tick, 30000);
     return () => window.clearInterval(id);
-  }, [fire, today]);
+  }, [fire, today, user]);
 
   const value = useMemo<Ctx>(
     () => ({ settings, save, waterMl, addWater, resetWater, requestPush, fire }),

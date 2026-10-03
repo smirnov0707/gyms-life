@@ -72,7 +72,7 @@ export function LabCommandDeck() {
     <section className="fl-lab-page fl-panel overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 sm:p-5">
       <header className="fl-page-heading flex items-start justify-between gap-3 border-b border-border/70 pb-3">
         <div>
-          <p className="fl-page-eyebrow text-[9px] uppercase tracking-[0.18em] text-violet-300 light:text-violet-700">
+          <p className="fl-page-eyebrow text-[9px] uppercase tracking-[0.18em] text-accent light:text-accent">
             GYMS.LIFE FUTURE LAB
           </p>
           <h1 className="mt-1 text-2xl font-semibold text-foreground">{t("nav.lab")}</h1>
@@ -132,7 +132,7 @@ export function LabCommandDeck() {
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-foreground/10">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400"
+                  className="h-full rounded-full bg-gradient-to-r from-accent to-cyan-400"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -170,7 +170,7 @@ export function LabCommandDeck() {
             <FutureLabPanel
               eyebrow={english ? "MODEL CALIBRATION" : "MODELIO KALIBRACIJA"}
               title={english ? "Evidence maturity" : "Įrodymų branda"}
-              action={<Gauge className="size-4 text-violet-300" />}
+              action={<Gauge className="size-4 text-accent" />}
             >
               <div className="flex items-center gap-4">
                 <div className="relative grid size-24 shrink-0 place-items-center">
@@ -216,7 +216,7 @@ export function LabCommandDeck() {
                         ? unknown
                         : t("common.loading")}
                   </p>
-                  <p className="mt-2 text-[9px] uppercase tracking-wider text-violet-300 light:text-violet-700">
+                  <p className="mt-2 text-[9px] uppercase tracking-wider text-accent light:text-accent">
                     Shadow
                   </p>
                 </div>

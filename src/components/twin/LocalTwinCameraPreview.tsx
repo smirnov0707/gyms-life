@@ -402,7 +402,7 @@ export function LocalTwinCameraPreview({
           className={`size-full object-cover ${cameraState === "active" ? "block" : "hidden"}`}
           aria-label={language === "lt" ? "Vietinės kameros peržiūra" : "Local camera preview"}
         />
-        <div className="pointer-events-none absolute inset-[8%_16%] rounded-[40%] border border-dashed border-violet-300/70" />
+        <div className="pointer-events-none absolute inset-[8%_16%] rounded-[40%] border border-dashed border-accent/70" />
         {cameraState !== "active" ? (
           <div className="absolute inset-0 grid place-items-center px-5 text-center text-xs text-neutral-400">
             {cameraState === "requesting"
@@ -432,7 +432,7 @@ export function LocalTwinCameraPreview({
             type="button"
             onClick={startCamera}
             disabled={cameraState === "requesting"}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-300/30 bg-violet-300/10 px-4 text-xs font-semibold text-violet-100 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 text-xs font-semibold text-accent disabled:opacity-60"
           >
             <Camera aria-hidden="true" className="size-4" /> {copy.open}
           </button>
@@ -446,11 +446,11 @@ export function LocalTwinCameraPreview({
 
       {manualMode && cameraState === "active" ? (
         <div
-          className="mt-3 rounded-xl border border-violet-300/20 bg-violet-300/[0.06] p-3"
+          className="mt-3 rounded-xl border border-accent/20 bg-accent/[0.06] p-3"
           data-twin-manual-guide
         >
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-200">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">
               {copy.manualGuide}
             </p>
             <span className="text-[10px] tabular-nums text-neutral-400">
@@ -465,7 +465,7 @@ export function LocalTwinCameraPreview({
             type="button"
             onClick={confirmManualCheckpoint}
             disabled={!quality.canAdvanceRotation || manualGuide.complete}
-            className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-300/30 bg-violet-300/10 px-4 text-xs font-semibold text-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 text-xs font-semibold text-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CheckCircle2 aria-hidden="true" className="size-4" />
             {manualGuide.complete ? copy.manualComplete : copy.manualConfirm}
@@ -480,7 +480,7 @@ export function LocalTwinCameraPreview({
         </div>
         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-violet-300 transition-[width]"
+            className="h-full rounded-full bg-accent transition-[width]"
             style={{ width: `${rotation.progressPct}%` }}
           />
         </div>

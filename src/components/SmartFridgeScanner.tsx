@@ -120,10 +120,10 @@ export const SmartFridgeScanner: React.FC = () => {
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-surface to-surface p-6 backdrop-blur-xl shadow-2xl">
-      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl">
+        <div className="p-3 bg-primary/10 border border-primary/20 text-primary rounded-2xl">
           <ChefHat className="w-6 h-6" />
         </div>
         <div>
@@ -141,7 +141,7 @@ export const SmartFridgeScanner: React.FC = () => {
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addIngredient()}
-          className="bg-surface border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-indigo-500"
+          className="bg-surface border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
         />
         <Button
           onClick={addIngredient}
@@ -175,7 +175,7 @@ export const SmartFridgeScanner: React.FC = () => {
       <Button
         onClick={() => handleGenerate()}
         disabled={isGenerating || ingredients.length === 0}
-        className="w-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-foreground font-semibold py-6 rounded-2xl shadow-lg shadow-indigo-500/20 transition-all duration-300"
+        className="w-full bg-[linear-gradient(90deg,var(--action-start),var(--action-end))] hover:brightness-110 text-foreground font-semibold py-6 rounded-2xl shadow-lg shadow-primary/20 transition-all duration-300"
       >
         {isGenerating ? (
           <span className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export const SmartFridgeScanner: React.FC = () => {
         <div className="mt-6 p-5 rounded-2xl bg-surface border border-border space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
           <div className="flex justify-between items-start gap-3">
             <h4 className="font-bold text-foreground text-base">{recipeResult.title}</h4>
-            <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-indigo-950/80 text-indigo-400 border border-indigo-800/50 flex items-center gap-1 shrink-0">
+            <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-primary/80 text-primary border border-primary/50 flex items-center gap-1 shrink-0">
               <Clock className="w-3 h-3" /> {recipeResult.time}
             </span>
           </div>
@@ -247,13 +247,13 @@ export const SmartFridgeScanner: React.FC = () => {
           <div className="space-y-1.5 pt-2">
             {recipeResult.steps.map((step: string, i: number) => (
               <p key={i} className="text-xs text-muted-foreground flex items-start gap-2">
-                <span className="font-bold text-indigo-400">{i + 1}.</span> {step}
+                <span className="font-bold text-primary">{i + 1}.</span> {step}
               </p>
             ))}
           </div>
 
           {recipeResult.coachNote && (
-            <p className="text-xs text-foreground/80 border-l-2 border-indigo-500/60 pl-3">
+            <p className="text-xs text-foreground/80 border-l-2 border-primary/60 pl-3">
               {recipeResult.coachNote}
             </p>
           )}

@@ -49,7 +49,7 @@ function ExperimentOutcomeInput({
         onChange={(event) => setValue(event.target.value)}
         placeholder={english ? `Add ${phase} value` : `Įrašyti ${phase} reikšmę`}
         aria-label={english ? `Add ${phase} outcome` : `Įrašyti ${phase} rezultatą`}
-        className="min-h-11 w-40 rounded-lg border border-border bg-background/40 px-3 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+        className="min-h-11 w-40 rounded-lg border border-border bg-background/40 px-3 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
       />
       <button
         type="button"
@@ -84,7 +84,7 @@ export function ExperimentLedger({ english }: { english: boolean }) {
     <FutureLabPanel
       eyebrow={english ? "Personal experiments" : "Asmeniniai eksperimentai"}
       title={english ? "Experiment ledger" : "Eksperimentų žurnalas"}
-      action={<FlaskConical className="size-4 text-violet-300" />}
+      action={<FlaskConical className="size-4 text-accent" />}
     >
       {query.isError ? (
         <FutureLabEmpty>
@@ -132,7 +132,7 @@ export function ExperimentLedger({ english }: { english: boolean }) {
                       onClick={() =>
                         transition.mutate({ experimentId: experiment.id, event: "mark_eligible" })
                       }
-                      className="min-h-11 rounded-full border border-violet-300/30 px-3 text-[10px] font-medium text-violet-200 disabled:opacity-50"
+                      className="min-h-11 rounded-full border border-accent/30 px-3 text-[10px] font-medium text-accent disabled:opacity-50"
                     >
                       {english ? "Check eligibility" : "Patikrinti tinkamumą"}
                     </button>

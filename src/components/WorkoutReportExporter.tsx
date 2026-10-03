@@ -71,7 +71,7 @@ export const WorkoutReportExporter: React.FC = () => {
   return (
     <div className="p-5 sm:p-6 rounded-3xl border border-border bg-surface backdrop-blur-xl shadow-2xl space-y-5">
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+        <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
           <FileText className="w-5 h-5" />
         </div>
         <div className="min-w-0">
@@ -225,9 +225,9 @@ export const WorkoutReportExporter: React.FC = () => {
           className="flex-1 min-w-0 h-11 bg-surface-2 hover:bg-surface border border-border text-foreground font-bold rounded-2xl"
         >
           {loading ? (
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin text-indigo-400 shrink-0" />
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin text-primary shrink-0" />
           ) : (
-            <Sparkles className="w-4 h-4 mr-2 text-indigo-400 shrink-0" />
+            <Sparkles className="w-4 h-4 mr-2 text-primary shrink-0" />
           )}
           <span className="truncate">
             {loading

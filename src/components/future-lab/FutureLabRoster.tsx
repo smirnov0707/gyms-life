@@ -150,7 +150,7 @@ export function LabRosterRows({
           : waiting
             ? "bg-amber-400"
             : module.kind === "rules"
-              ? "bg-violet-400"
+              ? "bg-accent"
               : "bg-emerald-400";
         return (
           <li
@@ -162,7 +162,7 @@ export function LabRosterRows({
             }
           >
             <span
-              className={`grid shrink-0 place-items-center border border-violet-400/20 bg-violet-500/[0.06] text-violet-300 light:text-violet-700 ${tiles ? "fl-role-icon" : "size-7 rounded-lg"}`}
+              className={`grid shrink-0 place-items-center border border-accent/20 bg-accent/[0.06] text-accent light:text-accent ${tiles ? "fl-role-icon" : "size-7 rounded-lg"}`}
             >
               <Icon className={tiles ? "size-4" : "size-3.5"} strokeWidth={1.4} />
             </span>
@@ -216,7 +216,7 @@ export function FutureLabRoster() {
       />
       <Link
         to="/lab"
-        className="mt-2 flex min-h-9 items-center justify-between gap-2 rounded-lg border border-violet-400/20 bg-violet-500/[0.06] px-2.5 text-[10px] font-medium text-violet-300 light:text-violet-700"
+        className="mt-2 flex min-h-9 items-center justify-between gap-2 rounded-lg border border-accent/20 bg-accent/[0.06] px-2.5 text-[10px] font-medium text-accent light:text-accent"
       >
         {t("ls.open")}
         <ArrowUpRight className="size-3" />

@@ -21,8 +21,24 @@
 @custom-variant light (&:is(.light *));
 
 /*
- * GYMS.LIFE — Future Lab. One semantic palette for every route and portal.
- * Midnight ink, mineral blue, luminous iris; warm paper in light mode.
+ * GYMS.LIFE — Onyx & Volt. One semantic palette for every route and portal.
+ *
+ * Onyx ground, volt action, ice data, ember intensity. The subject is a heavy
+ * set at six in the morning, not a wellness dashboard, so the ground is iron
+ * rather than navy and the action colour is the one a stopwatch and a track
+ * singlet use.
+ *
+ * The three accents never trade jobs, which is what keeps it readable:
+ *   volt    — what you can do: actions, links, the live set, focus rings
+ *   ice     — what was measured: telemetry, readings, recorded values
+ *   ember   — how hard: intensity, load, a personal record
+ *   red     — only what went wrong
+ * Volt and red are as far apart as this palette goes, on purpose: a warning and
+ * a call to action must never be mistaken for each other at arm's length in bad
+ * gym lighting.
+ *
+ * Volt cannot carry text on paper, so light mode takes the deep olive beside it
+ * — the rule in AGENTS.md about an accent that only reads on onyx.
  */
 
 @theme inline {
@@ -47,6 +63,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-ember: var(--ember);
+  --color-ember-foreground: var(--ember-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -77,35 +95,41 @@
 
 :root {
   --radius: 0.875rem;
-  --background: #070b14;
-  --foreground: #edf2fc;
-  --surface: #0e1625;
-  --surface-2: #151f32;
+  --background: #07080a;
+  --foreground: #f4f6f4;
+  --surface: #101216;
+  --surface-2: #181b21;
   --card: var(--surface);
   --card-foreground: var(--foreground);
-  --popover: #141e30;
+  --popover: #15181d;
   --popover-foreground: var(--foreground);
-  --primary: #baa5ff;
-  --primary-foreground: #191329;
-  --primary-dim: rgb(174 147 255 / 18%);
-  --primary-glow: rgb(152 116 244 / 24%);
-  --action-start: #c0acff;
-  --action-end: #96b6ff;
-  --secondary: #1b2840;
-  --secondary-foreground: #e5ecfa;
-  --muted: #131e31;
-  --muted-foreground: #a3b0c9;
+  /* Volt. Acid-olive weighted rather than lime-candy, so it reads engineered. */
+  --primary: #c8fa3c;
+  --primary-foreground: #0b0f03;
+  --primary-dim: rgb(200 250 60 / 16%);
+  --primary-glow: rgb(200 250 60 / 22%);
+  --action-start: #d2fe52;
+  --action-end: #9fe016;
+  --secondary: #1c2027;
+  --secondary-foreground: #eef1ee;
+  --muted: #15181d;
+  --muted-foreground: #a0a7a4;
+  /* Ice — what the system measured, never what it suggests. */
   --accent: #78dce5;
-  --accent-foreground: #10262d;
-  --destructive: #ff858f;
-  --destructive-foreground: #310c14;
-  --border: rgb(164 186 231 / 14%);
-  --input: rgb(164 186 231 / 24%);
-  --ring: #baa5ff;
-  --chart-1: #baa5ff;
+  --accent-foreground: #07171a;
+  /* Ember — intensity and records. Never an error. */
+  --ember: #ff6b2c;
+  --ember-foreground: #180600;
+  --ember-dim: rgb(255 107 44 / 16%);
+  --destructive: #ff4d5e;
+  --destructive-foreground: #1d0206;
+  --border: rgb(226 236 226 / 12%);
+  --input: rgb(226 236 226 / 22%);
+  --ring: #c8fa3c;
+  --chart-1: #c8fa3c;
   --chart-2: #78dce5;
-  --chart-3: #84a8ff;
-  --chart-4: #f4a0c2;
+  --chart-3: #ff6b2c;
+  --chart-4: #8fa6ff;
   --chart-5: #64d8b4;
   --sidebar: var(--background);
   --sidebar-foreground: var(--foreground);
@@ -126,32 +150,36 @@
 /* Light mode overrides */
 .light {
   color-scheme: light;
-  --background: #f2f4fa;
-  --foreground: #202c43;
+  --background: #f4f5f2;
+  --foreground: #1d2119;
   --surface: #ffffff;
-  --surface-2: #edf1fa;
+  --surface-2: #eceee7;
   --popover: #ffffff;
-  --primary: #6543bd;
+  /* The olive beside the volt: #c8fa3c cannot carry text on paper. */
+  --primary: #42600a;
   --primary-foreground: #ffffff;
-  --primary-dim: rgb(101 67 189 / 12%);
-  --primary-glow: rgb(101 67 189 / 17%);
-  --action-start: #704bd2;
-  --action-end: #505fc4;
-  --secondary: #e5eaf5;
-  --secondary-foreground: #27364e;
-  --muted: #e9eef7;
-  --muted-foreground: #586880;
-  --accent: #126f80;
+  --primary-dim: rgb(66 96 10 / 12%);
+  --primary-glow: rgb(66 96 10 / 16%);
+  --action-start: #4c6e0c;
+  --action-end: #35500a;
+  --secondary: #e7e9e2;
+  --secondary-foreground: #2a2f24;
+  --muted: #ebede6;
+  --muted-foreground: #5c6356;
+  --accent: #0f6373;
   --accent-foreground: #ffffff;
+  --ember: #c2410c;
+  --ember-foreground: #ffffff;
+  --ember-dim: rgb(194 65 12 / 12%);
   --destructive: #b9233d;
   --destructive-foreground: #ffffff;
-  --border: rgb(48 70 111 / 15%);
-  --input: rgb(48 70 111 / 25%);
-  --ring: #6543bd;
-  --chart-1: #6543bd;
-  --chart-2: #126f80;
-  --chart-3: #315fb6;
-  --chart-4: #af376e;
+  --border: rgb(42 52 42 / 16%);
+  --input: rgb(42 52 42 / 26%);
+  --ring: #42600a;
+  --chart-1: #42600a;
+  --chart-2: #0f6373;
+  --chart-3: #c2410c;
+  --chart-4: #31479b;
   --chart-5: #187958;
   --shadow-panel: 0 18px 50px -30px rgb(38 57 94 / 22%);
 }

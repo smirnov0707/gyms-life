@@ -53,15 +53,15 @@ export function GuidedTwinScanPreview({
   });
   return (
     <section
-      className="mt-4 rounded-2xl border border-violet-400/20 bg-violet-400/[0.05] p-4"
+      className="mt-4 rounded-2xl border border-accent/20 bg-accent/[0.05] p-4"
       data-guided-twin-scan
     >
       <div className="flex items-start gap-3">
-        <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-violet-400/10 text-violet-300">
+        <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-accent/10 text-accent">
           <Video aria-hidden="true" className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-300">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">
             {copy.eyebrow}
           </p>
           <h3 className="mt-1 text-sm font-semibold text-white">{copy.title}</h3>
@@ -75,11 +75,11 @@ export function GuidedTwinScanPreview({
             className="flex items-start gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-neutral-300"
           >
             {index === 2 ? (
-              <RotateCw aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
+              <RotateCw aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
             ) : index === 3 ? (
-              <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
+              <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
             ) : (
-              <Camera aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-violet-300" />
+              <Camera aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
             )}
             <span>{step}</span>
           </li>

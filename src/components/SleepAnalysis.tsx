@@ -25,7 +25,7 @@ import { stageBars } from "@/lib/sleep-stages.view";
  */
 
 const STAGE_TONE: Record<SleepStage, string> = {
-  deep: "bg-indigo-400",
+  deep: "bg-primary",
   rem: "bg-sky-400",
   core: "bg-slate-400",
   awake: "bg-amber-400",

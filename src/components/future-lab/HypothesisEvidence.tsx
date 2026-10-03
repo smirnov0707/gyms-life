@@ -23,7 +23,7 @@ export function HypothesisEvidence({ evidence }: { evidence: AthleteHypothesis["
   return (
     <WhyThisDisclosure
       summary={english ? "Why this? · Evidence" : "Kodėl taip? · Įrodymai"}
-      className="mt-3 bg-violet-500/[0.03]"
+      className="mt-3 bg-accent/[0.03]"
     >
       <dl className="space-y-2 p-3">
         {evidence.map((item) => (
