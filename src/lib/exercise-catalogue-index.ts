@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { withDeadline } from "@/lib/read-deadline";
 
 /**
  * Every exercise the library holds, read before the page is rendered.
@@ -21,7 +22,10 @@ export interface CatalogueEntry {
   name_en: string | null;
 }
 
-type CatalogueShortfall = "EXERCISE_CATALOGUE_READ_FAILED" | "EXERCISE_CATALOGUE_READ_THREW";
+type CatalogueShortfall =
+  | "EXERCISE_CATALOGUE_READ_FAILED"
+  | "EXERCISE_CATALOGUE_READ_THREW"
+  | "EXERCISE_CATALOGUE_READ_TIMED_OUT";
 
 function reportShortfall(code: CatalogueShortfall, collected: number): void {
   // Same convention as the sitemap and the exercise head: this runs for a
@@ -46,11 +50,21 @@ export async function readExerciseCatalogueIndex(): Promise<CatalogueEntry[]> {
   const collected: CatalogueEntry[] = [];
   try {
     for (let offset = 0; ; offset += PAGE) {
-      const { data, error } = await supabase
-        .from("exercises")
-        .select("slug, name_lt, name_en")
-        .order("name_lt")
-        .range(offset, offset + PAGE - 1);
+      // The loader blocks the route, so a read that never answers is a page
+      // that never appears. Before the catalogue moved into a loader this page
+      // opened with its own loading state; it has to keep doing that.
+      const page = await withDeadline(
+        supabase
+          .from("exercises")
+          .select("slug, name_lt, name_en")
+          .order("name_lt")
+          .range(offset, offset + PAGE - 1),
+      );
+      if (page.status === "timed_out") {
+        reportShortfall("EXERCISE_CATALOGUE_READ_TIMED_OUT", collected.length);
+        return collected;
+      }
+      const { data, error } = page.value;
       if (error || !data) {
         reportShortfall("EXERCISE_CATALOGUE_READ_FAILED", collected.length);
         return collected;

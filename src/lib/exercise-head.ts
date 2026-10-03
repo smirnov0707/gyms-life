@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { withDeadline } from "@/lib/read-deadline";
 import { getExerciseMedia, type MediaType } from "@/lib/exercise-media";
 
 /**
@@ -19,7 +20,8 @@ import { getExerciseMedia, type MediaType } from "@/lib/exercise-media";
 /** A name the page could not read is null, never the slug dressed up as one. */
 export type ExerciseName = string | null;
 
-type NameShortfall = "EXERCISE_NAME_READ_FAILED" | "EXERCISE_NAME_READ_THREW";
+type NameShortfall =
+  "EXERCISE_NAME_READ_FAILED" | "EXERCISE_NAME_READ_THREW" | "EXERCISE_NAME_READ_TIMED_OUT";
 
 function reportShortfall(code: NameShortfall, slug: string): void {
   // Same convention as `sitemap[.]xml.ts` and `health-ingest.ts`: this runs for
@@ -51,11 +53,17 @@ export type ExerciseRow = Tables<"exercises">;
  */
 export async function readExerciseRow(slug: string): Promise<ExerciseRow | null> {
   try {
-    const { data, error } = await supabase
-      .from("exercises")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle();
+    // Bounded for the same reason as the catalogue: this loader blocks the
+    // route, and the page's own query still separates "could not load" from
+    // "does not exist" once it renders.
+    const read = await withDeadline(
+      supabase.from("exercises").select("*").eq("slug", slug).maybeSingle(),
+    );
+    if (read.status === "timed_out") {
+      reportShortfall("EXERCISE_NAME_READ_TIMED_OUT", slug);
+      return null;
+    }
+    const { data, error } = read.value;
     if (error) {
       reportShortfall("EXERCISE_NAME_READ_FAILED", slug);
       return null;
