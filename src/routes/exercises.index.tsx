@@ -817,13 +817,18 @@ function ExercisesPage() {
                   <p className="text-xs font-bold uppercase tracking-widest text-primary">
                     {group.letter}
                   </p>
-                  <ul className="mt-1.5 space-y-1">
+                  {/* A 44px row per link. 175 names at 17px tall is a dense
+                      desktop index and an unusable one on a phone, which is
+                      where somebody looks up an exercise between sets. The
+                      suite's own touch-target audit reads buttons, so a list
+                      of links walks past it. */}
+                  <ul className="mt-1.5">
                     {group.entries.map((entry) => (
                       <li key={entry.slug}>
                         <Link
                           to="/exercises/$slug"
                           params={{ slug: entry.slug }}
-                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                          className="flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
                         >
                           {catalogueEntryName(entry)}
                         </Link>
