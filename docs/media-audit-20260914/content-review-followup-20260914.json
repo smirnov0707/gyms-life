@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "review_date": "2026-09-14",
+  "baseline_commit": "c280a7f5757ecb1f3afefa6f3707758675117801",
+  "scope": "Append-only editorial follow-up to the historical media inventory; not a runtime policy and not consumed by the baseline registry generator.",
+  "production_changed": false,
+  "content_approved_for_use": false,
+  "reviews": [
+    {
+      "slug": "lunge",
+      "expected_movement": "Walking Lunge",
+      "expected_equipment": "bodyweight",
+      "video": {
+        "path": "public/assets/videos/exercise-lunge.mp4",
+        "sha256": "43759495f8f0f52b86102d5ef1131fa04663e6e759b9e4f21b8c1d9b813c332b",
+        "review_method": "Previously viewed 2 fps contact sheet; checksum rechecked in this follow-up.",
+        "observation_lt": "Esamo MP4 atrinktuose kadruose matomi hanteliai. Tai neatitinka katalogo bodyweight įrangos. Ėjimo pirmyn variantas ir technikos kokybė nėra patvirtinti."
+      },
+      "frames": [
+        {"path":"public/assets/exercise-db/lunge/0.jpg","sha256":"344bfb904d401611dc38c5021a95ee1d149da086e79e2eb4377f9a93c4d52c37"},
+        {"path":"public/assets/exercise-db/lunge/1.jpg","sha256":"220fbd64f2da7317603c5d8b40ba2d294c04b77348cfb576af650af31ec41e27"}
+      ],
+      "frame_review_method": "Both original JPG files visually inspected.",
+      "frame_observation_lt": "Abiejose nuotraukose matoma ant pečių laikoma štanga; antroje — išpuolio padėtis. Todėl ši pora taip pat neatitinka bodyweight įrangos.",
+      "editorial_decision": "do_not_approve_existing_video_or_frame_pair_for_this_catalog_entry",
+      "reason_codes": ["video_equipment_mismatch", "frame_equipment_mismatch"],
+      "next_action_lt": "Gauti tiksliai Walking Lunge be papildomo svorio atitinkančią demonstraciją su patikrintomis teisėmis. Neperpriskirti turimos medijos kitam pratimui vien pagal panašumą."
+    },
+    {
+      "slug": "burpee",
+      "expected_movement": "Burpee",
+      "expected_equipment": "bodyweight",
+      "video": {
+        "path": "public/assets/videos/exercise-burpee.mp4",
+        "sha256": "17cd32b51c111743e63c0dd4f0b63e31eefc2c3cb346d721a6238297100e269c",
+        "decoded_frame_count": 124,
+        "frames_in_contact_sheet": 124,
+        "review_method": "All 124 sequential decoded frames, without temporal subsampling, viewed as an 8-by-16 contact sheet with 224-by-128 thumbnails; four trailing cells are padding. This checks gross movement phases, not fine technique or normal-speed playback.",
+        "observation_lt": "Visuose 124 kadruose išlieka atrama rankomis į grindis arba arti grindų; kojos juda pirmyn ir atgal. Atsistojimo fazės nėra. Klipas neparodo pilnos katalogo Burpee demonstracijos."
+      },
+      "frames": [
+        {"path":"public/assets/exercise-db/burpee/0.jpg","sha256":"8e6757ae0dc1d50a30f0ea67cdb330994947716a106451860cf7362bcd15f9f4"},
+        {"path":"public/assets/exercise-db/burpee/1.jpg","sha256":"e835d50facea325828d7a3700185a0d8ba9f908db3f033334f81a6f85f774f27"}
+      ],
+      "frame_review_method": "Both original JPG files visually inspected.",
+      "frame_observation_lt": "Pora rodo viršutinę ir apatinę atsispaudimo padėtis. Ji neatvaizduoja pilnos Burpee sekos ir nėra tinkamas pilnos demonstracijos pakaitalas.",
+      "editorial_decision": "do_not_approve_existing_video_or_frame_pair_for_this_catalog_entry",
+      "reason_codes": ["video_missing_standing_phase", "frame_pair_only_pushup_positions"],
+      "next_action_lt": "Gauti pilną pasirinkto Burpee varianto seką ir aiškiai užfiksuoti, ar variante yra atsispaudimas bei šuolis. Patikrinti naudojimo teises ir trenerio peržiūrą."
+    }
+  ],
+  "limitations": [
+    "Two catalogue entries reviewed; the other 173 frame pairs are not approved by this follow-up.",
+    "This is a visual content review, not medical or professional exercise-technique certification.",
+    "Original creators, capture provenance, commercial rights and self-host permissions remain unverified.",
+    "No asset deletion, reassignment, import, code deployment, database write, purchase or vendor contact occurred.",
+    "The historical baseline files remain unchanged. This follow-up must be read alongside them; the baseline generator does not apply these newer editorial decisions."
+  ]
+}
