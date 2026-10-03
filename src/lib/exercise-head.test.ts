@@ -38,7 +38,8 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-const { exerciseHeadMeta, readExerciseName } = await import("./exercise-head");
+const { exerciseHeadMeta, exerciseName, readExerciseName, readExerciseRow } =
+  await import("./exercise-head");
 const { getExerciseMedia } = await import("./exercise-media");
 
 const titleOf = (meta: ReturnType<typeof exerciseHeadMeta>) =>
@@ -173,8 +174,42 @@ describe("the demonstration an exercise page promises before you arrive", () => 
   });
 });
 
+describe("the name derived from a row", () => {
+  it("prefers Lithuanian, falls back to English, and otherwise is null", () => {
+    expect(exerciseName({ name_lt: "Ratukas presui", name_en: "Ab Wheel" } as never)).toBe(
+      "Ratukas presui",
+    );
+    expect(exerciseName({ name_lt: null, name_en: "Ab Wheel" } as never)).toBe("Ab Wheel");
+    expect(exerciseName({ name_lt: null, name_en: null } as never)).toBeNull();
+    expect(exerciseName(null)).toBeNull();
+  });
+});
+
+describe("the row read before the document is written", () => {
+  it("is the whole row, so the page and its markup can be rendered on the server", async () => {
+    answer = {
+      data: { name_lt: "Pritūpimai", name_en: "Squat", muscle_group: "legs" } as never,
+    };
+    const row = await readExerciseRow("squat");
+    expect(row).toMatchObject({ muscle_group: "legs" });
+    expect(queriedSlugs).toEqual(["squat"]);
+  });
+
+  it("is null when the read failed, with the same code as before", async () => {
+    answer = { error: { code: "57014" } };
+    expect(await readExerciseRow("squat")).toBeNull();
+    expect(reported).toEqual([{ code: "EXERCISE_NAME_READ_FAILED", slug: "squat" }]);
+  });
+
+  it("never throws, whatever the transport does", async () => {
+    throwOnRead = true;
+    await expect(readExerciseRow("squat")).resolves.toBeNull();
+    expect(reported).toEqual([{ code: "EXERCISE_NAME_READ_THREW", slug: "squat" }]);
+  });
+});
+
 describe("the route that asks for all this", () => {
-  it("loads the name before the head is written, and reads it from the loader", async () => {
+  it("loads the row before the head is written, and reads it from the loader", async () => {
     // The two halves live in different files and neither is wrong alone: a
     // `head()` that reads `loaderData` with no loader silently gets the slug
     // back, which is exactly the defect, and passes every other test here.
@@ -182,7 +217,20 @@ describe("the route that asks for all this", () => {
       readFileSync(new URL("../routes/exercises.$slug.tsx", import.meta.url), "utf8"),
     );
     expect(source).toMatch(/loader:\s*async\s*\(\{\s*params\s*\}\)\s*=>/);
-    expect(source).toMatch(/readExerciseName\(params\.slug\)/);
-    expect(source).toMatch(/exerciseHeadMeta\(params\.slug,\s*loaderData\?\.name\s*\?\?\s*null\)/);
+    expect(source).toMatch(/readExerciseRow\(params\.slug\)/);
+    expect(source).toMatch(
+      /exerciseHeadMeta\(params\.slug,\s*exerciseName\(loaderData\?\.exercise\s*\?\?\s*null\)\)/,
+    );
+  });
+
+  it("seeds the query from the loader only when the loader actually got a row", async () => {
+    // A failed loader read returns null. Seeding the query with that would
+    // hand the page "there is no such exercise" for what was an outage — the
+    // one distinction this page was carefully fixed to keep.
+    const source = await import("node:fs").then(({ readFileSync }) =>
+      readFileSync(new URL("../routes/exercises.$slug.tsx", import.meta.url), "utf8"),
+    );
+    expect(source).toMatch(/\.\.\.\(loaded \? \{ initialData: loaded \} : \{\}\)/);
+    expect(source).not.toMatch(/initialData:\s*loaded\s*\?\?/);
   });
 });

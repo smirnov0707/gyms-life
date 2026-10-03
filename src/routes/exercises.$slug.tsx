@@ -6,17 +6,17 @@ import { useI18n, baseLang, type TKey } from "@/lib/i18n";
 import { AppShell } from "@/components/AppShell";
 import { ExerciseVideo } from "@/components/ExerciseVideo";
 import { MuscleTargetVisualizer } from "@/components/MuscleTargetVisualizer";
-import { exerciseHeadMeta, readExerciseName } from "@/lib/exercise-head";
+import { exerciseHeadMeta, exerciseName, readExerciseRow } from "@/lib/exercise-head";
 import { exerciseStructuredData } from "@/lib/exercise-structured-data";
 
 export const Route = createFileRoute("/exercises/$slug")({
-  // The head needs the exercise's name, and `head()` is handed params only.
-  // This is the one read that has to happen before the document is written;
-  // the component keeps its own, because that one has error states this does
-  // not need and must not inherit.
-  loader: async ({ params }) => ({ name: await readExerciseName(params.slug) }),
+  // The one read that happens before the document is written. It feeds the
+  // head, the structured data and the first paint; the component keeps its own
+  // query, because that one has error states this must not inherit — a loader
+  // that rejected would take the whole route to its error boundary.
+  loader: async ({ params }) => ({ exercise: await readExerciseRow(params.slug) }),
   head: ({ params, loaderData }) => ({
-    meta: exerciseHeadMeta(params.slug, loaderData?.name ?? null),
+    meta: exerciseHeadMeta(params.slug, exerciseName(loaderData?.exercise ?? null)),
   }),
   component: ExerciseDetail,
 });
@@ -28,6 +28,12 @@ function ExerciseDetail() {
   // A failed read used to arrive as `null`, which this page renders exactly
   // like an exercise that does not exist. "We could not load it" and "there
   // is no such exercise" are different answers.
+  // The loader already has the row on the server, so it seeds the query and the
+  // first paint carries the exercise instead of a spinner. A loader read that
+  // failed returns null, and then nothing is seeded — the query runs as before
+  // and keeps its own distinction between "could not load" and "does not
+  // exist", which is the part that must not be lost here.
+  const loaded = Route.useLoaderData().exercise;
   const {
     data: ex,
     isLoading,
@@ -44,6 +50,7 @@ function ExerciseDetail() {
       if (error) throw new Error(error.message);
       return data;
     },
+    ...(loaded ? { initialData: loaded } : {}),
   });
 
   if (isLoading || !ex) {

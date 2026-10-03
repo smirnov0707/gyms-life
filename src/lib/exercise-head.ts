@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { getExerciseMedia, type MediaType } from "@/lib/exercise-media";
 
 /**
@@ -36,25 +37,46 @@ function reportShortfall(code: NameShortfall, slug: string): void {
  * exist" — carefully, because it once did not. This read exists only to title
  * the document, so its failure mode is the title it had before.
  */
-export async function readExerciseName(slug: string): Promise<ExerciseName> {
+export type ExerciseRow = Tables<"exercises">;
+
+/**
+ * Reads the exercise before the document is written, and never throws.
+ *
+ * The head needs the name, and the page needs the row: the instructions, the
+ * mistakes, the muscle group and the equipment that the structured data and the
+ * visible body are both built from. Reading it in the loader is what puts any
+ * of that into the server HTML — before this, the page fetched after hydration
+ * and the server sent a spinner, so every crawler that does not execute
+ * JavaScript saw 175 pages with no exercise on them.
+ */
+export async function readExerciseRow(slug: string): Promise<ExerciseRow | null> {
   try {
     const { data, error } = await supabase
       .from("exercises")
-      .select("name_lt, name_en")
+      .select("*")
       .eq("slug", slug)
       .maybeSingle();
     if (error) {
       reportShortfall("EXERCISE_NAME_READ_FAILED", slug);
       return null;
     }
-    // The server renders Lithuanian for everybody — `__root.tsx` serves
-    // `<html lang="lt">` and the language is chosen after hydration — so the
-    // head is Lithuanian first and English only where there is no Lithuanian.
-    return data?.name_lt ?? data?.name_en ?? null;
+    return data;
   } catch {
     reportShortfall("EXERCISE_NAME_READ_THREW", slug);
     return null;
   }
+}
+
+/** The display name for a row, or null — never the slug dressed up as one. */
+export function exerciseName(row: ExerciseRow | null): ExerciseName {
+  // The server renders Lithuanian for everybody — `__root.tsx` serves
+  // `<html lang="lt">` and the language is chosen after hydration — so the
+  // head is Lithuanian first and English only where there is no Lithuanian.
+  return row?.name_lt ?? row?.name_en ?? null;
+}
+
+export async function readExerciseName(slug: string): Promise<ExerciseName> {
+  return exerciseName(await readExerciseRow(slug));
 }
 
 export interface HeadMetaEntry {
