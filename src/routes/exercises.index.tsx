@@ -18,8 +18,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils";
 import { exerciseVideo, exerciseVideoPoster } from "@/lib/exercise-media";
 import { ExerciseVideo } from "@/components/ExerciseVideo";
+import {
+  catalogueEntryName,
+  groupCatalogueByLetter,
+  readExerciseCatalogueIndex,
+} from "@/lib/exercise-catalogue-index";
 
 export const Route = createFileRoute("/exercises/")({
+  // Read before the page is rendered, so the server HTML carries a link to
+  // every exercise. It carried none, and the sitemap was the only thing that
+  // claimed these 175 pages existed.
+  loader: async () => ({ index: await readExerciseCatalogueIndex() }),
   head: () => ({
     meta: [
       // Ten of the 175 exercises have a video; the rest are frame sequences,
@@ -309,6 +318,9 @@ function ExercisesPage() {
     if (error) throw new Error(error.message);
     return data ?? [];
   };
+
+  const catalogueIndex = Route.useLoaderData().index;
+  const lt = baseLang(lang) === "lt";
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["exercises"],
@@ -784,6 +796,40 @@ function ExercisesPage() {
             );
           })}
         </div>
+
+        {/* Every exercise, as plain links. Server-rendered from the loader, so
+            this is the page's own crawlable path to all 175 detail pages — and
+            it works with the filters above switched off, with JavaScript off,
+            and for somebody who knows the name and wants it in one tap. */}
+        {catalogueIndex.length > 0 && (
+          <section className="mt-12 border-t border-border/70 pt-8">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+              {lt ? "Visi pratimai" : "All exercises"}
+            </h2>
+            <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {groupCatalogueByLetter(catalogueIndex).map((group) => (
+                <div key={group.letter}>
+                  <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                    {group.letter}
+                  </p>
+                  <ul className="mt-1.5 space-y-1">
+                    {group.entries.map((entry) => (
+                      <li key={entry.slug}>
+                        <Link
+                          to="/exercises/$slug"
+                          params={{ slug: entry.slug }}
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          {catalogueEntryName(entry)}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Preview & Technique Modal */}
         <Dialog open={!!previewEx} onOpenChange={(o) => !o && setPreviewEx(null)}>
