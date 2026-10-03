@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 /**
  * Each page is checked against the title it serves, not against "some page".
  *
@@ -7,8 +9,38 @@
  * containing the string GYMS.LIFE — which is every page on the site, including
  * the one you get when the router falls over.
  */
+/**
+ * The landing title is read out of the route, not retyped here.
+ *
+ * It was the literal "GYMS.LIFE — Your personal Future Lab". When `index.tsx`
+ * started building its head from the landing hero's own words, production
+ * served "Train on the record. Not on a guess. — GYMS.LIFE" and this check
+ * reported the correct page as the wrong one — one more copy of a claim that
+ * nothing kept in step with its source.
+ *
+ * Deriving it keeps what the check is for and sharpens it: the live title is
+ * now compared against the title this working tree builds, so a deploy serving
+ * a stale bundle still fails, and an intentional rewrite no longer does.
+ */
+export function landingTitle() {
+  const route = readFileSync(path.join(process.cwd(), "src/routes/index.tsx"), "utf8");
+  const template = /const SHARE_TITLE = `\$\{hero\.title\} \$\{hero\.accent\} — ([^`]+)`/.exec(
+    route,
+  );
+  const landing = readFileSync(
+    path.join(process.cwd(), "src/components/FutureLabLanding.tsx"),
+    "utf8",
+  );
+  const english = landing.slice(landing.indexOf("  en: {"), landing.indexOf("  lt: {"));
+  const read = (key) => new RegExp(`${key}:\\s*\n?\\s*"([^"]+)"`).exec(english)?.[1];
+  const [title, accent, suffix] = [read("title"), read("accent"), template?.[1]];
+  if (!title || !accent || !suffix)
+    throw new Error("production smoke: cannot read the landing title from source");
+  return `${title} ${accent} — ${suffix}`;
+}
+
 const pages = [
-  { path: "/", title: "GYMS.LIFE — Your personal Future Lab" },
+  { path: "/", title: landingTitle() },
   { path: "/auth", title: "Prisijungimas — GYMS.LIFE treniruočių programėlė" },
   { path: "/app", title: "Today — GYMS.LIFE" },
   { path: "/twin", title: "My Twin — GYMS.LIFE" },

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { runProductionSmoke } from "./production-smoke.checks.mjs";
+import { landingTitle, runProductionSmoke } from "./production-smoke.checks.mjs";
 
 const dispatch = "/api/internal/night-lab";
 const schedule = "/.netlify/functions/night-lab";
@@ -13,7 +13,10 @@ const identity = "/api/public/environment";
  * the pages apart cannot notice a check that cannot either.
  */
 const TITLES = {
-  "/": "GYMS.LIFE — Your personal Future Lab",
+  // Derived, like the check itself. The fixture has to serve the title the
+  // checks expect, and when that was a second literal here the landing rewrite
+  // broke both at once — four of these tests failed for a page that was fine.
+  "/": landingTitle(),
   "/auth": "Prisijungimas — GYMS.LIFE treniruočių programėlė",
   "/app": "Today — GYMS.LIFE",
   "/twin": "My Twin — GYMS.LIFE",
