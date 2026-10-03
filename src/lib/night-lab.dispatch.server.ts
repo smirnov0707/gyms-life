@@ -1,12 +1,17 @@
 import { getContext } from "@netlify/functions";
 import { dispatchNightLab, type DispatchResult } from "./night-lab.dispatch";
-import { nightLabRuntimeTarget, matchesNightLabDatabase } from "./night-lab.target";
+import {
+  explainNightLabTarget,
+  matchesNightLabDatabase,
+  nightLabRuntimeTarget,
+  type TargetContextRefusal,
+} from "./night-lab.target";
 
 type ReadSetting = (name: string) => string | undefined;
 const runtimeSetting: ReadSetting = (name) => Netlify.env.get(name);
 
 export type TargetRefusal =
-  "TARGET_DEPLOYMENT_UNIDENTIFIED" | "TARGET_DATABASE_MISMATCH" | "TARGET_RESOLUTION_THREW";
+  TargetContextRefusal | "TARGET_DATABASE_MISMATCH" | "TARGET_RESOLUTION_THREW";
 
 /** Shared by dispatch and the receiving worker; malformed/foreign deployment fails closed. */
 export function currentNightLabTarget(
@@ -32,8 +37,12 @@ export function resolveNightLabTarget(
   | { ok: true; target: NonNullable<ReturnType<typeof nightLabRuntimeTarget>> }
   | { ok: false; reason: TargetRefusal } {
   try {
-    const target = nightLabRuntimeTarget(contextProvider());
-    if (!target) return { ok: false, reason: "TARGET_DEPLOYMENT_UNIDENTIFIED" };
+    const explained = explainNightLabTarget(contextProvider());
+    // One code per cause. The first firing recorded the old collapsed
+    // `TARGET_DEPLOYMENT_UNIDENTIFIED`, which named six possibilities and
+    // therefore none of them.
+    if (!explained.ok) return { ok: false, reason: explained.reason };
+    const { target } = explained;
     if (!matchesNightLabDatabase(readSetting("SUPABASE_URL"), target.databaseOrigin))
       return { ok: false, reason: "TARGET_DATABASE_MISMATCH" };
     return { ok: true, target };

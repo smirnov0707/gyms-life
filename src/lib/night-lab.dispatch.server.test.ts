@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sdk = vi.hoisted(() => ({ getContext: vi.fn() }));
 vi.mock("@netlify/functions", () => ({ getContext: sdk.getContext }));
 import { dispatchCurrentNightLab, currentNightLabTarget } from "./night-lab.dispatch.server";
-import { nightLabRuntimeTarget, matchesNightLabDatabase } from "./night-lab.target";
+import {
+  matchesNightLabDatabase,
+  nightLabRuntimeTarget,
+  TARGET_CONTEXT_REFUSALS,
+} from "./night-lab.target";
 const STAGE = "https://yywnpovsqifwujuxdxog.supabase.co",
   PROD = "https://tqwqbjkjqzusohxdzupr.supabase.co",
   ID = "aaaaaaaaaaaaaaaaaaaaaaaa";
@@ -80,24 +84,42 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
     expect(settings).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
   });
+  // One code per cause, not one name for eight cases. The first firing of the
+  // schedule recorded the old collapsed `TARGET_DEPLOYMENT_UNIDENTIFIED` and
+  // left nothing to act on; each row below is now a different thing to fix,
+  // and the refusal still happens before any secret or transport is touched.
   it.each([
-    null,
-    {},
-    { deploy: { id: ID, context: "deploy-preview", published: false } },
-    { site: { name: "synthetic-site" } },
-    context("dev"),
-    context("unexpected"),
-    context("production", false),
-    context("deploy-preview", true),
-  ])("untrusted/inconsistent context %j fails before secrets or transport", async (value) => {
-    const settings = read(),
-      send = vi.fn();
-    expect(await dispatchCurrentNightLab(() => value, settings, send)).toEqual({
-      status: "unavailable",
-      reason: "TARGET_DEPLOYMENT_UNIDENTIFIED",
-    });
-    expect(settings).not.toHaveBeenCalled();
-    expect(send).not.toHaveBeenCalled();
+    [null, "TARGET_CONTEXT_NOT_AN_OBJECT"],
+    [{}, "TARGET_CONTEXT_DEPLOY_MISSING"],
+    [
+      { deploy: { id: ID, context: "deploy-preview", published: false } },
+      "TARGET_CONTEXT_SITE_MISSING",
+    ],
+    [{ site: { name: "synthetic-site" } }, "TARGET_CONTEXT_DEPLOY_MISSING"],
+    [context("dev"), "TARGET_CONTEXT_NOT_A_KNOWN_CONTEXT"],
+    [context("unexpected"), "TARGET_CONTEXT_NOT_A_KNOWN_CONTEXT"],
+    [context("production", false), "TARGET_DEPLOYMENT_NOT_PUBLISHED"],
+    [context("deploy-preview", true), "TARGET_DEPLOYMENT_NOT_PUBLISHED"],
+  ])(
+    "untrusted/inconsistent context %j fails before secrets or transport, naming its cause",
+    async (value, reason) => {
+      const settings = read(),
+        send = vi.fn();
+      expect(await dispatchCurrentNightLab(() => value, settings, send)).toEqual({
+        status: "unavailable",
+        reason,
+      });
+      expect(settings).not.toHaveBeenCalled();
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not answer two different problems with the same code", () => {
+    // `Record<Path, Code>` makes the compiler demand an entry per field. It
+    // cannot demand that they differ, which is exactly what went wrong.
+    const distinct = new Set(TARGET_CONTEXT_REFUSALS);
+    expect(distinct.size).toBe(TARGET_CONTEXT_REFUSALS.length);
+    for (const code of TARGET_CONTEXT_REFUSALS) expect(code).toMatch(/^[A-Z][A-Z0-9_]{2,63}$/);
   });
   it.each([
     "..",
@@ -119,7 +141,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
     expect(nightLabRuntimeTarget(value)).toBeNull();
     expect(await dispatchCurrentNightLab(() => value, settings, send)).toEqual({
       status: "unavailable",
-      reason: "TARGET_DEPLOYMENT_UNIDENTIFIED",
+      reason: "TARGET_CONTEXT_SITE_NAME_UNRECOGNISED",
     });
     expect(send).not.toHaveBeenCalled();
   });
@@ -131,7 +153,7 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
       const send = vi.fn();
       expect(await dispatchCurrentNightLab(() => value, read(), send)).toEqual({
         status: "unavailable",
-        reason: "TARGET_DEPLOYMENT_UNIDENTIFIED",
+        reason: "TARGET_CONTEXT_DEPLOY_ID_UNRECOGNISED",
       });
       expect(send).not.toHaveBeenCalled();
     },
