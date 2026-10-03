@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { chromium, webkit, expect } from "@playwright/test";
@@ -8,6 +9,29 @@ import tailwindcss from "@tailwindcss/vite";
 const root = process.cwd(),
   dir = (name) => path.join(root, "tests/public-browser", name),
   output = path.join(root, "test-results/public-browser");
+
+/**
+ * The landing hero, read out of the component the page renders.
+ *
+ * This assertion used to carry the headline as a literal — "A stronger you." —
+ * and the hero was rewritten to "Train on the record. Not on a guess." without
+ * it. The check had been failing ever since and nobody saw it, because this
+ * suite could not launch a browser in CI's environment at all and died before
+ * its first check. Deriving the expectation means the rewrite that changes the
+ * page changes the test, and a headline that silently disappears still fails.
+ */
+const heroHeadline = (lang) => {
+  const source = readFileSync(path.join(root, "src/components/FutureLabLanding.tsx"), "utf8");
+  const start = source.indexOf(`  ${lang}: {`);
+  if (start < 0) throw new Error(`public suite: the landing copy has no ${lang} branch`);
+  const branch = source.slice(start, start + 2000);
+  const read = (key) => {
+    const found = new RegExp(`${key}:\\s*\n?\\s*"([^"]+)"`).exec(branch);
+    if (!found?.[1]) throw new Error(`public suite: the ${lang} hero has no ${key}`);
+    return found[1];
+  };
+  return { title: read("title"), accent: read("accent") };
+};
 await mkdir(output, { recursive: true });
 const server = await createServer({
   configFile: false,
@@ -63,9 +87,18 @@ try {
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
   const engine = process.env.CORE_BROWSER_ENGINE ?? "chromium";
   if (!["chromium", "webkit"].includes(engine)) throw new Error("Unknown browser engine");
+  // The same escape hatch `test-core-browser.mjs` already has, and the reason
+  // this suite went unrun: without it Playwright looks for a headless shell
+  // this environment does not install, and the suite fails before the first
+  // check instead of reporting on the pages it covers.
   browser = await (engine === "webkit" ? webkit : chromium).launch(
     engine === "chromium"
-      ? { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] }
+      ? {
+          args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+          ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+            ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+            : {}),
+        }
       : {},
   );
   const open = async (query = "", width = 390, block3D = engine === "webkit") => {
@@ -360,7 +393,11 @@ try {
   for (const lang of ["en", "lt", "de", "fr", "es", "pl", "ru", "uk"]) {
     const { page, context } = await open(`screen=home&lang=${lang}`, 320);
     const lt = lang === "lt";
-    await expect(page.locator("h1")).toContainText(lt ? "Stipresnis tu." : "A stronger you.");
+    // Six of the eight locales have no copy branch and fall back through
+    // `baseLang` to English, which is the only reason this is a two-way split.
+    const hero = heroHeadline(lt ? "lt" : "en");
+    await expect(page.locator("h1")).toContainText(hero.title);
+    await expect(page.locator("h1")).toContainText(hero.accent);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );

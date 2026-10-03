@@ -87,11 +87,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "GYMS.LIFE" },
       { name: "google-site-verification", content: "b1zYHPUG4ttUt9kbOSgIHLPi5OQ3qqplDXfUNFna1f4" },
       { property: "og:type", content: "website" },
-      // `summary`, not `summary_large_image`: nothing here sets `og:image` or
-      // `twitter:image`, and there is no branded share card in `public/` to
-      // point one at. A large-image card with no image renders as a broken
-      // preview — the card type is a promise about what the page provides, and
-      // claiming the larger one bought a worse link than the honest one.
+      // `summary` stays the default for every route that sets no image of its
+      // own. The card type is a promise about what the page provides, and a
+      // large-image card with no image renders as a broken preview, so a route
+      // earns `summary_large_image` by also setting `og:image` — the landing
+      // page does, from `public/share-card.png`.
       { name: "twitter:card", content: "summary" },
     ],
     links: [

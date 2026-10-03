@@ -17,7 +17,19 @@ import { PublicFrame } from "./PublicFrame";
 import { baseLang, useI18n } from "@/lib/i18n";
 const LandingTwin = lazy(() => import("./LandingTwin"));
 
-const copy = {
+/**
+ * Exported so the route's `head()` can build the share card from the same
+ * strings the page renders.
+ *
+ * AGENTS.md: what a surface promises before you reach it is checked nowhere.
+ * The hero was rewritten to say 175 exercises, sets that survive a dead signal
+ * and free-while-in-beta; the `og:title` and `og:description` kept saying "Your
+ * personal Future Lab · Your training. Your Digital Twin. Your next step." —
+ * the abstract line the page itself no longer makes. A shared link, a search
+ * result and a chat preview all carried the old claim, and nothing in the build
+ * compared the two.
+ */
+export const copy = {
   en: {
     eyebrow: "TRAINING YOU CAN CHECK",
     title: "Train on the record.",
