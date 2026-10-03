@@ -36,6 +36,16 @@ const ObservabilityEventNameSchema = z.enum([
    * anyone ever did is that it wrote those failures down.
    */
   "shadow_prediction.capture",
+  /**
+   * An account erased at the athlete's request.
+   *
+   * `app_observability_events.user_id` is `on delete set null`, so this row
+   * outlives the account and stops naming the person — which is why it is
+   * written before the cascade rather than after: afterwards there is no user
+   * id to attribute it to, and an erasure nobody can count is one nobody can
+   * answer a regulator about.
+   */
+  "account.erasure",
 ]);
 
 const SafeMetadataValueSchema = z.union([

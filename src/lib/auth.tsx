@@ -21,6 +21,19 @@ type AuthState = {
   loading: boolean;
   /** Re-reads the stored session; resolves to true when a session exists. */
   refresh: () => Promise<boolean>;
+  /**
+   * Ends the session on this device.
+   *
+   * There was no way out. Nothing in the app called `supabase.auth.signOut`,
+   * and this context never exposed it, so a signed-in athlete could only leave
+   * by clearing site data — on a shared phone, a borrowed laptop or a gym
+   * tablet, that is the difference between a session and a handover.
+   *
+   * Resolves to true when the session is gone. It fails closed in the sense
+   * that matters here: a refused network call still clears the local session,
+   * because the person asked to be signed out of this device.
+   */
+  signOut: () => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthState>({
@@ -28,6 +41,7 @@ const AuthContext = createContext<AuthState>({
   user: null,
   loading: true,
   refresh: async () => false,
+  signOut: async () => false,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -71,9 +85,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
   const refresh = useCallback(() => controller.current?.refresh() ?? Promise.resolve(false), []);
 
+  const signOut = useCallback(async () => {
+    try {
+      // `local` scope: this device, not every device the person is signed in
+      // on. Ending other sessions is a different request and should be asked
+      // for separately.
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // A refused call must not leave somebody signed in on a device they
+      // asked to be signed out of. The local session is cleared either way.
+    }
+    setSession(null);
+    offlineIdentity.set(null);
+    // The cache is keyed per owner; leaving it would show the next person who
+    // signs in on this device the previous athlete's answers until each query
+    // refetched.
+    queryClient.clear();
+    return true;
+  }, [queryClient]);
+
   const value = useMemo(
-    () => ({ session, user: session?.user ?? null, loading, refresh }),
-    [session, loading, refresh],
+    () => ({ session, user: session?.user ?? null, loading, refresh, signOut }),
+    [session, loading, refresh, signOut],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

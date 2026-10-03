@@ -25,6 +25,7 @@ import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TrainingRhythmCard } from "@/components/TrainingRhythmCard";
+import { AccountControls } from "@/components/AccountControls";
 import { getAthleteModel } from "@/lib/athlete-model.functions";
 import type { AthleteModelResponse } from "@/lib/athlete-model.contract";
 import { baseLang, formatLocale, useI18n, type Lang } from "@/lib/i18n";
@@ -1146,6 +1147,10 @@ function AthleteModelPage() {
           <TrainingRhythmCard />
         </div>
       </details>
+
+      {/* Signing out and erasing the account. Both were missing entirely, and
+          the privacy policy promised the second one in eight languages. */}
+      <AccountControls />
     </div>
   );
 }
