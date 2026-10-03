@@ -29,6 +29,11 @@ export const Route = createFileRoute("/exercises/")({
   // every exercise. It carried none, and the sitemap was the only thing that
   // claimed these 175 pages existed.
   loader: async () => ({ index: await readExerciseCatalogueIndex() }),
+  // The loader also runs on client navigation, and the catalogue changes about
+  // as often as the app is deployed. Without this it re-read 175 rows every
+  // time somebody came back to the library — twice, next to the page's own
+  // query, which already holds its answer for an hour.
+  staleTime: 1000 * 60 * 60,
   head: () => ({
     meta: [
       // Ten of the 175 exercises have a video; the rest are frame sequences,
