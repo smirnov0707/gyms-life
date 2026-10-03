@@ -546,6 +546,38 @@ try {
           readout,
         });
       }
+      if (screen === "today") {
+        // The one action against the links that surround it.
+        //
+        // `.fl-plan-start`, `.fl-card-action` and `.fl-action` shared a single
+        // rule, so the dashboard carried five equally loud volt bars; and
+        // because the wide-desktop rule sized the primary action *down*, each
+        // of the four card links ended up physically larger than "Start
+        // workout" — 30px tall and 10px of type against 27px and 9px. The
+        // hierarchy was not weak, it was inverted.
+        //
+        // Measured rather than source-scanned, which is the point: every rule
+        // involved read correctly in its own file. What was wrong was which one
+        // won, and only the rendered page knows that.
+        const measure = (selector) =>
+          shown.page.evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return null;
+            const style = getComputedStyle(el);
+            const box = el.getBoundingClientRect();
+            return {
+              fontSize: parseFloat(style.fontSize),
+              height: box.height,
+              filled: style.backgroundImage.includes("gradient"),
+            };
+          }, selector);
+        actionLayoutChecks.push({
+          screen,
+          viewport: viewport.name,
+          primary: await measure(".fl-plan-start"),
+          secondary: await measure(".fl-card-action"),
+        });
+      }
       if (screen === "lab" && viewport.name === "desktop") {
         const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
         const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
@@ -680,6 +712,33 @@ try {
     JSON.stringify(actionLayoutChecks, null, 2),
   );
   for (const check of actionLayoutChecks) {
+    if (check.screen === "today") {
+      const where = `Today ${check.viewport}`;
+      // The scan has to have found both, or the comparisons below are vacuous.
+      expect(check.primary, `${where} has a primary action to measure`).not.toBeNull();
+      expect(check.secondary, `${where} has a card action to measure`).not.toBeNull();
+      expect(
+        check.primary.fontSize,
+        `${where}: the primary action is set larger than the card links`,
+      ).toBeGreaterThan(check.secondary.fontSize);
+      expect(
+        check.primary.height,
+        `${where}: the primary action is taller than the card links`,
+      ).toBeGreaterThan(check.secondary.height);
+      // A thumb target, on every viewport — it was 27px on a 1440px desktop.
+      expect(
+        check.primary.height,
+        `${where}: the primary action is at least 44px tall`,
+      ).toBeGreaterThanOrEqual(44);
+      expect(
+        check.primary.fontSize,
+        `${where}: the primary action is not labelled in caption type`,
+      ).toBeGreaterThanOrEqual(14);
+      // Volt means action. Exactly one of these wears it filled.
+      expect(check.primary.filled, `${where}: the primary action is filled volt`).toBe(true);
+      expect(check.secondary.filled, `${where}: the card links are not filled volt`).toBe(false);
+      continue;
+    }
     if (check.screen === "muscle") {
       expect(
         check.action.y + check.action.height,
