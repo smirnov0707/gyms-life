@@ -19,7 +19,7 @@ import { Route as ReadinessRoute } from "@/routes/_authenticated/readiness";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";
 /* eslint-disable react-refresh/only-export-components -- isolated executable fixture */
-import { StrictMode, Suspense } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -148,6 +148,24 @@ function Panel() {
   if (selected === "training") return <ActivePlanLoader />;
   return <h1>Outside the controlled core fixture</h1>;
 }
+// The real router resolves a route's loader before it renders the component.
+// Awaiting it here means the first paint already carries the data, which is
+// what every check assumes when it treats the watermark as "the page is up".
+const loadable: Record<string, { load?: () => Promise<void> }> = {
+  camera: CameraRoute,
+  supplements: SupplementsRoute,
+  exercises: ExercisesRoute,
+  movement: MovementRoute,
+  readiness: ReadinessRoute,
+  profile: ProfileRoute,
+  meals: MealRoute,
+  nutrition: NutritionRoute,
+  onboarding: OnboardingRoute,
+  training: TrainingRoute,
+  workout: WorkoutRoute,
+};
+await loadable[query.get("screen") ?? ""]?.load?.();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={client}>
@@ -157,23 +175,17 @@ createRoot(document.getElementById("root")!).render(
             <aside data-testid="synthetic-watermark" style={{ padding: 12, fontSize: 12 }}>
               SYNTHETIC TEST FIXTURE — NOT USER DATA
             </aside>
-            {/* The real router awaits a route's loader before rendering it, so
-                the stub suspends. The watermark stays outside this boundary:
-                every check waits for it, and a screen still loading its data
-                must not look like a screen that failed to mount. */}
-            <Suspense fallback={<p data-testid="synthetic-loading">Loading synthetic route…</p>}>
-              {["exercises", "movement"].includes(query.get("screen") ?? "") ? (
+            {["exercises", "movement"].includes(query.get("screen") ?? "") ? (
+              <Panel />
+            ) : query.get("shell") === "1" ? (
+              <AppShell>
                 <Panel />
-              ) : query.get("shell") === "1" ? (
-                <AppShell>
-                  <Panel />
-                </AppShell>
-              ) : (
-                <main style={{ padding: 16, maxWidth: 1180, margin: "auto" }}>
-                  <Panel />
-                </main>
-              )}
-            </Suspense>
+              </AppShell>
+            ) : (
+              <main style={{ padding: 16, maxWidth: 1180, margin: "auto" }}>
+                <Panel />
+              </main>
+            )}
             <Toaster position="top-center" />
           </ReminderProvider>
         </ThemeProvider>

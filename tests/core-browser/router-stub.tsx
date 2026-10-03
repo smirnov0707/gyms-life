@@ -68,9 +68,8 @@ export const useRouter = () => ({
  * `TypeError: Route.useLoaderData is not a function` showed up — after 362
  * checks had passed — rather than as a failed assertion about anything.
  *
- * The real router awaits the loader before it renders the component, so this
- * suspends until the loader resolves. `fixture.tsx` holds the boundary, with
- * the watermark outside it.
+ * The real router awaits the loader before it renders the component, so
+ * `fixture.tsx` awaits `load()` on the selected route and only then mounts.
  */
 export const createFileRoute =
   () =>
@@ -89,13 +88,22 @@ export const createFileRoute =
       options,
       useSearch: () => ({}),
       useParams: params,
-      useLoaderData: () => {
-        if (!options.loader) return {} as never;
-        running ??= Promise.resolve(options.loader({ params: params() })).then((value) => {
-          settled = { value };
-        });
-        if (!settled) throw running;
-        return settled.value as never;
+      /**
+       * Awaited by `fixture.tsx` before the tree is mounted, because that is
+       * what the real router does: it resolves a route's loader and then
+       * renders the component, so the first paint already has the data.
+       *
+       * The first attempt suspended instead, which rendered a fallback and
+       * mounted the screen a beat later. The screens came out right and a
+       * `<video preload="metadata">` on the movement page never reached
+       * `readyState >= 2` inside the check's window — the element had been
+       * mounted after the point every check treats as "the page is up".
+       */
+      load: async () => {
+        if (!options.loader || settled) return;
+        running ??= Promise.resolve(options.loader({ params: params() }));
+        settled = { value: await running };
       },
+      useLoaderData: () => (settled?.value ?? {}) as never,
     };
   };
