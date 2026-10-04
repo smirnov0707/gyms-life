@@ -36,7 +36,5 @@ const WORLD_ACTION_ORDER: Record<ProductWorld, readonly ContextAction["intent"][
 
 export function contextualActionsFor(world: ProductWorld): readonly ContextAction[] {
   const order = WORLD_ACTION_ORDER[world];
-  return [...CONTEXT_ACTIONS].sort(
-    (a, b) => order.indexOf(a.intent) - order.indexOf(b.intent),
-  );
+  return [...CONTEXT_ACTIONS].sort((a, b) => order.indexOf(a.intent) - order.indexOf(b.intent));
 }
