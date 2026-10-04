@@ -11,7 +11,7 @@ import { TwinJournal } from "@/components/twin/TwinJournal";
 import { LiveSignals } from "@/components/LiveSignals";
 import { RecoveryOutlook } from "@/components/RecoveryOutlook";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
-import { baseLang, useI18n } from "@/lib/i18n";
+import { useI18n, type TKey } from "@/lib/i18n";
 import "./TwinScreen.css";
 import { nextTwinView, type TwinNavigation } from "@/lib/twin-navigation";
 
@@ -22,11 +22,11 @@ import { nextTwinView, type TwinNavigation } from "@/lib/twin-navigation";
  */
 
 const TABS = [
-  { id: "overview", en: "BODY", lt: "KŪNAS", icon: PersonStanding },
-  { id: "systems", en: "SYSTEMS", lt: "SISTEMOS", icon: HeartPulse },
-  { id: "future", en: "TRAJECTORY", lt: "TRAJEKTORIJA", icon: Rocket },
-  { id: "journal", en: "TIMELINE", lt: "LAIKO JUOSTA", icon: History },
-] as const;
+  { id: "overview", label: "tw.tabOverview", icon: PersonStanding },
+  { id: "systems", label: "tw.tabSystems", icon: HeartPulse },
+  { id: "future", label: "tw.tabFuture", icon: Rocket },
+  { id: "journal", label: "tw.tabJournal", icon: History },
+] as const satisfies readonly { id: string; label: TKey; icon: typeof PersonStanding }[];
 
 type TabId = (typeof TABS)[number]["id"];
 
@@ -34,8 +34,7 @@ export function TwinScreen({
   navigation,
   onNavigate,
 }: { navigation?: TwinNavigation; onNavigate?: (next: TwinNavigation) => void } = {}) {
-  const { t, lang } = useI18n();
-  const english = baseLang(lang) === "en";
+  const { t } = useI18n();
   const [localNavigation, setLocalNavigation] = useState<TwinNavigation>({});
   const current = navigation ?? localNavigation;
   const change = onNavigate ?? setLocalNavigation;
@@ -103,7 +102,7 @@ export function TwinScreen({
                   }`}
                 >
                   <Icon aria-hidden="true" className="size-3.5" />
-                  {english ? tab.en : tab.lt}
+                  {t(tab.label)}
                 </button>
               );
             })}
