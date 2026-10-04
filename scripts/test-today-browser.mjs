@@ -978,7 +978,9 @@ try {
   await calibrationSummary.click();
   const calibration = evidenceLab.page.getByText("Evidence maturity", { exact: true });
   await expect(calibration).toBeVisible();
-  const calibrationDetails = calibration.locator("xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]");
+  const calibrationDetails = calibration.locator(
+    "xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]",
+  );
   expect(await calibrationDetails.innerText()).not.toMatch(/\d\s*%/);
   await expect(
     first.page.getByText("No personal pattern has reached its evidence threshold yet.", {
