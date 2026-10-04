@@ -119,7 +119,13 @@ try {
     await page.goto(`${origin}/index.html?${query}`);
     await expect(page.getByTestId("synthetic-public")).toBeVisible();
     await expect(page.locator("h1")).toBeVisible();
-    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(async () => {
+      await Promise.all([
+        document.fonts.load('16px "Manrope"'),
+        document.fonts.load('16px "Space Grotesk"'),
+      ]);
+      await document.fonts.ready;
+    });
     return { page, context };
   };
   const states = [
