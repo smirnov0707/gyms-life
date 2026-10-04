@@ -1328,6 +1328,7 @@ try {
       viewport: { width: 390, height: 844 },
     },
   );
+  await baselineMemory.page.getByRole("tab", { name: "Timeline" }).click();
   const baselineSummary = baselineMemory.page
     .locator("details > summary")
     .filter({ hasText: "Changes, memory & milestones" });
@@ -1347,6 +1348,7 @@ try {
       viewport: { width: 390, height: 844 },
     },
   );
+  await changedMemory.page.getByRole("tab", { name: "Timeline" }).click();
   const changedSummary = changedMemory.page
     .locator("details > summary")
     .filter({ hasText: "Changes, memory & milestones" });
@@ -1368,6 +1370,7 @@ try {
     "?panel=twin&twin=regions&scenario=reference&uncertainty=training&view=journal",
     { viewport: { width: 390, height: 844 } },
   );
+  await uncertaintyTwin.page.getByRole("tab", { name: "Timeline" }).click();
   const uncertaintySummary = uncertaintyTwin.page
     .locator("details > summary")
     .filter({ hasText: "Changes, memory & milestones" });
