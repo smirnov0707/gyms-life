@@ -1311,3 +1311,23 @@
     margin-top: 5px;
   }
 }
+
+@media (max-width: 759px) {
+  .fl-today-command .fl-readiness-empty {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .fl-today-command .fl-readiness-inline > summary {
+    padding: 12px 14px;
+  }
+
+  .fl-today-command .fl-readiness-inline[open] > summary {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fl-today-command .fl-readiness-inline > div {
+    margin: 0;
+    padding: 14px;
+  }
+}
