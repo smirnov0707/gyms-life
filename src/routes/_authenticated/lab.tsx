@@ -34,9 +34,7 @@ function LabPage() {
         </div>
       </details>
       <details className="fl-secondary-details fl-luxury-disclosure">
-        <summary>
-          {english ? "How the Lab works" : "Kaip veikia Lab"}
-        </summary>
+        <summary>{english ? "How the Lab works" : "Kaip veikia Lab"}</summary>
         <div className="fl-disclosed-content">
           <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">
             {english
