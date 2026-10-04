@@ -109,6 +109,34 @@ describe("what the app tells a visitor the exercise catalogue is", () => {
     expect(withVideo).toEqual([]);
   });
 
+  it("keeps the landing page's exact count equal to the catalogue, not merely under it", () => {
+    // The gap this closes: `copyFiles()` reads `src/lib/i18n*` and
+    // `src/lib/i18n-locales/*`, so the four loudest claims on the site were
+    // scanned by nothing. The hero says "175 exercises" rather than "170+",
+    // and since the head and `public/share-card.png` are both built from that
+    // same copy, one unchecked number was being repeated on the landing page,
+    // in every shared link and in every search result.
+    //
+    // Checked apart from the rules above rather than folded into them, because
+    // it is a different claim shape. A floor ("170+") has to leave slack; an
+    // exact count has to be exactly right, which is a stricter promise and the
+    // one the hero deliberately makes. Folding the two together would also
+    // have caught the unrelated "21" claims in the same files, which are not
+    // about how big the catalogue is.
+    const landing = readFileSync(path.resolve("src/components/FutureLabLanding.tsx"), "utf8");
+    const total = seededSlugs().length;
+    const claims = [...landing.matchAll(/"((?:[^"\\]|\\.)*)"/g)]
+      .map((match) => match[1] ?? "")
+      .filter((value) => EXERCISE_WORD.test(value) && /\d{2,}/.test(value));
+    // Both copy branches state it twice; a scan that stops finding them passes
+    // forever.
+    expect(claims.length).toBeGreaterThanOrEqual(4);
+    const wrong = claims
+      .filter((value) => Number(/(\d{2,})/.exec(value)?.[1] ?? 0) !== total)
+      .map((value) => value.slice(0, 80));
+    expect(wrong).toEqual([]);
+  });
+
   it("is a claim the seed can still be measured against", () => {
     // The number the copy may not exceed is not a constant in this file; it is
     // counted from the seed. This pins the count that the other tests use.
