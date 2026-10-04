@@ -182,26 +182,34 @@ export function Overview() {
               />
             ) : (
               <div className="fl-surface fl-readiness-empty">
-                <p className="fl-eyebrow">{english ? "Readiness" : "Pasiruošimas"}</p>
-                <p>
-                  {readinessReadFailed
-                    ? english
-                      ? "Readiness could not be loaded."
-                      : "Nepavyko įkelti pasiruošimo duomenų."
-                    : english
-                      ? "How are you feeling today?"
-                      : "Kaip šiandien jautiesi?"}
-                </p>
-                {!readinessReadFailed ? (
-                  <details className="group mt-3">
-                    <summary className="fl-text-link cursor-pointer list-none">
-                      {english ? "Check in here" : "Įvertinti čia"} →
-                    </summary>
+                <details className="fl-readiness-inline group">
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3">
+                    <span>
+                      <span className="fl-eyebrow block">
+                        {english ? "Today's state" : "Šiandienos būsena"}
+                      </span>
+                      <span className="mt-1 block text-sm font-medium text-foreground">
+                        {readinessReadFailed
+                          ? english
+                            ? "Readiness unavailable"
+                            : "Būsena nepasiekiama"
+                          : english
+                            ? "How are you feeling?"
+                            : "Kaip jautiesi?"}
+                      </span>
+                    </span>
+                    {!readinessReadFailed ? (
+                      <span className="shrink-0 text-xs font-semibold text-primary">
+                        {english ? "Check in" : "Įvertinti"} →
+                      </span>
+                    ) : null}
+                  </summary>
+                  {!readinessReadFailed ? (
                     <div className="mt-3 border-t border-border pt-3">
                       <ReadinessWorkspace embedded />
                     </div>
-                  </details>
-                ) : null}
+                  ) : null}
+                </details>
               </div>
             )}
             <TodayDecision
