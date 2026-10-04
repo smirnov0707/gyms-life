@@ -267,7 +267,7 @@ try {
 
   const openTodayContextLayer = async (page) => {
     const summary = page.getByText(
-      /^(Context, sources & settings|Kontekstas, šaltiniai ir nustatymai)$/,
+      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
     );
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
@@ -724,8 +724,12 @@ try {
       ).toBeGreaterThanOrEqual(14);
       // Volt means action. Exactly one of these wears it filled.
       expect(check.primary.filled, `${where}: the primary action is filled volt`).toBe(true);
-      if (check.secondary)
-        expect(check.secondary.filled, `${where}: any visible supporting action is not filled volt`).toBe(false);
+      if (check.secondary) {
+        expect(
+          check.secondary.filled,
+          `${where}: any visible supporting action is not filled volt`,
+        ).toBe(false);
+      }
       continue;
     }
     if (check.screen === "muscle") {
