@@ -31,36 +31,9 @@ export const extra_twintabs = {
     es: "Músculos",
     fr: "Muscles",
   },
-  "tw.tabSystems": {
-    lt: "Sistemos",
-    en: "Systems",
-    ru: "Системы",
-    uk: "Системи",
-    pl: "Układy",
-    de: "Systeme",
-    es: "Sistemas",
-    fr: "Systèmes",
-  },
-  "tw.tabFuture": {
-    lt: "Ateitis",
-    en: "Future",
-    ru: "Будущее",
-    uk: "Майбутнє",
-    pl: "Przyszłość",
-    de: "Zukunft",
-    es: "Futuro",
-    fr: "Futur",
-  },
-  "tw.tabJournal": {
-    lt: "Laiko juosta",
-    en: "Timeline",
-    ru: "Хронология",
-    uk: "Хронологія",
-    pl: "Oś czasu",
-    de: "Zeitachse",
-    es: "Cronología",
-    fr: "Chronologie",
-  },
+
+
+
   "tw.musclesTitle": {
     lt: "Kiekvienas regionas",
     en: "Every region",
@@ -162,14 +135,5 @@ export const extra_twintabs = {
     fr: "Les couleurs de la silhouette viennent uniquement des séries enregistrées. Le sommeil, la VFC et la fréquence au repos ne les alimentent pas — ils figurent ici séparément, tels que la source les a livrés.",
   },
 
-  "tw.memoryTitle": {
-    lt: "Ką GYMS.LIFE apie tave išmoko",
-    en: "What GYMS.LIFE has learned about you",
-    ru: "Что GYMS.LIFE узнал о вас",
-    uk: "Що GYMS.LIFE дізнався про вас",
-    pl: "Czego GYMS.LIFE nauczył się o Tobie",
-    de: "Was GYMS.LIFE über dich gelernt hat",
-    es: "Lo que GYMS.LIFE ha aprendido sobre ti",
-    fr: "Ce que GYMS.LIFE a appris sur vous",
-  },
+
 } as const;
