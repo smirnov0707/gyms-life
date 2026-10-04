@@ -1,4 +1,5 @@
 import { ReadinessCard } from "@/components/ReadinessCard";
+import { QuickFoodLog } from "@/components/QuickFoodLog";
 import { LiveSignals } from "@/components/LiveSignals";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
@@ -240,6 +241,17 @@ export function Overview() {
               <SleepAnalysis />
               <PredictionEvidencePanel compact />
             </div>
+            <details className="fl-surface group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Log food here" : "Įrašyti maistą čia"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickFoodLog compact />
+                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
+                </Link>
+              </div>
+            </details>
             <DataSourcesStrip />
             <TodayLifeContext />
             {planData ? (
