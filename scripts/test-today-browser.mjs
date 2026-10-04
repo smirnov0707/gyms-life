@@ -498,6 +498,9 @@ try {
         );
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
+        // Progressive disclosure deliberately leaves supporting imagery hidden
+        // and eligible for lazy loading until the user opens that surface.
+        if (!(await illustration.isVisible())) continue;
         await illustration.scrollIntoViewIfNeeded();
         await expect
           .poll(async () =>
