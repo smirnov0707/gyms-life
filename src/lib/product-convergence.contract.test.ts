@@ -32,7 +32,7 @@ describe("Product Convergence contract", () => {
   });
 
   it("replaces the feature catalogue with a bounded contextual action layer", () => {
-    expect(actionRoutes).toEqual(["/training", "/app", "/nutrition", "/ar", "/coach"]);
+    expect(actionRoutes).toEqual(["/training", "/app", "/app", "/ar", "/coach"]);
     for (const legacy of [
       "/progress",
       "/history",
@@ -68,6 +68,8 @@ describe("Product Convergence contract", () => {
   });
   it("classifies legacy and embedded capabilities without exposing them as worlds", () => {
     expect(PRODUCT_SURFACES["/readiness"]).toBe("EMBEDDED_FLOW");
+    expect(CONTEXT_ACTIONS.find((action) => action.intent === "nutrition")?.to).toBe("/app");
+    expect(PRODUCT_SURFACES["/nutrition"]).toBe("CONTEXT_TOOL");
     expect(PRODUCT_SURFACES["/exercises"]).toBe("EMBEDDED_FLOW");
     expect(PRODUCT_SURFACES["/meal-plan"]).toBe("EMBEDDED_FLOW");
     expect(PRODUCT_SURFACES["/supplements"]).toBe("EMBEDDED_FLOW");
