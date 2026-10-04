@@ -116,7 +116,8 @@ export function ProgressForecast() {
               lift.trend === "rising"
                 ? "text-primary"
                 : lift.trend === "falling"
-                  ? "text-destructive"
+                  ? // A lift trending down is a trend, not an error.
+                    "text-ember"
                   : "text-accent";
             const values = [
               lift.currentEstimated1RMKg,

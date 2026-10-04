@@ -74,7 +74,13 @@ function deltaTone(signal: LiveSignal): string {
     return "text-muted-foreground";
   }
   const good = shape.betterWhen === "higher" ? signal.delta > 0 : signal.delta < 0;
-  return good ? "text-primary" : "text-destructive";
+  // Ember, not `destructive`. A resting heart rate 2 bpm up is a reading that
+  // moved the unfavourable way; `destructive` is the token the delete-account
+  // button and "the account could not be deleted" use. Spending it here means
+  // an athlete cannot tell a measurement they may not like from something that
+  // actually broke — and this app's whole claim is that it reports rather than
+  // editorialises.
+  return good ? "text-primary" : "text-ember";
 }
 
 /**

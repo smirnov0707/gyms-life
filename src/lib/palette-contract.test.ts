@@ -148,6 +148,48 @@ describe("the palette the app actually paints with", () => {
     expect(new Set(accents).size).toBe(accents.length);
   });
 
+  it("keeps the error colour for errors, not for readings an athlete may dislike", () => {
+    // `--destructive` is the delete-account button and "the account could not
+    // be deleted". It was also a resting heart rate 2 bpm up, a readiness of
+    // 54, and a bench press trending down — so the one colour that should mean
+    // "something broke" also meant "a number moved the way you did not want".
+    // An athlete cannot tell those apart, and this app's claim is that it
+    // reports rather than editorialises. Ember is the attention colour.
+    //
+    // Anchored on what the code does, not on a file list: any `destructive`
+    // chosen by a comparison against a measurement is the shape being banned.
+    const offenders: string[] = [];
+    let scanned = 0;
+    for (const { file, text } of sources()) {
+      if (!file.endsWith(".tsx")) continue;
+      for (const [line] of text.matchAll(/^.*destructive.*$/gm)) {
+        scanned += 1;
+        // A ternary or comparison picking `destructive` from a number, a trend
+        // or a score — rather than from a failure, a rejection or an error.
+        if (
+          /(?:score|delta|trend|value|good|level|percent|ratio|count)\b[^;\n]{0,80}destructive/i.test(
+            line,
+          ) &&
+          !/error|fail|reject|invalid|unavailable|destroy|delete|danger/i.test(line)
+        )
+          offenders.push(`${file}: ${line.trim().slice(0, 100)}`);
+      }
+    }
+    // The scan has to still be reading `destructive` lines at all.
+    expect(scanned).toBeGreaterThan(10);
+    expect(offenders).toEqual([]);
+  });
+
+  it("has an ember token that actually resolves to a utility", () => {
+    // `text-ember` only exists because `--color-ember` is declared in the
+    // `@theme inline` block. The three measurement colours above depend on it,
+    // and a token removed from that block fails silently as an unstyled class.
+    const styles = readFileSync(STYLES, "utf8");
+    const theme = styles.slice(styles.indexOf("@theme inline"));
+    expect(theme).toMatch(/--color-ember:\s*var\(--ember\)/);
+    expect(sources().some(({ text }) => /\btext-ember\b/.test(text))).toBe(true);
+  });
+
   it("sets numbers in tabular figures, so an instrument does not jitter", () => {
     // A weight going 95 → 100 must not shift the layout mid-set.
     const design = readFileSync(path.resolve("src/ui-design-system.css"), "utf8");
