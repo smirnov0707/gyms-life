@@ -103,7 +103,7 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
     for (const theme of ["dark", "light"]) {
       for (const width of [1440, 390]) {
         const { page, context } = await opened(open, `theme=${theme}`, width);
-        await expect(page.locator("h1")).toHaveText("Find your flow.");
+        await expect(page.locator("h1")).toHaveText("Movement Scan.");
         if (state === "settings") {
           await page.getByRole("button", { name: "More settings" }).press("Enter");
           await page.getByRole("button", { name: "Manual choice" }).press("Enter");
