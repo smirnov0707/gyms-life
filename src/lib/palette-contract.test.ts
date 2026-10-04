@@ -198,6 +198,85 @@ describe("the palette the app actually paints with", () => {
     expect(design).toMatch(/\.fl-display\b/);
   });
 
+  it("clears WCAG AA on every pair that carries text, in both themes", () => {
+    // Measured, because contrast is the part of a palette that looks fine in a
+    // screenshot and fails for the person reading it on a gym floor in
+    // daylight. Volt was chosen for onyx and olive for paper precisely so this
+    // holds; nothing checked that it did, and the next person to nudge a token
+    // has no way to find out except here.
+    const styles = readFileSync(STYLES, "utf8");
+    const slice = (from: string, to?: string) => {
+      const start = styles.indexOf(from);
+      expect(start, `${from} is still a block in styles.css`).toBeGreaterThan(-1);
+      const end = to ? styles.indexOf(to, start) : styles.length;
+      return styles.slice(start, end > start ? end : undefined);
+    };
+    const read = (block: string) => {
+      const found: Record<string, string> = {};
+      for (const [, name, value] of block.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g))
+        found[name!] = value!.trim();
+      return found;
+    };
+    const dark = read(slice(":root {", ".dark {"));
+    const light = read(slice(".light {", "@theme"));
+
+    const rgb = (value: string): [number, number, number] | null => {
+      const hex = /^#([0-9a-fA-F]{6})$/.exec(value);
+      if (hex?.[1])
+        return [0, 2, 4].map((at) => parseInt(hex[1]!.slice(at, at + 2), 16)) as [
+          number,
+          number,
+          number,
+        ];
+      const triple = /^rgb\(\s*(\d+)\s+(\d+)\s+(\d+)/.exec(value);
+      return triple ? [+triple[1]!, +triple[2]!, +triple[3]!] : null;
+    };
+    const luminance = ([r, g, b]: [number, number, number]) => {
+      const channel = (raw: number) => {
+        const v = raw / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+    const contrast = (a: [number, number, number], b: [number, number, number]) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi! + 0.05) / (lo! + 0.05);
+    };
+
+    // Every pair the app actually paints text in.
+    const pairs: [string, string][] = [
+      ["foreground", "background"],
+      ["foreground", "surface"],
+      ["muted-foreground", "background"],
+      ["muted-foreground", "surface"],
+      ["primary", "background"],
+      ["primary", "surface"],
+      ["accent", "surface"],
+      ["ember", "surface"],
+      ["destructive", "surface"],
+      ["primary-foreground", "primary"],
+    ];
+    const failures: string[] = [];
+    let measured = 0;
+    for (const [theme, tokens] of [
+      ["dark", dark],
+      ["light", light],
+    ] as const) {
+      for (const [fg, bg] of pairs) {
+        // The light block only overrides what differs; the rest is inherited.
+        const front = rgb(tokens[fg] ?? dark[fg] ?? "");
+        const back = rgb(tokens[bg] ?? dark[bg] ?? "");
+        expect(front, `${theme} --${fg} is a colour this test can read`).not.toBeNull();
+        expect(back, `${theme} --${bg} is a colour this test can read`).not.toBeNull();
+        measured += 1;
+        const ratio = contrast(front!, back!);
+        if (ratio < 4.5) failures.push(`${theme} ${fg} on ${bg}: ${ratio.toFixed(2)}:1`);
+      }
+    }
+    expect(measured).toBe(pairs.length * 2);
+    expect(failures).toEqual([]);
+  });
+
   it("asks no third party for a font, and does not keep a policy saying it may", () => {
     // Both faces are self-hosted under the OFL with their licences beside
     // them, which is also why the athletic voice is weight and tracking rather
