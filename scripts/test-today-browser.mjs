@@ -1315,7 +1315,7 @@ try {
 
   const memorySummary = twin.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(memorySummary).toBeVisible({ timeout: 30000 });
   await memorySummary.click();
   await expect(
@@ -1330,7 +1330,7 @@ try {
   );
   const baselineSummary = baselineMemory.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(baselineSummary).toBeVisible({ timeout: 30000 });
   await baselineSummary.click();
   await expect(
@@ -1349,7 +1349,7 @@ try {
   );
   const changedSummary = changedMemory.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(changedSummary).toBeVisible({ timeout: 30000 });
   await changedSummary.click();
   await expect(changedMemory.page.getByText("Strengthened", { exact: true })).toBeVisible();
@@ -1370,7 +1370,7 @@ try {
   );
   const uncertaintySummary = uncertaintyTwin.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(uncertaintySummary).toBeVisible({ timeout: 30000 });
   await uncertaintySummary.click();
   await expect(
