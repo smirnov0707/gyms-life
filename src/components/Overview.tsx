@@ -166,7 +166,7 @@ export function Overview() {
         </header>
 
         <section
-          className="fl-premium-card grid gap-4 rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
+          className="fl-today-command fl-premium-card grid gap-4 rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
           aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
         >
           <div className="grid content-start gap-3">
@@ -208,11 +208,11 @@ export function Overview() {
           </div>
         </section>
 
-        <section className="grid items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
-          <div className="min-w-0">
+        <section className="fl-today-world grid items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
+          <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
-          <details className="fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80" open>
+          <details className="fl-today-changes fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
               {english ? "What changed" : "Kas pasikeitė"}
             </summary>
@@ -223,7 +223,7 @@ export function Overview() {
           </details>
         </section>
 
-        <details className="fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
+        <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
           <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
             {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
           </summary>
