@@ -567,9 +567,18 @@ try {
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
         const changes = await shown.page.locator(".fl-today-changes").boundingBox();
-        expect(command.width, "Today mobile command uses the viewport instead of a desktop column").toBeGreaterThan(320);
-        expect(plan.width, "Today mobile plan keeps a readable single-column width").toBeGreaterThan(300);
-        expect(changes.x, "Today mobile changes stay aligned with the command").toBeGreaterThanOrEqual(command.x - 1);
+        expect(
+          command.width,
+          "Today mobile command uses the viewport instead of a desktop column",
+        ).toBeGreaterThan(320);
+        expect(
+          plan.width,
+          "Today mobile plan keeps a readable single-column width",
+        ).toBeGreaterThan(300);
+        expect(
+          changes.x,
+          "Today mobile changes stay aligned with the command",
+        ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
