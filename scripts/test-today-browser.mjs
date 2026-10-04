@@ -847,7 +847,7 @@ try {
     locale: "en-US",
   });
   await linked.page.getByRole("link", { name: "Explore muscles", exact: false }).click();
-  await expect(linked.page.getByRole("tab", { name: "Overview", exact: true })).toHaveAttribute(
+  await expect(linked.page.getByRole("tab", { name: "BODY", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -1275,7 +1275,7 @@ try {
   const twin = await openPanel("?panel=twin&twin=regions");
   const tabs = twin.page.getByRole("tablist", { name: "Twin views" });
   await expect(tabs).toBeVisible({ timeout: 30000 });
-  await expect(twin.page.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+  await expect(twin.page.getByRole("tab", { name: "BODY" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -1386,12 +1386,12 @@ try {
   expect(tableText.indexOf("55%")).toBeLessThan(tableText.indexOf("Calves"));
   expect(tableText).toMatch(/Calves\s*\n?\s*—/);
   expect(tableText).toContain("it is not");
-  // Muscle analytics now live inside the Body/Overview depth layer, alongside body composition.
+  // Muscle analytics stay inside the BODY depth layer, alongside body composition.
   await expect(twin.page.getByRole("region", { name: "Body composition" })).toBeVisible();
 
   await twin.page.screenshot({ path: path.join(artifacts, "twin-muscles.png"), fullPage: true });
 
-  await twin.page.getByRole("tab", { name: "Systems" }).click();
+  await twin.page.getByRole("tab", { name: "SYSTEMS" }).click();
   await expect(twin.page.getByRole("region", { name: "Live signals" })).toBeVisible({
     timeout: 30000,
   });
