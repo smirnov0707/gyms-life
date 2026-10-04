@@ -1790,7 +1790,9 @@ try {
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
   expect(evidence.errors).toEqual([]);
   await evidence.page.close();
-  record("prediction learning stays in one Lab calibration surface without a duplicate confidence dashboard");
+  record(
+    "prediction learning stays in one Lab calibration surface without a duplicate confidence dashboard",
+  );
 
   // 22. Where the template shows four sleep bars that always fill a night.
   //     Ours shows only what the source actually sent, and says which of the
