@@ -1,0 +1,14 @@
+{
+  "headline": "Train on the record.",
+  "accent": "Not on a guess.",
+  "eyebrow": "TRAINING YOU CAN CHECK",
+  "note": "No subscription yet. Nothing invented about your body.",
+  "palette": {
+    "background": "#07080a",
+    "foreground": "#f4f6f4",
+    "primary": "#c8fa3c",
+    "accent": "#78dce5",
+    "muted": "#a0a7a4",
+    "border": "rgb(226 236 226 / 12%)"
+  }
+}

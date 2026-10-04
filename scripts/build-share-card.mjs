@@ -18,6 +18,9 @@ import { chromium } from "@playwright/test";
 
 const root = process.cwd();
 const OUT = path.join(root, "public/share-card.png");
+// Beside the script, not in `public/`: it is build metadata that keeps the
+// card honest, not an asset the web needs.
+const INPUTS = path.join(root, "scripts/share-card.inputs.json");
 const WIDTH = 1200;
 const HEIGHT = 630;
 
@@ -132,6 +135,20 @@ await mkdir(path.dirname(OUT), { recursive: true });
 const shot = await tab.screenshot({ type: "png" });
 await writeFile(OUT, shot);
 await browser.close();
+
+/**
+ * What the picture was drawn from, beside the picture.
+ *
+ * The PNG is generated but committed, so editing the hero and forgetting to
+ * re-run this leaves an image that says one thing while the page says another —
+ * the exact drift this card was added to stop, reintroduced one level down. The
+ * image itself cannot be compared against source, so the inputs are written
+ * here and `share-card.test.ts` recomputes them and compares.
+ */
+await writeFile(
+  INPUTS,
+  JSON.stringify({ headline, accent: accentLine, eyebrow, note, palette }, null, 2) + "\n",
+);
 
 console.log(`share card: ${OUT} (${WIDTH}x${HEIGHT}, ${(shot.length / 1024).toFixed(0)} KB)`);
 console.log(`headline:   ${headline} ${accentLine}`);

@@ -24,6 +24,7 @@ import { SHARE_CARD_HEIGHT, SHARE_CARD_PATH, SHARE_CARD_URL, SHARE_CARD_WIDTH } 
 const INDEX = path.resolve("src/routes/index.tsx");
 const ROOT = path.resolve("src/routes/__root.tsx");
 const CARD = path.resolve(`public${SHARE_CARD_PATH}`);
+const CARD_INPUTS = path.resolve("scripts/share-card.inputs.json");
 const source = () => readFileSync(INDEX, "utf8");
 
 /** Width and height straight out of the PNG's IHDR, so a resize cannot pass. */
@@ -59,6 +60,63 @@ describe("the share card", () => {
     expect(source()).toMatch(/content: "summary_large_image"/);
     expect(source()).toMatch(/property: "og:image"/);
     expect(readFileSync(ROOT, "utf8")).toMatch(/name: "twitter:card", content: "summary"/);
+  });
+});
+
+describe("the card against the page it advertises", () => {
+  /** The hero strings, read the way `build-share-card.mjs` reads them. */
+  const heroFromSource = () => {
+    const landing = readFileSync(path.resolve("src/components/FutureLabLanding.tsx"), "utf8");
+    const english = landing.slice(landing.indexOf("  en: {"), landing.indexOf("  lt: {"));
+    const read = (key: string) => new RegExp(`${key}:\\s*\n?\\s*"([^"]+)"`).exec(english)?.[1];
+    return {
+      headline: read("title"),
+      accent: read("accent"),
+      eyebrow: read("eyebrow"),
+      note: read("note"),
+    };
+  };
+
+  it("was drawn from the words the page says today", () => {
+    // The PNG is generated but committed, so editing the hero and not re-running
+    // `npm run build:share-card` leaves an image saying one thing while the page
+    // says another — the drift this card was added to stop, one level down. The
+    // image cannot be compared against source, so the build writes down what it
+    // drew from and this recomputes it.
+    expect(
+      existsSync(CARD_INPUTS),
+      "scripts/share-card.inputs.json is written by npm run build:share-card",
+    ).toBe(true);
+    const drawn = JSON.parse(readFileSync(CARD_INPUTS, "utf8")) as Record<string, string>;
+    const source = heroFromSource();
+    for (const [key, value] of Object.entries(source)) {
+      expect(value, `the landing hero still has ${key}`).toBeTruthy();
+      expect(
+        drawn[key],
+        `share-card.png is stale: it was drawn with ${key} = ${JSON.stringify(
+          drawn[key],
+        )} but the hero now says ${JSON.stringify(value)}. Run npm run build:share-card.`,
+      ).toBe(value);
+    }
+  });
+
+  it("was drawn with the palette the app ships", () => {
+    // A repainted theme leaves the same stale card, and a card in the old
+    // palette is the first thing anyone sees of the new one.
+    const drawn = JSON.parse(readFileSync(CARD_INPUTS, "utf8")) as {
+      palette: Record<string, string>;
+    };
+    const styles = readFileSync(path.resolve("src/styles.css"), "utf8");
+    const dark = styles.slice(styles.indexOf(":root {"), styles.indexOf(".dark {"));
+    for (const [token, value] of Object.entries(drawn.palette)) {
+      const name = token === "muted" ? "muted-foreground" : token;
+      const current = new RegExp(`--${name}:\\s*([^;]+);`).exec(dark)?.[1]?.trim();
+      expect(current, `--${name} is still a token in styles.css`).toBeTruthy();
+      expect(
+        value,
+        `share-card.png is stale: drawn with --${name} = ${value}, theme now says ${current}. Run npm run build:share-card.`,
+      ).toBe(current);
+    }
   });
 });
 
