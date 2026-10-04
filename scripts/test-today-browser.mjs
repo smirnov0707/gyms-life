@@ -981,7 +981,10 @@ try {
   const calibrationDetails = calibration.locator(
     "xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]",
   );
-  expect(await calibrationDetails.innerText()).not.toMatch(/\d\s*%/);
+  const calibrationText = await calibrationDetails.innerText();
+  expect(calibrationText).toContain("0/8 evaluated outcomes");
+  expect(calibrationText).toContain("Evidence maturity is not prediction confidence.");
+  expect(calibrationText).not.toMatch(/confidence\s*[:·-]?\s*\d+\s*%/i);
   await expect(
     first.page.getByText("No personal pattern has reached its evidence threshold yet.", {
       exact: true,
