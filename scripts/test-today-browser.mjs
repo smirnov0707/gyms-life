@@ -1768,39 +1768,29 @@ try {
   await measured.page.close();
   record("a signal gets a line only when it has two readings to draw one from");
 
-  // 21. Where the template shows "82% · High Confidence · 512 data points".
-  //     Ours shows how far each target has actually been tested, and keeps
-  //     "never predicted" apart from "predicted, nothing resolved yet".
+  // 21. Prediction learning now has one canonical surface in Lab. Evidence
+  //     maturity is calibration progress, never a second confidence dashboard.
   const evidence = await openPanel("?shell=1&screen=lab&evidence=some");
-  const evidenceDetails = evidence.page
+  const evidenceCalibrationSummary = evidence.page
     .locator("details > summary")
-    .filter({ hasText: "Evidence, decisions & learning history" });
-  await expect(evidenceDetails).toBeVisible({ timeout: 30000 });
-  await evidenceDetails.click();
-  const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
-  await expect(evidencePanel).toBeVisible({ timeout: 30000 });
-  const evidenceText = await evidencePanel.innerText();
-  expect(evidenceText).toContain("Moderate");
-  expect(evidenceText).toContain("18 tested · 22 waiting");
-  // Two targets nothing has ever predicted say so, rather than being omitted
-  // or shown as insufficient evidence about the athlete.
-  await expect(evidencePanel.locator("li span.w-20").filter({ hasText: /^—$/ })).toHaveCount(2);
-  // No blended percentage anywhere on the panel.
-  expect(evidenceText).not.toMatch(/\d+\s*%/);
+    .filter({ hasText: /^Prediction calibration/ });
+  await expect(evidenceCalibrationSummary).toBeVisible({ timeout: 30000 });
+  await evidenceCalibrationSummary.click();
+  const evidenceMaturity = evidence.page.getByText("Evidence maturity", { exact: true });
+  await expect(evidenceMaturity).toBeVisible({ timeout: 30000 });
+  const evidenceCalibration = evidenceMaturity.locator(
+    "xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]",
+  );
+  const evidenceCalibrationText = await evidenceCalibration.innerText();
+  expect(evidenceCalibrationText).toContain("Evidence maturity is not prediction confidence.");
+  expect(evidenceCalibrationText).toContain("Captured");
+  expect(evidenceCalibrationText).toContain("Pending");
+  expect(evidenceCalibrationText).not.toMatch(/confidence\s*[:·-]?\s*\d+\s*%/i);
+  await expect(evidence.page.getByRole("region", { name: "Prediction evidence" })).toHaveCount(0);
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
+  expect(evidence.errors).toEqual([]);
   await evidence.page.close();
-
-  const noLedger = await openPanel("?shell=1&screen=lab&evidence=fail");
-  const noLedgerDetails = noLedger.page
-    .locator("details > summary")
-    .filter({ hasText: "Evidence, decisions & learning history" });
-  await expect(noLedgerDetails).toBeVisible({ timeout: 30000 });
-  await noLedgerDetails.click();
-  await expect(
-    noLedger.page.getByText("decision ledger could not be read", { exact: false }),
-  ).toBeVisible({ timeout: 30000 });
-  await noLedger.page.close();
-  record("prediction evidence is a level and a count, never a blended confidence percentage");
+  record("prediction learning stays in one Lab calibration surface without a duplicate confidence dashboard");
 
   // 22. Where the template shows four sleep bars that always fill a night.
   //     Ours shows only what the source actually sent, and says which of the
