@@ -160,9 +160,7 @@ export function Overview() {
             {greeting}
             {firstName ? `, ${firstName}` : ""}
           </h1>
-          <p>
-            {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
-          </p>
+          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
         </header>
 
         <section
