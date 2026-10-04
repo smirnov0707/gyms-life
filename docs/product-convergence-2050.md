@@ -52,6 +52,22 @@ Future Me and Journal behaved like separate products. They are temporal views of
 6. **Contextual tools.** Camera, voice, meal vision, AR, supplements and planning appear at the moment they are useful.
 7. **Self-evaluation.** Lab must show when predictions were wrong, evidence weakened, or a hypothesis was contradicted.
 
+## Product Convergence 2.0 — 2026-10-04
+
+The user-facing surface is now intentionally smaller while the underlying intelligence remains intact.
+
+- **Today** is command-first: readiness + governing decision + today's plan are one primary surface. Twin remains visible; overnight changes and deeper signals/evidence are progressive disclosures. The scientist roster no longer competes with the daily action.
+- **Twin** is expressed as **Body / Systems / Trajectory / Timeline**. Body no longer carries memory, rewind and trend tools; those temporal tools belong to Timeline. Future analytics support one Trajectory instead of presenting several forecasts as peers.
+- **Lab** has one investigation/calibration workbench. The second Lab dashboard, duplicated evidence panel and separate retrospective surface are no longer rendered as competing summaries. Night Lab remains available as its own disclosure.
+- **Nutrition** exposes one **Food Scan** with Meal / Fridge / Menu modes.
+- **Supplements** exposes one **Supplement Intelligence** surface with Label / Nutrition gaps / Routine modes. Diagnostic-sounding deficiency copy was replaced by gap language.
+- **Movement** exposes one **Movement Scan** with Live Coach / Technique Review / Movement Profile modes.
+- **Coach** is conversation-first; brief, memory and personalization controls are supporting context.
+- The pricing-only arithmetic widget previously called **Transformation Calculator** is removed from the product surface.
+- The load heuristic formerly labelled **Injury Risk Radar** is presented as an **Overload Signal**. Its deterministic engine is unchanged; the new name avoids implying clinical injury prediction.
+
+This wave changes product hierarchy and language, not athlete facts, model authority, AI routing, database ownership or Night Lab execution.
+
 ## Next convergence waves
 
 **DONE (this branch):** Today/Twin surface convergence, four-world navigation, Future + Timeline merge, Movement Intelligence convergence, Nutrition Studio shell, reminders in Profile Automations, achievements in Twin Timeline, Coach History in Coach Memory.
