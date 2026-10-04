@@ -1331,3 +1331,26 @@
     padding: 14px;
   }
 }
+
+@media (max-width: 759px) {
+  .fl-today-command-copy .fl-today-decision > .fl-eyebrow,
+  .fl-today-command-copy .fl-today-decision > h2 {
+    display: none;
+  }
+
+  .fl-today-command-copy .fl-today-decision {
+    border-top: 1px solid var(--border);
+    margin-top: 0;
+    padding: 12px 2px 0;
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-decision-summary {
+    margin: 0;
+    max-width: none;
+    color: var(--muted-foreground);
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-disclosure > summary {
+    min-height: 40px;
+  }
+}
