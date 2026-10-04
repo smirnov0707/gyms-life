@@ -6,15 +6,12 @@ import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
 import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { TwinMuscleTable } from "@/components/twin/TwinMuscleTable";
 import { TwinMuscleDetail } from "@/components/twin/TwinMuscleDetail";
-import { TwinRewind } from "@/components/twin/TwinRewind";
-import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
-import { TwinMemory } from "@/components/twin/TwinMemory";
 import { TwinFuture } from "@/components/twin/TwinFuture";
 import { TwinJournal } from "@/components/twin/TwinJournal";
 import { LiveSignals } from "@/components/LiveSignals";
 import { RecoveryOutlook } from "@/components/RecoveryOutlook";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
-import { useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import "./TwinScreen.css";
 import { nextTwinView, type TwinNavigation } from "@/lib/twin-navigation";
 
@@ -25,11 +22,11 @@ import { nextTwinView, type TwinNavigation } from "@/lib/twin-navigation";
  */
 
 const TABS = [
-  { id: "overview", label: "tw.tabOverview", icon: PersonStanding },
-  { id: "systems", label: "tw.tabSystems", icon: HeartPulse },
-  { id: "future", label: "tw.tabFuture", icon: Rocket },
-  { id: "journal", label: "tw.tabJournal", icon: History },
-] as const satisfies readonly { id: string; label: TKey; icon: typeof PersonStanding }[];
+  { id: "overview", en: "BODY", lt: "KŪNAS", icon: PersonStanding },
+  { id: "systems", en: "SYSTEMS", lt: "SISTEMOS", icon: HeartPulse },
+  { id: "future", en: "TRAJECTORY", lt: "TRAJEKTORIJA", icon: Rocket },
+  { id: "journal", en: "TIMELINE", lt: "LAIKO JUOSTA", icon: History },
+] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
@@ -37,7 +34,8 @@ export function TwinScreen({
   navigation,
   onNavigate,
 }: { navigation?: TwinNavigation; onNavigate?: (next: TwinNavigation) => void } = {}) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   const [localNavigation, setLocalNavigation] = useState<TwinNavigation>({});
   const current = navigation ?? localNavigation;
   const change = onNavigate ?? setLocalNavigation;
@@ -105,7 +103,7 @@ export function TwinScreen({
                   }`}
                 >
                   <Icon aria-hidden="true" className="size-3.5" />
-                  {t(tab.label)}
+                  {english ? tab.en : tab.lt}
                 </button>
               );
             })}
@@ -131,16 +129,6 @@ export function TwinScreen({
                   </summary>
                   <div className="grid gap-4 border-t border-border p-4">
                     <TwinMuscleTable onSelectRegion={setDetailRegion} />
-                    <TwinTrendLens />
-                    <TwinRewind />
-                  </div>
-                </details>
-                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
-                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
-                    {t("tw.memoryTitle")}
-                  </summary>
-                  <div className="border-t border-border p-4">
-                    <TwinMemory />
                   </div>
                 </details>
                 <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
