@@ -522,7 +522,9 @@ function SupplementsPage() {
             {english ? "SUPPLEMENT INTELLIGENCE" : "PAPILDŲ ANALIZĖ"}
           </p>
           <h2 id="supplement-tools-title">
-            {english ? "One place to understand your stack." : "Viena vieta suprasti savo papildų rutiną."}
+            {english
+              ? "One place to understand your stack."
+              : "Viena vieta suprasti savo papildų rutiną."}
           </h2>
           <p>
             {english
