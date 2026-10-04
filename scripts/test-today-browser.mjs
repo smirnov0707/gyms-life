@@ -1356,7 +1356,9 @@ try {
   await changedSummary.click();
   const latestMemoryChanges = changedMemory.page.getByRole("region", { name: "Latest changes" });
   await expect(latestMemoryChanges.getByText("Strengthened", { exact: true })).toBeVisible();
-  await expect(latestMemoryChanges.getByText("Observation change: +1", { exact: true })).toBeVisible();
+  await expect(
+    latestMemoryChanges.getByText("Observation change: +1", { exact: true }),
+  ).toBeVisible();
   await expect(latestMemoryChanges.getByText(/Compared with/).last()).toBeVisible();
   await changedMemory.page.screenshot({
     path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
