@@ -166,10 +166,10 @@ export function Overview() {
         </header>
 
         <section
-          className="fl-today-command fl-premium-card grid gap-4 rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
+          className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
           aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
         >
-          <div className="grid content-start gap-3">
+          <div className="fl-today-command-copy grid min-w-0 content-start gap-3">
             <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
               {english ? "TODAY COMMAND" : "ŠIANDIENOS VEIKSMAS"}
             </p>
@@ -210,12 +210,22 @@ export function Overview() {
               primaryTrainingActionHandled={Boolean(today)}
             />
           </div>
-          <div className="min-w-0">
+          <div className="fl-today-plan min-w-0">
             <TodaysPlanPanel />
           </div>
         </section>
 
-        <section className="fl-today-world grid items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
+        <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
+          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
+            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+              {english ? "Open My Twin" : "Atidaryti My Twin"}
+            </summary>
+            <div className="border-t border-border p-3">
+              <Link to="/twin" className="fl-text-link inline-flex">
+                {english ? "Explore body, systems & trajectory" : "Tyrinėti kūną, sistemas ir trajektoriją"} →
+              </Link>
+            </div>
+          </details>
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
