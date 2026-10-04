@@ -245,7 +245,16 @@ try {
     return { page, errors, fontResponses };
   };
 
+  const openTodayChangesLayer = async (page) => {
+    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
+    if (await summary.count()) {
+      const details = summary.locator("xpath=ancestor::details[1]");
+      if ((await details.getAttribute("open")) === null) await summary.click();
+    }
+  };
+
   const openTodayEvidenceLayer = async (page) => {
+    await openTodayChangesLayer(page);
     const summary = page.getByText(
       /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
     );
@@ -267,7 +276,7 @@ try {
 
   const openTodayContextLayer = async (page) => {
     const summary = page.getByText(
-      /^(Context, sources & settings|Kontekstas, šaltiniai ir nustatymai)$/,
+      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
     );
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
@@ -498,6 +507,9 @@ try {
         );
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
+        // Progressive disclosure deliberately leaves supporting imagery hidden
+        // and eligible for lazy loading until the user opens that surface.
+        if (!(await illustration.isVisible())) continue;
         await illustration.scrollIntoViewIfNeeded();
         await expect
           .poll(async () =>
@@ -624,7 +636,7 @@ try {
           fullPage: false,
         });
         const layout = await shown.page.evaluate(() =>
-          [".fl-cockpit", ".fl-bottom-deck", ".fl-dashboard-footer"].map((selector) => {
+          [".fl-today-command", ".fl-today-world", ".fl-today-support"].map((selector) => {
             const rect = document.querySelector(selector)?.getBoundingClientRect();
             return { selector, ...(rect?.toJSON() ?? {}) };
           }),
@@ -634,21 +646,15 @@ try {
           JSON.stringify(layout, null, 2),
         );
         console.log("TODAY_REFERENCE_LAYOUT " + JSON.stringify(layout));
-        const footer = await shown.page.locator(".fl-dashboard-footer").boundingBox();
+        const command = await shown.page.locator(".fl-today-command").boundingBox();
         referenceLayoutChecks.push({
           screen,
           viewport: viewport.name,
-          target: footer,
+          target: command,
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [
-            ".fl-left-rail",
-            ".fl-daily-column",
-            ".fl-body",
-            ".fl-laboratory",
-            ".fl-predictions",
-          ].map((selector) => {
+          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
             const element = document.querySelector(selector);
             const rect = element.getBoundingClientRect();
             return {
@@ -678,7 +684,7 @@ try {
         ).toBeLessThanOrEqual(1);
         await insightSummary.click();
         record(
-          "Today reference columns preserve a full-height Twin and full-width expandable insights",
+          "Today keeps one governing command above the fold and separates Twin from optional changes",
         );
       }
       await writeFile(
@@ -714,17 +720,8 @@ try {
   for (const check of actionLayoutChecks) {
     if (check.screen === "today") {
       const where = `Today ${check.viewport}`;
-      // The scan has to have found both, or the comparisons below are vacuous.
+      // The converged Today surface intentionally removes competing visible card actions.
       expect(check.primary, `${where} has a primary action to measure`).not.toBeNull();
-      expect(check.secondary, `${where} has a card action to measure`).not.toBeNull();
-      expect(
-        check.primary.fontSize,
-        `${where}: the primary action is set larger than the card links`,
-      ).toBeGreaterThan(check.secondary.fontSize);
-      expect(
-        check.primary.height,
-        `${where}: the primary action is taller than the card links`,
-      ).toBeGreaterThan(check.secondary.height);
       // A thumb target, on every viewport — it was 27px on a 1440px desktop.
       expect(
         check.primary.height,
@@ -736,7 +733,12 @@ try {
       ).toBeGreaterThanOrEqual(14);
       // Volt means action. Exactly one of these wears it filled.
       expect(check.primary.filled, `${where}: the primary action is filled volt`).toBe(true);
-      expect(check.secondary.filled, `${where}: the card links are not filled volt`).toBe(false);
+      if (check.secondary) {
+        expect(
+          check.secondary.filled,
+          `${where}: any visible supporting action is not filled volt`,
+        ).toBe(false);
+      }
       continue;
     }
     if (check.screen === "muscle") {
@@ -790,6 +792,7 @@ try {
       locale: "en-US",
     });
     await openTodayContextLayer(checked.page);
+    await openTodayEvidenceLayer(checked.page);
     const sources = checked.page.getByRole("region", { name: "Data sources" });
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
@@ -861,7 +864,7 @@ try {
     locale: "en-US",
   });
   await linked.page.getByRole("link", { name: "Explore muscles", exact: false }).click();
-  await expect(linked.page.getByRole("tab", { name: "Overview", exact: true })).toHaveAttribute(
+  await expect(linked.page.getByRole("tab", { name: "Body", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -968,14 +971,20 @@ try {
   await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
   await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
   const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
-  const evidenceSummary = evidenceLab.page
+  const calibrationSummary = evidenceLab.page
     .locator("details > summary")
-    .filter({ hasText: /^Evidence, decisions & learning history$/ });
-  await expect(evidenceSummary).toBeVisible();
-  await evidenceSummary.click();
-  const emptyEvidence = evidenceLab.page.getByRole("region", { name: "Prediction evidence" });
-  await expect(emptyEvidence).toBeVisible();
-  expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
+    .filter({ hasText: /^Prediction calibration/ });
+  await expect(calibrationSummary).toBeVisible();
+  await calibrationSummary.click();
+  const calibration = evidenceLab.page.getByText("Evidence maturity", { exact: true });
+  await expect(calibration).toBeVisible();
+  const calibrationDetails = calibration.locator(
+    "xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]",
+  );
+  const calibrationText = await calibrationDetails.innerText();
+  expect(calibrationText).toContain("0/8 evaluated outcomes");
+  expect(calibrationText).toContain("Evidence maturity is not prediction confidence.");
+  expect(calibrationText).not.toMatch(/confidence\s*[:·-]?\s*\d+\s*%/i);
   await expect(
     first.page.getByText("No personal pattern has reached its evidence threshold yet.", {
       exact: true,
@@ -1282,14 +1291,13 @@ try {
     "body composition shows a change only when there are two readings, and names what is derived",
   );
 
-  // 13. The Twin screen's three views. Each one answers from a different
-  //     source — the figure and the body from logged sets, the regions from
-  //     the same sets in full, the systems from what a device measured — so
-  //     switching tabs must never carry one panel's evidence into another.
+  // 13. The Twin's converged views keep body state, measured systems,
+  //     trajectory and auditable memory separate. Switching views must never
+  //     carry one panel's evidence into another.
   const twin = await openPanel("?panel=twin&twin=regions");
   const tabs = twin.page.getByRole("tablist", { name: "Twin views" });
   await expect(tabs).toBeVisible({ timeout: 30000 });
-  await expect(twin.page.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+  await expect(twin.page.getByRole("tab", { name: "Body" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -1303,21 +1311,27 @@ try {
   await expect(twin.page.locator('[data-twin-body="human"]')).toHaveCount(1, { timeout: 30000 });
   await twin.page.screenshot({ path: path.join(artifacts, "twin-overview.png"), fullPage: true });
 
+  await twin.page.getByRole("tab", { name: "Timeline" }).click();
+
   const memorySummary = twin.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(memorySummary).toBeVisible({ timeout: 30000 });
   await memorySummary.click();
   await expect(
     twin.page.getByText("No stable personal pattern is available yet", { exact: false }),
   ).toBeVisible();
 
-  const baselineMemory = await openPanel("?panel=twin&twin=regions&scenario=reference", {
-    viewport: { width: 390, height: 844 },
-  });
+  const baselineMemory = await openPanel(
+    "?panel=twin&twin=regions&scenario=reference&view=journal",
+    {
+      viewport: { width: 390, height: 844 },
+    },
+  );
+  await baselineMemory.page.getByRole("tab", { name: "Timeline" }).click();
   const baselineSummary = baselineMemory.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(baselineSummary).toBeVisible({ timeout: 30000 });
   await baselineSummary.click();
   await expect(
@@ -1329,21 +1343,23 @@ try {
   await baselineMemory.page.close();
 
   const changedMemory = await openPanel(
-    "?panel=twin&twin=regions&scenario=reference&memory=changed",
+    "?panel=twin&twin=regions&scenario=reference&memory=changed&view=journal",
     {
       viewport: { width: 390, height: 844 },
     },
   );
+  await changedMemory.page.getByRole("tab", { name: "Timeline" }).click();
   const changedSummary = changedMemory.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(changedSummary).toBeVisible({ timeout: 30000 });
   await changedSummary.click();
-  await expect(changedMemory.page.getByText("Strengthened", { exact: true })).toBeVisible();
+  const latestMemoryChanges = changedMemory.page.getByRole("region", { name: "Latest changes" });
+  await expect(latestMemoryChanges.getByText("Strengthened", { exact: true })).toBeVisible();
   await expect(
-    changedMemory.page.getByText("Observation change: +1", { exact: true }),
+    latestMemoryChanges.getByText("Observation change: +1", { exact: true }),
   ).toBeVisible();
-  await expect(changedMemory.page.getByText(/Compared with/).last()).toBeVisible();
+  await expect(latestMemoryChanges.getByText(/Compared with/).last()).toBeVisible();
   await changedMemory.page.screenshot({
     path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
     fullPage: true,
@@ -1352,12 +1368,13 @@ try {
   await changedMemory.page.close();
 
   const uncertaintyTwin = await openPanel(
-    "?panel=twin&twin=regions&scenario=reference&uncertainty=training",
+    "?panel=twin&twin=regions&scenario=reference&uncertainty=training&view=journal",
     { viewport: { width: 390, height: 844 } },
   );
+  await uncertaintyTwin.page.getByRole("tab", { name: "Timeline" }).click();
   const uncertaintySummary = uncertaintyTwin.page
     .locator("details > summary")
-    .filter({ hasText: "What GYMS.LIFE has learned about you" });
+    .filter({ hasText: "Changes, memory & milestones" });
   await expect(uncertaintySummary).toBeVisible({ timeout: 30000 });
   await uncertaintySummary.click();
   await expect(
@@ -1388,6 +1405,7 @@ try {
     "Twin Memory distinguishes empty, unknown-baseline and deterministic learned-change states",
   );
 
+  await twin.page.getByRole("tab", { name: "Body" }).click();
   const twinMuscles = twin.page.locator("summary").filter({ hasText: /^Muscles$/ });
   await expect(twinMuscles).toBeVisible({ timeout: 30000 });
   await twinMuscles.click();
@@ -1400,7 +1418,7 @@ try {
   expect(tableText.indexOf("55%")).toBeLessThan(tableText.indexOf("Calves"));
   expect(tableText).toMatch(/Calves\s*\n?\s*—/);
   expect(tableText).toContain("it is not");
-  // Muscle analytics now live inside the Body/Overview depth layer, alongside body composition.
+  // Muscle analytics stay inside the Body depth layer, alongside body composition.
   await expect(twin.page.getByRole("region", { name: "Body composition" })).toBeVisible();
 
   await twin.page.screenshot({ path: path.join(artifacts, "twin-muscles.png"), fullPage: true });
@@ -1750,39 +1768,31 @@ try {
   await measured.page.close();
   record("a signal gets a line only when it has two readings to draw one from");
 
-  // 21. Where the template shows "82% · High Confidence · 512 data points".
-  //     Ours shows how far each target has actually been tested, and keeps
-  //     "never predicted" apart from "predicted, nothing resolved yet".
+  // 21. Prediction learning now has one canonical surface in Lab. Evidence
+  //     maturity is calibration progress, never a second confidence dashboard.
   const evidence = await openPanel("?shell=1&screen=lab&evidence=some");
-  const evidenceDetails = evidence.page
+  const evidenceCalibrationSummary = evidence.page
     .locator("details > summary")
-    .filter({ hasText: "Evidence, decisions & learning history" });
-  await expect(evidenceDetails).toBeVisible({ timeout: 30000 });
-  await evidenceDetails.click();
-  const evidencePanel = evidence.page.getByRole("region", { name: "Prediction evidence" });
-  await expect(evidencePanel).toBeVisible({ timeout: 30000 });
-  const evidenceText = await evidencePanel.innerText();
-  expect(evidenceText).toContain("Moderate");
-  expect(evidenceText).toContain("18 tested · 22 waiting");
-  // Two targets nothing has ever predicted say so, rather than being omitted
-  // or shown as insufficient evidence about the athlete.
-  await expect(evidencePanel.locator("li span.w-20").filter({ hasText: /^—$/ })).toHaveCount(2);
-  // No blended percentage anywhere on the panel.
-  expect(evidenceText).not.toMatch(/\d+\s*%/);
+    .filter({ hasText: /^Prediction calibration/ });
+  await expect(evidenceCalibrationSummary).toBeVisible({ timeout: 30000 });
+  await evidenceCalibrationSummary.click();
+  const evidenceMaturity = evidence.page.getByText("Evidence maturity", { exact: true });
+  await expect(evidenceMaturity).toBeVisible({ timeout: 30000 });
+  const evidenceCalibration = evidenceMaturity.locator(
+    "xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]",
+  );
+  const evidenceCalibrationText = await evidenceCalibration.innerText();
+  expect(evidenceCalibrationText).toContain("Evidence maturity is not prediction confidence.");
+  expect(evidenceCalibrationText).toContain("Captured");
+  expect(evidenceCalibrationText).toContain("Pending");
+  expect(evidenceCalibrationText).not.toMatch(/confidence\s*[:·-]?\s*\d+\s*%/i);
+  await expect(evidence.page.getByRole("region", { name: "Prediction evidence" })).toHaveCount(0);
   await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
+  expect(evidence.errors).toEqual([]);
   await evidence.page.close();
-
-  const noLedger = await openPanel("?shell=1&screen=lab&evidence=fail");
-  const noLedgerDetails = noLedger.page
-    .locator("details > summary")
-    .filter({ hasText: "Evidence, decisions & learning history" });
-  await expect(noLedgerDetails).toBeVisible({ timeout: 30000 });
-  await noLedgerDetails.click();
-  await expect(
-    noLedger.page.getByText("decision ledger could not be read", { exact: false }),
-  ).toBeVisible({ timeout: 30000 });
-  await noLedger.page.close();
-  record("prediction evidence is a level and a count, never a blended confidence percentage");
+  record(
+    "prediction learning stays in one Lab calibration surface without a duplicate confidence dashboard",
+  );
 
   // 22. Where the template shows four sleep bars that always fill a night.
   //     Ours shows only what the source actually sent, and says which of the

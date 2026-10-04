@@ -16,7 +16,6 @@ import {
 import { PublicFrame } from "@/components/PublicFrame";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { toast } from "sonner";
-import { TransformationCalculator } from "@/components/TransformationCalculator";
 import { isBillingEnabled } from "@/lib/billing";
 
 export const Route = createFileRoute("/pricing")({
@@ -449,7 +448,6 @@ function PricingPage() {
           </section>
         )}
 
-        <TransformationCalculator />
         <div className="fl-pricing-context">
           <h2>{t("l3.pr.compare.t")}</h2>
           <p>{t("l3.pr.compare.d")}</p>

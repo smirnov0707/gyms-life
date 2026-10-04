@@ -182,7 +182,7 @@ export async function verifyRiskDesign({ open, record, artifacts }) {
       );
       await page
         .locator(".twin-future-view > details")
-        .nth(1)
+        .filter({ hasText: "Šios trajektorijos pagrindas" })
         .locator(":scope > summary")
         .press("Enter");
       await expect(panel(page).getByTestId("risk-score")).toHaveText("57/100");

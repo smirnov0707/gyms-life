@@ -19,8 +19,8 @@ export const extra_scan = {
   "sc.fridge.fat": { lt: "Riebalai", en: "Fat" },
 
   "sc.micro.title": {
-    lt: "Mikroelementų & Vitaminų Deficito Skeneris",
-    en: "Micronutrient & Vitamin Deficiency Scanner",
+    lt: "Mikroelementų spragų peržiūra",
+    en: "Micronutrient Gap Review",
   },
   "sc.micro.subtitle": {
     lt: "7 dienų maisto žurnalo analizė prieš treniruočių apkrovą",
@@ -30,8 +30,8 @@ export const extra_scan = {
   "sc.micro.currentIntake": { lt: "Gauta su maistu: {n}", en: "Intake from food: {n}" },
   "sc.micro.recommended": { lt: "Rekomenduojama: {n}", en: "Recommended: {n}" },
   "sc.micro.applied": {
-    lt: "Trūkumai integruoti į Papildų Planą",
-    en: "Deficiencies integrated into Supplement Plan",
+    lt: "Galimos spragos perduotos Papildų planui",
+    en: "Possible gaps added to the Supplement Plan",
   },
   "sc.micro.apply": {
     lt: "Automatiškai įtraukti į Papildų Dienotvarkę",

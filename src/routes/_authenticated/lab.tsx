@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HypothesisRetrospective } from "@/components/HypothesisRetrospective";
-import { LabView } from "@/components/LabView";
 import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 import { NightLabPanel } from "@/components/future-lab/NightLabPanel";
-import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { baseLang, useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_authenticated/lab")({
@@ -37,15 +34,13 @@ function LabPage() {
         </div>
       </details>
       <details className="fl-secondary-details fl-luxury-disclosure">
-        <summary>
-          {english
-            ? "Evidence, decisions & learning history"
-            : "Įrodymai, sprendimai ir mokymosi istorija"}
-        </summary>
-        <div className="fl-disclosed-content space-y-3">
-          <PredictionEvidencePanel />
-          <LabView />
-          <HypothesisRetrospective />
+        <summary>{english ? "How the Lab works" : "Kaip veikia Lab"}</summary>
+        <div className="fl-disclosed-content">
+          <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground">
+            {english
+              ? "Investigations, experiments and calibration now live in one Lab surface. Detail opens only when it changes a decision or helps you inspect the evidence."
+              : "Tyrimai, eksperimentai ir kalibracija dabar gyvena viename Lab vaizde. Detalės išskleidžiamos tik tada, kai jos keičia sprendimą arba padeda patikrinti įrodymus."}
+          </p>
         </div>
       </details>
     </div>

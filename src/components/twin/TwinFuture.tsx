@@ -12,25 +12,20 @@ export function TwinFuture() {
   const english = baseLang(lang) === "en";
 
   return (
-    <div className="twin-future-view grid">
+    <div className="twin-future-view grid gap-3">
       <FutureMeSimulationDeck />
-      <details className="fl-secondary-details">
-        <summary>{english ? "Observed evolution" : "Stebimi pokyčiai"}</summary>
-        <div className="fl-disclosed-content">
-          <FutureMeSummary />
-        </div>
-      </details>
       <details className="fl-secondary-details">
         <summary className="flex items-center gap-2">
           <Activity aria-hidden="true" className="size-3.5 text-primary" />
-          {english ? "Trajectory evidence" : "Pokyčių duomenys"}
+          {english ? "Evidence behind this trajectory" : "Šios trajektorijos pagrindas"}
         </summary>
-        <div className="fl-disclosed-content fl-trajectory-evidence">
+        <div className="fl-disclosed-content grid gap-4">
           <p className="text-xs text-muted-foreground">
             {english
-              ? "Recorded training, weekly patterns and load signals in one place."
-              : "Užregistruotos treniruotės, savaitės dėsningumai ir krūvio signalai vienoje vietoje."}
+              ? "Recorded change, training load and weekly patterns are supporting evidence — not extra forecasts."
+              : "Užfiksuoti pokyčiai, treniruočių krūvis ir savaitės dėsningumai yra pagrindžiantys duomenys, o ne papildomos prognozės."}
           </p>
+          <FutureMeSummary />
           <PerformanceProgressPanel />
           <WeeklyIntelligenceReview />
           <InjuryRiskRadar />

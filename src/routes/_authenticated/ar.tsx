@@ -53,16 +53,17 @@ import { BiomechanicsScanner } from "@/components/BiomechanicsScanner";
 export const Route = createFileRoute("/_authenticated/ar")({
   head: () => ({
     meta: [
-      { title: "Kameros treneris — GYMS.LIFE" },
+      { title: "Movement Scan — GYMS.LIFE" },
       {
         name: "description",
         content:
-          "Vienas mygtukas — kamera pati atpažįsta pratimą, skaičiuoja pakartojimus, vertina techniką, tempą ir pusiausvyrą realiu laiku.",
+          "Vienas Movement Scan sujungia gyvą trenerį, technikos peržiūrą ir judesio profilį.",
       },
-      { property: "og:title", content: "Kameros treneris — GYMS.LIFE" },
+      { property: "og:title", content: "Movement Scan — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Automatinis pratimo atpažinimas, pakartojimų kokybės balas ir serijos santrauka.",
+        content:
+          "Gyvas judesio vertinimas, technikos peržiūra ir judesio profilis vienoje vietoje.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -668,12 +669,12 @@ function ArMode() {
               GYMS.LIFE / {base === "lt" ? "JUDESYS" : "MOVEMENT"}
             </p>
             <h1 className="fl-workspace-title">
-              {base === "lt" ? "Pajusk savo judesį." : "Find your flow."}
+              {base === "lt" ? "Movement Scan." : "Movement Scan."}
             </h1>
             <p>
               {base === "lt"
-                ? "Stebėk techniką, suprask pakartojimą ir judėk sąmoningiau. Pasirink, kaip nori analizuoti judesį."
-                : "See your form, understand each rep and move with intention. Choose how you want to explore your movement."}
+                ? "Vienas judesio centras: gyvas treneris, technikos peržiūra ir judesio profilis."
+                : "One movement workspace: live coaching, technique review and movement profile."}
             </p>
           </div>
           <div className="fl-camera-hero-mark" aria-hidden="true">
@@ -692,7 +693,7 @@ function ArMode() {
             [
               ["live", Camera, base === "lt" ? "Gyvas treneris" : "Live coach"],
               ["scan", Target, base === "lt" ? "Technikos analizė" : "Technique review"],
-              ["biomechanics", Activity, base === "lt" ? "Pozicijos analizė" : "Position review"],
+              ["biomechanics", Activity, base === "lt" ? "Judesio profilis" : "Movement profile"],
             ] as const
           ).map(([key, Icon, label]) => (
             <button
@@ -725,8 +726,8 @@ function ArMode() {
                 ? "Pradėjus analizę, penki kameros kadrai siunčiami technikos peržiūrai."
                 : "Starting a review sends five camera frames for technique analysis."
               : base === "lt"
-                ? "Pasirinkta nuotrauka siunčiama pozicijos analizei. Rezultatas yra įvertis."
-                : "Your selected photo is sent for a position review. The result is an estimate."}
+                ? "Pasirinkta nuotrauka siunčiama judesio profilio analizei. Rezultatas yra įvertis."
+                : "Your selected photo is sent for movement-profile analysis. The result is an estimate."}
         </p>
       )}
 

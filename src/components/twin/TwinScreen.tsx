@@ -6,9 +6,6 @@ import { BodyMetricsPanel } from "@/components/BodyMetricsPanel";
 import { BodyCompositionScanner } from "@/components/BodyCompositionScanner";
 import { TwinMuscleTable } from "@/components/twin/TwinMuscleTable";
 import { TwinMuscleDetail } from "@/components/twin/TwinMuscleDetail";
-import { TwinRewind } from "@/components/twin/TwinRewind";
-import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
-import { TwinMemory } from "@/components/twin/TwinMemory";
 import { TwinFuture } from "@/components/twin/TwinFuture";
 import { TwinJournal } from "@/components/twin/TwinJournal";
 import { LiveSignals } from "@/components/LiveSignals";
@@ -131,16 +128,6 @@ export function TwinScreen({
                   </summary>
                   <div className="grid gap-4 border-t border-border p-4">
                     <TwinMuscleTable onSelectRegion={setDetailRegion} />
-                    <TwinTrendLens />
-                    <TwinRewind />
-                  </div>
-                </details>
-                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
-                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
-                    {t("tw.memoryTitle")}
-                  </summary>
-                  <div className="border-t border-border p-4">
-                    <TwinMemory />
                   </div>
                 </details>
                 <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">

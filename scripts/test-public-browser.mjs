@@ -119,7 +119,13 @@ try {
     await page.goto(`${origin}/index.html?${query}`);
     await expect(page.getByTestId("synthetic-public")).toBeVisible();
     await expect(page.locator("h1")).toBeVisible();
-    await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(async () => {
+      await Promise.all([
+        document.fonts.load('16px "Manrope"'),
+        document.fonts.load('16px "Space Grotesk"'),
+      ]);
+      await document.fonts.ready;
+    });
     return { page, context };
   };
   const states = [
@@ -327,26 +333,14 @@ try {
   for (const lang of ["en", "lt", "de", "fr", "es", "pl", "ru", "uk"]) {
     const { page, context } = await open(`lang=${lang}`, 320);
     await expect(page.locator(".fl-price-tagline").last()).toContainText("95");
-    const sliders = page.getByRole("slider");
-    for (const slider of await sliders.all())
-      expect(await slider.getAttribute("aria-labelledby")).toBeTruthy();
-    await sliders.first().press("End");
-    await sliders.nth(1).press("Home");
-    await expect(page.getByTestId("rhythm-sessions")).toHaveText("48");
-    await sliders.first().press("Home");
-    await sliders.nth(1).press("End");
-    await expect(page.getByTestId("rhythm-sessions")).toHaveText("24");
-    await sliders.first().press("ArrowRight");
-    await expect(page.getByTestId("rhythm-sessions")).toHaveText("30");
-    expect(await page.locator(".fl-rhythm").innerText()).not.toMatch(
-      /tl\.tc\.|%|kcal|forecast|prognozė/,
-    );
+    await expect(page.locator(".fl-rhythm")).toHaveCount(0);
+    await expect(page.getByTestId("rhythm-sessions")).toHaveCount(0);
     expect(await page.evaluate(() => window.__publicTest.calls)).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
     await context.close();
-    record(`${lang} keyboard planner uses schedule arithmetic without a prediction or write`);
+    record(`${lang} pricing stays focused on the offer without a pseudo-transformation calculator`);
   }
   for (const screen of ["privacy", "terms", "refund"])
     for (const theme of ["dark", "light"]) {
