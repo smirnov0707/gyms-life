@@ -19,7 +19,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
 import { PRIMARY_WORLD_NAV } from "@/lib/nav-map";
-import { CONTEXT_ACTIONS, type ContextAction } from "@/lib/action-layer";
+import { contextualActionsFor, type ContextAction, type ProductWorld } from "@/lib/action-layer";
 import { getOvernightWork } from "@/lib/night-lab.functions";
 import {
   Drawer,
@@ -43,8 +43,9 @@ const ACTION_ICONS: Record<ContextAction["intent"], typeof Dumbbell> = {
   coach: MessageSquare,
 };
 
-function MoreNavigation() {
+function MoreNavigation({ world }: { world: ProductWorld }) {
   const { t } = useI18n();
+  const actions = contextualActionsFor(world);
   const [open, setOpen] = useState(false);
 
   return (
@@ -66,7 +67,7 @@ function MoreNavigation() {
           </DrawerHeader>
           <div className="grid gap-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {CONTEXT_ACTIONS.map((action) => {
+              {actions.map((action) => {
                 const Icon = ACTION_ICONS[action.intent];
                 return (
                   <DrawerClose key={action.to} asChild>
@@ -195,6 +196,13 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return undefined;
   };
   const profileLabel = baseLang(lang) === "en" ? "My profile" : "Mano profilis";
+  const actionWorld: ProductWorld = location.pathname.startsWith("/twin")
+    ? "twin"
+    : location.pathname.startsWith("/lab")
+      ? "lab"
+      : location.pathname.startsWith("/coach")
+        ? "coach"
+        : "today";
 
   return (
     <div className="future-lab-app">
@@ -219,7 +227,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <div className="fl-shell-actions">
             <NightLabStatus />
             <LangSwitch className="fl-header-language" />
-            <MoreNavigation />
+            <MoreNavigation world={actionWorld} />
             <Link
               to="/me"
               aria-label={profileLabel}
