@@ -1291,10 +1291,9 @@ try {
     "body composition shows a change only when there are two readings, and names what is derived",
   );
 
-  // 13. The Twin screen's three views. Each one answers from a different
-  //     source — the figure and the body from logged sets, the regions from
-  //     the same sets in full, the systems from what a device measured — so
-  //     switching tabs must never carry one panel's evidence into another.
+  // 13. The Twin's converged views keep body state, measured systems,
+  //     trajectory and auditable memory separate. Switching views must never
+  //     carry one panel's evidence into another.
   const twin = await openPanel("?panel=twin&twin=regions");
   const tabs = twin.page.getByRole("tablist", { name: "Twin views" });
   await expect(tabs).toBeVisible({ timeout: 30000 });
@@ -1312,6 +1311,8 @@ try {
   await expect(twin.page.locator('[data-twin-body="human"]')).toHaveCount(1, { timeout: 30000 });
   await twin.page.screenshot({ path: path.join(artifacts, "twin-overview.png"), fullPage: true });
 
+  await twin.page.getByRole("tab", { name: "Timeline" }).click();
+
   const memorySummary = twin.page
     .locator("details > summary")
     .filter({ hasText: "What GYMS.LIFE has learned about you" });
@@ -1321,7 +1322,7 @@ try {
     twin.page.getByText("No stable personal pattern is available yet", { exact: false }),
   ).toBeVisible();
 
-  const baselineMemory = await openPanel("?panel=twin&twin=regions&scenario=reference", {
+  const baselineMemory = await openPanel("?panel=twin&twin=regions&scenario=reference&view=journal", {
     viewport: { width: 390, height: 844 },
   });
   const baselineSummary = baselineMemory.page
@@ -1338,7 +1339,7 @@ try {
   await baselineMemory.page.close();
 
   const changedMemory = await openPanel(
-    "?panel=twin&twin=regions&scenario=reference&memory=changed",
+    "?panel=twin&twin=regions&scenario=reference&memory=changed&view=journal",
     {
       viewport: { width: 390, height: 844 },
     },
@@ -1361,7 +1362,7 @@ try {
   await changedMemory.page.close();
 
   const uncertaintyTwin = await openPanel(
-    "?panel=twin&twin=regions&scenario=reference&uncertainty=training",
+    "?panel=twin&twin=regions&scenario=reference&uncertainty=training&view=journal",
     { viewport: { width: 390, height: 844 } },
   );
   const uncertaintySummary = uncertaintyTwin.page
@@ -1397,6 +1398,7 @@ try {
     "Twin Memory distinguishes empty, unknown-baseline and deterministic learned-change states",
   );
 
+  await twin.page.getByRole("tab", { name: "Body" }).click();
   const twinMuscles = twin.page.locator("summary").filter({ hasText: /^Muscles$/ });
   await expect(twinMuscles).toBeVisible({ timeout: 30000 });
   await twinMuscles.click();
