@@ -352,8 +352,15 @@ try {
         ),
       ).toBeVisible();
       const canvas = shown.page.locator("canvas[data-twin-frames]").first();
-      if (["today", "twin", "muscle"].includes(screen)) {
+      if (
+        ["twin", "muscle"].includes(screen) ||
+        (screen === "today" && viewport.name !== "mobile")
+      ) {
         await assertInteractiveTwin(canvas);
+      }
+      if (screen === "today" && viewport.name === "mobile") {
+        await expect(canvas).toBeHidden();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
