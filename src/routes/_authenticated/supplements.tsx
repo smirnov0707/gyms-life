@@ -519,7 +519,7 @@ function SupplementsPage() {
       <section className="fl-supplement-tools" aria-labelledby="supplement-tools-title">
         <header>
           <p className="fl-workspace-eyebrow">
-            {english ? "SUPPLEMENT INTELLIGENCE" : "PAPILDŲ INTELIGENTIKA"}
+            {english ? "SUPPLEMENT INTELLIGENCE" : "PAPILDŲ ANALIZĖ"}
           </p>
           <h2 id="supplement-tools-title">
             {english ? "One place to understand your stack." : "Viena vieta suprasti savo papildų rutiną."}
