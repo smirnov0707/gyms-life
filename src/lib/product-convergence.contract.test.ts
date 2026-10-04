@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRIMARY_WORLD_NAV } from "./nav-map";
-import { CONTEXT_ACTIONS } from "./action-layer";
+import { CONTEXT_ACTIONS, contextualActionsFor } from "./action-layer";
 import { buildTwinPulse } from "./twin-pulse";
 import { TWIN_VIEWS } from "./twin-navigation";
 import { PRODUCT_SURFACES } from "./product-surfaces";
@@ -32,7 +32,7 @@ describe("Product Convergence contract", () => {
   });
 
   it("replaces the feature catalogue with a bounded contextual action layer", () => {
-    expect(actionRoutes).toEqual(["/training", "/readiness", "/nutrition", "/ar", "/coach"]);
+    expect(actionRoutes).toEqual(["/training", "/app", "/nutrition", "/ar", "/coach"]);
     for (const legacy of [
       "/progress",
       "/history",
@@ -44,6 +44,23 @@ describe("Product Convergence contract", () => {
     ]) {
       expect(actionRoutes).not.toContain(legacy);
     }
+  });
+  it("keeps the same bounded actions but prioritizes them by active world", () => {
+    expect(contextualActionsFor("today").map((action) => action.intent)).toEqual([
+      "workout",
+      "checkin",
+      "nutrition",
+      "movement",
+      "coach",
+    ]);
+    expect(contextualActionsFor("twin").map((action) => action.intent)).toEqual([
+      "movement",
+      "workout",
+      "checkin",
+      "coach",
+      "nutrition",
+    ]);
+    expect(contextualActionsFor("lab").map((action) => action.intent)[0]).toBe("coach");
   });
   it("uses Coach as an action without creating a fifth product world", () => {
     expect(actionRoutes.filter((route) => route === "/coach")).toHaveLength(1);

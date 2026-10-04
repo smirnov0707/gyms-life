@@ -5,6 +5,7 @@ import { SleepAnalysis } from "@/components/SleepAnalysis";
 import { RecoveryOutlook } from "@/components/RecoveryOutlook";
 import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
 import { Link } from "@tanstack/react-router";
+import { ReadinessWorkspace } from "@/routes/_authenticated/readiness";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -190,9 +191,16 @@ export function Overview() {
                       ? "How are you feeling today?"
                       : "Kaip šiandien jautiesi?"}
                 </p>
-                <Link to="/readiness" className="fl-text-link">
-                  {english ? "Check in" : "Įvertinti savijautą"} →
-                </Link>
+                {!readinessReadFailed ? (
+                  <details className="group mt-3">
+                    <summary className="fl-text-link cursor-pointer list-none">
+                      {english ? "Check in here" : "Įvertinti čia"} →
+                    </summary>
+                    <div className="mt-3 border-t border-border pt-3">
+                      <ReadinessWorkspace embedded />
+                    </div>
+                  </details>
+                ) : null}
               </div>
             )}
             <TodayDecision

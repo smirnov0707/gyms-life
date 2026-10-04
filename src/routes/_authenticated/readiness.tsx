@@ -106,7 +106,7 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
   };
 }
 
-function ReadinessPage() {
+export function ReadinessWorkspace({ embedded = false }: { embedded?: boolean } = {}) {
   const { t, lang } = useI18n();
   const copy = surfaceCopy(lang);
   const { user } = useAuth();
@@ -162,7 +162,13 @@ function ReadinessPage() {
   };
 
   return (
-    <div className="fl-context-route fl-workspace fl-readiness-workspace fl-page-enter">
+    <div
+      className={
+        embedded
+          ? "fl-readiness-workspace"
+          : "fl-context-route fl-workspace fl-readiness-workspace fl-page-enter"
+      }
+    >
       <section className="fl-workspace-hero fl-readiness-hero" aria-busy={isFetching}>
         <p className="fl-workspace-eyebrow">{copy.eyebrow}</p>
         <h1 className="fl-workspace-title mt-3">{t("rd.title")}</h1>
@@ -315,4 +321,8 @@ function ReadinessPage() {
       ) : null}
     </div>
   );
+}
+
+function ReadinessPage() {
+  return <ReadinessWorkspace />;
 }

@@ -164,13 +164,14 @@ try {
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
           true,
         );
-        expect(
-          await page.evaluate(
-            () =>
-              document.fonts.check('16px "Manrope"') &&
-              document.fonts.check('16px "Space Grotesk"'),
-          ),
-        ).toBe(true);
+        const loadedBrandFonts = await page.evaluate(async () => {
+          const [manrope, spaceGrotesk] = await Promise.all([
+            document.fonts.load('16px "Manrope"'),
+            document.fonts.load('16px "Space Grotesk"'),
+          ]);
+          return manrope.length > 0 && spaceGrotesk.length > 0;
+        });
+        expect(loadedBrandFonts).toBe(true);
         const mark = await page.locator(".fl-brand-mark").boundingBox();
         expect([mark.width, mark.height]).toEqual([36, 36]);
         await expect(page.getByRole("link", { name: "GYMS.LIFE Future Lab" })).toHaveAttribute(
