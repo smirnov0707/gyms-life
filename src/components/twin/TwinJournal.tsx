@@ -17,7 +17,9 @@ export function TwinJournal() {
       <JournalIntelligence />
       <TwinTimeline />
       <details className="fl-secondary-details">
-        <summary>{english ? "Changes, memory & milestones" : "Pokyčiai, atmintis ir etapai"}</summary>
+        <summary>
+          {english ? "Changes, memory & milestones" : "Pokyčiai, atmintis ir etapai"}
+        </summary>
         <div className="fl-disclosed-content grid gap-4">
           <TwinTrendLens />
           <TwinRewind />
