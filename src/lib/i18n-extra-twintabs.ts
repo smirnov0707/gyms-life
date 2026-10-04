@@ -12,14 +12,14 @@ export const extra_twintabs = {
     fr: "Vues du jumeau",
   },
   "tw.tabOverview": {
-    lt: "Apžvalga",
-    en: "Overview",
-    ru: "Обзор",
-    uk: "Огляд",
-    pl: "Przegląd",
-    de: "Überblick",
-    es: "Resumen",
-    fr: "Aperçu",
+    lt: "Kūnas",
+    en: "Body",
+    ru: "Тело",
+    uk: "Тіло",
+    pl: "Ciało",
+    de: "Körper",
+    es: "Cuerpo",
+    fr: "Corps",
   },
   "tw.tabMuscles": {
     lt: "Raumenys",
@@ -31,8 +31,36 @@ export const extra_twintabs = {
     es: "Músculos",
     fr: "Muscles",
   },
-
-
+  "tw.tabSystems": {
+    lt: "Sistemos",
+    en: "Systems",
+    ru: "Системы",
+    uk: "Системи",
+    pl: "Systemy",
+    de: "Systeme",
+    es: "Sistemas",
+    fr: "Systèmes",
+  },
+  "tw.tabFuture": {
+    lt: "Trajektorija",
+    en: "Trajectory",
+    ru: "Траектория",
+    uk: "Траєкторія",
+    pl: "Trajektoria",
+    de: "Trajektorie",
+    es: "Trayectoria",
+    fr: "Trajectoire",
+  },
+  "tw.tabJournal": {
+    lt: "Laiko juosta",
+    en: "Timeline",
+    ru: "Хронология",
+    uk: "Хронологія",
+    pl: "Oś czasu",
+    de: "Zeitachse",
+    es: "Cronología",
+    fr: "Chronologie",
+  },
 
   "tw.musclesTitle": {
     lt: "Kiekvienas regionas",
@@ -134,6 +162,4 @@ export const extra_twintabs = {
     es: "Los colores de la figura salen solo de las series registradas. El sueño, la VFC y la frecuencia en reposo no los alimentan — se muestran aquí aparte, tal como llegaron de la fuente.",
     fr: "Les couleurs de la silhouette viennent uniquement des séries enregistrées. Le sommeil, la VFC et la fréquence au repos ne les alimentent pas — ils figurent ici séparément, tels que la source les a livrés.",
   },
-
-
 } as const;
