@@ -104,16 +104,6 @@ function CoachPage() {
         </div>
       </header>
 
-      <details className="fl-coach-brief fl-luxury-disclosure mb-3 border border-border bg-surface">
-        <summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-semibold text-muted-foreground">
-          {english ? "Today's context" : "Šiandienos kontekstas"}
-        </summary>
-        <div className="border-t border-border p-3">
-          <SmartBrief compact />
-        </div>
-      </details>
-      <AiPersonalizationConsentCard />
-
       <section className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface">
         <div
           aria-hidden="true"
@@ -195,10 +185,12 @@ function CoachPage() {
 
       <details className="fl-luxury-disclosure mt-4 rounded-2xl border border-border bg-surface/70">
         <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-          {english ? "Coach memory" : "Coach atmintis"}
+          {english ? "Context, memory & privacy" : "Kontekstas, atmintis ir privatumas"}
         </summary>
-        <div className="border-t border-border p-4">
+        <div className="grid gap-4 border-t border-border p-4">
+          <SmartBrief compact />
           <CoachMemory />
+          <AiPersonalizationConsentCard />
         </div>
       </details>
     </div>
