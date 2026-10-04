@@ -971,14 +971,15 @@ try {
   await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
   await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
   const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
-  const evidenceSummary = evidenceLab.page
+  const calibrationSummary = evidenceLab.page
     .locator("details > summary")
-    .filter({ hasText: /^Evidence, decisions & learning history$/ });
-  await expect(evidenceSummary).toBeVisible();
-  await evidenceSummary.click();
-  const emptyEvidence = evidenceLab.page.getByRole("region", { name: "Prediction evidence" });
-  await expect(emptyEvidence).toBeVisible();
-  expect(await emptyEvidence.innerText()).not.toMatch(/\d\s*%/);
+    .filter({ hasText: /^Prediction calibration/ });
+  await expect(calibrationSummary).toBeVisible();
+  await calibrationSummary.click();
+  const calibration = evidenceLab.page.getByText("Evidence maturity", { exact: true });
+  await expect(calibration).toBeVisible();
+  const calibrationDetails = calibration.locator("xpath=ancestor::div[contains(@class,'fl-disclosed-content')][1]");
+  expect(await calibrationDetails.innerText()).not.toMatch(/\d\s*%/);
   await expect(
     first.page.getByText("No personal pattern has reached its evidence threshold yet.", {
       exact: true,
