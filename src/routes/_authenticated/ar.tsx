@@ -62,7 +62,8 @@ export const Route = createFileRoute("/_authenticated/ar")({
       { property: "og:title", content: "Movement Scan — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Gyvas judesio vertinimas, technikos peržiūra ir judesio profilis vienoje vietoje.",
+        content:
+          "Gyvas judesio vertinimas, technikos peržiūra ir judesio profilis vienoje vietoje.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
