@@ -624,7 +624,7 @@ try {
           fullPage: false,
         });
         const layout = await shown.page.evaluate(() =>
-          [".fl-cockpit", ".fl-bottom-deck", ".fl-dashboard-footer"].map((selector) => {
+          [".fl-today-command", ".fl-today-world", ".fl-today-support"].map((selector) => {
             const rect = document.querySelector(selector)?.getBoundingClientRect();
             return { selector, ...(rect?.toJSON() ?? {}) };
           }),
@@ -634,21 +634,15 @@ try {
           JSON.stringify(layout, null, 2),
         );
         console.log("TODAY_REFERENCE_LAYOUT " + JSON.stringify(layout));
-        const footer = await shown.page.locator(".fl-dashboard-footer").boundingBox();
+        const command = await shown.page.locator(".fl-today-command").boundingBox();
         referenceLayoutChecks.push({
           screen,
           viewport: viewport.name,
-          target: footer,
+          target: command,
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [
-            ".fl-left-rail",
-            ".fl-daily-column",
-            ".fl-body",
-            ".fl-laboratory",
-            ".fl-predictions",
-          ].map((selector) => {
+          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
             const element = document.querySelector(selector);
             const rect = element.getBoundingClientRect();
             return {
@@ -678,7 +672,7 @@ try {
         ).toBeLessThanOrEqual(1);
         await insightSummary.click();
         record(
-          "Today reference columns preserve a full-height Twin and full-width expandable insights",
+          "Today keeps one governing command above the fold and separates Twin from optional changes",
         );
       }
       await writeFile(
@@ -714,17 +708,8 @@ try {
   for (const check of actionLayoutChecks) {
     if (check.screen === "today") {
       const where = `Today ${check.viewport}`;
-      // The scan has to have found both, or the comparisons below are vacuous.
+      // The converged Today surface intentionally removes competing visible card actions.
       expect(check.primary, `${where} has a primary action to measure`).not.toBeNull();
-      expect(check.secondary, `${where} has a card action to measure`).not.toBeNull();
-      expect(
-        check.primary.fontSize,
-        `${where}: the primary action is set larger than the card links`,
-      ).toBeGreaterThan(check.secondary.fontSize);
-      expect(
-        check.primary.height,
-        `${where}: the primary action is taller than the card links`,
-      ).toBeGreaterThan(check.secondary.height);
       // A thumb target, on every viewport — it was 27px on a 1440px desktop.
       expect(
         check.primary.height,
@@ -736,7 +721,8 @@ try {
       ).toBeGreaterThanOrEqual(14);
       // Volt means action. Exactly one of these wears it filled.
       expect(check.primary.filled, `${where}: the primary action is filled volt`).toBe(true);
-      expect(check.secondary.filled, `${where}: the card links are not filled volt`).toBe(false);
+      if (check.secondary)
+        expect(check.secondary.filled, `${where}: any visible supporting action is not filled volt`).toBe(false);
       continue;
     }
     if (check.screen === "muscle") {
