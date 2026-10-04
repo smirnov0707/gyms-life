@@ -245,7 +245,16 @@ try {
     return { page, errors, fontResponses };
   };
 
+  const openTodayChangesLayer = async (page) => {
+    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
+    if (await summary.count()) {
+      const details = summary.locator("xpath=ancestor::details[1]");
+      if ((await details.getAttribute("open")) === null) await summary.click();
+    }
+  };
+
   const openTodayEvidenceLayer = async (page) => {
+    await openTodayChangesLayer(page);
     const summary = page.getByText(
       /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
     );
@@ -783,6 +792,7 @@ try {
       locale: "en-US",
     });
     await openTodayContextLayer(checked.page);
+    await openTodayEvidenceLayer(checked.page);
     const sources = checked.page.getByRole("region", { name: "Data sources" });
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
