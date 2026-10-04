@@ -172,7 +172,10 @@ export async function verifyObservedDesign({ open, record, artifacts }) {
         { width, height: 900 },
       );
       const disclosures = page.locator(".twin-future-view > details");
-      await expect(disclosures).toHaveCount(2);
+      await expect(disclosures).toHaveCount(1);
+      await expect(disclosures.locator(":scope > summary")).toContainText(
+        "Šios trajektorijos pagrindas",
+      );
       const projection = page.locator(".fl-strength-summary");
       await expect(projection).toContainText("94,4 kg");
       await expect(projection).toContainText("+2,6%");
@@ -216,8 +219,6 @@ export async function verifyObservedDesign({ open, record, artifacts }) {
         width,
         scenario: "observed-expanded",
       });
-      await disclosures.nth(0).locator(":scope > summary").press("Enter");
-      await disclosures.nth(1).locator(":scope > summary").press("Enter");
       await expect(page.locator(".fl-weekly-review")).toBeVisible();
       await expect(page.locator(".fl-weekly-metrics dd")).toHaveText(["3", "4", "52,5/100"]);
       await expect(page.locator(".fl-weekly-discoveries article").nth(1)).toContainText("52,5/100");
