@@ -155,7 +155,7 @@ export function Overview() {
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
   return (
     <div className="fl-dashboard fl-page-enter">
-      <div className="mx-auto grid w-full max-w-[1480px] gap-4">
+      <div className="fl-today-root mx-auto grid w-full max-w-[1480px] gap-4">
         <header className="fl-greeting">
           <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
           <h1>
