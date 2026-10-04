@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type ReactNode } from "react";
 import {
   ArrowDown,
-  CalendarClock,
   ChevronDown,
   Clock,
   Info,
@@ -84,6 +83,7 @@ function SupplementsPage() {
   const [withFood, setWithFood] = useState(false);
   const [prefTime, setPrefTime] = useState<string>("any");
   const [notes, setNotes] = useState("");
+  const [intelligenceMode, setIntelligenceMode] = useState<"label" | "gaps" | "routine">("label");
 
   const query = useQuery({
     queryKey: ["supplements", user?.id],
@@ -519,50 +519,65 @@ function SupplementsPage() {
       <section className="fl-supplement-tools" aria-labelledby="supplement-tools-title">
         <header>
           <p className="fl-workspace-eyebrow">
-            {english ? "WHEN YOU NEED MORE" : "KAI REIKIA DAUGIAU"}
+            {english ? "SUPPLEMENT INTELLIGENCE" : "PAPILDŲ INTELIGENTIKA"}
           </p>
-          <h2 id="supplement-tools-title">{english ? "A closer look." : "Pažvelk iš arčiau."}</h2>
+          <h2 id="supplement-tools-title">
+            {english ? "One place to understand your stack." : "Viena vieta suprasti savo papildų rutiną."}
+          </h2>
           <p>
             {english
-              ? "Optional tools for reading labels and reviewing your logged routine. Nutrient estimates cannot confirm a deficiency."
-              : "Papildomi įrankiai etiketėms nuskaityti ir užregistruotai rutinai peržiūrėti. Apskaičiuoti mikroelementų kiekiai nepatvirtina jų trūkumo."}
+              ? "Scan a label, review possible nutrition gaps and inspect your current routine without treating estimates as a diagnosis."
+              : "Nuskaityk etiketę, peržiūrėk galimus mitybos trūkumų signalus ir savo rutiną, nelaikant įverčių diagnoze."}
           </p>
         </header>
-        <div className="grid content-start gap-3">
-          <SupplementTool
-            icon={ScanLine}
-            title={t("supp.scan.title")}
-            description={
-              english
-                ? "Read a label, then review every detail before saving."
-                : "Nuskaityk etiketę ir patikrink informaciją prieš išsaugodamas."
-            }
-          >
-            {(open) => <SupplementPhotoScanner active={open} />}
-          </SupplementTool>
-          <SupplementTool
-            icon={Utensils}
-            title={t("sc.micro.title")}
-            description={
-              english
-                ? "Explore signals in the food you have logged."
-                : "Peržiūrėk signalus iš užregistruoto maisto."
-            }
-          >
-            {() => <MicronutrientDeficiencyScanner />}
-          </SupplementTool>
-          <SupplementTool
-            icon={CalendarClock}
-            title={t("supp.cycle.title")}
-            description={
-              english
-                ? "Review the context behind your current routine."
-                : "Peržiūrėk dabartinės rutinos kontekstą."
-            }
-          >
-            {() => <SupplementCycleAdvisor />}
-          </SupplementTool>
-        </div>
+        <SupplementTool
+          icon={ScanLine}
+          title={english ? "Supplement Intelligence" : "Papildų analizė"}
+          description={
+            english
+              ? "Choose the question you want GYMS.LIFE to answer."
+              : "Pasirink klausimą, į kurį turi atsakyti GYMS.LIFE."
+          }
+        >
+          {(open) => (
+            <div className="grid gap-4">
+              <div
+                className="grid grid-cols-3 gap-1 rounded-2xl bg-surface-2 p-1"
+                role="group"
+                aria-label={english ? "Supplement intelligence mode" : "Papildų analizės režimas"}
+              >
+                {(
+                  [
+                    ["label", english ? "Scan label" : "Etiketė"],
+                    ["gaps", english ? "Nutrition gaps" : "Mitybos spragos"],
+                    ["routine", english ? "Routine" : "Rutina"],
+                  ] as const
+                ).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={intelligenceMode === mode}
+                    onClick={() => setIntelligenceMode(mode)}
+                    className={`min-h-11 rounded-xl px-2 text-[11px] font-semibold transition-colors ${
+                      intelligenceMode === mode
+                        ? "bg-surface text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {intelligenceMode === "label" ? (
+                <SupplementPhotoScanner active={open} />
+              ) : intelligenceMode === "gaps" ? (
+                <MicronutrientDeficiencyScanner />
+              ) : (
+                <SupplementCycleAdvisor />
+              )}
+            </div>
+          )}
+        </SupplementTool>
       </section>
     </div>
   );
