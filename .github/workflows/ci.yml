@@ -13,6 +13,18 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Two jobs, because they were one and the audit ran first.
+#
+# `npm audit --audit-level=moderate` covers dev dependencies, and wrangler and
+# @netlify/images carry advisories with no non-breaking fix. A `run:` step that
+# exits non-zero ends the job, so typecheck, test, toolchain, lint and both
+# builds were reported as "skipped" on every push to main — the entire quality
+# gate dark, for an advisory in tooling that never reaches an athlete. A check
+# that cannot run reports nothing, which is the shape this repository keeps
+# finding; this is that shape at the scale of the whole pipeline.
+#
+# Split, neither can hide the other: a vulnerable dev dependency no longer
+# conceals a type error, and a failing test no longer conceals an advisory.
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -31,14 +43,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit all installed dependencies
-        run: |
-          mkdir -p test-results/dependency-security
-          npm audit --audit-level=moderate --json > test-results/dependency-security/audit-all.json
-
-      - name: Audit production dependencies separately
-        run: npm audit --omit=dev --audit-level=moderate --json > test-results/dependency-security/audit-production.json
-
       - name: Typecheck
         run: npm run typecheck
 
@@ -56,6 +60,44 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Production dependencies are what reaches an athlete, so this one
+      # blocks. It is clean as of this commit: `npm audit fix` resolved
+      # undici, fast-uri and dompurify without a breaking change.
+      - name: Audit production dependencies
+        run: |
+          mkdir -p test-results/dependency-security
+          npm audit --omit=dev --audit-level=moderate --json > test-results/dependency-security/audit-production.json
+
+      # Everything installed, dev tooling included. Recorded rather than
+      # blocking: the open advisories are in wrangler, miniflare and
+      # @netlify/images, none of which ships, and npm offers no fix for them
+      # that is not a breaking major. The job still fails if the production
+      # audit above finds anything, and this file is kept as evidence either
+      # way, so the advisories stay visible instead of being argued away.
+      - name: Audit all installed dependencies, for the record
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p test-results/dependency-security
+          npm audit --audit-level=moderate --json > test-results/dependency-security/audit-all.json
 
       - name: Retain security evidence, including failed audits
         uses: actions/upload-artifact@v4
