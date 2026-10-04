@@ -1322,9 +1322,12 @@ try {
     twin.page.getByText("No stable personal pattern is available yet", { exact: false }),
   ).toBeVisible();
 
-  const baselineMemory = await openPanel("?panel=twin&twin=regions&scenario=reference&view=journal", {
-    viewport: { width: 390, height: 844 },
-  });
+  const baselineMemory = await openPanel(
+    "?panel=twin&twin=regions&scenario=reference&view=journal",
+    {
+      viewport: { width: 390, height: 844 },
+    },
+  );
   const baselineSummary = baselineMemory.page
     .locator("details > summary")
     .filter({ hasText: "What GYMS.LIFE has learned about you" });
