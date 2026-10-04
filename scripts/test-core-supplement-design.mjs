@@ -224,16 +224,14 @@ export async function verifySupplementDesign({ open, record, artifacts }) {
       list(page).getByRole("heading", { name: "Reviewed synthetic label", exact: true }),
     ).toBeVisible();
     expect(await page.evaluate(() => window.__core.counts.analyzeSupplementPhoto)).toBe(1);
-    const nutrient = page.locator(".fl-supplement-tool").nth(1);
+    const nutrient = tool;
     expect(await page.evaluate(() => window.__core.counts.scanMicronutrients ?? 0)).toBe(0);
-    await nutrient.locator("summary").click();
+    await nutrient.getByRole("button", { name: "Nutrition gaps", exact: true }).click();
     await expect(nutrient).toContainText("Synthetic fixture: no nutrient analysis available.");
-    await nutrient.locator("summary").click();
-    await nutrient.locator("summary").click();
     expect(await page.evaluate(() => window.__core.counts.scanMicronutrients)).toBe(1);
     await context.close();
     record(
-      "optional tools run on request; editable label drafts survive folding and save only on confirmation",
+      "Supplement Intelligence switches tools on request; editable label drafts survive folding and save only on confirmation",
     );
   }
   {
