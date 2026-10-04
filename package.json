@@ -27,7 +27,8 @@
     "test:netlify-release-gate": "node scripts/netlify-ignore-build.selftest.mjs",
     "verify:production": "node scripts/release-production.mjs",
     "deploy:production": "node scripts/release-production.mjs --deploy",
-    "build:share-card": "node scripts/build-share-card.mjs"
+    "build:share-card": "node scripts/build-share-card.mjs",
+    "smoke:production:browser": "node scripts/smoke-production-browser.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1",
