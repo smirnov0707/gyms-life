@@ -24,7 +24,7 @@ export interface NightLabTarget {
  * the schema says nothing about which field, and the field is the whole
  * question: a missing `deploy` means the scheduled runtime hands over less than
  * a request does, an unrecognised `deploy.id` means the shape changed, and
- * `TARGET_DEPLOYMENT_NOT_PUBLISHED` is not a shape problem at all.
+ * the `TARGET_DEPLOYMENT_*` pair is not a shape problem at all.
  *
  * One code per cause, in the ledger's `error_code` format
  * (`^[A-Z][A-Z0-9_]{2,63}$`), so the next firing names what to fix.
@@ -37,7 +37,8 @@ export const TARGET_CONTEXT_REFUSALS = [
   "TARGET_CONTEXT_PUBLISHED_MISSING",
   "TARGET_CONTEXT_SITE_MISSING",
   "TARGET_CONTEXT_SITE_NAME_UNRECOGNISED",
-  "TARGET_DEPLOYMENT_NOT_PUBLISHED",
+  "TARGET_DEPLOYMENT_PRODUCTION_UNPUBLISHED",
+  "TARGET_DEPLOYMENT_PUBLISHED_OFF_PRODUCTION",
 ] as const;
 export type TargetContextRefusal = (typeof TARGET_CONTEXT_REFUSALS)[number];
 
@@ -69,8 +70,19 @@ export function explainNightLabTarget(
   const { deploy, site } = parsed.data;
   const production = deploy.context === "production";
   // A retired production bundle must not schedule today's job on old code.
-  if (production !== deploy.published)
-    return { ok: false, reason: "TARGET_DEPLOYMENT_NOT_PUBLISHED" };
+  //
+  // Split, because `TARGET_DEPLOYMENT_NOT_PUBLISHED` was two unrelated
+  // situations under one name and the 2026-10-04 firing could not say which.
+  // A production context that reports itself unpublished is either a
+  // superseded bundle or a runtime that does not set `published` the way a
+  // request does; a published deploy that is not production means the schedule
+  // was registered somewhere other than production. They are fixed in
+  // different places, so they are named apart — the same move that turned
+  // `TARGET_DEPLOYMENT_UNIDENTIFIED` into something actionable.
+  if (production && !deploy.published)
+    return { ok: false, reason: "TARGET_DEPLOYMENT_PRODUCTION_UNPUBLISHED" };
+  if (!production && deploy.published)
+    return { ok: false, reason: "TARGET_DEPLOYMENT_PUBLISHED_OFF_PRODUCTION" };
   return {
     ok: true,
     target: {

@@ -98,8 +98,13 @@ describe("trusted runtime origin for scheduled and framework dispatch", () => {
     [{ site: { name: "synthetic-site" } }, "TARGET_CONTEXT_DEPLOY_MISSING"],
     [context("dev"), "TARGET_CONTEXT_NOT_A_KNOWN_CONTEXT"],
     [context("unexpected"), "TARGET_CONTEXT_NOT_A_KNOWN_CONTEXT"],
-    [context("production", false), "TARGET_DEPLOYMENT_NOT_PUBLISHED"],
-    [context("deploy-preview", true), "TARGET_DEPLOYMENT_NOT_PUBLISHED"],
+    // These two shared one code until the 2026-10-04 firing recorded it and
+    // could not say which had happened. A production bundle reporting itself
+    // unpublished and a published deploy that is not production are fixed in
+    // different places, so the ledger has to tell them apart.
+    [context("production", false), "TARGET_DEPLOYMENT_PRODUCTION_UNPUBLISHED"],
+    [context("deploy-preview", true), "TARGET_DEPLOYMENT_PUBLISHED_OFF_PRODUCTION"],
+    [context("branch-deploy", true), "TARGET_DEPLOYMENT_PUBLISHED_OFF_PRODUCTION"],
   ])(
     "untrusted/inconsistent context %j fails before secrets or transport, naming its cause",
     async (value, reason) => {
