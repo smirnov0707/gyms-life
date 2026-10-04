@@ -278,8 +278,8 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
   }
   for (const theme of ["dark", "light"]) {
     const { page, context } = await opened(open, `lang=lt&theme=${theme}`, 320);
-    await expect(page.locator("h1")).toHaveText("Pajusk savo judesį.");
-    for (const mode of ["Gyvas treneris", "Technikos analizė", "Pozicijos analizė"]) {
+    await expect(page.locator("h1")).toHaveText("Movement Scan.");
+    for (const mode of ["Gyvas treneris", "Technikos analizė", "Judesio profilis"]) {
       await page.getByRole("button", { name: mode, exact: true }).press("Enter");
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
