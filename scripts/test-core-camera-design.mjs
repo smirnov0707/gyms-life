@@ -110,7 +110,7 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
           await expect(page.getByRole("combobox", { name: "Exercise", exact: true })).toBeVisible();
         }
         if (state === "technique") await choose(page, "Technique review");
-        if (state === "position") await choose(page, "Position review");
+        if (state === "position") await choose(page, "Movement profile");
         expect((await cameraStats(page)).requests).toBe(0);
         const audit = await page.locator(".fl-camera-workspace").evaluate((el) => ({
           overflow: document.documentElement.scrollWidth > innerWidth + 1,
@@ -179,7 +179,7 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
     await expect.poll(() => page.evaluate(() => window.__pose.closed)).toBe(1);
     await start(page).press("Enter");
     await expect(page.getByRole("button", { name: "Finish set", exact: true })).toBeVisible();
-    await choose(page, "Position review");
+    await choose(page, "Movement profile");
     await expect.poll(() => cameraStats(page)).toEqual({ requests: 1, stopped: 1, attached: 1 });
     await expect
       .poll(() => page.evaluate(() => window.__pose.created === window.__pose.closed))
@@ -235,7 +235,7 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
     const enable = page.locator(".fl-form-review .fl-camera-idle button").first();
     await enable.press("Enter");
     await expect(page.getByRole("button", { name: "Stop camera", exact: true })).toBeVisible();
-    await choose(page, "Position review");
+    await choose(page, "Movement profile");
     await expect.poll(() => cameraStats(page)).toEqual({ requests: 1, stopped: 1, attached: 1 });
     await choose(page, "Technique review");
     await page.evaluate(() => {
@@ -266,7 +266,7 @@ export async function verifyCameraDesign({ open, record, artifacts }) {
   }
   {
     const { page, context } = await opened(open);
-    await choose(page, "Position review");
+    await choose(page, "Movement profile");
     const picker = page.waitForEvent("filechooser");
     await page.locator(".fl-position-upload").press("Enter");
     const chooser = await picker;
