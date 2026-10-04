@@ -74,8 +74,8 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
       logAction: "Log what you ate",
       history: "Inspect today's food log",
       historyHint: "Every item currently contributing to today's logged intake.",
-      tools: "Capture tools",
-      toolsHint: "Use camera and context tools when typing is not the fastest option.",
+      tools: "Scan food",
+      toolsHint: "One entry point for a meal, fridge or menu. Choose what is in front of you.",
       kcal: "Energy",
       protein: "Protein",
       carbs: "Carbs",
@@ -90,8 +90,8 @@ function surfaceCopy(lang: Lang): SurfaceCopy {
     logAction: "Užregistruok, ką suvalgei",
     history: "Peržiūrėti šiandienos maisto įrašus",
     historyHint: "Visi įrašai, kurie šiuo metu sudaro šiandienos suvartojimą.",
-    tools: "Fiksavimo įrankiai",
-    toolsHint: "Naudok kamerą ir kontekstinius įrankius, kai rašyti nėra greičiausias būdas.",
+    tools: "Skenuoti maistą",
+    toolsHint: "Vienas įėjimas patiekalui, šaldytuvui ar meniu. Pasirink, ką matai prieš save.",
     kcal: "Energija",
     protein: "Baltymai",
     carbs: "Angliavandeniai",
@@ -164,6 +164,7 @@ function NutritionPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [text, setText] = useState("");
+  const [captureMode, setCaptureMode] = useState<"meal" | "fridge" | "menu">("meal");
   const call = useServerFn(logMeal);
   const timeZone = browserTimeZone();
   const [today, setToday] = useState(() => dayInTimeZone(new Date(), timeZone));
@@ -465,10 +466,41 @@ function NutritionPage() {
             <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </div>
         </summary>
-        <div className="space-y-6 border-t border-border p-5 sm:p-6">
-          <SmartFridgeScanner />
-          <VisionMealScanner />
-          <DineOutMenuScanner />
+        <div className="border-t border-border p-5 sm:p-6">
+          <div
+            className="mb-4 grid grid-cols-3 gap-1 rounded-2xl bg-surface-2 p-1"
+            role="group"
+            aria-label={baseLang(lang) === "en" ? "Food scan mode" : "Maisto skenavimo režimas"}
+          >
+            {(
+              [
+                ["meal", baseLang(lang) === "en" ? "Meal" : "Patiekalas"],
+                ["fridge", baseLang(lang) === "en" ? "Fridge" : "Šaldytuvas"],
+                ["menu", baseLang(lang) === "en" ? "Menu" : "Meniu"],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={captureMode === mode}
+                onClick={() => setCaptureMode(mode)}
+                className={`min-h-11 rounded-xl px-2 text-xs font-semibold transition-colors ${
+                  captureMode === mode
+                    ? "bg-surface text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {captureMode === "meal" ? (
+            <VisionMealScanner />
+          ) : captureMode === "fridge" ? (
+            <SmartFridgeScanner />
+          ) : (
+            <DineOutMenuScanner />
+          )}
         </div>
       </details>
     </div>
