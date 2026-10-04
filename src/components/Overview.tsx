@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { TwinHome } from "@/components/twin/TwinHome";
-import { FutureLabRoster } from "@/components/future-lab/FutureLabRoster";
 import { baseLang } from "@/lib/i18n";
 import "./future-lab-dashboard.css";
 import { TodayDecision } from "@/components/TodayDecision";
@@ -154,31 +153,26 @@ export function Overview() {
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
   return (
     <div className="fl-dashboard fl-page-enter">
-      <div className="fl-cockpit">
-        <div className="fl-left-rail">
-          <aside className="fl-signal-rail">
-            <LiveSignals />
-          </aside>
-          <div className="fl-plan">
-            <TodaysPlanPanel />
-          </div>
-        </div>
-        <div className="fl-daily-column">
-          <header className="fl-greeting">
-            <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
-            {/* The waving hand went with the greeting. On a screen whose job is
-                to show an athlete their own measurements and send them into a
-                session, a cartoon wave is the one element that reads as a
-                consumer app rather than an instrument. */}
-            <h1>
-              {greeting}
-              {firstName ? `, ${firstName}` : ""}
-            </h1>
-            <p>
-              {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+      <div className="mx-auto grid w-full max-w-[1480px] gap-4">
+        <header className="fl-greeting">
+          <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
+          <h1>
+            {greeting}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p>
+            {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+          </p>
+        </header>
+
+        <section
+          className="fl-premium-card grid gap-4 rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
+          aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
+        >
+          <div className="grid content-start gap-3">
+            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
+              {english ? "TODAY COMMAND" : "ŠIANDIENOS VEIKSMAS"}
             </p>
-          </header>
-          <div className="fl-readiness">
             {readinessScore != null && Number.isFinite(readinessScore) ? (
               <ReadinessCard
                 compact
@@ -203,43 +197,51 @@ export function Overview() {
                 </Link>
               </div>
             )}
-          </div>
-          <div className="fl-decision">
             <TodayDecision
               compact
               workoutDay={today?.day ?? null}
               primaryTrainingActionHandled={Boolean(today)}
             />
           </div>
-          <div className="fl-brief">
-            <MorningLabReview compact />
+          <div className="min-w-0">
+            <TodaysPlanPanel />
           </div>
-        </div>
-        <div className="fl-body">
-          <TwinHome presentation="cockpit" />
-        </div>
-        <aside className="fl-laboratory">
-          <FutureLabRoster />
-        </aside>
-        <aside className="fl-predictions">
-          <PredictionEvidencePanel compact />
-          <RecoveryOutlook compact />
-          <SleepAnalysis />
-        </aside>
-      </div>
-      <TodayIntelligenceBrief presentation="cards" />
-      <div className="fl-dashboard-footer">
-        <DataSourcesStrip />
-        <details className="fl-context-disclosure">
-          <summary>
-            {english ? "Context, sources & settings" : "Kontekstas, šaltiniai ir nustatymai"}
+        </section>
+
+        <section className="grid items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
+          <div className="min-w-0">
+            <TwinHome presentation="cockpit" />
+          </div>
+          <details className="fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80" open>
+            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+              {english ? "What changed" : "Kas pasikeitė"}
+            </summary>
+            <div className="grid gap-3 border-t border-border p-4">
+              <MorningLabReview compact />
+              <TodayIntelligenceBrief presentation="cards" />
+            </div>
+          </details>
+        </section>
+
+        <details className="fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
+          <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
+            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
           </summary>
-          <TodayLifeContext />
-          {planData ? (
-            <Link to="/onboarding" className="fl-text-link">
-              {t("dash.regenerate")} →
-            </Link>
-          ) : null}
+          <div className="grid gap-4 border-t border-border p-4">
+            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+              <LiveSignals />
+              <RecoveryOutlook compact />
+              <SleepAnalysis />
+              <PredictionEvidencePanel compact />
+            </div>
+            <DataSourcesStrip />
+            <TodayLifeContext />
+            {planData ? (
+              <Link to="/onboarding" className="fl-text-link w-fit">
+                {t("dash.regenerate")} →
+              </Link>
+            ) : null}
+          </div>
         </details>
       </div>
     </div>
