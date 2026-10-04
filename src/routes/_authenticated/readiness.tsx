@@ -162,7 +162,13 @@ export function ReadinessWorkspace({ embedded = false }: { embedded?: boolean } 
   };
 
   return (
-    <div className={embedded ? "fl-readiness-workspace" : "fl-context-route fl-workspace fl-readiness-workspace fl-page-enter"}>
+    <div
+      className={
+        embedded
+          ? "fl-readiness-workspace"
+          : "fl-context-route fl-workspace fl-readiness-workspace fl-page-enter"
+      }
+    >
       <section className="fl-workspace-hero fl-readiness-hero" aria-busy={isFetching}>
         <p className="fl-workspace-eyebrow">{copy.eyebrow}</p>
         <h1 className="fl-workspace-title mt-3">{t("rd.title")}</h1>
