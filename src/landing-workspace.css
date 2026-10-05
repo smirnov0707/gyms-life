@@ -713,3 +713,12 @@
     transition: none;
   }
 }
+
+
+.light .fl-landing-world:hover {
+  box-shadow: 0 22px 54px -44px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.light .fl-landing-primary::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 42%), transparent);
+}
