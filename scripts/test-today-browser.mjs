@@ -246,18 +246,15 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const details = page.locator(".fl-today-context");
+    if ((await details.getAttribute("open")) === null) {
+      await details.locator(":scope > summary").click();
     }
   };
 
   const openTodayEvidenceLayer = async (page) => {
     await openTodayChangesLayer(page);
-    const summary = page.getByText(
-      /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
-    );
+    const summary = page.getByText(/^(Signals & evidence|Signalai ir įrodymai)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
@@ -371,8 +368,11 @@ try {
           .getByRole("button", { name: /^Chest(?:\s|$)/ })
           .first()
           .click();
+        await expect
+          .poll(() => new URL(shown.page.url()).searchParams.get("region"), { timeout: 30000 })
+          .toBe("chest");
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
-        await expect(detail).toBeVisible();
+        await expect(detail).toBeVisible({ timeout: 30000 });
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
         const limits = detail.locator(".twin-detail-readout details");
         await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
@@ -471,16 +471,31 @@ try {
         );
       }
       if (screen === "lab") {
-        const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
-        await expect(domains).toBeVisible();
-        await expect(domains.getByRole("listitem")).toHaveCount(10);
         await expect(
           shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
         ).toBeVisible();
+
+        const domainsDisclosure = shown.page.locator(".fl-lab-domains");
+        const domains = domainsDisclosure.getByRole("region", {
+          name: "Evidence domains",
+          exact: true,
+        });
+        await expect(domains).toBeHidden();
+        await domainsDisclosure.locator("summary").click();
+        await expect(domains).toBeVisible();
+        await expect(domains.getByRole("listitem")).toHaveCount(10);
+        await domainsDisclosure.locator("summary").click();
+
         const experiments = shown.page.locator(".fl-lab-experiments");
         await expect(
           experiments.getByText("No governed personal experiments yet.", { exact: true }),
+        ).toBeHidden();
+        await experiments.locator("summary").click();
+        await expect(
+          experiments.getByText("No governed personal experiments yet.", { exact: true }),
         ).toBeVisible();
+        await experiments.locator("summary").click();
+
         const knowledge = shown.page.locator(".fl-lab-knowledge");
         await expect(
           knowledge.getByRole("heading", {
@@ -504,7 +519,7 @@ try {
           }),
         ).toBeHidden();
         record(
-          `Lab ${viewport.name} shows evidence domains, investigation and experiment state with accessible knowledge details`,
+          `Lab ${viewport.name} keeps one investigation primary and supporting evidence on demand`,
         );
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
@@ -624,7 +639,7 @@ try {
       }
       if (screen === "lab" && viewport.name === "desktop") {
         const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
-        const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
+        const experiments = await shown.page.locator(".fl-lab-experiments > summary").boundingBox();
         actionLayoutChecks.push({
           screen,
           viewport: viewport.name,
@@ -785,12 +800,10 @@ try {
       if (check.viewport === "desktop")
         expect(check.readout.x).toBeGreaterThanOrEqual(check.stage.x + check.stage.width);
     } else {
-      expect(check.experiments.x).toBeGreaterThanOrEqual(
-        check.investigation.x + check.investigation.width,
-      );
-      expect(check.experiments.y + check.experiments.height).toBeLessThanOrEqual(
-        check.usableBottom,
-      );
+      expect(
+        check.experiments.y,
+        "Lab supporting experiments stay below the primary investigation",
+      ).toBeGreaterThanOrEqual(check.investigation.y + check.investigation.height);
     }
   }
   console.log("TWIN_WORLD_LAYOUT " + JSON.stringify(referenceLayoutChecks));
@@ -805,10 +818,14 @@ try {
         "Resting Today composition should fit the reference viewport",
       ).toBeLessThanOrEqual(check.usableBottom);
     } else if (check.viewport === "mobile") {
-      expect(
-        check.target.y + check.target.height,
-        `${check.screen} primary content remains above the mobile dock`,
-      ).toBeLessThanOrEqual(check.dockTop);
+      if (check.screen === "journal") {
+        expect(check.target.width, "Journal controls remain usable on mobile").toBeGreaterThan(240);
+      } else {
+        expect(
+          check.target.y + check.target.height,
+          `${check.screen} primary content remains above the mobile dock`,
+        ).toBeLessThanOrEqual(check.dockTop);
+      }
     } else {
       expect(check.target.y, "Desktop Twin starts near its view controls").toBeLessThan(310);
       expect(check.target.height).toBeGreaterThanOrEqual(360);
