@@ -60,6 +60,16 @@ export function RacePrepCockpit() {
           <Metric icon={<Target className="size-4" />} value={data.progress.completedSessions + " / " + data.progress.plannedSessions} label={english ? "Sessions" : "Sesijos"} />
           <Metric icon={<Gauge className="size-4" />} value={pct === null ? "—" : pct + "%"} label={english ? "Distance progress" : "Distancijos progresas"} />
         </div>
+        {data.terrainResponse.status === "measured" ? (
+          <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
+            <p className="fl-eyebrow">{english ? "TERRAIN RESPONSE" : "REAKCIJA Į RELJEFĄ"}</p>
+            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-lg font-semibold">{english ? "Observed hill response" : "Pamatuota reakcija į įkalnes"}</h3>
+              <strong className="text-primary">{data.terrainResponse.observedPaceDifferenceFraction === null ? "—" : (data.terrainResponse.observedPaceDifferenceFraction * 100).toFixed(1) + "%"}</strong>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{english ? "Observed difference between your repeated flat and hilly runs. This is not a universal grade-adjusted pace formula." : "Pamatuotas skirtumas tarp tavo pasikartojančių lygių ir kalvotų bėgimų. Tai nėra universali grade-adjusted pace formulė."}</p>
+          </div>
+        ) : null}
         <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="fl-eyebrow">{english ? "PACE INTELLIGENCE" : "TEMPO INTELLIGENCE"}</p>
