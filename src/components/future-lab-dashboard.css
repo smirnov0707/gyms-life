@@ -1383,3 +1383,44 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+@media (max-width: 759px) {
+  /* Mobile Today should read as a daily command, not label itself as one. */
+  .fl-today-command-copy > .text-\[9px\] {
+    display: none;
+  }
+
+  .fl-today-root > .fl-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-today-root > .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 8px;
+  }
+
+  .fl-today-root > .fl-greeting h1 {
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .fl-today-root > .fl-greeting > p:last-child {
+    display: -webkit-box;
+    max-width: 36ch;
+    margin-top: 5px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: var(--muted-foreground);
+    line-height: 1.45;
+  }
+
+  .fl-today-command {
+    gap: 10px;
+  }
+
+  .fl-today-world,
+  .fl-today-more {
+    margin-top: 0;
+  }
+}
