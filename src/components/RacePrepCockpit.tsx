@@ -40,6 +40,16 @@ export function RacePrepCockpit() {
             {data.daysToRace} {english ? "days to race" : "d. iki starto"}
           </div>
         </header>
+        {data.adaptation.action !== "hold" ? (
+          <div className="rounded-[1.5rem] border border-amber-500/25 bg-amber-500/5 p-4">
+            <p className="fl-eyebrow">{english ? "PLAN ADAPTATION" : "PLANO ADAPTACIJA"}</p>
+            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-lg font-semibold">{data.adaptation.action === "recover" ? (english ? "Recovery protected" : "Saugomas atsistatymas") : (english ? "Volume reduced" : "Krūvis sumažintas")}</h3>
+              <strong>{Math.round(data.adaptation.volumeModifier * 100)}%</strong>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{english ? "Deterministic reason: " : "Deterministinė priežastis: "}{data.adaptation.reason.replaceAll("_", " ")}. {english ? "This decision is stored in your adaptation history." : "Šis sprendimas išsaugotas adaptacijų istorijoje."}</p>
+          </div>
+        ) : null}
         <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="fl-eyebrow">{english ? "RACE READINESS" : "PASIRENGIMAS STARTUI"}</p>
