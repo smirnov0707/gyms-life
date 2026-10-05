@@ -237,7 +237,12 @@ export function TodayIntelligenceBrief({
         to="/lab"
         cta={english ? "Inspect" : "Peržiūrėti"}
       />
-      <Row
+      <div
+        className={
+          learnedChange?.kind === "strengthened" ? "fl-progress-reveal" : undefined
+        }
+      >
+        <Row
         card={cards}
         icon={BrainCircuit}
         eyebrow={
@@ -255,7 +260,8 @@ export function TodayIntelligenceBrief({
         {...(learnedChange ? { search: { view: "journal" as const } } : {})}
         cta={english ? "Review" : "Peržiūrėti"}
         {...(learnedChange ? { onOpen: () => seenMutation.mutate(learnedChange.fingerprint) } : {})}
-      />
+        />
+      </div>
       {learnedChange ? (
         <WhyThisDisclosure
           summary={english ? "Why this surfaced now" : "Kodėl tai iškilo dabar"}
