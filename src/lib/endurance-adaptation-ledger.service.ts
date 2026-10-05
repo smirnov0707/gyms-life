@@ -1,0 +1,6 @@
+import type{SupabaseClient}from"@supabase/supabase-js";import type{Database,Json}from"@/integrations/supabase/types";import type{EnduranceAdaptationDecision,EnduranceAdaptationSignal}from"./endurance-adaptation.engine";
+export const ENDURANCE_ADAPTATION_ENGINE_VERSION="1.0";
+export async function persistEnduranceAdaptation(supabase:SupabaseClient<Database>,input:{userId:string;raceGoalId:string;decisionOn:string;signal:EnduranceAdaptationSignal;decision:EnduranceAdaptationDecision}){
+ const evidence={plannedSessions:input.signal.plannedSessions,completedPlannedSessions:input.signal.completedPlannedSessions,lowResponseStreak:input.signal.lowResponseStreak,readinessBand:input.signal.readinessBand,distanceCompletionRatio:input.signal.distanceCompletionRatio??null,recentOverTargetRuns:input.signal.recentOverTargetRuns??0} satisfies Json;
+ const{data,error}=await supabase.from("endurance_adaptation_records").upsert({user_id:input.userId,race_goal_id:input.raceGoalId,decision_on:input.decisionOn,action:input.decision.action,volume_modifier:input.decision.volumeModifier,reason:input.decision.reason,evidence,engine_version:ENDURANCE_ADAPTATION_ENGINE_VERSION},{onConflict:"user_id,race_goal_id,decision_on,engine_version",ignoreDuplicates:true}).select("id,action,volume_modifier,reason,created_at").maybeSingle();if(error)throw error;return data;
+}
