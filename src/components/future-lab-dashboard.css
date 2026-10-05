@@ -1168,7 +1168,8 @@
   .fl-today-command-copy,
   .fl-today-plan,
   .fl-today-twin,
-  .fl-today-changes {
+  .fl-today-changes,
+  .fl-today-context {
     width: 100%;
     min-width: 0;
     max-width: 100%;
@@ -1213,11 +1214,13 @@
   }
 
   .fl-today-changes,
+  .fl-today-context,
   .fl-today-support {
     border-radius: 20px;
   }
 
   .fl-today-changes > summary,
+  .fl-today-context > summary,
   .fl-today-support > summary,
   .fl-today-twin-mobile > summary {
     min-height: 48px;
