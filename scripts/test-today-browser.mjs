@@ -255,9 +255,14 @@ try {
 
   const openTodayChangesLayer = async (page) => {
     // Today convergence moved secondary material under the canonical Deeper
-    // context disclosure. Older fixtures may still expose What changed as its
-    // own visible details, so support both without clicking hidden copy.
-    await openVisibleDetails(page.getByText(/^(Deeper context|Gilesnis kontekstas)$/));
+    // context disclosure. Open that structural layer first: its summary also
+    // carries explanatory copy, so matching the visible label alone is brittle.
+    const context = page.locator(".fl-today-context");
+    if (await context.count()) {
+      if ((await context.getAttribute("open")) === null) {
+        await context.locator(":scope > summary").click();
+      }
+    }
     await openVisibleDetails(page.getByText(/^(What changed|Kas pasikeitė)$/));
   };
 
