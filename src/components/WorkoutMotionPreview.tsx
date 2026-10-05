@@ -28,8 +28,7 @@ export function WorkoutMotionPreview({
       className="fl-workout-motion-preview"
       onMouseEnter={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
-      aria-label={title}
-      role="img"
+      aria-hidden="true"
     >
       {media.type === "video" && media.videoUrl ? (
         <video
