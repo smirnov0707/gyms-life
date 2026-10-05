@@ -1629,6 +1629,9 @@ export type Database = {
           day_index: number | null
           distance_meters: number | null
           duration_seconds: number | null
+          endurance_match_score: number | null
+          endurance_match_source: string | null
+          endurance_session_intent: string | null
           feeling: number | null
           finished_at: string | null
           id: string
@@ -1651,6 +1654,9 @@ export type Database = {
           created_at?: string
           day_index?: number | null
           duration_seconds?: number | null
+          endurance_match_score?: number | null
+          endurance_match_source?: string | null
+          endurance_session_intent?: string | null
           feeling?: number | null
           finished_at?: string | null
           id?: string
@@ -1674,6 +1680,9 @@ export type Database = {
           created_at?: string
           day_index?: number | null
           duration_seconds?: number | null
+          endurance_match_score?: number | null
+          endurance_match_source?: string | null
+          endurance_session_intent?: string | null
           feeling?: number | null
           finished_at?: string | null
           id?: string
