@@ -118,8 +118,12 @@ export async function reviewVisualSystem({ openPanel, artifacts, record, assertI
         .evaluate((element) => parseFloat(getComputedStyle(element).animationDuration));
       expect(duration).toBeLessThanOrEqual(0.01);
     }
-    if (["twin", "today"].includes(test.screen)) {
+    if (test.screen === "twin") {
       await assertInteractiveTwin(page.locator("canvas[data-twin-frames]").first());
+    }
+    if (test.screen === "today") {
+      await expect(page.locator("canvas[data-twin-frames]")).toHaveCount(0);
+      await expect(page.locator(".fl-today-twin-entry")).toBeVisible();
     }
     if (test.screen === "today") {
       const reading = page.locator(".fl-sleep-analysis > p:nth-child(2) > span:first-child");
