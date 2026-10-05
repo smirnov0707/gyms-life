@@ -59,6 +59,18 @@ export function RacePrepCockpit() {
           <Metric icon={<Target className="size-4" />} value={data.progress.completedSessions + " / " + data.progress.plannedSessions} label={english ? "Sessions" : "Sesijos"} />
           <Metric icon={<Gauge className="size-4" />} value={pct === null ? "—" : pct + "%"} label={english ? "Distance progress" : "Distancijos progresas"} />
         </div>
+        <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
+          <p className="fl-eyebrow">{english ? "LONG-RUN CAPACITY" : "ILGO BĖGIMO PAJĖGUMAS"}</p>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-lg font-semibold">
+              {data.longRunProgress.status === "progressing" ? (english ? "Progressing" : "Progresuoja") : data.longRunProgress.status === "stable" ? (english ? "Stable" : "Stabilu") : data.longRunProgress.status === "regressing" ? (english ? "Recent peak is lower" : "Naujausias pikas mažesnis") : (english ? "Building evidence" : "Kaupiami duomenys")}
+            </h3>
+            <strong className="text-primary">{data.longRunProgress.recentLongestMeters ? km(data.longRunProgress.recentLongestMeters) + " km" : "—"}</strong>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {data.longRunCoverage === null ? (english ? "More long-run history is needed before race-specific coverage can be interpreted." : "Reikia daugiau ilgų bėgimų istorijos, kad būtų galima vertinti pasirengimą konkrečiai distancijai.") : (english ? "Recent longest run covers " + Math.round(data.longRunCoverage * 100) + "% of race distance. This is context, not a universal readiness threshold." : "Naujausias ilgiausias bėgimas sudaro " + Math.round(data.longRunCoverage * 100) + "% varžybų distancijos. Tai kontekstas, o ne universali pasirengimo riba.")}
+          </p>
+        </div>
         {data.nextSession ? <div className="rounded-[1.5rem] border border-border bg-background/35 p-4">
           <p className="fl-eyebrow">{english ? "NEXT RUN" : "KITAS BĖGIMAS"}</p>
           <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
