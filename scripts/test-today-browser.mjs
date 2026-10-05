@@ -367,12 +367,11 @@ try {
         const muscles = shown.page.locator("summary").filter({ hasText: /^Muscles$/ });
         await expect(muscles).toBeVisible();
         await muscles.click();
-        await shown.page
-          .getByRole("button", { name: /^Chest(?:\s|$)/ })
-          .first()
-          .click();
+        const muscleDisclosure = muscles.locator("..");
+        await muscleDisclosure.getByRole("button", { name: /^Chest(?:\s|$)/ }).click();
+        await shown.page.waitForURL(/region=chest/, { timeout: 30000 });
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
-        await expect(detail).toBeVisible();
+        await expect(detail).toBeVisible({ timeout: 30000 });
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
         const limits = detail.locator(".twin-detail-readout details");
         await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
