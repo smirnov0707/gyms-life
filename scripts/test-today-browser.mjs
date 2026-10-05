@@ -360,7 +360,7 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -569,7 +569,8 @@ try {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
+        await expect(shown.page.locator(".fl-today-quick-action")).toBeHidden();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
@@ -590,7 +591,7 @@ try {
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile is one daily command; Twin and food logging stay in primary navigation/actions");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
