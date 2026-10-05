@@ -890,7 +890,7 @@ try {
     locale: "en-US",
   });
   const moreForToday = linked.page.locator("details.fl-today-more");
-  await moreForToday.locator("summary").click();
+  await moreForToday.locator(":scope > summary").click();
   await expect(moreForToday).toHaveAttribute("open", "");
   await moreForToday.getByRole("link", { name: "My Twin", exact: true }).click();
   await expect(linked.page.getByRole("tab", { name: "Body", exact: true })).toHaveAttribute(
