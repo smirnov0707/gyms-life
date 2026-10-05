@@ -246,10 +246,10 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const context = page.locator(".fl-today-context");
+    if (await context.count()) {
+      const summary = context.locator(":scope > summary");
+      if ((await context.getAttribute("open")) === null) await summary.click();
     }
   };
 
