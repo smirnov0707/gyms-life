@@ -360,7 +360,8 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toHaveCount(0);
+        await expect(shown.page.locator(".fl-today-more-twin")).toBeHidden();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -569,7 +570,8 @@ try {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toHaveCount(0);
+        await expect(shown.page.locator(".fl-today-support")).not.toHaveAttribute("open", "");
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
@@ -590,7 +592,7 @@ try {
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile is a single-column command with secondary worlds collapsed into More");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
@@ -897,8 +899,8 @@ try {
     viewport: { width: 390, height: 844 },
     locale: "en-US",
   });
-  await linked.page.getByText("Open My Twin", { exact: true }).click();
-  await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();
+  await linked.page.getByText("More", { exact: true }).click();
+  await linked.page.locator(".fl-today-more-twin").click();
   await expect(linked.page.getByRole("tab", { name: "Body", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
