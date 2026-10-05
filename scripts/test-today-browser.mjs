@@ -245,23 +245,29 @@ try {
     return { page, errors, fontResponses };
   };
 
+  const openVisibleDetails = async (summary) => {
+    if (!(await summary.count()) || !(await summary.first().isVisible())) return false;
+    const target = summary.first();
+    const details = target.locator("xpath=ancestor::details[1]");
+    if ((await details.getAttribute("open")) === null) await target.click();
+    return true;
+  };
+
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
-    }
+    // Today convergence moved secondary material under the canonical Deeper
+    // context disclosure. Older fixtures may still expose What changed as its
+    // own visible details, so support both without clicking hidden copy.
+    await openVisibleDetails(page.getByText(/^(Deeper context|Gilesnis kontekstas)$/));
+    await openVisibleDetails(page.getByText(/^(What changed|Kas pasikeitė)$/));
   };
 
   const openTodayEvidenceLayer = async (page) => {
     await openTodayChangesLayer(page);
-    const summary = page.getByText(
-      /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
+    await openVisibleDetails(
+      page.getByText(
+        /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
+      ),
     );
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
-    }
   };
 
   const openTodayExecutionLayer = async (page) => {
