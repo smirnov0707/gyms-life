@@ -39,7 +39,7 @@ export async function assembleCoachContext(args: {
     performanceForecast,
     endurance: racePrep.status === "active" ? {
       active: true,
-      raceDistance: racePrep.currentWeek.phase === "race" ? null : null,
+      raceDistance: racePrep.raceDistance,
       daysToRace: racePrep.daysToRace,
       phase: racePrep.currentWeek.phase,
       readiness: racePrep.readiness.status,
