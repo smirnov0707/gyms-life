@@ -1041,148 +1041,151 @@ function AthleteModelPage() {
         </section>
       ) : null}
 
-      <ConnectHealthSource />
-
-      <details className="fl-workspace-panel">
+      <details className="fl-workspace-panel fl-profile-section">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            {english ? "AUTOMATIONS" : "AUTOMATIZAVIMAS"}
-          </p>
-          <h2 className="mt-1 text-sm font-semibold text-foreground">
-            {english ? "Reminders & routines" : "Priminimai ir rutina"}
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {english
-              ? "Control when GYMS.LIFE nudges you without turning reminders into a separate product."
-              : "Valdyk, kada GYMS.LIFE primena, nepaversdamas priminimų atskiru produktu."}
-          </p>
+          <p className="text-sm font-semibold text-foreground">{ui.connections}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.connectionsSub}</p>
         </summary>
-        <div className="border-t border-border p-4 sm:p-5">
-          <AutomationSettings />
+        <div className="grid gap-4 border-t border-border p-4 sm:p-5">
+          <ConnectHealthSource />
+          <details className="fl-secondary-details">
+            <summary>{english ? "Reminders & routines" : "Priminimai ir rutina"}</summary>
+            <div className="fl-disclosed-content">
+              <AutomationSettings />
+            </div>
+          </details>
         </div>
       </details>
 
-      {state ? (
-        <details className="fl-workspace-panel">
-          <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
-            <p className="text-sm font-semibold text-foreground">{ui.inspect}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.inspectSub}</p>
-          </summary>
-          <div className="grid border-t border-border md:grid-cols-2">
-            <div className="p-5 sm:p-6 md:border-r md:border-border">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Dumbbell className="size-4 text-primary" /> {copy.training}
-              </h3>
-              <div className="mt-3">
-                <Metric label={copy.sessions7d} value={String(state.training.sessionsLast7Days)} />
-                <Metric
-                  label={copy.sessions28d}
-                  value={String(state.training.sessionsLast28Days)}
-                />
-                <Metric
-                  label={copy.volume}
-                  value={`${Math.round(state.training.totalVolumeLast28Days)} kg`}
-                />
-                <Metric
-                  label={copy.daysSince}
-                  value={numberOrDash(state.training.daysSinceLastCompletedWorkout)}
-                />
-                <Metric
-                  label={copy.sessionRatings}
-                  value={
-                    state.training.selfReportedResponse.available
-                      ? String(state.training.selfReportedResponse.ratedSessionsLast28Days)
-                      : "—"
-                  }
-                />
-                <Metric
-                  label={copy.averageSessionFeeling}
-                  value={
-                    state.training.selfReportedResponse.available
-                      ? numberOrDash(
-                          state.training.selfReportedResponse.averageFeelingLast28Days,
-                          " / 5",
-                        )
-                      : "—"
-                  }
-                />
-                <Metric
-                  label={copy.difficultSessionStreak}
-                  value={
-                    state.training.selfReportedResponse.available
-                      ? String(state.training.selfReportedResponse.recentLowFeelingStreak)
-                      : "—"
-                  }
-                />
-              </div>
-            </div>
-            <div className="grid sm:grid-cols-3 md:grid-cols-1">
-              <div className="p-5 sm:p-6">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <HeartPulse className="size-4 text-primary" /> {copy.recovery}
-                </h3>
-                <div className="mt-3">
-                  <Metric
-                    label={copy.readiness}
-                    value={numberOrDash(state.recovery.latestReadinessScore, "/100")}
-                  />
-                  <Metric
-                    label={copy.sleep}
-                    value={numberOrDash(state.recovery.averageSleepHoursLast7Days, " h")}
-                  />
-                </div>
-              </div>
-              <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Scale className="size-4 text-primary" /> {copy.body}
-                </h3>
-                <div className="mt-3">
-                  <Metric
-                    label={copy.weight}
-                    value={numberOrDash(state.body.latestWeightKg, " kg")}
-                  />
-                  <Metric
-                    label={copy.weightTrend}
-                    value={numberOrDash(state.body.weightChangeKgLast30Days, " kg")}
-                  />
-                </div>
-              </div>
-              <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Apple className="size-4 text-primary" /> {copy.nutrition}
-                </h3>
-                <div className="mt-3">
-                  <Metric
-                    label={copy.loggedDays}
-                    value={String(state.nutrition.loggedDaysLast14Days)}
-                  />
-                  <Metric
-                    label={copy.calories}
-                    value={numberOrDash(state.nutrition.averageCaloriesOnLoggedDays)}
-                  />
-                  <Metric
-                    label={copy.protein}
-                    value={numberOrDash(state.nutrition.averageProteinGOnLoggedDays, " g")}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </details>
-      ) : null}
-
-      <details className="fl-workspace-panel">
-        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-foreground sm:px-6">
-          {ui.rhythm}
+      <details className="fl-workspace-panel fl-profile-section">
+        <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
+          <p className="text-sm font-semibold text-foreground">{ui.evidenceAccount}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.evidenceAccountSub}</p>
         </summary>
-        <div className="border-t border-border p-4 sm:p-5">
-          <TrainingRhythmCard />
+        <div className="grid gap-4 border-t border-border p-4 sm:p-5">
+          {state ? (
+            <details className="fl-workspace-panel">
+              <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
+                <p className="text-sm font-semibold text-foreground">{ui.inspect}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.inspectSub}</p>
+              </summary>
+              <div className="grid border-t border-border md:grid-cols-2">
+                <div className="p-5 sm:p-6 md:border-r md:border-border">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Dumbbell className="size-4 text-primary" /> {copy.training}
+                  </h3>
+                  <div className="mt-3">
+                    <Metric label={copy.sessions7d} value={String(state.training.sessionsLast7Days)} />
+                    <Metric
+                      label={copy.sessions28d}
+                      value={String(state.training.sessionsLast28Days)}
+                    />
+                    <Metric
+                      label={copy.volume}
+                      value={`${Math.round(state.training.totalVolumeLast28Days)} kg`}
+                    />
+                    <Metric
+                      label={copy.daysSince}
+                      value={numberOrDash(state.training.daysSinceLastCompletedWorkout)}
+                    />
+                    <Metric
+                      label={copy.sessionRatings}
+                      value={
+                        state.training.selfReportedResponse.available
+                          ? String(state.training.selfReportedResponse.ratedSessionsLast28Days)
+                          : "—"
+                      }
+                    />
+                    <Metric
+                      label={copy.averageSessionFeeling}
+                      value={
+                        state.training.selfReportedResponse.available
+                          ? numberOrDash(
+                              state.training.selfReportedResponse.averageFeelingLast28Days,
+                              " / 5",
+                            )
+                          : "—"
+                      }
+                    />
+                    <Metric
+                      label={copy.difficultSessionStreak}
+                      value={
+                        state.training.selfReportedResponse.available
+                          ? String(state.training.selfReportedResponse.recentLowFeelingStreak)
+                          : "—"
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-3 md:grid-cols-1">
+                  <div className="p-5 sm:p-6">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <HeartPulse className="size-4 text-primary" /> {copy.recovery}
+                    </h3>
+                    <div className="mt-3">
+                      <Metric
+                        label={copy.readiness}
+                        value={numberOrDash(state.recovery.latestReadinessScore, "/100")}
+                      />
+                      <Metric
+                        label={copy.sleep}
+                        value={numberOrDash(state.recovery.averageSleepHoursLast7Days, " h")}
+                      />
+                    </div>
+                  </div>
+                  <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Scale className="size-4 text-primary" /> {copy.body}
+                    </h3>
+                    <div className="mt-3">
+                      <Metric
+                        label={copy.weight}
+                        value={numberOrDash(state.body.latestWeightKg, " kg")}
+                      />
+                      <Metric
+                        label={copy.weightTrend}
+                        value={numberOrDash(state.body.weightChangeKgLast30Days, " kg")}
+                      />
+                    </div>
+                  </div>
+                  <div className="border-t border-border p-5 sm:p-6 sm:border-l sm:border-t-0 md:border-l-0 md:border-t">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <Apple className="size-4 text-primary" /> {copy.nutrition}
+                    </h3>
+                    <div className="mt-3">
+                      <Metric
+                        label={copy.loggedDays}
+                        value={String(state.nutrition.loggedDaysLast14Days)}
+                      />
+                      <Metric
+                        label={copy.calories}
+                        value={numberOrDash(state.nutrition.averageCaloriesOnLoggedDays)}
+                      />
+                      <Metric
+                        label={copy.protein}
+                        value={numberOrDash(state.nutrition.averageProteinGOnLoggedDays, " g")}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </details>
+          ) : null}
+
+          <details className="fl-workspace-panel">
+            <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-foreground sm:px-6">
+              {ui.rhythm}
+            </summary>
+            <div className="border-t border-border p-4 sm:p-5">
+              <TrainingRhythmCard />
+            </div>
+          </details>
+
+          {/* Signing out and erasing the account. Both were missing entirely, and
+              the privacy policy promised the second one in eight languages. */}
+          <AccountControls />
         </div>
       </details>
-
-      {/* Signing out and erasing the account. Both were missing entirely, and
-          the privacy policy promised the second one in eight languages. */}
-      <AccountControls />
     </div>
   );
 }
