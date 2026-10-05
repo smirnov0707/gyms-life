@@ -226,7 +226,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </nav>
           <div className="fl-shell-actions">
             <NightLabStatus />
-            <LangSwitch className="fl-header-language" />
             <MoreNavigation world={actionWorld} />
             <Link
               to="/me"
