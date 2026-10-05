@@ -948,6 +948,45 @@
 }
 
 
+/* Living UI — Today atmosphere reflects the real readiness state.
+   The signal stays deliberately subtle: readiness meaning remains in text/data,
+   while the surface only changes emphasis. */
+.future-lab-app .fl-dashboard .fl-today-command {
+  transition:
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    background-color 420ms ease;
+}
+
+.future-lab-app .fl-dashboard[data-living-state="ready"] .fl-today-command {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  box-shadow:
+    var(--shadow-panel),
+    0 0 46px -38px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.future-lab-app .fl-dashboard[data-living-state="balanced"] .fl-today-command {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+
+.future-lab-app .fl-dashboard[data-living-state="recover"] .fl-today-command {
+  border-color: color-mix(in srgb, var(--ember) 18%, var(--border));
+  box-shadow:
+    var(--shadow-panel),
+    0 0 34px -30px color-mix(in srgb, var(--ember) 22%, transparent);
+}
+
+.future-lab-app .fl-dashboard[data-living-state="unknown"] .fl-today-command {
+  box-shadow: var(--shadow-panel);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .future-lab-app .fl-dashboard .fl-today-command {
+    transition: none !important;
+  }
+}
+
+
 /* Living UI — Lab atmosphere follows the governed hypothesis state. */
 .future-lab-app .fl-lab-page[data-investigation-state="supported"] .fl-investigation-card {
   border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
