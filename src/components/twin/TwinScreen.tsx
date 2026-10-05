@@ -145,7 +145,9 @@ export function TwinScreen({
               <section className="fl-twin-systems fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
                 <header>
                   <p className="fl-eyebrow">{t("tw.tabSystems")}</p>
-                  <h2 className="mt-2 text-lg font-semibold text-foreground">{t("tw.systemsTitle")}</h2>
+                  <h2 className="mt-2 text-lg font-semibold text-foreground">
+                    {t("tw.systemsTitle")}
+                  </h2>
                   <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                     {t("tw.systemsNote")}
                   </p>
