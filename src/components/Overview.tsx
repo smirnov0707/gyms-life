@@ -4,7 +4,6 @@ import { LiveSignals } from "@/components/LiveSignals";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
 import { RecoveryOutlook } from "@/components/RecoveryOutlook";
-import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
 import { Link } from "@tanstack/react-router";
 import { ReadinessWorkspace } from "@/routes/_authenticated/readiness";
 import { useQuery } from "@tanstack/react-query";
@@ -245,7 +244,6 @@ export function Overview() {
               {english ? "What changed" : "Kas pasikeitė"}
             </summary>
             <div className="grid gap-3 border-t border-border p-4">
-              <MorningLabReview compact />
               <TodayIntelligenceBrief presentation="cards" />
             </div>
           </details>
