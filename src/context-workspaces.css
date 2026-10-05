@@ -1762,3 +1762,146 @@
     animation: none !important;
   }
 }
+
+
+/* Visual Experience 3.0 — functional instruments, not decorative noise. */
+
+/* Movement Scan: optical HUD stays outside the analysed video semantics. */
+.fl-camera-stage {
+  isolation: isolate;
+}
+
+.fl-camera-stage::before {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: 10px;
+  pointer-events: none;
+  border-radius: 18px;
+  opacity: 0.52;
+  background:
+    linear-gradient(var(--primary), var(--primary)) left top / 28px 1px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) left top / 1px 28px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) right top / 28px 1px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) right top / 1px 28px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) left bottom / 28px 1px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) left bottom / 1px 28px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) right bottom / 28px 1px no-repeat,
+    linear-gradient(var(--primary), var(--primary)) right bottom / 1px 28px no-repeat;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 28%, transparent));
+}
+
+.fl-camera-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  left: 5%;
+  right: 5%;
+  top: 20%;
+  height: 1px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 75%, white), transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.fl-camera-panel:has(video:not([hidden])) .fl-camera-stage::after {
+  animation: fl-camera-scan 4.8s ease-in-out infinite;
+}
+
+/* Nutrition: metrics read like live instruments. */
+.fl-nutrition-metric {
+  position: relative;
+  overflow: hidden;
+}
+
+.fl-nutrition-metric::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  right: -24px;
+  bottom: -28px;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  opacity: 0.2;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 18%, transparent), transparent 68%);
+}
+
+.fl-nutrition-metric .bg-primary {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
+.fl-nutrition-metric .bg-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 38%), transparent);
+  transform: translateX(-100%);
+  animation: fl-meter-flow 3.8s ease-in-out infinite;
+}
+
+/* Onboarding: plan generation feels like the system assembling a model. */
+.fl-intake-pending .fl-workspace-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.fl-intake-pending .fl-workspace-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 26px, color-mix(in srgb, var(--primary) 5%, transparent) 27px),
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 7%, transparent), transparent);
+  animation: fl-system-build 5s linear infinite;
+}
+
+@keyframes fl-camera-scan {
+  0%,
+  12% {
+    top: 18%;
+    opacity: 0;
+  }
+  24%,
+  72% {
+    opacity: 0.72;
+  }
+  88%,
+  100% {
+    top: 82%;
+    opacity: 0;
+  }
+}
+
+@keyframes fl-meter-flow {
+  0%,
+  18% {
+    transform: translateX(-110%);
+  }
+  56%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes fl-system-build {
+  from {
+    background-position: 0 -120px, -260px 0;
+  }
+  to {
+    background-position: 0 120px, 260px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-camera-stage::after,
+  .fl-nutrition-metric .bg-primary::after,
+  .fl-intake-pending .fl-workspace-panel::after {
+    animation: none !important;
+  }
+}
