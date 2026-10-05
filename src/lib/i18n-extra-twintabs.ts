@@ -162,6 +162,16 @@ export const extra_twintabs = {
     es: "Qué lee el gemelo y qué no",
     fr: "Ce que le jumeau lit, et ce qu'il ne lit pas",
   },
+  "tw.systemsRecoverySleep": {
+    lt: "Atsistatymas ir miegas",
+    en: "Recovery & sleep",
+    ru: "Восстановление и сон",
+    uk: "Відновлення та сон",
+    pl: "Regeneracja i sen",
+    de: "Erholung & Schlaf",
+    es: "Recuperación y sueño",
+    fr: "Récupération et sommeil",
+  },
   "tw.systemsNote": {
     lt: "Figūros spalvos remiasi tik registruotomis serijomis. Miegas, ŠRV ir ramybės pulsas į jas neįeina — jie rodomi čia atskirai, tokie, kokie atkeliavo iš šaltinio.",
     en: "The figure's colours come from logged sets alone. Sleep, HRV and resting heart rate do not feed them — they are shown here separately, exactly as the source delivered them.",
