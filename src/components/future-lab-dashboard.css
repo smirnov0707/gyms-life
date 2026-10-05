@@ -1153,10 +1153,11 @@
   }
 }
 
-/* Product Convergence mobile hierarchy.
-   Today must never compress the decision, plan and Digital Twin side-by-side. */
-.fl-today-twin-mobile {
-  display: none;
+/* Product Convergence hierarchy.
+   Today owns the daily decision. The full Digital Twin lives in My Twin. */
+.fl-today-twin-entry {
+  display: block;
+  width: 100%;
 }
 
 @media (max-width: 759px) {
@@ -1167,7 +1168,7 @@
   .fl-today-support,
   .fl-today-command-copy,
   .fl-today-plan,
-  .fl-today-twin,
+  .fl-today-twin-entry,
   .fl-today-changes,
   .fl-today-context {
     width: 100%;
@@ -1202,17 +1203,6 @@
     gap: 12px;
   }
 
-  /* The full anatomical cockpit belongs to My Twin on a phone. Showing it
-     beside the daily plan created the two-column squeeze seen in production. */
-  .fl-today-twin {
-    display: none;
-  }
-
-  .fl-today-twin-mobile {
-    display: block;
-    width: 100%;
-  }
-
   .fl-today-changes,
   .fl-today-context,
   .fl-today-support {
@@ -1222,7 +1212,7 @@
   .fl-today-changes > summary,
   .fl-today-context > summary,
   .fl-today-support > summary,
-  .fl-today-twin-mobile > summary {
+  .fl-today-twin-entry > summary {
     min-height: 48px;
     display: flex;
     align-items: center;
