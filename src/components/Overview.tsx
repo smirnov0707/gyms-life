@@ -246,7 +246,7 @@ export function Overview() {
             </summary>
             <div className="grid gap-3 border-t border-border p-4">
               <MorningLabReview compact />
-              <TodayIntelligenceBrief presentation="cards" />
+              <TodayIntelligenceBrief />
             </div>
           </details>
         </section>
