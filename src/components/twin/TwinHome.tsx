@@ -492,14 +492,6 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
                 label={label}
               />
             </div>
-            {targets?.status === "session" ? (
-              <Link
-                to="/training"
-                className="mt-3 inline-flex min-h-11 items-center rounded-full border border-white/15 px-4 text-xs font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"
-              >
-                {t("th.open")}
-              </Link>
-            ) : null}
           </div>
 
           <div className="min-w-0">
