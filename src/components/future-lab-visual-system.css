@@ -968,3 +968,26 @@
   .fl-investigation-card {
   box-shadow: var(--shadow-panel);
 }
+
+
+/* Living UI — Coach moves from invitation to focused conversation. */
+.future-lab-app .fl-coach-conversation[data-conversation-state="idle"]::before {
+  width: 34rem;
+  height: 34rem;
+  top: -25rem;
+}
+
+.future-lab-app .fl-coach-conversation[data-conversation-state="active"]::before {
+  width: 24rem;
+  height: 24rem;
+  top: -18rem;
+  opacity: 0.34;
+}
+
+.future-lab-app .fl-coach-conversation[data-conversation-state="thinking"]::before {
+  width: 28rem;
+  height: 28rem;
+  top: -20rem;
+  opacity: 0.58;
+  animation-duration: 4.5s;
+}
