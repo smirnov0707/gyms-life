@@ -1685,6 +1685,10 @@
   overflow: hidden;
 }
 
+.fl-workout-summary.fl-workspace-hero::before {
+  display: none;
+}
+
 .fl-workout-summary::after {
   content: "";
   position: absolute;
