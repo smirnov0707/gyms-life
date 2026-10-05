@@ -47,9 +47,7 @@ export function TwinFuture() {
           </details>
 
           <details className="fl-secondary-details">
-            <summary>
-              {english ? "Constraints & uncertainty" : "Ribos ir neapibrėžtumas"}
-            </summary>
+            <summary>{english ? "Constraints & uncertainty" : "Ribos ir neapibrėžtumas"}</summary>
             <div className="fl-disclosed-content">
               <InjuryRiskRadar />
             </div>
