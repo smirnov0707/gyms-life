@@ -23,8 +23,8 @@ create table if not exists public.endurance_run_splits (
 alter table public.endurance_run_imports enable row level security;
 alter table public.endurance_run_splits enable row level security;
 revoke all on table public.endurance_run_imports,public.endurance_run_splits from anon;
-grant select,insert,update,delete on table public.endurance_run_imports,public.endurance_run_splits to authenticated;
+grant select on table public.endurance_run_imports,public.endurance_run_splits to authenticated;
 grant all on table public.endurance_run_imports,public.endurance_run_splits to service_role;
-create policy "Users manage own run imports" on public.endurance_run_imports for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
-create policy "Users manage own run splits" on public.endurance_run_splits for all to authenticated using((select auth.uid())=user_id) with check((select auth.uid())=user_id);
+create policy "Users read own run imports" on public.endurance_run_imports for select to authenticated using((select auth.uid())=user_id);
+create policy "Users read own run splits" on public.endurance_run_splits for select to authenticated using((select auth.uid())=user_id);
 create index if not exists endurance_run_splits_session_idx on public.endurance_run_splits(workout_session_id,split_index);
