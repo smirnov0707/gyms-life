@@ -1165,7 +1165,6 @@
   .fl-dashboard > div,
   .fl-today-command,
   .fl-today-world,
-  .fl-today-support,
   .fl-today-command-copy,
   .fl-today-plan,
   .fl-today-twin-entry,
@@ -1204,14 +1203,12 @@
   }
 
   .fl-today-changes,
-  .fl-today-context,
-  .fl-today-support {
+  .fl-today-context {
     border-radius: 20px;
   }
 
   .fl-today-changes > summary,
   .fl-today-context > summary,
-  .fl-today-support > summary,
   .fl-today-twin-entry > summary {
     min-height: 48px;
     display: flex;
