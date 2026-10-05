@@ -1207,8 +1207,12 @@
     display: none;
   }
 
-  .fl-today-twin-mobile {
-    display: block;
+  .fl-today-more:not([open]) .fl-today-twin-mobile {
+    display: none;
+  }
+
+  .fl-today-more[open] .fl-today-twin-mobile {
+    display: grid;
     width: 100%;
   }
 
