@@ -664,7 +664,7 @@ try {
             ? ".fl-strength-summary > button"
             : screen === "lab"
               ? ".fl-investigation-card h2"
-              : ".fl-journal-filters";
+              : ".twin-journal-view > section[aria-labelledby] h2 > button";
         const target = await shown.page.locator(selector).boundingBox();
         const dock = await shown.page.locator(".fl-mobile-navigation").boundingBox();
         referenceLayoutChecks.push({
