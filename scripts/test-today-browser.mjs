@@ -700,10 +700,12 @@ try {
         );
         console.log("TODAY_REFERENCE_LAYOUT " + JSON.stringify(layout));
         const command = await shown.page.locator(".fl-today-command").boundingBox();
+        const plan = await shown.page.locator(".fl-today-plan").boundingBox();
         referenceLayoutChecks.push({
           screen,
           viewport: viewport.name,
           target: command,
+          plan,
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
@@ -821,7 +823,11 @@ try {
     if (check.viewport === "reference") {
       expect(
         check.target.y + check.target.height,
-        "Resting Today composition should fit the reference viewport",
+        "Today command remains immediately visible in the reference viewport",
+      ).toBeLessThanOrEqual(check.usableBottom);
+      expect(
+        check.plan.y + check.plan.height,
+        "Today's primary plan remains immediately actionable in the reference viewport",
       ).toBeLessThanOrEqual(check.usableBottom);
     } else if (check.viewport === "mobile") {
       if (check.screen === "journal") {
