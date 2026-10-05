@@ -35,7 +35,7 @@ export async function loadActiveRacePrep(
 
   const weekStart = new Date(Date.parse(today + "T00:00:00Z") - 6 * DAY_MS).toISOString();
   const { data: runs, error: runsError } = await supabase
-    .from("workout_sessions").select("distance_meters,duration_seconds,perceived_effort")
+    .from("workout_sessions").select("distance_meters,duration_seconds,perceived_effort,endurance_session_intent")
     .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
     .gte("started_at", weekStart).order("started_at", { ascending: true });
   if (runsError) throw runsError;
@@ -46,7 +46,10 @@ export async function loadActiveRacePrep(
     perceivedEffort: run.perceived_effort,
   }));
   const progress = summarizeRaceWeek({ planned: currentWeek.sessions, completed });
-  const nextSession = currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)] ?? null;
+  const matchedIntents = new Set((runs ?? []).flatMap((run) => run.endurance_session_intent ? [run.endurance_session_intent] : []));
+  const nextSession = currentWeek.sessions.find((session) => !matchedIntents.has(session.intent))
+    ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]
+    ?? null;
 
   return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks };
 }
