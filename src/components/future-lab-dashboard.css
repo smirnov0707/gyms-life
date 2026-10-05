@@ -1373,3 +1373,173 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* Today 2.3: one mobile command, one secondary layer.
+   This block is intentionally last so older cockpit-era mobile rules cannot
+   reintroduce competing columns or secondary cards. */
+@media (max-width: 759px) {
+  .fl-dashboard .fl-today-root {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px;
+  }
+
+  .fl-dashboard .fl-today-root > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    grid-column: 1 / -1 !important;
+  }
+
+  .fl-dashboard .fl-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-dashboard .fl-mobile-page-name {
+    margin-bottom: 8px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+  }
+
+  .fl-dashboard .fl-greeting h1 {
+    font-size: 22px;
+    line-height: 1.18;
+  }
+
+  .fl-dashboard .fl-greeting > p:last-child {
+    display: none;
+  }
+
+  .fl-today-command {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    border-radius: 22px;
+    padding: 12px;
+  }
+
+  .fl-today-plan {
+    order: 1;
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fl-today-command-copy {
+    order: 2;
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fl-today-command-copy > p:first-child {
+    display: none;
+  }
+
+  .fl-today-command .fl-readiness-card,
+  .fl-today-command .fl-readiness-empty,
+  .fl-today-command .fl-todays-plan {
+    width: 100%;
+    max-width: none;
+  }
+
+  .fl-today-command .fl-readiness-empty {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .fl-today-command .fl-readiness-inline > summary {
+    min-height: 48px;
+    padding: 10px 12px;
+  }
+
+  .fl-today-command .fl-readiness-inline > div {
+    margin: 0;
+    padding: 12px;
+  }
+
+  .fl-today-command-copy .fl-today-decision {
+    margin-top: 8px;
+    padding: 10px 2px 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .fl-today-command-copy .fl-today-decision > .fl-eyebrow,
+  .fl-today-command-copy .fl-today-decision > h2 {
+    display: none;
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-decision-summary {
+    margin: 0;
+    max-width: none;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+  }
+
+  .fl-today-plan .fl-todays-plan {
+    border-radius: 18px;
+  }
+
+  .fl-today-plan .fl-plan-start {
+    width: 100%;
+    min-height: 56px;
+    font-size: 16px;
+  }
+
+  .fl-today-secondary {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fl-today-more {
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .fl-today-more > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .fl-today-more .fl-surface {
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .fl-today-twin-desktop {
+    display: none;
+  }
+
+  .fl-dashboard {
+    overflow-x: clip;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 760px) {
+  .fl-today-secondary {
+    grid-template-columns: minmax(280px, 0.55fr) minmax(0, 1.45fr);
+    align-items: start;
+  }
+
+  .fl-today-twin-desktop {
+    display: block;
+  }
+}

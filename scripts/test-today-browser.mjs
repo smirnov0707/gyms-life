@@ -360,7 +360,7 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-more")).toBeVisible();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -569,11 +569,11 @@ try {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-more")).toBeVisible();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const secondary = await shown.page.locator(".fl-today-secondary").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -583,14 +583,14 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          secondary.x,
+          "Today mobile secondary layer stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
+          Math.abs(secondary.width - command.width),
+          "Today mobile command and More layer share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile is one command followed by one collapsed More layer");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
@@ -670,7 +670,7 @@ try {
           fullPage: false,
         });
         const layout = await shown.page.evaluate(() =>
-          [".fl-today-command", ".fl-today-world", ".fl-today-support"].map((selector) => {
+          [".fl-today-command", ".fl-today-secondary"].map((selector) => {
             const rect = document.querySelector(selector)?.getBoundingClientRect();
             return { selector, ...(rect?.toJSON() ?? {}) };
           }),
@@ -688,17 +688,20 @@ try {
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
-            const element = document.querySelector(selector);
-            const rect = element.getBoundingClientRect();
-            return {
-              selector,
-              x: rect.x,
-              right: rect.right,
-              width: rect.width,
-              overflow: element.scrollWidth - element.clientWidth,
-            };
-          }),
+          [".fl-today-more", ".fl-today-twin-desktop"]
+            .map((selector) => {
+              const element = document.querySelector(selector);
+              if (!element) return null;
+              const rect = element.getBoundingClientRect();
+              return {
+                selector,
+                x: rect.x,
+                right: rect.right,
+                width: rect.width,
+                overflow: element.scrollWidth - element.clientWidth,
+              };
+            })
+            .filter(Boolean),
         );
         for (let i = 1; i < columns.length; i++)
           expect(columns[i].x).toBeGreaterThanOrEqual(columns[i - 1].right);
