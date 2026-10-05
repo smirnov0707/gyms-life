@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -16,22 +16,10 @@ import { submitCheckin } from "@/lib/smart.functions";
 import { calculateReadinessScore, loadModifierFor } from "@/lib/readiness.engine";
 
 export const Route = createFileRoute("/_authenticated/readiness")({
-  head: () => ({
-    meta: [
-      { title: "Paros pasiruošimas ir autoreguliacija — GYMS.LIFE" },
-      {
-        name: "description",
-        content:
-          "Miego, streso ir raumenų skausmo patikra, kuri automatiškai pritaiko šiandienos krūvį.",
-      },
-      { property: "og:title", content: "Paros pasiruošimas — GYMS.LIFE" },
-      {
-        property: "og:description",
-        content: "Sistema perskaičiuoja šiandienos krūvį pagal tavo būklę.",
-      },
-    ],
-  }),
-  component: ReadinessPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/app" });
+  },
+  component: () => null,
 });
 
 const fields = [
@@ -323,6 +311,3 @@ export function ReadinessWorkspace({ embedded = false }: { embedded?: boolean } 
   );
 }
 
-function ReadinessPage() {
-  return <ReadinessWorkspace />;
-}
