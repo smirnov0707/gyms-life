@@ -352,15 +352,12 @@ try {
         ),
       ).toBeVisible();
       const canvas = shown.page.locator("canvas[data-twin-frames]").first();
-      if (
-        ["twin", "muscle"].includes(screen) ||
-        (screen === "today" && viewport.name !== "mobile")
-      ) {
+      if (["twin", "muscle"].includes(screen)) {
         await assertInteractiveTwin(canvas);
       }
-      if (screen === "today" && viewport.name === "mobile") {
-        await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+      if (screen === "today") {
+        await expect(shown.page.locator("canvas[data-twin-frames]")).toHaveCount(0);
+        await expect(shown.page.locator(".fl-today-twin-entry")).toBeVisible();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -578,8 +575,7 @@ try {
         await expect(shown.page.locator(".fl-today-command .fl-greeting")).toHaveCount(1);
         await expect(shown.page.locator(".fl-today-root > .fl-greeting")).toHaveCount(0);
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
-        await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-entry")).toBeVisible();
         await expect(shown.page.locator(".fl-today-context")).toBeVisible();
         await expect(shown.page.locator(".fl-today-root > .fl-today-support")).toHaveCount(0);
 
@@ -701,38 +697,27 @@ try {
           target: command,
           usableBottom: viewport.height,
         });
-        const columns = await shown.page.evaluate(() =>
-          [".fl-today-twin", ".fl-today-context"].map((selector) => {
+        const secondary = await shown.page.evaluate(() =>
+          [".fl-today-twin-entry", ".fl-today-context"].map((selector) => {
             const element = document.querySelector(selector);
+            if (!element) throw new Error(`Missing Today secondary surface: ${selector}`);
             const rect = element.getBoundingClientRect();
             return {
               selector,
-              x: rect.x,
-              right: rect.right,
+              y: rect.y,
+              bottom: rect.bottom,
               width: rect.width,
               overflow: element.scrollWidth - element.clientWidth,
             };
           }),
         );
-        for (let i = 1; i < columns.length; i++)
-          expect(columns[i].x).toBeGreaterThanOrEqual(columns[i - 1].right);
-        for (const column of columns)
-          expect(column.overflow, column.selector).toBeLessThanOrEqual(1);
-        const canvasBounds = await canvas.boundingBox();
-        expect(canvasBounds.width).toBeGreaterThanOrEqual(220);
-        expect(canvasBounds.height).toBeGreaterThanOrEqual(380);
-        const insightSummary = shown.page.locator(".twin-cockpit-insights > summary");
-        await insightSummary.click();
-        const insights = shown.page.locator(".twin-cockpit-insights > section");
-        await expect(insights).toBeVisible();
-        const insightBounds = await insights.boundingBox();
-        expect(insightBounds.width).toBeGreaterThan(300);
-        expect(
-          await insights.evaluate((element) => element.scrollWidth - element.clientWidth),
-        ).toBeLessThanOrEqual(1);
-        await insightSummary.click();
+        expect(secondary[1].y).toBeGreaterThanOrEqual(secondary[0].bottom);
+        for (const surface of secondary) {
+          expect(surface.width, surface.selector).toBeGreaterThan(1000);
+          expect(surface.overflow, surface.selector).toBeLessThanOrEqual(1);
+        }
         record(
-          "Today keeps one governing command above the fold and separates Twin from optional changes",
+          "Today keeps one governing command and moves the full Twin into its own world",
         );
       }
       await writeFile(
