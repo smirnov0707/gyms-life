@@ -1627,6 +1627,7 @@ export type Database = {
           finished_at: string | null
           id: string
           notes: string | null
+          perceived_effort: number | null
           plan_id: string | null
           started_at: string
           title: string | null
@@ -1635,6 +1636,11 @@ export type Database = {
           workout_snapshot: Json | null
         }
         Insert: {
+          activity_environment?: string | null
+          activity_kind?: string | null
+          activity_source?: string | null
+          average_heart_rate_bpm?: number | null
+          distance_meters?: number | null
           adaptation_modifier?: number
           created_at?: string
           day_index?: number | null
@@ -1652,6 +1658,12 @@ export type Database = {
           workout_snapshot?: Json | null
         }
         Update: {
+          activity_environment?: string | null
+          activity_kind?: string | null
+          activity_source?: string | null
+          average_heart_rate_bpm?: number | null
+          distance_meters?: number | null
+          perceived_effort?: number | null
           adaptation_modifier?: number
           created_at?: string
           day_index?: number | null
