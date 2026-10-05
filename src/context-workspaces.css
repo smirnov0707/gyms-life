@@ -1999,3 +1999,22 @@
     transition: none;
   }
 }
+
+
+/* Light-theme restraint for workspace cinematic layers. */
+.light .fl-workspace-hero::before {
+  opacity: 0.2;
+  filter: blur(14px);
+}
+
+.light .fl-workout-summary::after {
+  opacity: 0.18;
+}
+
+.light .fl-camera-stage::before {
+  opacity: 0.34;
+}
+
+.light .fl-nutrition-metric::after {
+  opacity: 0.1;
+}
