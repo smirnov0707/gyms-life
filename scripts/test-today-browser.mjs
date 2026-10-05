@@ -246,10 +246,17 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
+    const context = page.getByText(/^(Deeper context|Išsamesnis kontekstas)$/);
+    if (await context.count()) {
+      const contextDetails = context.locator("xpath=ancestor::details[1]");
+      if ((await contextDetails.getAttribute("open")) === null) await context.click();
+    }
     const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+      if ((await details.getAttribute("open")) === null && (await summary.isVisible())) {
+        await summary.click();
+      }
     }
   };
 
