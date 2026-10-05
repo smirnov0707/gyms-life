@@ -12,9 +12,11 @@ describe("contextualActionsFor", () => {
 
   it("keeps check-in and nutrition available away from Today", () => {
     for (const world of ["twin", "lab", "coach"] as const) {
-      const intents = contextualActionsFor(world).map((action) => action.intent);
+      const actions = contextualActionsFor(world);
+      const intents = actions.map((action) => action.intent);
       expect(intents).toContain("checkin");
       expect(intents).toContain("nutrition");
+      expect(actions.find((action) => action.intent === "nutrition")?.to).toBe("/nutrition");
     }
   });
 });
