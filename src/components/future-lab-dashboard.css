@@ -1495,3 +1495,15 @@
     align-items: center;
   }
 }
+
+@media (max-width: 759px) {
+  .fl-plan-mobile-overflow {
+    display: none;
+  }
+
+  .fl-plan-more-exercises {
+    display: block;
+    padding-inline: 4px;
+    padding-top: 5px;
+  }
+}
