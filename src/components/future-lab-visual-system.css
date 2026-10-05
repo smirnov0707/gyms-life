@@ -857,3 +857,23 @@
 .light .future-lab-app .fl-lab-page::after {
   opacity: 0.12;
 }
+
+
+/* Mobile motion budget: one ambient layer + earned/action moments. */
+@media (max-width: 759px) {
+  .future-lab-app::after {
+    opacity: 0.2;
+    filter: blur(12px) saturate(108%);
+    animation-duration: 32s;
+  }
+
+  .future-lab-app .fl-lab-page::after,
+  .future-lab-app .fl-coach-conversation::before {
+    animation: none;
+  }
+
+  .future-lab-app .fl-coach-conversation::before {
+    opacity: 0.28;
+    filter: blur(10px);
+  }
+}
