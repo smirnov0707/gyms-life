@@ -486,8 +486,10 @@
     gap: 4px;
   }
   .future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-night-status) {
-    width: 40px;
-    min-height: 40px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
   }
 }
 
