@@ -8,6 +8,7 @@ import { assessRaceReadiness } from "./endurance-race-readiness.engine";
 import { loadDigitalAthleteState } from "./digital-athlete.service";
 import { assessLongRunProgress, raceSpecificLongRunCoverage } from "./endurance-long-run.engine";
 import { RACE_DISTANCE_METERS } from "./endurance-activity.schema";
+import { buildPaceProfile } from "./endurance-pace.engine";
 
 const DAY_MS = 86_400_000;
 const dayDiff = (a: string, b: string) => Math.floor((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DAY_MS);
@@ -57,12 +58,21 @@ export async function loadActiveRacePrep(
   const historySince = new Date(Date.now() - 84 * DAY_MS).toISOString();
   const { data: longHistory, error: longHistoryError } = await supabase
     .from("workout_sessions")
-    .select("started_at,distance_meters,endurance_session_intent")
+    .select("started_at,distance_meters,duration_seconds,endurance_session_intent,perceived_effort")
     .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
     .gte("started_at", historySince).order("started_at", { ascending: true });
   if (longHistoryError) throw longHistoryError;
   const longCandidates = (longHistory ?? []).filter((run) => run.distance_meters !== null && (run.endurance_session_intent === "long" || Number(run.distance_meters) >= 8000)).map((run) => ({ day: run.started_at.slice(0,10), distanceMeters: Number(run.distance_meters) }));
-  const longRunProgress = assessLongRunProgress(longCandidates);
+  const paceProfile = buildPaceProfile((longHistory ?? []).flatMap((run) =>
+    run.distance_meters !== null && run.duration_seconds !== null ? [{
+      day: run.started_at.slice(0,10),
+      distanceMeters: Number(run.distance_meters),
+      durationSeconds: Number(run.duration_seconds),
+      intent: run.endurance_session_intent as "easy" | "long" | "tempo" | "intervals" | "recovery" | "race" | null,
+      perceivedEffort: run.perceived_effort,
+    }] : []
+  ));
+    const longRunProgress = assessLongRunProgress(longCandidates);
   const longRunCoverage = raceSpecificLongRunCoverage(longRunProgress.recentLongestMeters, RACE_DISTANCE_METERS[goal.distance]);
 
     const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
@@ -79,5 +89,5 @@ export async function loadActiveRacePrep(
     repeatedOverTargetRuns: 0,
   });
 
-  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage };
+  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile };
 }
