@@ -1373,3 +1373,126 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+.fl-today-mobile-actions {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  /* The greeting is identity, not another card. Keep it quiet so the command
+     begins visually with the plan rather than three stacked headings. */
+  .fl-dashboard .fl-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-dashboard .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 6px;
+    font-size: 9px;
+    opacity: 0.72;
+  }
+
+  .fl-dashboard .fl-greeting h1 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .fl-dashboard .fl-greeting > p:last-child {
+    display: none;
+  }
+
+  .fl-today-command {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .fl-today-command-copy > .text-\[9px\] {
+    display: none;
+  }
+
+  .fl-today-command-copy {
+    margin-top: -2px;
+  }
+
+  /* "What changed" is useful only when requested. It is no longer another
+     peer card competing with the workout in the first viewport. */
+  .fl-today-changes {
+    order: 3;
+    border-radius: 16px;
+    background: transparent;
+  }
+
+  .fl-today-changes > summary {
+    min-height: 44px;
+    padding: 10px 12px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+  }
+
+  .fl-today-mobile-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .fl-today-mobile-action {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    color: var(--foreground);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  a.fl-today-mobile-action,
+  .fl-today-mobile-action > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 13px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .fl-today-mobile-action > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .fl-today-mobile-action-body {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    padding: 12px;
+  }
+
+  .fl-today-food-action[open] {
+    grid-column: 1 / -1;
+  }
+
+  .fl-today-food-action[open] > summary {
+    min-height: 44px;
+  }
+
+  .fl-today-support {
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .fl-today-support > summary {
+    min-height: 44px;
+    padding: 9px 2px;
+    color: var(--muted-foreground);
+    font-size: 11px;
+  }
+
+  .fl-today-support > div {
+    padding-inline: 0;
+  }
+
+  .fl-today-food-desktop {
+    display: none;
+  }
+}
