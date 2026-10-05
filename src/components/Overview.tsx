@@ -224,19 +224,6 @@ export function Overview() {
         </section>
 
         <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
-          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
-            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "Open My Twin" : "Atidaryti My Twin"}
-            </summary>
-            <div className="border-t border-border p-3">
-              <Link to="/twin" className="fl-text-link inline-flex">
-                {english
-                  ? "Explore body, systems & trajectory"
-                  : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
-                →
-              </Link>
-            </div>
-          </details>
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
@@ -251,9 +238,28 @@ export function Overview() {
           </details>
         </section>
 
+        <nav className="fl-today-mobile-actions" aria-label={english ? "More today actions" : "Daugiau šiandienos veiksmų"}>
+          <Link to="/twin" className="fl-today-mobile-action">
+            <span>{english ? "My Twin" : "My Twin"}</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+          <details className="fl-today-mobile-action fl-today-food-action">
+            <summary>
+              <span>{english ? "Log food" : "Įrašyti maistą"}</span>
+              <span aria-hidden="true">+</span>
+            </summary>
+            <div className="fl-today-mobile-action-body">
+              <QuickFoodLog compact />
+              <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                {english ? "Nutrition Intelligence" : "Nutrition Intelligence"} →
+              </Link>
+            </div>
+          </details>
+        </nav>
+
         <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
           <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
+            {english ? "Deep analysis" : "Gilesnė analizė"}
           </summary>
           <div className="grid gap-4 border-t border-border p-4">
             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
@@ -262,7 +268,7 @@ export function Overview() {
               <SleepAnalysis />
               <PredictionEvidencePanel compact />
             </div>
-            <details className="fl-surface group">
+            <details className="fl-surface fl-today-food-desktop group">
               <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
                 {english ? "Log food here" : "Įrašyti maistą čia"}
               </summary>
