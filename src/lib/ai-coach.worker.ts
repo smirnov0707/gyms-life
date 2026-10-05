@@ -14,11 +14,12 @@ export async function runCoachWorker(
   const recommendation = parseCoachRecommendation(await worker.generateRecommendation(context));
   const governed = governCoachRecommendation(context, recommendation);
   if (governed.enduranceExecution === "blocked") {
+    const protectRecovery = context.endurance.postRun?.nextAction === "protect_recovery" || context.endurance.readiness === "strained";
     return {
       ...recommendation,
       decision: "NO_CHANGE",
-      priority: "HIGH",
-      actions: [{ type: "RECOVER", exerciseSlug: null, value: null, unit: null, instruction: "Follow the validated GYMS.LIFE endurance decision; the AI-generated load change was blocked." }],
+      priority: protectRecovery ? "HIGH" : "MEDIUM",
+      actions: [{ type: protectRecovery ? "RECOVER" : "KEEP_PLAN", exerciseSlug: null, value: null, unit: null, instruction: "Follow the validated GYMS.LIFE endurance decision; the AI-generated override was blocked." }],
       safety: { requiresUserConfirmation: false, notes: [...recommendation.safety.notes, ...governed.violations].slice(0, 6) },
     };
   }
