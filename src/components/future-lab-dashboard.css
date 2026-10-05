@@ -1520,3 +1520,47 @@
     transform: none !important;
   }
 }
+
+
+/* Living UI — atmosphere follows measured readiness and local day phase.
+   These tokens never change the meaning or colour of the readiness reading itself. */
+.fl-dashboard[data-living-state="ready"] {
+  --fl-living-aura: color-mix(in srgb, var(--primary) 15%, transparent);
+  --fl-living-secondary: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.fl-dashboard[data-living-state="balanced"] {
+  --fl-living-aura: color-mix(in srgb, var(--accent) 10%, transparent);
+  --fl-living-secondary: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+.fl-dashboard[data-living-state="recover"] {
+  --fl-living-aura: color-mix(in srgb, var(--ember) 8%, transparent);
+  --fl-living-secondary: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.fl-dashboard[data-living-state="unknown"] {
+  --fl-living-aura: color-mix(in srgb, var(--foreground) 4%, transparent);
+  --fl-living-secondary: transparent;
+}
+
+.fl-dashboard .fl-today-command::after {
+  background:
+    radial-gradient(circle at 48% 52%, var(--fl-living-aura, color-mix(in srgb, var(--primary) 13%, transparent)), transparent 54%),
+    radial-gradient(circle at 42% 46%, var(--fl-living-secondary, color-mix(in srgb, var(--accent) 7%, transparent)), transparent 68%);
+}
+
+.fl-dashboard[data-day-phase="morning"] .fl-today-command {
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent),
+    0 -24px 72px -62px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.fl-dashboard[data-day-phase="evening"] .fl-today-command,
+.fl-dashboard[data-day-phase="night"] .fl-today-command {
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 3%, transparent),
+    0 26px 74px -66px color-mix(in srgb, var(--accent) 18%, transparent);
+}
