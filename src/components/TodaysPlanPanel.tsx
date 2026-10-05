@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
@@ -57,7 +57,8 @@ function ExerciseRow({
 }
 
 function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const exerciseLabel = baseLang(lang) === "en" ? "more exercises" : "daugiau pratimų";
   return (
     <>
       <div className="flex items-baseline justify-between gap-3 px-3">
@@ -77,7 +78,7 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
       </ul>
       {workout.exercises.length > 3 ? (
         <p className="fl-plan-more-exercises hidden px-3 pb-1 text-[11px] font-semibold text-muted-foreground">
-          +{workout.exercises.length - 3} {t("nav.exercises")}
+          +{workout.exercises.length - 3} {exerciseLabel}
         </p>
       ) : null}
       <div className="px-3 pb-3 pt-3">
