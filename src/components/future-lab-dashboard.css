@@ -1152,3 +1152,224 @@
     min-height: 44px;
   }
 }
+
+/* Product Convergence mobile hierarchy.
+   Today must never compress the decision, plan and Digital Twin side-by-side. */
+.fl-today-twin-mobile {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  .fl-dashboard,
+  .fl-dashboard > div,
+  .fl-today-command,
+  .fl-today-world,
+  .fl-today-support,
+  .fl-today-command-copy,
+  .fl-today-plan,
+  .fl-today-twin,
+  .fl-today-changes {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .fl-today-command {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: visible;
+    border-radius: 22px;
+    padding: 14px;
+  }
+
+  .fl-today-command-copy,
+  .fl-today-plan {
+    display: block;
+    width: 100%;
+  }
+
+  .fl-today-command .fl-surface,
+  .fl-today-command .fl-todays-plan {
+    width: 100%;
+    max-width: none;
+  }
+
+  .fl-today-world {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* The full anatomical cockpit belongs to My Twin on a phone. Showing it
+     beside the daily plan created the two-column squeeze seen in production. */
+  .fl-today-twin {
+    display: none;
+  }
+
+  .fl-today-twin-mobile {
+    display: block;
+    width: 100%;
+  }
+
+  .fl-today-changes,
+  .fl-today-support {
+    border-radius: 20px;
+  }
+
+  .fl-today-changes > summary,
+  .fl-today-support > summary,
+  .fl-today-twin-mobile > summary {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    font-size: 13px;
+  }
+
+  .fl-today-command .fl-today-decision h2 {
+    max-width: 18ch;
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .fl-today-command .fl-decision-summary {
+    max-width: 34ch;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .fl-today-plan .fl-todays-plan {
+    border-radius: 18px;
+  }
+
+  .fl-today-plan .fl-todays-plan li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fl-today-plan .fl-todays-plan li > span:first-child {
+    min-width: 0;
+  }
+
+  .fl-today-plan .fl-todays-plan li > span:first-child > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fl-today-plan .fl-plan-start {
+    width: 100%;
+    min-height: 58px;
+    font-size: 17px;
+  }
+
+  .fl-dashboard {
+    padding-bottom: calc(108px + env(safe-area-inset-bottom));
+    overflow-x: clip;
+  }
+}
+
+@media (max-width: 759px) {
+  .fl-today-command-copy {
+    order: 2;
+  }
+
+  .fl-today-plan {
+    order: 1;
+  }
+
+  .fl-today-command-copy > .fl-eyebrow,
+  .fl-today-command-copy > .fl-readiness-card,
+  .fl-today-command-copy > .fl-readiness-empty {
+    order: 0;
+  }
+
+  .fl-today-command-copy .fl-today-decision {
+    margin-top: 2px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    padding: 4px 2px 2px;
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-eyebrow {
+    font-size: 9px;
+  }
+
+  .fl-today-command-copy .fl-today-decision h2 {
+    margin-top: 5px;
+    font-size: 18px;
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-decision-summary {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-disclosure {
+    margin-top: 5px;
+  }
+}
+
+@media (max-width: 759px) {
+  .fl-today-command .fl-readiness-empty {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .fl-today-command .fl-readiness-inline > summary {
+    padding: 12px 14px;
+  }
+
+  .fl-today-command .fl-readiness-inline[open] > summary {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fl-today-command .fl-readiness-inline > div {
+    margin: 0;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 759px) {
+  .fl-today-command-copy .fl-today-decision > .fl-eyebrow,
+  .fl-today-command-copy .fl-today-decision > h2 {
+    display: none;
+  }
+
+  .fl-today-command-copy .fl-today-decision {
+    border-top: 1px solid var(--border);
+    margin-top: 0;
+    padding: 12px 2px 0;
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-decision-summary {
+    margin: 0;
+    max-width: none;
+    color: var(--muted-foreground);
+  }
+
+  .fl-today-command-copy .fl-today-decision .fl-disclosure > summary {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 759px) {
+  .fl-dashboard .fl-today-root {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px;
+  }
+
+  .fl-dashboard .fl-today-root > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    grid-column: 1 / -1 !important;
+  }
+}

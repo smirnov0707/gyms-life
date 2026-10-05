@@ -1,4 +1,5 @@
 import { ReadinessCard } from "@/components/ReadinessCard";
+import { QuickFoodLog } from "@/components/QuickFoodLog";
 import { LiveSignals } from "@/components/LiveSignals";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
@@ -154,7 +155,7 @@ export function Overview() {
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
   return (
     <div className="fl-dashboard fl-page-enter">
-      <div className="mx-auto grid w-full max-w-[1480px] gap-4">
+      <div className="fl-today-root mx-auto grid w-full max-w-[1480px] gap-4">
         <header className="fl-greeting">
           <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
           <h1>
@@ -165,10 +166,10 @@ export function Overview() {
         </header>
 
         <section
-          className="fl-today-command fl-premium-card grid gap-4 rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
+          className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
           aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
         >
-          <div className="grid content-start gap-3">
+          <div className="fl-today-command-copy grid min-w-0 content-start gap-3">
             <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
               {english ? "TODAY COMMAND" : "ŠIANDIENOS VEIKSMAS"}
             </p>
@@ -181,26 +182,34 @@ export function Overview() {
               />
             ) : (
               <div className="fl-surface fl-readiness-empty">
-                <p className="fl-eyebrow">{english ? "Readiness" : "Pasiruošimas"}</p>
-                <p>
-                  {readinessReadFailed
-                    ? english
-                      ? "Readiness could not be loaded."
-                      : "Nepavyko įkelti pasiruošimo duomenų."
-                    : english
-                      ? "How are you feeling today?"
-                      : "Kaip šiandien jautiesi?"}
-                </p>
-                {!readinessReadFailed ? (
-                  <details className="group mt-3">
-                    <summary className="fl-text-link cursor-pointer list-none">
-                      {english ? "Check in here" : "Įvertinti čia"} →
-                    </summary>
+                <details className="fl-readiness-inline group">
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3">
+                    <span>
+                      <span className="fl-eyebrow block">
+                        {english ? "Today's state" : "Šiandienos būsena"}
+                      </span>
+                      <span className="mt-1 block text-sm font-medium text-foreground">
+                        {readinessReadFailed
+                          ? english
+                            ? "Readiness unavailable"
+                            : "Būsena nepasiekiama"
+                          : english
+                            ? "How are you feeling?"
+                            : "Kaip jautiesi?"}
+                      </span>
+                    </span>
+                    {!readinessReadFailed ? (
+                      <span className="shrink-0 text-xs font-semibold text-primary">
+                        {english ? "Check in" : "Įvertinti"} →
+                      </span>
+                    ) : null}
+                  </summary>
+                  {!readinessReadFailed ? (
                     <div className="mt-3 border-t border-border pt-3">
                       <ReadinessWorkspace embedded />
                     </div>
-                  </details>
-                ) : null}
+                  ) : null}
+                </details>
               </div>
             )}
             <TodayDecision
@@ -209,12 +218,25 @@ export function Overview() {
               primaryTrainingActionHandled={Boolean(today)}
             />
           </div>
-          <div className="min-w-0">
+          <div className="fl-today-plan min-w-0">
             <TodaysPlanPanel />
           </div>
         </section>
 
-        <section className="fl-today-world grid items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
+        <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
+          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
+            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+              {english ? "Open My Twin" : "Atidaryti My Twin"}
+            </summary>
+            <div className="border-t border-border p-3">
+              <Link to="/twin" className="fl-text-link inline-flex">
+                {english
+                  ? "Explore body, systems & trajectory"
+                  : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
+                →
+              </Link>
+            </div>
+          </details>
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
@@ -240,6 +262,17 @@ export function Overview() {
               <SleepAnalysis />
               <PredictionEvidencePanel compact />
             </div>
+            <details className="fl-surface group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Log food here" : "Įrašyti maistą čia"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickFoodLog compact />
+                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
+                </Link>
+              </div>
+            </details>
             <DataSourcesStrip />
             <TodayLifeContext />
             {planData ? (

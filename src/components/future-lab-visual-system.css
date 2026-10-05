@@ -550,3 +550,20 @@
     transform: translateY(-1px);
   }
 }
+
+@media (max-width: 639px) {
+  .future-lab-app .fl-shell-main {
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: clip;
+    padding-inline: max(12px, var(--sal, 0px)) max(12px, var(--sar, 0px));
+    padding-bottom: calc(112px + var(--sab, 0px));
+  }
+
+  .future-lab-app .fl-mobile-navigation {
+    left: max(12px, var(--sal, 0px));
+    right: max(12px, var(--sar, 0px));
+    bottom: max(10px, var(--sab, 0px));
+  }
+}
