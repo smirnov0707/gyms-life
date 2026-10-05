@@ -667,19 +667,17 @@ function AthleteModelPage() {
       {/* The stable body facts. Until now their only entry point was the
           onboarding form, so an athlete who signed up before it started saving
           them had no way to tell the app how tall they are. */}
-      <section className="fl-workspace-panel fl-profile-body p-5 sm:p-6">
-        <div>
+      <details className="fl-workspace-panel fl-profile-body">
+        <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             <Ruler className="size-4" /> {copy.bodyFacts.eyebrow}
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-            {copy.bodyFacts.title}
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          <h2 className="mt-1 text-sm font-semibold text-foreground">{copy.bodyFacts.title}</h2>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
             {copy.bodyFacts.sub}
           </p>
-        </div>
-
+        </summary>
+        <div className="border-t border-border p-5 sm:p-6">
         {bodyLoading ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin text-primary" /> {copy.memory.loading}
@@ -774,7 +772,8 @@ function AthleteModelPage() {
             </Button>
           </>
         )}
-      </section>
+        </div>
+      </details>
 
       <section className="fl-workspace-panel fl-profile-memory p-5 sm:p-6">
         <div>
@@ -1009,7 +1008,24 @@ function AthleteModelPage() {
         </section>
       ) : null}
 
-      <ConnectHealthSource />
+      <details className="fl-workspace-panel fl-profile-sources">
+        <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            {english ? "DATA SOURCES" : "DUOMENŲ ŠALTINIAI"}
+          </p>
+          <h2 className="mt-1 text-sm font-semibold text-foreground">
+            {english ? "Connected health data" : "Prijungti sveikatos duomenys"}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {english
+              ? "Connect or review sources that enrich the athlete model."
+              : "Prijunk arba peržiūrėk šaltinius, kurie papildo sportininko modelį."}
+          </p>
+        </summary>
+        <div className="border-t border-border p-4 sm:p-5">
+          <ConnectHealthSource />
+        </div>
+      </details>
 
       <details className="fl-workspace-panel">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
