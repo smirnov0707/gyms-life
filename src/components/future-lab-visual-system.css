@@ -936,3 +936,35 @@
     animation: none !important;
   }
 }
+
+
+/* Living UI — Lab atmosphere follows the governed hypothesis state. */
+.future-lab-app .fl-lab-page[data-investigation-state="supported"] .fl-investigation-card {
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+  box-shadow:
+    var(--shadow-panel),
+    0 0 40px -32px color-mix(in srgb, var(--primary) 34%, transparent);
+}
+
+.future-lab-app
+  .fl-lab-page:is(
+    [data-investigation-state="monitoring"],
+    [data-investigation-state="insufficient_evidence"]
+  )
+  .fl-investigation-card {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+
+.future-lab-app .fl-lab-page[data-investigation-state="contradicted"] .fl-investigation-card {
+  border-color: color-mix(in srgb, var(--ember) 22%, var(--border));
+}
+
+.future-lab-app
+  .fl-lab-page:is(
+    [data-investigation-state="idle"],
+    [data-investigation-state="loading"],
+    [data-investigation-state="unavailable"]
+  )
+  .fl-investigation-card {
+  box-shadow: var(--shadow-panel);
+}
