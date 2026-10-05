@@ -6,6 +6,7 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
 
 const km = (m: number) => (m / 1000).toFixed(m % 1000 === 0 ? 0 : 1);
+const paceText = (seconds: number | null) => seconds === null ? "—" : Math.floor(seconds / 60) + ":" + String(Math.round(seconds % 60)).padStart(2, "0") + "/km";
 const phaseLabel = (phase: string, en: boolean) => ({
   base: en ? "Base" : "Bazė", build: en ? "Build" : "Auginimas",
   specific: en ? "Race specific" : "Specifinis pasiruošimas",
@@ -58,6 +59,21 @@ export function RacePrepCockpit() {
           <Metric icon={<Route className="size-4" />} value={km(data.progress.completedDistanceMeters) + " / " + km(data.progress.plannedDistanceMeters) + " km"} label={english ? "This week" : "Šią savaitę"} />
           <Metric icon={<Target className="size-4" />} value={data.progress.completedSessions + " / " + data.progress.plannedSessions} label={english ? "Sessions" : "Sesijos"} />
           <Metric icon={<Gauge className="size-4" />} value={pct === null ? "—" : pct + "%"} label={english ? "Distance progress" : "Distancijos progresas"} />
+        </div>
+        <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="fl-eyebrow">{english ? "PACE INTELLIGENCE" : "TEMPO INTELLIGENCE"}</p>
+            <span className="text-xs font-semibold text-muted-foreground">{data.paceProfile.evidenceRuns} {english ? "runs" : "bėg."} · {data.paceProfile.evidenceLevel}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-lg font-semibold">{data.paceProfile.trend === "faster" ? (english ? "Getting faster" : "Tempas greitėja") : data.paceProfile.trend === "slower" ? (english ? "Recent pace is slower" : "Naujausias tempas lėtesnis") : data.paceProfile.trend === "stable" ? (english ? "Stable pace" : "Stabilus tempas") : (english ? "Building evidence" : "Kaupiami duomenys")}</h3>
+            <strong className="text-primary">{paceText(data.paceProfile.recentMedianSecondsPerKm)}</strong>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {data.paceProfile.byIntent.easy ? <span>Easy {paceText(data.paceProfile.byIntent.easy.medianSecondsPerKm)}</span> : null}
+            {data.paceProfile.byIntent.tempo ? <span>Tempo {paceText(data.paceProfile.byIntent.tempo.medianSecondsPerKm)}</span> : null}
+            {data.paceProfile.byIntent.long ? <span>Long {paceText(data.paceProfile.byIntent.long.medianSecondsPerKm)}</span> : null}
+          </div>
         </div>
         <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
           <p className="fl-eyebrow">{english ? "LONG-RUN CAPACITY" : "ILGO BĖGIMO PAJĖGUMAS"}</p>
