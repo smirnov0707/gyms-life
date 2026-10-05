@@ -594,7 +594,9 @@ try {
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with My Twin behind the secondary More layer");
+        record(
+          "Today mobile is a single-column command with My Twin behind the secondary More layer",
+        );
       }
       if (screen === "today") {
         // The one action against the links that surround it.
