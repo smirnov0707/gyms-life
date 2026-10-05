@@ -335,13 +335,13 @@ function numberOrDash(value: number | null, suffix = ""): string {
 function dataGapAction(
   gap: string,
   lang: Lang,
-): { label: string; to: "/training" | "/readiness" | "/twin" | "/nutrition" } {
+): { label: string; to: "/training" | "/app" | "/twin" | "/nutrition" } {
   const isEnglish = baseLang(lang) === "en";
   if (gap.startsWith("training")) {
     return { label: isEnglish ? "Log a workout" : "Užregistruok treniruotę", to: "/training" };
   }
   if (gap.startsWith("recovery")) {
-    return { label: isEnglish ? "Check readiness" : "Įvertink pasiruošimą", to: "/readiness" };
+    return { label: isEnglish ? "Check readiness" : "Įvertink pasiruošimą", to: "/app" };
   }
   if (gap.startsWith("body")) {
     return { label: isEnglish ? "Log body metrics" : "Įvesk kūno rodiklius", to: "/twin" };
