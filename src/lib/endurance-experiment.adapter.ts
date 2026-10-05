@@ -1,0 +1,5 @@
+import{randomUUID}from"node:crypto";import type{EnduranceExperiment}from"./endurance-experiment.schema";import{governPersonalExperiment,type PersonalExperimentProtocol}from"./personal-experiment-governance";
+export function enduranceToPersonalExperiment(experiment:EnduranceExperiment):{protocol:PersonalExperimentProtocol;governance:ReturnType<typeof governPersonalExperiment>}{
+ const protocol:PersonalExperimentProtocol={id:randomUUID(),hypothesisId:"endurance:"+experiment.variable,domain:experiment.variable==="recovery_day_spacing"?"recovery_behavior":"training_behavior",intervention:experiment.variable+" from "+experiment.baselineValue+" to "+experiment.testValue,primaryOutcome:experiment.primaryMetric,durationDays:experiment.durationWeeks*7,changedVariableCount:1,requiresMedicationChange:false,requiresSupplementEscalation:false,requiresSleepRestriction:false,requiresFastingBeyondNormalRoutine:false,stopConditions:["stop_if_endurance_safety_guard_activates","stop_if_user_requests","stop_if_protocol_deviation"]};
+ return{protocol,governance:governPersonalExperiment(protocol)};
+}
