@@ -471,16 +471,31 @@ try {
         );
       }
       if (screen === "lab") {
-        const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
-        await expect(domains).toBeVisible();
-        await expect(domains.getByRole("listitem")).toHaveCount(10);
         await expect(
           shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
         ).toBeVisible();
+
+        const domainsDisclosure = shown.page.locator(".fl-lab-domains");
+        const domains = domainsDisclosure.getByRole("region", {
+          name: "Evidence domains",
+          exact: true,
+        });
+        await expect(domains).toBeHidden();
+        await domainsDisclosure.locator("summary").click();
+        await expect(domains).toBeVisible();
+        await expect(domains.getByRole("listitem")).toHaveCount(10);
+        await domainsDisclosure.locator("summary").click();
+
         const experiments = shown.page.locator(".fl-lab-experiments");
         await expect(
           experiments.getByText("No governed personal experiments yet.", { exact: true }),
+        ).toBeHidden();
+        await experiments.locator("summary").click();
+        await expect(
+          experiments.getByText("No governed personal experiments yet.", { exact: true }),
         ).toBeVisible();
+        await experiments.locator("summary").click();
+
         const knowledge = shown.page.locator(".fl-lab-knowledge");
         await expect(
           knowledge.getByRole("heading", {
@@ -504,7 +519,7 @@ try {
           }),
         ).toBeHidden();
         record(
-          `Lab ${viewport.name} shows evidence domains, investigation and experiment state with accessible knowledge details`,
+          `Lab ${viewport.name} keeps one investigation primary and supporting evidence on demand`,
         );
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
@@ -624,7 +639,9 @@ try {
       }
       if (screen === "lab" && viewport.name === "desktop") {
         const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
-        const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
+        const experiments = await shown.page
+          .locator(".fl-lab-experiments > summary")
+          .boundingBox();
         actionLayoutChecks.push({
           screen,
           viewport: viewport.name,
@@ -785,12 +802,10 @@ try {
       if (check.viewport === "desktop")
         expect(check.readout.x).toBeGreaterThanOrEqual(check.stage.x + check.stage.width);
     } else {
-      expect(check.experiments.x).toBeGreaterThanOrEqual(
-        check.investigation.x + check.investigation.width,
-      );
-      expect(check.experiments.y + check.experiments.height).toBeLessThanOrEqual(
-        check.usableBottom,
-      );
+      expect(
+        check.experiments.y,
+        "Lab supporting experiments stay below the primary investigation",
+      ).toBeGreaterThanOrEqual(check.investigation.y + check.investigation.height);
     }
   }
   console.log("TWIN_WORLD_LAYOUT " + JSON.stringify(referenceLayoutChecks));
