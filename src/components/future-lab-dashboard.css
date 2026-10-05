@@ -1376,3 +1376,79 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+
+/* Visual Experience 3.0 — Today command feels alive without encoding new data. */
+.fl-today-command {
+  isolation: isolate;
+}
+
+.fl-today-command::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: min(46vw, 620px);
+  aspect-ratio: 1;
+  right: -18%;
+  top: -58%;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0.5;
+  background:
+    radial-gradient(circle at 48% 52%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 54%),
+    radial-gradient(circle at 42% 46%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 68%);
+  filter: blur(10px);
+  animation: fl-command-orbit 16s ease-in-out infinite alternate;
+}
+
+.fl-today-command .fl-readiness-card svg circle:last-child {
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.fl-today-command .fl-plan-start {
+  position: relative;
+  overflow: hidden;
+}
+
+.fl-today-command .fl-plan-start::after {
+  content: "";
+  position: absolute;
+  inset: -60% auto -60% -30%;
+  width: 28%;
+  pointer-events: none;
+  opacity: 0;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 30%), transparent);
+}
+
+@media (hover: hover) {
+  .fl-today-command .fl-plan-start:hover::after {
+    opacity: 1;
+    animation: fl-action-sheen 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes fl-command-orbit {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(0.96);
+  }
+  to {
+    transform: translate3d(5%, 5%, 0) scale(1.06);
+  }
+}
+
+@keyframes fl-action-sheen {
+  from {
+    left: -30%;
+  }
+  to {
+    left: 115%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-today-command::after,
+  .fl-today-command .fl-plan-start:hover::after {
+    animation: none !important;
+  }
+}
