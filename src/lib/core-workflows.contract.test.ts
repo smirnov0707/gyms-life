@@ -132,6 +132,17 @@ describe("core workflow contracts", () => {
     missing.days[0]!.meals[0]!.kcal = 1;
     expect(() => validateAdaptationTargets(mealPlan, missing)).toThrow(/energy target/);
   });
+  it("keeps Living UI grounded in explicit product state", () => {
+    const today = readFileSync("src/components/Overview.tsx", "utf8");
+    const lab = readFileSync("src/components/future-lab/LabCommandDeck.tsx", "utf8");
+    const coach = readFileSync("src/routes/_authenticated/coach.tsx", "utf8");
+    const twin = readFileSync("src/components/twin/TwinHome.tsx", "utf8");
+    expect(today).toContain("data-living-state={livingState}");
+    expect(today).toContain("data-day-phase={dayPhase}");
+    expect(lab).toContain("data-investigation-state={investigationState}");
+    expect(coach).toContain("data-conversation-state=");
+    expect(twin).toContain("data-twin-layer={shownLayer}");
+  });
   it("keeps Athlete Hub disclosures readable and tappable on narrow screens", () => {
     const source = readFileSync("src/context-workspaces.css", "utf8");
     expect(source).toContain(".fl-workspace summary {");
