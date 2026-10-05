@@ -140,7 +140,7 @@
 .fl-night-status[data-state="ran"] small {
   color: var(--accent);
 }
-.fl-night-chevron {
+.fl-night-link-icon {
   color: var(--muted-foreground);
   margin-left: 9px;
 }
@@ -226,7 +226,7 @@
     padding: 0 13px;
   }
   .fl-night-copy,
-  .fl-night-chevron,
+  .fl-night-link-icon,
   .fl-night-status > .fl-night-dot {
     display: none;
   }
