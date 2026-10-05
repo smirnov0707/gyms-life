@@ -104,11 +104,6 @@ const baseDict = {
     lt: "Kamera, forma ir biomechanika",
     en: "Camera, form and biomechanics",
   },
-  "action.askCoach": { lt: "Paklausti Coach", en: "Ask Coach" },
-  "action.askCoach.d": {
-    lt: "Vienas pokalbis su visa sistema",
-    en: "One conversation with the whole system",
-  },
   "action.title": { lt: "Daryti dabar", en: "Do now" },
   "nav.coach": { lt: "Intelligence", en: "Intelligence" },
   "theme.label": { lt: "Tema", en: "Theme" },
