@@ -1373,3 +1373,99 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+@media (max-width: 759px) {
+  .fl-greeting {
+    padding-inline: 2px;
+  }
+
+  .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 4px;
+  }
+
+  .fl-greeting h1 {
+    font-size: clamp(28px, 9vw, 38px);
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+  }
+
+  .fl-greeting > p:last-child {
+    display: none;
+  }
+
+  .fl-today-command > .fl-today-command-copy > p:first-child {
+    display: none;
+  }
+
+  .fl-today-world {
+    gap: 8px;
+  }
+
+  .fl-today-twin-mobile,
+  .fl-today-quick-action,
+  .fl-today-changes,
+  .fl-today-support {
+    border-radius: 18px;
+  }
+
+  .fl-today-twin-mobile > summary,
+  .fl-today-quick-action > summary,
+  .fl-today-changes > summary,
+  .fl-today-support > summary {
+    min-height: 52px;
+    font-size: 13px;
+  }
+
+  .fl-today-support {
+    margin-top: 0;
+  }
+
+  .fl-today-support > summary {
+    color: var(--muted-foreground);
+  }
+}
+
+/* Today 2.3: one mobile command, not a stack of shortcuts.
+   Twin already has a primary-nav destination and food logging lives in the + action layer. */
+@media (max-width: 759px) {
+  .fl-today-twin-mobile,
+  .fl-today-quick-action {
+    display: none !important;
+  }
+
+  .fl-today-command-copy {
+    display: contents;
+  }
+
+  .fl-today-command-copy > .fl-readiness-card,
+  .fl-today-command-copy > .fl-readiness-empty {
+    order: 1;
+  }
+
+  .fl-today-plan {
+    order: 2;
+  }
+
+  .fl-today-command-copy > .fl-today-decision {
+    order: 3;
+  }
+
+  .fl-today-command {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .fl-greeting h1 {
+    font-size: clamp(25px, 7.4vw, 31px);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+
+  .fl-today-world {
+    gap: 0;
+  }
+
+  .fl-today-changes {
+    margin-top: 0;
+  }
+}
