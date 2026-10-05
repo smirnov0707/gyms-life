@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { logEnduranceActivity } from "@/lib/endurance-activity.functions";
+import { confirmRaceSessionMatchFn } from "@/lib/endurance-session-match.functions";
 
 export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void> }) {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
   const logActivity = useServerFn(logEnduranceActivity);
+  const confirmMatch = useServerFn(confirmRaceSessionMatchFn);
   const [environment, setEnvironment] = useState<"outdoor" | "treadmill">("outdoor");
   const [minutes, setMinutes] = useState("");
   const [distanceKm, setDistanceKm] = useState("");
   const [rpe, setRpe] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pendingMatch, setPendingMatch] = useState<{ sessionId: string; intent: "easy" | "long" | "tempo" | "intervals" | "recovery" | "race"; score: number } | null>(null);
 
   const submit = async () => {
     const duration = Number(minutes);
@@ -27,7 +30,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     }
     setSaving(true);
     try {
-      await logActivity({
+      const result = await logActivity({
         data: {
           kind: "run",
           environment,
@@ -39,6 +42,11 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
           perceivedEffort: effort,
         },
       });
+      if (result.raceMatch?.status === "needs_confirmation" && result.raceMatch.intent) {
+        setPendingMatch({ sessionId: result.session.id, intent: result.raceMatch.intent, score: result.raceMatch.score });
+      } else {
+        setPendingMatch(null);
+      }
       setMinutes("");
       setDistanceKm("");
       setRpe("");
@@ -51,6 +59,19 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     } finally {
       setSaving(false);
     }
+  };
+
+  const acceptMatch = async () => {
+    if (!pendingMatch) return;
+    setSaving(true);
+    try {
+      await confirmMatch({ data: { workoutSessionId: pendingMatch.sessionId, intent: pendingMatch.intent, matchScore: pendingMatch.score } });
+      setPendingMatch(null);
+      window.dispatchEvent(new CustomEvent("gymslife:endurance-updated"));
+      toast.success(english ? "Run linked to race preparation." : "Bėgimas susietas su pasiruošimo planu.");
+    } catch {
+      toast.error(english ? "Could not confirm the race session." : "Nepavyko patvirtinti plano sesijos.");
+    } finally { setSaving(false); }
   };
 
   return (
@@ -72,6 +93,16 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
         {saving ? <Loader2 className="size-4 animate-spin" /> : null}
         {english ? "Credit this run" : "Užskaityti bėgimą"}
       </Button>
+      {pendingMatch ? (
+        <div className="rounded-[1.25rem] border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm font-semibold">{english ? "Was this your planned " + pendingMatch.intent + " run?" : "Ar tai buvo tavo suplanuotas „" + pendingMatch.intent + "“ bėgimas?"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{english ? "The evidence is close, but not strong enough for automatic classification." : "Duomenys panašūs, bet jų neužtenka automatiniam priskyrimui."}</p>
+          <div className="mt-3 flex gap-2">
+            <Button type="button" size="sm" disabled={saving} onClick={() => void acceptMatch()}>{english ? "Yes, count it" : "Taip, užskaityti"}</Button>
+            <Button type="button" size="sm" variant="ghost" disabled={saving} onClick={() => setPendingMatch(null)}>{english ? "No" : "Ne"}</Button>
+          </div>
+        </div>
+      ) : null}
       <p className="text-xs leading-relaxed text-muted-foreground">
         {english ? "Counts as endurance training. It does not pretend to complete a different planned strength session." : "Užskaitoma kaip ištvermės treniruotė. Ji nebus klaidingai pažymėta kaip atlikta kita suplanuota jėgos sesija."}
       </p>
