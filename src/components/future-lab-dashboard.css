@@ -1156,7 +1156,13 @@
 /* Product Convergence mobile hierarchy.
    Today must never compress the decision, plan and Digital Twin side-by-side. */
 .fl-today-twin-mobile {
-  display: none;
+  display: grid;
+}
+
+@media (min-width: 760px) {
+  .fl-today-twin-mobile {
+    display: none;
+  }
 }
 
 @media (max-width: 759px) {
