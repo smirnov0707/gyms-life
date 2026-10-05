@@ -1,0 +1,57 @@
+import { useQuery } from "@tanstack/react-query";
+import { CalendarDays, Gauge, Route, Target } from "lucide-react";
+import { getActiveRacePrep } from "@/lib/endurance-race-prep.functions";
+import { baseLang, useI18n } from "@/lib/i18n";
+import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
+
+const km = (m: number) => (m / 1000).toFixed(m % 1000 === 0 ? 0 : 1);
+const phaseLabel = (phase: string, en: boolean) => ({
+  base: en ? "Base" : "Bazė", build: en ? "Build" : "Auginimas",
+  specific: en ? "Race specific" : "Specifinis pasiruošimas",
+  taper: en ? "Taper" : "Krūvio mažinimas", race: en ? "Race week" : "Varžybų savaitė",
+}[phase] ?? phase);
+
+export function RacePrepCockpit() {
+  const { lang } = useI18n(); const english = baseLang(lang) === "en";
+  const today = dayInTimeZone(new Date(), browserTimeZone());
+  const { data } = useQuery({
+    queryKey: ["active-race-prep", today],
+    queryFn: () => getActiveRacePrep({ data: { today } }),
+    staleTime: 30_000,
+  });
+  if (!data || data.status === "none") return null;
+  const pct = data.progress.distanceCompletionRatio === null ? null : Math.round(data.progress.distanceCompletionRatio * 100);
+  return (
+    <section className="fl-premium-card relative overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5">
+      <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative grid gap-5">
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div><p className="fl-eyebrow">RACE PREP · {phaseLabel(data.currentWeek.phase, english)}</p>
+            <h2 className="mt-2 text-2xl font-semibold">{english ? "Your endurance campaign" : "Tavo ištvermės kampanija"}</h2></div>
+          <div className="rounded-full border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary">
+            {data.daysToRace} {english ? "days to race" : "d. iki starto"}
+          </div>
+        </header>
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <Metric icon={<CalendarDays className="size-4" />} value={String(data.currentWeek.week)} label={english ? "Plan week" : "Plano savaitė"} />
+          <Metric icon={<Route className="size-4" />} value={km(data.progress.completedDistanceMeters) + " / " + km(data.progress.plannedDistanceMeters) + " km"} label={english ? "This week" : "Šią savaitę"} />
+          <Metric icon={<Target className="size-4" />} value={data.progress.completedSessions + " / " + data.progress.plannedSessions} label={english ? "Sessions" : "Sesijos"} />
+          <Metric icon={<Gauge className="size-4" />} value={pct === null ? "—" : pct + "%"} label={english ? "Distance progress" : "Distancijos progresas"} />
+        </div>
+        {data.nextSession ? <div className="rounded-[1.5rem] border border-border bg-background/35 p-4">
+          <p className="fl-eyebrow">{english ? "NEXT RUN" : "KITAS BĖGIMAS"}</p>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-xl font-semibold capitalize">{data.nextSession.intent}</h3>
+            <strong className="text-primary">{data.nextSession.plannedDistanceMeters ? km(data.nextSession.plannedDistanceMeters) + " km" : data.nextSession.plannedDurationMinutes + " min"}</strong>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">{data.nextSession.intensityCue}</p>
+        </div> : null}
+        <p className="text-xs text-muted-foreground">{data.baseline === "measured" ? (english ? "Plan baseline comes from your recent completed runs." : "Plano bazė apskaičiuota iš tavo realiai atliktų bėgimų.") : (english ? "Not enough recent running yet; the plan starts conservatively." : "Dar trūksta naujausių bėgimų istorijos, todėl planas pradeda konservatyviai.")}</p>
+      </div>
+    </section>
+  );
+}
+
+function Metric({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+  return <div className="rounded-[1.25rem] border border-border bg-background/30 p-3"><div className="flex items-center gap-2 text-primary">{icon}<span className="text-lg font-semibold text-foreground">{value}</span></div><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>;
+}
