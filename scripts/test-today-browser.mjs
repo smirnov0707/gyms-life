@@ -889,8 +889,8 @@ try {
     viewport: { width: 390, height: 844 },
     locale: "en-US",
   });
-  await linked.page.getByText("Open My Twin", { exact: true }).click();
-  await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();
+  await linked.page.getByText("More for today", { exact: true }).click();
+  await linked.page.getByRole("link", { name: "My Twin", exact: true }).click();
   await expect(linked.page.getByRole("tab", { name: "Body", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
