@@ -5,6 +5,7 @@ import { buildRacePlan } from "./endurance-race-plan.engine";
 import { loadRacePlanBaseline } from "./endurance-race-baseline.service";
 import { summarizeRaceWeek } from "./endurance-race-progress.engine";
 import { assessRaceReadiness } from "./endurance-race-readiness.engine";
+import { loadDigitalAthleteState } from "./digital-athlete.service";
 
 const DAY_MS = 86_400_000;
 const dayDiff = (a: string, b: string) => Math.floor((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DAY_MS);
@@ -52,13 +53,16 @@ export async function loadActiveRacePrep(
     ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]
     ?? null;
   const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
+  const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), "UTC");
+  const latestScore = athlete.recovery.latestReadinessScore;
+  const readinessBand = latestScore === null ? "unknown" : latestScore < 55 ? "low" : latestScore < 80 ? "moderate" : "high";
   const readiness = assessRaceReadiness({
     weeksObserved: elapsedWeeks,
     sessionCompletionRate: sessionRate,
     distanceCompletionRate: progress.distanceCompletionRatio,
     longestRunProgressRate: null,
-    recentLowResponseStreak: 0,
-    latestReadinessBand: "unknown",
+    recentLowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
+    latestReadinessBand: readinessBand,
     repeatedOverTargetRuns: 0,
   });
 
