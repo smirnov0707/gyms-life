@@ -567,6 +567,8 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-command .fl-greeting")).toHaveCount(1);
+        await expect(shown.page.locator(".fl-today-root > .fl-greeting")).toHaveCount(0);
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
         await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
