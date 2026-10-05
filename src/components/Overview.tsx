@@ -1,5 +1,4 @@
 import { ReadinessCard } from "@/components/ReadinessCard";
-import { QuickFoodLog } from "@/components/QuickFoodLog";
 import { LiveSignals } from "@/components/LiveSignals";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
@@ -234,17 +233,6 @@ export function Overview() {
                   ? "Explore body, systems & trajectory"
                   : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
                 →
-              </Link>
-            </div>
-          </details>
-          <details className="fl-today-quick-action fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
-            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "Log food" : "Įrašyti maistą"}
-            </summary>
-            <div className="border-t border-border p-4">
-              <QuickFoodLog compact />
-              <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                {english ? "Nutrition Intelligence" : "Nutrition Intelligence"} →
               </Link>
             </div>
           </details>
