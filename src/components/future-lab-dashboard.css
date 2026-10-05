@@ -1358,7 +1358,9 @@
   }
 
   .fl-today-command-copy .fl-today-decision .fl-disclosure > summary {
-    min-height: 40px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 }
 
