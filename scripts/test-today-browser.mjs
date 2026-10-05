@@ -246,18 +246,15 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const details = page.locator(".fl-today-context");
+    if ((await details.getAttribute("open")) === null) {
+      await details.locator(":scope > summary").click();
     }
   };
 
   const openTodayEvidenceLayer = async (page) => {
     await openTodayChangesLayer(page);
-    const summary = page.getByText(
-      /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
-    );
+    const summary = page.getByText(/^(Signals & evidence|Signalai ir įrodymai)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
