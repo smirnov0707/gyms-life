@@ -248,7 +248,8 @@ try {
   const openTodayChangesLayer = async (page) => {
     const more = page.locator(".fl-today-more");
     if ((await more.count()) && (await more.isVisible())) {
-      if ((await more.getAttribute("open")) === null) await more.locator(":scope > summary").click();
+      if ((await more.getAttribute("open")) === null)
+        await more.locator(":scope > summary").click();
       const details = more
         .locator(".fl-today-more-section")
         .filter({ hasText: /^(What changed|Kas pasikeitė)/ })
@@ -259,7 +260,11 @@ try {
     }
 
     const details = page.locator(".fl-today-changes");
-    if ((await details.count()) && (await details.isVisible()) && (await details.getAttribute("open")) === null)
+    if (
+      (await details.count()) &&
+      (await details.isVisible()) &&
+      (await details.getAttribute("open")) === null
+    )
       await details.locator(":scope > summary").click();
   };
 
