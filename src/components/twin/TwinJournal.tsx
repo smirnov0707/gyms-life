@@ -17,7 +17,9 @@ export function TwinJournal() {
       <header className="fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
         <p className="fl-eyebrow">{english ? "TWIN · TIMELINE" : "TWIN · LAIKO JUOSTA"}</p>
         <h2 className="mt-2 text-lg font-semibold text-foreground">
-          {english ? "Your history, with memory attached." : "Tavo istorija su išsaugota atmintimi."}
+          {english
+            ? "Your history, with memory attached."
+            : "Tavo istorija su išsaugota atmintimi."}
         </h2>
         <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
           {english
@@ -35,7 +37,9 @@ export function TwinJournal() {
           <TwinTrendLens />
           <TwinMilestones />
           <details className="fl-secondary-details">
-            <summary>{english ? "Learning ledger & rewind" : "Mokymosi žurnalas ir rewind"}</summary>
+            <summary>
+              {english ? "Learning ledger & rewind" : "Mokymosi žurnalas ir rewind"}
+            </summary>
             <div className="fl-disclosed-content grid gap-4">
               <JournalIntelligence />
               <TwinRewind />
