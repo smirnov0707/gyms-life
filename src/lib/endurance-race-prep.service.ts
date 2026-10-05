@@ -9,7 +9,8 @@ import { loadDigitalAthleteState } from "./digital-athlete.service";
 import { assessLongRunProgress, raceSpecificLongRunCoverage } from "./endurance-long-run.engine";
 import { RACE_DISTANCE_METERS } from "./endurance-activity.schema";
 import { buildPaceProfile } from "./endurance-pace.engine";
-import { assessTerrainResponse } from "./endurance-terrain.engine";
+import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engine";
+import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 
 const DAY_MS = 86_400_000;
 const dayDiff = (a: string, b: string) => Math.floor((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DAY_MS);
@@ -82,6 +83,16 @@ export async function loadActiveRacePrep(
       averageHeartRateBpm: run.average_heart_rate_bpm,
     }] : []
   ));
+  const efficiencyTrend = assessComparableEfficiencyTrend((longHistory ?? []).flatMap((run) =>
+    run.distance_meters !== null && run.duration_seconds !== null ? [{
+      day: run.started_at.slice(0,10),
+      distanceMeters: Number(run.distance_meters),
+      durationSeconds: Number(run.duration_seconds),
+      averageHeartRateBpm: run.average_heart_rate_bpm,
+      terrain: classifyTerrain({day:run.started_at.slice(0,10),distanceMeters:Number(run.distance_meters),durationSeconds:Number(run.duration_seconds),averageHeartRateBpm:run.average_heart_rate_bpm,elevationGainMeters:run.elevation_gain_meters===null?null:Number(run.elevation_gain_meters)}).classification,
+      cadenceSpm: null,
+    }] : []
+  ));
   const longRunProgress = assessLongRunProgress(longCandidates);
   const longRunCoverage = raceSpecificLongRunCoverage(longRunProgress.recentLongestMeters, RACE_DISTANCE_METERS[goal.distance]);
 
@@ -99,5 +110,5 @@ export async function loadActiveRacePrep(
     repeatedOverTargetRuns: 0,
   });
 
-  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse };
+  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend };
 }
