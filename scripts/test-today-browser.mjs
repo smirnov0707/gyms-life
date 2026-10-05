@@ -569,7 +569,7 @@ try {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const state = await shown.page.locator(".fl-today-state").boundingBox();
