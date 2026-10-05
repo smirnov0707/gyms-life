@@ -1747,6 +1747,10 @@ export type Database = {
         Args: { p_capture_set_id: string; p_claim_token: string; p_provider_job_id: string; p_provider_key: string; p_user_id: string }
         Returns: undefined
       }
+      replace_active_endurance_race_goal: {
+        Args: { p_user_id: string; p_distance: string; p_race_date: string; p_target_time_seconds: number | null; p_sessions_per_week: number }
+        Returns: string
+      }
       record_endurance_run_import: {
         Args: {
           p_user_id: string
