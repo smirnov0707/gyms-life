@@ -140,10 +140,6 @@
 .fl-night-status[data-state="ran"] small {
   color: var(--accent);
 }
-.fl-night-chevron {
-  color: var(--muted-foreground);
-  margin-left: 9px;
-}
 .fl-profile-control {
   display: flex;
   align-items: center;
@@ -227,7 +223,6 @@
     padding: 0 13px;
   }
   .fl-night-copy,
-  .fl-night-chevron,
   .fl-night-status > .fl-night-dot {
     display: none;
   }
@@ -648,9 +643,12 @@
 
 .fl-desktop-navigation a:hover,
 .fl-shell-icon-button:hover,
-.fl-profile-control:hover,
-.fl-night-status:hover {
+.fl-profile-control:hover {
   transform: translateY(-1px);
+}
+
+.fl-night-status:hover {
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
 }
 
 @media (max-width: 640px) {
