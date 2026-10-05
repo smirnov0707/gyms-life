@@ -15,7 +15,7 @@ export async function loadActiveRacePrep(
 ) {
   const { data: row, error } = await supabase
     .from("endurance_race_goals")
-    .select("id,distance,race_date,target_time_seconds,sessions_per_week")
+    .select("id,distance,race_date,target_time_seconds,sessions_per_week,created_at")
     .eq("user_id", userId).eq("status", "active").maybeSingle();
   if (error) throw error;
   if (!row) return { status: "none" as const };
@@ -25,11 +25,12 @@ export async function loadActiveRacePrep(
     sessionsPerWeek: row.sessions_per_week, longestRecentRunMeters: null,
   });
   const baseline = await loadRacePlanBaseline(supabase, userId);
-  const plan = buildRacePlan({ today, goal, baseline });
-  const elapsedWeeks = Math.max(0, Math.floor(dayDiff(today, goal.raceDate) < 0 ? plan.weeks : 0));
+  const startDay = row.created_at.slice(0, 10);
+  const plan = buildRacePlan({ today: startDay, goal, baseline });
+  const elapsedDays = Math.max(0, dayDiff(startDay, today));
+  const elapsedWeeks = Math.floor(elapsedDays / 7);
   const daysToRace = Math.max(0, dayDiff(today, goal.raceDate));
-  const weeksRemaining = Math.max(1, Math.ceil(daysToRace / 7));
-  const weekIndex = Math.min(plan.weeks - 1, Math.max(0, plan.weeks - weeksRemaining));
+  const weekIndex = Math.min(plan.weeks - 1, elapsedWeeks);
   const currentWeek = plan.weeksPlan[weekIndex]!;
 
   const weekStart = new Date(Date.parse(today + "T00:00:00Z") - 6 * DAY_MS).toISOString();
