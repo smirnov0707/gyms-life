@@ -246,10 +246,17 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
+    const context = page.getByText(/^(Deeper context|Išsamesnis kontekstas)$/);
+    if (await context.count()) {
+      const contextDetails = context.locator("xpath=ancestor::details[1]");
+      if ((await contextDetails.getAttribute("open")) === null) await context.click();
+    }
     const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+      if ((await details.getAttribute("open")) === null && (await summary.isVisible())) {
+        await summary.click();
+      }
     }
   };
 
@@ -567,13 +574,17 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-command .fl-greeting")).toHaveCount(1);
+        await expect(shown.page.locator(".fl-today-root > .fl-greeting")).toHaveCount(0);
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
         await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-context")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-root > .fl-today-support")).toHaveCount(0);
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const context = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -583,12 +594,12 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          context.x,
+          "Today mobile context stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
+          Math.abs(context.width - command.width),
+          "Today mobile command and context share one column width",
         ).toBeLessThanOrEqual(2);
         record("Today mobile is a single-column command with the full Twin moved to My Twin");
       }
