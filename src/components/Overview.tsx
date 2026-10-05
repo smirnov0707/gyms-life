@@ -231,7 +231,7 @@ export function Overview() {
               {english ? "What changed" : "Kas pasikeitė"}
             </summary>
             <div className="grid gap-3 border-t border-border p-4">
-              <TodayIntelligenceBrief presentation="cards" />
+              <TodayIntelligenceBrief presentation="changes" />
             </div>
           </details>
         </section>
