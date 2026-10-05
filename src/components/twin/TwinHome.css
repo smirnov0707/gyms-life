@@ -364,3 +364,76 @@
     margin: 0 8px 8px;
   }
 }
+
+
+/* Visual Experience 3.0 — holographic lab atmosphere around the Twin.
+   The body colours remain evidence-owned; these layers are scene decoration. */
+.twin-home--cockpit {
+  isolation: isolate;
+}
+
+.twin-home--cockpit::before,
+.twin-home--cockpit::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.twin-home--cockpit::before {
+  z-index: 0;
+  inset: 0;
+  opacity: 0.2;
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(103, 220, 235, 0.12) 50%, transparent 50.3%),
+    linear-gradient(0deg, transparent 49.7%, rgba(200, 250, 60, 0.07) 50%, transparent 50.3%);
+  background-size: 100% 100%;
+  mask-image: radial-gradient(ellipse at 42% 48%, black 0 18%, transparent 66%);
+}
+
+.twin-home--cockpit::after {
+  z-index: 1;
+  left: 7%;
+  right: 18%;
+  top: 18%;
+  height: 1px;
+  opacity: 0.5;
+  background: linear-gradient(90deg, transparent, rgba(102, 221, 235, 0.65), rgba(200, 250, 60, 0.42), transparent);
+  box-shadow: 0 0 14px rgba(102, 221, 235, 0.22);
+  animation: twin-scan-line 7.5s ease-in-out infinite;
+}
+
+.twin-home--cockpit > * {
+  position: relative;
+  z-index: 2;
+}
+
+.twin-cockpit-scene {
+  background:
+    radial-gradient(ellipse at 42% 48%, rgba(76, 203, 229, 0.055), transparent 44%),
+    radial-gradient(ellipse at 42% 82%, rgba(200, 250, 60, 0.035), transparent 34%);
+}
+
+@keyframes twin-scan-line {
+  0%,
+  12% {
+    top: 18%;
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.5;
+  }
+  76% {
+    opacity: 0.35;
+  }
+  88%,
+  100% {
+    top: 76%;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twin-home--cockpit::after {
+    display: none;
+  }
+}
