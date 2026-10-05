@@ -246,7 +246,7 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
+    const summary = page.getByText(/^(Since yesterday|Nuo vakar|What changed|Kas pasikeitė)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
@@ -276,7 +276,7 @@ try {
 
   const openTodayContextLayer = async (page) => {
     const summary = page.getByText(
-      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
+      /^(More about today|Daugiau apie šiandieną|Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
     );
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");

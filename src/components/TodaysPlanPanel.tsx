@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
@@ -22,10 +22,20 @@ import type { TrainingPlanDay } from "@/lib/training-plan.schema";
  * next steps, and a single empty panel serves none of them.
  */
 
-function ExerciseRow({ exercise }: { exercise: TrainingPlanDay["exercises"][number] }) {
+function ExerciseRow({
+  exercise,
+  mobileOverflow = false,
+}: {
+  exercise: TrainingPlanDay["exercises"][number];
+  mobileOverflow?: boolean;
+}) {
   const { t } = useI18n();
   return (
-    <li className="fl-plan-exercise flex items-baseline justify-between gap-3 border-t border-border/50 py-2 first:border-t-0">
+    <li
+      className={`fl-plan-exercise flex items-baseline justify-between gap-3 border-t border-border/50 py-2 first:border-t-0 ${
+        mobileOverflow ? "fl-plan-mobile-overflow" : ""
+      }`}
+    >
       <span className="min-w-0 flex-1">
         <span
           className="fl-plan-exercise-name block truncate text-xs font-semibold text-foreground"
@@ -47,7 +57,8 @@ function ExerciseRow({ exercise }: { exercise: TrainingPlanDay["exercises"][numb
 }
 
 function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const exerciseLabel = baseLang(lang) === "en" ? "more exercises" : "daugiau pratimų";
   return (
     <>
       <div className="flex items-baseline justify-between gap-3 px-3">
@@ -56,11 +67,20 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
           {workout.estimated_minutes} min
         </p>
       </div>
-      <ul className="mt-2 px-3">
-        {workout.exercises.map((exercise) => (
-          <ExerciseRow key={`${exercise.slug}-${exercise.name}`} exercise={exercise} />
+      <ul className="fl-plan-exercise-list mt-2 px-3">
+        {workout.exercises.map((exercise, index) => (
+          <ExerciseRow
+            key={`${exercise.slug}-${exercise.name}`}
+            exercise={exercise}
+            mobileOverflow={index >= 3}
+          />
         ))}
       </ul>
+      {workout.exercises.length > 3 ? (
+        <p className="fl-plan-more-exercises hidden px-3 pb-1 text-[11px] font-semibold text-muted-foreground">
+          +{workout.exercises.length - 3} {exerciseLabel}
+        </p>
+      ) : null}
       <div className="px-3 pb-3 pt-3">
         <Link
           to="/workout/$day"

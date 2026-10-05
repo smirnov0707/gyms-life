@@ -156,13 +156,15 @@ export function Overview() {
   return (
     <div className="fl-dashboard fl-page-enter">
       <div className="fl-today-root mx-auto grid w-full max-w-[1480px] gap-4">
-        <header className="fl-greeting">
+        <header className="fl-greeting fl-today-greeting">
           <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
           <h1>
             {greeting}
             {firstName ? `, ${firstName}` : ""}
           </h1>
-          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
+          <p className="fl-today-plan-name">
+            {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+          </p>
         </header>
 
         <section
@@ -242,7 +244,7 @@ export function Overview() {
           </div>
           <details className="fl-today-changes fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "What changed" : "Kas pasikeitė"}
+              {english ? "Since yesterday" : "Nuo vakar"}
             </summary>
             <div className="grid gap-3 border-t border-border p-4">
               <MorningLabReview compact />
@@ -253,7 +255,7 @@ export function Overview() {
 
         <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
           <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
+            {english ? "More about today" : "Daugiau apie šiandieną"}
           </summary>
           <div className="grid gap-4 border-t border-border p-4">
             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
@@ -262,9 +264,9 @@ export function Overview() {
               <SleepAnalysis />
               <PredictionEvidencePanel compact />
             </div>
-            <details className="fl-surface group">
+            <details className="fl-surface fl-today-quick-action group">
               <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food here" : "Įrašyti maistą čia"}
+                {english ? "Quick food log" : "Greitai įrašyti maistą"}
               </summary>
               <div className="border-t border-border p-4">
                 <QuickFoodLog compact />

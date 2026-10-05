@@ -1373,3 +1373,137 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* Today 2.3: the phone is a daily command, not a dashboard index. */
+@media (max-width: 759px) {
+  .fl-today-root {
+    gap: 12px;
+  }
+
+  .fl-today-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-today-greeting .fl-mobile-page-name {
+    margin-bottom: 4px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+  }
+
+  .fl-today-greeting h1 {
+    font-size: clamp(24px, 7vw, 30px);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+
+  .fl-today-greeting .fl-today-plan-name {
+    margin-top: 5px;
+    max-width: 34ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--muted-foreground);
+  }
+
+  .fl-today-command {
+    gap: 10px;
+    border-radius: 24px;
+    padding: 12px;
+  }
+
+  .fl-today-command-copy > p:first-child {
+    display: none;
+  }
+
+  .fl-today-plan {
+    order: 1;
+  }
+
+  .fl-today-command-copy {
+    order: 2;
+    gap: 8px;
+  }
+
+  .fl-today-command-copy .fl-readiness-card,
+  .fl-today-command-copy .fl-readiness-empty {
+    border-radius: 16px;
+  }
+
+  .fl-today-plan .fl-todays-plan {
+    border: 0;
+    background: transparent;
+  }
+
+  .fl-today-plan .fl-todays-plan > header {
+    padding-inline: 4px;
+    padding-top: 3px;
+  }
+
+  .fl-today-plan .fl-todays-plan > div,
+  .fl-today-plan .fl-todays-plan > ul {
+    padding-inline: 4px;
+  }
+
+  .fl-today-plan .fl-todays-plan > ul {
+    margin-top: 4px;
+  }
+
+  .fl-today-plan .fl-plan-exercise {
+    padding-block: 7px;
+  }
+
+  .fl-today-plan .fl-plan-start {
+    min-height: 54px;
+    border: 0;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  .fl-today-world {
+    gap: 8px;
+  }
+
+  .fl-today-twin-mobile,
+  .fl-today-changes,
+  .fl-today-support {
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 76%, transparent);
+  }
+
+  .fl-today-twin-mobile > summary,
+  .fl-today-changes > summary,
+  .fl-today-support > summary {
+    min-height: 46px;
+    padding: 11px 14px;
+    font-size: 12px;
+    color: var(--muted-foreground);
+  }
+
+  .fl-today-twin-mobile > summary {
+    color: var(--foreground);
+  }
+
+  .fl-today-support .fl-today-quick-action {
+    border-radius: 14px;
+  }
+
+  .fl-today-support .fl-today-quick-action > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+@media (max-width: 759px) {
+  .fl-plan-mobile-overflow {
+    display: none;
+  }
+
+  .fl-plan-more-exercises {
+    display: block;
+    padding-inline: 4px;
+    padding-top: 5px;
+  }
+}
