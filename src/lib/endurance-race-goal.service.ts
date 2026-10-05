@@ -14,25 +14,13 @@ export async function createRaceGoal(
   const baseline = await loadRacePlanBaseline(supabase, userId);
   const plan = buildRacePlan({ today, goal, baseline });
 
-  const { data: existing, error: existingError } = await supabase
-    .from("endurance_race_goals")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .maybeSingle();
-  if (existingError) throw existingError;
-  if (existing) {
-    const { error } = await supabase.from("endurance_race_goals").update({ status: "cancelled" }).eq("id", existing.id).eq("user_id", userId);
-    if (error) throw error;
-  }
-
-  const { data, error } = await supabase.from("endurance_race_goals").insert({
-    user_id: userId,
-    distance: goal.distance,
-    race_date: goal.raceDate,
-    target_time_seconds: goal.targetTimeSeconds,
-    sessions_per_week: goal.sessionsPerWeek,
-  }).select("id").single();
+  const { data: goalId, error } = await supabase.rpc("replace_active_endurance_race_goal", {
+    p_user_id: userId,
+    p_distance: goal.distance,
+    p_race_date: goal.raceDate,
+    p_target_time_seconds: goal.targetTimeSeconds,
+    p_sessions_per_week: goal.sessionsPerWeek,
+  });
   if (error) throw error;
-  return { goalId: data.id, goal, baseline, plan };
+  return { goalId: goalId, goal, baseline, plan };
 }
