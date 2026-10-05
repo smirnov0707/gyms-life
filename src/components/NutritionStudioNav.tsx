@@ -3,7 +3,7 @@ import { Apple, CalendarDays, Pill } from "lucide-react";
 import { baseLang, useI18n } from "@/lib/i18n";
 
 const MODES = [
-  { to: "/nutrition", icon: Apple, lt: "Šiandien", en: "Today" },
+  { to: "/nutrition", icon: Apple, lt: "Žurnalas", en: "Intake" },
   { to: "/meal-plan", icon: CalendarDays, lt: "Planas", en: "Plan" },
   { to: "/supplements", icon: Pill, lt: "Papildai", en: "Supplements" },
 ] as const;
@@ -21,8 +21,8 @@ export function NutritionStudioNav() {
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {english
-              ? "One nutrition system, three working modes."
-              : "Viena mitybos sistema, trys darbo režimai."}
+              ? "One nutrition system: intake, planning and supplements."
+              : "Viena mitybos sistema: žurnalas, planavimas ir papildai."}
           </p>
         </div>
       </div>
