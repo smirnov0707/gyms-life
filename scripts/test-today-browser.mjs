@@ -268,11 +268,15 @@ try {
 
   const openTodayEvidenceLayer = async (page) => {
     await openTodayChangesLayer(page);
-    await openVisibleDetails(
-      page.getByText(
-        /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
-      ),
-    );
+    const context = page.locator(".fl-today-context");
+    const evidence = context.locator(":scope > div > details.fl-surface").first();
+    if (await evidence.count()) {
+      if ((await evidence.getAttribute("open")) === null) {
+        await evidence.locator(":scope > summary").click();
+      }
+      return;
+    }
+    await openVisibleDetails(page.getByText(/^(Signals & evidence|Signalai ir įrodymai)$/));
   };
 
   const openTodayExecutionLayer = async (page) => {
