@@ -577,7 +577,7 @@ try {
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const changes = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -692,7 +692,7 @@ try {
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
+          [".fl-today-twin", ".fl-today-context"].map((selector) => {
             const element = document.querySelector(selector);
             const rect = element.getBoundingClientRect();
             return {
