@@ -210,7 +210,6 @@ const baseDict = {
   "dash.evening": { lt: "Labas vakaras", en: "Good evening" },
   "dash.welcomeBack": { lt: "Malonu matyti", en: "Good to see you" },
   "dash.streak": { lt: "Serija", en: "Streak" },
-  "dash.regenerate": { lt: "Generuoti naują planą", en: "Generate a new plan" },
 
   "plan.day": { lt: "Diena", en: "Day" },
   "plan.min": { lt: "min", en: "min" },
