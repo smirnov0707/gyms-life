@@ -306,7 +306,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
       : null;
 
     return (
-      <section aria-label={copy.title} data-twin-home className="twin-home--cockpit">
+      <section\n        aria-label={copy.title}\n        data-twin-home\n        data-twin-appearance={visualAppearance}\n        className="twin-home--cockpit"\n      >
         <header className="twin-cockpit-header">
           <p>{language === "lt" ? "Skaitmeninis kūnas" : "Digital human"}</p>
           <h2>{copy.title}</h2>
