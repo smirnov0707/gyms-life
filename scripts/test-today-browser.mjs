@@ -276,7 +276,7 @@ try {
 
   const openTodayContextLayer = async (page) => {
     const summary = page.getByText(
-      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
+      /^(Deep analysis|Gilesnė analizė)$/,
     );
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
