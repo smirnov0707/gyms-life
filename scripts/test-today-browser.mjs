@@ -246,11 +246,21 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const more = page.locator(".fl-today-more");
+    if ((await more.count()) && (await more.isVisible())) {
+      if ((await more.getAttribute("open")) === null) await more.locator(":scope > summary").click();
+      const details = more
+        .locator(".fl-today-more-section")
+        .filter({ hasText: /^(What changed|Kas pasikeitė)/ })
+        .first();
+      if ((await details.count()) && (await details.getAttribute("open")) === null)
+        await details.locator(":scope > summary").click();
+      return;
     }
+
+    const details = page.locator(".fl-today-changes");
+    if ((await details.count()) && (await details.isVisible()) && (await details.getAttribute("open")) === null)
+      await details.locator(":scope > summary").click();
   };
 
   const openTodayEvidenceLayer = async (page) => {
