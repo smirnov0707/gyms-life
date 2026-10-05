@@ -877,3 +877,62 @@
     filter: blur(10px);
   }
 }
+
+
+/* Visual Experience 3.0 — one route materialization language. */
+.future-lab-app .fl-page-enter {
+  animation: fl-page-materialize 420ms cubic-bezier(0.16, 1, 0.3, 1) 1 both;
+}
+
+.future-lab-app .fl-page-enter > :where(:nth-child(1), :nth-child(2), :nth-child(3)) {
+  animation: fl-content-arrival 460ms cubic-bezier(0.16, 1, 0.3, 1) 1 both;
+}
+
+.future-lab-app .fl-page-enter > :nth-child(2) {
+  animation-delay: 45ms;
+}
+
+.future-lab-app .fl-page-enter > :nth-child(3) {
+  animation-delay: 85ms;
+}
+
+@keyframes fl-page-materialize {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes fl-content-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 759px) {
+  .future-lab-app .fl-page-enter {
+    animation-duration: 300ms;
+  }
+  .future-lab-app .fl-page-enter > :where(:nth-child(1), :nth-child(2), :nth-child(3)) {
+    animation-duration: 320ms;
+    animation-delay: 0ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .future-lab-app .fl-page-enter,
+  .future-lab-app .fl-page-enter > :where(:nth-child(1), :nth-child(2), :nth-child(3)) {
+    animation: none !important;
+  }
+}
