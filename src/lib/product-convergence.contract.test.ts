@@ -32,7 +32,7 @@ describe("Product Convergence contract", () => {
   });
 
   it("replaces the feature catalogue with a bounded contextual action layer", () => {
-    expect(actionRoutes).toEqual(["/training", "/app", "/app", "/ar", "/coach"]);
+    expect(actionRoutes).toEqual(["/training", "/app", "/nutrition", "/ar", "/coach"]);
     for (const legacy of [
       "/progress",
       "/history",
@@ -45,22 +45,20 @@ describe("Product Convergence contract", () => {
       expect(actionRoutes).not.toContain(legacy);
     }
   });
-  it("keeps the same bounded actions but prioritizes them by active world", () => {
-    expect(contextualActionsFor("today").map((action) => action.intent)).toEqual([
-      "workout",
-      "checkin",
-      "nutrition",
-      "movement",
-      "coach",
-    ]);
+  it("filters and orders contextual actions without duplicating native world actions", () => {
+    expect(contextualActionsFor("today").map((action) => action.intent)).toEqual(["movement"]);
     expect(contextualActionsFor("twin").map((action) => action.intent)).toEqual([
       "movement",
       "workout",
       "checkin",
-      "coach",
       "nutrition",
     ]);
-    expect(contextualActionsFor("lab").map((action) => action.intent)[0]).toBe("coach");
+    expect(contextualActionsFor("lab").map((action) => action.intent)).toEqual([
+      "checkin",
+      "workout",
+      "nutrition",
+      "movement",
+    ]);
   });
   it("uses Coach as an action without creating a fifth product world", () => {
     expect(actionRoutes.filter((route) => route === "/coach")).toHaveLength(1);
@@ -68,7 +66,7 @@ describe("Product Convergence contract", () => {
   });
   it("classifies legacy and embedded capabilities without exposing them as worlds", () => {
     expect(PRODUCT_SURFACES["/readiness"]).toBe("EMBEDDED_FLOW");
-    expect(CONTEXT_ACTIONS.find((action) => action.intent === "nutrition")?.to).toBe("/app");
+    expect(CONTEXT_ACTIONS.find((action) => action.intent === "nutrition")?.to).toBe("/nutrition");
     expect(PRODUCT_SURFACES["/nutrition"]).toBe("CONTEXT_TOOL");
     expect(PRODUCT_SURFACES["/exercises"]).toBe("EMBEDDED_FLOW");
     expect(PRODUCT_SURFACES["/meal-plan"]).toBe("EMBEDDED_FLOW");
