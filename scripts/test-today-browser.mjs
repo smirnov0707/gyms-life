@@ -568,12 +568,13 @@ try {
       if (screen === "today" && viewport.name === "mobile") {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
-        await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-world")).toBeHidden();
+        await expect(shown.page.locator(".fl-today-support")).toBeHidden();
+        await expect(shown.page.locator(".fl-today-more")).toBeVisible();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const more = await shown.page.locator(".fl-today-more").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -583,14 +584,14 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          more.x,
+          "Today mobile secondary intelligence stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
+          Math.abs(more.width - command.width),
+          "Today mobile keeps one column for command and secondary intelligence",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile exposes one command plus one collapsed More today surface");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
