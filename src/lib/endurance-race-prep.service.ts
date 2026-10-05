@@ -110,5 +110,5 @@ export async function loadActiveRacePrep(
     repeatedOverTargetRuns: 0,
   });
 
-  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend };
+  return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend };
 }
