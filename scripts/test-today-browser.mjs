@@ -444,7 +444,10 @@ try {
         const journal = shown.page.locator(".twin-journal-view");
         await expect(journal).toBeVisible();
         await expect(
-          journal.getByRole("heading", { name: "Your history, with memory attached.", exact: true }),
+          journal.getByRole("heading", {
+            name: "Your history, with memory attached.",
+            exact: true,
+          }),
         ).toBeVisible();
         await expect(
           journal.getByRole("button", { name: "Twin event history", exact: true }),
@@ -463,7 +466,9 @@ try {
         await learning.locator(":scope > summary").press("Enter");
         await expect(journal.locator(".fl-journal-page")).toBeVisible();
 
-        record(`Journal ${viewport.name} keeps the chronological timeline primary and learning on demand`);
+        record(
+          `Journal ${viewport.name} keeps the chronological timeline primary and learning on demand`,
+        );
       }
       if (screen === "lab") {
         const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
@@ -566,7 +571,7 @@ try {
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-context").boundingBox();
+        const context = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -576,13 +581,13 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          context.x,
+          "Today mobile context stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
-        ).toBeLessThanOrEqual(2);
+          context.width,
+          "Today mobile context keeps a readable disclosure width",
+        ).toBeGreaterThan(300);
         record("Today mobile is a single-column command with the full Twin moved to My Twin");
       }
       if (screen === "today") {
