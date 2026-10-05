@@ -238,7 +238,10 @@ export function Overview() {
           </details>
         </section>
 
-        <nav className="fl-today-mobile-actions" aria-label={english ? "More today actions" : "Daugiau šiandienos veiksmų"}>
+        <nav
+          className="fl-today-mobile-actions"
+          aria-label={english ? "More today actions" : "Daugiau šiandienos veiksmų"}
+        >
           <Link to="/twin" className="fl-today-mobile-action">
             <span>{english ? "My Twin" : "My Twin"}</span>
             <span aria-hidden="true">→</span>
