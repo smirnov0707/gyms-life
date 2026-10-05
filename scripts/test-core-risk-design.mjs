@@ -180,9 +180,18 @@ export async function verifyRiskDesign({ open, record, artifacts }) {
         `screen=future&risk=ready&route=/twin&shell=1&lang=lt&theme=${theme}`,
         { width, height: 900 },
       );
-      await page
+      const basis = page
         .locator(".twin-future-view > details")
-        .filter({ hasText: "Šios trajektorijos pagrindas" })
+        .filter({ hasText: "Šios trajektorijos pagrindas" });
+      await basis.locator(":scope > summary").press("Enter");
+      await basis
+        .locator("details")
+        .filter({ hasText: "Treniruočių įrodymai" })
+        .locator(":scope > summary")
+        .press("Enter");
+      await basis
+        .locator("details")
+        .filter({ hasText: "Ribos ir neapibrėžtumas" })
         .locator(":scope > summary")
         .press("Enter");
       await expect(panel(page).getByTestId("risk-score")).toHaveText("57/100");

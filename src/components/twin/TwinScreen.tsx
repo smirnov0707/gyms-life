@@ -117,34 +117,37 @@ export function TwinScreen({
             className="grid gap-4"
           >
             {active === "overview" ? (
-              <>
+              <section className="fl-twin-body grid gap-4">
                 <TwinView onInspectRegion={setDetailRegion} />
-                <div className="twin-body-composition">
-                  <BodyCompositionCard />
-                </div>
-                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
-                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
-                    {t("tw.tabMuscles")}
-                  </summary>
-                  <div className="grid gap-4 border-t border-border p-4">
+
+                <details className="fl-secondary-details">
+                  <summary>{t("tw.tabMuscles")}</summary>
+                  <div className="fl-disclosed-content grid gap-4">
+                    <div className="twin-body-composition">
+                      <BodyCompositionCard />
+                    </div>
                     <TwinMuscleTable onSelectRegion={setDetailRegion} />
                   </div>
                 </details>
-                <details className="fl-luxury-disclosure rounded-2xl border border-border bg-surface/75">
-                  <summary className="cursor-pointer list-none px-4 py-3 text-xs font-medium text-foreground">
-                    {t("tw.measurementTools")}
-                  </summary>
-                  <div className="space-y-4 border-t border-border p-4">
+
+                <details className="fl-secondary-details">
+                  <summary>{t("tw.measurementTools")}</summary>
+                  <div className="fl-disclosed-content grid gap-4">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      {t("tw.measurementToolsNote")}
+                    </p>
                     <BodyMetricsPanel compact />
                     <BodyCompositionScanner />
                   </div>
                 </details>
-              </>
+              </section>
             ) : active === "systems" ? (
               <section className="fl-twin-systems fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
                 <header>
                   <p className="fl-eyebrow">{t("tw.tabSystems")}</p>
-                  <h2 className="mt-2 text-lg font-semibold text-foreground">{t("tw.systemsTitle")}</h2>
+                  <h2 className="mt-2 text-lg font-semibold text-foreground">
+                    {t("tw.systemsTitle")}
+                  </h2>
                   <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                     {t("tw.systemsNote")}
                   </p>

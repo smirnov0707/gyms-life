@@ -441,40 +441,34 @@ try {
         );
       }
       if (screen === "journal") {
-        const journal = shown.page.locator(".fl-journal-page");
+        const journal = shown.page.locator(".twin-journal-view");
+        await expect(journal).toBeVisible();
         await expect(
-          journal,
-          "The Twin mounts one learning ledger, including inside history",
-        ).toHaveCount(1);
-        const filters = journal.getByRole("navigation", { name: "Timeline filters" });
-        await expect(filters).toBeVisible();
-        await filters.getByRole("button", { name: "Patterns", exact: true }).click();
-        await expect(
-          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
-        ).toHaveCount(0);
-        await expect(
-          journal.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
+          journal.getByRole("heading", {
+            name: "Your history, with memory attached.",
+            exact: true,
+          }),
         ).toBeVisible();
-        await filters.getByRole("button", { name: "Decisions", exact: true }).click();
         await expect(
-          journal.getByRole("heading", { name: "Recent decisions", exact: true }),
+          journal.getByRole("button", { name: "Twin event history", exact: true }),
         ).toBeVisible();
-        await filters.getByRole("button", { name: "All", exact: true }).click();
-        await expect(
-          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
-        ).toBeVisible();
-        if (viewport.name === "mobile") {
-          const labelLines = await filters.getByRole("button").evaluateAll((buttons) =>
-            buttons.map((button) => {
-              const range = document.createRange();
-              range.selectNodeContents(button);
-              return { label: button.textContent, lines: range.getClientRects().length };
-            }),
-          );
-          for (const label of labelLines)
-            expect(label.lines, `${label.label} remains readable without a split word`).toBe(1);
-        }
-        record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
+
+        const memory = journal.locator(":scope > details").filter({ hasText: "Memory & patterns" });
+        await expect(memory.locator(":scope > summary")).toBeVisible();
+        await expect(journal.locator(".fl-journal-page")).toBeHidden();
+        await memory.locator(":scope > summary").press("Enter");
+
+        const learning = memory
+          .locator("details")
+          .filter({ hasText: "Learning ledger & rewind" })
+          .first();
+        await expect(learning.locator(":scope > summary")).toBeVisible();
+        await learning.locator(":scope > summary").press("Enter");
+        await expect(journal.locator(".fl-journal-page")).toBeVisible();
+
+        record(
+          `Journal ${viewport.name} keeps the chronological timeline primary and learning on demand`,
+        );
       }
       if (screen === "lab") {
         const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
@@ -577,7 +571,7 @@ try {
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const context = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -587,13 +581,13 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          context.x,
+          "Today mobile context stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
-        ).toBeLessThanOrEqual(2);
+          context.width,
+          "Today mobile context keeps a readable disclosure width",
+        ).toBeGreaterThan(300);
         record("Today mobile is a single-column command with the full Twin moved to My Twin");
       }
       if (screen === "today") {
@@ -692,7 +686,7 @@ try {
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
+          [".fl-today-twin", ".fl-today-context"].map((selector) => {
             const element = document.querySelector(selector);
             const rect = element.getBoundingClientRect();
             return {

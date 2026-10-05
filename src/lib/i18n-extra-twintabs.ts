@@ -142,6 +142,16 @@ export const extra_twintabs = {
     es: "Mediciones y captura corporal",
     fr: "Mesures et capture du corps",
   },
+  "tw.measurementToolsNote": {
+    lt: "Atnaujink kūno matavimus arba kūno fiksavimą tik tada, kai turi naujų duomenų. Jie papildo Twin, bet nekeičia treniruočių sprendimų savaime.",
+    en: "Update body measurements or body capture only when you have new data. They enrich the Twin but do not change training decisions on their own.",
+    ru: "Обновляйте измерения или сканирование тела только при появлении новых данных. Они дополняют Twin, но сами по себе не меняют тренировочные решения.",
+    uk: "Оновлюйте вимірювання або сканування тіла лише за наявності нових даних. Вони доповнюють Twin, але самі по собі не змінюють тренувальні рішення.",
+    pl: "Aktualizuj pomiary lub skan ciała tylko wtedy, gdy masz nowe dane. Wzbogacają Twin, ale same nie zmieniają decyzji treningowych.",
+    de: "Aktualisiere Körpermessungen oder Körpererfassung nur bei neuen Daten. Sie ergänzen den Twin, ändern Trainingsentscheidungen aber nicht eigenständig.",
+    es: "Actualiza las mediciones o la captura corporal solo cuando tengas datos nuevos. Enriquecen el Twin, pero no cambian por sí solas las decisiones de entrenamiento.",
+    fr: "Mettez à jour les mesures ou la capture corporelle uniquement avec de nouvelles données. Elles enrichissent le Twin sans modifier seules les décisions d'entraînement.",
+  },
   "tw.systemsTitle": {
     lt: "Ką dvynys skaito, o ko ne",
     en: "What the Twin reads, and what it does not",
