@@ -455,6 +455,24 @@ export type Database = {
           },
         ]
       }
+      endurance_adaptation_records: {
+        Row: { action: string; created_at: string; decision_on: string; engine_version: string; evidence: Json; id: string; outcome: Json | null; outcome_recorded_at: string | null; race_goal_id: string; reason: string; user_id: string; volume_modifier: number }
+        Insert: { action: string; created_at?: string; decision_on: string; engine_version: string; evidence: Json; id?: string; outcome?: Json | null; outcome_recorded_at?: string | null; race_goal_id: string; reason: string; user_id: string; volume_modifier: number }
+        Update: { action?: string; created_at?: string; decision_on?: string; engine_version?: string; evidence?: Json; id?: string; outcome?: Json | null; outcome_recorded_at?: string | null; race_goal_id?: string; reason?: string; user_id?: string; volume_modifier?: number }
+        Relationships: []
+      }
+      endurance_run_imports: {
+        Row: { created_at: string; external_activity_id: string; id: string; source: string; split_coverage: number; user_id: string; workout_session_id: string }
+        Insert: { created_at?: string; external_activity_id: string; id?: string; source: string; split_coverage: number; user_id: string; workout_session_id: string }
+        Update: { created_at?: string; external_activity_id?: string; id?: string; source?: string; split_coverage?: number; user_id?: string; workout_session_id?: string }
+        Relationships: []
+      }
+      endurance_run_splits: {
+        Row: { average_heart_rate_bpm: number | null; cadence_spm: number | null; distance_meters: number; duration_seconds: number; elevation_gain_meters: number | null; id: string; split_index: number; user_id: string; workout_session_id: string }
+        Insert: { average_heart_rate_bpm?: number | null; cadence_spm?: number | null; distance_meters: number; duration_seconds: number; elevation_gain_meters?: number | null; id?: string; split_index: number; user_id: string; workout_session_id: string }
+        Update: { average_heart_rate_bpm?: number | null; cadence_spm?: number | null; distance_meters?: number; duration_seconds?: number; elevation_gain_meters?: number | null; id?: string; split_index?: number; user_id?: string; workout_session_id?: string }
+        Relationships: []
+      }
       endurance_race_goals: {
         Row: { created_at: string; distance: string; id: string; race_date: string; sessions_per_week: number; status: string; target_time_seconds: number | null; updated_at: string; user_id: string }
         Insert: { created_at?: string; distance: string; id?: string; race_date: string; sessions_per_week: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id: string }
@@ -1632,6 +1650,8 @@ export type Database = {
           endurance_match_score: number | null
           endurance_match_source: string | null
           endurance_session_intent: string | null
+          elevation_gain_meters: number | null
+          average_cadence_spm: number | null
           feeling: number | null
           finished_at: string | null
           id: string
@@ -1657,6 +1677,8 @@ export type Database = {
           endurance_match_score?: number | null
           endurance_match_source?: string | null
           endurance_session_intent?: string | null
+          elevation_gain_meters?: number | null
+          average_cadence_spm?: number | null
           feeling?: number | null
           finished_at?: string | null
           id?: string
