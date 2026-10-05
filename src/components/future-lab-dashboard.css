@@ -1373,3 +1373,145 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* Today Convergence 2.3
+   One authoritative mobile composition. Older cockpit-era selectors above
+   remain for legacy components, but these scoped rules own the current Today. */
+.fl-today-more {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  .fl-dashboard .fl-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-dashboard .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 8px;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    opacity: 0.72;
+  }
+
+  .fl-dashboard .fl-greeting h1 {
+    font-size: clamp(24px, 7vw, 30px);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+
+  .fl-dashboard .fl-greeting > p:last-child {
+    display: none;
+  }
+
+  .fl-dashboard .fl-today-command {
+    gap: 10px;
+    border-radius: 24px;
+    padding: 12px;
+  }
+
+  .fl-dashboard .fl-today-command-copy > p:first-child {
+    display: none;
+  }
+
+  .fl-dashboard .fl-today-plan {
+    order: 1;
+  }
+
+  .fl-dashboard .fl-today-command-copy {
+    order: 2;
+    display: grid;
+    gap: 8px;
+  }
+
+  .fl-dashboard .fl-today-command-copy .fl-readiness-card,
+  .fl-dashboard .fl-today-command-copy .fl-readiness-empty {
+    border: 0;
+    border-radius: 14px;
+    background: var(--surface-2);
+    box-shadow: none;
+  }
+
+  .fl-dashboard .fl-today-command-copy .fl-today-decision {
+    border-top: 1px solid var(--border);
+    padding: 10px 2px 0;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan {
+    border: 0;
+    border-radius: 16px;
+    background: var(--surface-2);
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan header {
+    padding: 12px 12px 8px;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan header > a {
+    display: none;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan > div:first-of-type {
+    padding-inline: 12px;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan > ul {
+    padding-inline: 12px;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-plan-start {
+    min-height: 56px;
+    border: 0;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 15px;
+    letter-spacing: 0.08em;
+  }
+
+  .fl-dashboard .fl-today-world,
+  .fl-dashboard .fl-today-support {
+    display: none !important;
+  }
+
+  .fl-dashboard .fl-today-more {
+    display: block;
+    width: 100%;
+    border-radius: 18px;
+  }
+
+  .fl-dashboard .fl-today-more > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    padding: 12px 15px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+  }
+
+  .fl-dashboard .fl-today-more-action,
+  .fl-dashboard .fl-today-more-section > summary {
+    display: flex;
+    min-height: 48px;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 2px;
+    color: var(--foreground);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .fl-dashboard .fl-today-more-section {
+    border-top: 1px solid var(--border);
+  }
+
+  .fl-dashboard .fl-today-more-section > summary {
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .fl-dashboard .fl-today-more-section > summary::-webkit-details-marker,
+  .fl-dashboard .fl-today-more > summary::-webkit-details-marker {
+    display: none;
+  }
+}
