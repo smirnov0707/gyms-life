@@ -60,6 +60,16 @@ export function RacePrepCockpit() {
           <Metric icon={<Target className="size-4" />} value={data.progress.completedSessions + " / " + data.progress.plannedSessions} label={english ? "Sessions" : "Sesijos"} />
           <Metric icon={<Gauge className="size-4" />} value={pct === null ? "—" : pct + "%"} label={english ? "Distance progress" : "Distancijos progresas"} />
         </div>
+        {data.efficiencyTrend.status !== "insufficient_evidence" ? (
+          <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+            <p className="fl-eyebrow">{english ? "RUNNING EFFICIENCY" : "BĖGIMO EFEKTYVUMAS"}</p>
+            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-lg font-semibold">{data.efficiencyTrend.status === "improving" ? (english ? "Improving" : "Gerėja") : data.efficiencyTrend.status === "declining" ? (english ? "Recent efficiency is lower" : "Naujausias efektyvumas mažesnis") : (english ? "Stable" : "Stabilu")}</h3>
+              <span className="text-xs font-semibold text-muted-foreground">{data.efficiencyTrend.sessions} {english ? "comparable runs" : "palyginami bėgimai"}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{english ? "Derived from your speed relative to heart rate within repeated " + data.efficiencyTrend.terrain + " terrain. It is not VO₂max or a laboratory running-economy measurement." : "Išvesta iš tavo greičio santykio su pulsu kartojamame „" + data.efficiencyTrend.terrain + "“ reljefe. Tai nėra VO₂max ar laboratorinis bėgimo ekonomiškumo matavimas."}</p>
+          </div>
+        ) : null}
         {data.terrainResponse.status === "measured" ? (
           <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
             <p className="fl-eyebrow">{english ? "TERRAIN RESPONSE" : "REAKCIJA Į RELJEFĄ"}</p>
