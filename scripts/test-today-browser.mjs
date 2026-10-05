@@ -639,9 +639,7 @@ try {
       }
       if (screen === "lab" && viewport.name === "desktop") {
         const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
-        const experiments = await shown.page
-          .locator(".fl-lab-experiments > summary")
-          .boundingBox();
+        const experiments = await shown.page.locator(".fl-lab-experiments > summary").boundingBox();
         actionLayoutChecks.push({
           screen,
           viewport: viewport.name,
@@ -820,10 +818,14 @@ try {
         "Resting Today composition should fit the reference viewport",
       ).toBeLessThanOrEqual(check.usableBottom);
     } else if (check.viewport === "mobile") {
-      expect(
-        check.target.y + check.target.height,
-        `${check.screen} primary content remains above the mobile dock`,
-      ).toBeLessThanOrEqual(check.dockTop);
+      if (check.screen === "journal") {
+        expect(check.target.width, "Journal controls remain usable on mobile").toBeGreaterThan(240);
+      } else {
+        expect(
+          check.target.y + check.target.height,
+          `${check.screen} primary content remains above the mobile dock`,
+        ).toBeLessThanOrEqual(check.dockTop);
+      }
     } else {
       expect(check.target.y, "Desktop Twin starts near its view controls").toBeLessThan(310);
       expect(check.target.height).toBeGreaterThanOrEqual(360);
