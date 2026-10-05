@@ -17,7 +17,6 @@ import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { SmartBrief } from "@/components/SmartBrief";
 import { CoachMemory } from "@/components/CoachMemory";
 
 export const Route = createFileRoute("/_authenticated/coach")({
@@ -188,7 +187,6 @@ function CoachPage() {
           {english ? "Context, memory & privacy" : "Kontekstas, atmintis ir privatumas"}
         </summary>
         <div className="grid gap-4 border-t border-border p-4">
-          <SmartBrief compact />
           <CoachMemory />
           <AiPersonalizationConsentCard />
         </div>
