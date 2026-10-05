@@ -1905,3 +1905,16 @@
     animation: none !important;
   }
 }
+
+
+@media (max-width: 759px) {
+  .fl-workspace-hero::before {
+    animation: none;
+    opacity: 0.26;
+    filter: blur(8px);
+  }
+
+  .fl-nutrition-metric .bg-primary::after {
+    animation-duration: 5.5s;
+  }
+}
