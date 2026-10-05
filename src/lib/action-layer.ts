@@ -28,7 +28,7 @@ export type ContextAction = (typeof CONTEXT_ACTIONS)[number];
 export type ProductWorld = "today" | "twin" | "lab" | "coach";
 
 const WORLD_ACTION_ORDER: Record<ProductWorld, readonly ContextAction["intent"][]> = {
-  today: ["workout", "checkin", "nutrition", "movement", "coach"],
+  today: ["workout", "movement", "coach"],
   twin: ["movement", "workout", "checkin", "coach", "nutrition"],
   lab: ["coach", "checkin", "workout", "nutrition", "movement"],
   coach: ["workout", "checkin", "nutrition", "movement", "coach"],
@@ -36,5 +36,7 @@ const WORLD_ACTION_ORDER: Record<ProductWorld, readonly ContextAction["intent"][
 
 export function contextualActionsFor(world: ProductWorld): readonly ContextAction[] {
   const order = WORLD_ACTION_ORDER[world];
-  return [...CONTEXT_ACTIONS].sort((a, b) => order.indexOf(a.intent) - order.indexOf(b.intent));
+  return CONTEXT_ACTIONS.filter((action) => order.includes(action.intent)).sort(
+    (a, b) => order.indexOf(a.intent) - order.indexOf(b.intent),
+  );
 }
