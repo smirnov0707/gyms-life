@@ -275,9 +275,7 @@ try {
   };
 
   const openTodayContextLayer = async (page) => {
-    const summary = page.getByText(
-      /^(Deep analysis|Gilesnė analizė)$/,
-    );
+    const summary = page.getByText(/^(Deep analysis|Gilesnė analizė)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
