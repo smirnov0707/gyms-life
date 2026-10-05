@@ -919,6 +919,18 @@
 }
 
 @media (max-width: 759px) {
+  /* Mobile compositing budget: keep the cinematic language, but avoid making
+     Safari continuously blur the full shell chrome while scrolling. The
+     opaque-enough header still preserves depth through the shared surface,
+     border and ambient background layers. */
+  .future-lab-app .fl-shell-header {
+    backdrop-filter: blur(10px) saturate(118%);
+  }
+
+  .future-lab-app::before {
+    opacity: 0.24;
+  }
+
   .future-lab-app .fl-page-enter {
     animation-duration: 300ms;
   }
