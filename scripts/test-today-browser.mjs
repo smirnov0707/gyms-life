@@ -688,8 +688,9 @@ try {
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
+          [".fl-today-more", ".fl-today-twin-desktop"].map((selector) => {
             const element = document.querySelector(selector);
+            if (!element) return null;
             const rect = element.getBoundingClientRect();
             return {
               selector,
@@ -698,7 +699,7 @@ try {
               width: rect.width,
               overflow: element.scrollWidth - element.clientWidth,
             };
-          }),
+          }).filter(Boolean),
         );
         for (let i = 1; i < columns.length; i++)
           expect(columns[i].x).toBeGreaterThanOrEqual(columns[i - 1].right);
