@@ -835,3 +835,25 @@
     transform: none !important;
   }
 }
+
+
+/* Cinematic effects stay restrained on the light paper-like theme. */
+.light .future-lab-app::after {
+  opacity: 0.16;
+  filter: blur(24px) saturate(92%);
+}
+
+.light .future-lab-app :is(.fl-premium-card, .fl-premium-stage, .fl-luxury-disclosure)::before {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .light .future-lab-app :is(.fl-premium-card, .fl-premium-stage, .fl-luxury-disclosure):hover::before {
+    opacity: 0.45;
+  }
+}
+
+.light .future-lab-app .fl-coach-conversation::before,
+.light .future-lab-app .fl-lab-page::after {
+  opacity: 0.12;
+}
