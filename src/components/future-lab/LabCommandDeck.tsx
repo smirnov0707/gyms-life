@@ -68,8 +68,17 @@ export function LabCommandDeck() {
         contradicted: "Paneigta",
       };
 
+  const investigationState = query.isError
+    ? "unavailable"
+    : !data
+      ? "loading"
+      : primary?.status ?? "idle";
+
   return (
-    <section className="fl-lab-page fl-panel overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 sm:p-5">
+    <section
+      className="fl-lab-page fl-panel overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 sm:p-5"
+      data-investigation-state={investigationState}
+    >
       <header className="fl-page-heading flex items-start justify-between gap-3 border-b border-border/70 pb-3">
         <div>
           <p className="fl-page-eyebrow text-[9px] uppercase tracking-[0.18em] text-accent light:text-accent">

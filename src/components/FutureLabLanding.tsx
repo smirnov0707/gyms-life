@@ -68,8 +68,8 @@ export const copy = {
         detail: "Proposed · Outcome · Still unknown",
       },
       {
-        title: "Coach",
-        kicker: "MAKE YOUR NEXT MOVE",
+        title: "Intelligence",
+        kicker: "ASK WITH CONTEXT",
         text: "Bring your goals and training history into the conversation. Get help turning a question into a next step.",
         detail: "Context · Conversation · Action",
       },
@@ -89,7 +89,7 @@ export const copy = {
       },
       {
         title: "Look back. Move forward.",
-        text: "Review your history with your Twin and coach. Adjust your next step with context.",
+        text: "Review your history with your Twin and Intelligence. Adjust your next step with context.",
       },
     ],
     libraryTag: "MOVE WITH INTENTION",
@@ -170,8 +170,8 @@ export const copy = {
         detail: "Pasiūlyta · Rezultatas · Dar nežinoma",
       },
       {
-        title: "Treneris",
-        kicker: "PASIRINK KITĄ ŽINGSNĮ",
+        title: "Intelligence",
+        kicker: "KLAUSK SU KONTEKSTU",
         text: "Kalbėkis atsižvelgdamas į savo tikslus ir treniruočių istoriją. Paversk klausimą konkrečiu kitu žingsniu.",
         detail: "Kontekstas · Pokalbis · Veiksmas",
       },
@@ -191,7 +191,7 @@ export const copy = {
       },
       {
         title: "Įvertink. Judėk toliau.",
-        text: "Peržiūrėk istoriją su dvyniu ir treneriu. Koreguok kitą žingsnį atsižvelgdamas į kontekstą.",
+        text: "Peržiūrėk istoriją su dvyniu ir Intelligence. Koreguok kitą žingsnį atsižvelgdamas į kontekstą.",
       },
     ],
     libraryTag: "JUDĖK KRYPTINGAI",

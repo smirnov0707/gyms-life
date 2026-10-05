@@ -572,3 +572,153 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Visual Experience 3.0 — first-impression cinematic landing. */
+.fl-landing-preview {
+  position: relative;
+  isolation: isolate;
+}
+
+.fl-landing-preview::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  left: 7%;
+  right: 7%;
+  top: 18%;
+  height: 1px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, #78dce5cc, #c8fa3c99, transparent);
+  box-shadow: 0 0 18px #78dce544;
+  animation: fl-landing-scan 8s ease-in-out infinite;
+}
+
+.fl-landing-preview::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 46%, #78dce50c, transparent 34%),
+    radial-gradient(circle at 50% 78%, #c8fa3c0a, transparent 30%);
+}
+
+.fl-landing-preview > * {
+  position: relative;
+  z-index: 1;
+}
+
+.fl-landing-world {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 260ms ease,
+    box-shadow 360ms ease;
+}
+
+.fl-landing-world::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: auto -30% -62% 28%;
+  height: 78%;
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, transparent), transparent 68%);
+  transition: opacity 300ms ease;
+}
+
+@media (hover: hover) {
+  .fl-landing-world:hover {
+    transform: translateY(-6px);
+    border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+    box-shadow: 0 24px 60px -44px color-mix(in srgb, var(--primary) 32%, transparent);
+  }
+  .fl-landing-world:hover::after {
+    opacity: 1;
+  }
+}
+
+.fl-landing-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.fl-landing-primary::after {
+  content: "";
+  position: absolute;
+  inset: -70% auto -70% -34%;
+  width: 24%;
+  pointer-events: none;
+  transform: skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 30%), transparent);
+  animation: fl-landing-cta-glint 6s ease-in-out infinite;
+}
+
+@keyframes fl-landing-scan {
+  0%,
+  14% {
+    top: 18%;
+    opacity: 0;
+  }
+  24%,
+  70% {
+    opacity: 0.5;
+  }
+  88%,
+  100% {
+    top: 78%;
+    opacity: 0;
+  }
+}
+
+@keyframes fl-landing-cta-glint {
+  0%,
+  68% {
+    left: -34%;
+    opacity: 0;
+  }
+  74% {
+    opacity: 1;
+  }
+  88%,
+  100% {
+    left: 118%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .fl-landing-primary::after {
+    animation: none;
+    display: none;
+  }
+  .fl-landing-preview::after {
+    animation-duration: 11s;
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-landing-preview::after,
+  .fl-landing-primary::after {
+    animation: none !important;
+    display: none;
+  }
+  .fl-landing-world {
+    transition: none;
+  }
+}
+
+
+.light .fl-landing-world:hover {
+  box-shadow: 0 22px 54px -44px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.light .fl-landing-primary::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 42%), transparent);
+}

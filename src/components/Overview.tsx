@@ -153,8 +153,21 @@ export function Overview() {
     [readinessScore, t],
   );
   const today = nextWorkoutData?.status === "READY" ? nextWorkoutData.workout : undefined;
+  const livingState =
+    readinessScore == null || !Number.isFinite(readinessScore)
+      ? "unknown"
+      : readinessScore >= 80
+        ? "ready"
+        : readinessScore >= 55
+          ? "balanced"
+          : "recover";
+  const dayPhase = hour < 6 ? "night" : hour < 12 ? "morning" : hour < 18 ? "day" : "evening";
   return (
-    <div className="fl-dashboard fl-page-enter">
+    <div
+      className="fl-dashboard fl-page-enter"
+      data-living-state={livingState}
+      data-day-phase={dayPhase}
+    >
       <div className="fl-today-root mx-auto grid w-full max-w-[1480px] gap-4">
         <section
           className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
