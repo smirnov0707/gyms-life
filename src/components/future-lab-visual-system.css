@@ -1040,3 +1040,41 @@
   opacity: 0.58;
   animation-duration: 4.5s;
 }
+
+/* Once the conversation has started, content outranks atmosphere. Thinking is
+   the only state allowed to regain stronger motion because it maps to real work. */
+.future-lab-app .fl-coach-conversation[data-conversation-state="active"]::before {
+  animation-duration: 14s;
+}
+
+@media (max-width: 759px) {
+  .future-lab-app .fl-coach-conversation::before {
+    width: 20rem;
+    height: 20rem;
+    top: -14rem;
+    filter: blur(8px);
+  }
+
+  .future-lab-app .fl-coach-conversation[data-conversation-state="idle"]::before {
+    width: 22rem;
+    height: 22rem;
+    top: -16rem;
+    opacity: 0.38;
+  }
+
+  .future-lab-app .fl-coach-conversation[data-conversation-state="active"]::before {
+    width: 17rem;
+    height: 17rem;
+    top: -12rem;
+    opacity: 0.2;
+    animation-duration: 18s;
+  }
+
+  .future-lab-app .fl-coach-conversation[data-conversation-state="thinking"]::before {
+    width: 20rem;
+    height: 20rem;
+    top: -14rem;
+    opacity: 0.46;
+    animation-duration: 5.5s;
+  }
+}
