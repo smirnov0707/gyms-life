@@ -15,10 +15,9 @@ create unique index if not exists endurance_one_active_goal_per_user
 
 alter table public.endurance_race_goals enable row level security;
 revoke all on table public.endurance_race_goals from anon;
-grant select, insert, update, delete on table public.endurance_race_goals to authenticated;
+grant select on table public.endurance_race_goals to authenticated;
 grant all on table public.endurance_race_goals to service_role;
 drop policy if exists "Users manage own endurance race goals" on public.endurance_race_goals;
-create policy "Users manage own endurance race goals"
-  on public.endurance_race_goals for all to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+create policy "Users read own endurance race goals"
+  on public.endurance_race_goals for select to authenticated
+  using ((select auth.uid()) = user_id);
