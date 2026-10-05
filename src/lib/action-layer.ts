@@ -28,10 +28,10 @@ export type ContextAction = (typeof CONTEXT_ACTIONS)[number];
 export type ProductWorld = "today" | "twin" | "lab" | "coach";
 
 const WORLD_ACTION_ORDER: Record<ProductWorld, readonly ContextAction["intent"][]> = {
-  today: ["workout", "movement", "coach"],
-  twin: ["movement", "workout", "checkin", "coach", "nutrition"],
-  lab: ["coach", "checkin", "workout", "nutrition", "movement"],
-  coach: ["workout", "checkin", "nutrition", "movement", "coach"],
+  today: ["workout", "movement"],
+  twin: ["movement", "workout", "checkin", "nutrition"],
+  lab: ["checkin", "workout", "nutrition", "movement"],
+  coach: ["workout", "checkin", "nutrition", "movement"],
 };
 
 export function contextualActionsFor(world: ProductWorld): readonly ContextAction[] {
