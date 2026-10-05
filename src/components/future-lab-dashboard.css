@@ -1461,7 +1461,7 @@
   .fl-dashboard .fl-today-plan .fl-plan-start {
     min-height: 56px;
     border: 0;
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 78%, white));
     color: var(--primary-foreground);
     font-size: 15px;
     letter-spacing: 0.08em;
