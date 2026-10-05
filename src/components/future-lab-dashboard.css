@@ -1257,9 +1257,11 @@
   }
 
   .fl-today-plan .fl-todays-plan li > span:first-child > span:first-child {
+    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .fl-today-plan .fl-plan-start {
