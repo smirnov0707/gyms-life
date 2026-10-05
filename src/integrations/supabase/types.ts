@@ -1614,9 +1614,14 @@ export type Database = {
       }
       workout_sessions: {
         Row: {
+          activity_environment: string | null
+          activity_kind: string | null
+          activity_source: string | null
           adaptation_modifier: number
+          average_heart_rate_bpm: number | null
           created_at: string
           day_index: number | null
+          distance_meters: number | null
           duration_seconds: number | null
           feeling: number | null
           finished_at: string | null
@@ -1638,6 +1643,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           notes?: string | null
+          perceived_effort?: number | null
           plan_id?: string | null
           started_at?: string
           title?: string | null
