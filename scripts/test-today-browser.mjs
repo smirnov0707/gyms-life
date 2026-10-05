@@ -276,7 +276,7 @@ try {
 
   const openTodayContextLayer = async (page) => {
     const summary = page.getByText(
-      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
+      /^(More|Daugiau|Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
     );
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
@@ -360,7 +360,7 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -569,11 +569,15 @@ try {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
+        const state = await shown.page.locator(".fl-today-state").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
+        const why = await shown.page.locator(".fl-today-why").boundingBox();
         const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        expect(state.y, "Today mobile starts with state").toBeLessThan(plan.y);
+        expect(plan.y, "Today mobile plan precedes explanation").toBeLessThan(why.y);
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -590,7 +594,7 @@ try {
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile is a single-column state-plan-why command with Twin kept secondary");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
@@ -897,8 +901,8 @@ try {
     viewport: { width: 390, height: 844 },
     locale: "en-US",
   });
-  await linked.page.getByText("Open My Twin", { exact: true }).click();
-  await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();
+  await linked.page.getByText("What changed", { exact: true }).click();
+  await linked.page.getByRole("link", { name: "Open My Twin" }).click();
   await expect(linked.page.getByRole("tab", { name: "Body", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
