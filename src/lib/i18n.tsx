@@ -110,11 +110,6 @@ const baseDict = {
     en: "One conversation with the whole system",
   },
   "action.title": { lt: "Daryti dabar", en: "Do now" },
-  "nav.athlete": { lt: "Sportininko modelis", en: "Athlete model" },
-  "nav.athleteDescription": {
-    lt: "Skaidri tavo validuotų duomenų suvestinė",
-    en: "A transparent summary of your validated data",
-  },
   "nav.coach": { lt: "Intelligence", en: "Intelligence" },
   "theme.label": { lt: "Tema", en: "Theme" },
   "theme.light": { lt: "Šviesi", en: "Light" },
