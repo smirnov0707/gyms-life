@@ -12,7 +12,6 @@ import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { TwinHome } from "@/components/twin/TwinHome";
 import { baseLang } from "@/lib/i18n";
 import "./future-lab-dashboard.css";
 import { TodayDecision } from "@/components/TodayDecision";
@@ -224,8 +223,8 @@ export function Overview() {
           </div>
         </section>
 
-        <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
-          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
+        <section className="fl-today-world grid min-w-0 items-start gap-3">
+          <details className="fl-today-twin-entry fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
               {english ? "Open My Twin" : "Atidaryti My Twin"}
             </summary>
@@ -238,10 +237,6 @@ export function Overview() {
               </Link>
             </div>
           </details>
-          <div className="fl-today-twin min-w-0">
-            <TwinHome presentation="cockpit" />
-          </div>
-
           <details className="fl-today-context fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
               {english ? "Deeper context" : "Išsamesnis kontekstas"}
