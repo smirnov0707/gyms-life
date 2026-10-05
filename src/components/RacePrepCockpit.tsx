@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { CalendarDays, Gauge, Route, Target } from "lucide-react";
 import { getActiveRacePrep } from "@/lib/endurance-race-prep.functions";
 import { baseLang, useI18n } from "@/lib/i18n";
@@ -14,11 +15,17 @@ const phaseLabel = (phase: string, en: boolean) => ({
 export function RacePrepCockpit() {
   const { lang } = useI18n(); const english = baseLang(lang) === "en";
   const today = dayInTimeZone(new Date(), browserTimeZone());
+  const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ["active-race-prep", today],
     queryFn: () => getActiveRacePrep({ data: { today } }),
     staleTime: 30_000,
   });
+  useEffect(() => {
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["active-race-prep"] });
+    window.addEventListener("gymslife:endurance-updated", refresh);
+    return () => window.removeEventListener("gymslife:endurance-updated", refresh);
+  }, [queryClient]);
   if (!data || data.status === "none") return null;
   const pct = data.progress.distanceCompletionRatio === null ? null : Math.round(data.progress.distanceCompletionRatio * 100);
   return (
