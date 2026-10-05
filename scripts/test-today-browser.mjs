@@ -254,10 +254,8 @@ try {
   };
 
   const openTodayEvidenceLayer = async (page) => {
-    await openTodayChangesLayer(page);
-    const summary = page.getByText(
-      /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
-    );
+    await openTodayContextLayer(page);
+    const summary = page.getByText(/^(Signals & evidence|Signalai ir įrodymai)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
@@ -275,9 +273,7 @@ try {
   };
 
   const openTodayContextLayer = async (page) => {
-    const summary = page.getByText(
-      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
-    );
+    const summary = page.getByText(/^(More for today|Daugiau šiandien)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
@@ -837,23 +833,13 @@ try {
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
     expect(await sources.getByText(label, { exact: true }).count()).toBe(2);
-    const intelligence = checked.page.getByRole("region", { name: "Intelligence brief" });
-    if (scenario === "failure") {
-      await expect(
-        intelligence.getByText("Lab evidence is temporarily unavailable.", { exact: true }),
-      ).toHaveCount(2);
-      await expect(
-        intelligence.getByText("No hypothesis is currently awaiting more evidence.", {
-          exact: true,
-        }),
-      ).toHaveCount(0);
-    } else {
-      await expect(
-        intelligence.getByText("No hypothesis is currently awaiting more evidence.", {
-          exact: true,
-        }),
-      ).toBeVisible();
-    }
+    // Today no longer renders empty Lab/hypothesis receipts as peer cards.
+    // Source truth remains inspectable under the single secondary evidence layer.
+    await expect(
+      checked.page.getByText("No hypothesis is currently awaiting more evidence.", {
+        exact: true,
+      }),
+    ).toHaveCount(0);
     expect(checked.errors).toEqual([]);
     await checked.page.screenshot({
       path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),
