@@ -1918,3 +1918,80 @@
     animation-duration: 5.5s;
   }
 }
+
+
+/* Visual Experience 3.0 — active workout focus tunnel. */
+.fl-workout-console:has(.fl-workout-active) {
+  background:
+    radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 46%),
+    var(--surface);
+}
+
+.fl-workout-active .fl-workout-exercise {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--primary) 16%, var(--border));
+  box-shadow:
+    0 22px 64px -48px color-mix(in srgb, var(--primary) 28%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 3%);
+}
+
+.fl-workout-active .fl-workout-exercise::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 22rem;
+  height: 22rem;
+  right: -12rem;
+  top: -14rem;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0.38;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 14%, transparent), transparent 68%);
+}
+
+.fl-workout-active .fl-workout-exercise > * {
+  position: relative;
+  z-index: 1;
+}
+
+.fl-workout-fields input:focus {
+  border-color: color-mix(in srgb, var(--primary) 44%, var(--border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent),
+    0 0 22px -12px color-mix(in srgb, var(--primary) 34%, transparent);
+}
+
+.fl-workout-active :is(.fl-workout-log, button[class*="finish"]) {
+  transition:
+    transform 120ms ease,
+    box-shadow 220ms ease;
+}
+
+.fl-workout-active :is(.fl-workout-log, button[class*="finish"]):active {
+  transform: scale(0.985);
+}
+
+.fl-workout-active .animate-pulse {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--primary) 35%, transparent));
+}
+
+@media (max-width: 767px) {
+  .fl-workout-console:has(.fl-workout-active) {
+    border-color: color-mix(in srgb, var(--primary) 12%, var(--border));
+  }
+  .fl-workout-active .fl-workout-exercise::after {
+    width: 15rem;
+    height: 15rem;
+    right: -9rem;
+    top: -10rem;
+    opacity: 0.24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-workout-active :is(.fl-workout-log, button[class*="finish"]) {
+    transition: none;
+  }
+}
