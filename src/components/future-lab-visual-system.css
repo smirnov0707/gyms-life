@@ -168,7 +168,8 @@
 
 .future-lab-app :is(.fl-page-eyebrow, .fl-world-kicker) {
   color: var(--primary);
-  letter-spacing: 0.16em;
+  font-size: 10px;
+  letter-spacing: 0.13em;
   font-weight: 700;
 }
 
@@ -510,12 +511,14 @@
   .future-lab-app .fl-coach-empty {
     min-height: 100%;
   }
-  .future-lab-app :is(.fl-page-heading h1, .fl-future-heading h1) {
-    font-size: 21px;
-    line-height: 1.15;
+  .future-lab-app :is(.fl-page-heading h1, .fl-future-heading h1, .fl-world-title) {
+    font-size: 28px;
+    line-height: 1.12;
+    letter-spacing: -0.04em !important;
   }
   .future-lab-app .fl-dashboard .fl-greeting h1 {
     font-size: 28px;
+    line-height: 1.12;
   }
   .future-lab-app :is(.fl-lab-page, .fl-journal-page, .fl-future-page) {
     border-radius: 20px;
