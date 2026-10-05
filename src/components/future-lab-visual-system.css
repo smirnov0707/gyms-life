@@ -780,3 +780,58 @@
     animation: none !important;
   }
 }
+
+
+/* Visual Experience 3.0 — tactile interaction language. */
+.future-lab-app :is(button, a, summary) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-action-tile, .fl-card-action, .fl-action, .fl-plan-start),
+.future-lab-drawer :is(button, a) {
+  transform-origin: center;
+}
+
+.future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-action-tile, .fl-card-action, .fl-action, .fl-plan-start):active,
+.future-lab-drawer :is(button, a):active {
+  transform: scale(0.975);
+  transition-duration: 70ms;
+}
+
+.future-lab-app .fl-mobile-navigation a {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 220ms ease,
+    transform 120ms ease;
+}
+
+.future-lab-app .fl-mobile-navigation a:active {
+  transform: scale(0.94);
+}
+
+.future-lab-app .fl-mobile-navigation a[aria-current="page"] svg {
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 42%, transparent));
+}
+
+@media (hover: hover) {
+  .future-lab-app .fl-action-tile:hover {
+    transform: translateY(-3px) scale(1.006);
+  }
+
+  .future-lab-app .fl-luxury-disclosure:hover,
+  .future-lab-app .fl-premium-card:hover {
+    box-shadow:
+      var(--fl-depth-shadow),
+      0 20px 54px -42px color-mix(in srgb, var(--primary) 24%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 3.5%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-action-tile, .fl-card-action, .fl-action, .fl-plan-start):active,
+  .future-lab-drawer :is(button, a):active,
+  .future-lab-app .fl-mobile-navigation a:active {
+    transform: none !important;
+  }
+}
