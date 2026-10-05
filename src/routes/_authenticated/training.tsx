@@ -2,6 +2,7 @@ import { SavedTrainingPrograms } from "@/components/SavedTrainingPrograms";
 import { createFileRoute } from "@tanstack/react-router";
 import { ActivePlanLoader } from "@/components/ActivePlanLoader";
 import { RacePrepStarter } from "@/components/RacePrepStarter";
+import { RacePrepCockpit } from "@/components/RacePrepCockpit";
 
 export const Route = createFileRoute("/_authenticated/training")({
   head: () => ({
@@ -17,6 +18,7 @@ function TrainingPage() {
   return (
     <main className="fl-context-route fl-workspace fl-training-workspace fl-page-enter">
       <ActivePlanLoader />
+      <RacePrepCockpit />
       <RacePrepStarter />
       <SavedTrainingPrograms />
     </main>
