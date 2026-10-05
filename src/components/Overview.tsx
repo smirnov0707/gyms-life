@@ -237,6 +237,17 @@ export function Overview() {
               </Link>
             </div>
           </details>
+          <details className="fl-today-quick-action fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
+            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+              {english ? "Log food" : "Įrašyti maistą"}
+            </summary>
+            <div className="border-t border-border p-4">
+              <QuickFoodLog compact />
+              <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                {english ? "Nutrition Intelligence" : "Nutrition Intelligence"} →
+              </Link>
+            </div>
+          </details>
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
@@ -262,22 +273,11 @@ export function Overview() {
               <SleepAnalysis />
               <PredictionEvidencePanel compact />
             </div>
-            <details className="fl-surface group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food here" : "Įrašyti maistą čia"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickFoodLog compact />
-                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
-                </Link>
-              </div>
-            </details>
             <DataSourcesStrip />
             <TodayLifeContext />
             {planData ? (
-              <Link to="/onboarding" className="fl-text-link w-fit">
-                {t("dash.regenerate")} →
+              <Link to="/training" className="fl-text-link w-fit">
+                {english ? "Manage training plan" : "Tvarkyti treniruočių planą"} →
               </Link>
             ) : null}
           </div>
