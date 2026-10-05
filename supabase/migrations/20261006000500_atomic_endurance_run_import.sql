@@ -4,6 +4,8 @@ create or replace function public.record_endurance_run_import(
 ) returns uuid language plpgsql security definer set search_path=public as $$
 declare v_session uuid;v_existing uuid;
 begin
+ if p_source not in ('apple_health','garmin','strava','device','manual_import') then raise exception 'invalid source';end if;
+ if p_duration_seconds <= 0 or p_distance_meters <= 0 or p_split_coverage < 0 or p_split_coverage > 1 then raise exception 'invalid telemetry';end if;
  if auth.role()<>'service_role' and auth.uid() is distinct from p_user_id then raise exception 'not authorized';end if;
  select workout_session_id into v_existing from public.endurance_run_imports where user_id=p_user_id and source=p_source and external_activity_id=p_external_activity_id;
  if v_existing is not null then return v_existing;end if;
