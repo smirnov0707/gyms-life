@@ -106,7 +106,10 @@ function CoachPage() {
         </div>
       </header>
 
-      <section className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface">
+      <section
+        className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface"
+        data-conversation-state={messages.length === 0 && !busy ? "idle" : busy ? "thinking" : "active"}
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
