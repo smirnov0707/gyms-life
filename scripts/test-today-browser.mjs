@@ -360,7 +360,7 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
