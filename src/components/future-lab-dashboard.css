@@ -838,9 +838,9 @@
     margin-top: 3px;
   }
   .fl-dashboard .fl-readiness-card > button {
-    min-height: 21px;
-    height: 21px;
-    margin-top: 0;
+    min-height: 36px;
+    height: auto;
+    margin-top: 2px;
   }
   .fl-dashboard .fl-smart-brief h3 {
     margin-top: 3px;
@@ -1031,9 +1031,9 @@
   }
   .fl-dashboard .fl-data-sources > button,
   .fl-dashboard .fl-data-sources > a {
-    min-height: 26px;
-    padding: 4px 8px;
-    font-size: 9px;
+    min-height: 32px;
+    padding: 6px 9px;
+    font-size: 10px;
   }
   .fl-dashboard .fl-data-sources > span {
     font-size: 8px;
