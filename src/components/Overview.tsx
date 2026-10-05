@@ -219,8 +219,19 @@ export function Overview() {
               primaryTrainingActionHandled={Boolean(today)}
             />
           </div>
-          <div className="fl-today-plan min-w-0">
+          <div className="fl-today-plan grid min-w-0 content-start gap-3">
             <TodaysPlanPanel />
+            <details className="fl-surface fl-today-execution group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Log food" : "Įrašyti maistą"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickFoodLog compact />
+                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
+                </Link>
+              </div>
+            </details>
           </div>
         </section>
 
@@ -266,18 +277,6 @@ export function Overview() {
                   </div>
                   <DataSourcesStrip />
                   <TodayLifeContext />
-                </div>
-              </details>
-
-              <details className="fl-surface group">
-                <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                  {english ? "Log food" : "Įrašyti maistą"}
-                </summary>
-                <div className="border-t border-border p-4">
-                  <QuickFoodLog compact />
-                  <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                    {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
-                  </Link>
                 </div>
               </details>
 
