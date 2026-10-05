@@ -32,7 +32,7 @@ describe("Product Convergence contract", () => {
   });
 
   it("replaces the feature catalogue with a bounded contextual action layer", () => {
-    expect(actionRoutes).toEqual(["/training", "/app", "/nutrition", "/ar", "/coach"]);
+    expect(actionRoutes).toEqual(["/training", "/app", "/nutrition", "/ar"]);
     for (const legacy of [
       "/progress",
       "/history",
@@ -60,8 +60,8 @@ describe("Product Convergence contract", () => {
       "movement",
     ]);
   });
-  it("uses Coach as an action without creating a fifth product world", () => {
-    expect(actionRoutes.filter((route) => route === "/coach")).toHaveLength(1);
+  it("keeps Coach canonical as a product world rather than duplicating it as an action", () => {
+    expect(actionRoutes).not.toContain("/coach");
     expect(PRIMARY_WORLD_NAV.filter((item) => item.to === "/coach")).toHaveLength(1);
   });
   it("classifies legacy and embedded capabilities without exposing them as worlds", () => {
