@@ -39,6 +39,20 @@ export function RacePrepCockpit() {
             {data.daysToRace} {english ? "days to race" : "d. iki starto"}
           </div>
         </header>
+        <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="fl-eyebrow">{english ? "RACE READINESS" : "PASIRENGIMAS STARTUI"}</p>
+            <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">
+              {data.readiness.evidenceLevel === "high" ? (english ? "High evidence" : "Daug duomenų") : data.readiness.evidenceLevel === "moderate" ? (english ? "Moderate evidence" : "Vidutiniškai duomenų") : (english ? "Building evidence" : "Kaupiami duomenys")}
+            </span>
+          </div>
+          <h3 className="mt-2 text-xl font-semibold">
+            {data.readiness.status === "on_track" ? (english ? "On track" : "Pagal planą") : data.readiness.status === "strained" ? (english ? "Load needs attention" : "Krūviui reikia dėmesio") : data.readiness.status === "building" ? (english ? "Building" : "Formuojasi") : (english ? "Not enough evidence yet" : "Dar nepakanka duomenų")}
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {data.readiness.status === "insufficient_evidence" ? (english ? "GYMS.LIFE will not invent a race probability from a few sessions." : "GYMS.LIFE nekurs varžybų tikimybės iš kelių treniruočių.") : data.readiness.factors.join(" · ").replaceAll("_", " ")}
+          </p>
+        </div>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Metric icon={<CalendarDays className="size-4" />} value={String(data.currentWeek.week)} label={english ? "Plan week" : "Plano savaitė"} />
           <Metric icon={<Route className="size-4" />} value={km(data.progress.completedDistanceMeters) + " / " + km(data.progress.plannedDistanceMeters) + " km"} label={english ? "This week" : "Šią savaitę"} />
