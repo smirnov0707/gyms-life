@@ -124,8 +124,9 @@
   white-space: normal;
 }
 .fl-workspace :is(summary, button, a):focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 4px;
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, white 12%);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 .fl-context-route.fl-workspace details.fl-workspace-panel {
   overflow: clip;
