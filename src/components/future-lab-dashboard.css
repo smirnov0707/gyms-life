@@ -1373,3 +1373,79 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* Today 2.3 — calm mobile hierarchy. The first viewport is a command, not a
+   catalogue: greeting -> plan -> state/why -> one change disclosure -> More. */
+@media (max-width: 759px) {
+  .fl-dashboard .fl-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-dashboard .fl-mobile-page-name {
+    margin-bottom: 8px;
+  }
+
+  .fl-dashboard .fl-greeting h1 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .fl-dashboard .fl-greeting-context {
+    display: none;
+  }
+
+  .fl-dashboard .fl-today-command {
+    gap: 10px;
+    border-radius: 24px;
+    padding: 12px;
+  }
+
+  .fl-dashboard .fl-today-command-copy > .fl-eyebrow {
+    display: none;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan {
+    border: 0;
+    background: transparent;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan > header {
+    padding: 4px 4px 10px;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan > header > a {
+    display: none;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-todays-plan > div,
+  .fl-dashboard .fl-today-plan .fl-todays-plan > ul {
+    padding-inline: 4px;
+  }
+
+  .fl-dashboard .fl-today-plan .fl-plan-start {
+    border: 0;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+
+  .fl-dashboard .fl-today-plan .fl-plan-start:hover {
+    background: var(--primary);
+  }
+
+  .fl-dashboard .fl-today-changes,
+  .fl-dashboard .fl-today-support {
+    border-radius: 18px;
+    background: var(--surface);
+  }
+
+  .fl-dashboard .fl-today-changes > summary,
+  .fl-dashboard .fl-today-support > summary {
+    min-height: 52px;
+    padding: 14px 16px;
+  }
+
+  .fl-dashboard .fl-today-more-twin {
+    width: 100%;
+  }
+}

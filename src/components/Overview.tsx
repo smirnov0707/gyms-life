@@ -162,7 +162,9 @@ export function Overview() {
             {greeting}
             {firstName ? `, ${firstName}` : ""}
           </h1>
-          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
+          <p className="fl-greeting-context">
+            {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+          </p>
         </header>
 
         <section
@@ -224,19 +226,6 @@ export function Overview() {
         </section>
 
         <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
-          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
-            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "Open My Twin" : "Atidaryti My Twin"}
-            </summary>
-            <div className="border-t border-border p-3">
-              <Link to="/twin" className="fl-text-link inline-flex">
-                {english
-                  ? "Explore body, systems & trajectory"
-                  : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
-                →
-              </Link>
-            </div>
-          </details>
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
@@ -253,9 +242,16 @@ export function Overview() {
 
         <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
           <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
+            {english ? "More" : "Daugiau"}
           </summary>
           <div className="grid gap-4 border-t border-border p-4">
+            <Link
+              to="/twin"
+              className="fl-today-more-twin flex min-h-12 items-center justify-between rounded-2xl border border-border bg-surface-2 px-4 text-sm font-semibold text-foreground"
+            >
+              <span>{english ? "My Twin" : "My Twin"}</span>
+              <span className="text-xs text-primary">{english ? "Open" : "Atidaryti"} →</span>
+            </Link>
             <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
               <LiveSignals />
               <RecoveryOutlook compact />
