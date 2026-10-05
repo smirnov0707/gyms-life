@@ -489,3 +489,14 @@
     animation: none !important;
   }
 }
+
+
+.light .fl-auth-card:focus-within {
+  box-shadow:
+    0 24px 70px rgb(20 28 18 / 7%),
+    0 0 34px -28px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.light .fl-auth-card:focus-within::after {
+  opacity: 0.32;
+}
