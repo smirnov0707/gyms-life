@@ -792,6 +792,17 @@
   transform-origin: center;
 }
 
+.future-lab-app :is(button, a, summary):focus-visible,
+.future-lab-drawer :is(button, a, summary):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, white 12%);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.future-lab-app summary:focus-visible {
+  border-radius: 0.75rem;
+}
+
 .future-lab-app :is(.fl-shell-icon-button, .fl-profile-control, .fl-action-tile, .fl-card-action, .fl-action, .fl-plan-start):active,
 .future-lab-drawer :is(button, a):active {
   transform: scale(0.975);
