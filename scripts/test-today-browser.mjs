@@ -368,8 +368,11 @@ try {
           .getByRole("button", { name: /^Chest(?:\s|$)/ })
           .first()
           .click();
+        await expect
+          .poll(() => new URL(shown.page.url()).searchParams.get("region"), { timeout: 30000 })
+          .toBe("chest");
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
-        await expect(detail).toBeVisible();
+        await expect(detail).toBeVisible({ timeout: 30000 });
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
         const limits = detail.locator(".twin-detail-readout details");
         await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
