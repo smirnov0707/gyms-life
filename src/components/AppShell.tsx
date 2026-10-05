@@ -7,7 +7,6 @@ import {
   ArrowUpRight,
   ChevronDown,
   Dumbbell,
-  MessageSquare,
   MoonStar,
   Plus,
   ScanLine,
@@ -40,7 +39,6 @@ const ACTION_ICONS: Record<ContextAction["intent"], typeof Dumbbell> = {
   checkin: Zap,
   nutrition: Salad,
   movement: ScanLine,
-  coach: MessageSquare,
 };
 
 function MoreNavigation({ world }: { world: ProductWorld }) {
