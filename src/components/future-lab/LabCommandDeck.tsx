@@ -93,7 +93,6 @@ export function LabCommandDeck() {
         </span>
       </header>
 
-
       <div className="fl-lab-workbench mt-3 grid items-start gap-3">
         <FutureLabPanel
           className="fl-investigation-card"
@@ -147,7 +146,6 @@ export function LabCommandDeck() {
           </div>
         </details>
       </div>
-
 
       <details className="fl-secondary-details fl-lab-domains">
         <summary>{english ? "Evidence sources" : "Įrodymų šaltiniai"}</summary>
