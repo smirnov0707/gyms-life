@@ -156,7 +156,7 @@ export function TwinScreen({
                   <LiveSignals />
                 </div>
                 <details className="fl-secondary-details mt-4">
-                  <summary>{t("tw.systemsTitle")}</summary>
+                  <summary>{t("tw.systemsSupport")}</summary>
                   <div className="fl-disclosed-content grid gap-4 lg:grid-cols-2">
                     <RecoveryOutlook />
                     <SleepAnalysis />
