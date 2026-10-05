@@ -23,11 +23,14 @@ export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
     meta: [
       { title: "Intelligence — GYMS.LIFE" },
-      { name: "description", content: "Asmeninis treneris: technika, mityba ir plano korekcijos." },
-      { property: "og:title", content: "Tavo treneris — GYMS.LIFE" },
+      {
+        name: "description",
+        content: "GYMS.LIFE Intelligence dialogas apie Today sprendimus, My Twin būseną ir Lab tyrimus.",
+      },
+      { property: "og:title", content: "Intelligence — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Klausk trenerio, kuris mato tavo planą ir progresą.",
+        content: "Klausk savo sistemos apie sprendimus, būseną, įrodymus ir modeliuojamus scenarijus.",
       },
     ],
   }),
