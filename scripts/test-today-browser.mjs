@@ -441,40 +441,29 @@ try {
         );
       }
       if (screen === "journal") {
-        const journal = shown.page.locator(".fl-journal-page");
+        const journal = shown.page.locator(".twin-journal-view");
+        await expect(journal).toBeVisible();
         await expect(
-          journal,
-          "The Twin mounts one learning ledger, including inside history",
-        ).toHaveCount(1);
-        const filters = journal.getByRole("navigation", { name: "Timeline filters" });
-        await expect(filters).toBeVisible();
-        await filters.getByRole("button", { name: "Patterns", exact: true }).click();
-        await expect(
-          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
-        ).toHaveCount(0);
-        await expect(
-          journal.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
+          journal.getByRole("heading", { name: "Your history, with memory attached.", exact: true }),
         ).toBeVisible();
-        await filters.getByRole("button", { name: "Decisions", exact: true }).click();
         await expect(
-          journal.getByRole("heading", { name: "Recent decisions", exact: true }),
+          journal.getByRole("button", { name: "Twin event history", exact: true }),
         ).toBeVisible();
-        await filters.getByRole("button", { name: "All", exact: true }).click();
-        await expect(
-          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
-        ).toBeVisible();
-        if (viewport.name === "mobile") {
-          const labelLines = await filters.getByRole("button").evaluateAll((buttons) =>
-            buttons.map((button) => {
-              const range = document.createRange();
-              range.selectNodeContents(button);
-              return { label: button.textContent, lines: range.getClientRects().length };
-            }),
-          );
-          for (const label of labelLines)
-            expect(label.lines, `${label.label} remains readable without a split word`).toBe(1);
-        }
-        record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
+
+        const memory = journal.locator(":scope > details").filter({ hasText: "Memory & patterns" });
+        await expect(memory.locator(":scope > summary")).toBeVisible();
+        await expect(journal.locator(".fl-journal-page")).toBeHidden();
+        await memory.locator(":scope > summary").press("Enter");
+
+        const learning = memory
+          .locator("details")
+          .filter({ hasText: "Learning ledger & rewind" })
+          .first();
+        await expect(learning.locator(":scope > summary")).toBeVisible();
+        await learning.locator(":scope > summary").press("Enter");
+        await expect(journal.locator(".fl-journal-page")).toBeVisible();
+
+        record(`Journal ${viewport.name} keeps the chronological timeline primary and learning on demand`);
       }
       if (screen === "lab") {
         const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
