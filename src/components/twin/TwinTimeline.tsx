@@ -36,6 +36,8 @@ const COPY = {
       workout_completed: "Užregistruotas treniruotės užbaigimas",
       checkin_recorded: "Užregistruota savijauta",
       decision_recorded: "Užregistruotas dienos sprendimas",
+      endurance_adaptation: "Pritaikytas bėgimo pasiruošimo planas",
+      endurance_adaptation_observed: "Stebėtas rezultatas po bėgimo plano adaptacijos",
     },
     origins: {
       measured: "Išmatuota",
@@ -76,6 +78,8 @@ const COPY = {
       workout_completed: "Workout completion recorded",
       checkin_recorded: "Check-in recorded",
       decision_recorded: "Daily decision recorded",
+      endurance_adaptation: "Race preparation plan adapted",
+      endurance_adaptation_observed: "Post-adaptation race signals observed",
     },
     origins: {
       measured: "Measured",
