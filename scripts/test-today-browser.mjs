@@ -304,7 +304,11 @@ try {
     }
 
     const details = page.locator(".fl-today-support");
-    if ((await details.count()) && (await details.isVisible()) && (await details.getAttribute("open")) === null)
+    if (
+      (await details.count()) &&
+      (await details.isVisible()) &&
+      (await details.getAttribute("open")) === null
+    )
       await details.locator(":scope > summary").click();
   };
 
