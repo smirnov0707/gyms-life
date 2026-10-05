@@ -20,6 +20,17 @@ describe("endurance adaptation", () => {
     }).volumeModifier).toBe(0.8);
   });
 
+  it("backs off after repeated over-target running", () => {
+    expect(decideEnduranceAdaptation({
+      completedPlannedSessions: 4,
+      plannedSessions: 4,
+      lowResponseStreak: 0,
+      readinessBand: "high",
+      distanceCompletionRatio: 1.22,
+      recentOverTargetRuns: 2,
+    })).toEqual({ action: "reduce", volumeModifier: 0.9, reason: "repeated_over_target_work" });
+  });
+
   it("prioritizes recovery when low readiness coincides with missed work", () => {
     expect(decideEnduranceAdaptation({
       completedPlannedSessions: 1,
