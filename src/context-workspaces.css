@@ -1677,3 +1677,88 @@
     animation: none !important;
   }
 }
+
+
+/* Visual Experience 3.0 — earned workout completion reveal. */
+.fl-workout-summary {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.fl-workout-summary::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 36rem;
+  height: 36rem;
+  left: 50%;
+  top: -26rem;
+  pointer-events: none;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--primary) 20%, transparent), transparent 48%),
+    conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--accent) 8%, transparent), transparent 28%);
+  filter: blur(4px);
+  animation: fl-workout-complete-bloom 1.8s cubic-bezier(0.16, 1, 0.3, 1) 1 both;
+}
+
+.fl-workout-summary > * {
+  position: relative;
+  z-index: 1;
+}
+
+.fl-workout-summary > svg {
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--primary) 40%, transparent));
+  animation: fl-earned-icon 900ms cubic-bezier(0.16, 1, 0.3, 1) 1 both;
+}
+
+.fl-workout-summary .fl-workspace-number {
+  animation: fl-number-arrival 700ms cubic-bezier(0.16, 1, 0.3, 1) 180ms 1 both;
+}
+
+@keyframes fl-workout-complete-bloom {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.45) rotate(-20deg);
+  }
+  42% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(1.15) rotate(18deg);
+  }
+}
+
+@keyframes fl-earned-icon {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.72) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes fl-number-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-workout-summary::after,
+  .fl-workout-summary > svg,
+  .fl-workout-summary .fl-workspace-number {
+    animation: none !important;
+  }
+}
