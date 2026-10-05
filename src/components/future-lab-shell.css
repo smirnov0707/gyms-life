@@ -472,9 +472,29 @@
 }
 
 .fl-luxury-disclosure > summary {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
   transition:
     color 180ms ease,
     background-color 180ms ease;
+}
+.fl-luxury-disclosure > summary::after {
+  content: "+";
+  margin-left: auto;
+  padding-left: 16px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--muted-foreground);
+  transition:
+    color 180ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fl-luxury-disclosure[open] > summary::after {
+  color: var(--primary);
+  transform: rotate(45deg);
 }
 
 .fl-luxury-disclosure > summary:hover {
