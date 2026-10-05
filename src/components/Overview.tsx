@@ -156,20 +156,21 @@ export function Overview() {
   return (
     <div className="fl-dashboard fl-page-enter">
       <div className="fl-today-root mx-auto grid w-full max-w-[1480px] gap-4">
-        <header className="fl-greeting">
-          <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
-          <h1>
-            {greeting}
-            {firstName ? `, ${firstName}` : ""}
-          </h1>
-          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
-        </header>
-
         <section
           className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
           aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
         >
           <div className="fl-today-command-copy grid min-w-0 content-start gap-3">
+            <header className="fl-greeting fl-today-hero-copy">
+              <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
+              <h1>
+                {greeting}
+                {firstName ? `, ${firstName}` : ""}
+              </h1>
+              <p>
+                {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+              </p>
+            </header>
             <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
               {english ? "TODAY COMMAND" : "ŠIANDIENOS VEIKSMAS"}
             </p>
