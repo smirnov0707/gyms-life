@@ -662,3 +662,46 @@
   }
 }
 
+
+
+/* A reward only for a real strengthened learned-change event. */
+.fl-progress-reveal {
+  position: relative;
+  isolation: isolate;
+}
+
+.fl-progress-reveal::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: -1px;
+  pointer-events: none;
+  border-radius: 16px;
+  opacity: 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 46%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary) 8%, transparent),
+    0 0 34px color-mix(in srgb, var(--primary) 16%, transparent);
+  animation: fl-progress-arrival 1.5s cubic-bezier(0.16, 1, 0.3, 1) 1 both;
+}
+
+@keyframes fl-progress-arrival {
+  0% {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  28% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.012);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-progress-reveal::after {
+    animation: none !important;
+    display: none;
+  }
+}
