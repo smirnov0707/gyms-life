@@ -289,7 +289,6 @@ export function Overview() {
             </div>
           </details>
         </section>
-
       </div>
     </div>
   );
