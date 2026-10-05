@@ -9,7 +9,7 @@ export const CONTEXT_ACTIONS = [
   },
   { to: "/app", label: "action.checkIn", description: "action.checkIn.d", intent: "checkin" },
   {
-    to: "/app",
+    to: "/nutrition",
     label: "action.logFood",
     description: "action.logFood.d",
     intent: "nutrition",
