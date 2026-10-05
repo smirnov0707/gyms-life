@@ -20,7 +20,6 @@ export const CONTEXT_ACTIONS = [
     description: "action.scanMovement.d",
     intent: "movement",
   },
-  { to: "/coach", label: "action.askCoach", description: "action.askCoach.d", intent: "coach" },
 ] as const satisfies readonly { to: string; label: TKey; description: TKey; intent: string }[];
 
 export type ContextAction = (typeof CONTEXT_ACTIONS)[number];
