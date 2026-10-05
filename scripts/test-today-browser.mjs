@@ -246,7 +246,7 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
+    const summary = page.getByText(/^(Since yesterday|Nuo vakar|What changed|Kas pasikeitė)$/);
     if (await summary.count()) {
       const details = summary.locator("xpath=ancestor::details[1]");
       if ((await details.getAttribute("open")) === null) await summary.click();
