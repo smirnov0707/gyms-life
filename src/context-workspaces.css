@@ -1678,6 +1678,18 @@
   }
 }
 
+@media (max-width: 759px) {
+  .fl-workspace-hero::before {
+    width: 22rem;
+    height: 22rem;
+    right: -12rem;
+    bottom: -14rem;
+    opacity: 0.3;
+    filter: blur(7px);
+    animation: none;
+  }
+}
+
 
 /* Visual Experience 3.0 — earned workout completion reveal. */
 .fl-workout-summary {
