@@ -407,6 +407,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
     <section
       aria-label={copy.title}
       data-twin-home
+      data-twin-layer={shownLayer}
       className="relative -mx-4 overflow-hidden rounded-none border-y border-white/[0.07] bg-[#040a14] text-white sm:mx-0 sm:rounded-[1.75rem] sm:border"
     >
       <div
