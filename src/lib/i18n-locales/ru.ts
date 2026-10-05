@@ -77,7 +77,6 @@ export const locale: Record<string, string> = {
   "dash.evening": "Добрый вечер",
   "dash.welcomeBack": "Рады вас видеть",
   "dash.streak": "Серия",
-  "dash.regenerate": "Создать новый план",
   "plan.day": "День",
   "plan.min": "мин",
   "w.watch": "Смотреть технику",
