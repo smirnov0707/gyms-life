@@ -95,21 +95,6 @@ function MoreNavigation({ world }: { world: ProductWorld }) {
                 );
               })}
             </div>
-            <DrawerClose asChild>
-              <Link
-                to="/me"
-                className="flex items-center gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3"
-              >
-                <UserRound aria-hidden="true" className="size-5 text-primary" />
-                <span className="flex-1">
-                  <span className="block text-sm font-bold">{t("nav.athlete")}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {t("nav.athleteDescription")}
-                  </span>
-                </span>
-                <ArrowUpRight aria-hidden="true" className="size-4 text-primary" />
-              </Link>
-            </DrawerClose>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-2 px-3 py-2">
               <LangSwitch />
               <ThemeToggle />
