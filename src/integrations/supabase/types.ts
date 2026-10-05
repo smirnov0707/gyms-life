@@ -1755,6 +1755,10 @@ export type Database = {
         Args: { p_user_id: string; p_race_goal_id: string; p_decision_on: string; p_action: string; p_volume_modifier: number; p_reason: string; p_evidence: Json; p_engine_version: string }
         Returns: { id: string; action: string; volume_modifier: number; reason: string; created_at: string }[]
       }
+      record_endurance_adaptation_outcome: {
+        Args: { p_user_id: string; p_record_id: string; p_outcome: Json; p_recorded_at: string }
+        Returns: boolean
+      }
       record_endurance_run_import: {
         Args: {
           p_user_id: string
