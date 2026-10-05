@@ -261,11 +261,19 @@
   .fl-shell-icon-button,
   .fl-night-status,
   .fl-profile-control {
-    min-height: 40px;
-    height: 40px;
-    width: 36px;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+  .fl-night-status,
+  .fl-profile-control {
     border-color: transparent;
     background: transparent;
+  }
+  .fl-shell-icon-button {
+    border-color: color-mix(in srgb, var(--primary) 14%, var(--border));
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
   }
   .fl-profile-control {
     padding: 0;
