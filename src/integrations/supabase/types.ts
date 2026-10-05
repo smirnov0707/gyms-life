@@ -1747,6 +1747,23 @@ export type Database = {
         Args: { p_capture_set_id: string; p_claim_token: string; p_provider_job_id: string; p_provider_key: string; p_user_id: string }
         Returns: undefined
       }
+      record_endurance_run_import: {
+        Args: {
+          p_user_id: string
+          p_source: string
+          p_external_activity_id: string
+          p_started_at: string
+          p_finished_at: string
+          p_duration_seconds: number
+          p_distance_meters: number
+          p_average_hr: number | null
+          p_elevation_gain: number | null
+          p_average_cadence: number | null
+          p_split_coverage: number
+          p_splits: Json
+        }
+        Returns: string
+      }
       release_personalized_twin_provider_submission: {
         Args: { p_capture_set_id: string; p_claim_token: string; p_user_id: string }
         Returns: undefined
