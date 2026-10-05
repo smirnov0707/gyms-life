@@ -1373,3 +1373,130 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+/* Today Command 2.3 — one mobile story: state -> plan -> why.
+   Secondary intelligence stays behind disclosure instead of becoming a card wall. */
+@media (max-width: 759px) {
+  .fl-today-command {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .fl-today-state {
+    order: 1;
+  }
+
+  .fl-today-plan {
+    order: 2;
+  }
+
+  .fl-today-why {
+    order: 3;
+  }
+
+  .fl-today-command-copy {
+    display: none;
+  }
+
+  .fl-today-state .fl-readiness-card,
+  .fl-today-state .fl-readiness-empty {
+    border-radius: 16px;
+  }
+
+  .fl-today-state .fl-readiness-card {
+    padding: 10px 12px;
+  }
+
+  .fl-today-plan .fl-todays-plan {
+    border-radius: 18px;
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+    box-shadow: 0 12px 36px rgb(0 0 0 / 18%);
+  }
+
+  .fl-today-plan .fl-todays-plan header {
+    padding: 12px 14px 8px;
+  }
+
+  .fl-today-plan .fl-todays-plan > div:first-of-type {
+    padding-inline: 14px;
+  }
+
+  .fl-today-plan .fl-todays-plan > ul {
+    padding-inline: 14px;
+  }
+
+  .fl-today-plan .fl-plan-start {
+    min-height: 58px;
+    border-radius: 16px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    letter-spacing: 0.08em;
+  }
+
+  .fl-today-why .fl-today-decision {
+    margin: 0;
+    padding: 10px 4px 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .fl-today-why .fl-today-decision > .fl-eyebrow,
+  .fl-today-why .fl-today-decision > h2 {
+    display: none;
+  }
+
+  .fl-today-why .fl-decision-summary {
+    margin: 0;
+    max-width: none;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+  }
+
+  .fl-today-world {
+    gap: 10px;
+  }
+
+  .fl-today-twin-mobile {
+    display: none !important;
+  }
+
+  .fl-today-changes,
+  .fl-today-support {
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--surface) 76%, transparent);
+  }
+
+  .fl-today-changes > summary,
+  .fl-today-support > summary {
+    min-height: 46px;
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+
+  .fl-today-support > summary {
+    color: var(--muted-foreground);
+  }
+
+  .fl-greeting {
+    padding-bottom: 0;
+  }
+
+  .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 8px;
+  }
+
+  .fl-greeting h1 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .fl-greeting > p:last-child {
+    display: none;
+  }
+}
