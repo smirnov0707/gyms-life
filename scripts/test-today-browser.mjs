@@ -573,7 +573,7 @@ try {
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-secondary").boundingBox();
+        const secondary = await shown.page.locator(".fl-today-secondary").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
