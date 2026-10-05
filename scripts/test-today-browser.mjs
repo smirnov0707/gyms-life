@@ -569,6 +569,10 @@ try {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
+        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeHidden();
+        const moreForToday = shown.page.locator(".fl-today-more");
+        await expect(moreForToday).toBeVisible();
+        await moreForToday.locator("summary").first().click();
         await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
@@ -590,7 +594,7 @@ try {
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile is a single-column command with My Twin behind the secondary More layer");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
