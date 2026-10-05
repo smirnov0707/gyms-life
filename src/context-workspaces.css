@@ -1627,3 +1627,53 @@
 .fl-context-route.fl-camera-workspace .fl-camera-panel {
   padding: 0;
 }
+
+
+/* Visual Experience 3.0 — shared cinematic depth for Athlete and tool workspaces. */
+.fl-workspace-hero {
+  isolation: isolate;
+}
+
+.fl-workspace-hero::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 28rem;
+  height: 28rem;
+  right: -10rem;
+  bottom: -18rem;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0.42;
+  background:
+    radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 55%),
+    radial-gradient(circle at 62% 58%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 68%);
+  filter: blur(10px);
+  animation: fl-workspace-aura 14s ease-in-out infinite alternate;
+}
+
+.fl-workspace-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.fl-context-route.fl-workspace details.fl-workspace-panel[open] {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--primary) 3%, transparent), transparent 46%),
+    var(--surface);
+}
+
+@keyframes fl-workspace-aura {
+  from {
+    transform: translate3d(-4%, 2%, 0) scale(0.94);
+  }
+  to {
+    transform: translate3d(4%, -3%, 0) scale(1.07);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-workspace-hero::before {
+    animation: none !important;
+  }
+}
