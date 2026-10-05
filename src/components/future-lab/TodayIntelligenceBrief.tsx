@@ -197,10 +197,7 @@ export function TodayIntelligenceBrief({
       : "Ką pagrindžia tavo duomenys";
   if (changes) {
     return (
-      <section
-        className="grid gap-2"
-        aria-label={english ? "What changed" : "Kas pasikeitė"}
-      >
+      <section className="grid gap-2" aria-label={english ? "What changed" : "Kas pasikeitė"}>
         {learnedChange ? (
           <Row
             icon={BrainCircuit}
