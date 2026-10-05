@@ -1453,6 +1453,18 @@
   }
 }
 
+@media (max-width: 759px) {
+  /* The app shell already owns the single mobile ambient motion layer. */
+  .fl-today-command::after {
+    width: 24rem;
+    right: -12rem;
+    top: -15rem;
+    opacity: 0.32;
+    filter: blur(7px);
+    animation: none;
+  }
+}
+
 
 .fl-workout-motion-preview {
   position: relative;
