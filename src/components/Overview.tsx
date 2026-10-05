@@ -4,7 +4,6 @@ import { LiveSignals } from "@/components/LiveSignals";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
 import { RecoveryOutlook } from "@/components/RecoveryOutlook";
-import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
 import { Link } from "@tanstack/react-router";
 import { ReadinessWorkspace } from "@/routes/_authenticated/readiness";
 import { useQuery } from "@tanstack/react-query";
@@ -224,19 +223,6 @@ export function Overview() {
         </section>
 
         <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
-          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
-            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "Open My Twin" : "Atidaryti My Twin"}
-            </summary>
-            <div className="border-t border-border p-3">
-              <Link to="/twin" className="fl-text-link inline-flex">
-                {english
-                  ? "Explore body, systems & trajectory"
-                  : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
-                →
-              </Link>
-            </div>
-          </details>
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
@@ -245,26 +231,29 @@ export function Overview() {
               {english ? "What changed" : "Kas pasikeitė"}
             </summary>
             <div className="grid gap-3 border-t border-border p-4">
-              <MorningLabReview compact />
-              <TodayIntelligenceBrief presentation="cards" />
+              <TodayIntelligenceBrief presentation="changes" />
             </div>
           </details>
         </section>
 
-        <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
+        <details className="fl-today-more fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
           <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
+            {english ? "More for today" : "Daugiau šiandien"}
           </summary>
           <div className="grid gap-4 border-t border-border p-4">
-            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-              <LiveSignals />
-              <RecoveryOutlook compact />
-              <SleepAnalysis />
-              <PredictionEvidencePanel compact />
+            <div className="fl-today-twin-mobile grid gap-3">
+              <Link
+                to="/twin"
+                className="fl-surface flex min-h-12 items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-foreground"
+              >
+                <span>{english ? "My Twin" : "My Twin"}</span>
+                <span className="text-primary">→</span>
+              </Link>
             </div>
+
             <details className="fl-surface group">
               <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food here" : "Įrašyti maistą čia"}
+                {english ? "Log food" : "Įrašyti maistą"}
               </summary>
               <div className="border-t border-border p-4">
                 <QuickFoodLog compact />
@@ -273,8 +262,31 @@ export function Overview() {
                 </Link>
               </div>
             </details>
-            <DataSourcesStrip />
-            <TodayLifeContext />
+
+            <details className="fl-surface group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Something different today?" : "Šiandien kažkas kitaip?"}
+              </summary>
+              <div className="border-t border-border p-3">
+                <TodayLifeContext />
+              </div>
+            </details>
+
+            <details className="fl-surface group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Signals & evidence" : "Signalai ir įrodymai"}
+              </summary>
+              <div className="grid gap-4 border-t border-border p-4">
+                <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+                  <LiveSignals />
+                  <RecoveryOutlook compact />
+                  <SleepAnalysis />
+                  <PredictionEvidencePanel compact />
+                </div>
+                <DataSourcesStrip />
+              </div>
+            </details>
+
             {planData ? (
               <Link to="/onboarding" className="fl-text-link w-fit">
                 {t("dash.regenerate")} →

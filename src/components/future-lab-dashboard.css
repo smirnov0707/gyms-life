@@ -1156,7 +1156,13 @@
 /* Product Convergence mobile hierarchy.
    Today must never compress the decision, plan and Digital Twin side-by-side. */
 .fl-today-twin-mobile {
-  display: none;
+  display: grid;
+}
+
+@media (min-width: 760px) {
+  .fl-today-twin-mobile {
+    display: none;
+  }
 }
 
 @media (max-width: 759px) {
@@ -1164,7 +1170,7 @@
   .fl-dashboard > div,
   .fl-today-command,
   .fl-today-world,
-  .fl-today-support,
+  .fl-today-more,
   .fl-today-command-copy,
   .fl-today-plan,
   .fl-today-twin,
@@ -1207,18 +1213,22 @@
     display: none;
   }
 
-  .fl-today-twin-mobile {
-    display: block;
+  .fl-today-more:not([open]) .fl-today-twin-mobile {
+    display: none;
+  }
+
+  .fl-today-more[open] .fl-today-twin-mobile {
+    display: grid;
     width: 100%;
   }
 
   .fl-today-changes,
-  .fl-today-support {
+  .fl-today-more {
     border-radius: 20px;
   }
 
   .fl-today-changes > summary,
-  .fl-today-support > summary,
+  .fl-today-more > summary,
   .fl-today-twin-mobile > summary {
     min-height: 48px;
     display: flex;
@@ -1371,5 +1381,46 @@
     min-width: 0 !important;
     max-width: 100% !important;
     grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 759px) {
+  /* Mobile Today should read as a daily command, not label itself as one. */
+  .fl-today-command-copy > .text-\[9px\] {
+    display: none;
+  }
+
+  .fl-today-root > .fl-greeting {
+    padding: 2px 2px 0;
+  }
+
+  .fl-today-root > .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 8px;
+  }
+
+  .fl-today-root > .fl-greeting h1 {
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .fl-today-root > .fl-greeting > p:last-child {
+    display: -webkit-box;
+    max-width: 36ch;
+    margin-top: 5px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: var(--muted-foreground);
+    line-height: 1.45;
+  }
+
+  .fl-today-command {
+    gap: 10px;
+  }
+
+  .fl-today-world,
+  .fl-today-more {
+    margin-top: 0;
   }
 }

@@ -91,9 +91,10 @@ function Row({
 export function TodayIntelligenceBrief({
   presentation = "brief",
 }: {
-  presentation?: "brief" | "cards";
+  presentation?: "brief" | "cards" | "changes";
 }) {
   const cards = presentation === "cards";
+  const changes = presentation === "changes";
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
   const lab = useLabOverview();
@@ -194,6 +195,45 @@ export function TodayIntelligenceBrief({
     : english
       ? "What your data supports"
       : "Ką pagrindžia tavo duomenys";
+  if (changes) {
+    return (
+      <section className="grid gap-2" aria-label={english ? "What changed" : "Kas pasikeitė"}>
+        {learnedChange ? (
+          <Row
+            icon={BrainCircuit}
+            eyebrow={english ? "LEARNED CHANGE" : "IŠMOKTAS POKYTIS"}
+            title={learnedTitle}
+            detail={learnedDetail}
+            to="/twin"
+            search={{ view: "journal" }}
+            cta={english ? "Review" : "Peržiūrėti"}
+            onOpen={() => seenMutation.mutate(learnedChange.fingerprint)}
+          />
+        ) : (
+          <Row
+            icon={Sparkles}
+            eyebrow={english ? "TRAJECTORY" : "TRAJEKTORIJA"}
+            title={english ? "Strength direction" : "Jėgos kryptis"}
+            detail={futureDetail}
+            to="/twin"
+            search={{ view: "future" }}
+            cta={english ? "Open" : "Atidaryti"}
+          />
+        )}
+        {hypothesis ? (
+          <Row
+            icon={FlaskConical}
+            eyebrow={english ? "UNDER REVIEW" : "TIRIAMA"}
+            title={english ? "One pattern is being tested" : "Tikrinamas vienas dėsningumas"}
+            detail={hypothesisDetail}
+            to="/lab"
+            cta={english ? "Inspect" : "Peržiūrėti"}
+          />
+        ) : null}
+      </section>
+    );
+  }
+
   return (
     <section
       className={
