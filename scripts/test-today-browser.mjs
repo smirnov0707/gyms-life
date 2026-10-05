@@ -670,7 +670,7 @@ try {
           fullPage: false,
         });
         const layout = await shown.page.evaluate(() =>
-          [".fl-today-command", ".fl-today-world", ".fl-today-support"].map((selector) => {
+          [".fl-today-command", ".fl-today-secondary"].map((selector) => {
             const rect = document.querySelector(selector)?.getBoundingClientRect();
             return { selector, ...(rect?.toJSON() ?? {}) };
           }),
