@@ -4,6 +4,7 @@ import { RaceGoalSchema } from "./endurance-race-goal.schema";
 import { buildRacePlan } from "./endurance-race-plan.engine";
 import { loadRacePlanBaseline } from "./endurance-race-baseline.service";
 import { summarizeRaceWeek } from "./endurance-race-progress.engine";
+import { assessRaceReadiness } from "./endurance-race-readiness.engine";
 
 const DAY_MS = 86_400_000;
 const dayDiff = (a: string, b: string) => Math.floor((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DAY_MS);
@@ -50,6 +51,16 @@ export async function loadActiveRacePrep(
   const nextSession = currentWeek.sessions.find((session) => !matchedIntents.has(session.intent))
     ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]
     ?? null;
+  const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
+  const readiness = assessRaceReadiness({
+    weeksObserved: elapsedWeeks,
+    sessionCompletionRate: sessionRate,
+    distanceCompletionRate: progress.distanceCompletionRatio,
+    longestRunProgressRate: null,
+    recentLowResponseStreak: 0,
+    latestReadinessBand: "unknown",
+    repeatedOverTargetRuns: 0,
+  });
 
-  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks };
+  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness };
 }
