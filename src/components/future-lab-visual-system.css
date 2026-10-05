@@ -705,3 +705,78 @@
     display: none;
   }
 }
+
+
+/* Visual Experience 3.0 — world-specific atmosphere. */
+.future-lab-app .fl-lab-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.future-lab-app .fl-lab-page::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background:
+    linear-gradient(180deg, transparent 0 14%, color-mix(in srgb, var(--accent) 9%, transparent) 14.2%, transparent 14.5% 100%),
+    repeating-linear-gradient(90deg, transparent 0 72px, color-mix(in srgb, var(--foreground) 2%, transparent) 73px);
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 78%, transparent);
+  animation: fl-analysis-sweep 10s linear infinite;
+}
+
+.future-lab-app .fl-lab-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.future-lab-app .fl-coach-conversation::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 34rem;
+  height: 34rem;
+  left: 50%;
+  top: -25rem;
+  pointer-events: none;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  opacity: 0.55;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent), transparent 68%);
+  filter: blur(14px);
+  animation: fl-intelligence-halo 9s ease-in-out infinite alternate;
+}
+
+.future-lab-app .fl-coach-conversation > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes fl-analysis-sweep {
+  from {
+    background-position: 0 -18rem, 0 0;
+  }
+  to {
+    background-position: 0 38rem, 0 0;
+  }
+}
+
+@keyframes fl-intelligence-halo {
+  from {
+    opacity: 0.35;
+    transform: translateX(-50%) scale(0.9);
+  }
+  to {
+    opacity: 0.65;
+    transform: translateX(-50%) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .future-lab-app .fl-lab-page::after,
+  .future-lab-app .fl-coach-conversation::before {
+    animation: none !important;
+  }
+}
