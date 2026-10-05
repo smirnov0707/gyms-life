@@ -242,7 +242,10 @@ export function Overview() {
           </summary>
           <div className="grid gap-4 border-t border-border p-4">
             <div className="fl-today-twin-mobile grid gap-3">
-              <Link to="/twin" className="fl-surface flex min-h-12 items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-foreground">
+              <Link
+                to="/twin"
+                className="fl-surface flex min-h-12 items-center justify-between rounded-2xl px-4 py-3 text-sm font-semibold text-foreground"
+              >
                 <span>{english ? "My Twin" : "My Twin"}</span>
                 <span className="text-primary">→</span>
               </Link>
