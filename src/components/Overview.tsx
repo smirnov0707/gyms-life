@@ -223,65 +223,76 @@ export function Overview() {
           </div>
         </section>
 
-        <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
-          <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
+        <section className="fl-today-secondary grid min-w-0 gap-3">
+          <details className="fl-today-more fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "Open My Twin" : "Atidaryti My Twin"}
+              {english ? "More for today" : "Daugiau šiandienai"}
             </summary>
-            <div className="border-t border-border p-3">
-              <Link to="/twin" className="fl-text-link inline-flex">
-                {english
-                  ? "Explore body, systems & trajectory"
-                  : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
-                →
-              </Link>
-            </div>
-          </details>
-          <div className="fl-today-twin min-w-0">
-            <TwinHome presentation="cockpit" />
-          </div>
-          <details className="fl-today-changes fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
-            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "What changed" : "Kas pasikeitė"}
-            </summary>
-            <div className="grid gap-3 border-t border-border p-4">
-              <MorningLabReview compact />
-              <TodayIntelligenceBrief presentation="cards" />
-            </div>
-          </details>
-        </section>
-
-        <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
-          <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
-          </summary>
-          <div className="grid gap-4 border-t border-border p-4">
-            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-              <LiveSignals />
-              <RecoveryOutlook compact />
-              <SleepAnalysis />
-              <PredictionEvidencePanel compact />
-            </div>
-            <details className="fl-surface group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food here" : "Įrašyti maistą čia"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickFoodLog compact />
-                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
+            <div className="grid gap-3 border-t border-border p-3 sm:p-4">
+              <div className="fl-today-more-links grid gap-2 sm:grid-cols-2">
+                <Link
+                  to="/twin"
+                  className="fl-card-action flex min-h-11 items-center justify-between rounded-2xl border border-border bg-surface-2 px-4 text-xs font-semibold text-foreground"
+                >
+                  <span>{english ? "My Twin" : "My Twin"}</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+                <Link
+                  to="/nutrition"
+                  className="fl-card-action flex min-h-11 items-center justify-between rounded-2xl border border-border bg-surface-2 px-4 text-xs font-semibold text-foreground"
+                >
+                  <span>{english ? "Nutrition" : "Mityba"}</span>
+                  <span aria-hidden="true">→</span>
                 </Link>
               </div>
-            </details>
-            <DataSourcesStrip />
-            <TodayLifeContext />
-            {planData ? (
-              <Link to="/onboarding" className="fl-text-link w-fit">
-                {t("dash.regenerate")} →
-              </Link>
-            ) : null}
+
+              <details className="fl-surface">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-foreground">
+                  {english ? "What changed" : "Kas pasikeitė"}
+                </summary>
+                <div className="mt-3 grid gap-3 border-t border-border pt-3">
+                  <MorningLabReview compact />
+                  <TodayIntelligenceBrief presentation="cards" />
+                </div>
+              </details>
+
+              <details className="fl-surface">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-foreground">
+                  {english ? "Quick food log" : "Greitas maisto įrašas"}
+                </summary>
+                <div className="mt-3 border-t border-border pt-3">
+                  <QuickFoodLog compact />
+                </div>
+              </details>
+
+              <details className="fl-surface">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-muted-foreground">
+                  {english ? "Signals & evidence" : "Signalai ir įrodymai"}
+                </summary>
+                <div className="mt-3 grid gap-4 border-t border-border pt-3">
+                  <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+                    <LiveSignals />
+                    <RecoveryOutlook compact />
+                    <SleepAnalysis />
+                    <PredictionEvidencePanel compact />
+                  </div>
+                  <DataSourcesStrip />
+                  <TodayLifeContext />
+                </div>
+              </details>
+
+              {planData ? (
+                <Link to="/onboarding" className="fl-text-link w-fit">
+                  {t("dash.regenerate")} →
+                </Link>
+              ) : null}
+            </div>
+          </details>
+
+          <div className="fl-today-twin-desktop min-w-0">
+            <TwinHome presentation="cockpit" />
           </div>
-        </details>
+        </section>
       </div>
     </div>
   );
