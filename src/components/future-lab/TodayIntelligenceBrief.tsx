@@ -1,6 +1,4 @@
-import type { ReactNode } from "react";
 import { RecentWorkoutEffect } from "@/components/RecentWorkoutEffect";
-import { IllustrativeAthlete } from "./IllustrativeAthlete";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -40,8 +38,6 @@ function Row({
   search,
   cta,
   onOpen,
-  card = false,
-  visual,
 }: {
   icon: typeof Sparkles;
   eyebrow: string;
@@ -51,16 +47,10 @@ function Row({
   search?: { view: "future" | "journal" };
   cta: string;
   onOpen?: () => void;
-  card?: boolean;
-  visual?: ReactNode;
 }) {
   return (
     <article
-      className={
-        card
-          ? "fl-intelligence-card fl-panel"
-          : "grid gap-3 border-t border-border/70 py-4 first:border-t-0 first:pt-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
-      }
+      className="grid gap-3 border-t border-border/70 py-4 first:border-t-0 first:pt-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
     >
       <span className="grid size-9 place-items-center rounded-xl border border-accent/20 bg-accent/[0.06] text-accent">
         <Icon className="size-4" />
@@ -72,28 +62,18 @@ function Row({
         <h3 className="mt-1 text-sm font-medium text-foreground">{title}</h3>
         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{detail}</p>
       </div>
-      {visual}
       <Link
         to={to}
         {...(search ? { search } : {})}
         onClick={onOpen}
-        className={
-          card
-            ? "fl-card-action"
-            : "inline-flex min-h-11 items-center text-xs font-medium text-accent sm:justify-self-end"
-        }
+        className="inline-flex min-h-11 items-center text-xs font-medium text-accent sm:justify-self-end"
       >
         {cta} →
       </Link>
     </article>
   );
 }
-export function TodayIntelligenceBrief({
-  presentation = "brief",
-}: {
-  presentation?: "brief" | "cards";
-}) {
-  const cards = presentation === "cards";
+export function TodayIntelligenceBrief() {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
   const lab = useLabOverview();
@@ -196,12 +176,10 @@ export function TodayIntelligenceBrief({
       : "Ką pagrindžia tavo duomenys";
   return (
     <section
-      className={
-        cards ? "fl-bottom-deck" : "rounded-2xl border border-border bg-surface/85 p-4 sm:p-5"
-      }
+      className="rounded-2xl border border-border bg-surface/85 p-4 sm:p-5"
       aria-label={english ? "Intelligence brief" : "Intelligence santrauka"}
     >
-      <header className={cards ? "sr-only" : "mb-2"}>
+      <header className="mb-2">
         <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-accent">
           GYMS.LIFE INTELLIGENCE
         </p>
@@ -209,17 +187,10 @@ export function TodayIntelligenceBrief({
           {english ? "What matters beyond today's action" : "Kas svarbu už šiandienos veiksmo ribų"}
         </h2>
       </header>
-      {cards ? (
-        <article className="fl-intelligence-card fl-panel fl-recent-effect">
-          <RecentWorkoutEffect />
-          <Link to="/twin" search={{ view: "journal" }} className="fl-card-action">
-            {english ? "View workout history" : "Treniruočių istorija"} →
-          </Link>
-        </article>
-      ) : null}
+      <div className="mb-1 border-b border-border/70 pb-3">
+        <RecentWorkoutEffect />
+      </div>
       <Row
-        card={cards}
-        visual={cards ? <IllustrativeAthlete compact /> : undefined}
         icon={Sparkles}
         eyebrow="FUTURE"
         title={english ? "Strength trajectory" : "Jėgos trajektorija"}
@@ -229,7 +200,6 @@ export function TodayIntelligenceBrief({
         cta={english ? "Open" : "Atidaryti"}
       />
       <Row
-        card={cards}
         icon={FlaskConical}
         eyebrow={english ? "HYPOTHESIS" : "HIPOTEZĖ"}
         title={english ? "Under investigation" : "Tiriama"}
@@ -238,7 +208,6 @@ export function TodayIntelligenceBrief({
         cta={english ? "Inspect" : "Peržiūrėti"}
       />
       <Row
-        card={cards}
         icon={BrainCircuit}
         eyebrow={
           learnedChange
