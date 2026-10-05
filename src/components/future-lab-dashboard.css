@@ -1223,10 +1223,10 @@
   .fl-today-context > summary,
   .fl-today-support > summary,
   .fl-today-twin-mobile > summary {
-    min-height: 48px;
+    min-height: 52px;
     display: flex;
     align-items: center;
-    padding: 13px 16px;
+    padding: 14px 16px;
     font-size: 13px;
   }
 
