@@ -591,7 +591,9 @@ try {
           Math.abs(changes.width - command.width),
           "Today mobile sections share one column width",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is one daily command; Twin and food logging stay in primary navigation/actions");
+        record(
+          "Today mobile is one daily command; Twin and food logging stay in primary navigation/actions",
+        );
       }
       if (screen === "today") {
         // The one action against the links that surround it.
