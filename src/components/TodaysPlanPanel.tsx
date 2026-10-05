@@ -77,7 +77,7 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
       </ul>
       {workout.exercises.length > 3 ? (
         <p className="fl-plan-more-exercises hidden px-3 pb-1 text-[11px] font-semibold text-muted-foreground">
-          +{workout.exercises.length - 3} {t("tp.exercises")}
+          +{workout.exercises.length - 3} {t("nav.exercises")}
         </p>
       ) : null}
       <div className="px-3 pb-3 pt-3">
