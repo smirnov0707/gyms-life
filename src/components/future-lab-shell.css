@@ -217,8 +217,7 @@
     padding: 0 16px;
   }
   .fl-profile-copy,
-  .fl-profile-chevron,
-  .fl-header-language {
+  .fl-profile-chevron {
     display: none;
   }
 }
