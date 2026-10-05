@@ -141,21 +141,25 @@ export function TwinScreen({
                 </details>
               </>
             ) : active === "systems" ? (
-              <>
-                <section className="fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
-                  <h2 className="text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
-                    {t("tw.systemsTitle")}
-                  </h2>
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              <section className="fl-twin-systems fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
+                <header>
+                  <p className="fl-eyebrow">{t("tw.tabSystems")}</p>
+                  <h2 className="mt-2 text-lg font-semibold text-foreground">{t("tw.systemsTitle")}</h2>
+                  <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
                     {t("tw.systemsNote")}
                   </p>
-                </section>
-                <LiveSignals />
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <RecoveryOutlook />
-                  <SleepAnalysis />
+                </header>
+                <div className="mt-4">
+                  <LiveSignals />
                 </div>
-              </>
+                <details className="fl-secondary-details mt-4">
+                  <summary>{t("tw.systemsTitle")}</summary>
+                  <div className="fl-disclosed-content grid gap-4 lg:grid-cols-2">
+                    <RecoveryOutlook />
+                    <SleepAnalysis />
+                  </div>
+                </details>
+              </section>
             ) : active === "future" ? (
               <TwinFuture />
             ) : (
