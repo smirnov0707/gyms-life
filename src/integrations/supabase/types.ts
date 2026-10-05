@@ -455,6 +455,12 @@ export type Database = {
           },
         ]
       }
+      endurance_race_goals: {
+        Row: { created_at: string; distance: string; id: string; race_date: string; sessions_per_week: number; status: string; target_time_seconds: number | null; updated_at: string; user_id: string }
+        Insert: { created_at?: string; distance: string; id?: string; race_date: string; sessions_per_week: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id: string }
+        Update: { created_at?: string; distance?: string; id?: string; race_date?: string; sessions_per_week?: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id?: string }
+        Relationships: []
+      }
       exercises: {
         Row: {
           created_at: string
