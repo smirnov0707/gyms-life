@@ -223,6 +223,47 @@ export function Overview() {
           </div>
         </section>
 
+        <details className="fl-today-mobile-more fl-luxury-disclosure rounded-[1.5rem] border border-border bg-surface/80">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-foreground">
+            {english ? "More for today" : "Daugiau šiandien"}
+          </summary>
+          <div className="grid gap-3 border-t border-border p-3">
+            <Link
+              to="/twin"
+              className="flex min-h-12 items-center justify-between rounded-xl bg-surface-2 px-3 text-sm font-medium text-foreground"
+            >
+              <span>{english ? "My Twin" : "My Twin"}</span>
+              <span className="text-primary">→</span>
+            </Link>
+            <details className="rounded-xl bg-surface-2">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-3 text-sm font-medium text-foreground">
+                <span>{english ? "What changed" : "Kas pasikeitė"}</span>
+                <span className="text-primary">+</span>
+              </summary>
+              <div className="grid gap-3 border-t border-border p-3">
+                <MorningLabReview compact />
+                <TodayIntelligenceBrief presentation="cards" />
+              </div>
+            </details>
+            <details className="rounded-xl bg-surface-2">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-3 text-sm font-medium text-foreground">
+                <span>{english ? "Log food" : "Įrašyti maistą"}</span>
+                <span className="text-primary">+</span>
+              </summary>
+              <div className="border-t border-border p-3">
+                <QuickFoodLog compact />
+              </div>
+            </details>
+            <Link
+              to="/lab"
+              className="flex min-h-12 items-center justify-between rounded-xl px-3 text-sm font-medium text-muted-foreground"
+            >
+              <span>{english ? "Evidence & deeper analysis" : "Įrodymai ir gilesnė analizė"}</span>
+              <span>→</span>
+            </Link>
+          </div>
+        </details>
+
         <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
           <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">

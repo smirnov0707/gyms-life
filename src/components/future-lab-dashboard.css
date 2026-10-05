@@ -1373,3 +1373,52 @@
     grid-column: 1 / -1 !important;
   }
 }
+
+.fl-today-mobile-more {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  .fl-today-mobile-more {
+    display: block;
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .fl-today-mobile-more > summary {
+    display: flex;
+    min-height: 50px;
+    align-items: center;
+    padding: 13px 16px;
+  }
+
+  /* Secondary intelligence is represented once on mobile, through the hub. */
+  .fl-today-world,
+  .fl-today-support {
+    display: none !important;
+  }
+
+  .fl-greeting {
+    padding-bottom: 0;
+  }
+
+  .fl-greeting .fl-mobile-page-name {
+    margin-bottom: 8px;
+  }
+
+  .fl-greeting > p:last-child {
+    display: none;
+  }
+
+  .fl-today-command {
+    gap: 10px;
+  }
+
+  .fl-today-command > .fl-today-command-copy > p:first-child {
+    display: none;
+  }
+
+  .fl-today-command-copy {
+    margin-top: 0;
+  }
+}
