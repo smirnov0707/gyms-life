@@ -6,6 +6,8 @@ import { loadRacePlanBaseline } from "./endurance-race-baseline.service";
 import { summarizeRaceWeek } from "./endurance-race-progress.engine";
 import { assessRaceReadiness } from "./endurance-race-readiness.engine";
 import { loadDigitalAthleteState } from "./digital-athlete.service";
+import { assessLongRunProgress, raceSpecificLongRunCoverage } from "./endurance-long-run.engine";
+import { RACE_DISTANCE_METERS } from "./endurance-activity.schema";
 
 const DAY_MS = 86_400_000;
 const dayDiff = (a: string, b: string) => Math.floor((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DAY_MS);
@@ -52,7 +54,18 @@ export async function loadActiveRacePrep(
   const nextSession = currentWeek.sessions.find((session) => !matchedIntents.has(session.intent))
     ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]
     ?? null;
-  const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
+  const historySince = new Date(Date.now() - 84 * DAY_MS).toISOString();
+  const { data: longHistory, error: longHistoryError } = await supabase
+    .from("workout_sessions")
+    .select("started_at,distance_meters,endurance_session_intent")
+    .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
+    .gte("started_at", historySince).order("started_at", { ascending: true });
+  if (longHistoryError) throw longHistoryError;
+  const longCandidates = (longHistory ?? []).filter((run) => run.distance_meters !== null && (run.endurance_session_intent === "long" || Number(run.distance_meters) >= 8000)).map((run) => ({ day: run.started_at.slice(0,10), distanceMeters: Number(run.distance_meters) }));
+  const longRunProgress = assessLongRunProgress(longCandidates);
+  const longRunCoverage = raceSpecificLongRunCoverage(longRunProgress.recentLongestMeters, RACE_DISTANCE_METERS[goal.distance]);
+
+    const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
   const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), "UTC");
   const latestScore = athlete.recovery.latestReadinessScore;
   const readinessBand = latestScore === null ? "unknown" : latestScore < 55 ? "low" : latestScore < 80 ? "moderate" : "high";
@@ -60,11 +73,11 @@ export async function loadActiveRacePrep(
     weeksObserved: elapsedWeeks,
     sessionCompletionRate: sessionRate,
     distanceCompletionRate: progress.distanceCompletionRatio,
-    longestRunProgressRate: null,
+    longestRunProgressRate: longRunCoverage,
     recentLowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
     latestReadinessBand: readinessBand,
     repeatedOverTargetRuns: 0,
   });
 
-  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness };
+  return { status: "active" as const, goalId: row.id, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage };
 }
