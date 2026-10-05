@@ -246,11 +246,26 @@ try {
   };
 
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const more = page.locator(".fl-today-more");
+    if ((await more.count()) && (await more.isVisible())) {
+      if ((await more.getAttribute("open")) === null)
+        await more.locator(":scope > summary").click();
+      const details = more
+        .locator(".fl-today-more-section")
+        .filter({ hasText: /^(What changed|Kas pasikeitė)/ })
+        .first();
+      if ((await details.count()) && (await details.getAttribute("open")) === null)
+        await details.locator(":scope > summary").click();
+      return;
     }
+
+    const details = page.locator(".fl-today-changes");
+    if (
+      (await details.count()) &&
+      (await details.isVisible()) &&
+      (await details.getAttribute("open")) === null
+    )
+      await details.locator(":scope > summary").click();
   };
 
   const openTodayEvidenceLayer = async (page) => {
@@ -275,13 +290,26 @@ try {
   };
 
   const openTodayContextLayer = async (page) => {
-    const summary = page.getByText(
-      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
-    );
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const more = page.locator(".fl-today-more");
+    if ((await more.count()) && (await more.isVisible())) {
+      if ((await more.getAttribute("open")) === null)
+        await more.locator(":scope > summary").click();
+      const details = more
+        .locator(".fl-today-more-section")
+        .filter({ hasText: /^(Data & context|Duomenys ir kontekstas)/ })
+        .first();
+      if ((await details.count()) && (await details.getAttribute("open")) === null)
+        await details.locator(":scope > summary").click();
+      return;
     }
+
+    const details = page.locator(".fl-today-support");
+    if (
+      (await details.count()) &&
+      (await details.isVisible()) &&
+      (await details.getAttribute("open")) === null
+    )
+      await details.locator(":scope > summary").click();
   };
 
   const open = async (query = "", options = {}) => {
@@ -360,7 +388,7 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-more")).toBeVisible();
       }
       if (screen === "muscle") {
         // Exercise the real UI. There is deliberately no invented detail route.
@@ -568,12 +596,13 @@ try {
       if (screen === "today" && viewport.name === "mobile") {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
-        await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
-        await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-world")).toBeHidden();
+        await expect(shown.page.locator(".fl-today-support")).toBeHidden();
+        await expect(shown.page.locator(".fl-today-more")).toBeVisible();
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const more = await shown.page.locator(".fl-today-more").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -583,14 +612,14 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          more.x,
+          "Today mobile secondary intelligence stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
+          Math.abs(more.width - command.width),
+          "Today mobile keeps one column for command and secondary intelligence",
         ).toBeLessThanOrEqual(2);
-        record("Today mobile is a single-column command with the full Twin moved to My Twin");
+        record("Today mobile exposes one command plus one collapsed More today surface");
       }
       if (screen === "today") {
         // The one action against the links that surround it.
