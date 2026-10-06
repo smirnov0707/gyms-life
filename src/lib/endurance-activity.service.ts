@@ -88,6 +88,10 @@ export async function recordEnduranceActivity(
             .eq("id", data.id)
             .eq("user_id", userId);
           if (matchError) throw matchError;
+          const { persistCurrentEnduranceAdaptation } = await import(
+            "./endurance-adaptation-refresh.service"
+          );
+          await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
         }
       }
     } catch {
