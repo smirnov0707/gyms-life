@@ -65,7 +65,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     if (!pendingMatch) return;
     setSaving(true);
     try {
-      await confirmMatch({ data: { workoutSessionId: pendingMatch.sessionId, raceGoalId: pendingMatch.raceGoalId, planSessionKey: pendingMatch.planSessionKey, intent: pendingMatch.intent, matchScore: pendingMatch.score } });
+      await confirmMatch({ data: { workoutSessionId: pendingMatch.sessionId, raceGoalId: pendingMatch.raceGoalId, planSessionKey: pendingMatch.planSessionKey, matchScore: pendingMatch.score } });
       setPendingMatch(null);
       window.dispatchEvent(new CustomEvent("gymslife:endurance-updated"));
       toast.success(english ? "Run linked to race preparation." : "Bėgimas susietas su pasiruošimo planu.");
