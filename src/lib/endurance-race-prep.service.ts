@@ -120,5 +120,5 @@ export async function loadActiveRacePrep(
     recentOverTargetRuns: 0,
   } as const;
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
-  return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation };
+  return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal };
 }
