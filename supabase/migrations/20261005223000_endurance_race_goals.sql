@@ -7,7 +7,9 @@ create table if not exists public.endurance_race_goals (
   sessions_per_week integer not null check (sessions_per_week between 2 and 7),
   status text not null default 'active' check (status in ('active','completed','cancelled')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  baseline_weekly_distance_meters numeric,
+  baseline_longest_run_meters numeric
 );
 
 create unique index if not exists endurance_one_active_goal_per_user
