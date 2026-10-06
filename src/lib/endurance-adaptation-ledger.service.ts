@@ -5,6 +5,7 @@ import type {
   EnduranceAdaptationSignal,
 } from "./endurance-adaptation.engine";
 import { parseEnduranceAdaptationDecision } from "./endurance-adaptation.engine";
+import { createHash } from "node:crypto";
 
 export const ENDURANCE_ADAPTATION_ENGINE_VERSION = "1.0";
 
@@ -27,6 +28,20 @@ export async function persistEnduranceAdaptation(
     recentOverTargetRuns: input.signal.recentOverTargetRuns ?? 0,
   } satisfies Json;
 
+  const fingerprintPayload = [
+    ENDURANCE_ADAPTATION_ENGINE_VERSION,
+    input.decision.action,
+    input.decision.volumeModifier.toFixed(4),
+    input.decision.reason,
+    input.signal.plannedSessions,
+    input.signal.completedPlannedSessions,
+    input.signal.lowResponseStreak,
+    input.signal.readinessBand,
+    input.signal.distanceCompletionRatio ?? "null",
+    input.signal.recentOverTargetRuns ?? 0,
+  ].join("|");
+  const decisionFingerprint = createHash("sha256").update(fingerprintPayload).digest("hex");
+
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("record_endurance_adaptation", {
     p_user_id: input.userId,
@@ -37,6 +52,7 @@ export async function persistEnduranceAdaptation(
     p_reason: input.decision.reason,
     p_evidence: evidence,
     p_engine_version: ENDURANCE_ADAPTATION_ENGINE_VERSION,
+    p_decision_fingerprint: decisionFingerprint,
   });
   if (error) throw error;
 
