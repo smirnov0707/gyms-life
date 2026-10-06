@@ -31,6 +31,7 @@ export function RacePrepStarter() {
         goal: { distance, raceDate, sessionsPerWeek: sessions, targetTimeSeconds: null, longestRecentRunMeters: null },
       }});
       setResult({ weeks: response.plan.weeks, measured: response.plan.baseline === "measured" });
+      window.dispatchEvent(new CustomEvent("gymslife:endurance-updated"));
       toast.success(english ? "Race preparation created." : "Pasiruošimas varžyboms sukurtas.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : (english ? "Could not create race preparation." : "Nepavyko sukurti pasiruošimo."));
