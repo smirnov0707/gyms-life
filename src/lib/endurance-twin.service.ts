@@ -44,9 +44,26 @@ export async function loadEnduranceTwinProfile(supabase: SupabaseClient<Database
       paceStability: signals.find((x) => x.key === "split_pace_stability")?.value ?? null,
     });
   }
+  const { loadPersistedProfileTimeZone } = await import("./user-context.server");
+  const { dayInTimeZone } = await import("./local-day");
+  const { loadActiveRacePrep } = await import("./endurance-race-prep.service");
+  const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
+  const today = dayInTimeZone(new Date(), timeZone);
+  const racePrep = await loadActiveRacePrep(supabase, userId, today, timeZone);
+  const raceIntelligence =
+    racePrep.status === "active"
+      ? {
+          goalId: racePrep.goalId,
+          raceDistance: racePrep.raceDistance,
+          daysToRace: racePrep.daysToRace,
+          readiness: racePrep.readiness,
+          decision: racePrep.intelligence,
+        }
+      : null;
   return {
     provenance: "derived" as const,
     latestSignals,
     aerobicEfficiencyTrend: assessAerobicEfficiencyTrend(snapshots),
+    raceIntelligence,
   };
 }
