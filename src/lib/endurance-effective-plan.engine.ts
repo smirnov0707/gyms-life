@@ -44,3 +44,17 @@ export function applyAdaptationToRemainingSessions(input: {
     };
   });
 }
+
+
+export function selectNextExecutableSession(input: {
+  sessions: readonly EffectiveEnduranceSession[];
+  completedSessionKeys: ReadonlySet<string>;
+  adaptation: EnduranceAdaptationDecision;
+}): EffectiveEnduranceSession | null {
+  if (input.adaptation.action === "recover") return null;
+  return (
+    input.sessions.find(
+      (session) => !input.completedSessionKeys.has(session.sessionKey),
+    ) ?? null
+  );
+}
