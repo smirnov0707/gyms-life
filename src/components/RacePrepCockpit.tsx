@@ -92,6 +92,42 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             </div>
           ) : null}
         </div>
+        {data.adaptationLesson.status !== "insufficient_evidence" ? (
+          <div className="rounded-[1.5rem] border border-border bg-background/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="fl-eyebrow">
+                {english ? "LEARNED ABOUT YOU" : "KĄ SISTEMA IŠMOKO APIE TAVE"}
+              </p>
+              <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">
+                {data.adaptationLesson.status === "caution"
+                  ? english
+                    ? "Caution pattern"
+                    : "Atsargumo signalas"
+                  : english
+                    ? "Candidate pattern"
+                    : "Galimas dėsningumas"}
+              </span>
+            </div>
+            <h3 className="mt-2 text-lg font-semibold">
+              {data.adaptationLesson.status === "caution"
+                ? english
+                  ? "Previous similar decisions were followed by worse signals"
+                  : "Po panašių ankstesnių sprendimų sekė prastesni signalai"
+                : english
+                  ? "A personal response pattern is emerging"
+                  : "Ryškėja individualus reakcijos dėsningumas"}
+            </h3>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {data.adaptationLesson.supportingOutcomes}{" "}
+              {english ? "supporting observations" : "patvirtinantys stebėjimai"} ·{" "}
+              {data.adaptationLesson.contradictingOutcomes}{" "}
+              {english ? "contradicting" : "prieštaraujantys"}.{" "}
+              {english
+                ? "This is an observed association from your history, not proof of cause."
+                : "Tai tavo istorijoje stebėta sąsaja, o ne įrodytas priežastinis ryšys."}
+            </p>
+          </div>
+        ) : null}
         {data.adaptation.action !== "hold" && data.adaptationStatus === "persisted" ? (
           <div className="rounded-[1.5rem] border border-amber-500/25 bg-amber-500/5 p-4">
             <p className="fl-eyebrow">{english ? "PLAN ADAPTATION" : "PLANO ADAPTACIJA"}</p>
