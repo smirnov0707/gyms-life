@@ -27,7 +27,7 @@ export async function assembleCoachContext(args: {
   ]);
   const plan = activePlan.status === "READY" ? activePlan.plan : null;
 
-  const endurance =
+  const endurance: CoachContext["endurance"] | null =
     racePrep.status === "active"
       ? {
           active: true as const,
@@ -58,7 +58,7 @@ export async function assembleCoachContext(args: {
             "guaranteed_race_time",
             "vo2max_without_measurement",
             "override_deterministic_training_decision",
-          ] as const,
+          ],
         }
       : null;
 
