@@ -31,7 +31,12 @@ export async function tryPersistCurrentEnduranceAdaptation(
     await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
     const { recordDueAdaptationOutcomes } = await import("./endurance-adaptation-outcome.service");
     await recordDueAdaptationOutcomes(supabase, userId);
-  } catch {
+  } catch (error) {
+    console.error("[Endurance] Secondary adaptation audit write failed.", {
+      userId,
+      today,
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
     // The canonical workout/session match remains the source fact. The ledger
     // can be reconciled later; surfacing a false primary-action failure is worse.
   }
