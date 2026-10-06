@@ -14,11 +14,10 @@ export async function createRaceGoal(
   const baseline = await loadRacePlanBaseline(supabase, userId);
   const plan = buildRacePlan({ today, goal, baseline });
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: goalId, error } = await supabaseAdmin.rpc("replace_active_endurance_race_goal", {
+  const { data: goalId, error } = await supabase.rpc("replace_active_endurance_race_goal", {
     p_user_id: userId,
     p_distance: goal.distance,
-    p_started_on: today,
+    p_plan_start_day: today,
     p_race_date: goal.raceDate,
     p_target_time_seconds: goal.targetTimeSeconds,
     p_sessions_per_week: goal.sessionsPerWeek,
