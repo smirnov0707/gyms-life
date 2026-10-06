@@ -11,6 +11,7 @@ import { buildPaceProfile } from "./endurance-pace.engine";
 import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engine";
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
+import { decideRaceIntelligence } from "./endurance-race-intelligence.engine";
 import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import {
   applyAdaptationToRemainingSessions,
@@ -246,6 +247,12 @@ export async function loadActiveRacePrep(
     completedSessionKeys,
     adaptation,
   });
+  const intelligence = decideRaceIntelligence({
+    readiness,
+    adaptation,
+    nextSessionIntent: nextSession?.intent ?? null,
+    nextSessionDistanceMeters: nextSession?.plannedDistanceMeters ?? null,
+  });
   return {
     status: "active" as const,
     goalId: row.id,
@@ -256,6 +263,7 @@ export async function loadActiveRacePrep(
     baseProgress,
     progress,
     nextSession,
+    intelligence,
     baseline: plan.baseline,
     elapsedWeeks,
     readiness,
