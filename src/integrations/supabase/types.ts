@@ -1754,7 +1754,7 @@ export type Database = {
         Returns: undefined
       }
       replace_active_endurance_race_goal: {
-        Args: { p_user_id: string; p_distance: string; p_started_on: string; p_race_date: string; p_target_time_seconds: number | null; p_sessions_per_week: number; p_plan_start_day: string; p_baseline_weekly_distance_meters: number | null; p_baseline_longest_run_meters: number | null }
+        Args: { p_user_id: string; p_distance: string; p_started_on: string; p_race_date: string; p_target_time_seconds: number | null; p_sessions_per_week: number; p_baseline_weekly_distance_meters: number | null; p_baseline_longest_run_meters: number | null }
         Returns: string
       }
       confirm_endurance_race_session_match: {
