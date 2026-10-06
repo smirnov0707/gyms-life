@@ -1757,6 +1757,10 @@ export type Database = {
         Args: { p_user_id: string; p_distance: string; p_started_on: string; p_race_date: string; p_target_time_seconds: number | null; p_sessions_per_week: number; p_baseline_weekly_distance_meters: number | null; p_baseline_longest_run_meters: number | null }
         Returns: string
       }
+      confirm_endurance_race_session_match: {
+        Args: { p_user_id: string; p_workout_session_id: string; p_race_goal_id: string; p_plan_session_key: string; p_intent: string; p_match_score: number | null }
+        Returns: { id: string; started_at: string; endurance_race_goal_id: string | null; endurance_plan_session_key: string | null; endurance_session_intent: string | null; endurance_match_source: string | null }[]
+      }
       record_endurance_adaptation: {
         Args: { p_user_id: string; p_race_goal_id: string; p_decision_on: string; p_action: string; p_volume_modifier: number; p_reason: string; p_evidence: Json; p_engine_version: string; p_decision_fingerprint: string }
         Returns: { id: string; action: string; volume_modifier: number; reason: string; created_at: string }[]
