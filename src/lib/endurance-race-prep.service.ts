@@ -12,7 +12,7 @@ import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engi
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
 import { applyAdaptationToRemainingSessions } from "./endurance-effective-plan.engine";
-import { calendarDayDifference, dayBoundsInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
+import { calendarDayDifference, dayBoundsInTimeZone, dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
 
 export async function loadActiveRacePrep(
   supabase: SupabaseClient<Database>,
@@ -74,16 +74,17 @@ export async function loadActiveRacePrep(
     currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)] ??
     null;
   const historySince = dayBoundsInTimeZone(dayOffset(today, -84), zone).start;
+  const historyUntil = dayBoundsInTimeZone(dayOffset(today, 1), zone).start;
   const { data: longHistory, error: longHistoryError } = await supabase
     .from("workout_sessions")
     .select("started_at,distance_meters,duration_seconds,endurance_session_intent,perceived_effort,elevation_gain_meters,average_heart_rate_bpm")
     .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
-    .gte("started_at", historySince).order("started_at", { ascending: true });
+    .gte("started_at", historySince).lt("started_at", historyUntil).order("started_at", { ascending: true });
   if (longHistoryError) throw longHistoryError;
-  const longCandidates = (longHistory ?? []).filter((run) => run.distance_meters !== null && (run.endurance_session_intent === "long" || Number(run.distance_meters) >= 8000)).map((run) => ({ day: run.started_at.slice(0,10), distanceMeters: Number(run.distance_meters) }));
+  const longCandidates = (longHistory ?? []).filter((run) => run.distance_meters !== null && (run.endurance_session_intent === "long" || Number(run.distance_meters) >= 8000)).map((run) => ({ day: dayInTimeZone(new Date(run.started_at), zone), distanceMeters: Number(run.distance_meters) }));
   const paceProfile = buildPaceProfile((longHistory ?? []).flatMap((run) =>
     run.distance_meters !== null && run.duration_seconds !== null ? [{
-      day: run.started_at.slice(0,10),
+      day: dayInTimeZone(new Date(run.started_at), zone),
       distanceMeters: Number(run.distance_meters),
       durationSeconds: Number(run.duration_seconds),
       intent: run.endurance_session_intent as "easy" | "long" | "tempo" | "intervals" | "recovery" | "race" | null,
@@ -92,7 +93,7 @@ export async function loadActiveRacePrep(
   ));
     const terrainResponse = assessTerrainResponse((longHistory ?? []).flatMap((run) =>
     run.distance_meters !== null && run.duration_seconds !== null ? [{
-      day: run.started_at.slice(0,10),
+      day: dayInTimeZone(new Date(run.started_at), zone),
       distanceMeters: Number(run.distance_meters),
       durationSeconds: Number(run.duration_seconds),
       elevationGainMeters: run.elevation_gain_meters === null ? null : Number(run.elevation_gain_meters),
@@ -101,11 +102,11 @@ export async function loadActiveRacePrep(
   ));
   const efficiencyTrend = assessComparableEfficiencyTrend((longHistory ?? []).flatMap((run) =>
     run.distance_meters !== null && run.duration_seconds !== null ? [{
-      day: run.started_at.slice(0,10),
+      day: dayInTimeZone(new Date(run.started_at), zone),
       distanceMeters: Number(run.distance_meters),
       durationSeconds: Number(run.duration_seconds),
       averageHeartRateBpm: run.average_heart_rate_bpm,
-      terrain: classifyTerrain({day:run.started_at.slice(0,10),distanceMeters:Number(run.distance_meters),durationSeconds:Number(run.duration_seconds),averageHeartRateBpm:run.average_heart_rate_bpm,elevationGainMeters:run.elevation_gain_meters===null?null:Number(run.elevation_gain_meters)}).classification,
+      terrain: classifyTerrain({day:dayInTimeZone(new Date(run.started_at), zone),distanceMeters:Number(run.distance_meters),durationSeconds:Number(run.duration_seconds),averageHeartRateBpm:run.average_heart_rate_bpm,elevationGainMeters:run.elevation_gain_meters===null?null:Number(run.elevation_gain_meters)}).classification,
       cadenceSpm: null,
     }] : []
   ));
