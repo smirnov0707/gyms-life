@@ -28,7 +28,7 @@ begin
   end if;
 
   if p_distance not in ('5k','10k','half_marathon','marathon')
-     or p_race_date < current_date + 14
+     or p_race_date < current_date + case p_distance when '5k' then 14 when '10k' then 21 when 'half_marathon' then 42 when 'marathon' then 56 else 9999 end
      or p_sessions_per_week not between 2 and 7
      or (p_target_time_seconds is not null and (p_target_time_seconds <= 0 or p_target_time_seconds > 86400))
      or (p_baseline_weekly_distance_meters is not null and p_baseline_weekly_distance_meters <= 0)
