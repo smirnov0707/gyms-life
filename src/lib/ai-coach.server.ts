@@ -23,7 +23,7 @@ export async function assembleCoachContext(args: {
     getPerformanceOverviewData(args.supabase, args.userId),
     loadDeterministicPerformanceForecast(args.supabase, args.userId),
     getActivePlanData(args.supabase, args.userId),
-    loadActiveRacePrep(args.supabase, args.userId, today).catch(() => ({ status: "none" as const })),
+    loadActiveRacePrep(args.supabase, args.userId, today, timeZone).catch(() => ({ status: "none" as const })),
     loadLatestPostRunBrief(args.supabase, args.userId).catch(() => ({ status: "none" as const })),
   ]);
   const plan = activePlan.status === "READY" ? activePlan.plan : null;
