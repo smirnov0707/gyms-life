@@ -5,7 +5,6 @@ import type {
   EnduranceAdaptationSignal,
 } from "./endurance-adaptation.engine";
 import { parseEnduranceAdaptationDecision } from "./endurance-adaptation.engine";
-import { createHash } from "node:crypto";
 
 export const ENDURANCE_ADAPTATION_ENGINE_VERSION = "1.0";
 
@@ -28,7 +27,8 @@ export async function persistEnduranceAdaptation(
     recentOverTargetRuns: input.signal.recentOverTargetRuns ?? 0,
   } satisfies Json;
 
-  const fingerprintPayload = [
+  const { sha256Hex } = await import("./endurance-adaptation-fingerprint.server");
+  const decisionFingerprint = sha256Hex([
     ENDURANCE_ADAPTATION_ENGINE_VERSION,
     input.decision.action,
     input.decision.volumeModifier.toFixed(4),
@@ -39,8 +39,7 @@ export async function persistEnduranceAdaptation(
     input.signal.readinessBand,
     input.signal.distanceCompletionRatio ?? "null",
     input.signal.recentOverTargetRuns ?? 0,
-  ].join("|");
-  const decisionFingerprint = createHash("sha256").update(fingerprintPayload).digest("hex");
+  ]);
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("record_endurance_adaptation", {
