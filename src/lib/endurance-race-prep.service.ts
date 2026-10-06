@@ -56,6 +56,7 @@ export async function loadActiveRacePrep(
   if (runsError) throw runsError;
 
   const completed = (runs ?? []).map((run) => ({
+    planSessionKey: run.endurance_plan_session_key,
     distanceMeters: run.distance_meters === null ? null : Number(run.distance_meters),
     durationMinutes: Number(run.duration_seconds ?? 0) / 60,
     perceivedEffort: run.perceived_effort,
