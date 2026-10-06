@@ -43,9 +43,10 @@ function phaseFor(week: number, weeks: number): RacePlanWeek["phase"] {
   return "specific";
 }
 
-function sessionMix(sessionsPerWeek: number, weeklyDistance: number, phase: RacePlanWeek["phase"], raceDistance: number): EndurancePlanSession[] {
+function sessionMix(sessionsPerWeek: number, weeklyDistance: number, phase: RacePlanWeek["phase"], raceDistance: number, week: number): EndurancePlanSession[] {
   if (phase === "race") {
     return [{
+      sessionKey: `w${week}-s1`,
       intent: "race",
       plannedDurationMinutes: null,
       plannedDistanceMeters: raceDistance,
@@ -67,7 +68,8 @@ function sessionMix(sessionsPerWeek: number, weeklyDistance: number, phase: Race
   const easyCount = intents.filter((i) => i === "easy" || i === "recovery").length;
   const easyDistance = round100(Math.max(1_000, (weeklyDistance - fixed) / Math.max(1, easyCount)));
 
-  return intents.map((intent) => ({
+  return intents.map((intent, index) => ({
+    sessionKey: `w${week}-s${index + 1}`,
     intent,
     plannedDurationMinutes: null,
     plannedDistanceMeters:
@@ -103,7 +105,7 @@ export function buildRacePlan(input: { today: string; goal: RaceGoal; baseline: 
       week,
       phase,
       targetDistanceMeters: target,
-      sessions: sessionMix(input.goal.sessionsPerWeek, target, phase, raceDistance),
+      sessions: sessionMix(input.goal.sessionsPerWeek, target, phase, raceDistance, week),
     });
     previous = target;
   }
