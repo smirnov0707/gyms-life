@@ -27,6 +27,40 @@ export function TwinEnduranceLayer() {
           </h3>
         </div>
       </div>
+      {data.raceIntelligence ? (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              {en ? "Race trajectory" : "Varžybų trajektorija"}
+            </p>
+            <span className="text-xs font-semibold text-primary">
+              {data.raceIntelligence.daysToRace} {en ? "days" : "d."}
+            </span>
+          </div>
+          <strong className="mt-1 block">
+            {data.raceIntelligence.decision.action === "recover"
+              ? en
+                ? "Recovery protected"
+                : "Saugomas atsistatymas"
+              : data.raceIntelligence.decision.action === "reduce"
+                ? en
+                  ? "Load reduced"
+                  : "Krūvis mažinamas"
+                : data.raceIntelligence.decision.action === "proceed"
+                  ? en
+                    ? "Trajectory on plan"
+                    : "Trajektorija pagal planą"
+                  : en
+                    ? "Building evidence"
+                    : "Kaupiami duomenys"}
+          </strong>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {data.raceIntelligence.raceDistance.toUpperCase()} ·{" "}
+            {data.raceIntelligence.readiness.status.replaceAll("_", " ")} ·{" "}
+            {data.raceIntelligence.decision.confidence}
+          </p>
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border p-3">
           <p className="text-xs text-muted-foreground">
