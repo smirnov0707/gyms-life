@@ -50,7 +50,7 @@ export async function loadActiveRacePrep(
   const weekStart = new Date(weekStartMs).toISOString();
   const weekEnd = new Date(weekEndMs).toISOString();
   const { data: runs, error: runsError } = await supabase
-    .from("workout_sessions").select("distance_meters,duration_seconds,perceived_effort,endurance_session_intent")
+    .from("workout_sessions").select("distance_meters,duration_seconds,perceived_effort,endurance_session_intent,endurance_plan_session_key")
     .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
     .gte("started_at", weekStart).lt("started_at", weekEnd).order("started_at", { ascending: true });
   if (runsError) throw runsError;
@@ -61,8 +61,8 @@ export async function loadActiveRacePrep(
     perceivedEffort: run.perceived_effort,
   }));
   const progress = summarizeRaceWeek({ planned: currentWeek.sessions, completed });
-  const matchedIntents = new Set((runs ?? []).flatMap((run) => run.endurance_session_intent ? [run.endurance_session_intent] : []));
-  const baseNextSession = currentWeek.sessions.find((session) => !matchedIntents.has(session.intent))\n    ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]\n    ?? null;
+  const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
+  const baseNextSession = currentWeek.sessions.find((session) => session.sessionKey ? !completedSessionKeys.has(session.sessionKey) : true)\n    ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]\n    ?? null;
   const historySince = new Date(Date.parse(today + "T00:00:00Z") - 84 * DAY_MS).toISOString();
   const { data: longHistory, error: longHistoryError } = await supabase
     .from("workout_sessions")
@@ -126,7 +126,7 @@ export async function loadActiveRacePrep(
   } as const;
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
   await persistEnduranceAdaptation(supabase, { userId, raceGoalId: row.id, decisionOn: today, signal: adaptationSignal, decision: adaptation });
-  const effectiveSessions = applyAdaptationToRemainingSessions({ sessions: currentWeek.sessions, completedIntents: matchedIntents, adaptation });
+  const effectiveSessions = applyAdaptationToRemainingSessions({ sessions: currentWeek.sessions, completedSessionKeys, adaptation });
   const nextSession = baseNextSession ? effectiveSessions[currentWeek.sessions.indexOf(baseNextSession)] ?? null : null;
   return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, effectiveSessions, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal };
 }
