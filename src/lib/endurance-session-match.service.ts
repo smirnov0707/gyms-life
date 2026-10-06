@@ -43,23 +43,21 @@ export async function confirmRaceSessionMatch(
   );
   if (!plannedSession) throw new Error("Planned race session could not be verified.");
 
-  const { data, error } = await supabase
-    .from("workout_sessions")
-    .update({
-      endurance_race_goal_id: prep.goalId,
-      endurance_plan_session_key: plannedSession.sessionKey,
-      endurance_session_intent: plannedSession.intent,
-      endurance_match_source: "user_confirmed",
-      endurance_match_score: input.matchScore,
-    })
-    .eq("id", input.workoutSessionId)
-    .eq("user_id", userId)
-    .eq("activity_kind", "run")
-    .select(
-      "id,started_at,endurance_race_goal_id,endurance_plan_session_key,endurance_session_intent,endurance_match_source",
-    )
-    .single();
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: rows, error } = await supabaseAdmin.rpc(
+    "confirm_endurance_race_session_match",
+    {
+      p_user_id: userId,
+      p_workout_session_id: input.workoutSessionId,
+      p_race_goal_id: prep.goalId,
+      p_plan_session_key: plannedSession.sessionKey,
+      p_intent: plannedSession.intent,
+      p_match_score: input.matchScore,
+    },
+  );
   if (error) throw error;
+  const data = rows?.[0] ?? null;
+  if (!data) throw new Error("Race session could not be confirmed.");
 
   const { tryPersistCurrentEnduranceAdaptation } = await import(
     "./endurance-adaptation-refresh.service"
