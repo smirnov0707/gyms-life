@@ -16,27 +16,6 @@ export async function confirmRaceSessionMatch(
   value: unknown,
 ) {
   const input = ConfirmRaceSessionMatchSchema.parse(value);
-  const { loadPersistedProfileTimeZone } = await import("./user-context.server");
-  const { dayInTimeZone } = await import("./local-day");
-  const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
-  const { data: workout, error: workoutError } = await supabase
-    .from("workout_sessions")
-    .select("started_at")
-    .eq("id", input.workoutSessionId)
-    .eq("user_id", userId)
-    .eq("activity_kind", "run")
-    .single();
-  if (workoutError) throw workoutError;
-  const today = dayInTimeZone(new Date(workout.started_at), timeZone);
-  const { loadActiveRacePrep } = await import("./endurance-race-prep.service");
-  const prep = await loadActiveRacePrep(supabase, userId, today, timeZone);
-  if (prep.status !== "active" || prep.goalId !== input.raceGoalId) {
-    throw new Error("Race preparation no longer matches this confirmation.");
-  }
-  const planned = prep.effectiveSessions.find((session) => session.sessionKey === input.planSessionKey);
-  if (!planned || planned.intent !== input.intent) {
-    throw new Error("Planned race session does not match this confirmation.");
-  }
 
   const { data: workout, error: workoutError } = await supabase
     .from("workout_sessions")
@@ -80,20 +59,25 @@ export async function confirmRaceSessionMatch(
   }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: rows, error } = await supabaseAdmin.rpc("confirm_endurance_race_session_match", {
-    p_user_id: userId,
-    p_workout_session_id: input.workoutSessionId,
-    p_race_goal_id: prep.goalId,
-    p_plan_session_key: plannedSession.sessionKey,
-    p_intent: plannedSession.intent,
-    p_match_score: match.score,
-  });
+  const { data: rows, error } = await supabaseAdmin.rpc(
+    "confirm_endurance_race_session_match",
+    {
+      p_user_id: userId,
+      p_workout_session_id: input.workoutSessionId,
+      p_race_goal_id: prep.goalId,
+      p_plan_session_key: plannedSession.sessionKey,
+      p_intent: plannedSession.intent,
+      p_match_score: match.score,
+    },
+  );
   if (error) throw error;
+
   const data = rows?.[0] ?? null;
   if (!data) throw new Error("Race session could not be confirmed.");
 
-  const { tryPersistCurrentEnduranceAdaptation } =
-    await import("./endurance-adaptation-refresh.service");
+  const { tryPersistCurrentEnduranceAdaptation } = await import(
+    "./endurance-adaptation-refresh.service"
+  );
   await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
   return data;
 }
