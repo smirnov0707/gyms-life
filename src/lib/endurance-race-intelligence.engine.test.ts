@@ -53,6 +53,64 @@ describe("decideRaceIntelligence", () => {
     expect(result.guardrails).toContain("ai_cannot_increase_deterministic_load");
   });
 
+  it("uses repeated personal caution only to reduce a matching hold decision", () => {
+    const result = decideRaceIntelligence({
+      readiness: { status: "on_track", factors: ["consistent_plan_adherence"], evidenceLevel: "high" },
+      adaptation: { action: "hold", volumeModifier: 1, reason: "on_track" },
+      adaptationLesson: {
+        status: "caution",
+        reason: "on_track",
+        supportingOutcomes: 3,
+        contradictingOutcomes: 0,
+        statement: "Repeated worse signals observed.",
+        provenance: "calculated",
+      },
+      nextSessionIntent: "tempo",
+      nextSessionDistanceMeters: 8000,
+    });
+    expect(result.action).toBe("reduce");
+    expect(result.nextSession.volumeModifier).toBe(0.9);
+    expect(result.reasons).toContain("personal_adaptation_caution");
+  });
+
+  it("does not let a positive candidate memory increase deterministic load", () => {
+    const result = decideRaceIntelligence({
+      readiness: { status: "on_track", factors: ["consistent_plan_adherence"], evidenceLevel: "high" },
+      adaptation: { action: "hold", volumeModifier: 1, reason: "on_track" },
+      adaptationLesson: {
+        status: "candidate",
+        reason: "on_track",
+        supportingOutcomes: 4,
+        contradictingOutcomes: 0,
+        statement: "Repeated improved signals observed.",
+        provenance: "calculated",
+      },
+      nextSessionIntent: "easy",
+      nextSessionDistanceMeters: 6000,
+    });
+    expect(result.action).toBe("proceed");
+    expect(result.nextSession.volumeModifier).toBe(1);
+  });
+
+  it("ignores caution learned for a different adaptation reason", () => {
+    const result = decideRaceIntelligence({
+      readiness: { status: "on_track", factors: ["consistent_plan_adherence"], evidenceLevel: "moderate" },
+      adaptation: { action: "hold", volumeModifier: 1, reason: "on_track" },
+      adaptationLesson: {
+        status: "caution",
+        reason: "repeated_over_target_runs",
+        supportingOutcomes: 3,
+        contradictingOutcomes: 0,
+        statement: "Repeated worse signals observed.",
+        provenance: "calculated",
+      },
+      nextSessionIntent: "easy",
+      nextSessionDistanceMeters: 6000,
+    });
+    expect(result.action).toBe("proceed");
+    expect(result.nextSession.volumeModifier).toBe(1);
+  });
+
   it("proceeds when readiness and adaptation support the plan", () => {
     const result = decideRaceIntelligence({
       readiness: {
