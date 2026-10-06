@@ -412,7 +412,6 @@
   background: var(--surface);
 }
 
-
 /* Visual Experience 3.0 — authentication as a system handshake. */
 .fl-auth-orbit {
   isolation: isolate;
@@ -460,7 +459,11 @@
   top: -12rem;
   border-radius: 50%;
   opacity: 0;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 14%, transparent), transparent 70%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 14%, transparent),
+    transparent 70%
+  );
   transition: opacity 360ms ease;
 }
 
@@ -469,18 +472,35 @@
 }
 
 @keyframes fl-auth-orbit-a {
-  to { transform: rotate(330deg); }
+  to {
+    transform: rotate(330deg);
+  }
 }
 @keyframes fl-auth-orbit-b {
-  to { transform: rotate(380deg); }
+  to {
+    transform: rotate(380deg);
+  }
 }
 @keyframes fl-auth-orbit-c {
-  from { transform: rotate(28deg) scale(0.92); opacity: 0.65; }
-  to { transform: rotate(42deg) scale(1.08); opacity: 1; }
+  from {
+    transform: rotate(28deg) scale(0.92);
+    opacity: 0.65;
+  }
+  to {
+    transform: rotate(42deg) scale(1.08);
+    opacity: 1;
+  }
 }
 @keyframes fl-auth-core {
-  0%, 100% { transform: scale(0.94); opacity: 0.72; }
-  50% { transform: scale(1.08); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.72;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -489,7 +509,6 @@
     animation: none !important;
   }
 }
-
 
 .light .fl-auth-card:focus-within {
   box-shadow:

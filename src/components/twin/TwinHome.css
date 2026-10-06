@@ -365,7 +365,6 @@
   }
 }
 
-
 /* Visual Experience 3.0 — holographic lab atmosphere around the Twin.
    The body colours remain evidence-owned; these layers are scene decoration. */
 .twin-home--cockpit {
@@ -397,7 +396,13 @@
   top: 18%;
   height: 1px;
   opacity: 0.5;
-  background: linear-gradient(90deg, transparent, rgba(102, 221, 235, 0.65), rgba(200, 250, 60, 0.42), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(102, 221, 235, 0.65),
+    rgba(200, 250, 60, 0.42),
+    transparent
+  );
   box-shadow: 0 0 14px rgba(102, 221, 235, 0.22);
   animation: twin-scan-line 7.5s ease-in-out infinite;
 }
@@ -438,7 +443,6 @@
   }
 }
 
-
 /* Living UI — Twin optical depth follows the evidence layer, not an inferred mood. */
 [data-twin-home][data-twin-layer="recovery"] {
   box-shadow: inset 0 0 90px rgba(76, 203, 229, 0.025);
@@ -461,7 +465,6 @@
     radial-gradient(ellipse at 42% 48%, rgba(200, 250, 60, 0.045), transparent 42%),
     radial-gradient(ellipse at 42% 82%, rgba(76, 203, 229, 0.035), transparent 34%);
 }
-
 
 /* Living UI — appearance changes the optical instrument, not the evidence. */
 [data-twin-home][data-twin-appearance="realistic"] {

@@ -1,5 +1,6 @@
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { QuickFoodLog } from "@/components/QuickFoodLog";
+import { QuickRunLog } from "@/components/QuickRunLog";
 import { LiveSignals } from "@/components/LiveSignals";
 import { PredictionEvidencePanel } from "@/components/PredictionEvidencePanel";
 import { SleepAnalysis } from "@/components/SleepAnalysis";
@@ -7,7 +8,7 @@ import { RecoveryOutlook } from "@/components/RecoveryOutlook";
 import { MorningLabReview } from "@/components/future-lab/MorningLabReview";
 import { Link } from "@tanstack/react-router";
 import { ReadinessWorkspace } from "@/routes/_authenticated/readiness";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -18,6 +19,7 @@ import "./future-lab-dashboard.css";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
+import { TodayRaceCommand } from "@/components/TodayRaceCommand";
 import { DataSourcesStrip } from "@/components/DataSourcesStrip";
 import { TodayIntelligenceBrief } from "@/components/future-lab/TodayIntelligenceBrief";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
@@ -67,6 +69,7 @@ export function Overview() {
   const { t, lang } = useI18n();
   const english = baseLang(lang) === "en";
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const timeZone = browserTimeZone();
   const localDay = dayInTimeZone(new Date(), timeZone);
 
@@ -234,6 +237,19 @@ export function Overview() {
           </div>
           <div className="fl-today-plan grid min-w-0 content-start gap-3">
             <TodaysPlanPanel />
+            <TodayRaceCommand />
+            <details className="fl-surface fl-today-execution group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "I ran today" : "Šiandien bėgau"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickRunLog
+                  onLogged={async () => {
+                    await queryClient.invalidateQueries({ queryKey: ["todays-workout", user?.id] });
+                  }}
+                />
+              </div>
+            </details>
             <details className="fl-surface fl-today-execution group">
               <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
                 {english ? "Log food" : "Įrašyti maistą"}

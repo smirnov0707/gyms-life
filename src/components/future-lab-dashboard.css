@@ -1383,7 +1383,6 @@
   }
 }
 
-
 /* Visual Experience 3.0 — Today command feels alive without encoding new data. */
 .fl-today-command {
   isolation: isolate;
@@ -1401,8 +1400,16 @@
   border-radius: 50%;
   opacity: 0.5;
   background:
-    radial-gradient(circle at 48% 52%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 54%),
-    radial-gradient(circle at 42% 46%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 68%);
+    radial-gradient(
+      circle at 48% 52%,
+      color-mix(in srgb, var(--primary) 13%, transparent),
+      transparent 54%
+    ),
+    radial-gradient(
+      circle at 42% 46%,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      transparent 68%
+    );
   filter: blur(10px);
   animation: fl-command-orbit 16s ease-in-out infinite alternate;
 }
@@ -1471,7 +1478,6 @@
   }
 }
 
-
 .fl-workout-motion-preview {
   position: relative;
   height: 92px;
@@ -1539,7 +1545,6 @@
   }
 }
 
-
 /* Living UI — atmosphere follows measured readiness and local day phase.
    These tokens never change the meaning or colour of the readiness reading itself. */
 .fl-dashboard[data-living-state="ready"] {
@@ -1564,8 +1569,16 @@
 
 .fl-dashboard .fl-today-command::after {
   background:
-    radial-gradient(circle at 48% 52%, var(--fl-living-aura, color-mix(in srgb, var(--primary) 13%, transparent)), transparent 54%),
-    radial-gradient(circle at 42% 46%, var(--fl-living-secondary, color-mix(in srgb, var(--accent) 7%, transparent)), transparent 68%);
+    radial-gradient(
+      circle at 48% 52%,
+      var(--fl-living-aura, color-mix(in srgb, var(--primary) 13%, transparent)),
+      transparent 54%
+    ),
+    radial-gradient(
+      circle at 42% 46%,
+      var(--fl-living-secondary, color-mix(in srgb, var(--accent) 7%, transparent)),
+      transparent 68%
+    );
 }
 
 .fl-dashboard[data-day-phase="morning"] .fl-today-command {

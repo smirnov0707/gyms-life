@@ -10,6 +10,8 @@ export const PersonalTimelineEventTypeSchema = z.enum([
   "workout_completed",
   "checkin_recorded",
   "decision_recorded",
+  "endurance_adaptation",
+  "endurance_adaptation_observed",
 ]);
 
 /**

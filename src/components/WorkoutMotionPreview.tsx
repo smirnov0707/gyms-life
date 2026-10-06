@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getExerciseMedia } from "@/lib/exercise-media";
 
-export function WorkoutMotionPreview({
-  slug,
-  title,
-}: {
-  slug: string;
-  title: string;
-}) {
+export function WorkoutMotionPreview({ slug, title }: { slug: string; title: string }) {
   const media = getExerciseMedia(slug);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [active, setActive] = useState(false);

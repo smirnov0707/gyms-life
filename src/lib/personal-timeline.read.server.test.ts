@@ -23,7 +23,7 @@ function clientFor(body: unknown, status = 200) {
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 
 describe("authenticated personal timeline reader", () => {
-  it("uses an ownership filter, deterministic order, bounded metadata-only select, and excludes internal hypothesis audit rows", async () => {
+  it("uses an ownership filter, deterministic order, bounded select, and excludes internal hypothesis audit rows", async () => {
     const { client, request } = clientFor([]);
     expect((await loadPersonalTimeline(client, USER_ID)).events).toEqual([]);
     expect(request).toHaveBeenCalledOnce();
@@ -41,7 +41,7 @@ describe("authenticated personal timeline reader", () => {
     }
     expect(url.searchParams.get("order")).toBe("occurred_at.desc,id.desc");
     expect(url.searchParams.get("limit")).toBe(String(PERSONAL_TIMELINE_LIMIT + 1));
-    expect(url.searchParams.get("select")).not.toContain("summary");
+    expect(url.searchParams.get("select")).toContain("summary");
     expect(url.searchParams.get("select")).not.toContain("*");
   });
 

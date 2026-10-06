@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect } from "@playwright/test";
+import { TWIN_SCENE_LOAD_TIMEOUT_MS } from "../src/components/twin/twin-scene.attempt.ts";
 
 /** Freeze before the fixture creates any timers; startup cost is not simulated network delay. */
 export async function freezeTwinClock(page) {
@@ -40,8 +41,8 @@ export async function verifyTwinLoadingLifecycle({
       if (scenario === "manual-2d") {
         await page.getByRole("button", { name: "2D", exact: true }).click();
       } else {
-        // The public 15-second limit, not a private implementation timer.
-        await page.clock.fastForward(15_001);
+        // Exercise the same public loading deadline owned by the attempt state machine.
+        await page.clock.fastForward(TWIN_SCENE_LOAD_TIMEOUT_MS + 1);
         await expect(page.getByText(timeoutCopy, { exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Try 3D again", exact: true })).toBeVisible();
       }

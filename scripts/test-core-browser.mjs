@@ -309,11 +309,11 @@ try {
               url: location.href,
               text: document.body.innerText,
               fixture: {
-                counts: window.__core.counts,
-                last: window.__core.last,
-                fail: window.__core.fail,
-                checkin: window.__core.checkin,
-                supplements: window.__core.supplements,
+                counts: window.__core?.counts ?? null,
+                last: window.__core?.last ?? null,
+                fail: window.__core?.fail ?? null,
+                checkin: window.__core?.checkin ?? null,
+                supplements: window.__core?.supplements ?? null,
               },
               camera: window.__supplementCamera,
               toasts: [...document.querySelectorAll("[data-sonner-toast]")].map(

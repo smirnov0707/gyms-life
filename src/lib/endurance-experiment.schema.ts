@@ -1,0 +1,41 @@
+import { z } from "zod";
+export const EnduranceExperimentVariableSchema = z.enum([
+  "sessions_per_week",
+  "long_run_weekday",
+  "recovery_day_spacing",
+]);
+export const EnduranceExperimentMetricSchema = z.enum([
+  "session_completion",
+  "distance_completion",
+  "self_reported_response",
+  "running_efficiency",
+]);
+export const EnduranceExperimentSchema = z
+  .object({
+    variable: EnduranceExperimentVariableSchema,
+    hypothesis: z.string().trim().min(10).max(500),
+    baselineValue: z.string().min(1).max(80),
+    testValue: z.string().min(1).max(80),
+    primaryMetric: EnduranceExperimentMetricSchema,
+    durationWeeks: z.number().int().min(2).max(8),
+    startedOn: z.string().date(),
+  })
+  .strict()
+  .superRefine((v, c) => {
+    if (v.baselineValue === v.testValue)
+      c.addIssue({
+        code: "custom",
+        path: ["testValue"],
+        message: "Experiment test value must differ from baseline.",
+      });
+    if (v.variable === "sessions_per_week") {
+      const n = Number(v.testValue);
+      if (!Number.isInteger(n) || n < 2 || n > 6)
+        c.addIssue({
+          code: "custom",
+          path: ["testValue"],
+          message: "Running frequency experiment must stay between 2 and 6 sessions per week.",
+        });
+    }
+  });
+export type EnduranceExperiment = z.infer<typeof EnduranceExperimentSchema>;
