@@ -1298,7 +1298,7 @@ try {
   //     nothing connected is two sources that have sent nothing and no
   //     readings at all — never a green light nobody earned.
   await openTodayContextLayer(first.page);
-  const sources = first.page.getByRole("region", { name: "Data sources" });
+  const sources = first.page.locator(".fl-today-context");
   await expect(sources).toBeVisible();
   expect(await sources.getByText("Nothing received").count()).toBe(2);
   await expect(sources.getByText("No readings at all")).toBeVisible();
@@ -1306,7 +1306,7 @@ try {
   expect(sourcesText).not.toMatch(/operational|all systems/i);
 
   await openTodayContextLayer(failed.page);
-  const failedSources = failed.page.getByRole("region", { name: "Data sources" });
+  const failedSources = failed.page.locator(".fl-today-context");
   expect(await failedSources.getByText("Could not check").count()).toBe(2);
   await expect(failedSources.getByText("Nothing received")).toHaveCount(0);
   // The tail used to read "No readings at all" beside two chips saying the
