@@ -260,7 +260,7 @@ export async function loadActiveRacePrep(
     terrainResponse,
     efficiencyTrend,
     adaptation,
-    adaptationStatus: persistedAdaptation ? "persisted" as const : "preview" as const,
+    adaptationStatus: persistedAdaptation ? ("persisted" as const) : ("preview" as const),
     candidateAdaptation,
     adaptationSignal,
     completedSessionKeys: [...completedSessionKeys],
