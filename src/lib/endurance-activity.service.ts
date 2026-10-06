@@ -43,6 +43,7 @@ export async function recordEnduranceActivity(supabase: Client, userId: string, 
   if (error) throw error;
 
   let raceMatch = null;
+  let raceIntelligence = null;
   if (activity.kind === "run") {
     try {
       const { loadPersistedProfileTimeZone } = await import("./user-context.server");
@@ -91,6 +92,15 @@ export async function recordEnduranceActivity(supabase: Client, userId: string, 
             await import("./endurance-adaptation-refresh.service");
           await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
         }
+        const refreshedPrep = await loadActiveRacePrep(supabase, userId, today, timeZone);
+        raceIntelligence =
+          refreshedPrep.status === "active"
+            ? {
+                goalId: refreshedPrep.goalId,
+                decision: refreshedPrep.intelligence,
+                readiness: refreshedPrep.readiness,
+              }
+            : null;
       }
     } catch {
       // Race classification is enrichment. A successfully recorded run must
@@ -100,5 +110,11 @@ export async function recordEnduranceActivity(supabase: Client, userId: string, 
     }
   }
 
-  return { session: data, activity: activity satisfies EnduranceActivity, credit, raceMatch };
+  return {
+    session: data,
+    activity: activity satisfies EnduranceActivity,
+    credit,
+    raceMatch,
+    raceIntelligence,
+  };
 }
