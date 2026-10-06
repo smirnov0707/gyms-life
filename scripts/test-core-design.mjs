@@ -116,6 +116,11 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
             await identity.locator(":scope > summary").click();
           await expect(page.getByRole("spinbutton", { name: "Height (cm)" })).toHaveValue("170");
           if (width === 1440) {
+            const memorySection = page
+              .locator("details.fl-profile-section")
+              .filter({ hasText: "Memory & privacy" });
+            if ((await memorySection.getAttribute("open")) === null)
+              await memorySection.locator(":scope > summary").click();
             const body = await page.locator(".fl-profile-body").boundingBox();
             const memory = await page.locator(".fl-profile-memory").boundingBox();
             expect(Math.abs(body.y - memory.y)).toBeLessThan(4);
