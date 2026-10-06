@@ -17,9 +17,12 @@ export async function recordEnduranceActivity(
   const credit = buildEnduranceTrainingCredit(activity);
   if (credit.status !== "credited") throw new Error("Endurance activity could not be credited.");
 
-  const finishedAt = new Date(
-    new Date(activity.startedAt).getTime() + activity.durationSeconds * 1000,
-  ).toISOString();
+  const startedMs = new Date(activity.startedAt).getTime();
+  const finishedMs = startedMs + activity.durationSeconds * 1000;
+  if (finishedMs > Date.now() + 5 * 60_000) {
+    throw new Error("Completed endurance activity cannot finish in the future.");
+  }
+  const finishedAt = new Date(finishedMs).toISOString();
 
   const { data, error } = await supabase
     .from("workout_sessions")
