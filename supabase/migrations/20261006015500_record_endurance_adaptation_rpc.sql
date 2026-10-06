@@ -1,3 +1,5 @@
+create extension if not exists pgcrypto;
+
 create or replace function public.record_endurance_adaptation(
   p_user_id uuid,
   p_race_goal_id uuid,
@@ -6,8 +8,7 @@ create or replace function public.record_endurance_adaptation(
   p_volume_modifier numeric,
   p_reason text,
   p_evidence jsonb,
-  p_engine_version text,
-  p_decision_fingerprint text
+  p_engine_version text
 )
 returns table(
   id uuid,
@@ -20,6 +21,8 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_fingerprint text;
 begin
   if auth.role() <> 'service_role' then
     raise exception 'service role required';
@@ -35,7 +38,6 @@ begin
        'low_readiness_and_missed_work',
        'repeated_over_target_work'
      )
-     or p_decision_fingerprint !~ '^[a-f0-9]{64}$'
   then
     raise exception 'invalid adaptation';
   end if;
@@ -48,6 +50,23 @@ begin
   ) then
     raise exception 'race goal ownership mismatch';
   end if;
+
+  v_fingerprint := encode(
+    digest(
+      concat_ws(
+        '|',
+        p_race_goal_id::text,
+        p_decision_on::text,
+        p_action,
+        p_volume_modifier::text,
+        p_reason,
+        p_evidence::text,
+        p_engine_version
+      ),
+      'sha256'
+    ),
+    'hex'
+  );
 
   return query
   insert into public.endurance_adaptation_records (
@@ -70,7 +89,7 @@ begin
     p_reason,
     p_evidence,
     p_engine_version,
-    p_decision_fingerprint
+    v_fingerprint
   )
   on conflict (
     user_id,
@@ -89,9 +108,9 @@ end;
 $$;
 
 revoke all on function public.record_endurance_adaptation(
-  uuid, uuid, date, text, numeric, text, jsonb, text, text
+  uuid, uuid, date, text, numeric, text, jsonb, text
 ) from public, anon, authenticated;
 
 grant execute on function public.record_endurance_adaptation(
-  uuid, uuid, date, text, numeric, text, jsonb, text, text
+  uuid, uuid, date, text, numeric, text, jsonb, text
 ) to service_role;
