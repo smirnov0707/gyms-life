@@ -5,6 +5,7 @@ import type {
   EnduranceAdaptationSignal,
 } from "./endurance-adaptation.engine";
 import { parseEnduranceAdaptationDecision } from "./endurance-adaptation.engine";
+import { deriveAdaptationLesson } from "./endurance-adaptation-memory.engine";
 
 export const ENDURANCE_ADAPTATION_ENGINE_VERSION = "1.0";
 
@@ -101,4 +102,44 @@ export async function loadLatestEnduranceAdaptation(
     volumeModifier: Number(data.volume_modifier),
     reason: data.reason,
   });
+}
+
+
+export async function loadEnduranceAdaptationLesson(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  raceGoalId: string,
+) {
+  const { data, error } = await supabase
+    .from("endurance_adaptation_records")
+    .select("reason,outcome")
+    .eq("user_id", userId)
+    .eq("race_goal_id", raceGoalId)
+    .not("outcome", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(24);
+  if (error) throw error;
+
+  return deriveAdaptationLesson(
+    (data ?? []).map((row) => {
+      const outcome =
+        row.outcome && typeof row.outcome === "object" && !Array.isArray(row.outcome)
+          ? row.outcome
+          : null;
+      const association =
+        outcome && "association" in outcome && typeof outcome.association === "string"
+          ? outcome.association
+          : null;
+      return {
+        reason: row.reason,
+        association:
+          association === "improved_signals" ||
+          association === "mixed_signals" ||
+          association === "worse_signals" ||
+          association === "insufficient_signal"
+            ? association
+            : null,
+      };
+    }),
+  );
 }
