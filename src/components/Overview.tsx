@@ -19,6 +19,7 @@ import "./future-lab-dashboard.css";
 import { TodayDecision } from "@/components/TodayDecision";
 import { TodayLifeContext } from "@/components/TodayLifeContext";
 import { TodaysPlanPanel } from "@/components/TodaysPlanPanel";
+import { TodayRaceCommand } from "@/components/TodayRaceCommand";
 import { DataSourcesStrip } from "@/components/DataSourcesStrip";
 import { TodayIntelligenceBrief } from "@/components/future-lab/TodayIntelligenceBrief";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
@@ -236,6 +237,7 @@ export function Overview() {
           </div>
           <div className="fl-today-plan grid min-w-0 content-start gap-3">
             <TodaysPlanPanel />
+            <TodayRaceCommand />
             <details className="fl-surface fl-today-execution group">
               <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
                 {english ? "I ran today" : "Šiandien bėgau"}
