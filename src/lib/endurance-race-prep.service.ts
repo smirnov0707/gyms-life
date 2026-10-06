@@ -13,6 +13,7 @@ import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
 import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
+import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import {
   applyAdaptationToRemainingSessions,
   selectNextExecutableSession,
