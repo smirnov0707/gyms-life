@@ -1,6 +1,7 @@
 import type { EndurancePlanSession } from "./endurance-race-goal.schema";
 
 export type CompletedRunEvidence = {
+  planSessionKey?: string | null;
   distanceMeters: number | null;
   durationMinutes: number;
   perceivedEffort: number | null;
@@ -40,8 +41,10 @@ export type RaceWeekProgress = {
   plannedSessions: number;
   completedSessions: number;
   matchedSessions: number;
+  observedRuns: number;
   plannedDistanceMeters: number;
   completedDistanceMeters: number;
+  observedDistanceMeters: number;
   distanceCompletionRatio: number | null;
 };
 
@@ -49,14 +52,24 @@ export function summarizeRaceWeek(input: {
   planned: readonly EndurancePlanSession[];
   completed: readonly CompletedRunEvidence[];
 }): RaceWeekProgress {
-  const plannedDistance = input.planned.reduce((sum, s) => sum + (s.plannedDistanceMeters ?? 0), 0);
-  const completedDistance = input.completed.reduce((sum, s) => sum + (s.distanceMeters ?? 0), 0);
+  const plannedDistance = input.planned.reduce((sum, session) => sum + (session.plannedDistanceMeters ?? 0), 0);
+  const plannedKeys = new Set(input.planned.flatMap((session) => session.sessionKey ? [session.sessionKey] : []));
+  const matchedByKey = new Map<string, CompletedRunEvidence>();
+  for (const run of input.completed) {
+    if (!run.planSessionKey || !plannedKeys.has(run.planSessionKey) || matchedByKey.has(run.planSessionKey)) continue;
+    matchedByKey.set(run.planSessionKey, run);
+  }
+  const matchedRuns = [...matchedByKey.values()];
+  const completedDistance = matchedRuns.reduce((sum, run) => sum + (run.distanceMeters ?? 0), 0);
+  const observedDistance = input.completed.reduce((sum, run) => sum + (run.distanceMeters ?? 0), 0);
   return {
     plannedSessions: input.planned.length,
-    completedSessions: input.completed.length,
-    matchedSessions: Math.min(input.planned.length, input.completed.length),
+    completedSessions: matchedRuns.length,
+    matchedSessions: matchedRuns.length,
+    observedRuns: input.completed.length,
     plannedDistanceMeters: plannedDistance,
     completedDistanceMeters: completedDistance,
+    observedDistanceMeters: observedDistance,
     distanceCompletionRatio: plannedDistance > 0 ? round2(completedDistance / plannedDistance) : null,
   };
 }
