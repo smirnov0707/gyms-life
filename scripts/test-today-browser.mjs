@@ -314,7 +314,13 @@ try {
     // Dedicated Twin/Muscle and candidate checks still require the shipped human.
     if (allowSurface) {
       await expect
-        .poll(async () => await canvas.getAttribute("data-twin-body"), { timeout: 60000 })
+        .poll(
+          async () => {
+            if (!(await canvas.count())) return null;
+            return await canvas.first().getAttribute("data-twin-body");
+          },
+          { timeout: 60000 },
+        )
         .toMatch(/^(human|surface)$/);
     } else {
       await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60000 });
