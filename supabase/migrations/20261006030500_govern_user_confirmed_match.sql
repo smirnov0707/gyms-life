@@ -19,8 +19,8 @@ security definer
 set search_path = public
 as $$
 begin
-  if auth.uid() is distinct from p_user_id and auth.role() <> 'service_role' then
-    raise exception 'not authorized';
+  if auth.role() <> 'service_role' then
+    raise exception 'service role required';
   end if;
 
   if p_plan_session_key !~ '^w[0-9]+-s[0-9]+$'
@@ -39,8 +39,6 @@ begin
   ) then
     raise exception 'active race goal ownership mismatch';
   end if;
-
-  perform set_config('gymslife.user_confirmed_match', '1', true);
 
   return query
   update public.workout_sessions w
@@ -69,7 +67,7 @@ revoke all on function public.confirm_endurance_race_session_match(
 
 grant execute on function public.confirm_endurance_race_session_match(
   uuid,uuid,uuid,text,text,numeric
-) to authenticated, service_role;
+) to service_role;
 
 create or replace function public.guard_endurance_match_provenance()
 returns trigger
@@ -88,9 +86,7 @@ begin
       or new.endurance_session_intent is distinct from old.endurance_session_intent
       or new.endurance_match_source is distinct from old.endurance_match_source
       or new.endurance_match_score is distinct from old.endurance_match_score
-    )
-    and current_setting('gymslife.user_confirmed_match', true) is distinct from '1'
-    then
+    ) then
       raise exception 'endurance match fields require governed confirmation';
     end if;
   end if;
