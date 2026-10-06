@@ -59,25 +59,21 @@ export async function confirmRaceSessionMatch(
   }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: rows, error } = await supabaseAdmin.rpc(
-    "confirm_endurance_race_session_match",
-    {
-      p_user_id: userId,
-      p_workout_session_id: input.workoutSessionId,
-      p_race_goal_id: prep.goalId,
-      p_plan_session_key: plannedSession.sessionKey,
-      p_intent: plannedSession.intent,
-      p_match_score: match.score,
-    },
-  );
+  const { data: rows, error } = await supabaseAdmin.rpc("confirm_endurance_race_session_match", {
+    p_user_id: userId,
+    p_workout_session_id: input.workoutSessionId,
+    p_race_goal_id: prep.goalId,
+    p_plan_session_key: plannedSession.sessionKey,
+    p_intent: plannedSession.intent,
+    p_match_score: match.score,
+  });
   if (error) throw error;
 
   const data = rows?.[0] ?? null;
   if (!data) throw new Error("Race session could not be confirmed.");
 
-  const { tryPersistCurrentEnduranceAdaptation } = await import(
-    "./endurance-adaptation-refresh.service"
-  );
+  const { tryPersistCurrentEnduranceAdaptation } =
+    await import("./endurance-adaptation-refresh.service");
   await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
   return data;
 }
