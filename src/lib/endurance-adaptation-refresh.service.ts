@@ -19,3 +19,19 @@ export async function persistCurrentEnduranceAdaptation(
     decision: prep.adaptation,
   });
 }
+
+
+/** Secondary audit write: never make a completed training action look failed. */
+export async function tryPersistCurrentEnduranceAdaptation(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  today: string,
+  timeZone: string,
+): Promise<void> {
+  try {
+    await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
+  } catch {
+    // The canonical workout/session match remains the source fact. The ledger
+    // can be reconciled later; surfacing a false primary-action failure is worse.
+  }
+}
