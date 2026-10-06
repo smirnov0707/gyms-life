@@ -7,7 +7,6 @@ export const ConfirmRaceSessionMatchSchema = z
     workoutSessionId: z.string().uuid(),
     raceGoalId: z.string().uuid(),
     planSessionKey: z.string().regex(/^w\d+-s\d+$/),
-    matchScore: z.number().min(0).max(1).nullable(),
   })
   .strict();
 
@@ -20,7 +19,7 @@ export async function confirmRaceSessionMatch(
 
   const { data: workout, error: workoutError } = await supabase
     .from("workout_sessions")
-    .select("id,started_at")
+    .select("id,started_at,distance_meters,duration_seconds,perceived_effort")
     .eq("id", input.workoutSessionId)
     .eq("user_id", userId)
     .eq("activity_kind", "run")
@@ -30,6 +29,8 @@ export async function confirmRaceSessionMatch(
   const { loadPersistedProfileTimeZone } = await import("./user-context.server");
   const { dayInTimeZone } = await import("./local-day");
   const { loadActiveRacePrep } = await import("./endurance-race-prep.service");
+  const { matchCompletedRunToPlan } = await import("./endurance-session-matching.engine");
+
   const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
   const today = dayInTimeZone(new Date(workout.started_at), timeZone);
   const prep = await loadActiveRacePrep(supabase, userId, today, timeZone);
@@ -38,10 +39,28 @@ export async function confirmRaceSessionMatch(
     throw new Error("Race preparation is no longer active.");
   }
 
-  const plannedSession = prep.currentWeek.sessions.find(
-    (session) => session.sessionKey === input.planSessionKey,
+  const completedKeys = new Set(prep.completedSessionKeys);
+  const remaining = prep.effectiveSessions.filter(
+    (session) => !completedKeys.has(session.sessionKey),
   );
-  if (!plannedSession) throw new Error("Planned race session could not be verified.");
+  const match = matchCompletedRunToPlan(remaining, {
+    distanceMeters:
+      workout.distance_meters === null ? null : Number(workout.distance_meters),
+    durationMinutes: Number(workout.duration_seconds ?? 0) / 60,
+    perceivedEffort: workout.perceived_effort,
+  });
+
+  if (
+    match.status === "no_match" ||
+    match.plannedSessionKey !== input.planSessionKey
+  ) {
+    throw new Error("Race session candidate is no longer supported by current evidence.");
+  }
+
+  const plannedSession = remaining[match.plannedIndex];
+  if (!plannedSession || plannedSession.sessionKey !== match.plannedSessionKey) {
+    throw new Error("Planned race session could not be verified.");
+  }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: rows, error } = await supabaseAdmin.rpc(
@@ -52,7 +71,7 @@ export async function confirmRaceSessionMatch(
       p_race_goal_id: prep.goalId,
       p_plan_session_key: plannedSession.sessionKey,
       p_intent: plannedSession.intent,
-      p_match_score: input.matchScore,
+      p_match_score: match.score,
     },
   );
   if (error) throw error;
