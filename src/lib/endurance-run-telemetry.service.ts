@@ -24,7 +24,8 @@ export async function persistRunTelemetry(
     return { status: "already_imported" as const, workoutSessionId: existing.workout_session_id };
   }
 
-  const { data: workoutSessionId, error } = await supabase.rpc("record_endurance_run_import", {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: workoutSessionId, error } = await supabaseAdmin.rpc("record_endurance_run_import", {
     p_user_id: userId,
     p_source: t.source,
     p_external_activity_id: t.externalActivityId,
