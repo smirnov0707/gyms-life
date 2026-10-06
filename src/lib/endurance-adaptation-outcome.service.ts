@@ -71,8 +71,10 @@ export async function recordDueAdaptationOutcomes(
       .maybeSingle();
     if (checkinError) throw checkinError;
 
+    const ratedResponsesAfter = (runs ?? []).filter((run) => run.feeling !== null).length;
     const outcome = assessAdaptationOutcome({
       sessionsAfter: runs?.length ?? 0,
+      ratedResponsesAfter,
       lowResponseStreakAfter: lowFeelingStreakAfter(runs ?? []),
       readinessBandAfter: readinessBand(checkin?.readiness_score),
       daysObserved: Math.floor((now.getTime() - Date.parse(record.created_at)) / DAY_MS),
