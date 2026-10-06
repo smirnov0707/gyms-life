@@ -24,6 +24,7 @@ export async function createRaceGoal(
     p_sessions_per_week: goal.sessionsPerWeek,
     p_baseline_weekly_distance_meters: baseline.recentWeeklyDistanceMeters,
     p_baseline_longest_run_meters: baseline.recentLongestRunMeters,
+    p_today: today,
   });
   if (error) throw error;
   return { goalId: goalId, goal, baseline, plan };
