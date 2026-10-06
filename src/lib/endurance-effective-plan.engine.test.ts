@@ -3,6 +3,7 @@ import {
   applyAdaptationToRemainingSessions,
   selectNextExecutableSession,
 } from "./endurance-effective-plan.engine";
+import type { EnduranceAdaptationDecision } from "./endurance-adaptation.engine";
 
 const distanceSession = (
   intent: "easy" | "long" | "race",
@@ -85,10 +86,10 @@ describe("effective endurance plan", () => {
   });
 
   it("suppresses the next planned run while recovery is governing", () => {
-    const adaptation = {
-      action: "recover" as const,
+    const adaptation: EnduranceAdaptationDecision = {
+      action: "recover",
       volumeModifier: 0.7,
-      reason: "low_readiness_and_missed_work" as const,
+      reason: "low_readiness_and_missed_work",
     };
     const effective = applyAdaptationToRemainingSessions({
       sessions: [distanceSession("easy", 5_000, "w1-s1")],
