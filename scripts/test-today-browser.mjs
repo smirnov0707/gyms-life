@@ -873,7 +873,7 @@ try {
     });
     await openTodayContextLayer(checked.page);
     await openTodayEvidenceLayer(checked.page);
-    const sources = checked.page.getByRole("region", { name: "Data sources" });
+    const sources = checked.page.locator(".fl-data-sources");
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
     expect(await sources.getByText(label, { exact: true }).count()).toBe(2);
