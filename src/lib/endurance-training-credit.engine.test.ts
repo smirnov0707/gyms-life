@@ -34,7 +34,10 @@ describe("endurance training credit", () => {
       distanceMeters: 5000,
     });
 
-    expect(buildEnduranceTrainingCredit(activity).workload).toEqual({
+    const credit = buildEnduranceTrainingCredit(activity);
+    expect(credit.status).toBe("credited");
+    if (credit.status !== "credited") throw new Error("Expected credited endurance activity.");
+    expect(credit.workload).toEqual({
       basis: "duration",
       value: 30,
     });
