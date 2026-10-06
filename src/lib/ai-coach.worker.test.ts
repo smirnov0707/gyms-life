@@ -10,7 +10,23 @@ const context: CoachContext = {
   activePlan: null,
   performance: { workouts: 1, totalVolumeKg: 100, totalSets: 3, totalReps: 30, averageRpe: 7 },
   performanceSignals: [],
-  endurance: { active: false, raceDistance: null, daysToRace: null, phase: null, readiness: null, evidenceLevel: null, nextSession: null, postRun: null, prohibitedClaims: ["diagnosis", "injury_prediction_without_evidence", "guaranteed_race_time", "vo2max_without_measurement", "override_deterministic_training_decision"] },
+  endurance: {
+    active: false,
+    raceDistance: null,
+    daysToRace: null,
+    phase: null,
+    readiness: null,
+    evidenceLevel: null,
+    nextSession: null,
+    postRun: null,
+    prohibitedClaims: [
+      "diagnosis",
+      "injury_prediction_without_evidence",
+      "guaranteed_race_time",
+      "vo2max_without_measurement",
+      "override_deterministic_training_decision",
+    ],
+  },
   exercises: [],
 };
 
@@ -44,11 +60,51 @@ describe("runCoachWorker", () => {
       context,
     );
     expect(result.decision).toBe("NO_CHANGE");
-    it("blocks provider endurance load override at the worker boundary", async () => {
-    const enduranceContext = { ...context, endurance: { ...context.endurance, active: true, raceDistance: "10k" as const, daysToRace: 30, phase: "build" as const, readiness: "on_track" as const, evidenceLevel: "moderate" as const } };
-    const result = await runCoachWorker({ name: "fake", version: "test", async generateRecommendation() { return { schemaVersion: "1.0", decision: "ADJUST_NEXT_WORKOUT", priority: "MEDIUM", summary: "Add more", rationale: [], actions: [{ type: "INCREASE_LOAD", exerciseSlug: null, value: 20, unit: "percent", instruction: "Add 20%" }], confidence: .9, safety: { requiresUserConfirmation: false, notes: [] } }; } }, enduranceContext);
+  });
+
+  it("blocks provider endurance load override at the worker boundary", async () => {
+    const enduranceContext: CoachContext = {
+      ...context,
+      endurance: {
+        ...context.endurance,
+        active: true,
+        raceDistance: "10k",
+        daysToRace: 30,
+        phase: "build",
+        readiness: "on_track",
+        evidenceLevel: "moderate",
+      },
+    };
+
+    const result = await runCoachWorker(
+      {
+        name: "fake",
+        version: "test",
+        async generateRecommendation() {
+          return {
+            schemaVersion: "1.0",
+            decision: "ADJUST_NEXT_WORKOUT",
+            priority: "MEDIUM",
+            summary: "Add more",
+            rationale: [],
+            actions: [
+              {
+                type: "INCREASE_LOAD",
+                exerciseSlug: null,
+                value: 20,
+                unit: "percent",
+                instruction: "Add 20%",
+              },
+            ],
+            confidence: 0.9,
+            safety: { requiresUserConfirmation: false, notes: [] },
+          };
+        },
+      },
+      enduranceContext,
+    );
+
     expect(result.decision).toBe("NO_CHANGE");
     expect(result.actions[0]?.type).toBe("KEEP_PLAN");
   });
-});
 });
