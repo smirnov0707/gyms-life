@@ -48,23 +48,42 @@ export async function recordEnduranceActivity(
       const today = activity.startedAt.slice(0, 10);
       const prep = await loadActiveRacePrep(supabase, userId, today);
       if (prep.status === "active") {
-        const remaining = prep.currentWeek.sessions.filter((_, index) => index >= prep.progress.matchedSessions);
+        const completedKeys = new Set(prep.completedSessionKeys);
+        const remaining = prep.effectiveSessions.filter(
+          (session) => session.sessionKey && !completedKeys.has(session.sessionKey),
+        );
         const match = matchCompletedRunToPlan(remaining, {
           distanceMeters: activity.distanceMeters,
           durationMinutes: activity.durationSeconds / 60,
           perceivedEffort: activity.perceivedEffort,
         });
-        raceMatch = match.status === "no_match" ? match : {
-          ...match,
-          plannedIndex: match.plannedIndex + prep.progress.matchedSessions,
-          intent: prep.currentWeek.sessions[match.plannedIndex + prep.progress.matchedSessions]?.intent ?? null,
-        };
-        if (raceMatch.status === "confident" && raceMatch.intent !== null) {
-          const { error: matchError } = await supabase.from("workout_sessions").update({
-            endurance_session_intent: raceMatch.intent,
-            endurance_match_source: "system_confident",
-            endurance_match_score: raceMatch.score,
-          }).eq("id", data.id).eq("user_id", userId);
+        const matchedSession =
+          match.status === "no_match" ? null : remaining[match.plannedIndex] ?? null;
+        raceMatch =
+          match.status === "no_match"
+            ? match
+            : {
+                ...match,
+                raceGoalId: prep.goalId,
+                intent: matchedSession?.intent ?? null,
+              };
+        if (
+          raceMatch.status === "confident" &&
+          raceMatch.intent !== null &&
+          matchedSession?.sessionKey
+        ) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { error: matchError } = await supabaseAdmin
+            .from("workout_sessions")
+            .update({
+              endurance_race_goal_id: prep.goalId,
+              endurance_plan_session_key: matchedSession.sessionKey,
+              endurance_session_intent: raceMatch.intent,
+              endurance_match_source: "system_confident",
+              endurance_match_score: raceMatch.score,
+            })
+            .eq("id", data.id)
+            .eq("user_id", userId);
           if (matchError) throw matchError;
         }
       }
