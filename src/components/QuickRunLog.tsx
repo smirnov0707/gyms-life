@@ -66,7 +66,11 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
       setDistanceKm("");
       setRpe("");
       window.dispatchEvent(new CustomEvent("gymslife:training-completed"));
-      window.dispatchEvent(new CustomEvent("gymslife:endurance-updated"));
+      window.dispatchEvent(
+        new CustomEvent("gymslife:endurance-updated", {
+          detail: { raceIntelligence: result.raceIntelligence ?? null },
+        }),
+      );
       await onLogged?.();
       toast.success(english ? "Run credited to today." : "Bėgimas užskaitytas šiandienai.");
     } catch {
