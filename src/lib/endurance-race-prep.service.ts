@@ -11,7 +11,7 @@ import { buildPaceProfile } from "./endurance-pace.engine";
 import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engine";
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
-import { applyAdaptationToRemainingSessions } from "./endurance-effective-plan.engine";
+import { applyAdaptationToRemainingSessions, selectNextExecutableSession } from "./endurance-effective-plan.engine";
 import { calendarDayDifference, dayBoundsInTimeZone, dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
 
 export async function loadActiveRacePrep(
@@ -69,8 +69,6 @@ export async function loadActiveRacePrep(
   }).length;
 
   const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_race_goal_id === row.id && run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
-  const baseNextSession =
-    currentWeek.sessions.find((session) => !completedSessionKeys.has(session.sessionKey)) ?? null;
   const historySince = dayBoundsInTimeZone(dayOffset(today, -84), zone).start;
   const historyUntil = dayBoundsInTimeZone(dayOffset(today, 1), zone).start;
   const { data: longHistory, error: longHistoryError } = await supabase
@@ -145,6 +143,10 @@ export async function loadActiveRacePrep(
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
   const effectiveSessions = applyAdaptationToRemainingSessions({ sessions: currentWeek.sessions, completedSessionKeys, adaptation });
   const progress = summarizeRaceWeek({ planned: effectiveSessions, completed });
-  const nextSession = baseNextSession ? effectiveSessions[currentWeek.sessions.indexOf(baseNextSession)] ?? null : null;
+  const nextSession = selectNextExecutableSession({
+    sessions: effectiveSessions,
+    completedSessionKeys,
+    adaptation,
+  });
   return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, effectiveSessions, baseProgress, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal, completedSessionKeys: [...completedSessionKeys] };
 }
