@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAdaptationToRemainingSessions } from "./endurance-effective-plan.engine";
+import { applyAdaptationToRemainingSessions, selectNextExecutableSession } from "./endurance-effective-plan.engine";
 
 const distanceSession = (intent: "easy" | "long" | "race", distance: number, key: string) => ({
   sessionKey: key,
@@ -7,6 +7,28 @@ const distanceSession = (intent: "easy" | "long" | "race", distance: number, key
   plannedDurationMinutes: null,
   plannedDistanceMeters: distance,
   intensityCue: "x",
+  it("suppresses the next planned run while recovery is governing", () => {
+    const effective = applyAdaptationToRemainingSessions({
+      sessions: [distanceSession("easy", 5_000, "w1-s1")],
+      completedSessionKeys: new Set(),
+      adaptation: {
+        action: "recover",
+        volumeModifier: 0.7,
+        reason: "low_readiness_and_missed_work",
+      },
+    });
+    expect(
+      selectNextExecutableSession({
+        sessions: effective,
+        completedSessionKeys: new Set(),
+        adaptation: {
+          action: "recover",
+          volumeModifier: 0.7,
+          reason: "low_readiness_and_missed_work",
+        },
+      }),
+    ).toBeNull();
+  });
 });
 
 describe("effective endurance plan", () => {
