@@ -119,7 +119,7 @@ export async function loadActiveRacePrep(
     weeksObserved: elapsedWeeks,
     sessionCompletionRate: sessionRate,
     distanceCompletionRate: baseProgress.distanceCompletionRatio,
-    longestRunProgressRate: longRunCoverage,
+    longRunTrend: longRunProgress.status,
     recentLowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
     latestReadinessBand: readinessBand,
     repeatedOverTargetRuns: recentOverTargetRuns,
