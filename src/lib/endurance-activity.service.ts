@@ -4,6 +4,7 @@ import { EnduranceActivitySchema, type EnduranceActivity } from "./endurance-act
 import { buildEnduranceTrainingCredit } from "./endurance-training-credit.engine";
 import { matchCompletedRunToPlan } from "./endurance-session-matching.engine";
 import { loadActiveRacePrep } from "./endurance-race-prep.service";
+import { dayInTimeZone } from "./local-day";
 
 type Client = SupabaseClient<Database>;
 
@@ -45,8 +46,10 @@ export async function recordEnduranceActivity(
   let raceMatch = null;
   if (activity.kind === "run") {
     try {
-      const today = activity.startedAt.slice(0, 10);
-      const prep = await loadActiveRacePrep(supabase, userId, today);
+      const { loadPersistedProfileTimeZone } = await import("./user-context.server");
+      const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
+      const today = dayInTimeZone(new Date(activity.startedAt), timeZone);
+      const prep = await loadActiveRacePrep(supabase, userId, today, timeZone);
       if (prep.status === "active") {
         const completedKeys = new Set(prep.completedSessionKeys);
         const remaining = prep.effectiveSessions.filter(
