@@ -91,10 +91,10 @@ export async function recordEnduranceActivity(
             .eq("id", data.id)
             .eq("user_id", userId);
           if (matchError) throw matchError;
-          const { persistCurrentEnduranceAdaptation } = await import(
+          const { tryPersistCurrentEnduranceAdaptation } = await import(
             "./endurance-adaptation-refresh.service"
           );
-          await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
+          await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
         }
       }
     } catch {
