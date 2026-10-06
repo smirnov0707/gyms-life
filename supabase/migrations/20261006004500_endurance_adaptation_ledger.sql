@@ -16,7 +16,7 @@ create table if not exists public.endurance_adaptation_records (
   ),
   evidence jsonb not null,
   engine_version text not null,
-  decision_fingerprint text not null check (decision_fingerprint ~ '^[a-f0-9]{64}$'),
+  decision_fingerprint text not null check (decision_fingerprint ~ '^[a-f0-9]{32}$'),
   created_at timestamptz not null default now()
 );
 
