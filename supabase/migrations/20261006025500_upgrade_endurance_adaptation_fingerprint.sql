@@ -39,7 +39,7 @@ alter table public.endurance_adaptation_records
   add constraint endurance_adaptation_records_decision_fingerprint_check
   check (decision_fingerprint ~ '^[a-f0-9]{64}$');
 
-do $$
+do $
 declare
   constraint_name text;
 begin
@@ -48,11 +48,13 @@ begin
     from pg_constraint c
     where c.conrelid = 'public.endurance_adaptation_records'::regclass
       and c.contype = 'u'
-      and pg_get_constraintdef(c.oid) like '%user_id%'
-      and pg_get_constraintdef(c.oid) like '%race_goal_id%'
-      and pg_get_constraintdef(c.oid) like '%decision_on%'
-      and pg_get_constraintdef(c.oid) like '%engine_version%'
-      and pg_get_constraintdef(c.oid) not like '%decision_fingerprint%'
+      and (
+        select array_agg(a.attname order by u.ordinality)
+        from unnest(c.conkey) with ordinality as u(attnum, ordinality)
+        join pg_attribute a
+          on a.attrelid = c.conrelid
+         and a.attnum = u.attnum
+      ) = array['user_id','race_goal_id','decision_on','engine_version']
   loop
     execute format(
       'alter table public.endurance_adaptation_records drop constraint %I',
@@ -60,7 +62,7 @@ begin
     );
   end loop;
 end;
-$$;
+$;
 
 create unique index if not exists endurance_adaptation_records_decision_identity_idx
   on public.endurance_adaptation_records(
