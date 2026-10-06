@@ -24,7 +24,7 @@ export async function loadActiveRacePrep(
   const { data: row, error } = await supabase
     .from("endurance_race_goals")
     .select("id,distance,race_date,started_on,target_time_seconds,sessions_per_week,baseline_weekly_distance_meters,baseline_longest_run_meters")
-    .eq("user_id", userId).eq("status", "active").maybeSingle();
+    .eq("user_id", userId).eq("status", "active").gte("race_date", today).maybeSingle();
   if (error) throw error;
   if (!row) return { status: "none" as const };
 
