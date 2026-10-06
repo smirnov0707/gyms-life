@@ -48,16 +48,32 @@ export function parseEnduranceAdaptationDecision(value: {
   volumeModifier: number;
   reason: string;
 }): EnduranceAdaptationDecision | null {
-  if (\n    value.action === "recover" &&\n    value.volumeModifier === 0.7 &&\n    value.reason === "low_readiness_and_missed_work"\n  ) {
+  if (
+    value.action === "recover" &&
+    value.volumeModifier === 0.7 &&
+    value.reason === "low_readiness_and_missed_work"
+  ) {
     return { action: "recover", volumeModifier: 0.7, reason: "low_readiness_and_missed_work" };
   }
-  if (\n    value.action === "reduce" &&\n    value.volumeModifier === 0.8 &&\n    value.reason === "repeated_low_response"\n  ) {
+  if (
+    value.action === "reduce" &&
+    value.volumeModifier === 0.8 &&
+    value.reason === "repeated_low_response"
+  ) {
     return { action: "reduce", volumeModifier: 0.8, reason: "repeated_low_response" };
   }
-  if (\n    value.action === "reduce" &&\n    value.volumeModifier === 0.9 &&\n    value.reason === "repeated_over_target_work"\n  ) {
+  if (
+    value.action === "reduce" &&
+    value.volumeModifier === 0.9 &&
+    value.reason === "repeated_over_target_work"
+  ) {
     return { action: "reduce", volumeModifier: 0.9, reason: "repeated_over_target_work" };
   }
-  if (\n    value.action === "hold" &&\n    value.volumeModifier === 1 &&\n    (value.reason === "on_track" || value.reason === "insufficient_evidence")\n  ) {
+  if (
+    value.action === "hold" &&
+    value.volumeModifier === 1 &&
+    (value.reason === "on_track" || value.reason === "insufficient_evidence")
+  ) {
     return { action: "hold", volumeModifier: 1, reason: value.reason };
   }
   return null;
