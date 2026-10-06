@@ -25,7 +25,7 @@ export type EnduranceSessionIntent = z.infer<typeof EnduranceSessionIntentSchema
 
 export const EndurancePlanSessionSchema = z
   .object({
-    sessionKey: z.string().regex(/^w\\d+-s\\d+$/).optional(),
+    sessionKey: z.string().regex(/^w\\d+-s\\d+$/),
     intent: EnduranceSessionIntentSchema,
     plannedDurationMinutes: z.number().int().positive().max(360).nullable(),
     plannedDistanceMeters: z.number().finite().positive().max(100_000).nullable(),
