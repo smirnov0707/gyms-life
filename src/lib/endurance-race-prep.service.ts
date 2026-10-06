@@ -11,7 +11,6 @@ import { buildPaceProfile } from "./endurance-pace.engine";
 import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engine";
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
-import { persistEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import { applyAdaptationToRemainingSessions } from "./endurance-effective-plan.engine";
 import { calendarDayDifference, dayBoundsInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
 
@@ -133,7 +132,6 @@ export async function loadActiveRacePrep(
     recentOverTargetRuns,
   } as const;
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
-  await persistEnduranceAdaptation(supabase, { userId, raceGoalId: row.id, decisionOn: today, signal: adaptationSignal, decision: adaptation });
   const effectiveSessions = applyAdaptationToRemainingSessions({ sessions: currentWeek.sessions, completedSessionKeys, adaptation });
   const nextSession = baseNextSession ? effectiveSessions[currentWeek.sessions.indexOf(baseNextSession)] ?? null : null;
   return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, effectiveSessions, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal, completedSessionKeys: [...completedSessionKeys] };
