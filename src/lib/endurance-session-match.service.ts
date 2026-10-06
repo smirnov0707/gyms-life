@@ -24,7 +24,13 @@ export async function confirmRaceSessionMatch(
     endurance_match_source: "user_confirmed",
     endurance_match_score: input.matchScore,
   }).eq("id", input.workoutSessionId).eq("user_id", userId).eq("activity_kind", "run")
-    .select("id,endurance_race_goal_id,endurance_plan_session_key,endurance_session_intent,endurance_match_source").single();
+    .select("id,started_at,endurance_race_goal_id,endurance_plan_session_key,endurance_session_intent,endurance_match_source").single();
   if (error) throw error;
+  const { loadPersistedProfileTimeZone } = await import("./user-context.server");
+  const { dayInTimeZone } = await import("./local-day");
+  const { persistCurrentEnduranceAdaptation } = await import("./endurance-adaptation-refresh.service");
+  const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
+  const today = dayInTimeZone(new Date(data.started_at), timeZone);
+  await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
   return data;
 }
