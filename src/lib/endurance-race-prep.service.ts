@@ -11,6 +11,7 @@ import { buildPaceProfile } from "./endurance-pace.engine";
 import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engine";
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
+import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import {
   applyAdaptationToRemainingSessions,
   selectNextExecutableSession,
@@ -226,7 +227,9 @@ export async function loadActiveRacePrep(
     distanceCompletionRatio: baseProgress.distanceCompletionRatio,
     recentOverTargetRuns,
   } as const;
-  const adaptation = decideEnduranceAdaptation(adaptationSignal);
+  const candidateAdaptation = decideEnduranceAdaptation(adaptationSignal);
+  const persistedAdaptation = await loadLatestEnduranceAdaptation(supabase, userId, row.id, today);
+  const adaptation = persistedAdaptation ?? candidateAdaptation;
   const effectiveSessions = applyAdaptationToRemainingSessions({
     sessions: currentWeek.sessions,
     completedSessionKeys,
@@ -257,6 +260,7 @@ export async function loadActiveRacePrep(
     terrainResponse,
     efficiencyTrend,
     adaptation,
+    candidateAdaptation,
     adaptationSignal,
     completedSessionKeys: [...completedSessionKeys],
   };
