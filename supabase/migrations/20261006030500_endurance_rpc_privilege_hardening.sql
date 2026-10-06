@@ -4,7 +4,7 @@
 -- in their source migrations on fresh installs.
 
 revoke all on function public.record_endurance_run_import(
-  uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb
+  uuid,text,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb
 ) from public,anon,authenticated;
 grant execute on function public.record_endurance_run_import(
   uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb
