@@ -17,6 +17,10 @@ export const EnduranceActivitySchema = z
   })
   .strict();
 
+export const ManualEnduranceActivitySchema = EnduranceActivitySchema.extend({
+  source: z.literal("manual"),
+});
+
 export type EnduranceActivity = z.infer<typeof EnduranceActivitySchema>;
 
 export const RaceDistanceSchema = z.enum(["5k", "10k", "half_marathon", "marathon"]);
