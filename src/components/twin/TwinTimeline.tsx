@@ -32,6 +32,27 @@ const COPY = {
     quality: "Indekso duomenų kokybė",
     version: "Įrašo schemos versija",
     unknown: "Nežinoma",
+    adaptation: {
+      action: {
+        hold: "Planas nekeistas",
+        reduce: "Krūvis sumažintas",
+        recover: "Prioritetas atsistatymui",
+      },
+      reason: {
+        insufficient_evidence: "Dar nepakanka įrodymų",
+        on_track: "Pasiruošimas vyksta pagal planą",
+        repeated_low_response: "Kartojosi sunkios treniruočių reakcijos",
+        low_readiness_and_missed_work: "Žemas pasiruošimas ir praleistos treniruotės",
+        repeated_over_target_work: "Pakartotinai viršytas suplanuotas krūvis",
+      },
+      observed: {
+        improved_signals: "Vėliau stebėti geresni signalai",
+        mixed_signals: "Vėliau stebėti mišrūs signalai",
+        worse_signals: "Vėliau stebėti prastesni signalai",
+        insufficient_signal: "Vėlesnių signalų dar nepakanka",
+      },
+      associationOnly: "Tai stebėtas ryšys, ne priežasties įrodymas.",
+    },
     events: {
       workout_completed: "Užregistruotas treniruotės užbaigimas",
       checkin_recorded: "Užregistruota savijauta",
@@ -74,6 +95,27 @@ const COPY = {
     quality: "Index data quality",
     version: "Record schema version",
     unknown: "Unknown",
+    adaptation: {
+      action: {
+        hold: "Plan held",
+        reduce: "Volume reduced",
+        recover: "Recovery prioritized",
+      },
+      reason: {
+        insufficient_evidence: "Evidence is still insufficient",
+        on_track: "Preparation is on track",
+        repeated_low_response: "Repeated difficult training response",
+        low_readiness_and_missed_work: "Low readiness with missed training",
+        repeated_over_target_work: "Repeated work above planned target",
+      },
+      observed: {
+        improved_signals: "Better signals were observed afterward",
+        mixed_signals: "Mixed signals were observed afterward",
+        worse_signals: "Worse signals were observed afterward",
+        insufficient_signal: "Not enough follow-up signal yet",
+      },
+      associationOnly: "This is an observed association, not proof of causation.",
+    },
     events: {
       workout_completed: "Workout completion recorded",
       checkin_recorded: "Check-in recorded",
@@ -131,6 +173,26 @@ function TimelineEntry({
         {copy.occurred}:{" "}
         <time dateTime={event.occurredAt}>{formatter.format(new Date(event.occurredAt))}</time>
       </p>
+      {event.details?.kind === "endurance_adaptation" ? (
+        <div className="mt-3 rounded-xl border border-border bg-surface-2 p-3 text-xs">
+          <p className="font-semibold text-foreground">
+            {copy.adaptation.action[event.details.action]} ·{" "}
+            {Math.round(event.details.volumeModifier * 100)}%
+          </p>
+          <p className="mt-1 leading-relaxed text-muted-foreground">
+            {copy.adaptation.reason[event.details.reason]}
+          </p>
+        </div>
+      ) : event.details?.kind === "endurance_adaptation_observed" ? (
+        <div className="mt-3 rounded-xl border border-border bg-surface-2 p-3 text-xs">
+          <p className="font-semibold text-foreground">
+            {copy.adaptation.observed[event.details.association]}
+          </p>
+          <p className="mt-1 leading-relaxed text-muted-foreground">
+            {copy.adaptation.associationOnly}
+          </p>
+        </div>
+      ) : null}
       <details className="mt-2 text-xs">
         <summary className="min-h-11 cursor-pointer content-center rounded-lg text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
           {copy.details}
