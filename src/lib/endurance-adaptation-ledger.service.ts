@@ -104,7 +104,6 @@ export async function loadLatestEnduranceAdaptation(
   });
 }
 
-
 export async function loadEnduranceAdaptationLesson(
   supabase: SupabaseClient<Database>,
   userId: string,
