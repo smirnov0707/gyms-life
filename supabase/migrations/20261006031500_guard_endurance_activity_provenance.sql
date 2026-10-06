@@ -1,7 +1,7 @@
 create or replace function public.guard_endurance_activity_provenance() returns trigger language plpgsql set search_path=public as $$
 begin
  if auth.role()<>'service_role'
-    and new.activity_source in ('device','wearable','imported')
+    and (new.activity_source in ('device','wearable','imported') or (tg_op='UPDATE' and old.activity_source in ('device','wearable','imported')))
     and (
       tg_op='INSERT'
       or old.activity_source is distinct from new.activity_source
