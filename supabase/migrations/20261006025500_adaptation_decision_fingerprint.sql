@@ -37,3 +37,5 @@ $migration$;
 
 create unique index if not exists endurance_adaptation_decision_fingerprint_uidx
   on public.endurance_adaptation_records(user_id,race_goal_id,decision_on,engine_version,decision_fingerprint);
+
+drop function if exists public.record_endurance_adaptation(uuid,uuid,date,text,numeric,text,jsonb,text);
