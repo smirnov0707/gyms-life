@@ -55,7 +55,11 @@ describe("decideRaceIntelligence", () => {
 
   it("uses repeated personal caution only to reduce a matching hold decision", () => {
     const result = decideRaceIntelligence({
-      readiness: { status: "on_track", factors: ["consistent_plan_adherence"], evidenceLevel: "high" },
+      readiness: {
+        status: "on_track",
+        factors: ["consistent_plan_adherence"],
+        evidenceLevel: "high",
+      },
       adaptation: { action: "hold", volumeModifier: 1, reason: "on_track" },
       adaptationLesson: {
         status: "caution",
@@ -75,7 +79,11 @@ describe("decideRaceIntelligence", () => {
 
   it("does not let a positive candidate memory increase deterministic load", () => {
     const result = decideRaceIntelligence({
-      readiness: { status: "on_track", factors: ["consistent_plan_adherence"], evidenceLevel: "high" },
+      readiness: {
+        status: "on_track",
+        factors: ["consistent_plan_adherence"],
+        evidenceLevel: "high",
+      },
       adaptation: { action: "hold", volumeModifier: 1, reason: "on_track" },
       adaptationLesson: {
         status: "candidate",
@@ -94,7 +102,11 @@ describe("decideRaceIntelligence", () => {
 
   it("ignores caution learned for a different adaptation reason", () => {
     const result = decideRaceIntelligence({
-      readiness: { status: "on_track", factors: ["consistent_plan_adherence"], evidenceLevel: "moderate" },
+      readiness: {
+        status: "on_track",
+        factors: ["consistent_plan_adherence"],
+        evidenceLevel: "moderate",
+      },
       adaptation: { action: "hold", volumeModifier: 1, reason: "on_track" },
       adaptationLesson: {
         status: "caution",
