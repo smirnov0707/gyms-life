@@ -15,11 +15,12 @@ const phaseLabel = (phase: string, en: boolean) => ({
 
 export function RacePrepCockpit() {
   const { lang } = useI18n(); const english = baseLang(lang) === "en";
-  const today = dayInTimeZone(new Date(), browserTimeZone());
+  const timeZone = browserTimeZone();
+  const today = dayInTimeZone(new Date(), timeZone);
   const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: ["active-race-prep", today],
-    queryFn: () => getActiveRacePrep({ data: { today } }),
+    queryFn: () => getActiveRacePrep({ data: { today, timeZone } }),
     staleTime: 30_000,
   });
   useEffect(() => {
