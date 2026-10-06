@@ -12,7 +12,10 @@ import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engi
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
 import { decideRaceIntelligence } from "./endurance-race-intelligence.engine";
-import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
+import {
+  loadEnduranceAdaptationLesson,
+  loadLatestEnduranceAdaptation,
+} from "./endurance-adaptation-ledger.service";
 import {
   applyAdaptationToRemainingSessions,
   selectNextExecutableSession,
@@ -231,6 +234,7 @@ export async function loadActiveRacePrep(
   const candidateAdaptation = decideEnduranceAdaptation(adaptationSignal);
   const persistedAdaptation = await loadLatestEnduranceAdaptation(supabase, userId, row.id, today);
   const adaptation = persistedAdaptation ?? candidateAdaptation;
+  const adaptationLesson = await loadEnduranceAdaptationLesson(supabase, userId, row.id);
   const executionAdaptation = persistedAdaptation ?? {
     action: "hold" as const,
     volumeModifier: 1 as const,
@@ -252,6 +256,7 @@ export async function loadActiveRacePrep(
     adaptation,
     nextSessionIntent: nextSession?.intent ?? null,
     nextSessionDistanceMeters: nextSession?.plannedDistanceMeters ?? null,
+    adaptationLesson,
   });
   return {
     status: "active" as const,
@@ -273,6 +278,7 @@ export async function loadActiveRacePrep(
     terrainResponse,
     efficiencyTrend,
     adaptation,
+    adaptationLesson,
     adaptationStatus: persistedAdaptation ? ("persisted" as const) : ("preview" as const),
     candidateAdaptation,
     adaptationSignal,
