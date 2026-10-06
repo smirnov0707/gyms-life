@@ -33,9 +33,13 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
             await identity.locator(":scope > summary").click();
           if ((await memory.getAttribute("open")) === null)
             await memory.locator(":scope > summary").click();
-          await expect(
-            page.getByText("Synthetic preference: train in the morning.", { exact: true }),
-          ).toBeVisible();
+          const preference = page.getByText("Synthetic preference: train in the morning.", {
+            exact: true,
+          });
+          const memoryEntry = preference.locator("xpath=ancestor::details[1]");
+          if ((await memoryEntry.getAttribute("open")) === null)
+            await memoryEntry.locator(":scope > summary").click();
+          await expect(preference).toBeVisible();
         }
         await page.evaluate(() => document.fonts.ready);
         const audit = await workspace.evaluate((el) => {
