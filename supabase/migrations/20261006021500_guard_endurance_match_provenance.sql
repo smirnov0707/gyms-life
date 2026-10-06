@@ -6,4 +6,3 @@ end$$;
 drop trigger if exists workout_sessions_guard_endurance_match_provenance on public.workout_sessions;
 create trigger workout_sessions_guard_endurance_match_provenance before update on public.workout_sessions for each row execute function public.guard_endurance_match_provenance();
 revoke all on function public.guard_endurance_match_provenance() from public,anon,authenticated;
-grant execute on function public.guard_endurance_match_provenance() to service_role;
