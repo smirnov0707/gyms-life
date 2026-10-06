@@ -1,0 +1,66 @@
+name: Pack CC0 GYMS.LIFE digital human v3
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-cc0-pack-v3.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_RUN: '34024542738'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download reviewed v2 authoring artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/v3"
+          gh run download "$SOURCE_RUN" --repo "${{ github.repository }}" --name gyms-digital-human-v2-candidate --dir "$RUNNER_TEMP/v3"
+          test -f "$RUNNER_TEMP/v3/gyms-digital-human-v2.obj"
+          test -f "$RUNNER_TEMP/v3/gyms-digital-human-v2.mtl"
+      - name: Remove redundant MakeHuman opacity duplicates
+        run: |
+          cd "$RUNNER_TEMP/v3"
+          # MakeHuman exports map_D pointing to the original full-resolution
+          # diffuse map in addition to map_Kd. obj2gltf then embeds that large
+          # original and discards the already optimized albedo. The optimized
+          # map_Kd PNGs retain their own alpha where it is actually needed.
+          sed -i '/^map_D /d' gyms-digital-human-v2.mtl
+          cp gyms-digital-human-v2.obj gyms-digital-human-v3.obj
+          cp gyms-digital-human-v2.mtl gyms-digital-human-v3.mtl
+      - name: Convert self-contained GLB
+        run: |
+          cd "$RUNNER_TEMP/v3"
+          npx --yes obj2gltf@3.2.0 -i gyms-digital-human-v3.obj -o gyms-digital-human-v3.glb -b --secure --checkTransparency
+      - name: Audit exact v3 binary
+        run: |
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'v3'; glb=root/'gyms-digital-human-v3.glb'
+          sha=hashlib.sha256(glb.read_bytes()).hexdigest()
+          rights={'assetSha256':sha,'creator':'GYMS.LIFE derivative authored from MakeHuman CC0 graphical assets','sourceUrl':'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html','licenseName':'CC0-1.0-derived','evidenceReference':'SOURCE_MANIFEST.json + official MakeHuman CC0 asset pack/FAQ','permissions':{'commercialWebApp':'approved','browserDelivery':'approved','publicRepository':'approved'}}
+          (root/'rights-v3.json').write_text(json.dumps(rights,indent=2))
+          print('v3 GLB bytes',glb.stat().st_size,'SHA256',sha)
+          PY
+          node scripts/audit-twin-human-asset.mjs "$RUNNER_TEMP/v3/gyms-digital-human-v3.glb" "$RUNNER_TEMP/v3/rights-v3.json" "$RUNNER_TEMP/v3/intake-report-v3.json"
+          cat "$RUNNER_TEMP/v3/intake-report-v3.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gyms-digital-human-v3-review
+          path: |
+            ${{ runner.temp }}/v3/gyms-digital-human-v3.glb
+            ${{ runner.temp }}/v3/SOURCE_MANIFEST.json
+            ${{ runner.temp }}/v3/rights-v3.json
+            ${{ runner.temp }}/v3/intake-report-v3.json
+          retention-days: 3
+          if-no-files-found: error

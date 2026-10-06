@@ -1,0 +1,37 @@
+name: Human authoring source bundle
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths: [.github/workflows/human-authoring-sources.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Retrieve reviewed CC0 system skin and grooming assets
+        run: |
+          curl --fail --location --retry 2 --max-time 300 'https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip' -o "$RUNNER_TEMP/system-assets.zip"
+          python3 - <<'PY'
+          import hashlib, os, pathlib, zipfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          archive = root / 'system-assets.zip'
+          selected = root / 'human-system-selected.zip'
+          with zipfile.ZipFile(archive) as source, zipfile.ZipFile(selected, 'w', zipfile.ZIP_DEFLATED) as dest:
+              dest.writestr('SOURCE.txt', 'https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html\nLicense: CC0, makehuman_system\nArchive SHA256: ' + hashlib.sha256(archive.read_bytes()).hexdigest() + '\n')
+              dest.writestr('FILE_LIST.txt', '\n'.join(source.namelist()))
+              for name in source.namelist():
+                  if not name.endswith('/') and any(key in name.lower() for key in ['young_caucasian_male', 'young_african_male', 'short01', 'short02', 'short04', 'eyebrow001', 'eyebrow002', 'eyelashes01', 'license', 'copyright']):
+                      dest.writestr(name, source.read(name))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: human-system-selected
+          path: ${{ runner.temp }}/human-system-selected.zip
+          if-no-files-found: error
+          retention-days: 3

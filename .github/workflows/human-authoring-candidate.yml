@@ -1,0 +1,84 @@
+name: Validate authored human candidate
+on:
+  push:
+    branches: [future-lab-human-realism-intake]
+    paths:
+      - .github/workflows/human-authoring-candidate.yml
+      - scripts/human/**
+      - scripts/test-human-browser.mjs
+      - src/components/twin/twin-human.asset*
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: python -m pip install numpy==2.3.5 Pillow==12.3.0
+      - name: Fetch pinned official core graphics and verified CC0 system pack
+        env:
+          MH_REF: a8bc2d54ff0ac92e78ff71431b1023eda42bf482
+        run: |
+          mkdir -p "$RUNNER_TEMP/human-core" "$RUNNER_TEMP/human-materials"
+          curl --fail --location --retry 2 --max-time 180 "https://codeload.github.com/makehumancommunity/makehuman/tar.gz/$MH_REF" -o "$RUNNER_TEMP/core.tar.gz"
+          tar -xzf "$RUNNER_TEMP/core.tar.gz" -C "$RUNNER_TEMP/human-core" --strip-components=1 "makehuman-$MH_REF/makehuman/data" "makehuman-$MH_REF/LICENSE.md" "makehuman-$MH_REF/LICENSE.ASSETS.md"
+          curl --fail --location --retry 2 --max-time 240 https://files2.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip -o "$RUNNER_TEMP/system.zip"
+          echo "b542127a8e25547c7c29c19f2d1d2adb9a664c80396ecd694095dbc8028a0107  $RUNNER_TEMP/system.zip" | sha256sum --check
+          python - <<'PY'
+          import os, zipfile
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          with zipfile.ZipFile(root/'system.zip') as z:
+              for name in z.namelist():
+                  p=Path(name)
+                  if p.is_absolute() or '..' in p.parts: raise ValueError('Unsafe archive path')
+                  if name.startswith(('skins/young_caucasian_male/', 'hair/short01/')):
+                      z.extract(name,root/'human-materials')
+          PY
+      - name: Author and optimize the actual human asset
+        run: |
+          python scripts/human/build_cc0_human.py --core "$RUNNER_TEMP/human-core" --materials "$RUNNER_TEMP/human-materials" --output public/assets/twin/human
+          node scripts/human/optimize-authored-human.mjs public/assets/twin/human
+      - name: Apply guarded renderer integration in isolated runner workspace
+        run: |
+          python scripts/human/wire-preview.py
+          rm scripts/human/wire-preview.py
+          npx prettier --write src/components/twin/twin-human.asset.ts src/components/twin/twin-human.asset.test.ts src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts scripts/test-human-browser.mjs scripts/human/optimize-authored-human.mjs public/assets/twin/human/asset-manifest.json
+          npx eslint --fix scripts/test-human-browser.mjs
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Preserve existing schematic Twin regression coverage
+        run: npm run test:browser
+      - name: Test and capture the actual authored human preview
+        run: node scripts/test-human-browser.mjs
+      - name: Package the exact candidate sources for review, without modifying the branch
+        if: always()
+        run: |
+          mkdir -p test-results/human
+          git rev-parse HEAD > test-results/human/SOURCE_COMMIT.txt
+          git diff -- src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts src/components/twin/twin-human.asset.ts src/components/twin/twin-human.asset.test.ts scripts/test-human-browser.mjs scripts/human/optimize-authored-human.mjs > test-results/human/validated-source.patch
+          tar -czf "$RUNNER_TEMP/human-authored-candidate.tar.gz" public/assets/twin/human src/components/twin/TwinStage.tsx src/components/twin/twin-scene.runtime.ts src/components/twin/twin-human.asset.ts src/components/twin/twin-human.asset.test.ts scripts/test-human-browser.mjs scripts/human/build_cc0_human.py scripts/human/optimize-authored-human.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: authored-human-candidate-evidence
+          path: |
+            test-results/human
+            ${{ runner.temp }}/human-authored-candidate.tar.gz
+          retention-days: 3
+          if-no-files-found: error
