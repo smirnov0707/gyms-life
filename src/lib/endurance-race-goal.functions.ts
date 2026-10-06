@@ -14,5 +14,17 @@ export const startRacePreparation = createServerFn({ method: "POST" })
     const { dayInTimeZone } = await import("./local-day");
     const timeZone = await loadPersistedProfileTimeZone(context.supabase, context.userId);
     const today = dayInTimeZone(new Date(), timeZone);
-    return createRaceGoal(context.supabase, context.userId, data.goal, today);
+    const result = await createRaceGoal(context.supabase, context.userId, data.goal, today);
+
+    const { tryPersistCurrentEnduranceAdaptation } = await import(
+      "./endurance-adaptation-refresh.service"
+    );
+    await tryPersistCurrentEnduranceAdaptation(
+      context.supabase,
+      context.userId,
+      today,
+      timeZone,
+    );
+
+    return result;
   });
