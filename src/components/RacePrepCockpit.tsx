@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { CalendarDays, Gauge, Route, Target } from "lucide-react";
 import { getActiveRacePrep } from "@/lib/endurance-race-prep.functions";
 import { baseLang, useI18n } from "@/lib/i18n";
@@ -313,7 +313,7 @@ export function RacePrepCockpit() {
   );
 }
 
-function Metric({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+function Metric({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
   return (
     <div className="rounded-[1.25rem] border border-border bg-background/30 p-3">
       <div className="flex items-center gap-2 text-primary">
