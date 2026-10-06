@@ -26,10 +26,15 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           await expect(
             page.getByRole("heading", { name: "Synthetic seven-day meal plan" }),
           ).toBeVisible();
-        if (screen === "profile")
+        if (screen === "profile") {
+          const identity = page.locator("details.fl-profile-section").filter({ hasText: "Identity & body" });
+          const memory = page.locator("details.fl-profile-section").filter({ hasText: "Memory & privacy" });
+          await identity.locator(":scope > summary").click();
+          await memory.locator(":scope > summary").click();
           await expect(
             page.getByText("Synthetic preference: train in the morning.", { exact: true }),
           ).toBeVisible();
+        }
         await page.evaluate(() => document.fonts.ready);
         const audit = await workspace.evaluate((el) => {
           const root = getComputedStyle(document.documentElement);
