@@ -29,8 +29,8 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
         if (screen === "profile") {
           const identity = page.locator("details.fl-profile-section").filter({ hasText: "Identity & body" });
           const memory = page.locator("details.fl-profile-section").filter({ hasText: "Memory & privacy" });
-          await identity.locator(":scope > summary").click();
-          await memory.locator(":scope > summary").click();
+          await identity.evaluate((details) => { details.open = true; });
+          await memory.evaluate((details) => { details.open = true; });
           await expect(
             page.getByText("Synthetic preference: train in the morning.", { exact: true }),
           ).toBeVisible();
