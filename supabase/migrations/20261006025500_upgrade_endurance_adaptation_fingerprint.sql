@@ -1,5 +1,5 @@
 -- Forward-compatible upgrade for databases that already applied the first
--- endurance adaptation ledger migration before decision fingerprints existed.
+-- endurance adaptation ledger shape before decision fingerprints existed.
 alter table public.endurance_adaptation_records
   add column if not exists decision_fingerprint text;
 
@@ -39,7 +39,7 @@ alter table public.endurance_adaptation_records
   add constraint endurance_adaptation_records_decision_fingerprint_check
   check (decision_fingerprint ~ '^[a-f0-9]{64}$');
 
-do $
+do $migration$
 declare
   constraint_name text;
 begin
@@ -62,7 +62,7 @@ begin
     );
   end loop;
 end;
-$;
+$migration$;
 
 create unique index if not exists endurance_adaptation_records_decision_identity_idx
   on public.endurance_adaptation_records(
@@ -72,7 +72,6 @@ create unique index if not exists endurance_adaptation_records_decision_identity
     engine_version,
     decision_fingerprint
   );
-
 
 drop function if exists public.record_endurance_adaptation(
   uuid, uuid, date, text, numeric, text, jsonb, text
@@ -99,7 +98,7 @@ returns table(
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $function$
 begin
   if auth.role() <> 'service_role' then
     raise exception 'service role required';
@@ -166,7 +165,7 @@ begin
     endurance_adaptation_records.reason,
     endurance_adaptation_records.created_at;
 end;
-$$;
+$function$;
 
 revoke all on function public.record_endurance_adaptation(
   uuid, uuid, date, text, numeric, text, jsonb, text, text
