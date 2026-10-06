@@ -28,9 +28,9 @@ export async function confirmRaceSessionMatch(
   if (error) throw error;
   const { loadPersistedProfileTimeZone } = await import("./user-context.server");
   const { dayInTimeZone } = await import("./local-day");
-  const { persistCurrentEnduranceAdaptation } = await import("./endurance-adaptation-refresh.service");
+  const { tryPersistCurrentEnduranceAdaptation } = await import("./endurance-adaptation-refresh.service");
   const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
   const today = dayInTimeZone(new Date(data.started_at), timeZone);
-  await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
+  await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
   return data;
 }
