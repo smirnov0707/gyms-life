@@ -16,6 +16,27 @@ export async function confirmRaceSessionMatch(
   value: unknown,
 ) {
   const input = ConfirmRaceSessionMatchSchema.parse(value);
+  const { loadPersistedProfileTimeZone } = await import("./user-context.server");
+  const { dayInTimeZone } = await import("./local-day");
+  const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
+  const { data: workout, error: workoutError } = await supabase
+    .from("workout_sessions")
+    .select("started_at")
+    .eq("id", input.workoutSessionId)
+    .eq("user_id", userId)
+    .eq("activity_kind", "run")
+    .single();
+  if (workoutError) throw workoutError;
+  const today = dayInTimeZone(new Date(workout.started_at), timeZone);
+  const { loadActiveRacePrep } = await import("./endurance-race-prep.service");
+  const prep = await loadActiveRacePrep(supabase, userId, today, timeZone);
+  if (prep.status !== "active" || prep.goalId !== input.raceGoalId) {
+    throw new Error("Race preparation no longer matches this confirmation.");
+  }
+  const planned = prep.effectiveSessions.find((session) => session.sessionKey === input.planSessionKey);
+  if (!planned || planned.intent !== input.intent) {
+    throw new Error("Planned race session does not match this confirmation.");
+  }
 
   const { data: workout, error: workoutError } = await supabase
     .from("workout_sessions")
