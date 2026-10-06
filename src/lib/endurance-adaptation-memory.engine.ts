@@ -10,9 +10,17 @@ export type AdaptationLesson = {
   reason: string | null;
   supportingOutcomes: number;
   contradictingOutcomes: number;
+  evidenceStrength: "low" | "moderate" | "high";
   statement: string | null;
   provenance: "calculated";
 };
+function evidenceStrength(supporting: number, contradicting: number): "low" | "moderate" | "high" {
+  const total = supporting + contradicting;
+  if (supporting >= 6 && total > 0 && contradicting / total <= 0.2) return "high";
+  if (supporting >= 4 && total > 0 && contradicting / total <= 0.34) return "moderate";
+  return "low";
+}
+
 export function deriveAdaptationLesson(items: readonly AdaptationHistoryItem[]): AdaptationLesson {
   const reasons = [...new Set(items.map((x) => x.reason))];
   let best: { reason: string; good: number; bad: number } | null = null;
@@ -34,6 +42,7 @@ export function deriveAdaptationLesson(items: readonly AdaptationHistoryItem[]):
       reason: caution.reason,
       supportingOutcomes: caution.bad,
       contradictingOutcomes: caution.good,
+      evidenceStrength: evidenceStrength(caution.bad, caution.good),
       statement:
         "Repeated observed outcomes after this adaptation pattern were worse; treat it as a caution signal, not causal proof.",
       provenance: "calculated",
@@ -45,6 +54,7 @@ export function deriveAdaptationLesson(items: readonly AdaptationHistoryItem[]):
       reason: null,
       supportingOutcomes: 0,
       contradictingOutcomes: 0,
+      evidenceStrength: "low",
       statement: null,
       provenance: "calculated",
     };
@@ -53,6 +63,7 @@ export function deriveAdaptationLesson(items: readonly AdaptationHistoryItem[]):
     reason: best.reason,
     supportingOutcomes: best.good,
     contradictingOutcomes: best.bad,
+    evidenceStrength: evidenceStrength(best.good, best.bad),
     statement:
       "Repeated observed outcomes suggest this adaptation pattern may fit this athlete; association is not causal proof.",
     provenance: "calculated",
