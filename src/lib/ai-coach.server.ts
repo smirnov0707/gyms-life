@@ -7,7 +7,7 @@ import { loadDeterministicPerformanceForecast } from "./forecast.server";
 import { getPerformanceOverviewData } from "./performance.service";
 import { loadActiveRacePrep } from "./endurance-race-prep.service";
 import { loadLatestPostRunBrief } from "./endurance-post-run.service";
-import { dayInTimeZone } from "./local-day";
+import { dayInTimeZone, IanaTimeZoneSchema } from "./local-day";
 
 export async function assembleCoachContext(args: {
   supabase: SupabaseClient<Database>;
@@ -15,7 +15,10 @@ export async function assembleCoachContext(args: {
   goal?: string | null;
   dayIndex?: number | null;
 }): Promise<CoachContext> {
-  const today = dayInTimeZone(new Date(), "UTC");
+  const { data: profile } = await args.supabase.from("profiles").select("time_zone").eq("id", args.userId).maybeSingle();
+  const parsedZone = IanaTimeZoneSchema.safeParse(profile?.time_zone);
+  const timeZone = parsedZone.success ? parsedZone.data : "UTC";
+  const today = dayInTimeZone(new Date(), timeZone);
   const [performance, performanceForecast, activePlan, racePrep, postRun] = await Promise.all([
     getPerformanceOverviewData(args.supabase, args.userId),
     loadDeterministicPerformanceForecast(args.supabase, args.userId),
