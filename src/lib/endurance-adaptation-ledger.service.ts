@@ -27,23 +27,6 @@ export async function persistEnduranceAdaptation(
     recentOverTargetRuns: input.signal.recentOverTargetRuns ?? 0,
   } satisfies Json;
 
-  const canonical = [
-    input.decisionOn,
-    ENDURANCE_ADAPTATION_ENGINE_VERSION,
-    input.decision.action,
-    String(input.decision.volumeModifier),
-    input.decision.reason,
-    String(input.signal.plannedSessions),
-    String(input.signal.completedPlannedSessions),
-    String(input.signal.lowResponseStreak),
-    input.signal.readinessBand,
-    String(input.signal.distanceCompletionRatio ?? null),
-    String(input.signal.recentOverTargetRuns ?? 0),
-  ].join("|");
-
-  const { createHash } = await import("node:crypto");
-  const decisionFingerprint = createHash("sha256").update(canonical).digest("hex");
-
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("record_endurance_adaptation", {
     p_user_id: input.userId,
@@ -54,7 +37,6 @@ export async function persistEnduranceAdaptation(
     p_reason: input.decision.reason,
     p_evidence: evidence,
     p_engine_version: ENDURANCE_ADAPTATION_ENGINE_VERSION,
-    p_decision_fingerprint: decisionFingerprint,
   });
   if (error) throw error;
 
@@ -75,7 +57,6 @@ export async function persistEnduranceAdaptation(
         volumeModifier: record.volume_modifier,
         reason: record.reason,
         engineVersion: ENDURANCE_ADAPTATION_ENGINE_VERSION,
-        decisionFingerprint,
       },
     });
   }
