@@ -26,21 +26,24 @@ export async function persistEnduranceAdaptation(
     recentOverTargetRuns: input.signal.recentOverTargetRuns ?? 0,
   } satisfies Json;
 
-  const { createHash } = await import("node:crypto");
-  const decisionFingerprint = createHash("sha256")
-    .update(
-      JSON.stringify({
-        decisionOn: input.decisionOn,
-        evidence,
-        decision: input.decision,
-        engineVersion: ENDURANCE_ADAPTATION_ENGINE_VERSION,
-      }),
-    )
-    .digest("hex");
+  const canonical = [
+    input.decisionOn,
+    ENDURANCE_ADAPTATION_ENGINE_VERSION,
+    input.decision.action,
+    String(input.decision.volumeModifier),
+    input.decision.reason,
+    String(input.signal.plannedSessions),
+    String(input.signal.completedPlannedSessions),
+    String(input.signal.lowResponseStreak),
+    input.signal.readinessBand,
+    String(input.signal.distanceCompletionRatio ?? null),
+    String(input.signal.recentOverTargetRuns ?? 0),
+  ].join("|");
 
-  const canonical=[input.decision.action,String(input.decision.volumeModifier),input.decision.reason,String(evidence.plannedSessions),String(evidence.completedPlannedSessions),String(evidence.lowResponseStreak),String(evidence.readinessBand),String(evidence.distanceCompletionRatio),String(evidence.recentOverTargetRuns)].join("|");
- const decisionFingerprint=await sha256Hex(canonical);
- const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { createHash } = await import("node:crypto");
+  const decisionFingerprint = createHash("sha256").update(canonical).digest("hex");
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("record_endurance_adaptation", {
     p_user_id: input.userId,
     p_race_goal_id: input.raceGoalId,
