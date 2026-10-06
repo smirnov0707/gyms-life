@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { RaceGoalSchema } from "./endurance-race-goal.schema";
 import { buildRacePlan } from "./endurance-race-plan.engine";
-import { loadRacePlanBaseline } from "./endurance-race-baseline.service";
 import { summarizeRaceWeek } from "./endurance-race-progress.engine";
 import { assessRaceReadiness } from "./endurance-race-readiness.engine";
 import { loadDigitalAthleteState } from "./digital-athlete.service";
@@ -24,7 +23,7 @@ export async function loadActiveRacePrep(
 ) {
   const { data: row, error } = await supabase
     .from("endurance_race_goals")
-    .select("id,distance,race_date,target_time_seconds,sessions_per_week,created_at")
+    .select("id,distance,race_date,target_time_seconds,sessions_per_week,created_at,baseline_weekly_distance_meters,baseline_longest_run_meters")
     .eq("user_id", userId).eq("status", "active").maybeSingle();
   if (error) throw error;
   if (!row) return { status: "none" as const };
@@ -33,7 +32,10 @@ export async function loadActiveRacePrep(
     distance: row.distance, raceDate: row.race_date, targetTimeSeconds: row.target_time_seconds,
     sessionsPerWeek: row.sessions_per_week, longestRecentRunMeters: null,
   });
-  const baseline = await loadRacePlanBaseline(supabase, userId);
+  const baseline = {
+    recentWeeklyDistanceMeters: row.baseline_weekly_distance_meters === null ? null : Number(row.baseline_weekly_distance_meters),
+    recentLongestRunMeters: row.baseline_longest_run_meters === null ? null : Number(row.baseline_longest_run_meters),
+  };
   const startDay = row.created_at.slice(0, 10);
   const plan = buildRacePlan({ today: startDay, goal, baseline });
   const elapsedDays = Math.max(0, dayDiff(startDay, today));
