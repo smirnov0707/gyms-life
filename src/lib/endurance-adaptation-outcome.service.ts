@@ -45,7 +45,7 @@ export async function recordDueAdaptationOutcomes(
     .limit(10);
   if (error) throw error;
 
-  const latestByDecisionDay = new Map<string, (typeof records extends Array<infer T> ? T : never)>();
+  type DueRecord = { id: string; created_at: string; race_goal_id: string; decision_on: string };\n  const latestByDecisionDay = new Map<string, DueRecord>();
   for (const record of records ?? []) {
     const key = record.race_goal_id + "|" + record.decision_on;
     const current = latestByDecisionDay.get(key);
