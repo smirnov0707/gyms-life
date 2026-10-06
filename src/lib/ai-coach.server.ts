@@ -27,6 +27,41 @@ export async function assembleCoachContext(args: {
   ]);
   const plan = activePlan.status === "READY" ? activePlan.plan : null;
 
+  const endurance =
+    racePrep.status === "active"
+      ? {
+          active: true as const,
+          raceDistance: racePrep.raceDistance,
+          daysToRace: racePrep.daysToRace,
+          phase: racePrep.currentWeek.phase,
+          readiness: racePrep.readiness.status,
+          evidenceLevel: racePrep.readiness.evidenceLevel,
+          nextSession: racePrep.nextSession
+            ? {
+                intent: racePrep.nextSession.intent,
+                distanceMeters: racePrep.nextSession.plannedDistanceMeters,
+                durationMinutes: racePrep.nextSession.plannedDurationMinutes,
+                intensityCue: racePrep.nextSession.intensityCue,
+              }
+            : null,
+          postRun:
+            postRun.status === "ready"
+              ? {
+                  headline: postRun.brief.headline,
+                  nextAction: postRun.brief.nextAction,
+                  facts: postRun.brief.facts,
+                }
+              : null,
+          prohibitedClaims: [
+            "diagnosis",
+            "injury_prediction_without_evidence",
+            "guaranteed_race_time",
+            "vo2max_without_measurement",
+            "override_deterministic_training_decision",
+          ] as const,
+        }
+      : null;
+
   return buildCoachContext({
     userId: args.userId,
     goal: args.goal ?? plan?.goal ?? null,
@@ -39,25 +74,6 @@ export async function assembleCoachContext(args: {
       : null,
     performance,
     performanceForecast,
-    endurance: racePrep.status === "active" ? {
-      active: true,
-      raceDistance: racePrep.raceDistance,
-      daysToRace: racePrep.daysToRace,
-      phase: racePrep.currentWeek.phase,
-      readiness: racePrep.readiness.status,
-      evidenceLevel: racePrep.readiness.evidenceLevel,
-      nextSession: racePrep.nextSession ? {
-        intent: racePrep.nextSession.intent,
-        distanceMeters: racePrep.nextSession.plannedDistanceMeters,
-        durationMinutes: racePrep.nextSession.plannedDurationMinutes,
-        intensityCue: racePrep.nextSession.intensityCue,
-      } : null,
-      postRun: postRun.status === "ready" ? {
-        headline: postRun.brief.headline,
-        nextAction: postRun.brief.nextAction,
-        facts: postRun.brief.facts,
-      } : null,
-      prohibitedClaims: ["diagnosis", "injury_prediction_without_evidence", "guaranteed_race_time", "vo2max_without_measurement", "override_deterministic_training_decision"],
-    } : undefined,
+    ...(endurance ? { endurance } : {}),
   });
 }
