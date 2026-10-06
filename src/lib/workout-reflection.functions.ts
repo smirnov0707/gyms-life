@@ -32,6 +32,23 @@ export const recordWorkoutReflection = createServerFn({ method: "POST" })
         if (error) throw new Error("Could not save workout reflection.");
         if (!saved) throw new Error("Completed workout session was not found.");
 
+        const { loadPersistedProfileTimeZone } = await import("./user-context.server");
+        const { dayInTimeZone } = await import("./local-day");
+        const { tryPersistCurrentEnduranceAdaptation } = await import(
+          "./endurance-adaptation-refresh.service"
+        );
+        const timeZone = await loadPersistedProfileTimeZone(
+          context.supabase,
+          context.userId,
+        );
+        const decisionOn = dayInTimeZone(new Date(), timeZone);
+        await tryPersistCurrentEnduranceAdaptation(
+          context.supabase,
+          context.userId,
+          decisionOn,
+          timeZone,
+        );
+
         return parseWorkoutReflection(saved);
       },
     ),
