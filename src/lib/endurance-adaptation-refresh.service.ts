@@ -16,7 +16,7 @@ export async function persistCurrentEnduranceAdaptation(
     raceGoalId: prep.goalId,
     decisionOn: today,
     signal: prep.adaptationSignal,
-    decision: prep.adaptation,
+    decision: prep.candidateAdaptation,
   });
 }
 
