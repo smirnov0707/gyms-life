@@ -12,6 +12,7 @@ import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engi
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
 import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
+import { loadLatestEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import {
   applyAdaptationToRemainingSessions,
   selectNextExecutableSession,
