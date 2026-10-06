@@ -37,7 +37,7 @@ export async function recordDueAdaptationOutcomes(
 
   const { data: records, error } = await supabase
     .from("endurance_adaptation_records")
-    .select("id,created_at")
+    .select("id,created_at,race_goal_id,decision_on")
     .eq("user_id", userId)
     .is("outcome", null)
     .lte("created_at", cutoff)
@@ -45,7 +45,14 @@ export async function recordDueAdaptationOutcomes(
     .limit(10);
   if (error) throw error;
 
+  const latestByDecisionDay = new Map<string, (typeof records extends Array<infer T> ? T : never)>();
   for (const record of records ?? []) {
+    const key = record.race_goal_id + "|" + record.decision_on;
+    const current = latestByDecisionDay.get(key);
+    if (!current || record.created_at > current.created_at) latestByDecisionDay.set(key, record);
+  }
+
+  for (const record of latestByDecisionDay.values()) {
     const { data: runs, error: runsError } = await supabase
       .from("workout_sessions")
       .select("started_at,feeling")
