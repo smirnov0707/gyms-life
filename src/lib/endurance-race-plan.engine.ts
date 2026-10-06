@@ -22,6 +22,12 @@ export type RacePlan = {
 };
 
 const DAY_MS = 86_400_000;
+export const MIN_RACE_PREP_DAYS: Readonly<Record<RaceDistance, number>> = {
+  "5k": 14,
+  "10k": 21,
+  half_marathon: 42,
+  marathon: 56,
+};
 const round100 = (n: number) => Math.max(100, Math.round(n / 100) * 100);
 
 function daysBetween(startDay: string, endDay: string): number {
@@ -86,7 +92,8 @@ function sessionMix(sessionsPerWeek: number, weeklyDistance: number, phase: Race
 
 export function buildRacePlan(input: { today: string; goal: RaceGoal; baseline: RacePlanBaseline }): RacePlan {
   const days = daysBetween(input.today, input.goal.raceDate);
-  if (days < 14) throw new Error("Race preparation requires at least 14 days.");
+  const minimumDays = MIN_RACE_PREP_DAYS[input.goal.distance];
+  if (days < minimumDays) throw new Error(`Race preparation for ${input.goal.distance} requires at least ${minimumDays} days.`);
   const weeks = Math.max(2, Math.ceil(days / 7));
   const measured = input.baseline.recentWeeklyDistanceMeters !== null && input.baseline.recentWeeklyDistanceMeters > 0;
   const startingWeekly = measured ? input.baseline.recentWeeklyDistanceMeters! : defaultWeeklyDistance(input.goal.distance);
