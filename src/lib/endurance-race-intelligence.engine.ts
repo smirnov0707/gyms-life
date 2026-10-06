@@ -1,11 +1,13 @@
 import type { EnduranceAdaptationDecision } from "./endurance-adaptation.engine";
 import type { RaceReadiness } from "./endurance-race-readiness.engine";
+import type { AdaptationLesson } from "./endurance-adaptation-memory.engine";
 
 export type RaceIntelligenceInput = {
   readiness: RaceReadiness;
   adaptation: EnduranceAdaptationDecision;
   nextSessionIntent: string | null;
   nextSessionDistanceMeters: number | null;
+  adaptationLesson?: AdaptationLesson | null;
 };
 
 export type RaceIntelligenceDecision = {
@@ -47,6 +49,9 @@ export function decideRaceIntelligence(input: RaceIntelligenceInput): RaceIntell
   }
 
   const confidence = input.readiness.evidenceLevel;
+  const cautionApplies =
+    input.adaptationLesson?.status === "caution" &&
+    input.adaptationLesson.reason === input.adaptation.reason;
 
   if (input.adaptation.action === "recover" || input.readiness.status === "strained") {
     const modifier =
@@ -62,6 +67,20 @@ export function decideRaceIntelligence(input: RaceIntelligenceInput): RaceIntell
         volumeModifier: modifier,
       },
       reasons: [...input.readiness.factors, input.adaptation.reason],
+      guardrails,
+    };
+  }
+
+  if (cautionApplies && input.adaptation.action === "hold") {
+    return {
+      action: "reduce",
+      confidence,
+      nextSession: {
+        intent: input.nextSessionIntent,
+        plannedDistanceMeters: input.nextSessionDistanceMeters,
+        volumeModifier: 0.9,
+      },
+      reasons: [...input.readiness.factors, input.adaptation.reason, "personal_adaptation_caution"],
       guardrails,
     };
   }
