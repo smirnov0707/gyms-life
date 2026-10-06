@@ -1,14 +1,26 @@
 alter table public.endurance_race_goals
+  add column if not exists started_on date,
   add column if not exists baseline_weekly_distance_meters numeric,
   add column if not exists baseline_longest_run_meters numeric;
 
+update public.endurance_race_goals
+set started_on = coalesce(started_on, created_at::date)
+where started_on is null;
+
+alter table public.endurance_race_goals
+  alter column started_on set not null;
+
 drop function if exists public.replace_active_endurance_race_goal(
   uuid, text, date, integer, integer
+);
+drop function if exists public.replace_active_endurance_race_goal(
+  uuid, text, date, integer, integer, numeric, numeric
 );
 
 create or replace function public.replace_active_endurance_race_goal(
   p_user_id uuid,
   p_distance text,
+  p_started_on date,
   p_race_date date,
   p_target_time_seconds integer,
   p_sessions_per_week integer,
@@ -22,13 +34,22 @@ set search_path = public
 as $$
 declare
   v_id uuid;
+  v_minimum_days integer;
 begin
-  if auth.role() <> 'service_role' and auth.uid() is distinct from p_user_id then
-    raise exception 'not authorized';
+  if auth.role() <> 'service_role' then
+    raise exception 'service role required';
   end if;
 
-  if p_distance not in ('5k','10k','half_marathon','marathon')
-     or p_race_date < current_date + case p_distance when '5k' then 14 when '10k' then 21 when 'half_marathon' then 42 when 'marathon' then 56 else 9999 end
+  v_minimum_days := case p_distance
+    when '5k' then 14
+    when '10k' then 21
+    when 'half_marathon' then 42
+    when 'marathon' then 56
+    else null
+  end;
+
+  if v_minimum_days is null
+     or p_race_date < p_started_on + v_minimum_days
      or p_sessions_per_week not between 2 and 7
      or (p_target_time_seconds is not null and (p_target_time_seconds <= 0 or p_target_time_seconds > 86400))
      or (p_baseline_weekly_distance_meters is not null and p_baseline_weekly_distance_meters <= 0)
@@ -46,6 +67,7 @@ begin
   insert into public.endurance_race_goals(
     user_id,
     distance,
+    started_on,
     race_date,
     target_time_seconds,
     sessions_per_week,
@@ -55,6 +77,7 @@ begin
   values (
     p_user_id,
     p_distance,
+    p_started_on,
     p_race_date,
     p_target_time_seconds,
     p_sessions_per_week,
@@ -68,9 +91,9 @@ end;
 $$;
 
 revoke all on function public.replace_active_endurance_race_goal(
-  uuid, text, date, integer, integer, numeric, numeric
-) from public, anon;
+  uuid, text, date, date, integer, integer, numeric, numeric
+) from public, anon, authenticated;
 
 grant execute on function public.replace_active_endurance_race_goal(
-  uuid, text, date, integer, integer, numeric, numeric
-) to authenticated, service_role;
+  uuid, text, date, date, integer, integer, numeric, numeric
+) to service_role;
