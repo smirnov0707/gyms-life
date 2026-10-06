@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { RaceGoalSchema } from "./endurance-race-goal.schema";
 import { buildRacePlan } from "./endurance-race-plan.engine";
-import { summarizeRaceWeek } from "./endurance-race-progress.engine";
+import { evaluatePlannedRun, summarizeRaceWeek } from "./endurance-race-progress.engine";
 import { assessRaceReadiness } from "./endurance-race-readiness.engine";
 import { loadDigitalAthleteState } from "./digital-athlete.service";
 import { assessLongRunProgress, raceSpecificLongRunCoverage } from "./endurance-long-run.engine";
@@ -62,6 +62,13 @@ export async function loadActiveRacePrep(
     perceivedEffort: run.perceived_effort,
   }));
   const progress = summarizeRaceWeek({ planned: currentWeek.sessions, completed });
+  const plannedByKey = new Map(currentWeek.sessions.map((session) => [session.sessionKey, session] as const));
+  const recentOverTargetRuns = completed.filter((run) => {
+    if (!run.planSessionKey) return false;
+    const plannedSession = plannedByKey.get(run.planSessionKey);
+    return plannedSession ? evaluatePlannedRun(plannedSession, run).status === "over_target" : false;
+  }).length;
+
   const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_race_goal_id === row.id && run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
   const baseNextSession = currentWeek.sessions.find((session) => session.sessionKey ? !completedSessionKeys.has(session.sessionKey) : true)\n    ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]\n    ?? null;
   const historySince = new Date(Date.parse(today + "T00:00:00Z") - 84 * DAY_MS).toISOString();
@@ -123,7 +130,7 @@ export async function loadActiveRacePrep(
     lowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
     readinessBand,
     distanceCompletionRatio: progress.distanceCompletionRatio,
-    recentOverTargetRuns: 0,
+    recentOverTargetRuns,
   } as const;
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
   await persistEnduranceAdaptation(supabase, { userId, raceGoalId: row.id, decisionOn: today, signal: adaptationSignal, decision: adaptation });
