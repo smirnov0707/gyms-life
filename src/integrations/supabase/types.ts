@@ -474,9 +474,9 @@ export type Database = {
         Relationships: []
       }
       endurance_race_goals: {
-        Row: { created_at: string; distance: string; id: string; race_date: string; sessions_per_week: number; status: string; target_time_seconds: number | null; updated_at: string; user_id: string }
-        Insert: { created_at?: string; distance: string; id?: string; race_date: string; sessions_per_week: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id: string }
-        Update: { created_at?: string; distance?: string; id?: string; race_date?: string; sessions_per_week?: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id?: string }
+        Row: { baseline_longest_run_meters: number | null; baseline_weekly_distance_meters: number | null; created_at: string; distance: string; id: string; race_date: string; sessions_per_week: number; status: string; target_time_seconds: number | null; updated_at: string; user_id: string }
+        Insert: { baseline_longest_run_meters?: number | null; baseline_weekly_distance_meters?: number | null; created_at?: string; distance: string; id?: string; race_date: string; sessions_per_week: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id: string }
+        Update: { baseline_longest_run_meters?: number | null; baseline_weekly_distance_meters?: number | null; created_at?: string; distance?: string; id?: string; race_date?: string; sessions_per_week?: number; status?: string; target_time_seconds?: number | null; updated_at?: string; user_id?: string }
         Relationships: []
       }
       exercises: {
@@ -1748,7 +1748,7 @@ export type Database = {
         Returns: undefined
       }
       replace_active_endurance_race_goal: {
-        Args: { p_user_id: string; p_distance: string; p_race_date: string; p_target_time_seconds: number | null; p_sessions_per_week: number }
+        Args: { p_user_id: string; p_distance: string; p_race_date: string; p_target_time_seconds: number | null; p_sessions_per_week: number; p_baseline_weekly_distance_meters: number | null; p_baseline_longest_run_meters: number | null }
         Returns: string
       }
       record_endurance_adaptation: {
