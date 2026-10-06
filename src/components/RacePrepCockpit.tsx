@@ -284,8 +284,14 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
         ) : data.adaptation.action === "recover" && data.adaptationStatus === "persisted" ? (
           <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
             <p className="fl-eyebrow">{english ? "RECOVERY WINDOW" : "ATSISTATYMO LANGAS"}</p>
-            <h3 className="mt-2 text-xl font-semibold">\n              {english ? "No run prescribed right now" : "Šiuo metu bėgimas neskiriamas"}\n            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">\n              {english\n                ? "The persisted recovery decision temporarily pauses the next executable run. The base plan remains intact and will be re-evaluated when new evidence arrives."\n                : "Išsaugotas atsistatymo sprendimas laikinai pristabdo kitą vykdomą bėgimą. Bazinis planas lieka nepakeistas ir bus pervertintas gavus naujų duomenų."}\n            </p>
+            <h3 className="mt-2 text-xl font-semibold">
+              {english ? "No run prescribed right now" : "Šiuo metu bėgimas neskiriamas"}
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {english
+                ? "The persisted recovery decision temporarily pauses the next executable run. The base plan remains intact and will be re-evaluated when new evidence arrives."
+                : "Išsaugotas atsistatymo sprendimas laikinai pristabdo kitą vykdomą bėgimą. Bazinis planas lieka nepakeistas ir bus pervertintas gavus naujų duomenų."}
+            </p>
           </div>
         ) : null}
         <p className="text-xs text-muted-foreground">
