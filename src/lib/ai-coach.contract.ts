@@ -20,7 +20,7 @@ export const CoachPerformanceSignalSchema = z
   .strict();
 
 export const CoachContextSchema = z.object({
-  schemaVersion: z.literal("1.2"),
+  schemaVersion: z.literal("1.3"),
   user: z.object({ id: z.string().uuid() }),
   generatedAt: z.string().datetime(),
   goal: z.string().nullable(),
@@ -50,6 +50,19 @@ export const CoachContextSchema = z.object({
       phase: z.enum(["base", "build", "specific", "taper", "race"]).nullable(),
       readiness: z.enum(["insufficient_evidence", "building", "on_track", "strained"]).nullable(),
       evidenceLevel: z.enum(["low", "moderate", "high"]).nullable(),
+      adaptation: z
+        .object({
+          action: z.enum(["hold", "reduce", "recover"]),
+          volumeModifier: z.number().positive().max(1),
+          reason: z.enum([
+            "insufficient_evidence",
+            "on_track",
+            "repeated_low_response",
+            "low_readiness_and_missed_work",
+            "repeated_over_target_work",
+          ]),
+        })
+        .nullable(),
       nextSession: z
         .object({
           intent: z.enum(["easy", "long", "tempo", "intervals", "recovery", "race"]),
@@ -138,7 +151,7 @@ export interface AICoachWorker {
 }
 
 export function createCoachContext(input: Omit<CoachContext, "schemaVersion">): CoachContext {
-  return CoachContextSchema.parse({ schemaVersion: "1.2", ...input });
+  return CoachContextSchema.parse({ schemaVersion: "1.3", ...input });
 }
 
 export function parseCoachRecommendation(value: unknown): CoachRecommendation {
