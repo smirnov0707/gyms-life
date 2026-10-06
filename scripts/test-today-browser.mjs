@@ -269,7 +269,7 @@ try {
   const openTodayEvidenceLayer = async (page) => {
     await openTodayChangesLayer(page);
     await openVisibleDetails(
-      page.getByText(/^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/),
+      page.getByText(/^(Signals & evidence|Signalai ir įrodymai|Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/),
     );
   };
 
