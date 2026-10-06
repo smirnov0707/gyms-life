@@ -7,10 +7,8 @@ begin
  return query insert into public.endurance_adaptation_records(user_id,race_goal_id,decision_on,action,volume_modifier,reason,evidence,engine_version,decision_fingerprint) values(p_user_id,p_race_goal_id,p_decision_on,p_action,p_volume_modifier,p_reason,p_evidence,p_engine_version,p_decision_fingerprint) on conflict(user_id,race_goal_id,decision_on,engine_version,decision_fingerprint) do nothing returning endurance_adaptation_records.id,endurance_adaptation_records.action,endurance_adaptation_records.volume_modifier,endurance_adaptation_records.reason,endurance_adaptation_records.created_at;
 end$$;
 revoke all on function public.record_endurance_adaptation(uuid,uuid,date,text,numeric,text,jsonb,text,text) from public,anon;
-grant execute on function public.record_endurance_adaptation(uuid,uuid,date,text,numeric,text,jsonb,text) to service_role;
+grant execute on function public.record_endurance_adaptation(uuid,uuid,date,text,numeric,text,jsonb,text,text) to service_role;
  then raise exception 'invalid adaptation';end if;
  if not exists(select 1 from public.endurance_race_goals g where g.id=p_race_goal_id and g.user_id=p_user_id) then raise exception 'race goal ownership mismatch';end if;
  return query insert into public.endurance_adaptation_records(user_id,race_goal_id,decision_on,action,volume_modifier,reason,evidence,engine_version) values(p_user_id,p_race_goal_id,p_decision_on,p_action,p_volume_modifier,p_reason,p_evidence,p_engine_version) on conflict(user_id,race_goal_id,decision_on,engine_version) do nothing returning endurance_adaptation_records.id,endurance_adaptation_records.action,endurance_adaptation_records.volume_modifier,endurance_adaptation_records.reason,endurance_adaptation_records.created_at;
 end$$;
-revoke all on function public.record_endurance_adaptation(uuid,uuid,date,text,numeric,text,jsonb,text) from public,anon;
-grant execute on function public.record_endurance_adaptation(uuid,uuid,date,text,numeric,text,jsonb,text) to service_role;
