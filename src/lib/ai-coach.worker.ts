@@ -14,7 +14,10 @@ export async function runCoachWorker(
   const recommendation = parseCoachRecommendation(await worker.generateRecommendation(context));
   const governed = governCoachRecommendation(context, recommendation);
   if (governed.enduranceExecution === "blocked") {
-    const protectRecovery = context.endurance.postRun?.nextAction === "protect_recovery" || context.endurance.readiness === "strained";
+    const protectRecovery =
+      context.endurance.adaptation?.action === "recover" ||
+      context.endurance.postRun?.nextAction === "protect_recovery" ||
+      context.endurance.readiness === "strained";
     return {
       ...recommendation,
       decision: "NO_CHANGE",
