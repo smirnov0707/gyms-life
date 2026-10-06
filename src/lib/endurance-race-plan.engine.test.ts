@@ -18,7 +18,12 @@ describe("race plan engine", () => {
   });
 
   it("refuses a last-minute generated race plan", () => {
-    const goal = RaceGoalSchema.parse({ distance: "marathon", raceDate: "2026-10-12", sessionsPerWeek: 4 });
-    expect(() => buildRacePlan({ today: "2026-10-06", goal, baseline: { recentWeeklyDistanceMeters: 30000, recentLongestRunMeters: 15000 } })).toThrow();
+    const goal = RaceGoalSchema.parse({ distance: "marathon", raceDate: "2026-11-20", sessionsPerWeek: 4 });
+    expect(() => buildRacePlan({ today: "2026-10-06", goal, baseline: { recentWeeklyDistanceMeters: 30000, recentLongestRunMeters: 15000 } })).toThrow(/56 days/);
+  });
+
+  it("allows a shorter runway for 5k than marathon", () => {
+    const goal = RaceGoalSchema.parse({ distance: "5k", raceDate: "2026-10-20", sessionsPerWeek: 3 });
+    expect(buildRacePlan({ today: "2026-10-06", goal, baseline: { recentWeeklyDistanceMeters: 12000, recentLongestRunMeters: 5000 } }).weeks).toBe(2);
   });
 });
