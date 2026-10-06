@@ -13,15 +13,15 @@ import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
 import { persistEnduranceAdaptation } from "./endurance-adaptation-ledger.service";
 import { applyAdaptationToRemainingSessions } from "./endurance-effective-plan.engine";
-
-const DAY_MS = 86_400_000;
-const dayDiff = (a: string, b: string) => Math.floor((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / DAY_MS);
+import { calendarDayDifference, dayBoundsInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
 
 export async function loadActiveRacePrep(
   supabase: SupabaseClient<Database>,
   userId: string,
   today: string,
+  timeZone = "UTC",
 ) {
+  const zone = IanaTimeZoneSchema.parse(timeZone);
   const { data: row, error } = await supabase
     .from("endurance_race_goals")
     .select("id,distance,race_date,target_time_seconds,sessions_per_week,created_at,baseline_weekly_distance_meters,baseline_longest_run_meters")
@@ -39,16 +39,16 @@ export async function loadActiveRacePrep(
   };
   const startDay = row.created_at.slice(0, 10);
   const plan = buildRacePlan({ today: startDay, goal, baseline });
-  const elapsedDays = Math.max(0, dayDiff(startDay, today));
+  const elapsedDays = Math.max(0, calendarDayDifference(startDay, today));
   const elapsedWeeks = Math.floor(elapsedDays / 7);
-  const daysToRace = Math.max(0, dayDiff(today, goal.raceDate));
+  const daysToRace = Math.max(0, calendarDayDifference(today, goal.raceDate));
   const weekIndex = Math.min(plan.weeks - 1, elapsedWeeks);
   const currentWeek = plan.weeksPlan[weekIndex]!;
 
-  const weekStartMs = Date.parse(startDay + "T00:00:00Z") + weekIndex * 7 * DAY_MS;
-  const weekEndMs = weekStartMs + 7 * DAY_MS;
-  const weekStart = new Date(weekStartMs).toISOString();
-  const weekEnd = new Date(weekEndMs).toISOString();
+  const weekStartDay = dayOffset(startDay, weekIndex * 7);
+  const weekEndDay = dayOffset(weekStartDay, 7);
+  const weekStart = dayBoundsInTimeZone(weekStartDay, zone).start;
+  const weekEnd = dayBoundsInTimeZone(weekEndDay, zone).start;
   const { data: runs, error: runsError } = await supabase
     .from("workout_sessions").select("distance_meters,duration_seconds,perceived_effort,endurance_session_intent,endurance_plan_session_key,endurance_race_goal_id")
     .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
@@ -71,7 +71,7 @@ export async function loadActiveRacePrep(
 
   const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_race_goal_id === row.id && run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
   const baseNextSession = currentWeek.sessions.find((session) => session.sessionKey ? !completedSessionKeys.has(session.sessionKey) : true)\n    ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]\n    ?? null;
-  const historySince = new Date(Date.parse(today + "T00:00:00Z") - 84 * DAY_MS).toISOString();
+  const historySince = dayBoundsInTimeZone(dayOffset(today, -84), zone).start;
   const { data: longHistory, error: longHistoryError } = await supabase
     .from("workout_sessions")
     .select("started_at,distance_meters,duration_seconds,endurance_session_intent,perceived_effort,elevation_gain_meters,average_heart_rate_bpm")
@@ -111,7 +111,7 @@ export async function loadActiveRacePrep(
   const longRunCoverage = raceSpecificLongRunCoverage(longRunProgress.recentLongestMeters, RACE_DISTANCE_METERS[goal.distance]);
 
     const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
-  const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), "UTC");
+  const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), zone);
   const latestScore = athlete.recovery.latestReadinessScore;
   const readinessBand = latestScore === null ? "unknown" : latestScore < 55 ? "low" : latestScore < 80 ? "moderate" : "high";
   const readiness = assessRaceReadiness({
