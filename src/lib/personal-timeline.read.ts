@@ -21,7 +21,7 @@ const TimelineRowSchema = z
     source_table: z.string().min(1).max(80).nullable(),
     source_reference: z.string().min(1).max(200).nullable(),
     schema_version: z.string().min(1).max(40),
-    summary: z.unknown(),
+    summary: z.unknown().optional(),
   })
   .strict();
 
