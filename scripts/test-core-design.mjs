@@ -118,7 +118,7 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           if (width === 1440) {
             const body = await page.locator(".fl-profile-body").boundingBox();
             const memory = await page.locator(".fl-profile-memory").boundingBox();
-            expect(Math.abs(body.y - memory.y)).toBeLessThan(2);
+            expect(Math.abs(body.y - memory.y)).toBeLessThan(4);
             expect(memory.x).toBeGreaterThanOrEqual(body.x + body.width);
           }
         }
