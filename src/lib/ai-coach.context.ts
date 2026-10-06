@@ -47,7 +47,7 @@ export function buildCoachContext(input: {
       averageRpe: input.performance.metrics.averageRpe,
     },
     performanceSignals: performanceSignalsFor(input.performanceForecast),
-    endurance: input.endurance ?? { active: false, raceDistance: null, daysToRace: null, phase: null, readiness: null, evidenceLevel: null, nextSession: null, postRun: null, prohibitedClaims: ["diagnosis", "injury_prediction_without_evidence", "guaranteed_race_time", "vo2max_without_measurement", "override_deterministic_training_decision"] },
+    endurance: input.endurance ?? { active: false, raceDistance: null, daysToRace: null, phase: null, readiness: null, evidenceLevel: null, adaptation: null, nextSession: null, postRun: null, prohibitedClaims: ["diagnosis", "injury_prediction_without_evidence", "guaranteed_race_time", "vo2max_without_measurement", "override_deterministic_training_decision"] },
     exercises: input.performance.exercises.map(({ totalVolume, ...exercise }) => ({
       ...exercise,
       totalVolumeKg: totalVolume,
