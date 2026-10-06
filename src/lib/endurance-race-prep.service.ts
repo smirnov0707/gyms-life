@@ -113,8 +113,17 @@ export async function loadActiveRacePrep(
 
     const sessionRate = baseProgress.plannedSessions > 0 ? baseProgress.completedSessions / baseProgress.plannedSessions : null;
   const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), zone);
-  const latestScore = athlete.recovery.latestReadinessScore;
-  const readinessBand = latestScore === null ? "unknown" : latestScore < 55 ? "low" : latestScore < 80 ? "moderate" : "high";
+  const latestScore = athlete.currentDay.hasCompletedReadiness
+    ? athlete.recovery.latestReadinessScore
+    : null;
+  const readinessBand =
+    latestScore === null
+      ? "unknown"
+      : latestScore < 55
+        ? "low"
+        : latestScore < 80
+          ? "moderate"
+          : "high";
   const readiness = assessRaceReadiness({
     weeksObserved: elapsedWeeks,
     sessionCompletionRate: sessionRate,
