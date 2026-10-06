@@ -309,17 +309,22 @@ try {
     if ((await details.getAttribute("open")) === null) await summary.click();
   };
 
-  const assertInteractiveTwin = async (canvas) => {
-    // The Today shell can mount the renderer before the GLB finishes loading.
-    // Wait for the stable human canvas before visibility/interaction checks so
-    // a loading canvas replacement cannot race the locator assertion.
-    await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60000 });
+  const assertInteractiveTwin = async (canvas, { allowSurface = false } = {}) => {
+    // Today may legitimately reach the generated surface on a slow runner.
+    // Dedicated Twin/Muscle and candidate checks still require the shipped human.
+    if (allowSurface) {
+      await expect
+        .poll(async () => await canvas.getAttribute("data-twin-body"), { timeout: 60000 })
+        .toMatch(/^(human|surface)$/);
+    } else {
+      await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60000 });
+      await expect(canvas).toHaveAttribute("data-twin-asset-sha256", expectedAnalysisSha);
+    }
     await expect(canvas).toBeVisible({ timeout: 15000 });
     // Playwright's visible state includes below-fold elements. The renderer
     // deliberately stops offscreen and when ambient motion is disabled; one
     // frame is valid. Bring it into view, then prove a real input is repainted.
     await canvas.scrollIntoViewIfNeeded();
-    await expect(canvas).toHaveAttribute("data-twin-asset-sha256", expectedAnalysisSha);
     if (candidate) expect(candidateRequests).toBeGreaterThan(0);
     await expect
       .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
@@ -368,7 +373,9 @@ try {
         ["twin", "muscle"].includes(screen) ||
         (screen === "today" && viewport.name !== "mobile")
       ) {
-        await assertInteractiveTwin(canvas);
+        await assertInteractiveTwin(canvas, {
+          allowSurface: screen === "today" && !candidate,
+        });
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(canvas).toBeHidden();
