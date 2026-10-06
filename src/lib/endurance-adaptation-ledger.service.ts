@@ -81,3 +81,43 @@ export async function persistEnduranceAdaptation(
 
   return record;
 }
+
+export async function loadLatestEnduranceAdaptation(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  raceGoalId: string,
+  decisionOn: string,
+): Promise<EnduranceAdaptationDecision | null> {
+  const { data, error } = await supabase
+    .from("endurance_adaptation_records")
+    .select("action,volume_modifier,reason")
+    .eq("user_id", userId)
+    .eq("race_goal_id", raceGoalId)
+    .eq("decision_on", decisionOn)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  if (
+    data.action === "recover" &&
+    Number(data.volume_modifier) === 0.7 &&
+    data.reason === "low_readiness_and_missed_work"
+  ) return { action: "recover", volumeModifier: 0.7, reason: "low_readiness_and_missed_work" };
+  if (
+    data.action === "reduce" &&
+    Number(data.volume_modifier) === 0.8 &&
+    data.reason === "repeated_low_response"
+  ) return { action: "reduce", volumeModifier: 0.8, reason: "repeated_low_response" };
+  if (
+    data.action === "reduce" &&
+    Number(data.volume_modifier) === 0.9 &&
+    data.reason === "repeated_over_target_work"
+  ) return { action: "reduce", volumeModifier: 0.9, reason: "repeated_over_target_work" };
+  if (
+    data.action === "hold" &&
+    Number(data.volume_modifier) === 1 &&
+    (data.reason === "on_track" || data.reason === "insufficient_evidence")
+  ) return { action: "hold", volumeModifier: 1, reason: data.reason };
+  return null;
+}
