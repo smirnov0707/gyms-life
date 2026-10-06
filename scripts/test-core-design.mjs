@@ -123,8 +123,8 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
               await memorySection.locator(":scope > summary").click();
             const body = await page.locator(".fl-profile-body").boundingBox();
             const memory = await page.locator(".fl-profile-memory").boundingBox();
-            expect(Math.abs(body.y - memory.y)).toBeLessThan(4);
-            expect(memory.x).toBeGreaterThanOrEqual(body.x + body.width);
+            expect(memory.y).toBeGreaterThan(body.y + body.height);
+            expect(Math.abs(body.x - memory.x)).toBeLessThan(4);
           }
         }
         await page.evaluate(() => {
