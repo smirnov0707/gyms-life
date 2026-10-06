@@ -127,8 +127,8 @@ export async function loadEnduranceAdaptationLesson(
           ? row.outcome
           : null;
       const association =
-        outcome && "association" in outcome && typeof outcome.association === "string"
-          ? outcome.association
+        outcome && "association" in outcome && typeof outcome["association"] === "string"
+          ? outcome["association"]
           : null;
       return {
         reason: row.reason,
