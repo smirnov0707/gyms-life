@@ -120,6 +120,32 @@ describe("personal timeline read model", () => {
     expect(() => buildPersonalTimelinePage([...rows, row()])).toThrow();
   });
 
+  it("projects only validated endurance adaptation details", () => {
+    const page = buildPersonalTimelinePage([
+      row({
+        event_type: "endurance_adaptation",
+        provenance: "calculated",
+        summary: {
+          decisionOn: "2026-10-06",
+          action: "reduce",
+          volumeModifier: 0.8,
+          reason: "repeated_low_response",
+          decisionFingerprint: "should-not-cross-browser-boundary",
+          arbitrarySecret: "hidden",
+        },
+      }),
+    ]);
+
+    expect(page.events[0]?.details).toEqual({
+      kind: "endurance_adaptation",
+      decisionOn: "2026-10-06",
+      action: "reduce",
+      volumeModifier: 0.8,
+      reason: "repeated_low_response",
+    });
+    expect(page.events[0]).not.toHaveProperty("summary");
+  });
+
   it("does not export arbitrary source summaries or ownership fields", () => {
     const page = buildPersonalTimelinePage([row()]);
     expect(page.events[0]).not.toHaveProperty("summary");
