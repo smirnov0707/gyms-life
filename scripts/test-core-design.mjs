@@ -99,6 +99,8 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           await expect(add).toBeDisabled();
         }
         if (screen === "profile") {
+          const identity = page.locator("details.fl-profile-section").filter({ hasText: "Identity & body" });
+          if ((await identity.getAttribute("open")) === null) await identity.locator(":scope > summary").click();
           await expect(page.getByRole("spinbutton", { name: "Height (cm)" })).toHaveValue("170");
           if (width === 1440) {
             const body = await page.locator(".fl-profile-body").boundingBox();
