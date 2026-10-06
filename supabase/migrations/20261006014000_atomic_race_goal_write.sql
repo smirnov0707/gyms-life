@@ -9,4 +9,4 @@ begin
  return v_id;
 end$$;
 revoke all on function public.replace_active_endurance_race_goal(uuid,text,date,date,integer,integer,numeric,numeric) from public,anon;
-grant execute on function public.replace_active_endurance_race_goal(uuid,text,date,integer,integer) to authenticated,service_role;
+grant execute on function public.replace_active_endurance_race_goal(uuid,text,date,date,integer,integer,numeric,numeric) to service_role;
