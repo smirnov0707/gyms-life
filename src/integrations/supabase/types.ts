@@ -1769,6 +1769,7 @@ export type Database = {
         Args: {
           p_user_id: string
           p_source: string
+          p_environment: string
           p_external_activity_id: string
           p_started_at: string
           p_finished_at: string
