@@ -1,29 +1,33 @@
-create extension if not exists pgcrypto;
-
 alter table public.endurance_adaptation_records
   add column if not exists decision_fingerprint text;
 
 update public.endurance_adaptation_records
-set decision_fingerprint = encode(
-  digest(
-    concat_ws(
-      '|',
-      decision_on::text,
-      engine_version,
-      action,
-      volume_modifier::text,
-      reason,
-      coalesce(evidence->>'plannedSessions', ''),
-      coalesce(evidence->>'completedPlannedSessions', ''),
-      coalesce(evidence->>'lowResponseStreak', ''),
-      coalesce(evidence->>'readinessBand', ''),
-      coalesce(evidence->>'distanceCompletionRatio', 'null'),
-      coalesce(evidence->>'recentOverTargetRuns', '0')
-    ),
-    'sha256'
-  ),
-  'hex'
-)
+set decision_fingerprint =
+  md5(concat_ws(
+    '|',
+    decision_on::text,
+    engine_version,
+    action,
+    volume_modifier::text,
+    reason,
+    coalesce(evidence->>'plannedSessions', ''),
+    coalesce(evidence->>'completedPlannedSessions', ''),
+    coalesce(evidence->>'lowResponseStreak', ''),
+    coalesce(evidence->>'readinessBand', ''),
+    coalesce(evidence->>'distanceCompletionRatio', 'null'),
+    coalesce(evidence->>'recentOverTargetRuns', '0')
+  ))
+  ||
+  md5(concat_ws(
+    '|',
+    'legacy-backfill',
+    decision_on::text,
+    engine_version,
+    action,
+    volume_modifier::text,
+    reason,
+    evidence::text
+  ))
 where decision_fingerprint is null;
 
 alter table public.endurance_adaptation_records
