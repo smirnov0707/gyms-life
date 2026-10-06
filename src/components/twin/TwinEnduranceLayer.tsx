@@ -61,6 +61,25 @@ export function TwinEnduranceLayer() {
           </p>
         </div>
       ) : null}
+      {data.raceIntelligence?.adaptationLesson.status !== "insufficient_evidence" ? (
+        <div className="rounded-xl border border-border bg-background/30 p-3">
+          <p className="text-xs font-semibold text-foreground">
+            {en ? "Personal response memory" : "Individualios reakcijos atmintis"}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {data.raceIntelligence?.adaptationLesson.status === "caution"
+              ? en
+                ? "Repeated similar decisions were followed by worse signals."
+                : "Po panašių sprendimų kartojosi prastesni signalai."
+              : en
+                ? "A repeated personal response pattern is emerging."
+                : "Ryškėja pasikartojantis individualus reakcijos dėsningumas."}{" "}
+            {en
+              ? "Observed association only — not proof of cause."
+              : "Tik stebėta sąsaja — ne priežasties įrodymas."}
+          </p>
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border p-3">
           <p className="text-xs text-muted-foreground">
