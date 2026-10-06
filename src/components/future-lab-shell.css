@@ -140,10 +140,6 @@
 .fl-night-status[data-state="ran"] small {
   color: var(--accent);
 }
-.fl-night-chevron {
-  color: var(--muted-foreground);
-  margin-left: 9px;
-}
 .fl-profile-control {
   display: flex;
   align-items: center;
@@ -227,7 +223,6 @@
     padding: 0 13px;
   }
   .fl-night-copy,
-  .fl-night-chevron,
   .fl-night-status > .fl-night-dot {
     display: none;
   }
@@ -266,11 +261,19 @@
   .fl-shell-icon-button,
   .fl-night-status,
   .fl-profile-control {
-    min-height: 40px;
-    height: 40px;
-    width: 36px;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+  .fl-night-status,
+  .fl-profile-control {
     border-color: transparent;
     background: transparent;
+  }
+  .fl-shell-icon-button {
+    border-color: color-mix(in srgb, var(--primary) 14%, var(--border));
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
   }
   .fl-profile-control {
     padding: 0;
@@ -472,9 +475,29 @@
 }
 
 .fl-luxury-disclosure > summary {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
   transition:
     color 180ms ease,
     background-color 180ms ease;
+}
+.fl-luxury-disclosure > summary::after {
+  content: "+";
+  margin-left: auto;
+  padding-left: 16px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--muted-foreground);
+  transition:
+    color 180ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fl-luxury-disclosure[open] > summary::after {
+  color: var(--primary);
+  transform: rotate(45deg);
 }
 
 .fl-luxury-disclosure > summary:hover {
@@ -628,9 +651,12 @@
 
 .fl-desktop-navigation a:hover,
 .fl-shell-icon-button:hover,
-.fl-profile-control:hover,
-.fl-night-status:hover {
+.fl-profile-control:hover {
   transform: translateY(-1px);
+}
+
+.fl-night-status:hover {
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
 }
 
 @media (max-width: 640px) {

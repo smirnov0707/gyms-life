@@ -56,13 +56,25 @@ const navigate = (
     { to?: string; params?: Record<string, unknown>; search?: Record<string, unknown> } | string,
 ) => {
   const target = typeof options === "string" ? options : (options.to ?? fixtureLocation().pathname);
-  window.location.assign(
-    fixtureHref(
-      target,
-      typeof options === "string" ? undefined : options.params,
-      typeof options === "string" ? undefined : options.search,
-    ),
+  const href = fixtureHref(
+    target,
+    typeof options === "string" ? undefined : options.params,
+    typeof options === "string" ? undefined : options.search,
   );
+  // Search-only navigation inside My Twin changes the selected view/region,
+  // not the fixture route. Preserve special Twin reference screens such as
+  // "muscle" so the harness exercises the same in-place detail transition as
+  // the real router instead of silently remounting the generic Twin screen.
+  if (typeof options !== "string" && !options.to && target === "/twin") {
+    const next = new URL(href, window.location.origin);
+    const currentScreen = new URLSearchParams(window.location.search).get("screen");
+    if (currentScreen && ["twin", "muscle", "futureme", "journal"].includes(currentScreen)) {
+      next.searchParams.set("screen", currentScreen);
+    }
+    window.location.assign(`${next.pathname}?${next.searchParams}`);
+    return;
+  }
+  window.location.assign(href);
 };
 export const useNavigate = () => navigate;
 

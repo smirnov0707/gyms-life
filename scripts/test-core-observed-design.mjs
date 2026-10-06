@@ -219,6 +219,11 @@ export async function verifyObservedDesign({ open, record, artifacts }) {
         width,
         scenario: "observed-expanded",
       });
+      const trainingEvidence = page
+        .locator("details > summary")
+        .filter({ hasText: "Treniruočių įrodymai" });
+      await expect(trainingEvidence).toBeVisible();
+      await trainingEvidence.click();
       await expect(page.locator(".fl-weekly-review")).toBeVisible();
       await expect(page.locator(".fl-weekly-metrics dd")).toHaveText(["3", "4", "52,5/100"]);
       await expect(page.locator(".fl-weekly-discoveries article").nth(1)).toContainText("52,5/100");

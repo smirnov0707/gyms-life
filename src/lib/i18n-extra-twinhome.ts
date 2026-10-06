@@ -101,14 +101,4 @@ export const extra_twinhome = {
     es: "Hoy no se entrena",
     fr: "Pas entraîné aujourd'hui",
   },
-  "th.open": {
-    lt: "Atidaryti treniruotę",
-    en: "Open the session",
-    ru: "Открыть тренировку",
-    uk: "Відкрити тренування",
-    pl: "Otwórz sesję",
-    de: "Einheit öffnen",
-    es: "Abrir la sesión",
-    fr: "Ouvrir la séance",
-  },
 } as const;

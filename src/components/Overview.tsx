@@ -156,20 +156,21 @@ export function Overview() {
   return (
     <div className="fl-dashboard fl-page-enter">
       <div className="fl-today-root mx-auto grid w-full max-w-[1480px] gap-4">
-        <header className="fl-greeting">
-          <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
-          <h1>
-            {greeting}
-            {firstName ? `, ${firstName}` : ""}
-          </h1>
-          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
-        </header>
-
         <section
           className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
           aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
         >
           <div className="fl-today-command-copy grid min-w-0 content-start gap-3">
+            <header className="fl-greeting fl-today-hero-copy">
+              <p className="fl-eyebrow fl-mobile-page-name">{t("nav.today")}</p>
+              <h1>
+                {greeting}
+                {firstName ? `, ${firstName}` : ""}
+              </h1>
+              <p>
+                {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
+              </p>
+            </header>
             <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
               {english ? "TODAY COMMAND" : "ŠIANDIENOS VEIKSMAS"}
             </p>
@@ -218,8 +219,19 @@ export function Overview() {
               primaryTrainingActionHandled={Boolean(today)}
             />
           </div>
-          <div className="fl-today-plan min-w-0">
+          <div className="fl-today-plan grid min-w-0 content-start gap-3">
             <TodaysPlanPanel />
+            <details className="fl-surface fl-today-execution group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Log food" : "Įrašyti maistą"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickFoodLog compact />
+                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
+                </Link>
+              </div>
+            </details>
           </div>
         </section>
 
@@ -240,48 +252,42 @@ export function Overview() {
           <div className="fl-today-twin min-w-0">
             <TwinHome presentation="cockpit" />
           </div>
-          <details className="fl-today-changes fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
+
+          <details className="fl-today-context fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "What changed" : "Kas pasikeitė"}
+              {english ? "Deeper context" : "Išsamesnis kontekstas"}
             </summary>
-            <div className="grid gap-3 border-t border-border p-4">
-              <MorningLabReview compact />
-              <TodayIntelligenceBrief presentation="cards" />
+            <div className="grid gap-4 border-t border-border p-4">
+              <section className="fl-today-changes grid gap-3">
+                <p className="fl-eyebrow">{english ? "What changed" : "Kas pasikeitė"}</p>
+                <MorningLabReview compact />
+                <TodayIntelligenceBrief presentation="cards" />
+              </section>
+
+              <details className="fl-surface group">
+                <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                  {english ? "Signals & evidence" : "Signalai ir įrodymai"}
+                </summary>
+                <div className="grid gap-4 border-t border-border p-4">
+                  <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+                    <LiveSignals />
+                    <RecoveryOutlook compact />
+                    <SleepAnalysis />
+                    <PredictionEvidencePanel compact />
+                  </div>
+                  <DataSourcesStrip />
+                  <TodayLifeContext />
+                </div>
+              </details>
+
+              {planData ? (
+                <Link to="/onboarding" className="fl-text-link w-fit">
+                  {t("dash.regenerate")} →
+                </Link>
+              ) : null}
             </div>
           </details>
         </section>
-
-        <details className="fl-today-support fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/70">
-          <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">
-            {english ? "Signals, evidence & context" : "Signalai, įrodymai ir kontekstas"}
-          </summary>
-          <div className="grid gap-4 border-t border-border p-4">
-            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-              <LiveSignals />
-              <RecoveryOutlook compact />
-              <SleepAnalysis />
-              <PredictionEvidencePanel compact />
-            </div>
-            <details className="fl-surface group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food here" : "Įrašyti maistą čia"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickFoodLog compact />
-                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
-                </Link>
-              </div>
-            </details>
-            <DataSourcesStrip />
-            <TodayLifeContext />
-            {planData ? (
-              <Link to="/onboarding" className="fl-text-link w-fit">
-                {t("dash.regenerate")} →
-              </Link>
-            ) : null}
-          </div>
-        </details>
       </div>
     </div>
   );

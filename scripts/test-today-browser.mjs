@@ -245,23 +245,38 @@ try {
     return { page, errors, fontResponses };
   };
 
+  const openVisibleDetails = async (summary) => {
+    if (!(await summary.count()) || !(await summary.first().isVisible())) return false;
+    const target = summary.first();
+    const details = target.locator("xpath=ancestor::details[1]");
+    if ((await details.getAttribute("open")) === null) await target.click();
+    return true;
+  };
+
   const openTodayChangesLayer = async (page) => {
-    const summary = page.getByText(/^(What changed|Kas pasikeitė)$/);
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    // Today convergence moved secondary material under the canonical Deeper
+    // context disclosure. Open that structural layer first: its summary also
+    // carries explanatory copy, so matching the visible label alone is brittle.
+    const context = page.locator(".fl-today-context");
+    if (await context.count()) {
+      if ((await context.getAttribute("open")) === null) {
+        await context.locator(":scope > summary").click();
+      }
     }
+    await openVisibleDetails(page.getByText(/^(What changed|Kas pasikeitė)$/));
   };
 
   const openTodayEvidenceLayer = async (page) => {
     await openTodayChangesLayer(page);
-    const summary = page.getByText(
-      /^(Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
-    );
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
+    const context = page.locator(".fl-today-context");
+    const evidence = context.locator(":scope > div > details.fl-surface").first();
+    if (await evidence.count()) {
+      if ((await evidence.getAttribute("open")) === null) {
+        await evidence.locator(":scope > summary").click();
+      }
+      return;
     }
+    await openVisibleDetails(page.getByText(/^(Signals & evidence|Signalai ir įrodymai)$/));
   };
 
   const openTodayExecutionLayer = async (page) => {
@@ -441,52 +456,61 @@ try {
         );
       }
       if (screen === "journal") {
-        const journal = shown.page.locator(".fl-journal-page");
+        const journal = shown.page.locator(".twin-journal-view");
+        await expect(journal).toBeVisible();
         await expect(
-          journal,
-          "The Twin mounts one learning ledger, including inside history",
-        ).toHaveCount(1);
-        const filters = journal.getByRole("navigation", { name: "Timeline filters" });
-        await expect(filters).toBeVisible();
-        await filters.getByRole("button", { name: "Patterns", exact: true }).click();
-        await expect(
-          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
-        ).toHaveCount(0);
-        await expect(
-          journal.getByText("Recent sessions have repeatedly felt difficult.", { exact: true }),
+          journal.getByRole("heading", {
+            name: "Your history, with memory attached.",
+            exact: true,
+          }),
         ).toBeVisible();
-        await filters.getByRole("button", { name: "Decisions", exact: true }).click();
         await expect(
-          journal.getByRole("heading", { name: "Recent decisions", exact: true }),
+          journal.getByRole("button", { name: "Twin event history", exact: true }),
         ).toBeVisible();
-        await filters.getByRole("button", { name: "All", exact: true }).click();
-        await expect(
-          journal.getByRole("heading", { name: "Supported discovery", exact: true }),
-        ).toBeVisible();
-        if (viewport.name === "mobile") {
-          const labelLines = await filters.getByRole("button").evaluateAll((buttons) =>
-            buttons.map((button) => {
-              const range = document.createRange();
-              range.selectNodeContents(button);
-              return { label: button.textContent, lines: range.getClientRects().length };
-            }),
-          );
-          for (const label of labelLines)
-            expect(label.lines, `${label.label} remains readable without a split word`).toBe(1);
-        }
-        record(`Journal ${viewport.name} exposes working discovery, pattern and decision filters`);
+
+        const memory = journal.locator(":scope > details").filter({ hasText: "Memory & patterns" });
+        await expect(memory.locator(":scope > summary")).toBeVisible();
+        await expect(journal.locator(".fl-journal-page")).toBeHidden();
+        await memory.locator(":scope > summary").press("Enter");
+
+        const learning = memory
+          .locator("details")
+          .filter({ hasText: "Learning ledger & rewind" })
+          .first();
+        await expect(learning.locator(":scope > summary")).toBeVisible();
+        await learning.locator(":scope > summary").press("Enter");
+        await expect(journal.locator(".fl-journal-page")).toBeVisible();
+
+        record(
+          `Journal ${viewport.name} keeps the chronological timeline primary and learning on demand`,
+        );
       }
       if (screen === "lab") {
-        const domains = shown.page.getByRole("region", { name: "Evidence domains", exact: true });
-        await expect(domains).toBeVisible();
-        await expect(domains.getByRole("listitem")).toHaveCount(10);
         await expect(
           shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
         ).toBeVisible();
+
+        const domainsDisclosure = shown.page.locator(".fl-lab-domains");
+        const domains = domainsDisclosure.getByRole("region", {
+          name: "Evidence domains",
+          exact: true,
+        });
+        await expect(domains).toBeHidden();
+        await domainsDisclosure.locator("summary").click();
+        await expect(domains).toBeVisible();
+        await expect(domains.getByRole("listitem")).toHaveCount(10);
+        await domainsDisclosure.locator("summary").click();
+
         const experiments = shown.page.locator(".fl-lab-experiments");
         await expect(
           experiments.getByText("No governed personal experiments yet.", { exact: true }),
+        ).toBeHidden();
+        await experiments.locator("summary").click();
+        await expect(
+          experiments.getByText("No governed personal experiments yet.", { exact: true }),
         ).toBeVisible();
+        await experiments.locator("summary").click();
+
         const knowledge = shown.page.locator(".fl-lab-knowledge");
         await expect(
           knowledge.getByRole("heading", {
@@ -510,7 +534,7 @@ try {
           }),
         ).toBeHidden();
         record(
-          `Lab ${viewport.name} shows evidence domains, investigation and experiment state with accessible knowledge details`,
+          `Lab ${viewport.name} keeps one investigation primary and supporting evidence on demand`,
         );
       }
       for (const illustration of await shown.page.locator(".fl-illustrative-athlete img").all()) {
@@ -567,13 +591,17 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-command .fl-greeting")).toHaveCount(1);
+        await expect(shown.page.locator(".fl-today-root > .fl-greeting")).toHaveCount(0);
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
         await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-context")).toBeVisible();
+        await expect(shown.page.locator(".fl-today-root > .fl-today-support")).toHaveCount(0);
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
-        const changes = await shown.page.locator(".fl-today-changes").boundingBox();
+        const context = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,
           "Today mobile command uses the viewport instead of a desktop column",
@@ -583,13 +611,13 @@ try {
           "Today mobile plan keeps a readable single-column width",
         ).toBeGreaterThan(300);
         expect(
-          changes.x,
-          "Today mobile changes stay aligned with the command",
+          context.x,
+          "Today mobile context stays aligned with the command",
         ).toBeGreaterThanOrEqual(command.x - 1);
         expect(
-          Math.abs(changes.width - command.width),
-          "Today mobile sections share one column width",
-        ).toBeLessThanOrEqual(2);
+          context.width,
+          "Today mobile context keeps a readable disclosure width",
+        ).toBeGreaterThan(300);
         record("Today mobile is a single-column command with the full Twin moved to My Twin");
       }
       if (screen === "today") {
@@ -626,7 +654,7 @@ try {
       }
       if (screen === "lab" && viewport.name === "desktop") {
         const investigation = await shown.page.locator(".fl-investigation-card").boundingBox();
-        const experiments = await shown.page.locator(".fl-lab-experiments").boundingBox();
+        const experiments = await shown.page.locator(".fl-lab-experiments > summary").boundingBox();
         actionLayoutChecks.push({
           screen,
           viewport: viewport.name,
@@ -649,7 +677,7 @@ try {
             ? ".fl-strength-summary > button"
             : screen === "lab"
               ? ".fl-investigation-card h2"
-              : ".fl-journal-filters";
+              : ".twin-journal-view > section[aria-labelledby] h2 > button";
         const target = await shown.page.locator(selector).boundingBox();
         const dock = await shown.page.locator(".fl-mobile-navigation").boundingBox();
         referenceLayoutChecks.push({
@@ -688,7 +716,7 @@ try {
           usableBottom: viewport.height,
         });
         const columns = await shown.page.evaluate(() =>
-          [".fl-today-twin", ".fl-today-changes"].map((selector) => {
+          [".fl-today-twin", ".fl-today-context"].map((selector) => {
             const element = document.querySelector(selector);
             const rect = element.getBoundingClientRect();
             return {
@@ -787,12 +815,10 @@ try {
       if (check.viewport === "desktop")
         expect(check.readout.x).toBeGreaterThanOrEqual(check.stage.x + check.stage.width);
     } else {
-      expect(check.experiments.x).toBeGreaterThanOrEqual(
-        check.investigation.x + check.investigation.width,
-      );
-      expect(check.experiments.y + check.experiments.height).toBeLessThanOrEqual(
-        check.usableBottom,
-      );
+      expect(
+        check.experiments.y,
+        "Lab supporting experiments stay below the primary investigation",
+      ).toBeGreaterThanOrEqual(check.investigation.y + check.investigation.height);
     }
   }
   console.log("TWIN_WORLD_LAYOUT " + JSON.stringify(referenceLayoutChecks));
@@ -807,10 +833,14 @@ try {
         "Resting Today composition should fit the reference viewport",
       ).toBeLessThanOrEqual(check.usableBottom);
     } else if (check.viewport === "mobile") {
-      expect(
-        check.target.y + check.target.height,
-        `${check.screen} primary content remains above the mobile dock`,
-      ).toBeLessThanOrEqual(check.dockTop);
+      if (check.screen === "journal") {
+        expect(check.target.width, "Journal controls remain usable on mobile").toBeGreaterThan(240);
+      } else {
+        expect(
+          check.target.y + check.target.height,
+          `${check.screen} primary content remains above the mobile dock`,
+        ).toBeLessThanOrEqual(check.dockTop);
+      }
     } else {
       expect(check.target.y, "Desktop Twin starts near its view controls").toBeLessThan(310);
       expect(check.target.height).toBeGreaterThanOrEqual(360);
@@ -827,7 +857,7 @@ try {
     });
     await openTodayContextLayer(checked.page);
     await openTodayEvidenceLayer(checked.page);
-    const sources = checked.page.getByRole("region", { name: "Data sources" });
+    const sources = checked.page.locator(".fl-data-sources");
     await expect(sources).toBeVisible({ timeout: 30000 });
     const label = scenario === "failure" ? "Could not check" : "Nothing received";
     expect(await sources.getByText(label, { exact: true }).count()).toBe(2);

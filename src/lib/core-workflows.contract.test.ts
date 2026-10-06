@@ -132,6 +132,19 @@ describe("core workflow contracts", () => {
     missing.days[0]!.meals[0]!.kcal = 1;
     expect(() => validateAdaptationTargets(mealPlan, missing)).toThrow(/energy target/);
   });
+  it("keeps Athlete Hub disclosures readable and tappable on narrow screens", () => {
+    const source = readFileSync("src/context-workspaces.css", "utf8");
+    expect(source).toContain(".fl-workspace summary {");
+    expect(source).toContain("min-height: 52px");
+    expect(source).toContain("overflow-wrap: anywhere");
+    expect(source).toContain(".fl-profile-section > summary > *");
+  });
+  it("keeps readiness as a legacy deep link into the canonical Today surface", () => {
+    const source = readFileSync("src/routes/_authenticated/readiness.tsx", "utf8");
+    expect(source).toContain('throw redirect({ to: "/app" })');
+    expect(source).toContain("export function ReadinessWorkspace");
+    expect(source).not.toContain("function ReadinessPage");
+  });
   it("does not mount or retain fabricated TDEE and universal fasting components", () => {
     const page = readFileSync("src/routes/_authenticated/meal-plan.tsx", "utf8");
     for (const name of ["DynamicTDEECalculator", "SmartFastingWindow"]) {

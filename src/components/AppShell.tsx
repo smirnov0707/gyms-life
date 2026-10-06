@@ -179,7 +179,6 @@ function NightLabStatus() {
         <strong>NIGHT LAB</strong>
         <small>{status}</small>
       </span>
-      <ChevronDown className="fl-night-chevron" aria-hidden="true" size={12} />
     </Link>
   );
 }
