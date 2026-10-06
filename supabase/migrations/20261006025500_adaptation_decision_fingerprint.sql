@@ -1,4 +1,4 @@
-alter table public.endurance_adaptation_records add column if not exists decision_fingerprint text;
+create extension if not exists pgcrypto;\n\nalter table public.endurance_adaptation_records add column if not exists decision_fingerprint text;
 
 update public.endurance_adaptation_records
 set decision_fingerprint =
