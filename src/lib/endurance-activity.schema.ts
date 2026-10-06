@@ -10,7 +10,11 @@ export const EnduranceActivitySchema = z
     environment: EnduranceEnvironmentSchema,
     source: EnduranceSourceSchema,
     startedAt: z.string().datetime({ offset: true }),
-    durationSeconds: z.number().int().positive().max(60 * 60 * 24),
+    durationSeconds: z
+      .number()
+      .int()
+      .positive()
+      .max(60 * 60 * 24),
     distanceMeters: z.number().finite().positive().max(250_000).nullable(),
     averageHeartRateBpm: z.number().int().min(30).max(240).nullable().default(null),
     perceivedEffort: z.number().int().min(1).max(10).nullable().default(null),

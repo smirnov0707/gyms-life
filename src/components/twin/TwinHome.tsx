@@ -461,7 +461,6 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             ))}
           </div>
         </header>
-
         {/* Stretched, not centred: the stage fills the row so the figure is as
             large as the screen allows rather than sitting in the middle of it. */}
         <div className="grid min-h-0 min-w-0 px-1 sm:px-3">
@@ -484,8 +483,11 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             language={language}
           />
         </div>
-
-        <div className="px-4 pb-4 sm:px-6"><TwinEnduranceLayer /></div>\n\n        <div className="grid gap-4 px-4 pb-5 sm:px-6 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="px-4 pb-4 sm:px-6">
+          <TwinEnduranceLayer />
+        </div>
+        \n\n{" "}
+        <div className="grid gap-4 px-4 pb-5 sm:px-6 lg:grid-cols-2 xl:grid-cols-4">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400">
               <Dumbbell aria-hidden="true" className="size-3.5" /> {t("th.targets")}

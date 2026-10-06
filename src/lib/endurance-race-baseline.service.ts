@@ -21,7 +21,9 @@ export async function loadRacePlanBaseline(
     .limit(100);
   if (error) throw error;
 
-  const runs = (data ?? []).filter((row) => row.distance_meters !== null && Number(row.distance_meters) > 0);
+  const runs = (data ?? []).filter(
+    (row) => row.distance_meters !== null && Number(row.distance_meters) > 0,
+  );
   if (runs.length === 0) return { recentWeeklyDistanceMeters: null, recentLongestRunMeters: null };
   const total = runs.reduce((sum, row) => sum + Number(row.distance_meters), 0);
   return {

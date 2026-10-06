@@ -1,1 +1,20 @@
-import{describe,expect,it}from"vitest";import{evaluateEnduranceExperiment}from"./endurance-experiment-result.engine";describe("experiment results",()=>{it("requires observations in both periods",()=>expect(evaluateEnduranceExperiment([{period:"baseline",value:1}]).status).toBe("insufficient_evidence"));it("reports association without causal claim",()=>{const r=evaluateEnduranceExperiment([{period:"baseline",value:.6},{period:"baseline",value:.7},{period:"baseline",value:.65},{period:"test",value:.8},{period:"test",value:.85},{period:"test",value:.8}]);expect(r.direction).toBe("better");expect(r.causalClaim).toBe(false)})});
+import { describe, expect, it } from "vitest";
+import { evaluateEnduranceExperiment } from "./endurance-experiment-result.engine";
+describe("experiment results", () => {
+  it("requires observations in both periods", () =>
+    expect(evaluateEnduranceExperiment([{ period: "baseline", value: 1 }]).status).toBe(
+      "insufficient_evidence",
+    ));
+  it("reports association without causal claim", () => {
+    const r = evaluateEnduranceExperiment([
+      { period: "baseline", value: 0.6 },
+      { period: "baseline", value: 0.7 },
+      { period: "baseline", value: 0.65 },
+      { period: "test", value: 0.8 },
+      { period: "test", value: 0.85 },
+      { period: "test", value: 0.8 },
+    ]);
+    expect(r.direction).toBe("better");
+    expect(r.causalClaim).toBe(false);
+  });
+});

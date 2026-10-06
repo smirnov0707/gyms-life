@@ -73,18 +73,33 @@ export const CoachContextSchema = z.object({
         .nullable(),
       postRun: z
         .object({
-          headline: z.enum(["completed", "strong_control", "fatigue_detected", "race_session_completed", "building_evidence"]),
-          nextAction: z.enum(["continue_plan", "protect_recovery", "confirm_session", "collect_more_data"]),
+          headline: z.enum([
+            "completed",
+            "strong_control",
+            "fatigue_detected",
+            "race_session_completed",
+            "building_evidence",
+          ]),
+          nextAction: z.enum([
+            "continue_plan",
+            "protect_recovery",
+            "confirm_session",
+            "collect_more_data",
+          ]),
           facts: z.array(z.string().min(1).max(160)).max(8),
         })
         .nullable(),
-      prohibitedClaims: z.array(z.enum([
-        "diagnosis",
-        "injury_prediction_without_evidence",
-        "guaranteed_race_time",
-        "vo2max_without_measurement",
-        "override_deterministic_training_decision",
-      ])).min(1),
+      prohibitedClaims: z
+        .array(
+          z.enum([
+            "diagnosis",
+            "injury_prediction_without_evidence",
+            "guaranteed_race_time",
+            "vo2max_without_measurement",
+            "override_deterministic_training_decision",
+          ]),
+        )
+        .min(1),
     })
     .strict(),
   exercises: z.array(

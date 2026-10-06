@@ -68,11 +68,7 @@ export type PersonalTimelineDetails =
     }
   | {
       kind: "endurance_adaptation_observed";
-      association:
-        | "improved_signals"
-        | "mixed_signals"
-        | "worse_signals"
-        | "insufficient_signal";
+      association: "improved_signals" | "mixed_signals" | "worse_signals" | "insufficient_signal";
       causalClaim: false;
       facts: string[];
     }

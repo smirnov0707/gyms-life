@@ -11,8 +11,17 @@ import { buildPaceProfile } from "./endurance-pace.engine";
 import { assessTerrainResponse, classifyTerrain } from "./endurance-terrain.engine";
 import { assessComparableEfficiencyTrend } from "./endurance-running-efficiency.engine";
 import { decideEnduranceAdaptation } from "./endurance-adaptation.engine";
-import { applyAdaptationToRemainingSessions, selectNextExecutableSession } from "./endurance-effective-plan.engine";
-import { calendarDayDifference, dayBoundsInTimeZone, dayInTimeZone, dayOffset, IanaTimeZoneSchema } from "./local-day";
+import {
+  applyAdaptationToRemainingSessions,
+  selectNextExecutableSession,
+} from "./endurance-effective-plan.engine";
+import {
+  calendarDayDifference,
+  dayBoundsInTimeZone,
+  dayInTimeZone,
+  dayOffset,
+  IanaTimeZoneSchema,
+} from "./local-day";
 
 export async function loadActiveRacePrep(
   supabase: SupabaseClient<Database>,
@@ -23,18 +32,30 @@ export async function loadActiveRacePrep(
   const zone = IanaTimeZoneSchema.parse(timeZone);
   const { data: row, error } = await supabase
     .from("endurance_race_goals")
-    .select("id,distance,race_date,started_on,target_time_seconds,sessions_per_week,baseline_weekly_distance_meters,baseline_longest_run_meters")
-    .eq("user_id", userId).eq("status", "active").gte("race_date", today).maybeSingle();
+    .select(
+      "id,distance,race_date,started_on,target_time_seconds,sessions_per_week,baseline_weekly_distance_meters,baseline_longest_run_meters",
+    )
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gte("race_date", today)
+    .maybeSingle();
   if (error) throw error;
   if (!row) return { status: "none" as const };
 
   const goal = RaceGoalSchema.parse({
-    distance: row.distance, raceDate: row.race_date, targetTimeSeconds: row.target_time_seconds,
-    sessionsPerWeek: row.sessions_per_week, longestRecentRunMeters: null,
+    distance: row.distance,
+    raceDate: row.race_date,
+    targetTimeSeconds: row.target_time_seconds,
+    sessionsPerWeek: row.sessions_per_week,
+    longestRecentRunMeters: null,
   });
   const baseline = {
-    recentWeeklyDistanceMeters: row.baseline_weekly_distance_meters === null ? null : Number(row.baseline_weekly_distance_meters),
-    recentLongestRunMeters: row.baseline_longest_run_meters === null ? null : Number(row.baseline_longest_run_meters),
+    recentWeeklyDistanceMeters:
+      row.baseline_weekly_distance_meters === null
+        ? null
+        : Number(row.baseline_weekly_distance_meters),
+    recentLongestRunMeters:
+      row.baseline_longest_run_meters === null ? null : Number(row.baseline_longest_run_meters),
   };
   const startDay = row.started_on;
   const plan = buildRacePlan({ today: startDay, goal, baseline });
@@ -49,9 +70,16 @@ export async function loadActiveRacePrep(
   const weekStart = dayBoundsInTimeZone(weekStartDay, zone).start;
   const weekEnd = dayBoundsInTimeZone(weekEndDay, zone).start;
   const { data: runs, error: runsError } = await supabase
-    .from("workout_sessions").select("distance_meters,duration_seconds,perceived_effort,endurance_session_intent,endurance_plan_session_key,endurance_race_goal_id")
-    .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
-    .gte("started_at", weekStart).lt("started_at", weekEnd).order("started_at", { ascending: true });
+    .from("workout_sessions")
+    .select(
+      "distance_meters,duration_seconds,perceived_effort,endurance_session_intent,endurance_plan_session_key,endurance_race_goal_id",
+    )
+    .eq("user_id", userId)
+    .eq("activity_kind", "run")
+    .not("finished_at", "is", null)
+    .gte("started_at", weekStart)
+    .lt("started_at", weekEnd)
+    .order("started_at", { ascending: true });
   if (runsError) throw runsError;
 
   const completed = (runs ?? []).map((run) => ({
@@ -61,55 +89,113 @@ export async function loadActiveRacePrep(
     perceivedEffort: run.perceived_effort,
   }));
   const baseProgress = summarizeRaceWeek({ planned: currentWeek.sessions, completed });
-  const plannedByKey = new Map(currentWeek.sessions.map((session) => [session.sessionKey, session] as const));
+  const plannedByKey = new Map(
+    currentWeek.sessions.map((session) => [session.sessionKey, session] as const),
+  );
   const recentOverTargetRuns = completed.filter((run) => {
     if (!run.planSessionKey) return false;
     const plannedSession = plannedByKey.get(run.planSessionKey);
-    return plannedSession ? evaluatePlannedRun(plannedSession, run).status === "over_target" : false;
+    return plannedSession
+      ? evaluatePlannedRun(plannedSession, run).status === "over_target"
+      : false;
   }).length;
 
-  const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_race_goal_id === row.id && run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
+  const completedSessionKeys = new Set(
+    (runs ?? []).flatMap((run) =>
+      run.endurance_race_goal_id === row.id && run.endurance_plan_session_key
+        ? [run.endurance_plan_session_key]
+        : [],
+    ),
+  );
   const historySince = dayBoundsInTimeZone(dayOffset(today, -84), zone).start;
   const historyUntil = dayBoundsInTimeZone(dayOffset(today, 1), zone).start;
   const { data: longHistory, error: longHistoryError } = await supabase
     .from("workout_sessions")
-    .select("started_at,distance_meters,duration_seconds,endurance_session_intent,perceived_effort,elevation_gain_meters,average_heart_rate_bpm")
-    .eq("user_id", userId).eq("activity_kind", "run").not("finished_at", "is", null)
-    .gte("started_at", historySince).lt("started_at", historyUntil).order("started_at", { ascending: true });
+    .select(
+      "started_at,distance_meters,duration_seconds,endurance_session_intent,perceived_effort,elevation_gain_meters,average_heart_rate_bpm",
+    )
+    .eq("user_id", userId)
+    .eq("activity_kind", "run")
+    .not("finished_at", "is", null)
+    .gte("started_at", historySince)
+    .lt("started_at", historyUntil)
+    .order("started_at", { ascending: true });
   if (longHistoryError) throw longHistoryError;
-  const longCandidates = (longHistory ?? []).filter((run) => run.distance_meters !== null && (run.endurance_session_intent === "long" || Number(run.distance_meters) >= 8000)).map((run) => ({ day: dayInTimeZone(new Date(run.started_at), zone), distanceMeters: Number(run.distance_meters) }));
-  const paceProfile = buildPaceProfile((longHistory ?? []).flatMap((run) =>
-    run.distance_meters !== null && run.duration_seconds !== null ? [{
+  const longCandidates = (longHistory ?? [])
+    .filter(
+      (run) =>
+        run.distance_meters !== null &&
+        (run.endurance_session_intent === "long" || Number(run.distance_meters) >= 8000),
+    )
+    .map((run) => ({
       day: dayInTimeZone(new Date(run.started_at), zone),
       distanceMeters: Number(run.distance_meters),
-      durationSeconds: Number(run.duration_seconds),
-      intent: run.endurance_session_intent as "easy" | "long" | "tempo" | "intervals" | "recovery" | "race" | null,
-      perceivedEffort: run.perceived_effort,
-    }] : []
-  ));
-    const terrainResponse = assessTerrainResponse((longHistory ?? []).flatMap((run) =>
-    run.distance_meters !== null && run.duration_seconds !== null ? [{
-      day: dayInTimeZone(new Date(run.started_at), zone),
-      distanceMeters: Number(run.distance_meters),
-      durationSeconds: Number(run.duration_seconds),
-      elevationGainMeters: run.elevation_gain_meters === null ? null : Number(run.elevation_gain_meters),
-      averageHeartRateBpm: run.average_heart_rate_bpm,
-    }] : []
-  ));
-  const efficiencyTrend = assessComparableEfficiencyTrend((longHistory ?? []).flatMap((run) =>
-    run.distance_meters !== null && run.duration_seconds !== null ? [{
-      day: dayInTimeZone(new Date(run.started_at), zone),
-      distanceMeters: Number(run.distance_meters),
-      durationSeconds: Number(run.duration_seconds),
-      averageHeartRateBpm: run.average_heart_rate_bpm,
-      terrain: classifyTerrain({day:dayInTimeZone(new Date(run.started_at), zone),distanceMeters:Number(run.distance_meters),durationSeconds:Number(run.duration_seconds),averageHeartRateBpm:run.average_heart_rate_bpm,elevationGainMeters:run.elevation_gain_meters===null?null:Number(run.elevation_gain_meters)}).classification,
-      cadenceSpm: null,
-    }] : []
-  ));
+    }));
+  const paceProfile = buildPaceProfile(
+    (longHistory ?? []).flatMap((run) =>
+      run.distance_meters !== null && run.duration_seconds !== null
+        ? [
+            {
+              day: dayInTimeZone(new Date(run.started_at), zone),
+              distanceMeters: Number(run.distance_meters),
+              durationSeconds: Number(run.duration_seconds),
+              intent: run.endurance_session_intent as
+                "easy" | "long" | "tempo" | "intervals" | "recovery" | "race" | null,
+              perceivedEffort: run.perceived_effort,
+            },
+          ]
+        : [],
+    ),
+  );
+  const terrainResponse = assessTerrainResponse(
+    (longHistory ?? []).flatMap((run) =>
+      run.distance_meters !== null && run.duration_seconds !== null
+        ? [
+            {
+              day: dayInTimeZone(new Date(run.started_at), zone),
+              distanceMeters: Number(run.distance_meters),
+              durationSeconds: Number(run.duration_seconds),
+              elevationGainMeters:
+                run.elevation_gain_meters === null ? null : Number(run.elevation_gain_meters),
+              averageHeartRateBpm: run.average_heart_rate_bpm,
+            },
+          ]
+        : [],
+    ),
+  );
+  const efficiencyTrend = assessComparableEfficiencyTrend(
+    (longHistory ?? []).flatMap((run) =>
+      run.distance_meters !== null && run.duration_seconds !== null
+        ? [
+            {
+              day: dayInTimeZone(new Date(run.started_at), zone),
+              distanceMeters: Number(run.distance_meters),
+              durationSeconds: Number(run.duration_seconds),
+              averageHeartRateBpm: run.average_heart_rate_bpm,
+              terrain: classifyTerrain({
+                day: dayInTimeZone(new Date(run.started_at), zone),
+                distanceMeters: Number(run.distance_meters),
+                durationSeconds: Number(run.duration_seconds),
+                averageHeartRateBpm: run.average_heart_rate_bpm,
+                elevationGainMeters:
+                  run.elevation_gain_meters === null ? null : Number(run.elevation_gain_meters),
+              }).classification,
+              cadenceSpm: null,
+            },
+          ]
+        : [],
+    ),
+  );
   const longRunProgress = assessLongRunProgress(longCandidates);
-  const longRunCoverage = raceSpecificLongRunCoverage(longRunProgress.recentLongestMeters, RACE_DISTANCE_METERS[goal.distance]);
+  const longRunCoverage = raceSpecificLongRunCoverage(
+    longRunProgress.recentLongestMeters,
+    RACE_DISTANCE_METERS[goal.distance],
+  );
 
-    const sessionRate = baseProgress.plannedSessions > 0 ? baseProgress.completedSessions / baseProgress.plannedSessions : null;
+  const sessionRate =
+    baseProgress.plannedSessions > 0
+      ? baseProgress.completedSessions / baseProgress.plannedSessions
+      : null;
   const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), zone);
   const latestScore = athlete.currentDay.hasCompletedReadiness
     ? athlete.recovery.latestReadinessScore
@@ -141,12 +227,37 @@ export async function loadActiveRacePrep(
     recentOverTargetRuns,
   } as const;
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
-  const effectiveSessions = applyAdaptationToRemainingSessions({ sessions: currentWeek.sessions, completedSessionKeys, adaptation });
+  const effectiveSessions = applyAdaptationToRemainingSessions({
+    sessions: currentWeek.sessions,
+    completedSessionKeys,
+    adaptation,
+  });
   const progress = summarizeRaceWeek({ planned: effectiveSessions, completed });
   const nextSession = selectNextExecutableSession({
     sessions: effectiveSessions,
     completedSessionKeys,
     adaptation,
   });
-  return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, effectiveSessions, baseProgress, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal, completedSessionKeys: [...completedSessionKeys] };
+  return {
+    status: "active" as const,
+    goalId: row.id,
+    raceDistance: goal.distance,
+    daysToRace,
+    currentWeek,
+    effectiveSessions,
+    baseProgress,
+    progress,
+    nextSession,
+    baseline: plan.baseline,
+    elapsedWeeks,
+    readiness,
+    longRunProgress,
+    longRunCoverage,
+    paceProfile,
+    terrainResponse,
+    efficiencyTrend,
+    adaptation,
+    adaptationSignal,
+    completedSessionKeys: [...completedSessionKeys],
+  };
 }

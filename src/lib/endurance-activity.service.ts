@@ -8,11 +8,7 @@ import { dayInTimeZone } from "./local-day";
 
 type Client = SupabaseClient<Database>;
 
-export async function recordEnduranceActivity(
-  supabase: Client,
-  userId: string,
-  input: unknown,
-) {
+export async function recordEnduranceActivity(supabase: Client, userId: string, input: unknown) {
   const activity = EnduranceActivitySchema.parse(input);
   const credit = buildEnduranceTrainingCredit(activity);
   if (credit.status !== "credited") throw new Error("Endurance activity could not be credited.");
@@ -64,7 +60,7 @@ export async function recordEnduranceActivity(
           perceivedEffort: activity.perceivedEffort,
         });
         const matchedSession =
-          match.status === "no_match" ? null : remaining[match.plannedIndex] ?? null;
+          match.status === "no_match" ? null : (remaining[match.plannedIndex] ?? null);
         raceMatch =
           match.status === "no_match"
             ? match
@@ -91,9 +87,8 @@ export async function recordEnduranceActivity(
             .eq("id", data.id)
             .eq("user_id", userId);
           if (matchError) throw matchError;
-          const { tryPersistCurrentEnduranceAdaptation } = await import(
-            "./endurance-adaptation-refresh.service"
-          );
+          const { tryPersistCurrentEnduranceAdaptation } =
+            await import("./endurance-adaptation-refresh.service");
           await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
         }
       }

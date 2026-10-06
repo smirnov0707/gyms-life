@@ -72,7 +72,7 @@ export function LabCommandDeck() {
     ? "unavailable"
     : !data
       ? "loading"
-      : primary?.status ?? "idle";
+      : (primary?.status ?? "idle");
 
   return (
     <section

@@ -39,14 +39,20 @@ describe("race progress", () => {
 
   it("keeps free runs out of race-plan adherence", () => {
     const result = summarizeRaceWeek({
-      planned: [
-        planned(5_000, "w1-s1"),
-        planned(8_000, "w1-s2"),
-        planned(12_000, "w1-s3"),
-      ],
+      planned: [planned(5_000, "w1-s1"), planned(8_000, "w1-s2"), planned(12_000, "w1-s3")],
       completed: [
-        { planSessionKey: "w1-s1", distanceMeters: 5_000, durationMinutes: 30, perceivedEffort: null },
-        { planSessionKey: "w1-s2", distanceMeters: 10_000, durationMinutes: 60, perceivedEffort: null },
+        {
+          planSessionKey: "w1-s1",
+          distanceMeters: 5_000,
+          durationMinutes: 30,
+          perceivedEffort: null,
+        },
+        {
+          planSessionKey: "w1-s2",
+          distanceMeters: 10_000,
+          durationMinutes: 60,
+          perceivedEffort: null,
+        },
         { planSessionKey: null, distanceMeters: 6_000, durationMinutes: 35, perceivedEffort: null },
       ],
     });

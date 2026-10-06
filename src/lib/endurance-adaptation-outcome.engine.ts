@@ -8,18 +8,12 @@ export type AdaptationOutcomeInput = {
 
 export type AdaptationOutcome = {
   status: "too_early" | "observed";
-  association:
-    | "improved_signals"
-    | "mixed_signals"
-    | "worse_signals"
-    | "insufficient_signal";
+  association: "improved_signals" | "mixed_signals" | "worse_signals" | "insufficient_signal";
   facts: string[];
   causalClaim: false;
 };
 
-export function assessAdaptationOutcome(
-  input: AdaptationOutcomeInput,
-): AdaptationOutcome {
+export function assessAdaptationOutcome(input: AdaptationOutcomeInput): AdaptationOutcome {
   if (input.daysObserved < 3) {
     return {
       status: "too_early",

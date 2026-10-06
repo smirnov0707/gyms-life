@@ -20,9 +20,7 @@ function lowFeelingStreakAfter(
   return streak;
 }
 
-function readinessBand(
-  score: number | null | undefined,
-): "low" | "moderate" | "high" | "unknown" {
+function readinessBand(score: number | null | undefined): "low" | "moderate" | "high" | "unknown" {
   if (score === null || score === undefined) return "unknown";
   if (score < 55) return "low";
   if (score < 80) return "moderate";

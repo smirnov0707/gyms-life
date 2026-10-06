@@ -1,7 +1,15 @@
 import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Link2, Activity, Dumbbell, ClipboardCheck, CircleHelp, Route } from "lucide-react";
+import {
+  ChevronDown,
+  Link2,
+  Activity,
+  Dumbbell,
+  ClipboardCheck,
+  CircleHelp,
+  Route,
+} from "lucide-react";
 import { TwinLedgerState } from "./TwinLedgerState";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, type Lang } from "@/lib/i18n";
@@ -251,7 +259,14 @@ export function TwinEvidenceBridge({
       result[event.eventType ?? "unknown"] += 1;
       return result;
     },
-    { workout_completed: 0, checkin_recorded: 0, decision_recorded: 0, endurance_adaptation: 0, endurance_adaptation_observed: 0, unknown: 0 },
+    {
+      workout_completed: 0,
+      checkin_recorded: 0,
+      decision_recorded: 0,
+      endurance_adaptation: 0,
+      endurance_adaptation_observed: 0,
+      unknown: 0,
+    },
   );
   return (
     <section className="fl-evidence-bridge" aria-labelledby={`${id}-title`}>

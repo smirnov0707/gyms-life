@@ -24,9 +24,7 @@ const round1 = (value: number) => Math.round(value * 10) / 10;
  * was logged?" It deliberately does not award points, calories, strength kg,
  * VO2max, or recovery cost that the source data cannot establish.
  */
-export function buildEnduranceTrainingCredit(
-  activity: EnduranceActivity,
-): EnduranceTrainingCredit {
+export function buildEnduranceTrainingCredit(activity: EnduranceActivity): EnduranceTrainingCredit {
   if (!Number.isFinite(activity.durationSeconds) || activity.durationSeconds <= 0) {
     return { status: "invalid", reason: "activity_invalid" };
   }

@@ -5,7 +5,13 @@ export const RaceGoalSchema = z
   .object({
     distance: RaceDistanceSchema,
     raceDate: z.string().date(),
-    targetTimeSeconds: z.number().int().positive().max(24 * 60 * 60).nullable().default(null),
+    targetTimeSeconds: z
+      .number()
+      .int()
+      .positive()
+      .max(24 * 60 * 60)
+      .nullable()
+      .default(null),
     sessionsPerWeek: z.number().int().min(2).max(7),
     longestRecentRunMeters: z.number().finite().nonnegative().max(100_000).nullable().default(null),
   })
@@ -33,8 +39,7 @@ export const EndurancePlanSessionSchema = z
   })
   .strict()
   .refine(
-    (session) =>
-      session.plannedDurationMinutes !== null || session.plannedDistanceMeters !== null,
+    (session) => session.plannedDurationMinutes !== null || session.plannedDistanceMeters !== null,
     "An endurance session needs a duration or distance target.",
   );
 

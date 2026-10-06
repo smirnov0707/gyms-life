@@ -1,1 +1,18 @@
-import{describe,expect,it}from"vitest";import{deriveAdaptationLesson}from"./endurance-adaptation-memory.engine";describe("adaptation memory",()=>{it("does not learn from one outcome",()=>expect(deriveAdaptationLesson([{reason:"repeated_low_response",association:"improved_signals"}]).status).toBe("insufficient_evidence"));it("creates only a candidate after repeated support",()=>expect(deriveAdaptationLesson([1,2,3].map(()=>({reason:"repeated_low_response",association:"improved_signals" as const}))).status).toBe("candidate"))});
+import { describe, expect, it } from "vitest";
+import { deriveAdaptationLesson } from "./endurance-adaptation-memory.engine";
+describe("adaptation memory", () => {
+  it("does not learn from one outcome", () =>
+    expect(
+      deriveAdaptationLesson([{ reason: "repeated_low_response", association: "improved_signals" }])
+        .status,
+    ).toBe("insufficient_evidence"));
+  it("creates only a candidate after repeated support", () =>
+    expect(
+      deriveAdaptationLesson(
+        [1, 2, 3].map(() => ({
+          reason: "repeated_low_response",
+          association: "improved_signals" as const,
+        })),
+      ).status,
+    ).toBe("candidate"));
+});

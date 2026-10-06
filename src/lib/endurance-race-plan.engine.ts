@@ -37,7 +37,13 @@ function daysBetween(startDay: string, endDay: string): number {
 }
 
 function defaultWeeklyDistance(distance: RaceDistance): number {
-  return distance === "5k" ? 12_000 : distance === "10k" ? 18_000 : distance === "half_marathon" ? 24_000 : 30_000;
+  return distance === "5k"
+    ? 12_000
+    : distance === "10k"
+      ? 18_000
+      : distance === "half_marathon"
+        ? 24_000
+        : 30_000;
 }
 
 function phaseFor(week: number, weeks: number): RacePlanWeek["phase"] {
@@ -49,28 +55,49 @@ function phaseFor(week: number, weeks: number): RacePlanWeek["phase"] {
   return "specific";
 }
 
-function sessionMix(sessionsPerWeek: number, weeklyDistance: number, phase: RacePlanWeek["phase"], raceDistance: number, week: number): EndurancePlanSession[] {
+function sessionMix(
+  sessionsPerWeek: number,
+  weeklyDistance: number,
+  phase: RacePlanWeek["phase"],
+  raceDistance: number,
+  week: number,
+): EndurancePlanSession[] {
   if (phase === "race") {
-    return [{
-      sessionKey: `w${week}-s1`,
-      intent: "race",
-      plannedDurationMinutes: null,
-      plannedDistanceMeters: raceDistance,
-      intensityCue: "Race effort guided by the completed preparation and current-day safety state.",
-    }];
+    return [
+      {
+        sessionKey: `w${week}-s1`,
+        intent: "race",
+        plannedDurationMinutes: null,
+        plannedDistanceMeters: raceDistance,
+        intensityCue:
+          "Race effort guided by the completed preparation and current-day safety state.",
+      },
+    ];
   }
 
   const intents: EndurancePlanSession["intent"][] =
-    sessionsPerWeek === 2 ? ["easy", "long"] :
-    sessionsPerWeek === 3 ? ["easy", "tempo", "long"] :
-    sessionsPerWeek === 4 ? ["easy", "intervals", "easy", "long"] :
-    ["easy", "intervals", "easy", "tempo", ...Array(Math.max(0, sessionsPerWeek - 5)).fill("recovery"), "long"];
+    sessionsPerWeek === 2
+      ? ["easy", "long"]
+      : sessionsPerWeek === 3
+        ? ["easy", "tempo", "long"]
+        : sessionsPerWeek === 4
+          ? ["easy", "intervals", "easy", "long"]
+          : [
+              "easy",
+              "intervals",
+              "easy",
+              "tempo",
+              ...Array(Math.max(0, sessionsPerWeek - 5)).fill("recovery"),
+              "long",
+            ];
 
   const longShare = phase === "taper" ? 0.25 : 0.35;
   const qualityShare = phase === "taper" ? 0.15 : 0.2;
   const longDistance = round100(weeklyDistance * longShare);
   const qualityCount = intents.filter((i) => i === "tempo" || i === "intervals").length;
-  const fixed = longDistance + qualityCount * round100(weeklyDistance * qualityShare / Math.max(1, qualityCount));
+  const fixed =
+    longDistance +
+    qualityCount * round100((weeklyDistance * qualityShare) / Math.max(1, qualityCount));
   const easyCount = intents.filter((i) => i === "easy" || i === "recovery").length;
   const easyDistance = round100(Math.max(1_000, (weeklyDistance - fixed) / Math.max(1, easyCount)));
 
@@ -79,24 +106,40 @@ function sessionMix(sessionsPerWeek: number, weeklyDistance: number, phase: Race
     intent,
     plannedDurationMinutes: null,
     plannedDistanceMeters:
-      intent === "long" ? longDistance :
-      intent === "tempo" || intent === "intervals" ? round100(weeklyDistance * qualityShare / Math.max(1, qualityCount)) :
-      easyDistance,
+      intent === "long"
+        ? longDistance
+        : intent === "tempo" || intent === "intervals"
+          ? round100((weeklyDistance * qualityShare) / Math.max(1, qualityCount))
+          : easyDistance,
     intensityCue:
-      intent === "easy" || intent === "recovery" ? "Conversational, controlled effort." :
-      intent === "long" ? "Comfortable endurance effort; finish with control." :
-      intent === "tempo" ? "Sustainably hard, never all-out." :
-      "Fast repetitions with controlled recoveries.",
+      intent === "easy" || intent === "recovery"
+        ? "Conversational, controlled effort."
+        : intent === "long"
+          ? "Comfortable endurance effort; finish with control."
+          : intent === "tempo"
+            ? "Sustainably hard, never all-out."
+            : "Fast repetitions with controlled recoveries.",
   }));
 }
 
-export function buildRacePlan(input: { today: string; goal: RaceGoal; baseline: RacePlanBaseline }): RacePlan {
+export function buildRacePlan(input: {
+  today: string;
+  goal: RaceGoal;
+  baseline: RacePlanBaseline;
+}): RacePlan {
   const days = daysBetween(input.today, input.goal.raceDate);
   const minimumDays = MIN_RACE_PREP_DAYS[input.goal.distance];
-  if (days < minimumDays) throw new Error(`Race preparation for ${input.goal.distance} requires at least ${minimumDays} days.`);
+  if (days < minimumDays)
+    throw new Error(
+      `Race preparation for ${input.goal.distance} requires at least ${minimumDays} days.`,
+    );
   const weeks = Math.max(2, Math.ceil(days / 7));
-  const measured = input.baseline.recentWeeklyDistanceMeters !== null && input.baseline.recentWeeklyDistanceMeters > 0;
-  const startingWeekly = measured ? input.baseline.recentWeeklyDistanceMeters! : defaultWeeklyDistance(input.goal.distance);
+  const measured =
+    input.baseline.recentWeeklyDistanceMeters !== null &&
+    input.baseline.recentWeeklyDistanceMeters > 0;
+  const startingWeekly = measured
+    ? input.baseline.recentWeeklyDistanceMeters!
+    : defaultWeeklyDistance(input.goal.distance);
   const raceDistance = RACE_DISTANCE_METERS[input.goal.distance];
 
   const weeksPlan: RacePlanWeek[] = [];
@@ -104,7 +147,8 @@ export function buildRacePlan(input: { today: string; goal: RaceGoal; baseline: 
   for (let week = 1; week <= weeks; week += 1) {
     const phase = phaseFor(week, weeks);
     let target = previous;
-    if (phase === "build" || phase === "specific") target = Math.min(previous * 1.08, raceDistance * 1.5);
+    if (phase === "build" || phase === "specific")
+      target = Math.min(previous * 1.08, raceDistance * 1.5);
     if (phase === "taper") target = previous * 0.72;
     if (phase === "race") target = raceDistance;
     target = round100(target);
@@ -117,5 +161,11 @@ export function buildRacePlan(input: { today: string; goal: RaceGoal; baseline: 
     previous = target;
   }
 
-  return { distance: input.goal.distance, raceDate: input.goal.raceDate, weeks, baseline: measured ? "measured" : "conservative_default", weeksPlan };
+  return {
+    distance: input.goal.distance,
+    raceDate: input.goal.raceDate,
+    weeks,
+    baseline: measured ? "measured" : "conservative_default",
+    weeksPlan,
+  };
 }

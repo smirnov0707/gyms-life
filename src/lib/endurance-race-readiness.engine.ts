@@ -46,8 +46,7 @@ export function assessRaceReadiness(input: RaceReadinessInput): RaceReadiness {
   }
 
   const adherenceGood =
-    (input.sessionCompletionRate ?? 0) >= 0.75 &&
-    (input.distanceCompletionRate ?? 0) >= 0.75;
+    (input.sessionCompletionRate ?? 0) >= 0.75 && (input.distanceCompletionRate ?? 0) >= 0.75;
   const longRunDirectionSupportsPlan =
     input.longRunTrend === null ||
     input.longRunTrend === "insufficient_evidence" ||

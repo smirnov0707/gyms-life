@@ -8,7 +8,11 @@ export type CompletedRunEvidence = {
 };
 
 export type PlannedRunProgress =
-  | { status: "unmatched"; completionRatio: null; reason: "missing_distance_target" | "missing_distance_evidence" }
+  | {
+      status: "unmatched";
+      completionRatio: null;
+      reason: "missing_distance_target" | "missing_distance_evidence";
+    }
   | {
       status: "completed" | "under_target" | "over_target";
       completionRatio: number;
@@ -52,11 +56,21 @@ export function summarizeRaceWeek(input: {
   planned: readonly EndurancePlanSession[];
   completed: readonly CompletedRunEvidence[];
 }): RaceWeekProgress {
-  const plannedDistance = input.planned.reduce((sum, session) => sum + (session.plannedDistanceMeters ?? 0), 0);
-  const plannedKeys = new Set(input.planned.flatMap((session) => session.sessionKey ? [session.sessionKey] : []));
+  const plannedDistance = input.planned.reduce(
+    (sum, session) => sum + (session.plannedDistanceMeters ?? 0),
+    0,
+  );
+  const plannedKeys = new Set(
+    input.planned.flatMap((session) => (session.sessionKey ? [session.sessionKey] : [])),
+  );
   const matchedByKey = new Map<string, CompletedRunEvidence>();
   for (const run of input.completed) {
-    if (!run.planSessionKey || !plannedKeys.has(run.planSessionKey) || matchedByKey.has(run.planSessionKey)) continue;
+    if (
+      !run.planSessionKey ||
+      !plannedKeys.has(run.planSessionKey) ||
+      matchedByKey.has(run.planSessionKey)
+    )
+      continue;
     matchedByKey.set(run.planSessionKey, run);
   }
   const matchedRuns = [...matchedByKey.values()];
@@ -70,6 +84,7 @@ export function summarizeRaceWeek(input: {
     plannedDistanceMeters: plannedDistance,
     completedDistanceMeters: completedDistance,
     observedDistanceMeters: observedDistance,
-    distanceCompletionRatio: plannedDistance > 0 ? round2(completedDistance / plannedDistance) : null,
+    distanceCompletionRatio:
+      plannedDistance > 0 ? round2(completedDistance / plannedDistance) : null,
   };
 }

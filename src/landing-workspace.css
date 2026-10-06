@@ -573,7 +573,6 @@
   }
 }
 
-
 /* Visual Experience 3.0 — first-impression cinematic landing. */
 .fl-landing-preview {
   position: relative;
@@ -628,7 +627,11 @@
   height: 78%;
   border-radius: 50%;
   opacity: 0;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, transparent), transparent 68%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 12%, transparent),
+    transparent 68%
+  );
   transition: opacity 300ms ease;
 }
 
@@ -713,7 +716,6 @@
     transition: none;
   }
 }
-
 
 .light .fl-landing-world:hover {
   box-shadow: 0 22px 54px -44px color-mix(in srgb, var(--primary) 22%, transparent);

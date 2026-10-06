@@ -20,7 +20,6 @@ export async function persistCurrentEnduranceAdaptation(
   });
 }
 
-
 /** Secondary audit write: never make a completed training action look failed. */
 export async function tryPersistCurrentEnduranceAdaptation(
   supabase: SupabaseClient<Database>,
@@ -30,9 +29,7 @@ export async function tryPersistCurrentEnduranceAdaptation(
 ): Promise<void> {
   try {
     await persistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
-    const { recordDueAdaptationOutcomes } = await import(
-      "./endurance-adaptation-outcome.service"
-    );
+    const { recordDueAdaptationOutcomes } = await import("./endurance-adaptation-outcome.service");
     await recordDueAdaptationOutcomes(supabase, userId);
   } catch {
     // The canonical workout/session match remains the source fact. The ledger

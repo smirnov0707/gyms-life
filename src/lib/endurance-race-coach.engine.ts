@@ -21,16 +21,23 @@ export function buildRaceCoachBrief(input: {
   ];
 
   const headlineKey =
-    input.progress.plannedSessions < 2 ? "building_evidence" :
-    input.adaptation.action === "recover" ? "protect_recovery" :
-    input.adaptation.action === "reduce" ? "reduce_load" : "on_track";
+    input.progress.plannedSessions < 2
+      ? "building_evidence"
+      : input.adaptation.action === "recover"
+        ? "protect_recovery"
+        : input.adaptation.action === "reduce"
+          ? "reduce_load"
+          : "on_track";
 
   return {
     headlineKey,
     facts,
     allowedMessageIntent:
-      headlineKey === "building_evidence" ? "request_more_evidence" :
-      input.adaptation.action === "hold" ? "motivate" : "explain_adjustment",
+      headlineKey === "building_evidence"
+        ? "request_more_evidence"
+        : input.adaptation.action === "hold"
+          ? "motivate"
+          : "explain_adjustment",
     prohibitedClaims: [
       "diagnosis",
       "injury_prediction_without_evidence",

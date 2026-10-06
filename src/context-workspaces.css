@@ -1629,7 +1629,6 @@
   padding: 0;
 }
 
-
 /* Visual Experience 3.0 — shared cinematic depth for Athlete and tool workspaces. */
 .fl-workspace-hero {
   isolation: isolate;
@@ -1647,8 +1646,16 @@
   border-radius: 50%;
   opacity: 0.42;
   background:
-    radial-gradient(circle at 40% 40%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 55%),
-    radial-gradient(circle at 62% 58%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 68%);
+    radial-gradient(
+      circle at 40% 40%,
+      color-mix(in srgb, var(--primary) 13%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 62% 58%,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      transparent 68%
+    );
   filter: blur(10px);
   animation: fl-workspace-aura 14s ease-in-out infinite alternate;
 }
@@ -1691,7 +1698,6 @@
   }
 }
 
-
 /* Visual Experience 3.0 — earned workout completion reveal. */
 .fl-workout-summary {
   isolation: isolate;
@@ -1715,7 +1721,12 @@
   transform: translateX(-50%);
   background:
     radial-gradient(circle, color-mix(in srgb, var(--primary) 20%, transparent), transparent 48%),
-    conic-gradient(from 0deg, transparent, color-mix(in srgb, var(--accent) 8%, transparent), transparent 28%);
+    conic-gradient(
+      from 0deg,
+      transparent,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 28%
+    );
   filter: blur(4px);
   animation: fl-workout-complete-bloom 1.8s cubic-bezier(0.16, 1, 0.3, 1) 1 both;
 }
@@ -1780,7 +1791,6 @@
   }
 }
 
-
 /* Visual Experience 3.0 — functional instruments, not decorative noise. */
 
 /* Movement Scan: optical HUD stays outside the analysed video semantics. */
@@ -1818,7 +1828,12 @@
   height: 1px;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 75%, white), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--primary) 75%, white),
+    transparent
+  );
   box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
@@ -1842,7 +1857,11 @@
   height: 86px;
   border-radius: 50%;
   opacity: 0.2;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 18%, transparent), transparent 68%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 18%, transparent),
+    transparent 68%
+  );
 }
 
 .fl-nutrition-metric .bg-primary {
@@ -1873,8 +1892,17 @@
   pointer-events: none;
   opacity: 0.28;
   background:
-    repeating-linear-gradient(0deg, transparent 0 26px, color-mix(in srgb, var(--primary) 5%, transparent) 27px),
-    linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 7%, transparent), transparent);
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 26px,
+      color-mix(in srgb, var(--primary) 5%, transparent) 27px
+    ),
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      transparent
+    );
   animation: fl-system-build 5s linear infinite;
 }
 
@@ -1908,10 +1936,14 @@
 
 @keyframes fl-system-build {
   from {
-    background-position: 0 -120px, -260px 0;
+    background-position:
+      0 -120px,
+      -260px 0;
   }
   to {
-    background-position: 0 120px, 260px 0;
+    background-position:
+      0 120px,
+      260px 0;
   }
 }
 
@@ -1922,7 +1954,6 @@
     animation: none !important;
   }
 }
-
 
 @media (max-width: 759px) {
   .fl-workspace-hero::before {
@@ -1936,11 +1967,14 @@
   }
 }
 
-
 /* Visual Experience 3.0 — active workout focus tunnel. */
 .fl-workout-console:has(.fl-workout-active) {
   background:
-    radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 46%),
+    radial-gradient(
+      ellipse at 50% 18%,
+      color-mix(in srgb, var(--primary) 7%, transparent),
+      transparent 46%
+    ),
     var(--surface);
 }
 
@@ -1965,7 +1999,11 @@
   pointer-events: none;
   border-radius: 50%;
   opacity: 0.38;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 14%, transparent), transparent 68%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 14%, transparent),
+    transparent 68%
+  );
 }
 
 .fl-workout-active .fl-workout-exercise > * {
@@ -2012,7 +2050,6 @@
     transition: none;
   }
 }
-
 
 /* Light-theme restraint for workspace cinematic layers. */
 .light .fl-workspace-hero::before {

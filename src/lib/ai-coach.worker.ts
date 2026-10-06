@@ -22,8 +22,20 @@ export async function runCoachWorker(
       ...recommendation,
       decision: "NO_CHANGE",
       priority: protectRecovery ? "HIGH" : "MEDIUM",
-      actions: [{ type: protectRecovery ? "RECOVER" : "KEEP_PLAN", exerciseSlug: null, value: null, unit: null, instruction: "Follow the validated GYMS.LIFE endurance decision; the AI-generated override was blocked." }],
-      safety: { requiresUserConfirmation: false, notes: [...recommendation.safety.notes, ...governed.violations].slice(0, 6) },
+      actions: [
+        {
+          type: protectRecovery ? "RECOVER" : "KEEP_PLAN",
+          exerciseSlug: null,
+          value: null,
+          unit: null,
+          instruction:
+            "Follow the validated GYMS.LIFE endurance decision; the AI-generated override was blocked.",
+        },
+      ],
+      safety: {
+        requiresUserConfirmation: false,
+        notes: [...recommendation.safety.notes, ...governed.violations].slice(0, 6),
+      },
     };
   }
   return recommendation;

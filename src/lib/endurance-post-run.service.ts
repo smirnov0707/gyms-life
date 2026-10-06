@@ -5,10 +5,7 @@ import { buildPostRunBrief } from "./endurance-post-run.engine";
 import { loadDigitalAthleteState } from "./digital-athlete.service";
 import { dayBoundsInTimeZone, dayInTimeZone } from "./local-day";
 
-export async function loadLatestPostRunBrief(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-) {
+export async function loadLatestPostRunBrief(supabase: SupabaseClient<Database>, userId: string) {
   const { loadPersistedProfileTimeZone } = await import("./user-context.server");
   const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
   const now = new Date();
@@ -36,9 +33,7 @@ export async function loadLatestPostRunBrief(
 
   const { data: splits, error: splitError } = await supabase
     .from("endurance_run_splits")
-    .select(
-      "split_index,distance_meters,duration_seconds,average_heart_rate_bpm,cadence_spm",
-    )
+    .select("split_index,distance_meters,duration_seconds,average_heart_rate_bpm,cadence_spm")
     .eq("user_id", userId)
     .eq("workout_session_id", run.id)
     .order("split_index");

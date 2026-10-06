@@ -26,9 +26,7 @@ export function decideEnduranceAdaptation(
   }
 
   const completionRate =
-    signal.plannedSessions > 0
-      ? signal.completedPlannedSessions / signal.plannedSessions
-      : 0;
+    signal.plannedSessions > 0 ? signal.completedPlannedSessions / signal.plannedSessions : 0;
 
   if (signal.readinessBand === "low" && completionRate < 0.5) {
     return { action: "recover", volumeModifier: 0.7, reason: "low_readiness_and_missed_work" };

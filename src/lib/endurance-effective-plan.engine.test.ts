@@ -5,11 +5,7 @@ import {
 } from "./endurance-effective-plan.engine";
 import type { EnduranceAdaptationDecision } from "./endurance-adaptation.engine";
 
-const distanceSession = (
-  intent: "easy" | "long" | "race",
-  distance: number,
-  key: string,
-) => ({
+const distanceSession = (intent: "easy" | "long" | "race", distance: number, key: string) => ({
   sessionKey: key,
   intent,
   plannedDurationMinutes: null,
@@ -20,10 +16,7 @@ const distanceSession = (
 describe("effective endurance plan", () => {
   it("does not rewrite a completed session", () => {
     const result = applyAdaptationToRemainingSessions({
-      sessions: [
-        distanceSession("easy", 5_000, "w1-s1"),
-        distanceSession("long", 12_000, "w1-s2"),
-      ],
+      sessions: [distanceSession("easy", 5_000, "w1-s1"), distanceSession("long", 12_000, "w1-s2")],
       completedSessionKeys: new Set(["w1-s1"]),
       adaptation: {
         action: "reduce",

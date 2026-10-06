@@ -195,9 +195,8 @@ export const submitCheckin = createServerFn({ method: "POST" })
       summary: { readinessScore: score, loadModifier: modifier },
     });
 
-    const { tryPersistCurrentEnduranceAdaptation } = await import(
-      "./endurance-adaptation-refresh.service"
-    );
+    const { tryPersistCurrentEnduranceAdaptation } =
+      await import("./endurance-adaptation-refresh.service");
     await tryPersistCurrentEnduranceAdaptation(supabase, userId, checkinOn, data.timeZone);
 
     return { score, modifier, advice };
@@ -237,9 +236,8 @@ export const saveReadinessAdjustment = createServerFn({ method: "POST" })
       summary: { readinessScore: score, loadModifier: modifier },
     });
 
-    const { tryPersistCurrentEnduranceAdaptation } = await import(
-      "./endurance-adaptation-refresh.service"
-    );
+    const { tryPersistCurrentEnduranceAdaptation } =
+      await import("./endurance-adaptation-refresh.service");
     await tryPersistCurrentEnduranceAdaptation(
       context.supabase,
       context.userId,
