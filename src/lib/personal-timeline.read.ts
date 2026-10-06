@@ -8,7 +8,6 @@ import {
 
 export const PERSONAL_TIMELINE_LIMIT = 30;
 
-/** Deliberately excludes summary and user_id from the browser projection. */
 const TimelineRowSchema = z
   .object({
     id: z.string().uuid(),
@@ -22,8 +21,62 @@ const TimelineRowSchema = z
     source_table: z.string().min(1).max(80).nullable(),
     source_reference: z.string().min(1).max(200).nullable(),
     schema_version: z.string().min(1).max(40),
+    summary: z.unknown(),
   })
   .strict();
+
+const EnduranceAdaptationSummarySchema = z
+  .object({
+    decisionOn: z.string().date().optional(),
+    action: z.enum(["hold", "reduce", "recover"]),
+    volumeModifier: z.number().positive().max(1),
+    reason: z.enum([
+      "insufficient_evidence",
+      "on_track",
+      "repeated_low_response",
+      "low_readiness_and_missed_work",
+      "repeated_over_target_work",
+    ]),
+  })
+  .passthrough();
+
+const EnduranceAdaptationObservedSummarySchema = z
+  .object({
+    association: z.enum([
+      "improved_signals",
+      "mixed_signals",
+      "worse_signals",
+      "insufficient_signal",
+    ]),
+    causalClaim: z.literal(false),
+    facts: z.array(z.string().min(1).max(160)).max(8),
+  })
+  .passthrough();
+
+export type PersonalTimelineDetails =
+  | {
+      kind: "endurance_adaptation";
+      decisionOn: string | null;
+      action: "hold" | "reduce" | "recover";
+      volumeModifier: number;
+      reason:
+        | "insufficient_evidence"
+        | "on_track"
+        | "repeated_low_response"
+        | "low_readiness_and_missed_work"
+        | "repeated_over_target_work";
+    }
+  | {
+      kind: "endurance_adaptation_observed";
+      association:
+        | "improved_signals"
+        | "mixed_signals"
+        | "worse_signals"
+        | "insufficient_signal";
+      causalClaim: false;
+      facts: string[];
+    }
+  | null;
 
 export type PersonalTimelineEntry = {
   id: string;
@@ -37,6 +90,7 @@ export type PersonalTimelineEntry = {
   sourceTable: string | null;
   sourceReference: string | null;
   schemaVersion: string;
+  details: PersonalTimelineDetails;
 };
 
 export type PersonalTimelinePage = {
@@ -46,10 +100,40 @@ export type PersonalTimelinePage = {
   limit: number;
 };
 
+function detailsFor(
+  eventType: z.infer<typeof PersonalTimelineEventTypeSchema> | null,
+  summary: unknown,
+): PersonalTimelineDetails {
+  if (eventType === "endurance_adaptation") {
+    const parsed = EnduranceAdaptationSummarySchema.safeParse(summary);
+    if (!parsed.success) return null;
+    return {
+      kind: "endurance_adaptation",
+      decisionOn: parsed.data.decisionOn ?? null,
+      action: parsed.data.action,
+      volumeModifier: parsed.data.volumeModifier,
+      reason: parsed.data.reason,
+    };
+  }
+
+  if (eventType === "endurance_adaptation_observed") {
+    const parsed = EnduranceAdaptationObservedSummarySchema.safeParse(summary);
+    if (!parsed.success) return null;
+    return {
+      kind: "endurance_adaptation_observed",
+      association: parsed.data.association,
+      causalClaim: false,
+      facts: parsed.data.facts,
+    };
+  }
+
+  return null;
+}
+
 /**
  * A bounded read model, not a historical DigitalAthleteState reconstruction.
- * Unknown vocabulary remains unknown. Malformed rows are explicitly counted;
- * a malformed response is a failure, never an apparently empty history.
+ * Raw timeline summaries never cross the browser boundary: only explicitly
+ * validated details for supported event types are projected.
  */
 export function buildPersonalTimelinePage(value: unknown): PersonalTimelinePage {
   const rows = z
@@ -70,11 +154,12 @@ export function buildPersonalTimelinePage(value: unknown): PersonalTimelinePage 
     const provenance = PersonalTimelineProvenanceSchema.safeParse(row.provenance);
     const quality = PersonalTimelineQualitySchema.safeParse(row.quality);
     const timeZone = IanaTimeZoneSchema.safeParse(row.timezone);
+    const parsedEventType = eventType.success ? eventType.data : null;
+
     events.push({
       id: row.id,
-      eventType: eventType.success ? eventType.data : null,
+      eventType: parsedEventType,
       occurredAt: row.occurred_at,
-      // created_at is the index write time, not the original source write time.
       recordedAt: row.created_at,
       timeZone: timeZone.success ? timeZone.data : null,
       provenance: provenance.success ? provenance.data : null,
@@ -83,10 +168,10 @@ export function buildPersonalTimelinePage(value: unknown): PersonalTimelinePage 
       sourceTable: row.source_table,
       sourceReference: row.source_reference,
       schemaVersion: row.schema_version,
+      details: detailsFor(parsedEventType, row.summary),
     });
   }
 
-  // Compare instants, not ISO strings: offsets can reverse lexical ordering.
   events.sort((left, right) => {
     const byTime = Date.parse(right.occurredAt) - Date.parse(left.occurredAt);
     if (byTime !== 0) return byTime;
