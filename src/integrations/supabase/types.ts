@@ -1651,6 +1651,7 @@ export type Database = {
           endurance_match_source: string | null
           endurance_session_intent: string | null
           endurance_plan_session_key: string | null
+          endurance_race_goal_id: string | null
           elevation_gain_meters: number | null
           average_cadence_spm: number | null
           feeling: number | null
@@ -1679,6 +1680,7 @@ export type Database = {
           endurance_match_source?: string | null
           endurance_session_intent?: string | null
           endurance_plan_session_key?: string | null
+          endurance_race_goal_id?: string | null
           elevation_gain_meters?: number | null
           average_cadence_spm?: number | null
           feeling?: number | null
@@ -1708,6 +1710,7 @@ export type Database = {
           endurance_match_source?: string | null
           endurance_session_intent?: string | null
           endurance_plan_session_key?: string | null
+          endurance_race_goal_id?: string | null
           feeling?: number | null
           finished_at?: string | null
           id?: string
