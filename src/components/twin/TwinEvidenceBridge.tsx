@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Link2, Activity, Dumbbell, ClipboardCheck, CircleHelp } from "lucide-react";
+import { ChevronDown, Link2, Activity, Dumbbell, ClipboardCheck, CircleHelp, Route } from "lucide-react";
 import { TwinLedgerState } from "./TwinLedgerState";
 import { useAuth } from "@/lib/auth";
 import { baseLang, formatLocale, type Lang } from "@/lib/i18n";
@@ -41,12 +41,16 @@ const COPY = {
       workout_completed: "Treniruotės",
       checkin_recorded: "Savijauta",
       decision_recorded: "Sprendimai",
+      endurance_adaptation: "Bėgimo adaptacijos",
+      endurance_adaptation_observed: "Po adaptacijos",
       unknown: "Kiti įvykiai",
     },
     events: {
       workout_completed: "Treniruotė užbaigta",
       checkin_recorded: "Savijauta užregistruota",
       decision_recorded: "Dienos sprendimas išsaugotas",
+      endurance_adaptation: "Bėgimo planas adaptuotas",
+      endurance_adaptation_observed: "Stebėti signalai po adaptacijos",
     },
     origins: {
       measured: "Išmatuota",
@@ -88,12 +92,16 @@ const COPY = {
       workout_completed: "Workouts",
       checkin_recorded: "Check-ins",
       decision_recorded: "Decisions",
+      endurance_adaptation: "Run adaptations",
+      endurance_adaptation_observed: "Post-adaptation",
       unknown: "Other events",
     },
     events: {
       workout_completed: "Workout completed",
       checkin_recorded: "Check-in recorded",
       decision_recorded: "Daily decision saved",
+      endurance_adaptation: "Race plan adapted",
+      endurance_adaptation_observed: "Post-adaptation signals observed",
     },
     origins: {
       measured: "Measured",
@@ -112,12 +120,16 @@ const COUNT_KEYS = [
   "workout_completed",
   "checkin_recorded",
   "decision_recorded",
+  "endurance_adaptation",
+  "endurance_adaptation_observed",
   "unknown",
 ] as const satisfies readonly CountKey[];
 const ICONS = {
   workout_completed: Dumbbell,
   checkin_recorded: Activity,
   decision_recorded: ClipboardCheck,
+  endurance_adaptation: Route,
+  endurance_adaptation_observed: Activity,
   unknown: CircleHelp,
 };
 function formatEventTime(event: PersonalTimelineEntry, locale: string, value: string): string {
@@ -239,7 +251,7 @@ export function TwinEvidenceBridge({
       result[event.eventType ?? "unknown"] += 1;
       return result;
     },
-    { workout_completed: 0, checkin_recorded: 0, decision_recorded: 0, unknown: 0 },
+    { workout_completed: 0, checkin_recorded: 0, decision_recorded: 0, endurance_adaptation: 0, endurance_adaptation_observed: 0, unknown: 0 },
   );
   return (
     <section className="fl-evidence-bridge" aria-labelledby={`${id}-title`}>
