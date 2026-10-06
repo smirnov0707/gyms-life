@@ -17,4 +17,4 @@ begin
  return v_session;
 end$$;
 revoke all on function public.record_endurance_run_import(uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb) from public,anon;
-grant execute on function public.record_endurance_run_import(uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,jsonb) to authenticated,service_role;
+grant execute on function public.record_endurance_run_import(uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb) to authenticated,service_role;
