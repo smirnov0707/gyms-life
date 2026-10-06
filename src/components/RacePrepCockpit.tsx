@@ -4,6 +4,7 @@ import { CalendarDays, Gauge, Route, Target } from "lucide-react";
 import { getActiveRacePrep } from "@/lib/endurance-race-prep.functions";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
+import { useAuth } from "@/lib/auth";
 
 const km = (m: number) => (m / 1000).toFixed(m % 1000 === 0 ? 0 : 1);
 const paceText = (seconds: number | null) => seconds === null ? "—" : Math.floor(seconds / 60) + ":" + String(Math.round(seconds % 60)).padStart(2, "0") + "/km";
@@ -15,12 +16,14 @@ const phaseLabel = (phase: string, en: boolean) => ({
 
 export function RacePrepCockpit() {
   const { lang } = useI18n(); const english = baseLang(lang) === "en";
+  const { user } = useAuth();
   const timeZone = browserTimeZone();
   const today = dayInTimeZone(new Date(), timeZone);
   const queryClient = useQueryClient();
   const { data } = useQuery({
-    queryKey: ["active-race-prep", today],
+    queryKey: ["active-race-prep", user?.id, today, timeZone],
     queryFn: () => getActiveRacePrep({ data: { today, timeZone } }),
+    enabled: Boolean(user),
     staleTime: 30_000,
   });
   useEffect(() => {
