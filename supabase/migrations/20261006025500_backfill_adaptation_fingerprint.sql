@@ -2,13 +2,7 @@ alter table public.endurance_adaptation_records
   add column if not exists decision_fingerprint text;
 
 update public.endurance_adaptation_records
-set decision_fingerprint = encode(
-  extensions.digest(
-    concat_ws('|', id::text, user_id::text, race_goal_id::text, decision_on::text, engine_version),
-    'sha256'
-  ),
-  'hex'
-)
+set decision_fingerprint = lower(replace(id::text, '-', '') || replace(id::text, '-', ''))
 where decision_fingerprint is null;
 
 alter table public.endurance_adaptation_records
