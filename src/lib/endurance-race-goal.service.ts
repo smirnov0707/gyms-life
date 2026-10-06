@@ -18,6 +18,7 @@ export async function createRaceGoal(
   const { data: goalId, error } = await supabaseAdmin.rpc("replace_active_endurance_race_goal", {
     p_user_id: userId,
     p_distance: goal.distance,
+    p_started_on: today,
     p_race_date: goal.raceDate,
     p_target_time_seconds: goal.targetTimeSeconds,
     p_sessions_per_week: goal.sessionsPerWeek,
