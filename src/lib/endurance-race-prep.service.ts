@@ -230,7 +230,7 @@ export async function loadActiveRacePrep(
   const candidateAdaptation = decideEnduranceAdaptation(adaptationSignal);
   const persistedAdaptation = await loadLatestEnduranceAdaptation(supabase, userId, row.id, today);
   const adaptation = persistedAdaptation ?? candidateAdaptation;
-  const executionAdaptation = persistedAdaptation ?? { action: "hold" as const, volumeModifier: 1 as const, reason: "insufficient_evidence" as const };
+  const executionAdaptation = persistedAdaptation ?? {\n    action: "hold" as const,\n    volumeModifier: 1 as const,\n    reason: "insufficient_evidence" as const,\n  };
   const effectiveSessions = applyAdaptationToRemainingSessions({
     sessions: currentWeek.sessions,
     completedSessionKeys,
