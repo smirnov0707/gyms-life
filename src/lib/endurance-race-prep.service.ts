@@ -23,7 +23,7 @@ export async function loadActiveRacePrep(
   const zone = IanaTimeZoneSchema.parse(timeZone);
   const { data: row, error } = await supabase
     .from("endurance_race_goals")
-    .select("id,distance,race_date,target_time_seconds,sessions_per_week,created_at,baseline_weekly_distance_meters,baseline_longest_run_meters")
+    .select("id,distance,race_date,started_on,target_time_seconds,sessions_per_week,baseline_weekly_distance_meters,baseline_longest_run_meters")
     .eq("user_id", userId).eq("status", "active").maybeSingle();
   if (error) throw error;
   if (!row) return { status: "none" as const };
@@ -36,7 +36,7 @@ export async function loadActiveRacePrep(
     recentWeeklyDistanceMeters: row.baseline_weekly_distance_meters === null ? null : Number(row.baseline_weekly_distance_meters),
     recentLongestRunMeters: row.baseline_longest_run_meters === null ? null : Number(row.baseline_longest_run_meters),
   };
-  const startDay = row.created_at.slice(0, 10);
+  const startDay = row.started_on;
   const plan = buildRacePlan({ today: startDay, goal, baseline });
   const elapsedDays = Math.max(0, calendarDayDifference(startDay, today));
   const elapsedWeeks = Math.floor(elapsedDays / 7);
