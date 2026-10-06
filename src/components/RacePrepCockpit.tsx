@@ -1,10 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { CalendarDays, Gauge, Route, Target } from "lucide-react";
-import { getActiveRacePrep } from "@/lib/endurance-race-prep.functions";
 import { baseLang, useI18n } from "@/lib/i18n";
-import { browserTimeZone, dayInTimeZone } from "@/lib/local-day";
-import { useAuth } from "@/lib/auth";
+import type { getActiveRacePrep } from "@/lib/endurance-race-prep.functions";
 
 const km = (m: number) => (m / 1000).toFixed(m % 1000 === 0 ? 0 : 1);
 const paceText = (seconds: number | null) =>
@@ -20,25 +17,11 @@ const phaseLabel = (phase: string, en: boolean) =>
     race: en ? "Race week" : "Varžybų savaitė",
   })[phase] ?? phase;
 
-export function RacePrepCockpit() {
+type ActiveRacePrep = Exclude<Awaited<ReturnType<typeof getActiveRacePrep>>, { status: "none" }>;
+
+export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
-  const { user } = useAuth();
-  const timeZone = browserTimeZone();
-  const today = dayInTimeZone(new Date(), timeZone);
-  const queryClient = useQueryClient();
-  const { data } = useQuery({
-    queryKey: ["active-race-prep", user?.id, today, timeZone],
-    queryFn: () => getActiveRacePrep({ data: { today, timeZone } }),
-    enabled: Boolean(user),
-    staleTime: 30_000,
-  });
-  useEffect(() => {
-    const refresh = () => void queryClient.invalidateQueries({ queryKey: ["active-race-prep"] });
-    window.addEventListener("gymslife:endurance-updated", refresh);
-    return () => window.removeEventListener("gymslife:endurance-updated", refresh);
-  }, [queryClient]);
-  if (!data || data.status === "none") return null;
   const pct =
     data.progress.distanceCompletionRatio === null
       ? null
