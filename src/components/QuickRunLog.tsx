@@ -18,7 +18,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
   const [distanceKm, setDistanceKm] = useState("");
   const [rpe, setRpe] = useState("");
   const [saving, setSaving] = useState(false);
-  const [pendingMatch, setPendingMatch] = useState<{ sessionId: string; raceGoalId: string; planSessionKey: string; intent: "easy" | "long" | "tempo" | "intervals" | "recovery" | "race"; score: number } | null>(null);
+  const [pendingMatch, setPendingMatch] = useState<{ sessionId: string; raceGoalId: string; planSessionKey: string; intent: "easy" | "long" | "tempo" | "intervals" | "recovery" | "race" } | null>(null);
 
   const submit = async () => {
     const duration = Number(minutes);
@@ -43,7 +43,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
         },
       });
       if (result.raceMatch?.status === "needs_confirmation" && result.raceMatch.intent) {
-        setPendingMatch({ sessionId: result.session.id, raceGoalId: result.raceMatch.raceGoalId, planSessionKey: result.raceMatch.plannedSessionKey, intent: result.raceMatch.intent, score: result.raceMatch.score });
+        setPendingMatch({ sessionId: result.session.id, raceGoalId: result.raceMatch.raceGoalId, planSessionKey: result.raceMatch.plannedSessionKey, intent: result.raceMatch.intent });
       } else {
         setPendingMatch(null);
       }
@@ -65,7 +65,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     if (!pendingMatch) return;
     setSaving(true);
     try {
-      await confirmMatch({ data: { workoutSessionId: pendingMatch.sessionId, raceGoalId: pendingMatch.raceGoalId, planSessionKey: pendingMatch.planSessionKey, matchScore: pendingMatch.score } });
+      await confirmMatch({ data: { workoutSessionId: pendingMatch.sessionId, raceGoalId: pendingMatch.raceGoalId, planSessionKey: pendingMatch.planSessionKey } });
       setPendingMatch(null);
       window.dispatchEvent(new CustomEvent("gymslife:endurance-updated"));
       toast.success(english ? "Run linked to race preparation." : "Bėgimas susietas su pasiruošimo planu.");
