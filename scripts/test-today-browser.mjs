@@ -310,12 +310,15 @@ try {
   };
 
   const assertInteractiveTwin = async (canvas) => {
-    await expect(canvas).toBeVisible({ timeout: 30000 });
+    // The Today shell can mount the renderer before the GLB finishes loading.
+    // Wait for the stable human canvas before visibility/interaction checks so
+    // a loading canvas replacement cannot race the locator assertion.
+    await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60000 });
+    await expect(canvas).toBeVisible({ timeout: 15000 });
     // Playwright's visible state includes below-fold elements. The renderer
     // deliberately stops offscreen and when ambient motion is disabled; one
     // frame is valid. Bring it into view, then prove a real input is repainted.
     await canvas.scrollIntoViewIfNeeded();
-    await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
     await expect(canvas).toHaveAttribute("data-twin-asset-sha256", expectedAnalysisSha);
     if (candidate) expect(candidateRequests).toBeGreaterThan(0);
     await expect
