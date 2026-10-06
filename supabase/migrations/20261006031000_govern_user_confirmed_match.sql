@@ -63,7 +63,7 @@ $$;
 
 revoke all on function public.confirm_endurance_race_session_match(
   uuid,uuid,uuid,text,text,numeric
-) from public, anon;
+) from public, anon, authenticated;
 
 grant execute on function public.confirm_endurance_race_session_match(
   uuid,uuid,uuid,text,text,numeric
