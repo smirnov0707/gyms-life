@@ -17,9 +17,17 @@ create table if not exists public.endurance_adaptation_records (
   evidence jsonb not null,
   engine_version text not null,
   decision_fingerprint text not null check (decision_fingerprint ~ '^[a-f0-9]{64}$'),
-  created_at timestamptz not null default now(),
-  unique (user_id, race_goal_id, decision_on, engine_version, decision_fingerprint)
+  created_at timestamptz not null default now()
 );
+
+create unique index if not exists endurance_adaptation_decision_fingerprint_uidx
+  on public.endurance_adaptation_records(
+    user_id,
+    race_goal_id,
+    decision_on,
+    engine_version,
+    decision_fingerprint
+  );
 
 alter table public.endurance_adaptation_records enable row level security;
 
