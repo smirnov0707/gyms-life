@@ -41,6 +41,57 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             {data.daysToRace} {english ? "days to race" : "d. iki starto"}
           </div>
         </header>
+        <div className="rounded-[1.5rem] border border-primary/25 bg-primary/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="fl-eyebrow">{english ? "RACE INTELLIGENCE" : "RACE INTELLIGENCE"}</p>
+            <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">
+              {data.intelligence.confidence === "high"
+                ? english
+                  ? "High confidence"
+                  : "Aukštas patikimumas"
+                : data.intelligence.confidence === "moderate"
+                  ? english
+                    ? "Moderate confidence"
+                    : "Vidutinis patikimumas"
+                  : english
+                    ? "Learning"
+                    : "Mokomasi"}
+            </span>
+          </div>
+          <h3 className="mt-2 text-xl font-semibold">
+            {data.intelligence.action === "recover"
+              ? english
+                ? "Protect recovery"
+                : "Saugoti atsistatymą"
+              : data.intelligence.action === "reduce"
+                ? english
+                  ? "Reduce the next load"
+                  : "Mažinti kitą krūvį"
+                : data.intelligence.action === "proceed"
+                  ? english
+                    ? "Proceed with the plan"
+                    : "Tęsti pagal planą"
+                  : english
+                    ? "Build more evidence"
+                    : "Sukaupti daugiau duomenų"}
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {data.intelligence.reasons.join(" · ").replaceAll("_", " ")}
+          </p>
+          {data.intelligence.nextSession.intent ? (
+            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 border-t border-border pt-3">
+              <span className="text-sm capitalize">{data.intelligence.nextSession.intent}</span>
+              <strong className="text-primary">
+                {data.intelligence.nextSession.plannedDistanceMeters
+                  ? km(
+                      data.intelligence.nextSession.plannedDistanceMeters *
+                        data.intelligence.nextSession.volumeModifier,
+                    ) + " km"
+                  : Math.round(data.intelligence.nextSession.volumeModifier * 100) + "%"}
+              </strong>
+            </div>
+          ) : null}
+        </div>
         {data.adaptation.action !== "hold" && data.adaptationStatus === "persisted" ? (
           <div className="rounded-[1.5rem] border border-amber-500/25 bg-amber-500/5 p-4">
             <p className="fl-eyebrow">{english ? "PLAN ADAPTATION" : "PLANO ADAPTACIJA"}</p>
