@@ -673,10 +673,19 @@ try {
           usableBottom: viewport.height,
         });
       }
+      const captureScreenshot = async (options) => {
+  try {
+    await shown.page.screenshot({ ...options, timeout: 60_000 });
+  } catch (error) {
+    if (error?.name !== "TimeoutError") throw error;
+    await shown.page.waitForTimeout(1_000);
+    await shown.page.screenshot({ ...options, timeout: 60_000 });
+  }
+};
       const filename = `reference-${screen}-${viewport.name}.png`;
-      await shown.page.screenshot({ path: path.join(artifacts, filename), fullPage: true });
+      await captureScreenshot({ path: path.join(artifacts, filename), fullPage: true });
       if (viewport.name !== "reference") {
-        await shown.page.screenshot({
+        await captureScreenshot({
           path: path.join(artifacts, `reference-${screen}-${viewport.name}-viewport.png`),
           fullPage: false,
         });
