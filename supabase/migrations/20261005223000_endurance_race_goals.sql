@@ -3,7 +3,6 @@ create table if not exists public.endurance_race_goals (
   user_id uuid not null references auth.users(id) on delete cascade,
   distance text not null check (distance in ('5k','10k','half_marathon','marathon')),
   race_date date not null,
-  plan_start_day date not null default current_date,
   started_on date not null,
   target_time_seconds integer check (target_time_seconds is null or target_time_seconds > 0),
   sessions_per_week integer not null check (sessions_per_week between 2 and 7),
