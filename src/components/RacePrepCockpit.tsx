@@ -41,7 +41,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             {data.daysToRace} {english ? "days to race" : "d. iki starto"}
           </div>
         </header>
-        {data.adaptation.action !== "hold" ? (
+        {data.adaptation.action !== "hold" && data.adaptationStatus === "persisted" ? (
           <div className="rounded-[1.5rem] border border-amber-500/25 bg-amber-500/5 p-4">
             <p className="fl-eyebrow">{english ? "PLAN ADAPTATION" : "PLANO ADAPTACIJA"}</p>
             <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
