@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { baseLang, useI18n } from "@/lib/i18n";
-import { dayInTimeZone, browserTimeZone } from "@/lib/local-day";
 import { startRacePreparation } from "@/lib/endurance-race-goal.functions";
 import type { RaceDistance } from "@/lib/endurance-activity.schema";
 
@@ -29,7 +28,6 @@ export function RacePrepStarter() {
     setSaving(true);
     try {
       const response = await start({ data: {
-        today: dayInTimeZone(new Date(), browserTimeZone()),
         goal: { distance, raceDate, sessionsPerWeek: sessions, targetTimeSeconds: null, longestRecentRunMeters: null },
       }});
       setResult({ weeks: response.plan.weeks, measured: response.plan.baseline === "measured" });
