@@ -1,6 +1,11 @@
 export type AdaptationHistoryItem = {
   reason: string;
-  association: "improved_signals" | "mixed_signals" | "worse_signals" | "insufficient_signal" | null;
+  association:
+    | "improved_signals"
+    | "mixed_signals"
+    | "worse_signals"
+    | "insufficient_signal"
+    | null;
 };
 export type AdaptationLesson = {
   status: "insufficient_evidence" | "candidate" | "caution";
