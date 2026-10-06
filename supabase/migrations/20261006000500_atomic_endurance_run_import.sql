@@ -6,7 +6,7 @@ declare v_session uuid;v_existing uuid;
 begin
  if p_source not in ('apple_health','garmin','strava','device','manual_import') then raise exception 'invalid source';end if;
  if p_duration_seconds <= 0 or p_distance_meters <= 0 or p_split_coverage < 0 or p_split_coverage > 1 then raise exception 'invalid telemetry';end if;
- if auth.role()<>'service_role' and auth.uid() is distinct from p_user_id then raise exception 'not authorized';end if;
+ if auth.role()<>'service_role' then raise exception 'service role required';end if;
  select workout_session_id into v_existing from public.endurance_run_imports where user_id=p_user_id and source=p_source and external_activity_id=p_external_activity_id;
  if v_existing is not null then return v_existing;end if;
  insert into public.workout_sessions(user_id,started_at,finished_at,duration_seconds,title,total_volume,activity_kind,activity_environment,activity_source,distance_meters,average_heart_rate_bpm,elevation_gain_meters,average_cadence_spm)
@@ -17,4 +17,4 @@ begin
  return v_session;
 end$$;
 revoke all on function public.record_endurance_run_import(uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb) from public,anon;
-grant execute on function public.record_endurance_run_import(uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb) to authenticated,service_role;
+grant execute on function public.record_endurance_run_import(uuid,text,text,timestamptz,timestamptz,integer,numeric,integer,numeric,numeric,numeric,jsonb) to service_role;
