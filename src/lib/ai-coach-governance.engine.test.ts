@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { governCoachRecommendation } from "./ai-coach-governance.engine";
+import type { CoachContext, CoachRecommendation } from "./ai-coach.contract";
 
-const context: any = {
+const context = {
   endurance: {
     active: true,
     readiness: "on_track",
@@ -15,9 +16,12 @@ const context: any = {
       "override_deterministic_training_decision",
     ],
   },
-};
+} as CoachContext;
 
-const recommendation = (actions: any[], summary = "Keep going"): any => ({
+const recommendation = (
+  actions: CoachRecommendation["actions"],
+  summary = "Keep going",
+): CoachRecommendation => ({
   schemaVersion: "1.0",
   decision: "ADJUST_NEXT_WORKOUT",
   priority: "MEDIUM",
@@ -64,7 +68,7 @@ describe("coach governance", () => {
   });
 
   it("blocks keep-plan while deterministic recovery is governing", () => {
-    const recoveryContext: any = {
+    const recoveryContext: CoachContext = {
       ...context,
       endurance: {
         ...context.endurance,
