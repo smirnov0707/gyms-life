@@ -1,5 +1,3 @@
-create extension if not exists pgcrypto;
-
 create or replace function public.record_endurance_adaptation(
   p_user_id uuid,
   p_race_goal_id uuid,
@@ -51,9 +49,7 @@ begin
     raise exception 'race goal ownership mismatch';
   end if;
 
-  v_fingerprint := encode(
-    digest(
-      concat_ws(
+  v_fingerprint := md5(concat_ws(
         '|',
         p_race_goal_id::text,
         p_decision_on::text,
@@ -62,11 +58,7 @@ begin
         p_reason,
         p_evidence::text,
         p_engine_version
-      ),
-      'sha256'
-    ),
-    'hex'
-  );
+      ));
 
   return query
   insert into public.endurance_adaptation_records (
