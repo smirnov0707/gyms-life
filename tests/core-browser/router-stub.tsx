@@ -51,6 +51,7 @@ export const useLocation = () => ({
     "/app",
   search: {},
 });
+export const redirect = (options: Record<string, unknown>) => ({ ...options, isRedirect: true });
 export const useNavigate =
   () =>
   ({ to }: { to: string }) =>

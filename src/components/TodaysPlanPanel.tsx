@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
+import { WorkoutMotionPreview } from "@/components/WorkoutMotionPreview";
 
 /**
  * The session the athlete is meant to do today, listed rather than summarised.
@@ -56,6 +57,14 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
           {workout.estimated_minutes} min
         </p>
       </div>
+      {workout.exercises[0] ? (
+        <div className="px-3 pt-1">
+          <WorkoutMotionPreview
+            slug={workout.exercises[0].slug}
+            title={workout.exercises[0].name}
+          />
+        </div>
+      ) : null}
       <ul className="mt-2 px-3">
         {workout.exercises.map((exercise) => (
           <ExerciseRow key={`${exercise.slug}-${exercise.name}`} exercise={exercise} />

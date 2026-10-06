@@ -25,12 +25,14 @@ export const Route = createFileRoute("/_authenticated/coach")({
       { title: "Intelligence — GYMS.LIFE" },
       {
         name: "description",
-        content: "GYMS.LIFE Intelligence dialogas apie Today sprendimus, My Twin būseną ir Lab tyrimus.",
+        content:
+          "GYMS.LIFE Intelligence dialogas apie Today sprendimus, My Twin būseną ir Lab tyrimus.",
       },
       { property: "og:title", content: "Intelligence — GYMS.LIFE" },
       {
         property: "og:description",
-        content: "Klausk savo sistemos apie sprendimus, būseną, įrodymus ir modeliuojamus scenarijus.",
+        content:
+          "Klausk savo sistemos apie sprendimus, būseną, įrodymus ir modeliuojamus scenarijus.",
       },
     ],
   }),
@@ -106,7 +108,12 @@ function CoachPage() {
         </div>
       </header>
 
-      <section className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface">
+      <section
+        className="fl-coach-conversation fl-premium-card relative mt-4 flex min-h-[520px] flex-1 flex-col overflow-hidden rounded-[2rem] border border-border bg-surface"
+        data-conversation-state={
+          messages.length === 0 && !busy ? "idle" : busy ? "thinking" : "active"
+        }
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"

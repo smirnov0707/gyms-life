@@ -43,8 +43,8 @@ export function AuthFrame({
     },
     {
       icon: MessageCircle,
-      title: lt ? "Treneris" : "Coach",
-      detail: lt ? "Paversk įžvalgas veiksmais" : "Turn insight into action",
+      title: "Intelligence",
+      detail: lt ? "Klausk su savo kontekstu" : "Ask with your context",
     },
   ];
   return (

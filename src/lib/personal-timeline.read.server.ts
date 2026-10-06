@@ -17,7 +17,7 @@ export async function loadPersonalTimeline(
   const { data, error } = await supabase
     .from("personal_timeline_events")
     .select(
-      "id,event_type,occurred_at,created_at,timezone,provenance,quality,source_system,source_table,source_reference,schema_version",
+      "id,event_type,occurred_at,created_at,timezone,provenance,quality,source_system,source_table,source_reference,schema_version,summary",
     )
     .eq("user_id", userId)
     .not("event_type", "in", `(${TIMELINE_AUDIT_EVENT_TYPES.join(",")})`)
