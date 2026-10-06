@@ -1,6 +1,6 @@
 alter table public.endurance_adaptation_records add column if not exists decision_fingerprint text;
 update public.endurance_adaptation_records
-set decision_fingerprint=encode(digest(concat_ws('|',action,volume_modifier::text,reason,evidence::text,engine_version),'sha256'),'hex')
+set decision_fingerprint=md5(concat_ws('|',action,volume_modifier::text,reason,evidence::text,engine_version)) || md5(concat_ws('|',engine_version,evidence::text,reason,volume_modifier::text,action))
 where decision_fingerprint is null;
 alter table public.endurance_adaptation_records alter column decision_fingerprint set not null;
 alter table public.endurance_adaptation_records drop constraint if exists endurance_adaptation_records_decision_fingerprint_check;
