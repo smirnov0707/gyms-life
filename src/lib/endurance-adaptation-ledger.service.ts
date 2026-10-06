@@ -38,7 +38,9 @@ export async function persistEnduranceAdaptation(
     )
     .digest("hex");
 
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const canonical=[input.decision.action,String(input.decision.volumeModifier),input.decision.reason,String(evidence.plannedSessions),String(evidence.completedPlannedSessions),String(evidence.lowResponseStreak),String(evidence.readinessBand),String(evidence.distanceCompletionRatio),String(evidence.recentOverTargetRuns)].join("|");
+ const decisionFingerprint=await sha256Hex(canonical);
+ const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("record_endurance_adaptation", {
     p_user_id: input.userId,
     p_race_goal_id: input.raceGoalId,
