@@ -25,6 +25,24 @@ describe("adaptation memory", () => {
     expect(lesson.status).toBe("caution");
     expect(lesson.reason).toBe("repeated_over_target_work");
     expect(lesson.supportingOutcomes).toBe(3);
+    expect(lesson.evidenceStrength).toBe("low");
+  });
+  it("grades repeated consistent outcomes without turning them into causal proof", () => {
+    const moderate = deriveAdaptationLesson(
+      [1, 2, 3, 4].map(() => ({
+        reason: "on_track",
+        association: "improved_signals" as const,
+      })),
+    );
+    const high = deriveAdaptationLesson(
+      [1, 2, 3, 4, 5, 6].map(() => ({
+        reason: "on_track",
+        association: "improved_signals" as const,
+      })),
+    );
+    expect(moderate.evidenceStrength).toBe("moderate");
+    expect(high.evidenceStrength).toBe("high");
+    expect(high.statement).toContain("not causal proof");
   });
   it("does not call mixed evidence a caution", () =>
     expect(
