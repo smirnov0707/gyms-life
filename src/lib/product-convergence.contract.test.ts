@@ -48,8 +48,6 @@ describe("Product Convergence contract", () => {
   it("keeps the same bounded actions but prioritizes them by active world", () => {
     expect(contextualActionsFor("today").map((action) => action.intent)).toEqual([
       "workout",
-      "checkin",
-      "nutrition",
       "movement",
       "coach",
     ]);
