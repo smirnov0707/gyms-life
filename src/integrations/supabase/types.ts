@@ -456,9 +456,9 @@ export type Database = {
         ]
       }
       endurance_adaptation_records: {
-        Row: { action: string; created_at: string; decision_on: string; engine_version: string; evidence: Json; id: string; outcome: Json | null; outcome_recorded_at: string | null; race_goal_id: string; reason: string; user_id: string; volume_modifier: number }
-        Insert: { action: string; created_at?: string; decision_on: string; engine_version: string; evidence: Json; id?: string; outcome?: Json | null; outcome_recorded_at?: string | null; race_goal_id: string; reason: string; user_id: string; volume_modifier: number }
-        Update: { action?: string; created_at?: string; decision_on?: string; engine_version?: string; evidence?: Json; id?: string; outcome?: Json | null; outcome_recorded_at?: string | null; race_goal_id?: string; reason?: string; user_id?: string; volume_modifier?: number }
+        Row: { action: string; created_at: string; decision_fingerprint: string; decision_on: string; engine_version: string; evidence: Json; id: string; outcome: Json | null; outcome_recorded_at: string | null; race_goal_id: string; reason: string; user_id: string; volume_modifier: number }
+        Insert: { action: string; created_at?: string; decision_fingerprint: string; decision_on: string; engine_version: string; evidence: Json; id?: string; outcome?: Json | null; outcome_recorded_at?: string | null; race_goal_id: string; reason: string; user_id: string; volume_modifier: number }
+        Update: { action?: string; created_at?: string; decision_fingerprint?: string; decision_on?: string; engine_version?: string; evidence?: Json; id?: string; outcome?: Json | null; outcome_recorded_at?: string | null; race_goal_id?: string; reason?: string; user_id?: string; volume_modifier?: number }
         Relationships: []
       }
       endurance_run_imports: {
@@ -1758,7 +1758,7 @@ export type Database = {
         Returns: string
       }
       record_endurance_adaptation: {
-        Args: { p_user_id: string; p_race_goal_id: string; p_decision_on: string; p_action: string; p_volume_modifier: number; p_reason: string; p_evidence: Json; p_engine_version: string }
+        Args: { p_user_id: string; p_race_goal_id: string; p_decision_on: string; p_action: string; p_volume_modifier: number; p_reason: string; p_evidence: Json; p_engine_version: string; p_decision_fingerprint: string }
         Returns: { id: string; action: string; volume_modifier: number; reason: string; created_at: string }[]
       }
       record_endurance_adaptation_outcome: {
