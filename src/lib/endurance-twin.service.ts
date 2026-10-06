@@ -58,6 +58,7 @@ export async function loadEnduranceTwinProfile(supabase: SupabaseClient<Database
           daysToRace: racePrep.daysToRace,
           readiness: racePrep.readiness,
           decision: racePrep.intelligence,
+          adaptationLesson: racePrep.adaptationLesson,
         }
       : null;
   return {
