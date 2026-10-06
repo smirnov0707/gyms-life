@@ -1,13 +1,9 @@
 alter table public.endurance_adaptation_records add column if not exists decision_fingerprint text;
 
 update public.endurance_adaptation_records
-set decision_fingerprint = encode(
-  digest(
-    concat_ws('|', user_id::text, race_goal_id::text, decision_on::text, engine_version, action, volume_modifier::text, reason, evidence::text),
-    'sha256'
-  ),
-  'hex'
-)
+set decision_fingerprint =
+  md5(concat_ws('|', user_id::text, race_goal_id::text, decision_on::text, engine_version, action, volume_modifier::text, reason, evidence::text))
+  || md5(concat_ws('|', evidence::text, reason, action, engine_version, decision_on::text, race_goal_id::text, user_id::text))
 where decision_fingerprint is null;
 
 alter table public.endurance_adaptation_records alter column decision_fingerprint set not null;
