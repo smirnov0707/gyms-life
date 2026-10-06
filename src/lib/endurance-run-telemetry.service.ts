@@ -28,6 +28,7 @@ export async function persistRunTelemetry(
   const { data: workoutSessionId, error } = await supabaseAdmin.rpc("record_endurance_run_import", {
     p_user_id: userId,
     p_source: t.source,
+    p_environment: t.environment,
     p_external_activity_id: t.externalActivityId,
     p_started_at: t.startedAt,
     p_finished_at: finishedAt,
