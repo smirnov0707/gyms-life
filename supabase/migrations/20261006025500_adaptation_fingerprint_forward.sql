@@ -32,6 +32,7 @@ alter table public.endurance_adaptation_records
   add constraint endurance_adaptation_records_decision_fingerprint_check
   check (decision_fingerprint ~ '^[a-f0-9]{64}$');
 
+alter table public.endurance_adaptation_records drop constraint if exists endurance_adaptation_records_user_id_race_goal_id_decision_on_engine_version_key;
 drop index if exists endurance_one_adaptation_per_day;
 drop index if exists endurance_adaptation_decision_fingerprint_uidx;
 
