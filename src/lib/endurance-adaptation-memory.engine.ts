@@ -1,4 +1,5 @@
-export type AdaptationOutcomeAssociation = "improved_signals" | "mixed_signals" | "worse_signals" | "insufficient_signal" | null;
+export type AdaptationOutcomeAssociation =
+  "improved_signals" | "mixed_signals" | "worse_signals" | "insufficient_signal" | null;
 
 export type AdaptationHistoryItem = {
   reason: string;
