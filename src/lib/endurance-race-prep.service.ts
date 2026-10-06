@@ -69,7 +69,10 @@ export async function loadActiveRacePrep(
   }).length;
 
   const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_race_goal_id === row.id && run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
-  const baseNextSession = currentWeek.sessions.find((session) => session.sessionKey ? !completedSessionKeys.has(session.sessionKey) : true)\n    ?? currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)]\n    ?? null;
+  const baseNextSession =
+    currentWeek.sessions.find((session) => !completedSessionKeys.has(session.sessionKey)) ??
+    currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)] ??
+    null;
   const historySince = dayBoundsInTimeZone(dayOffset(today, -84), zone).start;
   const { data: longHistory, error: longHistoryError } = await supabase
     .from("workout_sessions")
@@ -120,7 +123,7 @@ export async function loadActiveRacePrep(
     longestRunProgressRate: longRunCoverage,
     recentLowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
     latestReadinessBand: readinessBand,
-    repeatedOverTargetRuns: 0,
+    repeatedOverTargetRuns: recentOverTargetRuns,
   });
 
   const adaptationSignal = {
