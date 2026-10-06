@@ -1,3 +1,4 @@
+import { EnduranceEnvironmentSchema } from "./endurance-activity.schema";
 import { z } from "zod";
 export const RunTelemetrySourceSchema=z.enum(["apple_health","garmin","strava","device","manual_import"]);
 export const RunSplitSchema=z.object({
@@ -10,6 +11,7 @@ export const RunSplitSchema=z.object({
 }).strict();
 export const RunTelemetrySchema=z.object({
  source:RunTelemetrySourceSchema,
+ environment:EnduranceEnvironmentSchema,
  externalActivityId:z.string().trim().min(1).max(300),
  startedAt:z.string().datetime({offset:true}),
  distanceMeters:z.number().finite().positive().max(250000),
