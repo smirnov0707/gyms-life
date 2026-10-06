@@ -70,9 +70,7 @@ export async function loadActiveRacePrep(
 
   const completedSessionKeys = new Set((runs ?? []).flatMap((run) => run.endurance_race_goal_id === row.id && run.endurance_plan_session_key ? [run.endurance_plan_session_key] : []));
   const baseNextSession =
-    currentWeek.sessions.find((session) => !completedSessionKeys.has(session.sessionKey)) ??
-    currentWeek.sessions[Math.min(completed.length, currentWeek.sessions.length - 1)] ??
-    null;
+    currentWeek.sessions.find((session) => !completedSessionKeys.has(session.sessionKey)) ?? null;
   const historySince = dayBoundsInTimeZone(dayOffset(today, -84), zone).start;
   const historyUntil = dayBoundsInTimeZone(dayOffset(today, 1), zone).start;
   const { data: longHistory, error: longHistoryError } = await supabase
