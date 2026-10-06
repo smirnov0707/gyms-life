@@ -30,9 +30,17 @@ export function applyAdaptationToRemainingSessions(input: {
       originalDurationMinutes: originalDuration,
       appliedVolumeModifier: modifier,
       plannedDistanceMeters:
-        originalDistance === null ? null : roundDistance(originalDistance * modifier),
+        originalDistance === null
+          ? null
+          : canAdapt
+            ? roundDistance(originalDistance * modifier)
+            : originalDistance,
       plannedDurationMinutes:
-        originalDuration === null ? null : roundMinutes(originalDuration * modifier),
+        originalDuration === null
+          ? null
+          : canAdapt
+            ? roundMinutes(originalDuration * modifier)
+            : originalDuration,
     };
   });
 }
