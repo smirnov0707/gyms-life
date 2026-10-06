@@ -33,7 +33,7 @@ describe("buildCoachContext", () => {
       },
     });
 
-    expect(context.schemaVersion).toBe("1.2");
+    expect(context.schemaVersion).toBe("1.3");
     expect(context.endurance.active).toBe(false);
     expect(context.performance.totalVolumeKg).toBe(1200);
     expect(context.activePlan?.title).toBe("Strength");
