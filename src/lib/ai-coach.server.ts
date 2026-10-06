@@ -36,6 +36,11 @@ export async function assembleCoachContext(args: {
           phase: racePrep.currentWeek.phase,
           readiness: racePrep.readiness.status,
           evidenceLevel: racePrep.readiness.evidenceLevel,
+          adaptation: {
+            action: racePrep.adaptation.action,
+            volumeModifier: racePrep.adaptation.volumeModifier,
+            reason: racePrep.adaptation.reason,
+          },
           nextSession: racePrep.nextSession
             ? {
                 intent: racePrep.nextSession.intent,
