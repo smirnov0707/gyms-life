@@ -100,5 +100,9 @@ export async function loadLatestEnduranceAdaptation(
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  return parseEnduranceAdaptationDecision({\n    action: data.action,\n    volumeModifier: Number(data.volume_modifier),\n    reason: data.reason,\n  });
+  return parseEnduranceAdaptationDecision({
+    action: data.action,
+    volumeModifier: Number(data.volume_modifier),
+    reason: data.reason,
+  });
 }
