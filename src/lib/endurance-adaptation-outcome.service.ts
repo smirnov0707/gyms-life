@@ -77,7 +77,7 @@ export async function recordDueAdaptationOutcomes(
       readinessBandAfter: readinessBand(checkin?.readiness_score),
       daysObserved: Math.floor((now.getTime() - Date.parse(record.created_at)) / DAY_MS),
     });
-    if (outcome.status === "too_early") continue;
+    if (outcome.status === "too_early" || outcome.association === "insufficient_signal") continue;
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: recorded, error: updateError } = await supabaseAdmin.rpc(
