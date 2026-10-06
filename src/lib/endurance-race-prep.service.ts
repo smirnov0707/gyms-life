@@ -60,7 +60,7 @@ export async function loadActiveRacePrep(
     durationMinutes: Number(run.duration_seconds ?? 0) / 60,
     perceivedEffort: run.perceived_effort,
   }));
-  const progress = summarizeRaceWeek({ planned: currentWeek.sessions, completed });
+  const baseProgress = summarizeRaceWeek({ planned: currentWeek.sessions, completed });
   const plannedByKey = new Map(currentWeek.sessions.map((session) => [session.sessionKey, session] as const));
   const recentOverTargetRuns = completed.filter((run) => {
     if (!run.planSessionKey) return false;
@@ -111,14 +111,14 @@ export async function loadActiveRacePrep(
   const longRunProgress = assessLongRunProgress(longCandidates);
   const longRunCoverage = raceSpecificLongRunCoverage(longRunProgress.recentLongestMeters, RACE_DISTANCE_METERS[goal.distance]);
 
-    const sessionRate = progress.plannedSessions > 0 ? progress.completedSessions / progress.plannedSessions : null;
+    const sessionRate = baseProgress.plannedSessions > 0 ? baseProgress.completedSessions / baseProgress.plannedSessions : null;
   const athlete = await loadDigitalAthleteState(supabase, userId, new Date(), zone);
   const latestScore = athlete.recovery.latestReadinessScore;
   const readinessBand = latestScore === null ? "unknown" : latestScore < 55 ? "low" : latestScore < 80 ? "moderate" : "high";
   const readiness = assessRaceReadiness({
     weeksObserved: elapsedWeeks,
     sessionCompletionRate: sessionRate,
-    distanceCompletionRate: progress.distanceCompletionRatio,
+    distanceCompletionRate: baseProgress.distanceCompletionRatio,
     longestRunProgressRate: longRunCoverage,
     recentLowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
     latestReadinessBand: readinessBand,
@@ -126,15 +126,16 @@ export async function loadActiveRacePrep(
   });
 
   const adaptationSignal = {
-    completedPlannedSessions: progress.completedSessions,
-    plannedSessions: progress.plannedSessions,
+    completedPlannedSessions: baseProgress.completedSessions,
+    plannedSessions: baseProgress.plannedSessions,
     lowResponseStreak: athlete.training.selfReportedResponse.recentLowFeelingStreak,
     readinessBand,
-    distanceCompletionRatio: progress.distanceCompletionRatio,
+    distanceCompletionRatio: baseProgress.distanceCompletionRatio,
     recentOverTargetRuns,
   } as const;
   const adaptation = decideEnduranceAdaptation(adaptationSignal);
   const effectiveSessions = applyAdaptationToRemainingSessions({ sessions: currentWeek.sessions, completedSessionKeys, adaptation });
+  const progress = summarizeRaceWeek({ planned: effectiveSessions, completed });
   const nextSession = baseNextSession ? effectiveSessions[currentWeek.sessions.indexOf(baseNextSession)] ?? null : null;
-  return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, effectiveSessions, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal, completedSessionKeys: [...completedSessionKeys] };
+  return { status: "active" as const, goalId: row.id, raceDistance: goal.distance, daysToRace, currentWeek, effectiveSessions, baseProgress, progress, nextSession, baseline: plan.baseline, elapsedWeeks, readiness, longRunProgress, longRunCoverage, paceProfile, terrainResponse, efficiencyTrend, adaptation, adaptationSignal, completedSessionKeys: [...completedSessionKeys] };
 }
