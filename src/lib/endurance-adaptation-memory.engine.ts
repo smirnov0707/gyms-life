@@ -6,7 +6,6 @@ export type AdaptationHistoryItem = {
     | "worse_signals"
     | "insufficient_signal"
     | null;
-    "improved_signals" | "mixed_signals" | "worse_signals" | "insufficient_signal" | null;
 };
 export type AdaptationLesson = {
   status: "insufficient_evidence" | "candidate" | "caution";
