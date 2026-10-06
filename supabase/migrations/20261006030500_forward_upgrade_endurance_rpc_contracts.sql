@@ -151,12 +151,17 @@ set search_path = public
 as $$
 begin
   if auth.role() <> 'service_role'
-     and new.endurance_match_source = 'system_confident'
+     and (
+       new.endurance_match_source = 'system_confident'
+       or (tg_op = 'UPDATE' and old.endurance_match_source = 'system_confident')
+     )
      and (
        tg_op = 'INSERT'
        or old.endurance_match_source is distinct from new.endurance_match_source
        or old.endurance_session_intent is distinct from new.endurance_session_intent
        or old.endurance_match_score is distinct from new.endurance_match_score
+       or old.endurance_plan_session_key is distinct from new.endurance_plan_session_key
+       or old.endurance_race_goal_id is distinct from new.endurance_race_goal_id
      )
   then
     raise exception 'system_confident provenance is server-owned';
