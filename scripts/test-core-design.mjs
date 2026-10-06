@@ -27,8 +27,12 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
             page.getByRole("heading", { name: "Synthetic seven-day meal plan" }),
           ).toBeVisible();
         if (screen === "profile") {
-          const identity = page.locator("details.fl-profile-section").filter({ hasText: "Identity & body" });
-          const memory = page.locator("details.fl-profile-section").filter({ hasText: "Memory & privacy" });
+          const identity = page
+            .locator("details.fl-profile-section")
+            .filter({ hasText: "Identity & body" });
+          const memory = page
+            .locator("details.fl-profile-section")
+            .filter({ hasText: "Memory & privacy" });
           if ((await identity.getAttribute("open")) === null)
             await identity.locator(":scope > summary").click();
           if ((await memory.getAttribute("open")) === null)
@@ -105,8 +109,11 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           await expect(add).toBeDisabled();
         }
         if (screen === "profile") {
-          const identity = page.locator("details.fl-profile-section").filter({ hasText: "Identity & body" });
-          if ((await identity.getAttribute("open")) === null) await identity.locator(":scope > summary").click();
+          const identity = page
+            .locator("details.fl-profile-section")
+            .filter({ hasText: "Identity & body" });
+          if ((await identity.getAttribute("open")) === null)
+            await identity.locator(":scope > summary").click();
           await expect(page.getByRole("spinbutton", { name: "Height (cm)" })).toHaveValue("170");
           if (width === 1440) {
             const body = await page.locator(".fl-profile-body").boundingBox();
