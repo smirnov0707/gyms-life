@@ -1,12 +1,8 @@
-create extension if not exists pgcrypto;
-
 alter table public.endurance_adaptation_records
   add column if not exists decision_fingerprint text;
 
 update public.endurance_adaptation_records
-set decision_fingerprint = encode(
-  digest(
-    concat_ws(
+set decision_fingerprint = md5(concat_ws(
       '|',
       race_goal_id::text,
       decision_on::text,
@@ -15,11 +11,7 @@ set decision_fingerprint = encode(
       reason,
       evidence::text,
       engine_version
-    ),
-    'sha256'
-  ),
-  'hex'
-)
+    ))
 where decision_fingerprint is null;
 
 alter table public.endurance_adaptation_records
@@ -30,7 +22,7 @@ alter table public.endurance_adaptation_records
 
 alter table public.endurance_adaptation_records
   add constraint endurance_adaptation_records_decision_fingerprint_check
-  check (decision_fingerprint ~ '^[a-f0-9]{64}$');
+  check (decision_fingerprint ~ '^[a-f0-9]{32}$');
 
 alter table public.endurance_adaptation_records drop constraint if exists endurance_adaptation_records_user_id_race_goal_id_decision_on_engine_version_key;
 drop index if exists endurance_one_adaptation_per_day;
