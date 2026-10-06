@@ -45,7 +45,7 @@ describe("Twin scene load attempt", () => {
     const { attempt, handle, onFailure } = setup();
     vi.advanceTimersByTime(10_000);
     attempt.attach(handle);
-    vi.advanceTimersByTime(5_000);
+    vi.advanceTimersByTime(TWIN_SCENE_LOAD_TIMEOUT_MS - 10_000);
     expect(onFailure).toHaveBeenCalledTimes(1);
     expect(handle.dispose).toHaveBeenCalledTimes(1);
   });
