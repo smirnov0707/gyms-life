@@ -260,7 +260,16 @@ try {
     const context = page.locator(".fl-today-context:visible").first();
     if (await context.count()) {
       if ((await context.getAttribute("open")) === null) {
-        await context.locator(":scope > summary").click();
+        // Native keyboard activation avoids a repeated pointer-scroll race on
+        // the GPU-heavy page. Visibility, focus, viewport reachability and the
+        // opened state are still required; never force a click or set `open`.
+        const summary = context.locator(":scope > summary");
+        await expect(summary).toBeVisible({ timeout: 30_000 });
+        await summary.focus({ timeout: 30_000 });
+        await expect(summary).toBeFocused({ timeout: 30_000 });
+        await expect(summary).toBeInViewport({ timeout: 30_000 });
+        await summary.press("Enter", { timeout: 30_000 });
+        await expect(context).toHaveAttribute("open", "", { timeout: 30_000 });
       }
     }
     await openVisibleDetails(page.getByText(/^(What changed|Kas pasikeitė)$/));
