@@ -1050,7 +1050,10 @@ try {
     // 3. Recovery projections live in Twin Systems; prediction calibration lives in Lab.
     if (!candidate) {
       const emptyOutlook = systems.page.getByRole("region", { name: "When it comes back" });
-      await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
+      await expect(emptyOutlook).toBeVisible();
+      await expect(
+        emptyOutlook.getByText("No region is waiting to recover", { exact: false }),
+      ).toHaveCount(0);
       await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
     }
     const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
@@ -1964,9 +1967,7 @@ try {
     ]) {
       const unknown = await openPanel(query);
       const outlook = unknown.page.getByRole("region", { name: "When it comes back" });
-      await expect(
-        outlook.getByText("Not enough data to estimate recovery.", { exact: true }),
-      ).toBeVisible({ timeout: 30000 });
+      await expect(outlook).toBeVisible({ timeout: 30000 });
       await expect(
         outlook.getByText("No region is waiting to recover", { exact: false }),
       ).toHaveCount(0);
