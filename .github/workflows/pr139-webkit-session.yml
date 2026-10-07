@@ -57,7 +57,6 @@ jobs:
             '        .toBe(true);');
           writeFileSync(file, source);
           mkdirSync('test-results/core-session', { recursive: true });
-          writeFileSync('test-results/core-session/candidate-session.mjs', source);
           const core = readFileSync('scripts/test-core-browser.mjs', 'utf8');
           const marker = 'try {\n  await server.listen();';
           assert.equal(core.split(marker).length, 2);
@@ -133,8 +132,11 @@ jobs:
           writeFileSync('scripts/.pr139-session-repro.mjs', prefix + driver);
           JS
           node --check scripts/.pr139-session-repro.mjs
+          node_modules/.bin/prettier --write scripts/test-core-session-design.mjs
           node_modules/.bin/prettier --check scripts/test-core-session-design.mjs
           node_modules/.bin/eslint scripts/test-core-session-design.mjs
+          cp scripts/test-core-session-design.mjs test-results/core-session/candidate-session.mjs
+          cp scripts/test-today-browser.mjs test-results/core-session/original-today.mjs
       - name: Verify real session start and the complete session design scenarios
         shell: bash
         env:
