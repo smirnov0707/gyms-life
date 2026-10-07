@@ -1,0 +1,38 @@
+name: PR139 isolated reproduction workspace
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-repro-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fead92a83904e9cdd11fa2164c7e2e0b6ab158e5
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Archive only tracked source and installed dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr139-repro
+          git archive --format=tar HEAD > /tmp/pr139-repro/workspace.tar
+          tar -rf /tmp/pr139-repro/workspace.tar node_modules
+          gzip -1 /tmp/pr139-repro/workspace.tar
+          printf '%s\n' 'fead92a83904e9cdd11fa2164c7e2e0b6ab158e5' > /tmp/pr139-repro/source-commit.txt
+          sha256sum /tmp/pr139-repro/workspace.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr139-repro-workspace
+          path: /tmp/pr139-repro
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
