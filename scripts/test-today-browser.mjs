@@ -878,7 +878,7 @@ try {
   );
 
   if (!candidate) {
-      for (const scenario of ["empty", "failure"]) {
+    for (const scenario of ["empty", "failure"]) {
       const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
         viewport: { width: 390, height: 844 },
         locale: "en-US",
@@ -923,7 +923,13 @@ try {
     });
     await menu.page.getByRole("button", { name: "Do now", exact: true }).click();
     const drawer = menu.page.getByRole("dialog");
-    for (const action of ["Start workout", "Check in", "Log food", "Analyse movement", "Ask Coach"]) {
+    for (const action of [
+      "Start workout",
+      "Check in",
+      "Log food",
+      "Analyse movement",
+      "Ask Coach",
+    ]) {
       await expect(drawer.getByText(action, { exact: true })).toBeVisible();
     }
     await expect(drawer.getByText("Exercises", { exact: true })).toHaveCount(0);
@@ -1035,7 +1041,10 @@ try {
         await expect(button).toBeEnabled({ timeout: 30000 });
         await button.click();
         await expect(
-          checked.page.getByTestId("received-data-refresh-status").filter({ visible: true }).first(),
+          checked.page
+          .getByTestId("received-data-refresh-status")
+          .filter({ visible: true })
+          .first(),
         ).toHaveText(expected);
         await expect(button).toBeEnabled();
         expect(checked.errors).toEqual([]);
@@ -1073,7 +1082,9 @@ try {
     const railText = (await rail.innerText()).replace(/[—–-]/g, "");
     expect(/\d/.test(railText)).toBe(false);
     await expect(rail.getByRole("link", { name: "Connect a device" })).toBeVisible();
-    record("Twin Systems keeps an empty source honest, with no invented figure and a way to fix it");
+    record(
+      "Twin Systems keeps an empty source honest, with no invented figure and a way to fix it",
+    );
 
     // 3. Recovery projections live in Twin Systems; prediction calibration lives in Lab.
     if (!candidate) {
@@ -1152,7 +1163,9 @@ try {
     //    page for a shoulder, a screen share or a screenshot to pick up.
     const health = await openPanel("?panel=health");
     const KEY = "11111111-2222-4333-8444-555555555555";
-    await expect(health.page.getByRole("region", { name: "Connect a watch or phone" })).toBeVisible();
+    await expect(
+      health.page.getByRole("region", { name: "Connect a watch or phone" }),
+    ).toBeVisible();
     expect(await health.page.locator("body").innerText()).not.toContain(KEY);
     await health.page.getByRole("button", { name: "Show key" }).click();
     await expect(health.page.getByText(KEY, { exact: true })).toBeVisible();
@@ -1180,7 +1193,10 @@ try {
     ]) {
       expect(healthText, `${field} is not documented on the setup screen`).toContain(field);
     }
-    await health.page.screenshot({ path: path.join(artifacts, "health-source.png"), fullPage: true });
+    await health.page.screenshot({
+      path: path.join(artifacts, "health-source.png"),
+      fullPage: true,
+    });
     expect(health.errors).toEqual([]);
     record("the ingest key stays masked until asked for, and delivery status is stated");
 
