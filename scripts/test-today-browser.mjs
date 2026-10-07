@@ -1076,10 +1076,21 @@ try {
     expect(body).not.toContain("Not enough verified data yet."); // obsolete copy must not mask a stuck loading state
 
     await writeFile(path.join(artifacts, "today.txt"), body);
-    await first.page.screenshot({
-      path: path.join(artifacts, "today-desktop.png"),
-      fullPage: true,
-    });
+    try {
+      await first.page.screenshot({
+        path: path.join(artifacts, "today-desktop.png"),
+        fullPage: true,
+        timeout: 60_000,
+      });
+    } catch (error) {
+      if (error?.name !== "TimeoutError") throw error;
+      await first.page.waitForTimeout(1_000);
+      await first.page.screenshot({
+        path: path.join(artifacts, "today-desktop.png"),
+        fullPage: true,
+        timeout: 60_000,
+      });
+    }
     record("panels without evidence say so instead of showing a figure");
 
     // 4. A failed read is a different sentence from an empty one. The signal surface lives in Twin Systems.
