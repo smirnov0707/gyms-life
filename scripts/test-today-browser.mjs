@@ -246,62 +246,51 @@ try {
   };
 
   const openVisibleDetails = async (summary) => {
-    if (!(await summary.count()) || !(await summary.first().isVisible())) return false;
-    const target = summary.first();
-    const details = target.locator("xpath=ancestor::details[1]");
-    if ((await details.getAttribute("open")) === null) await target.click();
-    return true;
+    // Only a real direct summary can toggle native details. A heading inside
+    // closed content can have a layout box without being an actionable control.
+    await expect(summary).toHaveCount(1, { timeout: 30_000 });
+    await expect(summary).toBeVisible({ timeout: 30_000 });
+    expect(await summary.evaluate((node) => node.tagName)).toBe("SUMMARY");
+    const details = summary.locator("..");
+    expect(await details.evaluate((node) => node.tagName)).toBe("DETAILS");
+    if ((await details.getAttribute("open")) === null) {
+      await summary.focus({ timeout: 30_000 });
+      await expect(summary).toBeFocused({ timeout: 30_000 });
+      await expect(summary).toBeInViewport({ timeout: 30_000 });
+      await summary.press("Enter", { timeout: 30_000 });
+    }
+    await expect(details).toHaveAttribute("open", "", { timeout: 30_000 });
   };
 
   const openTodayChangesLayer = async (page) => {
-    // Today convergence moved secondary material under the canonical Deeper
-    // context disclosure. Open that structural layer first: its summary also
-    // carries explanatory copy, so matching the visible label alone is brittle.
-    const context = page.locator(".fl-today-context:visible").first();
-    if (await context.count()) {
-      if ((await context.getAttribute("open")) === null) {
-        // Native keyboard activation avoids a repeated pointer-scroll race on
-        // the GPU-heavy page. Visibility, focus, viewport reachability and the
-        // opened state are still required; never force a click or set `open`.
-        const summary = context.locator(":scope > summary");
-        await expect(summary).toBeVisible({ timeout: 30_000 });
-        await summary.focus({ timeout: 30_000 });
-        await expect(summary).toBeFocused({ timeout: 30_000 });
-        await expect(summary).toBeInViewport({ timeout: 30_000 });
-        await summary.press("Enter", { timeout: 30_000 });
-        await expect(context).toHaveAttribute("open", "", { timeout: 30_000 });
-      }
-    }
-    await openVisibleDetails(page.getByText(/^(What changed|Kas pasikeitė)$/));
+    // Scope to the actual outer disclosure, not another use of a style class.
+    // Wait for it to mount rather than silently skipping a loading frame.
+    const context = page.locator(".fl-today-world > details.fl-today-context");
+    await openVisibleDetails(context.locator(":scope > summary"));
+    // "What changed" is now a paragraph, not a disclosure. Never click it.
+    await expect(context.locator(".fl-today-changes")).toBeVisible({ timeout: 30_000 });
+    return context;
   };
 
   const openTodayEvidenceLayer = async (page) => {
-    await openTodayChangesLayer(page);
+    const context = await openTodayChangesLayer(page);
     await openVisibleDetails(
-      page.getByText(
-        /^(Signals & evidence|Signalai ir įrodymai|Why this\? · Evidence & signals|Kodėl taip\? · Įrodymai ir signalai)$/,
-      ),
+      context.locator("details > summary").filter({
+        hasText: /^(Signals & evidence|Signalai ir įrodymai)$/,
+      }),
     );
   };
 
   const openTodayExecutionLayer = async (page) => {
-    const summary = page.getByText(
-      /^(Today's execution · Open session|Šiandienos vykdymas · Atidaryti sesiją)$/,
-    );
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
-    }
+    // The plan is directly visible in the converged command, not behind the
+    // removed "Today's execution" disclosure.
+    await expect(page.locator(".fl-today-plan .fl-todays-plan")).toBeVisible({
+      timeout: 30_000,
+    });
   };
 
   const openTodayContextLayer = async (page) => {
-    const summary = page.getByText(
-      /^(Signals, evidence & context|Signalai, įrodymai ir kontekstas)$/,
-    );
-    if (await summary.count()) {
-      const details = summary.locator("xpath=ancestor::details[1]");
-      if ((await details.getAttribute("open")) === null) await summary.click();
-    }
+    await openTodayEvidenceLayer(page);
   };
 
   const open = async (query = "", options = {}) => {
@@ -1321,7 +1310,7 @@ try {
     //     nothing connected is two sources that have sent nothing and no
     //     readings at all — never a green light nobody earned.
     await openTodayContextLayer(first.page);
-    const sources = first.page.locator(".fl-today-context");
+    const sources = first.page.locator(".fl-data-sources");
     await expect(sources).toBeVisible();
     expect(await sources.getByText("Nothing received").count()).toBe(2);
     await expect(sources.getByText("No readings at all")).toBeVisible();
@@ -1329,7 +1318,7 @@ try {
     expect(sourcesText).not.toMatch(/operational|all systems/i);
 
     await openTodayContextLayer(failed.page);
-    const failedSources = failed.page.locator(".fl-today-context");
+    const failedSources = failed.page.locator(".fl-data-sources");
     expect(await failedSources.getByText("Could not check").count()).toBe(2);
     await expect(failedSources.getByText("Nothing received")).toHaveCount(0);
     // The tail used to read "No readings at all" beside two chips saying the
