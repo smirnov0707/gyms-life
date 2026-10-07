@@ -1042,9 +1042,9 @@ try {
         await button.click();
         await expect(
           checked.page
-          .getByTestId("received-data-refresh-status")
-          .filter({ visible: true })
-          .first(),
+            .getByTestId("received-data-refresh-status")
+            .filter({ visible: true })
+            .first(),
         ).toHaveText(expected);
         await expect(button).toBeEnabled();
         expect(checked.errors).toEqual([]);
@@ -1834,7 +1834,9 @@ try {
     // A first week is not an infinite improvement, and an unread source is not
     // a week without training.
     const firstWeek = await openPanel("?panel=home&twin=regions&load=first");
-    await expect(firstWeek.page.getByText("no logged load last week", { exact: false })).toBeVisible({
+    await expect(
+      firstWeek.page.getByText("no logged load last week", { exact: false }),
+    ).toBeVisible({
       timeout: 30000,
     });
     await expect(firstWeek.page.getByText("%", { exact: true })).toHaveCount(0);
