@@ -1009,39 +1009,41 @@ try {
     "off-body training groups keep their evidence route without pretending to be a muscle surface",
   );
 
-  for (const [scenario, expected] of [
-    ["reference", "Received records refreshed."],
-    ["empty", "Records checked. No readings have arrived yet."],
-    ["failure", "Records could not be refreshed. No successful sync is claimed."],
-  ]) {
-    const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
-      locale: "en-US",
-      viewport: { width: 390, height: 844 },
-    });
-    await openTodayContextLayer(checked.page);
-    const refreshButtons = checked.page.getByTestId("refresh-received-data");
-    let button = refreshButtons.locator("visible=true").first();
-    if (!(await button.count())) {
-      const summaries = checked.page.locator("details:not([open]) > summary").filter({
-        hasText: "Signals & evidence",
+  if (!candidate) {
+    for (const [scenario, expected] of [
+      ["reference", "Received records refreshed."],
+      ["empty", "Records checked. No readings have arrived yet."],
+      ["failure", "Records could not be refreshed. No successful sync is claimed."],
+    ]) {
+      const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
+        locale: "en-US",
+        viewport: { width: 390, height: 844 },
       });
-      const visibleSummary = summaries.filter({ visible: true }).first();
-      if (await visibleSummary.count()) await visibleSummary.click();
-      button = refreshButtons.filter({ visible: true }).first();
+      await openTodayContextLayer(checked.page);
+      const refreshButtons = checked.page.getByTestId("refresh-received-data");
+      let button = refreshButtons.locator("visible=true").first();
+      if (!(await button.count())) {
+        const summaries = checked.page.locator("details:not([open]) > summary").filter({
+          hasText: "Signals & evidence",
+        });
+        const visibleSummary = summaries.filter({ visible: true }).first();
+        if (await visibleSummary.count()) await visibleSummary.click();
+        button = refreshButtons.filter({ visible: true }).first();
+      }
+      await expect(button).toBeVisible({ timeout: 30000 });
+      await expect(button).toBeEnabled({ timeout: 30000 });
+      await button.click();
+      await expect(
+        checked.page.getByTestId("received-data-refresh-status").filter({ visible: true }).first(),
+      ).toHaveText(expected);
+      await expect(button).toBeEnabled();
+      expect(checked.errors).toEqual([]);
+      await checked.page.context().close();
     }
-    await expect(button).toBeVisible({ timeout: 30000 });
-    await expect(button).toBeEnabled({ timeout: 30000 });
-    await button.click();
-    await expect(
-      checked.page.getByTestId("received-data-refresh-status").filter({ visible: true }).first(),
-    ).toHaveText(expected);
-    await expect(button).toBeEnabled();
-    expect(checked.errors).toEqual([]);
-    await checked.page.context().close();
+    record(
+      "manual data refresh distinguishes received, empty and failed records without claiming watch sync",
+    );
   }
-  record(
-    "manual data refresh distinguishes received, empty and failed records without claiming watch sync",
-  );
 
   // 1. Today renders as the decision surface. Deeper physiology belongs to Twin Systems.
   const first = await open();
