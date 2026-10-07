@@ -1,0 +1,91 @@
+name: PR139 focused functional reproduction
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths:
+      - diagnostics/pr139-transform.py
+      - .github/workflows/pr139-functional-repro.yml
+permissions:
+  contents: write
+jobs:
+  functional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Apply the source-version-checked candidate
+        run: |
+          python3 diagnostics/pr139-transform.py
+          node_modules/.bin/prettier --write scripts/test-today-browser.mjs
+          node --check scripts/test-today-browser.mjs
+          node_modules/.bin/eslint scripts/test-today-browser.mjs
+      - name: Prepare a focused copy without changing the canonical suite
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import assert from 'node:assert/strict';
+          const source = readFileSync('scripts/test-today-browser.mjs', 'utf8');
+          const startMarker = '  // Capture the real route trees';
+          const functionalMarker = '    // 1. Today renders as the decision surface.';
+          assert.equal(source.split(startMarker).length, 2);
+          assert.equal(source.split(functionalMarker).length, 2);
+          const start = source.indexOf(startMarker);
+          const functional = source.indexOf(functionalMarker);
+          assert.ok(functional > start);
+          const focused = source.slice(0, start) + '  if (!candidate) {\n' + source.slice(functional);
+          assert.ok(focused.includes('// 23. Where the template plots'));
+          writeFileSync('scripts/.today-functional-debug.mjs', focused);
+          mkdirSync('test-results/today', { recursive: true });
+          const bytes = Buffer.from(source);
+          writeFileSync('test-results/today/candidate.json', JSON.stringify({
+            sourceCommit: 'fead92a83904e9cdd11fa2164c7e2e0b6ab158e5',
+            workflowCommit: process.env.GITHUB_SHA,
+            blobSha: createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),
+            scope: 'All 23 functional blocks of the real Today suite; visual matrix is not part of this focused diagnostic and remains required in the normal release gate.'
+          }, null, 2));
+          JS
+      - name: Exercise the real components against isolated synthetic services
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/.today-functional-debug.mjs 2>&1 | tee test-results/today/focused.log
+      - name: Save only the verified candidate on the diagnostic branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const { owner, repo } = context.repo;
+            const branch = 'diagnostics/pr139-repro-2026-10-07';
+            const ref = await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+            if (ref.data.object.sha !== context.sha) throw new Error('Diagnostic branch changed during verification; refusing write');
+            const path = 'scripts/test-today-browser.mjs';
+            const prior = await github.rest.repos.getContent({ owner, repo, path, ref: context.sha });
+            const result = await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, branch, path, sha: prior.data.sha,
+              message: 'test(release): align disclosed evidence and close completed browser contexts',
+              content: fs.readFileSync(path).toString('base64')
+            });
+            fs.writeFileSync('test-results/today/verified-commit.json', JSON.stringify({
+              commit: result.data.commit.sha, blob: result.data.content.sha,
+              scope: 'Focused functional reproduction only; not a production release approval'
+            }, null, 2));
+            core.info(`Verified diagnostic commit: ${result.data.commit.sha}`);
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr139-focused-functional-evidence
+          path: test-results/today
+          retention-days: 3
+          if-no-files-found: warn
