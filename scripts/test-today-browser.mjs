@@ -208,6 +208,25 @@ try {
     args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
 
+  // Evidence capture is not a functional retry. Every assertion still runs
+  // once before reaching this helper. Only the capture of an already checked
+  // page may retry, once, and a second timeout remains a release failure.
+  const captureEvidence = async (page, options) => {
+    const capture = { ...options, animations: "disabled", timeout: 60_000 };
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      // A previously inspected context may no longer be the foreground tab.
+      // Disable CSS motion only while photographing; no elements are hidden,
+      // no viewport/fullPage settings change, and live interaction tests remain.
+      await page.bringToFront();
+      try {
+        return await page.screenshot(capture);
+      } catch (error) {
+        if (error?.name !== "TimeoutError" || attempt === 2) throw error;
+        console.warn("BROWSER_EVIDENCE_RETRY " + JSON.stringify({ path: options.path, attempt }));
+      }
+    }
+  };
+
   const openPanel = async (query = "", options = {}) => {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1100 },
@@ -684,15 +703,7 @@ try {
           usableBottom: viewport.height,
         });
       }
-      const captureScreenshot = async (options) => {
-        try {
-          await shown.page.screenshot({ ...options, timeout: 60_000 });
-        } catch (error) {
-          if (error?.name !== "TimeoutError") throw error;
-          await shown.page.waitForTimeout(1_000);
-          await shown.page.screenshot({ ...options, timeout: 60_000 });
-        }
-      };
+      const captureScreenshot = (options) => captureEvidence(shown.page, options);
       const filename = `reference-${screen}-${viewport.name}.png`;
       await captureScreenshot({ path: path.join(artifacts, filename), fullPage: true });
       if (viewport.name !== "reference") {
@@ -723,7 +734,7 @@ try {
         referenceLayoutChecks.push({ screen, viewport: viewport.name, target });
       }
       if (viewport.name === "reference") {
-        await shown.page.screenshot({
+        await captureEvidence(shown.page, {
           path: path.join(artifacts, "reference-today-1280x853.png"),
           fullPage: false,
         });
@@ -916,7 +927,7 @@ try {
         ).toBeVisible();
       }
       expect(checked.errors).toEqual([]);
-      await checked.page.screenshot({
+      await captureEvidence(checked.page, {
         path: path.join(artifacts, `reference-today-${scenario}-mobile.png`),
         fullPage: true,
       });
@@ -947,7 +958,7 @@ try {
       "aria-pressed",
       "true",
     );
-    await menu.page.screenshot({
+    await captureEvidence(menu.page, {
       path: path.join(artifacts, "mobile-menu-language.png"),
       fullPage: false,
     });
@@ -1090,21 +1101,10 @@ try {
     expect(body).not.toContain("Not enough verified data yet."); // obsolete copy must not mask a stuck loading state
 
     await writeFile(path.join(artifacts, "today.txt"), body);
-    try {
-      await first.page.screenshot({
-        path: path.join(artifacts, "today-desktop.png"),
-        fullPage: true,
-        timeout: 60_000,
-      });
-    } catch (error) {
-      if (error?.name !== "TimeoutError") throw error;
-      await first.page.waitForTimeout(1_000);
-      await first.page.screenshot({
-        path: path.join(artifacts, "today-desktop.png"),
-        fullPage: true,
-        timeout: 60_000,
-      });
-    }
+    await captureEvidence(first.page, {
+      path: path.join(artifacts, "today-desktop.png"),
+      fullPage: true,
+    });
     record("panels without evidence say so instead of showing a figure");
 
     // 4. A failed read is a different sentence from an empty one. The signal surface lives in Twin Systems.
@@ -1141,7 +1141,7 @@ try {
     expect(await plan.innerText()).not.toMatch(/\bkg\b/);
     await expect(planned.page.getByRole("link", { name: "Start workout" })).toBeVisible();
     expect(planned.errors).toEqual([]);
-    await planned.page.screenshot({
+    await captureEvidence(planned.page, {
       path: path.join(artifacts, "today-with-plan.png"),
       fullPage: true,
     });
@@ -1182,7 +1182,7 @@ try {
     ]) {
       expect(healthText, `${field} is not documented on the setup screen`).toContain(field);
     }
-    await health.page.screenshot({
+    await captureEvidence(health.page, {
       path: path.join(artifacts, "health-source.png"),
       fullPage: true,
     });
@@ -1203,7 +1203,7 @@ try {
       const text = await screen.page.locator("body").innerText();
       expect(text.length).toBeGreaterThan(40);
       expect(screen.errors, `${name} raised ${screen.errors[0]}`).toEqual([]);
-      await screen.page.screenshot({
+      await captureEvidence(screen.page, {
         path: path.join(artifacts, `screen-${panel}.png`),
         fullPage: true,
       });
@@ -1237,7 +1237,10 @@ try {
     await expect(
       lab.page.getByText("No governed personal experiments yet.", { exact: true }),
     ).toHaveCount(0);
-    await lab.page.screenshot({ path: path.join(artifacts, "screen-lab.png"), fullPage: true });
+    await captureEvidence(lab.page, {
+      path: path.join(artifacts, "screen-lab.png"),
+      fullPage: true,
+    });
     await lab.page.context().close();
     record("an unread lab shows unknown modules instead of ready ones");
 
@@ -1265,7 +1268,7 @@ try {
       journal.page.getByText("Timeline intelligence is temporarily unavailable."),
     ).toBeVisible();
     await expect(journal.page.locator(".fl-journal-stats")).toHaveCount(0);
-    await journal.page.screenshot({
+    await captureEvidence(journal.page, {
       path: path.join(artifacts, "screen-journal.png"),
       fullPage: true,
     });
@@ -1289,7 +1292,10 @@ try {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
-    await first.page.screenshot({ path: path.join(artifacts, "today-320.png"), fullPage: true });
+    await captureEvidence(first.page, {
+      path: path.join(artifacts, "today-320.png"),
+      fullPage: true,
+    });
     record("no horizontal overflow at 320px");
 
     // 10. And in the language the athlete actually reads it in. Lithuanian runs
@@ -1330,7 +1336,10 @@ try {
     }
     expect(ltSystems.errors).toEqual([]);
     await ltSystems.page.context().close();
-    await lt.page.screenshot({ path: path.join(artifacts, "today-lt-320.png"), fullPage: true });
+    await captureEvidence(lt.page, {
+      path: path.join(artifacts, "today-lt-320.png"),
+      fullPage: true,
+    });
     expect(lt.errors).toEqual([]);
     await lt.page.context().close();
     record("Lithuanian at 320px stays inside the screen with tappable controls");
@@ -1374,7 +1383,10 @@ try {
     expect(oneText).toMatch(/calculated from the weight and the body fat percentage/);
     // One reading carries no signed change anywhere on the card.
     expect(oneText).not.toMatch(/[+−-]\d+\.\d\s*kg/);
-    await one.page.screenshot({ path: path.join(artifacts, "body-single.png"), fullPage: true });
+    await captureEvidence(one.page, {
+      path: path.join(artifacts, "body-single.png"),
+      fullPage: true,
+    });
     await one.page.context().close();
 
     const trend = await openPanel("?panel=body&body=change");
@@ -1385,7 +1397,10 @@ try {
     expect(trendText).toContain("+0.5");
     expect(trendText).toContain("2026-08-13");
     expect(trendText).toMatch(/calculated from the weight and the body fat percentage/);
-    await trend.page.screenshot({ path: path.join(artifacts, "body-change.png"), fullPage: true });
+    await captureEvidence(trend.page, {
+      path: path.join(artifacts, "body-change.png"),
+      fullPage: true,
+    });
     expect(trend.errors).toEqual([]);
     await trend.page.context().close();
 
@@ -1441,7 +1456,10 @@ try {
     // a generated surface and only marks itself human once the glTF has loaded,
     // so this fails if the asset is missing, unusable or served wrong.
     await expect(twin.page.locator('[data-twin-body="human"]')).toHaveCount(1, { timeout: 30000 });
-    await twin.page.screenshot({ path: path.join(artifacts, "twin-overview.png"), fullPage: true });
+    await captureEvidence(twin.page, {
+      path: path.join(artifacts, "twin-overview.png"),
+      fullPage: true,
+    });
 
     await twin.page.getByRole("tab", { name: "Timeline" }).click();
 
@@ -1480,7 +1498,7 @@ try {
       latestMemoryChanges.getByText("Observation change: +1", { exact: true }),
     ).toBeVisible();
     await expect(latestMemoryChanges.getByText(/Compared with/).last()).toBeVisible();
-    await changedMemory.page.screenshot({
+    await captureEvidence(changedMemory.page, {
       path: path.join(artifacts, "twin-memory-evolution-mobile.png"),
       fullPage: true,
     });
@@ -1537,7 +1555,10 @@ try {
     // Muscle analytics stay inside the Body depth layer, alongside body composition.
     await expect(twin.page.getByRole("region", { name: "Body composition" })).toBeVisible();
 
-    await twin.page.screenshot({ path: path.join(artifacts, "twin-muscles.png"), fullPage: true });
+    await captureEvidence(twin.page, {
+      path: path.join(artifacts, "twin-muscles.png"),
+      fullPage: true,
+    });
 
     await twin.page.getByRole("tab", { name: "Systems" }).click();
     await expect(twin.page.getByRole("region", { name: "Live signals" })).toBeVisible({
@@ -1546,7 +1567,10 @@ try {
     const systemsText = await twin.page.innerText("body");
     expect(systemsText).toMatch(/colours come from logged sets alone/);
     await expect(table).toHaveCount(0);
-    await twin.page.screenshot({ path: path.join(artifacts, "twin-systems.png"), fullPage: true });
+    await captureEvidence(twin.page, {
+      path: path.join(artifacts, "twin-systems.png"),
+      fullPage: true,
+    });
     expect(twin.errors).toEqual([]);
     await twin.page.context().close();
     record(
@@ -1593,7 +1617,10 @@ try {
       bare.page.getByText("We couldn't load today's decision.", { exact: false }),
     ).toBeVisible();
     await expect(bare.page.getByRole("button", { name: "Try again" })).toBeVisible();
-    await bare.page.screenshot({ path: path.join(artifacts, "today-bare.png"), fullPage: true });
+    await captureEvidence(bare.page, {
+      path: path.join(artifacts, "today-bare.png"),
+      fullPage: true,
+    });
     expect(bare.errors).toEqual([]);
     await bare.page.context().close();
     record("with nothing measured, Today explains itself at full width instead of spinning");
@@ -1649,7 +1676,7 @@ try {
     await expect(
       stuck.page.getByText("Only this account's records are shown.", { exact: false }),
     ).toBeVisible();
-    await stuck.page.screenshot({ path: path.join(artifacts, "offline-queue.png") });
+    await captureEvidence(stuck.page, { path: path.join(artifacts, "offline-queue.png") });
     await stuck.page.context().close();
 
     // Delivered, the strip has nothing left to report and gets out of the way.
@@ -1738,7 +1765,7 @@ try {
           })),
       );
       expect(clipped, `${name} has controls whose own text does not fit`).toEqual([]);
-      await page.page.screenshot({
+      await captureEvidence(page.page, {
         path: path.join(artifacts, `narrow-${name.replace(/\s+/g, "-")}.png`),
         fullPage: true,
       });
@@ -1789,12 +1816,15 @@ try {
     // than quietly understating the week.
     expect(loadText).toMatch(/3 completed sets are not in this total/);
 
-    await home.page.screenshot({ path: path.join(artifacts, "twin-home.png"), fullPage: true });
+    await captureEvidence(home.page, {
+      path: path.join(artifacts, "twin-home.png"),
+      fullPage: true,
+    });
 
     // And recovery is one tap away, still meaning only recovery.
     await homeStage.getByRole("button", { name: "Recovery", exact: true }).click();
     await expect(homeStage.getByText("% · calculated")).toBeVisible();
-    await home.page.screenshot({
+    await captureEvidence(home.page, {
       path: path.join(artifacts, "twin-home-recovery.png"),
       fullPage: true,
     });
@@ -1881,7 +1911,7 @@ try {
     await expect(plotted.getByRole("img", { name: /^Sleep/ })).toHaveCount(0);
     // Exactly one signal is plottable, so exactly one line exists.
     expect(await plotted.locator("svg[role='img']").count()).toBe(1);
-    await measured.page.screenshot({ path: path.join(artifacts, "signals-sparkline.png") });
+    await captureEvidence(measured.page, { path: path.join(artifacts, "signals-sparkline.png") });
     expect(measured.errors).toEqual([]);
     await measured.page.context().close();
     record("a signal gets a line only when it has two readings to draw one from");
@@ -1905,7 +1935,7 @@ try {
     expect(evidenceCalibrationText).toContain("Pending");
     expect(evidenceCalibrationText).not.toMatch(/confidence\s*[:·-]?\s*\d+\s*%/i);
     await expect(evidence.page.getByRole("region", { name: "Prediction evidence" })).toHaveCount(0);
-    await evidence.page.screenshot({ path: path.join(artifacts, "evidence-levels.png") });
+    await captureEvidence(evidence.page, { path: path.join(artifacts, "evidence-levels.png") });
     expect(evidence.errors).toEqual([]);
     await evidence.page.context().close();
     record(
@@ -1932,7 +1962,7 @@ try {
     const shares = [...stagedText.matchAll(/(\d+)\s*%/g)].map((match) => Number(match[1]));
     expect(shares.length).toBe(4);
     expect(shares.reduce((sum, share) => sum + share, 0)).toBe(100);
-    await staged.page.screenshot({ path: path.join(artifacts, "sleep-stages.png") });
+    await captureEvidence(staged.page, { path: path.join(artifacts, "sleep-stages.png") });
     await staged.page.context().close();
 
     // One stage out of four: minutes, no percentages, and the reason said out
@@ -1988,7 +2018,7 @@ try {
     expect(aheadText).toMatch(/calculated estimate, not a measurement/i);
     // And no weekday is named anywhere, because the plan has no calendar.
     expect(aheadText).not.toMatch(/monday|tuesday|wednesday|thursday|friday|saturday|sunday/i);
-    await ahead.page.screenshot({ path: path.join(artifacts, "recovery-outlook.png") });
+    await captureEvidence(ahead.page, { path: path.join(artifacts, "recovery-outlook.png") });
     await ahead.page.context().close();
 
     // Empty evidence must not claim every region is recovered, in either view.
