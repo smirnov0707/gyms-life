@@ -1,0 +1,53 @@
+name: PR139 deployed preview browser smoke
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-preview-smoke.yml]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 76e02a3761d0533d0651aca818eceeb69b709ac8
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Verify the preview is the intended commit
+        env:
+          GYMSLIFE_ORIGIN: https://deploy-preview-139--singular-vacherin-57448d.netlify.app
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          const response = await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`);
+          assert.equal(response.status, 200);
+          const identity = await response.json();
+          mkdirSync('test-results/production-browser', { recursive: true });
+          writeFileSync('test-results/production-browser/preview-identity.json', JSON.stringify(identity, null, 2));
+          assert.ok(JSON.stringify(identity).includes('76e02a3761d0533d0651aca818eceeb69b709ac8'), 'Preview must match the tested release commit');
+          JS
+      - name: Render public pages in both themes at 1440px and 390px
+        shell: bash
+        env:
+          GYMSLIFE_ORIGIN: https://deploy-preview-139--singular-vacherin-57448d.netlify.app
+        run: |
+          set -o pipefail
+          node scripts/smoke-production-browser.mjs 2>&1 | tee test-results/production-browser/preview-smoke.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr139-preview-browser-evidence
+          path: test-results/production-browser
+          retention-days: 3
+          if-no-files-found: warn
