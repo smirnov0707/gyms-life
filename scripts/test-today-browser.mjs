@@ -257,7 +257,7 @@ try {
     // Today convergence moved secondary material under the canonical Deeper
     // context disclosure. Open that structural layer first: its summary also
     // carries explanatory copy, so matching the visible label alone is brittle.
-    const context = page.locator(".fl-today-context");
+    const context = page.locator(".fl-today-context:visible").first();
     if (await context.count()) {
       if ((await context.getAttribute("open")) === null) {
         await context.locator(":scope > summary").click();
