@@ -1019,18 +1019,22 @@ try {
       viewport: { width: 390, height: 844 },
     });
     await openTodayContextLayer(checked.page);
-    const button = checked.page.getByTestId("refresh-received-data");
-    if (!(await button.isVisible())) {
+    const refreshButtons = checked.page.getByTestId("refresh-received-data");
+    let button = refreshButtons.locator("visible=true").first();
+    if (!(await button.count())) {
       const summaries = checked.page.locator("details:not([open]) > summary").filter({
         hasText: "Signals & evidence",
       });
       const visibleSummary = summaries.filter({ visible: true }).first();
       if (await visibleSummary.count()) await visibleSummary.click();
+      button = refreshButtons.filter({ visible: true }).first();
     }
     await expect(button).toBeVisible({ timeout: 30000 });
     await expect(button).toBeEnabled({ timeout: 30000 });
     await button.click();
-    await expect(checked.page.getByTestId("received-data-refresh-status")).toHaveText(expected);
+    await expect(
+      checked.page.getByTestId("received-data-refresh-status").filter({ visible: true }).first(),
+    ).toHaveText(expected);
     await expect(button).toBeEnabled();
     expect(checked.errors).toEqual([]);
     await checked.page.context().close();
