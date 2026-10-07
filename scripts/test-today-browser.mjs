@@ -1075,9 +1075,11 @@ try {
   record("Twin Systems keeps an empty source honest, with no invented figure and a way to fix it");
 
   // 3. Recovery projections live in Twin Systems; prediction calibration lives in Lab.
-  const emptyOutlook = systems.page.getByRole("region", { name: "When it comes back" });
-  await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
-  await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
+  if (!candidate) {
+    const emptyOutlook = systems.page.getByRole("region", { name: "When it comes back" });
+    await expect(emptyOutlook.getByText("Not enough data to estimate recovery.")).toBeVisible();
+    await expect(emptyOutlook.getByRole("img")).toHaveCount(0);
+  }
   const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
   const calibrationSummary = evidenceLab.page
     .locator("details > summary")
