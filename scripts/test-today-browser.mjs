@@ -877,12 +877,8 @@ try {
     "Reference world layouts keep primary content above the mobile dock and the desktop Twin near its controls",
   );
 
-  if (candidate) {
-    await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
-    return;
-  }
-
-  for (const scenario of ["empty", "failure"]) {
+  if (!candidate) {
+    for (const scenario of ["empty", "failure"]) {
     const checked = await openPanel(`?shell=1&screen=today&scenario=${scenario}`, {
       viewport: { width: 390, height: 844 },
       locale: "en-US",
@@ -2006,6 +2002,7 @@ try {
   ).toBeVisible({ timeout: 30000 });
   await noTwin.page.close();
   record("recovery ahead is projected arithmetic with its assumption stated, never a forecast");
+  }
 
   await writeFile(path.join(artifacts, "results.json"), JSON.stringify(results, null, 2));
 } finally {
