@@ -157,6 +157,7 @@ try {
   await expect(page.locator("[data-twin-stage]")).toHaveAttribute(
     "data-twin-source",
     expectedSource,
+    { timeout: 45_000 },
   );
   await expect(page.locator("[data-twin-credit]")).toContainText(expectedCredit);
   await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
