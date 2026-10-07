@@ -1016,8 +1016,6 @@ try {
       "off-body training groups keep their evidence route without pretending to be a muscle surface",
     );
 
-
-
     // 1. Today renders as the decision surface. Deeper physiology belongs to Twin Systems.
     const first = await open();
     const systems = await openPanel("?shell=1&screen=twin&scenario=empty&view=systems", {
