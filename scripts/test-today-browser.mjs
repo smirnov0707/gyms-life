@@ -1018,8 +1018,13 @@ try {
     });
     await openTodayContextLayer(checked.page);
     const button = checked.page.getByTestId("refresh-received-data");
-    const disclosure = button.locator("xpath=ancestor::details[not(@open)][1]");
-    if (await disclosure.count()) await disclosure.locator(":scope > summary").click();
+    if (!(await button.isVisible())) {
+      const summaries = checked.page.locator("details:not([open]) > summary").filter({
+        hasText: "Signals & evidence",
+      });
+      const visibleSummary = summaries.filter({ visible: true }).first();
+      if (await visibleSummary.count()) await visibleSummary.click();
+    }
     await expect(button).toBeVisible({ timeout: 30000 });
     await expect(button).toBeEnabled({ timeout: 30000 });
     await button.click();
