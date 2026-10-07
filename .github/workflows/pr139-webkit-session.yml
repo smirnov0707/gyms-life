@@ -1,0 +1,152 @@
+name: PR139 narrow session verification
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-webkit-session.yml]
+permissions:
+  contents: read
+jobs:
+  session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [webkit, chromium]
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 76e02a3761d0533d0651aca818eceeb69b709ac8
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Build source-checked candidate and isolated real-route driver
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import assert from 'node:assert/strict';
+          const file = 'scripts/test-core-session-design.mjs';
+          let source = readFileSync(file, 'utf8');
+          const blob = createHash('sha1').update(`blob ${Buffer.byteLength(source)}\0`).update(source).digest('hex');
+          assert.equal(blob, '9a4ce8d94a93eb8ac4c9da17a8f38e9859d9247c');
+          const before = '    await expect(page.locator(".fl-workspace h1")).toHaveCount(1);\n    if (screen === "workout") {';
+          const after = '    await expect(page.locator(".fl-workspace h1")).toHaveCount(1);\n' +
+            '    // Match the session matrix: settle entry motion and local fonts before\n' +
+            '    // WebKit resolves a pointer coordinate, not after the start action.\n' +
+            '    await page.emulateMedia({ reducedMotion: "reduce" });\n' +
+            '    await page.evaluate(() => document.fonts.ready);\n' +
+            '    if (screen === "workout") {';
+          assert.equal(source.split(before).length, 2);
+          source = source.replace(before, after);
+          const action = '        .getByRole("button", { name: "Pradėti arba tęsti treniruotę", exact: true })\n        .click();';
+          assert.equal(source.split(action).length, 2);
+          source = source.replace(action, action + '\n' +
+            '      await expect\n' +
+            '        .poll(() => page.evaluate(() => window.__core.counts.startWorkout ?? 0))\n' +
+            '        .toBe(1);\n' +
+            '      await expect\n' +
+            '        .poll(() => page.evaluate(() => window.__core.workoutSession.started))\n' +
+            '        .toBe(true);');
+          writeFileSync(file, source);
+          mkdirSync('test-results/core-session', { recursive: true });
+          writeFileSync('test-results/core-session/candidate-session.mjs', source);
+          const core = readFileSync('scripts/test-core-browser.mjs', 'utf8');
+          const marker = 'try {\n  await server.listen();';
+          assert.equal(core.split(marker).length, 2);
+          const prefix = core.slice(0, core.indexOf(marker));
+          const driver = String.raw`
+          const probes = [];
+          try {
+            await server.listen();
+            const origin = 'http://127.0.0.1:' + server.httpServer.address().port;
+            const engine = process.env.CORE_BROWSER_ENGINE;
+            browser = await (engine === 'webkit' ? webkit : chromium).launch();
+            const open = async (query, viewport = { width: 1280, height: 900 }) => {
+              const context = await browser.newContext({ viewport, locale: 'en-GB', timezoneId: 'Europe/Vilnius' });
+              const page = await context.newPage();
+              page.on('pageerror', error => errors.push(String(error)));
+              await page.addInitScript(() => {
+                window.__sessionPointer = [];
+                for (const type of ['pointerdown', 'pointerup', 'click']) {
+                  document.addEventListener(type, event => {
+                    const element = event.target;
+                    const button = element.closest?.('button');
+                    window.__sessionPointer.push({
+                      type, target: element.tagName, text: button?.textContent ?? element.textContent?.slice(0, 100),
+                      x: event.clientX, y: event.clientY, fonts: document.fonts.status,
+                      reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+                    });
+                  }, true);
+                }
+              });
+              await page.goto(origin + '/index.html?' + query);
+              await expect(page.getByTestId('synthetic-watermark')).toBeVisible({ timeout: 30000 });
+              return { page, context };
+            };
+            for (const stabilized of [false, true]) {
+              for (let attempt = 1; attempt <= 5; attempt++) {
+                const { page, context } = await open('screen=workout&scenario=empty&shell=1&theme=light&lang=lt', { width: 320, height: 844 });
+                let failure = null;
+                try {
+                  await expect(page.locator('.fl-workspace h1')).toHaveCount(1);
+                  if (stabilized) {
+                    await page.emulateMedia({ reducedMotion: 'reduce' });
+                    await page.evaluate(() => document.fonts.ready);
+                  }
+                  await page.getByRole('button', { name: 'Pradėti arba tęsti treniruotę', exact: true }).click();
+                  await expect(page.getByRole('button', { name: 'Registruoti setą', exact: true })).toBeVisible();
+                  await expect.poll(() => page.evaluate(() => window.__core.counts.startWorkout ?? 0)).toBe(1);
+                  await expect.poll(() => page.evaluate(() => window.__core.workoutSession.started)).toBe(true);
+                } catch (error) { failure = String(error); }
+                const state = await page.evaluate(() => ({
+                  counts: window.__core.counts, started: window.__core.workoutSession.started,
+                  events: window.__sessionPointer, text: document.body.innerText,
+                  overflow: document.documentElement.scrollWidth - innerWidth,
+                }));
+                probes.push({ engine, stabilized, attempt, failure, ...state });
+                console.log('SESSION_POINTER_PROBE ' + JSON.stringify(probes.at(-1)));
+                await writeFile(path.join(artifacts, 'pointer-probes.json'), JSON.stringify(probes, null, 2));
+                await context.close();
+              }
+            }
+            expect(probes.filter(probe => probe.stabilized && probe.failure)).toEqual([]);
+            expect(probes.filter(probe => probe.stabilized && probe.overflow > 1)).toEqual([]);
+            await ran('session-design', () => verifySessionDesign({ open, record, artifacts }));
+            expect(errors).toEqual([]);
+            await writeFile(path.join(artifacts, 'results.json'), JSON.stringify({
+              sourceCommit: '76e02a3761d0533d0651aca818eceeb69b709ac8', engine, results,
+              scope: 'Isolated full session verifier and 10 real pointer probes. Full Core and Today release gates remain required.'
+            }, null, 2));
+          } finally {
+            await browser?.close();
+            await server?.close();
+          }
+          `;
+          writeFileSync('scripts/.pr139-session-repro.mjs', prefix + driver);
+          JS
+          node --check scripts/.pr139-session-repro.mjs
+          node_modules/.bin/prettier --check scripts/test-core-session-design.mjs
+          node_modules/.bin/eslint scripts/test-core-session-design.mjs
+      - name: Verify real session start and the complete session design scenarios
+        shell: bash
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
+          CORE_BROWSER_ARTIFACTS: test-results/core-session
+        run: |
+          set -o pipefail
+          node scripts/.pr139-session-repro.mjs 2>&1 | tee test-results/core-session/browser.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr139-session-${{ matrix.engine }}-evidence
+          path: test-results/core-session
+          retention-days: 3
+          if-no-files-found: error
