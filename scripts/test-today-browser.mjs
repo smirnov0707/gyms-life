@@ -1018,6 +1018,9 @@ try {
     });
     await openTodayContextLayer(checked.page);
     const button = checked.page.getByTestId("refresh-received-data");
+    const disclosure = button.locator("xpath=ancestor::details[not(@open)][1]");
+    if (await disclosure.count()) await disclosure.locator(":scope > summary").click();
+    await expect(button).toBeVisible({ timeout: 30000 });
     await expect(button).toBeEnabled({ timeout: 30000 });
     await button.click();
     await expect(checked.page.getByTestId("received-data-refresh-status")).toHaveText(expected);
