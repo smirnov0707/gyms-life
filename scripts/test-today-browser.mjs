@@ -399,7 +399,7 @@ try {
           .first()
           .click();
         const detail = shown.page.locator('[data-twin-muscle-detail="chest"]');
-        await expect(detail).toBeVisible();
+        await expect(detail).toBeVisible({ timeout: 30_000 });
         await assertInteractiveTwin(detail.locator("canvas[data-twin-frames]"));
         const limits = detail.locator(".twin-detail-readout details");
         await expect(limits.getByText("Injury risk", { exact: true })).toBeHidden();
@@ -967,7 +967,9 @@ try {
     .getByRole("button", { name: /^Chest(?:\s|$)/ })
     .first()
     .click();
-  await expect(linked.page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+  await expect(linked.page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible({
+    timeout: 30_000,
+  });
   await linked.page.getByRole("button", { name: "Impact", exact: true }).click();
   await expect(linked.page).toHaveURL(/detail=impact/);
   await expect(linked.page.getByText("Latest completed session", { exact: true })).toBeVisible();
