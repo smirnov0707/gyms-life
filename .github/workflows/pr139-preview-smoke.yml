@@ -12,6 +12,12 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
       options: --init
+    # Netlify's documented deploy permalink serves this immutable deployment
+    # without the injected collaboration Drawer. Do not weaken CSP or suppress
+    # browser errors to make the moving deploy-preview alias pass.
+    # https://docs.netlify.com/deploy/review-deploys/netlify-drawer-for-feedback/overview/
+    env:
+      GYMSLIFE_ORIGIN: https://6ac6a13cac5ba40008885450--singular-vacherin-57448d.netlify.app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,9 +29,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
-      - name: Verify the preview is the intended commit
-        env:
-          GYMSLIFE_ORIGIN: https://deploy-preview-139--singular-vacherin-57448d.netlify.app
+      - name: Verify the immutable preview is the intended commit
         run: |
           node --input-type=module <<'JS'
           import assert from 'node:assert/strict';
@@ -35,12 +39,13 @@ jobs:
           const identity = await response.json();
           mkdirSync('test-results/production-browser', { recursive: true });
           writeFileSync('test-results/production-browser/preview-identity.json', JSON.stringify(identity, null, 2));
-          assert.ok(JSON.stringify(identity).includes('76e02a3761d0533d0651aca818eceeb69b709ac8'), 'Preview must match the tested release commit');
+          assert.equal(identity.schema, 'gyms-environment.v1');
+          assert.equal(identity.status, 'compatible');
+          assert.equal(identity.buildContext, 'deploy-preview');
+          assert.equal(identity.sourceCommit, '76e02a3761d0533d0651aca818eceeb69b709ac8');
           JS
       - name: Render public pages in both themes at 1440px and 390px
         shell: bash
-        env:
-          GYMSLIFE_ORIGIN: https://deploy-preview-139--singular-vacherin-57448d.netlify.app
         run: |
           set -o pipefail
           node scripts/smoke-production-browser.mjs 2>&1 | tee test-results/production-browser/preview-smoke.log
