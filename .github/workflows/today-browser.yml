@@ -66,7 +66,9 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p test-results/today
-          git rev-parse HEAD > test-results/today/tested-commit.txt
+          # Default checkout uses this event SHA (the merge commit for a PR).
+          # Avoid a new Git invocation under the container's different HOME.
+          printf '%s\n' "$GITHUB_SHA" > test-results/today/tested-commit.txt
           node scripts/test-today-browser.mjs 2>&1 | tee test-results/today/browser.log
       - name: Retain a concise failure tail
         if: failure()
