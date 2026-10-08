@@ -1,8 +1,10 @@
+import { verifyRunContinuity } from "./test-core-run-continuity.mjs";
 import { expect } from "@playwright/test";
 import path from "node:path";
 
 /** Real QuickRunLog; only service boundaries and their account data are synthetic. */
 export async function verifyEnduranceRunLog({ open, record, artifacts }) {
+  await verifyRunContinuity({ open, record, artifacts });
   const values = async (page) => page.evaluate(() => window.__enduranceLog);
   const prepare = async (query, lang = "en") => {
     const opened = await open(`screen=runlog&${query}&lang=${lang}`, {

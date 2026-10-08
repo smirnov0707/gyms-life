@@ -1,0 +1,43 @@
+/* Shared operational UI: hierarchy and real state, not decorative telemetry. */
+.gl-system-notice {
+  min-width: 0;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+.gl-system-notice__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.gl-system-notice__title {
+  margin-top: .5rem;
+  font-size: .9375rem;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -.015em;
+}
+.gl-system-notice__body { margin-top: .5rem; font-size: .8125rem; line-height: 1.6; }
+.gl-system-notice__actions { margin-top: .875rem; }
+.gl-run-console { min-width: 0; }
+.gl-run-console header p { font-size: .6875rem; font-weight: 600; letter-spacing: .14em; }
+.gl-run-console header h3 { margin-top: .375rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -.02em; }
+.gl-run-console label { display: grid; min-width: 0; gap: .375rem; }
+.gl-run-console label > span { font-size: .75rem; line-height: 1.5; }
+.gl-run-console input { min-height: 2.75rem; font-variant-numeric: tabular-nums; }
+.gl-run-console button { min-height: 2.75rem; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.gl-run-console [aria-pressed="true"] { border-width: 2px; font-weight: 600; }
+.gl-run-follow-up-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.gl-run-follow-up-ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .75rem; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  .gl-system-notice { animation: gl-system-notice-enter 180ms ease-out both; }
+  .gl-run-console button { transition: background-color 160ms ease-out, border-color 160ms ease-out; }
+}
+@keyframes gl-system-notice-enter {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -5,6 +5,8 @@ import { useManualEnduranceSubmission } from "@/lib/use-manual-endurance-submiss
 import { EnduranceSubmissionStorageError } from "@/lib/endurance-submission-store";
 import { offlineIdentity } from "@/lib/offline-identity";
 import { useRef, useState } from "react";
+import { useEnduranceFollowUp } from "@/lib/use-endurance-follow-up";
+import { SystemNotice } from "@/components/system/SystemNotice";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Route, TimerReset } from "lucide-react";
 import { toast } from "sonner";
@@ -39,6 +41,7 @@ function QuickRunLogForm({
   const english = baseLang(lang) === "en";
   const submission = useManualEnduranceSubmission(ownerId);
   const queryClient = useQueryClient();
+  const followUp = useEnduranceFollowUp(ownerId);
   const confirmMatch = useServerFn(confirmRaceSessionMatchFn);
   const retryEnrichment = useServerFn(retryEnduranceRaceEnrichmentFn);
   const inFlight = useRef(false);
@@ -50,6 +53,7 @@ function QuickRunLogForm({
   const [savedRun, setSavedRun] = useState<{
     sessionId: string;
     enrichment: EnduranceRaceEnrichmentState;
+    verificationRequired?: boolean;
   } | null>(null);
   const [pendingMatch, setPendingMatch] = useState<{
     sessionId: string;
@@ -58,8 +62,23 @@ function QuickRunLogForm({
     intent: "easy" | "long" | "tempo" | "intervals" | "recovery" | "race";
   } | null>(null);
 
-  const applyEnrichment = (sessionId: string, result: EnduranceRaceEnrichmentResult) => {
-    setSavedRun({ sessionId, enrichment: result.raceEnrichment });
+  const applyEnrichment = (
+    sessionId: string,
+    result: EnduranceRaceEnrichmentResult,
+    restored = false,
+  ) => {
+    followUp.remember(
+      sessionId,
+      result.raceEnrichment.retryable || result.raceEnrichment.status === "needs_confirmation",
+    );
+    setSavedRun({
+      sessionId,
+      enrichment: result.raceEnrichment,
+      verificationRequired:
+        restored &&
+        result.raceEnrichment.status === "unavailable" &&
+        result.raceEnrichment.stage === "load",
+    });
     if (result.raceMatch?.status === "needs_confirmation" && result.raceMatch.intent) {
       setPendingMatch({
         sessionId,
@@ -175,10 +194,14 @@ function QuickRunLogForm({
     }
   };
 
-  const retryPlanCheck = async () => {
+  const retryPlanCheck = async (restoredSessionId?: string) => {
+    const sessionId = restoredSessionId ?? savedRun?.sessionId;
     if (
       inFlight.current ||
-      !savedRun?.enrichment.retryable ||
+      !sessionId ||
+      (restoredSessionId
+        ? !followUp.sessionIds.includes(restoredSessionId)
+        : !savedRun?.enrichment.retryable) ||
       !ownerId ||
       offlineIdentity.current() !== ownerId
     )
@@ -187,16 +210,27 @@ function QuickRunLogForm({
     inFlight.current = true;
     setSaving(true);
     try {
-      const result = await retryEnrichment({ data: { workoutSessionId: savedRun.sessionId } });
+      const result = await retryEnrichment({ data: { workoutSessionId: sessionId } });
       if (!scope.isCurrent() || !submission.isMounted()) return;
-      applyEnrichment(savedRun.sessionId, result);
-      await refreshSavedRun(false, result.raceIntelligence);
+      applyEnrichment(
+        sessionId,
+        result,
+        Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired),
+      );
+      if (!(
+        result.raceEnrichment.status === "unavailable" && result.raceEnrichment.stage === "load"
+      ))
+        await refreshSavedRun(false, result.raceIntelligence);
     } catch {
       if (!scope.isCurrent() || !submission.isMounted()) return;
       toast.error(
-        english
-          ? "Run remains saved. The plan check is still unavailable."
-          : "Bėgimas lieka išsaugotas. Plano susiejimo patikra vis dar nepasiekiama.",
+        Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired)
+          ? english
+            ? "The earlier run could not be verified. No new save was sent."
+            : "Ankstesnio bėgimo patikrinti nepavyko. Nauja įrašymo užklausa nesiųsta."
+          : english
+            ? "Run remains saved. The plan check is still unavailable."
+            : "Bėgimas lieka išsaugotas. Plano susiejimo patikra vis dar nepasiekiama.",
       );
     } finally {
       inFlight.current = false;
@@ -219,6 +253,7 @@ function QuickRunLogForm({
         },
       });
       if (!scope.isCurrent() || !submission.isMounted()) return;
+      followUp.remember(pendingMatch.sessionId, false);
       setSavedRun({
         sessionId: pendingMatch.sessionId,
         enrichment: { status: "matched", linked: true, retryable: false },
@@ -233,6 +268,7 @@ function QuickRunLogForm({
       // A lost response may follow a committed confirmation. Re-read the saved
       // run before offering another classification, never log another workout.
       if (!scope.isCurrent() || !submission.isMounted()) return;
+      followUp.remember(pendingMatch.sessionId, true);
       setSavedRun({
         sessionId: pendingMatch.sessionId,
         enrichment: { status: "unavailable", linked: false, retryable: true, stage: "link" },
@@ -247,8 +283,72 @@ function QuickRunLogForm({
     }
   };
 
+  const restoredIds = followUp.sessionIds.filter((id) => id !== savedRun?.sessionId);
   return (
-    <div className="grid gap-3">
+    <div className="gl-run-console grid gap-4" data-run-console>
+      <header>
+        <p className="text-muted-foreground">ENDURANCE</p>
+        <h3>{english ? "Record your run" : "Įrašyti bėgimą"}</h3>
+      </header>
+      {followUp.storageUnavailable ? (
+        <div data-follow-up-storage-warning role="alert">
+          <SystemNotice
+            eyebrow={english ? "CONTINUITY" : "TĘSTINUMAS"}
+            title={
+              english
+                ? "Follow-up recovery is unavailable"
+                : "Laukiančių patikrų atkūrimas nepasiekiamas"
+            }
+            actions={
+              <Button
+                type="button"
+                variant="outline"
+                onClick={followUp.reload}
+                disabled={saving}
+                className="w-full"
+              >
+                {english ? "Retry follow-up recovery" : "Pakartoti patikrų atkūrimą"}
+              </Button>
+            }
+          >
+            {english
+              ? "This does not undo a saved run. The notice may not survive leaving this screen; do not record the same run again."
+              : "Tai neatšaukia išsaugoto bėgimo. Pranešimas gali neišlikti išėjus iš ekrano; to paties bėgimo iš naujo neįrašyk."}
+          </SystemNotice>
+        </div>
+      ) : null}
+      {restoredIds.length > 0 ? (
+        <div data-run-follow-up>
+          <SystemNotice
+            eyebrow={english ? "CONTINUE" : "TĘSTI"}
+            title={
+              english ? "An earlier plan check needs attention" : "Liko ankstesnių plano patikrų"
+            }
+          >
+            <p>
+              {english
+                ? "Recheck saved data to continue. No new run is created and no earlier suggestion is accepted automatically."
+                : "Tęsk patikrinęs išsaugotus duomenis. Naujas bėgimas nekuriamas, ankstesnis pasiūlymas nepatvirtinamas automatiškai."}
+            </p>
+            <ul className="mt-3 grid gap-2">
+              {restoredIds.map((id) => (
+                <li className="gl-run-follow-up-row" key={id}>
+                  <span className="gl-run-follow-up-ref">#{id.slice(0, 8)}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    data-run-follow-up-check
+                    disabled={saving || !submission.ready}
+                    onClick={() => void retryPlanCheck(id)}
+                  >
+                    {english ? "Check plan" : "Patikrinti planą"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </SystemNotice>
+        </div>
+      ) : null}
       {submission.storageUnavailable ? (
         <div role="alert" className="rounded-2xl border border-border bg-surface p-3 text-sm">
           <p>
@@ -282,11 +382,8 @@ function QuickRunLogForm({
       >
         <Button
           type="button"
-          variant={
-            (submission.pending?.activity.environment ?? environment) === "outdoor"
-              ? "default"
-              : "outline"
-          }
+          variant="outline"
+          aria-pressed={(submission.pending?.activity.environment ?? environment) === "outdoor"}
           className="min-h-11"
           disabled={saving || Boolean(submission.pending)}
           onClick={() => setEnvironment("outdoor")}
@@ -295,11 +392,8 @@ function QuickRunLogForm({
         </Button>
         <Button
           type="button"
-          variant={
-            (submission.pending?.activity.environment ?? environment) === "treadmill"
-              ? "default"
-              : "outline"
-          }
+          variant="outline"
+          aria-pressed={(submission.pending?.activity.environment ?? environment) === "treadmill"}
           className="min-h-11"
           disabled={saving || Boolean(submission.pending)}
           onClick={() => setEnvironment("treadmill")}
@@ -307,42 +401,62 @@ function QuickRunLogForm({
           <TimerReset className="size-4" /> {english ? "Treadmill" : "Takelis"}
         </Button>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Input
-          disabled={saving || Boolean(submission.pending)}
-          inputMode="decimal"
-          value={
-            submission.pending ? String(submission.pending.activity.durationSeconds / 60) : minutes
-          }
-          onChange={(e) => setMinutes(e.target.value)}
-          placeholder={english ? "Minutes" : "Minutės"}
-          aria-label={english ? "Duration in minutes" : "Trukmė minutėmis"}
-        />
-        <Input
-          disabled={saving || Boolean(submission.pending)}
-          inputMode="decimal"
-          value={
-            submission.pending
-              ? String(Number(submission.pending.activity.distanceMeters) / 1000)
-              : distanceKm
-          }
-          onChange={(e) => setDistanceKm(e.target.value)}
-          placeholder="km"
-          aria-label={english ? "Distance in kilometres" : "Atstumas kilometrais"}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <label>
+          <span className="text-muted-foreground">
+            {english ? "Duration · min" : "Trukmė · min"}
+          </span>
+          <Input
+            disabled={saving || Boolean(submission.pending)}
+            inputMode="decimal"
+            value={
+              submission.pending
+                ? String(submission.pending.activity.durationSeconds / 60)
+                : minutes
+            }
+            onChange={(e) => setMinutes(e.target.value)}
+            placeholder={english ? "Minutes" : "Minutės"}
+            aria-label={english ? "Duration in minutes" : "Trukmė minutėmis"}
+          />
+        </label>
+        <label>
+          <span className="text-muted-foreground">
+            {english ? "Distance · km" : "Atstumas · km"}
+          </span>
+          <Input
+            disabled={saving || Boolean(submission.pending)}
+            inputMode="decimal"
+            value={
+              submission.pending
+                ? String(Number(submission.pending.activity.distanceMeters) / 1000)
+                : distanceKm
+            }
+            onChange={(e) => setDistanceKm(e.target.value)}
+            placeholder="km"
+            aria-label={english ? "Distance in kilometres" : "Atstumas kilometrais"}
+          />
+        </label>
       </div>
-      <Input
-        disabled={saving || Boolean(submission.pending)}
-        inputMode="numeric"
-        value={submission.pending ? String(submission.pending.activity.perceivedEffort ?? "") : rpe}
-        onChange={(e) => setRpe(e.target.value)}
-        placeholder={english ? "Effort 1–10 (optional)" : "Pastangos 1–10 (nebūtina)"}
-        aria-label={english ? "Perceived effort from 1 to 10" : "Juntamos pastangos nuo 1 iki 10"}
-      />
+      <label>
+        <span className="text-muted-foreground">
+          {english ? "Perceived effort · optional" : "Juntamos pastangos · nebūtina"}
+        </span>
+        <Input
+          disabled={saving || Boolean(submission.pending)}
+          inputMode="numeric"
+          value={
+            submission.pending ? String(submission.pending.activity.perceivedEffort ?? "") : rpe
+          }
+          onChange={(e) => setRpe(e.target.value)}
+          placeholder={english ? "Effort 1–10 (optional)" : "Pastangos 1–10 (nebūtina)"}
+          aria-label={english ? "Perceived effort from 1 to 10" : "Juntamos pastangos nuo 1 iki 10"}
+        />
+      </label>
       <Button
         type="button"
         className="min-h-11"
         disabled={saving || !submission.ready}
+        variant={pendingMatch ? "outline" : "default"}
         onClick={() => void submit()}
       >
         {saving ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -357,13 +471,17 @@ function QuickRunLogForm({
       {savedRun?.enrichment.retryable ? (
         <div className="rounded-2xl border border-border bg-surface p-3">
           <p role="status" className="text-sm leading-relaxed text-foreground">
-            {savedRun.enrichment.linked
+            {savedRun.verificationRequired
               ? english
-                ? "Run saved and linked. Updated analysis is temporarily unavailable."
-                : "Bėgimas išsaugotas ir susietas. Atnaujinta analizė laikinai nepasiekiama."
-              : english
-                ? "Run saved. Race-plan matching is temporarily unavailable. Retry without recording another run."
-                : "Bėgimas išsaugotas. Susiejimas su planu laikinai nepasiekiamas. Kartok tik patikrą, ne bėgimo įrašymą."}
+                ? "The earlier run could not be verified. No new save was sent."
+                : "Ankstesnio bėgimo patikrinti nepavyko. Nauja įrašymo užklausa nesiųsta."
+              : savedRun.enrichment.linked
+                ? english
+                  ? "Run saved and linked. Updated analysis is temporarily unavailable."
+                  : "Bėgimas išsaugotas ir susietas. Atnaujinta analizė laikinai nepasiekiama."
+                : english
+                  ? "Run saved. Race-plan matching is temporarily unavailable. Retry without recording another run."
+                  : "Bėgimas išsaugotas. Susiejimas su planu laikinai nepasiekiamas. Kartok tik patikrą, ne bėgimo įrašymą."}
           </p>
           <Button
             type="button"
@@ -401,7 +519,10 @@ function QuickRunLogForm({
               size="sm"
               variant="ghost"
               disabled={saving}
-              onClick={() => setPendingMatch(null)}
+              onClick={() => {
+                followUp.remember(pendingMatch.sessionId, false);
+                setPendingMatch(null);
+              }}
             >
               {english ? "No" : "Ne"}
             </Button>
