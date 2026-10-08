@@ -1,3 +1,4 @@
+import { TWIN_SKIN_MATERIAL, TWIN_SELECTION_EDGE } from "./twin-skin.palette";
 import {
   Color,
   Vector3,
@@ -8,11 +9,19 @@ import {
 import type { TwinSculptContour, TwinSculptCompetition } from "./twin-sculpt.contours";
 
 /**
- * A cool edge on the existing surface keeps the dark anatomical silhouette
+ * A studio edge on the existing surface keeps the natural anatomical silhouette
  * readable. This is constant studio lighting, independent of every data layer.
  * Opaque depth testing preserves the atlas's overlapping muscle boundaries;
  * additional translucent shells would wash those boundaries out.
  */
+const selectionUniforms = new WeakMap<MeshStandardMaterial, { value: number }>();
+
+/** Update the existing shader uniform; no extra shell, postprocess, or per-click recompilation. */
+export function setTwinAnatomySelection(material: MeshStandardMaterial, selected: boolean): void {
+  const uniform = selectionUniforms.get(material);
+  if (uniform) uniform.value = selected ? 1 : 0;
+}
+
 export function createTwinAnatomyMaterial(
   parameters: MeshStandardMaterialParameters,
   {
@@ -30,9 +39,17 @@ export function createTwinAnatomyMaterial(
   } = {},
 ): MeshStandardMaterial {
   const material = new MeshStandardMaterial(parameters);
+  const selection = { value: 0 };
+  selectionUniforms.set(material, selection);
   material.onBeforeCompile = (shader) => {
+    shader.uniforms["twinSelection"] = selection;
+    shader.uniforms["twinSelectionEdge"] = { value: new Color(TWIN_SELECTION_EDGE) };
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <common>",
+      "#include <common>\nuniform float twinSelection;\nuniform vec3 twinSelectionEdge;",
+    );
     if (regionMask) {
-      shader.uniforms["twinNeutral"] = { value: new Color(0x354956) };
+      shader.uniforms["twinNeutral"] = { value: new Color(TWIN_SKIN_MATERIAL.color) };
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
@@ -168,10 +185,16 @@ export function createTwinAnatomyMaterial(
       `#include <emissivemap_fragment>
       ${regionMask ? "totalEmissiveRadiance *= twinSurfaceMask;" : ""}
       float twinRim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 6.0);
-      totalEmissiveRadiance += vec3(0.14, 0.38, 0.46) * twinRim * 0.18;`,
+      totalEmissiveRadiance += vec3(0.14, 0.38, 0.46) * twinRim * 0.12;
+      // The selection edge stays on the real region surface and respects its mask.
+      float twinSelectedRim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 2.0);
+      float twinSelectionCoverage = ${regionMask ? "twinSurfaceMask" : "1.0"};
+      float twinSelectionBoundary = 4.0 * twinSelectionCoverage * (1.0 - twinSelectionCoverage);
+      totalEmissiveRadiance += twinSelectionEdge * twinSelection *
+        (0.55 * twinSelectedRim * twinSelectionCoverage + 0.32 * twinSelectionBoundary);`,
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-rim-v7-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
+    `twin-anatomy-skin-selection-v8-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }

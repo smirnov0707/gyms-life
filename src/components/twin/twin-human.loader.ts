@@ -1,3 +1,4 @@
+import { TWIN_SKIN_MATERIAL } from "./twin-skin.palette";
 import { Group, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
@@ -21,41 +22,13 @@ import {
 /** Region names ride on material names, since glTF primitives have none. */
 const REGION_MATERIAL_PREFIX = "twin-region:";
 
-/**
- * An unlit muscle, and the colour a region carrying no reading has.
- *
- * The figure is a dark instrument, not a photograph of skin. It was briefly
- * flesh-coloured, on the reasoning that a body should look like a body — and
- * that reasoning cost the screen everything it is for: on skin, a saturated
- * data colour reads as clothing, so every reading had to be muted until none
- * of them could be seen. A near-black body carries a lit muscle as a lit
- * muscle, which is how the design has always been drawn.
- *
- * Slate blue rather than near-black, and barely metallic. Both were darker and
- * half metal, which looks right in isolation and is wrong here: metalness eats
- * the diffuse term, so every part of the figure carrying no reading — the
- * head, the hands, the kneecaps, the sternum — rendered as a black hole in the
- * middle of the lit muscle around it. It has to read as unlit body, not as
- * missing body.
- */
-const BODY = { color: 0x243746, roughness: 0.6, metalness: 0.12 };
-const REALISTIC_BODY = { color: 0xb9856d, roughness: 0.7, metalness: 0.01 };
-
-/**
- * The skin, over the parts of the figure that have no muscle.
- *
- * The build drops every skin triangle with a muscle underneath it, so what
- * arrives here is the head, the hands, the feet, the shins and the pelvis. It
- * is the same instrument as the muscle, a shade lighter, so a hand reads as a
- * hand without turning the figure into a mannequin with a flesh-coloured head
- * on it.
- */
-const SKIN = { color: 0x354956, roughness: 0.55, metalness: 0.1 };
-const REALISTIC_SKIN = { color: 0xb9856d, roughness: 0.7, metalness: 0.01 };
-
-/** Darker than the body, so the face reads as a face at a glance. */
-const EYE = { color: 0x15222c, roughness: 0.4, metalness: 0.08 };
-const REALISTIC_EYE = { color: 0x241814, roughness: 0.38, metalness: 0.0 };
+/** Both analysis and Body retain readable natural skin; evidence is a separate tint. */
+const BODY = TWIN_SKIN_MATERIAL;
+const REALISTIC_BODY = TWIN_SKIN_MATERIAL;
+const SKIN = TWIN_SKIN_MATERIAL;
+const REALISTIC_SKIN = TWIN_SKIN_MATERIAL;
+const EYE = { color: 0x241814, roughness: 0.4, metalness: 0 };
+const REALISTIC_EYE = EYE;
 
 export type TwinBodyModel = {
   provenance: TwinBodyProvenance;

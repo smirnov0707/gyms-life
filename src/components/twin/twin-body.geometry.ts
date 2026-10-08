@@ -1,4 +1,6 @@
-import { BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial } from "three";
+import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
+import { TWIN_SKIN_MATERIAL } from "./twin-skin.palette";
+import { BufferGeometry, Float32BufferAttribute, Group, Mesh } from "three";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import surface from "./twin-body.surface.json";
 
@@ -17,6 +19,7 @@ export function createTwinBody() {
   const regionMeshes = new Map<TwinBodyRegion, Mesh[]>();
   const regionOf = new Map<Mesh, TwinBodyRegion>();
   const meshes: Mesh[] = [];
+  const baseColorOf = new Map<Mesh, number>();
   const positions = new Float32BufferAttribute(
     surface.positions.map((value) => value / surface.scale),
     3,
@@ -34,15 +37,12 @@ export function createTwinBody() {
     geometry.setAttribute("normal", normals);
     geometry.setIndex(indices);
     geometry.computeBoundingSphere();
-    const material = new MeshStandardMaterial({
-      color: "#657076",
-      roughness: 0.48,
-      metalness: 0.22,
-    });
+    const material = createTwinAnatomyMaterial(TWIN_SKIN_MATERIAL);
     const mesh = new Mesh(geometry, material);
     mesh.name = `twin-region-${id}`;
     body.add(mesh);
     meshes.push(mesh);
+    baseColorOf.set(mesh, TWIN_SKIN_MATERIAL.color);
     if (isTwinBodyRegion(id)) {
       regionOf.set(mesh, id);
       regionMeshes.set(id, [mesh]);
@@ -55,6 +55,7 @@ export function createTwinBody() {
     meshes,
     regionMeshes,
     regionOf,
+    baseColorOf,
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -65,6 +66,7 @@ export function createTwinBody() {
         else material.dispose();
       }
       whole.dispose();
+      baseColorOf.clear();
       regionOf.clear();
       regionMeshes.clear();
       body.clear();

@@ -1,9 +1,10 @@
+import { twinRegionSurface, TWIN_SKIN_MATERIAL } from "./twin-skin.palette";
+import { setTwinAnatomySelection } from "./twin-anatomy.material";
 import {
   ACESFilmicToneMapping,
   Box3,
   CanvasTexture,
   CircleGeometry,
-  Color,
   DirectionalLight,
   Group,
   HemisphereLight,
@@ -35,11 +36,8 @@ import {
 } from "./twin-human.loader";
 import {
   TWIN_CAMERA,
-  TWIN_DISPLAY_COLORS,
   TWIN_FIELD_OF_VIEW,
   TWIN_FRAME,
-  TWIN_SELECTION_GLOW,
-  TWIN_TONE_GLOW,
   fittedTwinDistance,
   isTwinBodyRegion,
   isTwinTap,
@@ -130,12 +128,9 @@ export function mountTwinScene(
     });
     renderer.outputColorSpace = SRGBColorSpace;
     renderer.toneMapping = ACESFilmicToneMapping;
-    // Under one, deliberately. The data colours are saturated and the key is
-    // strong, and at neutral exposure the figure came out pastel — every
-    // muscle the same washed lilac rather than the deep violet the screen is
-    // drawn in. Pulling the exposure down puts the range back into the colour.
+    // Neutral exposure preserves a warm skin base in both analytical and Body views.
     const appearance = options.visualAppearance ?? "analysis";
-    renderer.toneMappingExposure = appearance === "realistic" ? 1.02 : 0.86;
+    renderer.toneMappingExposure = 1.0;
     renderer.setClearColor(0x040a14, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     const canvas = renderer.domElement;
@@ -168,38 +163,15 @@ export function mountTwinScene(
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
 
-    // Lit for a dark instrument rather than for skin: a cool ambient that keeps
-    // the unlit body readable as a body, a cold key that models the form, and
-    // two rims — one cyan behind and one violet from the side — that draw the
-    // silhouette out of the stage. It was warm and bright while the figure was
-    // skin-coloured; a warm key on a near-black body just makes it grey.
-    scene.add(
-      appearance === "realistic"
-        ? new HemisphereLight(0xffeadf, 0x18202a, 0.9)
-        : new HemisphereLight(0xadc3d1, 0x101722, 0.58),
-    );
-    const lights =
-      appearance === "realistic"
-        ? ([
-            [[1.8, 2.8, 2.6], 0xffe5d5, 2.1],
-            [[-2.4, 1.25, 1.8], 0xc7d9ed, 0.75],
-            [[-1.8, 1.9, -3.0], 0xaedcf4, 0.8],
-            [[2.2, 1.4, -2.6], 0xd4bff5, 0.55],
-          ] as const)
-        : ([
-            // The key, high and slightly to the front, which is what models a muscle
-            // belly. Kept modest: the data colour is emissive, so a bright key on top
-            // of it flattens the very thing it is there to shape.
-            [[1.8, 2.8, 2.6], 0xdeebf4, 1.7],
-            [[-2.6, 1.0, 1.6], 0x9cadc1, 0.65],
-            // The rim, hard behind and to each side. This is where the figure gets
-            // its edge against the stage. A scaled-up inside-out copy of every mesh
-            // was tried for that first, and on a body made of a hundred overlapping
-            // muscles each copy glows over its neighbours as well as over the stage —
-            // the figure came out milky and lost every muscle boundary it had.
-            [[-1.6, 1.9, -3.0], 0x9adceb, 1.4],
-            [[2.2, 1.4, -2.6], 0x98acd8, 1.0],
-          ] as const);
+    // Neutral studio light keeps the front, back and unmeasured regions readable.
+    // Selection uses its own bounded surface edge rather than brighter global bloom.
+    scene.add(new HemisphereLight(0xfff1e8, 0x51463f, 1.0));
+    const lights = [
+      [[1.8, 2.8, 2.6], 0xfff1e8, 1.8],
+      [[-2.4, 1.25, 1.8], 0xe3eff7, 0.85],
+      [[-1.8, 1.9, -3.0], 0xffeadc, 1.25],
+      [[2.2, 1.4, -2.6], 0xe3eff7, 0.9],
+    ] as const;
     for (const [position, color, intensity] of lights) {
       const light = new DirectionalLight(color, intensity);
       light.position.set(position[0], position[1], position[2]);
@@ -423,59 +395,27 @@ export function mountTwinScene(
 
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
-      // The body is a dark instrument, so the data colour goes into the
-      // surface as well as over it. The old rule — tint a human, never repaint
-      // one — existed to protect a skin tone the figure no longer has, and it
-      // was the thing keeping every reading off the body: on skin, colour
-      // reads as clothing at any strength worth seeing.
+      canvas.dataset["twinSkinPalette"] = "natural";
+      canvas.dataset["twinSelectedRegion"] = selectedRegion ?? "";
       const base = "baseColorOf" in model ? model.baseColorOf : null;
       for (const [id, meshes] of model.regionMeshes) {
         const value = state.regions.find((region) => region.id === id);
-        const tone = new Color(TWIN_DISPLAY_COLORS[value?.display.tone ?? "unknown"]);
         const selected = selectedRegion === id;
         for (const mesh of meshes) {
           const material = mesh.material as MeshStandardMaterial;
-          const bodyColour = base?.get(mesh);
-          if (bodyColour !== undefined) {
-            const glow =
-              TWIN_TONE_GLOW[value?.display.tone ?? "unknown"] +
-              (selected ? TWIN_SELECTION_GLOW : 0);
-            // The colour is the surface, and the glow is only a glow.
-            //
-            // This was the other way round — most of the brightness emissive,
-            // the albedo barely tinted — and it cost the figure every muscle
-            // it had: an emissive surface is lit by nothing, so the key light
-            // had no shading left to do and the body came out as flat pastel
-            // panels. A muscle belly reads because it is shaded, so the data
-            // colour goes into the albedo and the light does its work on it.
-            const lit = glow > 0;
-            const tintStrength = appearance === "realistic" ? (selected ? 0.38 : 0) : lit ? 0.8 : 0;
-            material.color.set(bodyColour).lerp(tone, tintStrength);
-            material.emissive.copy(tone);
-            // Enough to lift a region off the stage and to keep the states in
-            // order against each other, not enough to bleach the shading.
-            // Divided by the tone's own brightness, so how much a region lights
-            // up is set by what it means rather than by how pale its colour
-            // happens to be.
-            material.emissiveIntensity =
-              appearance === "realistic"
-                ? selected
-                  ? (0.08 * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
-                  : 0
-                : lit
-                  ? ((selected ? 0.22 : 0.12) * glow) / Math.max(tone.r, tone.g, tone.b, 0.25)
-                  : 0;
-            // Realistic mode keeps skin-like broad highlights while analysis
-            // mode preserves the stronger instrument contrast.
-            material.roughness =
-              appearance === "realistic" ? (selected ? 0.62 : 0.68) : selected ? 0.56 : 0.6;
-            material.metalness = appearance === "realistic" ? 0.02 : 0.12;
-          } else {
-            material.color.copy(new Color("#48565d").lerp(tone, 0.55));
-            material.emissive.set(selected ? "#bcefe3" : "#000000");
-            material.emissiveIntensity = selected ? 0.22 : 0;
-            material.roughness = selected ? 0.36 : 0.48;
-          }
+          const surface = twinRegionSurface({
+            baseColor: base?.get(mesh) ?? TWIN_SKIN_MATERIAL.color,
+            tone: value?.display.tone ?? "unknown",
+            appearance,
+            selected,
+            hasSelection: selectedRegion !== null,
+          });
+          material.color.set(surface.color);
+          material.emissive.set(surface.emissive);
+          material.emissiveIntensity = surface.emissiveIntensity;
+          material.roughness = surface.roughness;
+          material.metalness = surface.metalness;
+          setTwinAnatomySelection(material, selected);
         }
       }
       requestRender();
