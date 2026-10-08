@@ -72,31 +72,33 @@ try {
             for (const variant of ["full", "cockpit"]) {
               const section = page.locator(`[data-variant="${variant}"]`);
               await expect(section.locator("[data-changes]")).toHaveText("0");
-              const geometry = await section.locator("[data-twin-layer-controls]").evaluate((el) => {
-                const box = el.getBoundingClientRect();
-                const buttons = [...el.querySelectorAll("button")].map((button) => {
-                  const rect = button.getBoundingClientRect();
-                  const label = button.querySelector("[data-twin-layer-label]");
-                  const range = document.createRange();
-                  range.selectNodeContents(label);
-                  const lines = [...range.getClientRects()];
-                  return {
-                    id: button.dataset.twinLayerOption,
-                    text: label.textContent,
-                    name: button.getAttribute("aria-label"),
-                    height: rect.height,
-                    top: rect.top,
-                    inside: rect.left >= box.left && rect.right <= box.right + 1,
-                    textInside: lines.every((line) =>
-                      line.left >= rect.left && line.right <= rect.right + 1,
-                    ),
-                    lines: lines.length,
-                    clipX: button.scrollWidth - button.clientWidth,
-                    clipY: button.scrollHeight - button.clientHeight,
-                  };
+              const geometry = await section
+                .locator("[data-twin-layer-controls]")
+                .evaluate((el) => {
+                  const box = el.getBoundingClientRect();
+                  const buttons = [...el.querySelectorAll("button")].map((button) => {
+                    const rect = button.getBoundingClientRect();
+                    const label = button.querySelector("[data-twin-layer-label]");
+                    const range = document.createRange();
+                    range.selectNodeContents(label);
+                    const lines = [...range.getClientRects()];
+                    return {
+                      id: button.dataset.twinLayerOption,
+                      text: label.textContent,
+                      name: button.getAttribute("aria-label"),
+                      height: rect.height,
+                      top: rect.top,
+                      inside: rect.left >= box.left && rect.right <= box.right + 1,
+                      textInside: lines.every(
+                        (line) => line.left >= rect.left && line.right <= rect.right + 1,
+                      ),
+                      lines: lines.length,
+                      clipX: button.scrollWidth - button.clientWidth,
+                      clipY: button.scrollHeight - button.clientHeight,
+                    };
+                  });
+                  return { left: box.left, right: box.right, buttons };
                 });
-                return { left: box.left, right: box.right, buttons };
-              });
               expect(geometry.left).toBeGreaterThanOrEqual(0);
               expect(geometry.right).toBeLessThanOrEqual(width);
               for (const button of geometry.buttons) {
@@ -128,8 +130,9 @@ try {
               await expect(section.locator("[data-changes]")).toHaveText("4");
               layouts.push({ variant, ...geometry });
             }
-            expect(await page.evaluate(() => document.documentElement.scrollWidth))
-              .toBeLessThanOrEqual(width + 1);
+            expect(
+              await page.evaluate(() => document.documentElement.scrollWidth),
+            ).toBeLessThanOrEqual(width + 1);
             if (width === 320)
               await page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
             results.push({ name, status: "passed", layouts });

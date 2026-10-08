@@ -11,7 +11,7 @@ const language = query.get("lang") === "lt" ? "lt" : "en";
 document.documentElement.lang = language;
 document.documentElement.className = query.get("theme") === "light" ? "light" : "dark";
 
-function Selection({ compact }: { compact: boolean }) {
+export function Selection({ compact }: { compact: boolean }) {
   const [layer, setLayer] = useState<TwinLayer>("recovery");
   const [changes, setChanges] = useState(0);
   return (
@@ -34,7 +34,7 @@ function Selection({ compact }: { compact: boolean }) {
   );
 }
 
-function Fixture() {
+export function Fixture() {
   return (
     <main className="min-h-screen bg-background p-4 text-foreground">
       <p className="mb-6 text-sm">Synthetic controls. No account, metrics or server writes.</p>

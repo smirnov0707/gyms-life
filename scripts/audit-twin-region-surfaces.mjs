@@ -22,8 +22,10 @@ for (const file of ["twin-selected-v1.glb", "twin-body-v2.glb"]) {
       const nodes = (gltf.nodes ?? []).filter((node) => node.mesh === meshIndex);
       const extras = [mesh.extras, ...nodes.map((node) => node.extras)].filter(Boolean);
       const attributes = Object.keys(primitive.attributes ?? {});
-      const count = gltf.accessors?.[primitive.indices]?.count ??
-        gltf.accessors?.[primitive.attributes?.POSITION]?.count ?? 0;
+      const count =
+        gltf.accessors?.[primitive.indices]?.count ??
+        gltf.accessors?.[primitive.attributes?.POSITION]?.count ??
+        0;
       regions.push({
         region: material.slice("twin-region:".length),
         triangles: (primitive.mode ?? 4) === 4 ? count / 3 : null,
@@ -42,5 +44,8 @@ const report = {
   assets,
 };
 await mkdir("test-results/twin-layer-controls", { recursive: true });
-await writeFile("test-results/twin-layer-controls/asset-audit.json", JSON.stringify(report, null, 2));
+await writeFile(
+  "test-results/twin-layer-controls/asset-audit.json",
+  JSON.stringify(report, null, 2),
+);
 console.log(JSON.stringify(report, null, 2));
