@@ -1,0 +1,358 @@
+{
+  "base": "20e2d1613e9a0b1a4408d461c717847fe5c2f9c3",
+  "branch": "fix/twin-natural-skin-2026-10-08",
+  "commit": "78221c0ac2048c011c0f352563c89dd6b6a1a045",
+  "tree": "204e4deb96900847bd00f499c64187b3d980e2b7",
+  "files": [
+    {
+      "path": "src/components/twin/twin-skin.palette.ts",
+      "sha256": "a6dfbe74e06a7cdaf3bb7f8ce44faff93561c0e1a1c1c648e646a4c33fcbb67e"
+    },
+    {
+      "path": "src/components/twin/twin-human.loader.ts",
+      "sha256": "fab33f697b00ee0dceb122eee3f0a1dd0b712c63b23591ab597e0e59b65a1d93"
+    },
+    {
+      "path": "src/components/twin/twin-anatomy.material.ts",
+      "sha256": "cf6b97650a25768aad61cd4d463062f5d8a8b9a96007a0e883f52d630a938890"
+    },
+    {
+      "path": "src/components/twin/twin-body.geometry.ts",
+      "sha256": "b11a371e00eb13ab37b8478e2a93f3fbba4495673215c0b887dd9fc689343ebc"
+    },
+    {
+      "path": "src/components/twin/twin-scene.runtime.ts",
+      "sha256": "7232c752af177f2e821d6301336d1bba2a9ad0eaed4440f0b18a1634f60eff7c"
+    },
+    {
+      "path": "src/components/twin/twin-skin.palette.test.ts",
+      "sha256": "795b10c3b1edfe9db6955d7d5e65ce03e59f4ab1c28fd21b2f273222b333c6d5"
+    },
+    {
+      "path": "docs/twin-natural-skin.md",
+      "sha256": "15ca8300eea003b5b17270b12e80a995a98e97812e18718aa96d608b52e66226"
+    },
+    {
+      "path": "scripts/test-twin-skin-browser.mjs",
+      "sha256": "c66096aff8b56f1e1abf075402a02e2413571e5600ee0abc27a6dc73c744b0e4"
+    },
+    {
+      "path": ".github/workflows/twin-skin-browser.yml",
+      "sha256": "d471499c81067439f4251ffa46c9a6aba69f58c70afb9dccec0309cb2f6e0c6a"
+    }
+  ],
+  "evidenceRoot": "diagnostics/twin-natural-skin/evidence-37753222166",
+  "images": [
+    "analysis-dark-320-chest-base.png",
+    "analysis-dark-320-chest-selected.png",
+    "analysis-light-320-back-selected.png",
+    "realistic-light-320-chest-selected.png"
+  ],
+  "workflowPending": true,
+  "rendered": {
+    "scope": "Real WebGL surfaces with synthetic evidence; no live account or database. Chromium software renderer.",
+    "results": [
+      {
+        "label": "analysis-dark-320",
+        "region": "Chest",
+        "warm": 42643,
+        "changed": 4100,
+        "coolAdded": 3926,
+        "meanSkinLuminance": 139.9576581431927,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320",
+        "region": "Back",
+        "warm": 47121,
+        "changed": 6371,
+        "coolAdded": 5249,
+        "meanSkinLuminance": 127.73037498779598,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320",
+        "region": "Legs",
+        "warm": 42643,
+        "changed": 7684,
+        "coolAdded": 7155,
+        "meanSkinLuminance": 139.9576581431927,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-960",
+        "region": "Chest",
+        "warm": 42643,
+        "changed": 4100,
+        "coolAdded": 3926,
+        "meanSkinLuminance": 139.9576681143486,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-960",
+        "region": "Back",
+        "warm": 47121,
+        "changed": 6371,
+        "coolAdded": 5249,
+        "meanSkinLuminance": 127.73037949958476,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-960",
+        "region": "Legs",
+        "warm": 42643,
+        "changed": 7684,
+        "coolAdded": 7155,
+        "meanSkinLuminance": 139.9576681143486,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-light-320",
+        "region": "Chest",
+        "warm": 42649,
+        "changed": 4100,
+        "coolAdded": 3926,
+        "meanSkinLuminance": 140.19716341297968,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-light-320",
+        "region": "Back",
+        "warm": 47345,
+        "changed": 6371,
+        "coolAdded": 5249,
+        "meanSkinLuminance": 128.94743442813234,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-light-320",
+        "region": "Legs",
+        "warm": 42649,
+        "changed": 7684,
+        "coolAdded": 7137,
+        "meanSkinLuminance": 140.19716341297968,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-light-960",
+        "region": "Chest",
+        "warm": 42649,
+        "changed": 4100,
+        "coolAdded": 3926,
+        "meanSkinLuminance": 140.19717338273279,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-light-960",
+        "region": "Back",
+        "warm": 47345,
+        "changed": 6371,
+        "coolAdded": 5249,
+        "meanSkinLuminance": 128.94743891857482,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-light-960",
+        "region": "Legs",
+        "warm": 42649,
+        "changed": 7684,
+        "coolAdded": 7137,
+        "meanSkinLuminance": 140.19717338273279,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-dark-320",
+        "region": "Chest",
+        "warm": 45426,
+        "changed": 5102,
+        "coolAdded": 5052,
+        "meanSkinLuminance": 143.6860396645148,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-dark-320",
+        "region": "Back",
+        "warm": 48923,
+        "changed": 7327,
+        "coolAdded": 7078,
+        "meanSkinLuminance": 125.68579976698075,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-dark-320",
+        "region": "Legs",
+        "warm": 45426,
+        "changed": 12861,
+        "coolAdded": 13006,
+        "meanSkinLuminance": 143.6860396645148,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-dark-960",
+        "region": "Chest",
+        "warm": 45426,
+        "changed": 5102,
+        "coolAdded": 5052,
+        "meanSkinLuminance": 143.6859562893552,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-dark-960",
+        "region": "Back",
+        "warm": 48923,
+        "changed": 7327,
+        "coolAdded": 7078,
+        "meanSkinLuminance": 125.68581438587167,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-dark-960",
+        "region": "Legs",
+        "warm": 45426,
+        "changed": 12861,
+        "coolAdded": 13006,
+        "meanSkinLuminance": 143.6859562893552,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-light-320",
+        "region": "Chest",
+        "warm": 45431,
+        "changed": 5102,
+        "coolAdded": 5052,
+        "meanSkinLuminance": 143.8881335651924,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-light-320",
+        "region": "Back",
+        "warm": 49185,
+        "changed": 7327,
+        "coolAdded": 7076,
+        "meanSkinLuminance": 126.85547232286216,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-light-320",
+        "region": "Legs",
+        "warm": 45431,
+        "changed": 12861,
+        "coolAdded": 12901,
+        "meanSkinLuminance": 143.8881335651924,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-light-960",
+        "region": "Chest",
+        "warm": 45431,
+        "changed": 5102,
+        "coolAdded": 5052,
+        "meanSkinLuminance": 143.88805019920878,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-light-960",
+        "region": "Back",
+        "warm": 49185,
+        "changed": 7327,
+        "coolAdded": 7076,
+        "meanSkinLuminance": 126.85548686388077,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "realistic-light-960",
+        "region": "Legs",
+        "warm": 45431,
+        "changed": 12861,
+        "coolAdded": 12901,
+        "meanSkinLuminance": 143.88805019920878,
+        "pixels": 576000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320-fallback",
+        "region": "Chest",
+        "warm": 54757,
+        "changed": 9543,
+        "coolAdded": 9469,
+        "meanSkinLuminance": 140.5078972149715,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320-fallback",
+        "region": "Back",
+        "warm": 56734,
+        "changed": 18158,
+        "coolAdded": 17945,
+        "meanSkinLuminance": 127.23510262276608,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320-fallback",
+        "region": "Legs",
+        "warm": 54757,
+        "changed": 18938,
+        "coolAdded": 19098,
+        "meanSkinLuminance": 140.5078972149715,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320-measured",
+        "region": "Chest",
+        "warm": 23310,
+        "changed": 4107,
+        "coolAdded": 3713,
+        "meanSkinLuminance": 141.60541979407876,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320-measured",
+        "region": "Back",
+        "warm": 27391,
+        "changed": 6404,
+        "coolAdded": 5219,
+        "meanSkinLuminance": 129.93150287320273,
+        "pixels": 192000,
+        "status": "passed"
+      },
+      {
+        "label": "analysis-dark-320-measured",
+        "region": "Legs",
+        "warm": 23310,
+        "changed": 7697,
+        "coolAdded": 4314,
+        "meanSkinLuminance": 141.60541979407876,
+        "pixels": 192000,
+        "status": "passed"
+      }
+    ],
+    "errors": []
+  }
+}
