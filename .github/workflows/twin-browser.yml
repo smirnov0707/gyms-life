@@ -50,6 +50,12 @@ jobs:
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-twin-browser.mjs
+      - name: Verify visible skin and selection in the real WebGL scene
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/twin-skin
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-skin/browser.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,27 +63,6 @@ jobs:
           path: test-results/twin
           retention-days: 7
           if-no-files-found: ignore
-
-  skin-clarity:
-    runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
-      options: --init
-    timeout-minutes: 12
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: node scripts/verify-ci-browser-runtime.mjs
-      - name: Verify visible skin and selection in the real WebGL scene
-        shell: bash
-        run: |
-          set -o pipefail
-          mkdir -p test-results/twin-skin
-          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-skin/browser.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
