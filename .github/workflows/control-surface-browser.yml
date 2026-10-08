@@ -1,0 +1,69 @@
+name: Shared control surface browser
+on:
+  pull_request:
+    paths:
+      - "src/components/ui/button.tsx"
+      - "src/components/ui/calendar.tsx"
+      - "src/components/ui/input.tsx"
+      - "src/components/ui/textarea.tsx"
+      - "src/components/system/SystemNotice.tsx"
+      - "src/ui-design-system.css"
+      - "src/styles.css"
+      - "src/styles/system-notice.css"
+      - "tests/control-browser/**"
+      - "scripts/test-control-surface-browser.mjs"
+      - "scripts/test-calendar-control-browser.mjs"
+      - ".github/workflows/control-surface-browser.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/ui/button.tsx"
+      - "src/components/ui/calendar.tsx"
+      - "src/components/ui/input.tsx"
+      - "src/components/ui/textarea.tsx"
+      - "src/components/system/SystemNotice.tsx"
+      - "src/ui-design-system.css"
+      - "src/styles.css"
+      - "src/styles/system-notice.css"
+      - "tests/control-browser/**"
+      - "scripts/test-control-surface-browser.mjs"
+      - "scripts/test-calendar-control-browser.mjs"
+      - ".github/workflows/control-surface-browser.yml"
+permissions:
+  contents: read
+concurrency:
+  group: control-surface-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: node scripts/test-control-surface-browser.mjs
+        env:
+          CONTROL_BROWSER_ENGINE: ${{ matrix.engine }}
+      - name: Verify real calendar layout and native interactions
+        run: node scripts/test-calendar-control-browser.mjs
+        env:
+          CONTROL_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-controls-${{ matrix.engine }}-evidence
+          path: test-results/control-surface
+          retention-days: 14
+          if-no-files-found: error

@@ -1,0 +1,11 @@
+body { margin: 0; background: var(--background); color: var(--foreground); }
+.control-fixture { width: 100%; max-width: 640px; margin: 0 auto; padding: 24px 16px; box-sizing: border-box; }
+.control-fixture header { margin-bottom: 24px; }
+.control-fixture header > p:first-child { font-size: 10px; letter-spacing: .1em; color: var(--muted-foreground); }
+.control-fixture h1 { font-family: var(--font-display); color: var(--foreground); font-size: clamp(26px, 6vw, 38px); font-weight: 700; line-height: 1.1; margin: 12px 0; }
+.control-fixture header > p:last-child { color: var(--muted-foreground); font-size: 13px; line-height: 1.6; }
+.control-fixture form { display: grid; gap: 10px; margin-bottom: 24px; }
+.control-fixture label { font-size: 12px; margin-top: 8px; }
+.control-fixture-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; align-items: start; }
+.control-fixture #field-error { color: var(--destructive); font-size: 12px; line-height: 1.5; }
+.control-fixture output { font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
