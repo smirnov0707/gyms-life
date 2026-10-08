@@ -52,8 +52,7 @@ try {
         });
         await context.route("**/*", (route) => {
           const url = new URL(route.request().url());
-          if (url.origin === origin && route.request().method() === "GET")
-            return route.continue();
+          if (url.origin === origin && route.request().method() === "GET") return route.continue();
           errors.push(
             `Unexpected request: ${route.request().method()} ${url.origin}${url.pathname}`,
           );
