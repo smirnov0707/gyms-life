@@ -1,0 +1,79 @@
+name: Twin native-pixel size review
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-size-pixel-review.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 2e22301c0e64931e38fd077d552560b3dfcce63d
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 11574861850
+          run-id: 37833750004
+          github-token: ${{ github.token }}
+          path: /tmp/size-evidence
+      - run: npm ci
+      - name: Measure native PNG pixels and place unchanged screenshots side by side
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,readdirSync,statSync,mkdirSync,writeFileSync} from 'node:fs';
+          import path from 'node:path';
+          import sharp from 'sharp';
+          const files=[];function walk(dir){for(const name of readdirSync(dir)){const p=path.join(dir,name);statSync(p).isDirectory()?walk(p):files.push(p);}}walk('/tmp/size-evidence');
+          const one=suffix=>{const matches=files.filter(p=>p.endsWith('/'+suffix));assert.equal(matches.length,1,suffix);return readFileSync(matches[0]);};
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          const report=[];const tree=[];mkdirSync('test-results/native-size',{recursive:true});
+          async function metrics(input){
+            const {data,info}=await sharp(input).removeAlpha().raw().toBuffer({resolveWithObject:true});
+            let count=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+            for(let y=0;y<info.height;y++)for(let x=0;x<info.width;x++){
+              const i=(y*info.width+x)*info.channels,r=data[i],g=data[i+1],b=data[i+2];
+              if(r>95&&r>g*1.04&&g>b*1.06){count++;minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);}
+            }
+            assert.ok(count>1000);return {width:info.width,height:info.height,skinPixels:count,skinBounds:{minX,minY,maxX,maxY,width:maxX-minX+1,height:maxY-minY+1}};
+          }
+          for(const [lang,width] of [['lt',320],['lt',390],['en',1280]]){
+            const a=one(`${lang}-dark-${width}-old-size.png`),b=one(`${lang}-dark-${width}-larger.png`);
+            const before=await metrics(a),after=await metrics(b);assert.equal(before.width,after.width);
+            const w=before.width*2+24,h=Math.max(before.height,after.height)+54;
+            const header=Buffer.from(`<svg width="${w}" height="54" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#ffffff"/><text x="8" y="22" font-family="sans-serif" font-size="15">PRIES / BEFORE</text><text x="${before.width+32}" y="22" font-family="sans-serif" font-size="15">PO / AFTER</text><text x="8" y="44" font-family="sans-serif" font-size="12">Original pixels. No resizing. Viewport ${width}px.</text></svg>`);
+            const composite=await sharp({create:{width:w,height:h,channels:4,background:'#ffffff'}}).composite([{input:header,left:0,top:0},{input:a,left:0,top:54},{input:b,left:before.width+24,top:54}]).png().toBuffer();
+            const name=`comparison-${width}-native.png`;writeFileSync(`test-results/native-size/${name}`,composite);
+            const item={viewport:width,before,after,skinPixelAreaRatio:after.skinPixels/before.skinPixels,skinBoundsHeightRatio:after.skinBounds.height/before.skinBounds.height,composite:name,transform:'padding and labels only; neither screenshot resized'};
+            report.push(item);console.log('NATIVE_SIZE_RESULT',JSON.stringify(item));
+            const blob=await api('git/blobs','POST',{content:composite.toString('base64'),encoding:'base64'});tree.push({path:`docs/twin-native-size-review/${name}`,mode:'100644',type:'blob',sha:blob.sha});
+          }
+          const note=['# Native-pixel Twin size review','', 'Application 2e22301c. Original PNGs from verified artifact 11574861850. Two screenshots share one image so image viewers cannot resize each separately. No screenshot rescaling or retouching; only padding and labels were added. Skin-colour threshold is the same as the existing test; these pixel counts are not a biological measure or percentage of height.','',...report.flatMap(r=>[`## Viewport ${r.viewport}px`,`![Native comparison](comparison-${r.viewport}-native.png)`,'']), '```json',JSON.stringify(report,null,2),'```'].join('\n');
+          writeFileSync('test-results/native-size/results.json',JSON.stringify(report,null,2));
+          tree.push({path:'docs/twin-native-size-review/README.md',mode:'100644',type:'blob',content:note});
+          const branch=process.env.GITHUB_REF_NAME,head=(await api(`git/ref/heads/${branch}`)).object.sha;
+          assert.equal(head,process.env.GITHUB_SHA,'Diagnostic branch changed');
+          const base=await api(`git/commits/${head}`),next=await api('git/trees','POST',{base_tree:base.tree.sha,tree});
+          const commit=await api('git/commits','POST',{message:'docs(diagnostics): Twin side-by-side screenshots at identical native scale',tree:next.sha,parents:[head]});
+          await api(`git/refs/heads/${branch}`,'PATCH',{sha:commit.sha,force:false});
+          console.log('NATIVE_SIZE_GALLERY',commit.sha);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-native-pixel-size-evidence
+          path: test-results/native-size
+          retention-days: 14
+          if-no-files-found: error
