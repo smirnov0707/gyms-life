@@ -1,3 +1,4 @@
+import { subscribeTodayRefresh } from "@/lib/training-view-refresh";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -266,19 +267,7 @@ export function TodayDecision({
     void load();
   }, [load]);
 
-  useEffect(() => {
-    const refresh = () => void load();
-    window.addEventListener("gymslife:life-context", refresh);
-    window.addEventListener("gymslife:training-rhythm", refresh);
-    window.addEventListener("gymslife:adaptation", refresh);
-    window.addEventListener("gymslife:training-completed", refresh);
-    return () => {
-      window.removeEventListener("gymslife:life-context", refresh);
-      window.removeEventListener("gymslife:training-rhythm", refresh);
-      window.removeEventListener("gymslife:adaptation", refresh);
-      window.removeEventListener("gymslife:training-completed", refresh);
-    };
-  }, [load]);
+  useEffect(() => subscribeTodayRefresh(window, () => void load()), [load]);
 
   const navigateToAction = (action: TodayDecisionAction) => {
     if (action === "generate_training_plan") {

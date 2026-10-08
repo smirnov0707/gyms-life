@@ -1,3 +1,4 @@
+import { persistEnduranceActivity } from "./endurance-submission.service";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { EnduranceActivitySchema, type EnduranceActivity } from "./endurance-activity.schema";
@@ -10,7 +11,12 @@ import {
 
 type Client = SupabaseClient<Database>;
 
-export async function recordEnduranceActivity(supabase: Client, userId: string, input: unknown) {
+export async function recordEnduranceActivity(
+  supabase: Client,
+  userId: string,
+  input: unknown,
+  submissionId?: string,
+) {
   const activity = EnduranceActivitySchema.parse(input);
   const credit = buildEnduranceTrainingCredit(activity);
   if (credit.status !== "credited") throw new Error("Endurance activity could not be credited.");
@@ -22,28 +28,14 @@ export async function recordEnduranceActivity(supabase: Client, userId: string, 
   }
   const finishedAt = new Date(finishedMs).toISOString();
 
-  const { data, error } = await supabase
-    .from("workout_sessions")
-    .insert({
-      user_id: userId,
-      started_at: activity.startedAt,
-      finished_at: finishedAt,
-      duration_seconds: activity.durationSeconds,
-      title: activity.kind === "run" ? "Run" : activity.kind === "walk" ? "Walk" : "Hike",
-      total_volume: 0,
-      activity_kind: activity.kind,
-      activity_environment: activity.environment,
-      activity_source: activity.source,
-      distance_meters: activity.distanceMeters,
-      average_heart_rate_bpm: activity.averageHeartRateBpm,
-      perceived_effort: activity.perceivedEffort,
-      workout_snapshot: { enduranceCredit: credit },
-    })
-    .select("id, started_at, finished_at")
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error("Endurance activity could not be saved.");
+  const { session: data, manualSubmission } = await persistEnduranceActivity(
+    supabase,
+    userId,
+    activity,
+    credit,
+    finishedAt,
+    submissionId,
+  );
 
   let enrichment: EnduranceRaceEnrichmentResult = {
     raceMatch: null,
@@ -64,6 +56,7 @@ export async function recordEnduranceActivity(supabase: Client, userId: string, 
 
   return {
     session: data,
+    manualSubmission,
     activity: activity satisfies EnduranceActivity,
     credit,
     ...enrichment,
