@@ -2,7 +2,12 @@ name: Twin skin clarity validation
 on:
   push:
     branches: [diagnostics/twin-skin-clarity-2026-10-08]
-    paths: [.github/workflows/twin-skin-clarity-validation.yml]
+    paths:
+      - .github/workflows/twin-skin-clarity-validation.yml
+      - scripts/test-twin-skin-browser.mjs
+      - diagnostics/twin-skin-edits.json
+      - src/components/twin/twin-surface.style.ts
+      - src/components/twin/twin-surface.style.test.ts
 permissions:
   contents: write
 jobs:
