@@ -1,0 +1,131 @@
+name: PR143 production acceptance
+on:
+  push:
+    branches: [diagnostics/pr143-runtime-gates-2026-10-08]
+    paths: [.github/workflows/pr143-production-acceptance.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      EXPECTED_COMMIT: 89c3f8b8af6e8ada0c76b89df789541fff477d05
+      VERIFIED_HEAD: dba48c7cd06f34dc306a71efb56fad4d2db7ba7f
+      EXPECTED_CONTEXT: production
+      EXPECTED_TARGET: production
+      GYMSLIFE_ORIGIN: https://gyms.life
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_COMMIT }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Require the exact published production identity and unchanged smoke source
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const out='test-results/production-browser';
+          mkdirSync(out,{recursive:true});
+          const response=await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`,{signal:AbortSignal.timeout(30000),headers:{connection:'close'}});
+          assert.equal(response.status,200);
+          const identity=await response.json();
+          writeFileSync(`${out}/identity-before.json`,JSON.stringify(identity,null,2));
+          assert.equal(identity.sourceCommit,process.env.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.buildContext,process.env.EXPECTED_CONTEXT);
+          assert.equal(identity.target,process.env.EXPECTED_TARGET);
+          const bytes=readFileSync('scripts/smoke-production-browser.mjs');
+          const sha=createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+          assert.equal(sha,'e9fd373dd4b5a0c8f2b2429bcf545c87dc54033d');
+          writeFileSync(`${out}/scope.json`,JSON.stringify({sourceCommit:process.env.EXPECTED_COMMIT,scope:'Live public /, /auth, /pricing rendering only; no authenticated submission, workout, payment or database mutation.',previewDrawerOptOut:false,errorFiltering:false,securityPolicyChanged:false,smokeSourceUnmodified:true},null,2));
+          JS
+      - name: Render the live production routes without preview opt-outs or error filters
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/smoke-production-browser.mjs 2>&1 | tee test-results/production-browser/browser.log
+      - name: Require all 12 direct-browser results and unchanged identity after rendering
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const out='test-results/production-browser';
+          const results=JSON.parse(readFileSync(`${out}/results.json`,'utf8'));
+          assert.equal(results.origin,process.env.GYMSLIFE_ORIGIN);
+          assert.equal(results.direct,true);
+          assert.equal(results.results.length,12);
+          assert.equal(new Set(results.results.map(r=>`${r.route}:${r.scheme}:${r.viewport}`)).size,12);
+          for(const row of results.results) assert.deepEqual(row.why,[]);
+          const response=await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`,{signal:AbortSignal.timeout(30000),headers:{connection:'close'}});
+          assert.equal(response.status,200);
+          const identity=await response.json();
+          assert.equal(identity.sourceCommit,process.env.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.buildContext,process.env.EXPECTED_CONTEXT);
+          assert.equal(identity.target,process.env.EXPECTED_TARGET);
+          writeFileSync(`${out}/identity-after.json`,JSON.stringify(identity,null,2));
+          console.log('PASS all 12 strict live public cases and exact production identity before/after');
+          JS
+      - name: Bind the release to green PR gates and checksum-verified real Twin screenshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+          const api='https://api.github.com/repos/smirnov0707/gyms-life';
+          const headers={authorization:`Bearer ${process.env.GH_TOKEN}`,accept:'application/vnd.github+json'};
+          async function json(path){const r=await fetch(api+path,{headers,signal:AbortSignal.timeout(30000)});assert.equal(r.status,200,`GitHub read failed: ${path}`);return r.json();}
+          const pr=await json('/pulls/143');
+          assert.equal(pr.merged,true);
+          assert.equal(pr.merge_commit_sha,process.env.EXPECTED_COMMIT);
+          assert.equal(pr.head.sha,process.env.VERIFIED_HEAD);
+          const comparison=await json(`/compare/${process.env.VERIFIED_HEAD}...${process.env.EXPECTED_COMMIT}`);
+          assert.deepEqual(comparison.files,[]);
+          const runs=await json(`/actions/runs?head_sha=${process.env.VERIFIED_HEAD}&event=pull_request&per_page=100`);
+          const names=['CI','Today browser','Core workflows browser','Twin browser','Twin shader visual comparison','Anatomy candidate browser','Public pages browser','Authentication browser','Offline identity browser','Night Lab review','Body replay browser'];
+          const gates=names.map(name=>{const r=runs.workflow_runs.find(r=>r.name===name);assert.ok(r,`Missing gate ${name}`);assert.equal(r.status,'completed',name);assert.equal(r.conclusion,'success',name);return {name,id:r.id,status:r.status,conclusion:r.conclusion};});
+          const artifact=await json('/actions/artifacts/11539519013');
+          const digest='292f504c4503defab4b65edf6f1eacbc61a2830355331d79496df2b9875aed58';
+          assert.equal(artifact.name,'twin-skin-clarity-evidence');
+          assert.equal(artifact.workflow_run.head_sha,process.env.VERIFIED_HEAD);
+          assert.equal(artifact.digest,`sha256:${digest}`);
+          const response=await fetch(api+'/actions/artifacts/11539519013/zip',{headers,signal:AbortSignal.timeout(60000)});
+          assert.equal(response.status,200);
+          const archive=Buffer.from(await response.arrayBuffer());
+          assert.equal(createHash('sha256').update(archive).digest('hex'),digest);
+          const out='test-results/production-browser';
+          writeFileSync(`${out}/native-twin-source.zip`,archive);
+          execFileSync('python3',['-c',"import pathlib,sys,zipfile\narchive=pathlib.Path(sys.argv[1]); target=pathlib.Path(sys.argv[2]); target.mkdir(parents=True,exist_ok=True)\nwith zipfile.ZipFile(archive) as z:\n for item in z.infolist():\n  path=pathlib.PurePosixPath(item.filename)\n  if item.is_dir(): continue\n  if path.is_absolute() or '..' in path.parts: raise ValueError('Unsafe artifact path')\n  if path.suffix.lower() not in ('.png','.json','.log'): continue\n  dest=target.joinpath(*path.parts); dest.parent.mkdir(parents=True,exist_ok=True); dest.write_bytes(z.read(item))\n",`${out}/native-twin-source.zip`,`${out}/native-twin`],{stdio:'inherit'});
+          const native=JSON.parse(readFileSync(`${out}/native-twin/results.json`,'utf8'));
+          assert.equal(native.results.length,8);
+          assert.deepEqual(native.errors,[]);
+          for(const r of native.results){assert.equal(r.status,'passed');assert.deepEqual(r.errors,[]);}
+          const report={verifiedAt:new Date().toISOString(),pr:143,sourceCommit:process.env.EXPECTED_COMMIT,verifiedPrHead:process.env.VERIFIED_HEAD,mergeChangedFiles:0,origin:process.env.GYMSLIFE_ORIGIN,productionPublicCases:12,directBrowserTLS:true,identityBeforeAfter:'compatible production at exact release commit',requiredPrGates:gates,nativeTwin:{artifactId:artifact.id,sha256:digest,checksumVerified:true,cases:8,scope:native.scope},limitations:['Native Twin screenshots use synthetic evidence and software WebGL, not a live authenticated account or a physical iPhone.','The production browser check covers public routes only. No database changes or authenticated writes were performed.']};
+          writeFileSync(`${out}/release-verification.json`,JSON.stringify(report,null,2));
+          console.log(JSON.stringify(report,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr143-production-release-verified
+          path: test-results/production-browser
+          retention-days: 14
+          if-no-files-found: error
