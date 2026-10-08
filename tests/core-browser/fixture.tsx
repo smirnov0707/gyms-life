@@ -1,3 +1,5 @@
+import { QuickRunLog } from "@/components/QuickRunLog";
+import { refreshRunLogFixture } from "./endurance-log-fixtures";
 import { ComparisonFixture } from "./ComparisonFixture";
 import { TwinRewind } from "@/components/twin/TwinRewind";
 import { TwinTrendLens } from "@/components/twin/TwinTrendLens";
@@ -68,6 +70,13 @@ function Panel() {
       <div className="fl-world-page mx-auto w-full max-w-6xl">
         {selected === "future" ? <TwinFuture /> : <FutureMeSummary />}
       </div>
+    );
+  if (selected === "runlog")
+    return (
+      <section className="mx-auto max-w-md">
+        <h1 className="mb-4 text-xl">Synthetic run log</h1>
+        <QuickRunLog onLogged={refreshRunLogFixture} />
+      </section>
     );
   if (selected === "comparison") return <ComparisonFixture />;
   if (selected === "rewind")

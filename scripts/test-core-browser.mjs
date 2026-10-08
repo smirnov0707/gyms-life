@@ -1,3 +1,4 @@
+import { verifyEnduranceRunLog } from "./test-core-endurance-log.mjs";
 import { verifyComparisonDesign } from "./test-core-comparison-design.mjs";
 import { verifyRewindDesign } from "./test-core-rewind-design.mjs";
 import { verifyTrendDesign } from "./test-core-trend-design.mjs";
@@ -148,6 +149,7 @@ try {
     return { page, context };
   };
   // Exercise the newly changed boundary first; all existing checks still run.
+  await ran("endurance-run-log", () => verifyEnduranceRunLog({ open, record, artifacts }));
   await ran("comparison-design", () => verifyComparisonDesign({ open, record, artifacts }));
   await ran("rewind-design", () => verifyRewindDesign({ open, record, artifacts }));
   await ran("trend-design", () => verifyTrendDesign({ open, record, artifacts }));
