@@ -1,0 +1,66 @@
+{
+  "sourceCommit": "94b96529de1e2c57355488c33c69a7378e75738e",
+  "scope": "Real Today-to-Twin controls, Body selection, chest detail, impact, reload, back and history. Delay cases deliberately delay the fixture module; they are not production performance measurements.",
+  "outcomes": [
+    {
+      "mode": "baseline",
+      "delayMs": 0,
+      "status": "passed",
+      "elapsedMs": 36190,
+      "delayedRequests": 0,
+      "url": "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history",
+      "errors": []
+    },
+    {
+      "mode": "baseline",
+      "delayMs": 6500,
+      "status": "failed",
+      "elapsedMs": 12741,
+      "delayedRequests": 1,
+      "url": "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin",
+      "error": "Error: expect(locator).toHaveAttribute(expected) failed\n\nLocator: getByRole('tab', { name: 'Body', exact: true })\nExpected: \"true\"\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"to.have.attribute.value\" with timeout 5000ms\n  - waiting for getByRole('tab', { name: 'Body', exact: true })\n",
+      "errors": []
+    },
+    {
+      "mode": "mounted-route",
+      "delayMs": 0,
+      "status": "passed",
+      "elapsedMs": 32890,
+      "delayedRequests": 0,
+      "url": "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history",
+      "errors": []
+    },
+    {
+      "mode": "mounted-route",
+      "delayMs": 0,
+      "status": "passed",
+      "elapsedMs": 28406,
+      "delayedRequests": 0,
+      "url": "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history",
+      "errors": []
+    },
+    {
+      "mode": "mounted-route",
+      "delayMs": 0,
+      "status": "passed",
+      "elapsedMs": 32792,
+      "delayedRequests": 0,
+      "url": "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history",
+      "errors": []
+    },
+    {
+      "mode": "mounted-route",
+      "delayMs": 6500,
+      "status": "passed",
+      "elapsedMs": 41236,
+      "delayedRequests": 1,
+      "url": "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history",
+      "errors": []
+    }
+  ],
+  "jobStatus": "success",
+  "scopeNote": "Focused validation only. Full normal release gates remain mandatory.",
+  "candidateCommit": "3d13334b1109b0610c90082935dadc0eec74ad61",
+  "candidateBlob": "5195154f2fb0e90b39a2a102a56d688b376ac5d4",
+  "logTail": "\u001b[33m`transformWithEsbuild` is deprecated and will be removed in the future. Please migrate to `transformWithOxc`.\u001b[39m\nPASS Today opens muscle evidence; status, impact and history survive URL navigation and reload\nNAVIGATION_PROBE {\"mode\":\"baseline\",\"delayMs\":0,\"status\":\"passed\",\"elapsedMs\":36190,\"delayedRequests\":0,\"url\":\"http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history\",\"errors\":[]}\nNAVIGATION_PROBE {\"mode\":\"baseline\",\"delayMs\":6500,\"status\":\"failed\",\"elapsedMs\":12741,\"delayedRequests\":1,\"url\":\"http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin\",\"error\":\"Error: expect(locator).toHaveAttribute(expected) failed\\n\\nLocator: getByRole('tab', { name: 'Body', exact: true })\\nExpected: \\\"true\\\"\\nTimeout: 5000ms\\nError: element(s) not found\\n\\nCall log:\\n  - Expect \\\"to.have.attribute.value\\\" with timeout 5000ms\\n  - waiting for getByRole('tab', { name: 'Body', exact: true })\\n\",\"errors\":[]}\nPASS Today opens muscle evidence; status, impact and history survive URL navigation and reload\nNAVIGATION_PROBE {\"mode\":\"mounted-route\",\"delayMs\":0,\"status\":\"passed\",\"elapsedMs\":32890,\"delayedRequests\":0,\"url\":\"http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history\",\"errors\":[]}\nPASS Today opens muscle evidence; status, impact and history survive URL navigation and reload\nNAVIGATION_PROBE {\"mode\":\"mounted-route\",\"delayMs\":0,\"status\":\"passed\",\"elapsedMs\":28406,\"delayedRequests\":0,\"url\":\"http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history\",\"errors\":[]}\nPASS Today opens muscle evidence; status, impact and history survive URL navigation and reload\nNAVIGATION_PROBE {\"mode\":\"mounted-route\",\"delayMs\":0,\"status\":\"passed\",\"elapsedMs\":32792,\"delayedRequests\":0,\"url\":\"http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history\",\"errors\":[]}\nPASS Today opens muscle evidence; status, impact and history survive URL navigation and reload\nNAVIGATION_PROBE {\"mode\":\"mounted-route\",\"delayMs\":6500,\"status\":\"passed\",\"elapsedMs\":41236,\"delayedRequests\":1,\"url\":\"http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin&view=overview&region=chest&detail=history\",\"errors\":[]}\n"
+}
