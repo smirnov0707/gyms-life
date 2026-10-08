@@ -1,0 +1,47 @@
+{
+  "sourceHead": "94b96529de1e2c57355488c33c69a7378e75738e",
+  "testedCommit": "321d4cf82c8ab4fe0228c4f2040ab71b01a33e6a",
+  "run": "https://github.com/smirnov0707/gyms-life/actions/runs/37686999792",
+  "failure": {
+    "status": "failed",
+    "error": "Error: expect(locator).toHaveAttribute(expected) failed\n\nLocator: getByRole('tab', { name: 'Body', exact: true })\nExpected: \"true\"\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"to.have.attribute.value\" with timeout 5000ms\n  - waiting for getByRole('tab', { name: 'Body', exact: true })\n\n    at Proxy.<anonymous> (/__w/gyms-life/gyms-life/node_modules/playwright/lib/matchers/expect.js:224:24)\n    at file:///__w/gyms-life/gyms-life/scripts/test-today-browser.mjs:986:79",
+    "openPages": [
+      "http://127.0.0.1:4183/index.html?shell=1&screen=twin&scenario=reference&plan=ready&twin=regions&sleep=staged&evidence=some&body=change&source=scale&route=%2Ftwin"
+    ],
+    "passedChecks": 17
+  },
+  "lastPassed": [
+    {
+      "name": "Future mobile changes validated horizons without inventing a long-range result",
+      "status": "passed"
+    },
+    {
+      "name": "Lab mobile keeps one investigation primary and supporting evidence on demand",
+      "status": "passed"
+    },
+    {
+      "name": "Journal mobile keeps the chronological timeline primary and learning on demand",
+      "status": "passed"
+    },
+    {
+      "name": "all seven canonical world/detail views render inside the shell at 1440px and 390px",
+      "status": "passed"
+    },
+    {
+      "name": "Shared design system loads local fonts, passes text-token contrast, keyboard access and reduced-motion checks in both themes",
+      "status": "passed"
+    },
+    {
+      "name": "Reference world layouts keep primary content above the mobile dock and the desktop Twin near its controls",
+      "status": "passed"
+    },
+    {
+      "name": "Today keeps empty data and unreadable sources visibly distinct without duplicating Twin signals",
+      "status": "passed"
+    },
+    {
+      "name": "the contextual action layer replaces the feature catalogue and keeps language controls usable",
+      "status": "passed"
+    }
+  ]
+}
