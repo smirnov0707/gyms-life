@@ -231,10 +231,16 @@ export async function verifySessionDesign({ open, record, artifacts }) {
       { width: 320, height: 844 },
     );
     await expect(page.locator(".fl-workspace h1")).toHaveCount(1);
+    // Match the session matrix: settle entry motion and local fonts before
+    // WebKit resolves a pointer coordinate, not after the start action.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.evaluate(() => document.fonts.ready);
     if (screen === "workout") {
       await page
         .getByRole("button", { name: "Pradėti arba tęsti treniruotę", exact: true })
         .click();
+      await expect.poll(() => page.evaluate(() => window.__core.counts.startWorkout ?? 0)).toBe(1);
+      await expect.poll(() => page.evaluate(() => window.__core.workoutSession.started)).toBe(true);
       await expect(
         page.getByRole("button", { name: "Registruoti setą", exact: true }),
       ).toBeVisible();

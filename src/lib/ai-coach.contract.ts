@@ -20,7 +20,7 @@ export const CoachPerformanceSignalSchema = z
   .strict();
 
 export const CoachContextSchema = z.object({
-  schemaVersion: z.literal("1.1"),
+  schemaVersion: z.literal("1.3"),
   user: z.object({ id: z.string().uuid() }),
   generatedAt: z.string().datetime(),
   goal: z.string().nullable(),
@@ -42,6 +42,66 @@ export const CoachContextSchema = z.object({
   // forecast. A provider can interpret these observations but may not treat
   // them as a load prescription or fabricated probability.
   performanceSignals: z.array(CoachPerformanceSignalSchema).max(6),
+  endurance: z
+    .object({
+      active: z.boolean(),
+      raceDistance: z.enum(["5k", "10k", "half_marathon", "marathon"]).nullable(),
+      daysToRace: z.number().int().nonnegative().nullable(),
+      phase: z.enum(["base", "build", "specific", "taper", "race"]).nullable(),
+      readiness: z.enum(["insufficient_evidence", "building", "on_track", "strained"]).nullable(),
+      evidenceLevel: z.enum(["low", "moderate", "high"]).nullable(),
+      adaptation: z
+        .object({
+          action: z.enum(["hold", "reduce", "recover"]),
+          volumeModifier: z.number().positive().max(1),
+          reason: z.enum([
+            "insufficient_evidence",
+            "on_track",
+            "repeated_low_response",
+            "low_readiness_and_missed_work",
+            "repeated_over_target_work",
+          ]),
+        })
+        .nullable(),
+      nextSession: z
+        .object({
+          intent: z.enum(["easy", "long", "tempo", "intervals", "recovery", "race"]),
+          distanceMeters: z.number().positive().nullable(),
+          durationMinutes: z.number().positive().nullable(),
+          intensityCue: z.string().min(1).max(300),
+        })
+        .nullable(),
+      postRun: z
+        .object({
+          headline: z.enum([
+            "completed",
+            "strong_control",
+            "fatigue_detected",
+            "race_session_completed",
+            "building_evidence",
+          ]),
+          nextAction: z.enum([
+            "continue_plan",
+            "protect_recovery",
+            "confirm_session",
+            "collect_more_data",
+          ]),
+          facts: z.array(z.string().min(1).max(160)).max(8),
+        })
+        .nullable(),
+      prohibitedClaims: z
+        .array(
+          z.enum([
+            "diagnosis",
+            "injury_prediction_without_evidence",
+            "guaranteed_race_time",
+            "vo2max_without_measurement",
+            "override_deterministic_training_decision",
+          ]),
+        )
+        .min(1),
+    })
+    .strict(),
   exercises: z.array(
     z.object({
       exerciseSlug: z.string(),
@@ -106,7 +166,7 @@ export interface AICoachWorker {
 }
 
 export function createCoachContext(input: Omit<CoachContext, "schemaVersion">): CoachContext {
-  return CoachContextSchema.parse({ schemaVersion: "1.1", ...input });
+  return CoachContextSchema.parse({ schemaVersion: "1.3", ...input });
 }
 
 export function parseCoachRecommendation(value: unknown): CoachRecommendation {

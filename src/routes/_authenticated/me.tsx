@@ -766,7 +766,10 @@ function AthleteModelPage() {
                       inputMode="decimal"
                       value={bodyForm.targetWeightKg}
                       onChange={(event) =>
-                        setBodyForm((current) => ({ ...current, targetWeightKg: event.target.value }))
+                        setBodyForm((current) => ({
+                          ...current,
+                          targetWeightKg: event.target.value,
+                        }))
                       }
                       className="h-11 rounded-xl border border-border bg-surface-2 px-3 text-foreground"
                     />
@@ -803,7 +806,9 @@ function AthleteModelPage() {
       <details className="fl-workspace-panel fl-profile-section">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
           <p className="text-sm font-semibold text-foreground">{ui.memoryPrivacy}</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.memoryPrivacySub}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {ui.memoryPrivacySub}
+          </p>
         </summary>
         <div className="border-t border-border">
           <section className="fl-workspace-panel fl-profile-memory p-5 sm:p-6">
@@ -811,7 +816,9 @@ function AthleteModelPage() {
               <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
                 <Brain className="size-4" /> {copy.memory.eyebrow}
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{ui.knows}</h2>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                {ui.knows}
+              </h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{ui.knowsSub}</p>
             </div>
 
@@ -820,7 +827,9 @@ function AthleteModelPage() {
                 <Loader2 className="size-4 animate-spin text-primary" /> {copy.memory.loading}
               </div>
             ) : memories.length === 0 ? (
-              <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{copy.memory.empty}</p>
+              <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
+                {copy.memory.empty}
+              </p>
             ) : (
               <>
                 {/* The heading says "what GYMS.LIFE currently knows", so a bound
@@ -989,7 +998,11 @@ function AthleteModelPage() {
                                   disabled={pendingMemoryAction !== null || correctionInvalid}
                                   onClick={() => void submitMemoryCorrection(memory)}
                                 >
-                                  {correctPending ? <Loader2 className="animate-spin" /> : <Pencil />}
+                                  {correctPending ? (
+                                    <Loader2 className="animate-spin" />
+                                  ) : (
+                                    <Pencil />
+                                  )}
                                   {copy.memory.saveCorrection}
                                 </Button>
                                 <Button
@@ -1060,14 +1073,18 @@ function AthleteModelPage() {
       <details className="fl-workspace-panel fl-profile-section">
         <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
           <p className="text-sm font-semibold text-foreground">{ui.evidenceAccount}</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.evidenceAccountSub}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {ui.evidenceAccountSub}
+          </p>
         </summary>
         <div className="grid gap-4 border-t border-border p-4 sm:p-5">
           {state ? (
             <details className="fl-workspace-panel">
               <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
                 <p className="text-sm font-semibold text-foreground">{ui.inspect}</p>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{ui.inspectSub}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {ui.inspectSub}
+                </p>
               </summary>
               <div className="grid border-t border-border md:grid-cols-2">
                 <div className="p-5 sm:p-6 md:border-r md:border-border">
@@ -1075,7 +1092,10 @@ function AthleteModelPage() {
                     <Dumbbell className="size-4 text-primary" /> {copy.training}
                   </h3>
                   <div className="mt-3">
-                    <Metric label={copy.sessions7d} value={String(state.training.sessionsLast7Days)} />
+                    <Metric
+                      label={copy.sessions7d}
+                      value={String(state.training.sessionsLast7Days)}
+                    />
                     <Metric
                       label={copy.sessions28d}
                       value={String(state.training.sessionsLast28Days)}

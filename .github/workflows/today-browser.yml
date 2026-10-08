@@ -52,7 +52,7 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
       options: --init
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -61,7 +61,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
-      - run: node scripts/test-today-browser.mjs
+      - name: Test Today and retain the complete diagnostic log
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/today
+          # Default checkout uses this event SHA (the merge commit for a PR).
+          # Avoid a new Git invocation under the container's different HOME.
+          printf '%s\n' "$GITHUB_SHA" > test-results/today/tested-commit.txt
+          node scripts/test-today-browser.mjs 2>&1 | tee test-results/today/browser.log
+      - name: Retain a concise failure tail
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f test-results/today/browser.log ]; then
+            tail -n 160 test-results/today/browser.log > test-results/today/failure-tail.txt
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

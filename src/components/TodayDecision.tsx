@@ -271,10 +271,12 @@ export function TodayDecision({
     window.addEventListener("gymslife:life-context", refresh);
     window.addEventListener("gymslife:training-rhythm", refresh);
     window.addEventListener("gymslife:adaptation", refresh);
+    window.addEventListener("gymslife:training-completed", refresh);
     return () => {
       window.removeEventListener("gymslife:life-context", refresh);
       window.removeEventListener("gymslife:training-rhythm", refresh);
       window.removeEventListener("gymslife:adaptation", refresh);
+      window.removeEventListener("gymslife:training-completed", refresh);
     };
   }, [load]);
 

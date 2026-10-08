@@ -237,25 +237,29 @@ export function TodayIntelligenceBrief({
         to="/lab"
         cta={english ? "Inspect" : "Peržiūrėti"}
       />
-      <Row
-        card={cards}
-        icon={BrainCircuit}
-        eyebrow={
-          learnedChange
-            ? english
-              ? "LEARNED CHANGE"
-              : "IŠMOKTAS POKYTIS"
-            : english
-              ? "DISCOVERY"
-              : "ATRADIMAS"
-        }
-        title={learnedTitle}
-        detail={learnedChange ? learnedDetail : discoveryDetail}
-        to={learnedChange ? "/twin" : "/lab"}
-        {...(learnedChange ? { search: { view: "journal" as const } } : {})}
-        cta={english ? "Review" : "Peržiūrėti"}
-        {...(learnedChange ? { onOpen: () => seenMutation.mutate(learnedChange.fingerprint) } : {})}
-      />
+      <div className={learnedChange?.kind === "strengthened" ? "fl-progress-reveal" : undefined}>
+        <Row
+          card={cards}
+          icon={BrainCircuit}
+          eyebrow={
+            learnedChange
+              ? english
+                ? "LEARNED CHANGE"
+                : "IŠMOKTAS POKYTIS"
+              : english
+                ? "DISCOVERY"
+                : "ATRADIMAS"
+          }
+          title={learnedTitle}
+          detail={learnedChange ? learnedDetail : discoveryDetail}
+          to={learnedChange ? "/twin" : "/lab"}
+          {...(learnedChange ? { search: { view: "journal" as const } } : {})}
+          cta={english ? "Review" : "Peržiūrėti"}
+          {...(learnedChange
+            ? { onOpen: () => seenMutation.mutate(learnedChange.fingerprint) }
+            : {})}
+        />
+      </div>
       {learnedChange ? (
         <WhyThisDisclosure
           summary={english ? "Why this surfaced now" : "Kodėl tai iškilo dabar"}

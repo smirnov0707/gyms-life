@@ -1,0 +1,20 @@
+import { describe, expect, it } from "vitest";
+import { measureAerobicPaceDrift } from "./endurance-pace-drift.engine";
+describe("pace drift", () => {
+  it("refuses average-only evidence", () =>
+    expect(
+      measureAerobicPaceDrift([
+        { index: 1, distanceMeters: 5000, durationSeconds: 1800, averageHeartRateBpm: 150 },
+      ]).status,
+    ).toBe("insufficient_evidence"));
+  it("measures split-based efficiency drift", () => {
+    const r = measureAerobicPaceDrift([
+      { index: 1, distanceMeters: 1000, durationSeconds: 330, averageHeartRateBpm: 145 },
+      { index: 2, distanceMeters: 1000, durationSeconds: 330, averageHeartRateBpm: 146 },
+      { index: 3, distanceMeters: 1000, durationSeconds: 350, averageHeartRateBpm: 155 },
+      { index: 4, distanceMeters: 1000, durationSeconds: 355, averageHeartRateBpm: 158 },
+    ]);
+    expect(r.status).toBe("measured");
+    if (r.status === "measured") expect(r.driftFraction).toBeLessThan(0);
+  });
+});

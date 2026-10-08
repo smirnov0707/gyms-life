@@ -15,7 +15,7 @@ import { Route as SupplementsRoute } from "@/routes/_authenticated/supplements";
 import { Route as ExercisesRoute } from "@/routes/exercises.index";
 import { Route as MovementRoute } from "@/routes/exercises.$slug";
 import { DynamicWarmupGenerator } from "@/components/DynamicWarmupGenerator";
-import { Route as ReadinessRoute } from "@/routes/_authenticated/readiness";
+import { ReadinessWorkspace } from "@/routes/_authenticated/readiness";
 import { Route as WorkoutRoute } from "@/routes/_authenticated/workout/$day";
 import { Route as TrainingRoute } from "@/routes/_authenticated/training";
 /* eslint-disable react-refresh/only-export-components -- isolated executable fixture */
@@ -126,7 +126,7 @@ function Panel() {
     supplements: SupplementsRoute.options.component,
     exercises: ExercisesRoute.options.component,
     movement: MovementRoute.options.component,
-    readiness: ReadinessRoute.options.component,
+    readiness: ReadinessWorkspace,
     profile: ProfileRoute.options.component,
     meals: MealRoute.options.component,
     nutrition: NutritionRoute.options.component,
@@ -156,7 +156,6 @@ const loadable: Record<string, { load?: () => Promise<void> }> = {
   supplements: SupplementsRoute,
   exercises: ExercisesRoute,
   movement: MovementRoute,
-  readiness: ReadinessRoute,
   profile: ProfileRoute,
   meals: MealRoute,
   nutrition: NutritionRoute,

@@ -1,0 +1,32 @@
+import { describe, expect, it } from "vitest";
+import {
+  deriveRunningEfficiency,
+  assessComparableEfficiencyTrend,
+} from "./endurance-running-efficiency.engine";
+const r = (day: string, min: number, hr: number, terrain: "flat" | "hilly" = "flat") => ({
+  day,
+  distanceMeters: 5000,
+  durationSeconds: min * 60,
+  averageHeartRateBpm: hr,
+  terrain,
+  cadenceSpm: 174,
+});
+describe("running efficiency", () => {
+  it("derives speed per heart-rate without calling it VO2max", () =>
+    expect(deriveRunningEfficiency(r("1", 25, 150))?.provenance).toBe("derived"));
+  it("requires repeated comparable terrain", () =>
+    expect(
+      assessComparableEfficiencyTrend([r("1", 25, 150), r("2", 30, 150, "hilly")]).status,
+    ).toBe("insufficient_evidence"));
+  it("detects improvement within comparable flat runs", () => {
+    const x = [
+      r("1", 30, 150),
+      r("2", 30, 150),
+      r("3", 29, 150),
+      r("4", 27, 150),
+      r("5", 27, 150),
+      r("6", 26, 150),
+    ];
+    expect(assessComparableEfficiencyTrend(x).status).toBe("improving");
+  });
+});

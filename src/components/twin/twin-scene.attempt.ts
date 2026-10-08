@@ -1,11 +1,15 @@
 import type { TwinBodyProvenance } from "./twin-body.provenance";
 
-export const TWIN_SCENE_LOAD_TIMEOUT_MS = 15_000;
+export const TWIN_SCENE_LOAD_TIMEOUT_MS = 30_000;
 
 type DisposableScene = { dispose: () => void };
 type AttemptPhase = "loading" | "ready" | "failed" | "disposed";
 
-/** Own the complete mount attempt, not just its dynamic import. */
+/**
+ * Own the complete mount attempt, not just its dynamic import.
+ * Keep this above the renderer's 20s human-to-surface fallback window so the
+ * fallback can become ready before the outer attempt is declared failed.
+ */
 export function createTwinSceneAttempt<Scene extends DisposableScene>(callbacks: {
   onReady: (provenance: TwinBodyProvenance | null) => void;
   onFailure: (reason: "timeout" | "error") => void;

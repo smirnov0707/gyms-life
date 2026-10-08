@@ -26,10 +26,25 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           await expect(
             page.getByRole("heading", { name: "Synthetic seven-day meal plan" }),
           ).toBeVisible();
-        if (screen === "profile")
-          await expect(
-            page.getByText("Synthetic preference: train in the morning.", { exact: true }),
-          ).toBeVisible();
+        if (screen === "profile") {
+          const identity = page
+            .locator("details.fl-profile-section")
+            .filter({ hasText: "Identity & body" });
+          const memory = page
+            .locator("details.fl-profile-section")
+            .filter({ hasText: "Memory & privacy" });
+          if ((await identity.getAttribute("open")) === null)
+            await identity.locator(":scope > summary").click();
+          if ((await memory.getAttribute("open")) === null)
+            await memory.locator(":scope > summary").click();
+          const preference = page.getByText("Synthetic preference: train in the morning.", {
+            exact: true,
+          });
+          const memoryEntry = preference.locator("xpath=ancestor::details[1]");
+          if ((await memoryEntry.getAttribute("open")) === null)
+            await memoryEntry.locator(":scope > summary").click();
+          await expect(preference).toBeVisible();
+        }
         await page.evaluate(() => document.fonts.ready);
         const audit = await workspace.evaluate((el) => {
           const root = getComputedStyle(document.documentElement);
@@ -94,12 +109,22 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
           await expect(add).toBeDisabled();
         }
         if (screen === "profile") {
+          const identity = page
+            .locator("details.fl-profile-section")
+            .filter({ hasText: "Identity & body" });
+          if ((await identity.getAttribute("open")) === null)
+            await identity.locator(":scope > summary").click();
           await expect(page.getByRole("spinbutton", { name: "Height (cm)" })).toHaveValue("170");
           if (width === 1440) {
+            const memorySection = page
+              .locator("details.fl-profile-section")
+              .filter({ hasText: "Memory & privacy" });
+            if ((await memorySection.getAttribute("open")) === null)
+              await memorySection.locator(":scope > summary").click();
             const body = await page.locator(".fl-profile-body").boundingBox();
             const memory = await page.locator(".fl-profile-memory").boundingBox();
-            expect(Math.abs(body.y - memory.y)).toBeLessThan(2);
-            expect(memory.x).toBeGreaterThanOrEqual(body.x + body.width);
+            expect(memory.y).toBeGreaterThan(body.y + body.height);
+            expect(Math.abs(body.x - memory.x)).toBeLessThan(4);
           }
         }
         await page.evaluate(() => {

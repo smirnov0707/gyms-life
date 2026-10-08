@@ -1,0 +1,31 @@
+import { describe, expect, it } from "vitest";
+import { buildPaceProfile } from "./endurance-pace.engine";
+const r = (day: string, km: number, min: number, intent: "easy" | "tempo" = "easy") => ({
+  day,
+  distanceMeters: km * 1000,
+  durationSeconds: min * 60,
+  intent,
+  perceivedEffort: null,
+});
+describe("pace intelligence", () => {
+  it("requires enough runs before claiming a trend", () => {
+    expect(buildPaceProfile([r("2026-01-01", 5, 30), r("2026-01-02", 5, 29)]).trend).toBe(
+      "insufficient_evidence",
+    );
+  });
+  it("detects longitudinal faster pace from observed runs", () => {
+    const x = [
+      r("01", 5, 32),
+      r("02", 5, 31),
+      r("03", 5, 31),
+      r("04", 5, 29),
+      r("05", 5, 28),
+      r("06", 5, 28),
+    ];
+    expect(buildPaceProfile(x).trend).toBe("faster");
+  });
+  it("keeps intent profiles separate", () => {
+    const p = buildPaceProfile([r("01", 5, 30, "easy"), r("02", 5, 25, "tempo")]);
+    expect(p.byIntent.tempo?.medianSecondsPerKm).toBeLessThan(p.byIntent.easy!.medianSecondsPerKm);
+  });
+});

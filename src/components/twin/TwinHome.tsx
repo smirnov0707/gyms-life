@@ -26,6 +26,7 @@ import { formatTwinValue, twinLayerCopy } from "@/components/twin/twin-layer.cop
 import { TwinStage } from "@/components/twin/TwinStage";
 import { TrainingLoadPanel } from "@/components/TrainingLoadPanel";
 import { RecentWorkoutEffect } from "@/components/RecentWorkoutEffect";
+import { TwinEnduranceLayer } from "@/components/twin/TwinEnduranceLayer";
 import { twinCopyFor } from "@/components/TwinView";
 import {
   isAnatomicalRegion,
@@ -306,7 +307,12 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
       : null;
 
     return (
-      <section aria-label={copy.title} data-twin-home className="twin-home--cockpit">
+      <section
+        aria-label={copy.title}
+        data-twin-home
+        data-twin-appearance={visualAppearance}
+        className="twin-home--cockpit"
+      >
         <header className="twin-cockpit-header">
           <p>{language === "lt" ? "Skaitmeninis kūnas" : "Digital human"}</p>
           <h2>{copy.title}</h2>
@@ -407,6 +413,7 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
     <section
       aria-label={copy.title}
       data-twin-home
+      data-twin-layer={shownLayer}
       className="relative -mx-4 overflow-hidden rounded-none border-y border-white/[0.07] bg-[#040a14] text-white sm:mx-0 sm:rounded-[1.75rem] sm:border"
     >
       <div
@@ -454,7 +461,6 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             ))}
           </div>
         </header>
-
         {/* Stretched, not centred: the stage fills the row so the figure is as
             large as the screen allows rather than sitting in the middle of it. */}
         <div className="grid min-h-0 min-w-0 px-1 sm:px-3">
@@ -477,7 +483,10 @@ export function TwinHome({ presentation = "full" }: { presentation?: "full" | "c
             language={language}
           />
         </div>
-
+        <div className="px-4 pb-4 sm:px-6">
+          <TwinEnduranceLayer />
+        </div>
+        \n\n{" "}
         <div className="grid gap-4 px-4 pb-5 sm:px-6 lg:grid-cols-2 xl:grid-cols-4">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-400">
