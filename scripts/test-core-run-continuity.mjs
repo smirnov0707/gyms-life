@@ -18,8 +18,8 @@ export async function verifyRunContinuity({ open, record, artifacts }) {
       .getByRole("button", { name: lt ? "Užskaityti bėgimą" : "Credit this run", exact: true })
       .click();
     await expect(page.locator('[data-sonner-toast][data-type="success"]')).toBeVisible();
-    // A previous success toast can still be visible while the next save is
-    // in flight. Observe this request's acknowledgement before navigating.
+    // An earlier toast may still be visible. The current form must receive
+    // its own acknowledgement and finish refreshing before navigation.
     await expect(
       page.getByRole("textbox", { name: lt ? "Trukmė minutėmis" : "Duration in minutes" }),
     ).toHaveValue("");

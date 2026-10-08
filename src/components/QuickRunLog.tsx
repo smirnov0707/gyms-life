@@ -217,11 +217,14 @@ function QuickRunLogForm({
         result,
         Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired),
       );
-      await refreshSavedRun(false, result.raceIntelligence);
+      if (!(
+        result.raceEnrichment.status === "unavailable" && result.raceEnrichment.stage === "load"
+      ))
+        await refreshSavedRun(false, result.raceIntelligence);
     } catch {
       if (!scope.isCurrent() || !submission.isMounted()) return;
       toast.error(
-        restoredSessionId || savedRun?.verificationRequired
+        Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired)
           ? english
             ? "The earlier run could not be verified. No new save was sent."
             : "Ankstesnio bėgimo patikrinti nepavyko. Nauja įrašymo užklausa nesiųsta."
