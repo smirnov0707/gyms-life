@@ -1,0 +1,276 @@
+{
+  "commit": "1c24ecd4b408d2dac37f850bd3eede97d7345f1c",
+  "tree": "922898e1e08caa98f55bee8954a5e75a56fe4249",
+  "parent": "f74861f5875bb93ba5ef248c608570b642fa5679",
+  "main": "3967daa8504ba53f28b60d913235e3020f303981",
+  "files": [
+    {
+      "path": "src/components/twin/twin-region-boundary.ts",
+      "sha256": "0471cd438cfeb1a0fc494738d2efde4470bac4783fb8f6483080c62636770056"
+    },
+    {
+      "path": "src/components/twin/twin-boundary.material.ts",
+      "sha256": "4f65330d0e53044c8adabb3432e26e0193fea81293e99b6f730870457c4f3432"
+    },
+    {
+      "path": "src/components/twin/twin-region-boundary.test.ts",
+      "sha256": "6f2f1e3ac7ddf46d940942fde27cca77cd8fb0e5b8862b44b6d335a5f22ef140"
+    },
+    {
+      "path": "docs/twin-back-boundary.md",
+      "sha256": "2dfbc56966c0949a1c363aadd45483b0e79b3aa8510365e941898f9e5e0ad089"
+    },
+    {
+      "path": "src/components/twin/twin-human.loader.ts",
+      "sha256": "f1a45f3a86a567b10798686c8213a20df876fd1580c174fb800cfb893ec5833a"
+    }
+  ],
+  "quality": "passed",
+  "comparison": {
+    "results": [
+      {
+        "treatment": "reference",
+        "theme": "dark",
+        "width": 390,
+        "pixels": {
+          "blue": 31314,
+          "abruptRowChanges": 45,
+          "width": 340,
+          "height": 420
+        }
+      },
+      {
+        "treatment": "reference",
+        "theme": "light",
+        "width": 390,
+        "pixels": {
+          "blue": 31314,
+          "abruptRowChanges": 45,
+          "width": 340,
+          "height": 420
+        }
+      },
+      {
+        "treatment": "reference",
+        "theme": "dark",
+        "width": 1280,
+        "pixels": {
+          "blue": 68053,
+          "abruptRowChanges": 59,
+          "width": 622,
+          "height": 540
+        }
+      },
+      {
+        "treatment": "reference",
+        "theme": "light",
+        "width": 1280,
+        "pixels": {
+          "blue": 68053,
+          "abruptRowChanges": 59,
+          "width": 622,
+          "height": 540
+        }
+      },
+      {
+        "treatment": "feathered",
+        "theme": "dark",
+        "width": 390,
+        "pixels": {
+          "blue": 23177,
+          "abruptRowChanges": 7,
+          "width": 340,
+          "height": 420
+        }
+      },
+      {
+        "treatment": "feathered",
+        "theme": "light",
+        "width": 390,
+        "pixels": {
+          "blue": 23177,
+          "abruptRowChanges": 7,
+          "width": 340,
+          "height": 420
+        }
+      },
+      {
+        "treatment": "feathered",
+        "theme": "dark",
+        "width": 1280,
+        "pixels": {
+          "blue": 50474,
+          "abruptRowChanges": 16,
+          "width": 622,
+          "height": 540
+        }
+      },
+      {
+        "treatment": "feathered",
+        "theme": "light",
+        "width": 1280,
+        "pixels": {
+          "blue": 50474,
+          "abruptRowChanges": 16,
+          "width": 622,
+          "height": 540
+        }
+      }
+    ],
+    "errors": [],
+    "failure": null,
+    "scope": "Generic registered body with synthetic evidence; reference bypass exists in this test transform only. Pixel edge counts are descriptive, not an anatomical or device-performance claim."
+  },
+  "skin": {
+    "scope": "Real TwinSnapshotView and registered GLBs, synthetic evidence only; no live user data.",
+    "results": [
+      {
+        "name": "1280-dark-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 35042,
+          "blue": 2899,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 31794,
+          "blue": 6001,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "1280-dark-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 37724,
+          "blue": 3593,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 33558,
+          "blue": 7669,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "1280-light-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 35042,
+          "blue": 2900,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 31794,
+          "blue": 6001,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "1280-light-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 37724,
+          "blue": 3593,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 33558,
+          "blue": 7669,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-dark-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 18749,
+          "blue": 1534,
+          "width": 270,
+          "height": 396
+        },
+        "selected": {
+          "skin": 17022,
+          "blue": 3218,
+          "width": 270,
+          "height": 396
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-dark-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 22768,
+          "blue": 2200,
+          "width": 270,
+          "height": 420
+        },
+        "selected": {
+          "skin": 20241,
+          "blue": 4665,
+          "width": 270,
+          "height": 420
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-light-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 18749,
+          "blue": 1534,
+          "width": 270,
+          "height": 396
+        },
+        "selected": {
+          "skin": 17022,
+          "blue": 3218,
+          "width": 270,
+          "height": 396
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-light-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 22768,
+          "blue": 2200,
+          "width": 270,
+          "height": 420
+        },
+        "selected": {
+          "skin": 20241,
+          "blue": 4665,
+          "width": 270,
+          "height": 420
+        },
+        "measurement": 77,
+        "errors": []
+      }
+    ],
+    "errors": []
+  },
+  "prBranchUpdated": false,
+  "deployed": false
+}
