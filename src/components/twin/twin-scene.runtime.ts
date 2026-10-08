@@ -21,6 +21,14 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
+import { createTwinPickingProfile } from "./twin-picking.profile";
+import {
+  clampTwinTargetY,
+  moveTwinTargetY,
+  twinCameraKey,
+  twinNearSideReach,
+  twinPresetDistance,
+} from "./twin-camera.navigation";
 import { TWIN_SKIN_COLOR, twinSurfaceStyle } from "./twin-surface.style";
 import { setTwinAnatomySelection } from "./twin-anatomy.material";
 import { createTwinStageDecor } from "./twin-stage.scene";
@@ -153,7 +161,9 @@ export function mountTwinScene(
     const controls = new OrbitControls(camera, canvas);
     cleanups.push(() => controls.dispose());
     controls.target.copy(target);
-    controls.enablePan = false;
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.panSpeed = 0.75;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.65;
@@ -227,6 +237,8 @@ export function mountTwinScene(
 
     let model: TwinBodyModel | TwinIdentityShellModel | ReturnType<typeof createTwinBody> =
       createTwinBody();
+    let pickingProfile = createTwinPickingProfile(model.body);
+    const pickingAxis = new Vector3();
     // The generated surface is no longer shown while the figure downloads. It
     // is a mannequin, and for the seconds a 1.2 MB glTF takes on a phone it
     // stood in the athlete's stage looking like their twin. Nothing is added
@@ -264,6 +276,7 @@ export function mountTwinScene(
     cleanups.push(() => {
       humanLoad.abort();
       model.dispose();
+      pickingProfile = null;
       twinBodyRoot.clear();
       scene.clear();
     });
@@ -387,11 +400,37 @@ export function mountTwinScene(
       }
       canvas.dataset["twinYaw"] = controls.getAzimuthalAngle().toFixed(3);
       canvas.dataset["twinDistance"] = controls.getDistance().toFixed(3);
+      canvas.dataset["twinPitch"] = controls.getPolarAngle().toFixed(3);
+      canvas.dataset["twinTargetY"] = controls.target.y.toFixed(4);
+      canvas.dataset["twinTargetX"] = controls.target.x.toFixed(4);
+      canvas.dataset["twinTargetZ"] = controls.target.z.toFixed(4);
+      canvas.dataset["twinHomeY"] = target.y.toFixed(4);
+      canvas.dataset["twinFitDistance"] = fitDistance.toFixed(4);
       canvas.dataset["twinFrames"] = String(++frames);
       if (moving) requestRender();
     }
-    controls.addEventListener("change", requestRender);
-    cleanups.push(() => controls.removeEventListener("change", requestRender));
+    function constrainTarget() {
+      // Vertical-only pan: retain the body's orbit axis and move the camera by
+      // the same correction. Never let a two-finger gesture lose the body.
+      const y = clampTwinTargetY(
+        controls.target.y,
+        bodyFrame?.height ?? TWIN_FRAME.height,
+        target.y,
+      );
+      const correction = new Vector3(
+        target.x - controls.target.x,
+        y - controls.target.y,
+        target.z - controls.target.z,
+      );
+      controls.target.add(correction);
+      camera.position.add(correction);
+    }
+    const controlsChanged = () => {
+      constrainTarget();
+      requestRender();
+    };
+    controls.addEventListener("change", controlsChanged);
+    cleanups.push(() => controls.removeEventListener("change", controlsChanged));
 
     function applyState() {
       canvas.dataset["twinLayer"] = state.layer;
@@ -420,7 +459,6 @@ export function mountTwinScene(
     }
 
     const command = (action: TwinCameraCommand) => {
-      if (action === "reset") controls.target.copy(target);
       controls.enableDamping = false;
       controls.update();
       const next = moveTwinCamera(
@@ -432,6 +470,17 @@ export function mountTwinScene(
         action,
         fitDistance,
       );
+      const nextY = moveTwinTargetY(
+        controls.target.y,
+        action,
+        bodyFrame?.height ?? TWIN_FRAME.height,
+        target.y,
+      );
+      if (action === "reset" || action === "upper-body" || action === "lower-body")
+        controls.target.copy(target);
+      controls.target.y = nextY;
+      const presetDistance = twinPresetDistance(action, fitDistance);
+      if (presetDistance !== undefined) next.distance = presetDistance;
       camera.position
         .copy(controls.target)
         .add(new Vector3().setFromSpherical(new Spherical(next.distance, next.pitch, next.yaw)));
@@ -449,9 +498,15 @@ export function mountTwinScene(
       if (bounds.isEmpty()) return;
       const size = bounds.getSize(new Vector3());
       const centre = bounds.getCenter(new Vector3());
+      controls.enableDamping = false;
+      controls.update();
       // Keep the orbit axis inside the body, so the near-side picking cutoff
       // still rejects hits through a gap onto the opposite side.
-      controls.target.set(centre.x, centre.y, 0);
+      controls.target.set(
+        target.x,
+        clampTwinTargetY(centre.y, bodyFrame?.height ?? TWIN_FRAME.height, target.y),
+        target.z,
+      );
       const tangent = Math.tan((TWIN_FIELD_OF_VIEW * Math.PI) / 360);
       const distance = (Math.max(size.y, size.x / camera.aspect) * 0.68) / tangent + size.z;
       const yaw = region === "back" || region === "glutes" ? Math.PI : 0;
@@ -490,6 +545,9 @@ export function mountTwinScene(
     function frameBody(nextFrame: ReturnType<typeof createTwinCameraFrame>) {
       const offset = camera.position.clone().sub(controls.target);
       bodyFrame = nextFrame;
+      // Rebuild once for a replacement body, never for a camera gesture or frame.
+      // Identity Shells have no analytical regions and need no picking profile.
+      pickingProfile = model.regionMeshes.size > 0 ? createTwinPickingProfile(model.body) : null;
       target.copy(nextFrame.target);
       controls.target.copy(target);
       camera.position.copy(target).add(offset);
@@ -582,10 +640,17 @@ export function mountTwinScene(
       //
       // And the skin itself carries no reading, so a hit on a hand or a face
       // is skipped rather than treated as a miss.
-      const reach = raycaster.ray.origin.distanceTo(controls.target);
+      const reach = twinNearSideReach(raycaster.ray, camera.position, target);
       const region = raycaster
         .intersectObjects(model.meshes, false)
-        .filter((hit) => hit.distance <= reach)
+        .filter((hit) => {
+          // The torso centre is not the calf centre. Keep the near-side guard,
+          // but locate its axis at this hit's height using existing geometry.
+          const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
+            ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
+            : reach;
+          return hit.distance <= limit;
+        })
         .map((hit) => (hit.object instanceof Mesh ? model.regionOf.get(hit.object) : undefined))
         .find((candidate) => candidate !== undefined);
       if (region) options.onSelect(region);
@@ -595,16 +660,7 @@ export function mountTwinScene(
       multiplePointers = true;
     };
     const key = (event: KeyboardEvent) => {
-      const action: TwinCameraCommand | undefined = (
-        {
-          ArrowLeft: "rotate-left",
-          ArrowRight: "rotate-right",
-          "+": "zoom-in",
-          "=": "zoom-in",
-          "-": "zoom-out",
-          Home: "reset",
-        } as Record<string, TwinCameraCommand>
-      )[event.key];
+      const action = twinCameraKey(event);
       if (action) {
         event.preventDefault();
         command(action);

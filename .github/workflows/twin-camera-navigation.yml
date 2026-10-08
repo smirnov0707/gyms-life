@@ -1,0 +1,53 @@
+name: Twin camera navigation
+on:
+  pull_request:
+    paths:
+      - "src/components/twin/**"
+      - "src/components/TwinView.tsx"
+      - "src/components/future-lab-*.css"
+      - "src/styles.css"
+      - "tests/twin-browser/**"
+      - "scripts/test-twin-camera-*.mjs"
+      - "public/models/**"
+      - ".github/workflows/twin-camera-navigation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/twin/**"
+      - "src/components/TwinView.tsx"
+      - "src/components/future-lab-*.css"
+      - "src/styles.css"
+      - "tests/twin-browser/**"
+      - "scripts/test-twin-camera-*.mjs"
+      - "public/models/**"
+      - ".github/workflows/twin-camera-navigation.yml"
+permissions:
+  contents: read
+concurrency:
+  group: twin-navigation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: node scripts/test-twin-camera-navigation.mjs
+      - name: Actual leg and back picking after camera navigation in both models
+        run: node scripts/test-twin-camera-picking.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-camera-navigation-evidence
+          path: test-results/twin-navigation
+          retention-days: 14
+          if-no-files-found: error
