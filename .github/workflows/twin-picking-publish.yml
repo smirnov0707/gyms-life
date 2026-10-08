@@ -1,0 +1,87 @@
+name: Twin verified picking finalization
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-picking-publish.yml]
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PR_HEAD: 299a9bc935de265e993d5531ac98dc2439d7cc54
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PR_HEAD }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 11575480343
+          run-id: 37833750004
+          github-token: ${{ github.token }}
+          path: /tmp/verified-height-picking
+      - name: Verify retained source and successful test steps, then create commit object only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync,readdirSync,statSync,mkdirSync,copyFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          import path from 'node:path';
+          const base=process.env.PR_HEAD;
+          const allowed=['scripts/test-twin-camera-picking.mjs','.github/workflows/twin-camera-navigation.yml','src/components/twin/twin-picking.profile.ts','src/components/twin/twin-picking.profile.test.ts','docs/twin-height-aware-picking.md','src/components/twin/twin-scene.runtime.ts'];
+          const entries=[];
+          function walk(dir){for(const name of readdirSync(dir)){const p=path.join(dir,name);statSync(p).isDirectory()?walk(p):entries.push(p);}}
+          walk('/tmp/verified-height-picking');
+          const one=(suffix)=>{const matches=entries.filter(p=>p.endsWith('/'+suffix));assert.equal(matches.length,1,suffix);return matches[0];};
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          const metadata=await api('actions/artifacts/11575480343');
+          assert.equal(metadata.digest,'sha256:093ceb04e296df5b1cbd38f9fcad0bd170941f334e25e2006dda528e2387c9d38');
+          assert.equal(metadata.workflow_run.id,37833750004);
+          assert.equal(metadata.workflow_run.head_sha,'7bd550053ef0c20708de9762d7247a5a02b4d6d6');
+          const jobs=await api('actions/runs/37833750004/jobs?per_page=10');
+          const job=jobs.jobs.find(j=>j.id===113505430259);assert.ok(job);
+          const required=['Materialize reviewed helper and integrate without altering other rendering behavior','Format reviewed source with unchanged installed lint policy','Complete quality gates and both builds','Preserve all original navigation and trusted touch groups','Actual leg and back clicks in both registered models','Retain exact final source after test discovery'];
+          for(const name of required)assert.equal(job.steps.find(s=>s.name===name)?.conclusion,'success',name);
+          assert.equal(job.steps.find(s=>s.name==='Create exact verified commit object without updating PR or main')?.conclusion,'failure');
+          const normal=JSON.parse(readFileSync(one('twin-navigation/results.json'),'utf8'));
+          const picking=JSON.parse(readFileSync(one('twin-navigation/picking/results.json'),'utf8'));
+          assert.equal(normal.results.length,6);assert.equal(picking.results.length,12);
+          assert.deepEqual(normal.errors,[]);assert.deepEqual(picking.errors,[]);
+          assert.equal(normal.failure,null);assert.equal(picking.failure,null);
+          for(const item of [...normal.results,...picking.results])assert.equal(item.status,'passed');
+          const sourceList=JSON.parse(readFileSync(one('picking-files.json'),'utf8'));
+          assert.deepEqual([...sourceList].sort(),[...allowed].sort());
+          const log=readFileSync(one('quality.log'),'utf8').replace(/\x1b\[[0-9;]*m/g,'');
+          assert.match(log,/Tests\s+2519 passed/);
+          assert.match(log,/Test Files\s+311 passed/);
+          const pr=await api('pulls/151');assert.equal(pr.head.sha,base);assert.equal(pr.state,'open');assert.equal(pr.merged,false);
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),base);
+          const source=allowed.map(name=>({path:name,content:readFileSync(one('reviewed-source/'+name),'utf8')}));
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:source.map(f=>({...f,mode:'100644',type:'blob'}))});
+          const commit=await api('git/commits','POST',{message:'fix(twin): keep visible calf selection after vertical camera navigation\n\nUse height-aware axes derived from existing triangles, retaining near-side protection and unchanged geometry. TypeScript, 2519 tests, toolchain, lint, both builds, six original navigation groups and twelve real-pointer Body/Muscles groups passed in run 37833750004. Reuse the exact retained formatted source; that run failed only its subsequent PR-read permission check. This finalizer creates an object only, not a ref or deploy.',tree:tree.sha,parents:[base]});
+          const output='test-results/twin-finalized';mkdirSync(output,{recursive:true});
+          const report={commit:commit.sha,tree:tree.sha,parent:base,sourceRun:37833750004,sourceArtifact:11575480343,sourceArtifactDigest:metadata.digest,quality:{typecheck:'passed',unitTests:2519,unitFiles:311,toolchain:'passed',lint:'passed',buildStaging:'passed',buildMain:'passed'},navigationGroups:6,pickingGroups:12,files:source.map(f=>({path:f.path,sha256:createHash('sha256').update(f.content).digest('hex')})),publicationRecovery:'Original tests succeeded; explicit pull-requests:read corrects only the failed metadata check. No test rerun or altered evidence.',prUpdated:false,deployed:false};
+          writeFileSync(path.join(output,'verified-height-picking.json'),JSON.stringify(report,null,2));
+          for(const f of source){const target=path.join(output,'reviewed-source',f.path);mkdirSync(path.dirname(target),{recursive:true});writeFileSync(target,f.content);}
+          copyFileSync(one('twin-navigation/results.json'),path.join(output,'navigation-results.json'));
+          copyFileSync(one('twin-navigation/picking/results.json'),path.join(output,'picking-results.json'));
+          console.log('VERIFIED_HEIGHT_PICKING',JSON.stringify(report));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twin-finalized-picking-manifest
+          path: test-results/twin-finalized
+          retention-days: 14
+          if-no-files-found: error
