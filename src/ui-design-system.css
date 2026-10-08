@@ -66,6 +66,14 @@
   }
 }
 
+/* A calendar is a bounded grid. Its caption, arrows and dates share one
+ * explicit cell size (32px by default); generic action minima must not
+ * enlarge the arrows or collapse the date columns. Other controls keep 44px. */
+[data-slot="calendar"] .ui-button {
+  min-width: var(--cell-size);
+  min-height: var(--cell-size);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .ui-button {
     transition:

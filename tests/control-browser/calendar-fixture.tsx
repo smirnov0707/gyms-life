@@ -8,7 +8,7 @@ document.documentElement.className = params.get("theme") === "light" ? "light" :
 const dateLabel = (date: Date | undefined) =>
   date ? `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}` : "none";
 
-function CalendarFixture() {
+export function CalendarFixture() {
   const [selected, setSelected] = useState<Date | undefined>(new Date(2026, 9, 8));
   const [submissions, setSubmissions] = useState(0);
   return (

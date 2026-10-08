@@ -54,15 +54,19 @@ try {
         geometry = await calendar.evaluate((element) => {
           const caption = element.querySelector(".rdp-month_caption").getBoundingClientRect();
           const nav = element.querySelector(".rdp-button_next").getBoundingClientRect();
+          const bounds = element.getBoundingClientRect();
           const cells = [...element.querySelectorAll("button[data-day]")].map((day) => {
             const rect = day.getBoundingClientRect();
             return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
           });
           const overlaps = cells.filter((a, index) =>
-            cells.slice(index + 1).some((b) =>
-              Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 1 &&
-              Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 1
-            ),
+            cells
+              .slice(index + 1)
+              .some(
+                (b) =>
+                  Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 1 &&
+                  Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 1,
+              ),
           ).length;
           return {
             navHeight: nav.height,
@@ -71,16 +75,25 @@ try {
             minDayWidth: Math.min(...cells.map((cell) => cell.width)),
             minDayHeight: Math.min(...cells.map((cell) => cell.height)),
             overlaps,
+            left: bounds.left,
+            right: bounds.right,
+            documentWidth: document.documentElement.scrollWidth,
             overflow: document.documentElement.scrollWidth - innerWidth,
           };
         });
         console.log("CALENDAR_GEOMETRY", name, JSON.stringify(geometry));
-        await page.screenshot({ path: path.join(artifacts, `${theme}-${width}.png`), fullPage: true });
+        await page.screenshot({
+          path: path.join(artifacts, `${theme}-${width}.png`),
+          fullPage: true,
+        });
         expect(geometry.overlaps).toBe(0);
         expect(geometry.overflow).toBeLessThanOrEqual(1);
+        expect(geometry.left).toBeGreaterThanOrEqual(0);
+        expect(geometry.right).toBeLessThanOrEqual(width);
+        expect(geometry.documentWidth).toBeLessThanOrEqual(width + 1);
         expect(geometry.captionCenterDelta).toBeLessThanOrEqual(1);
-        expect(geometry.minDayWidth).toBeGreaterThanOrEqual(24);
-        expect(geometry.minDayHeight).toBeGreaterThanOrEqual(24);
+        expect(geometry.minDayWidth).toBeGreaterThanOrEqual(32);
+        expect(geometry.minDayHeight).toBeGreaterThanOrEqual(32);
         const day = days.filter({ hasText: /^14$/ });
         await day.click();
         await expect(page.getByLabel("Selected date")).toHaveText("2026-10-14");
