@@ -42,23 +42,12 @@ jobs:
           replace('      createTwinBody();','      createTwinBody();\n    let pickingProfile = createTwinPickingProfile(model.body);\n    const pickingAxis = new Vector3();')
           replace('      model.dispose();\n      twinBodyRoot.clear();','      model.dispose();\n      pickingProfile = null;\n      twinBodyRoot.clear();')
           replace('      bodyFrame = nextFrame;','      bodyFrame = nextFrame;\n      // Rebuild once for a replacement body, never for a camera gesture or frame.\n      // Identity Shells have no analytical regions and need no picking profile.\n      pickingProfile = model.regionMeshes.size > 0 ? createTwinPickingProfile(model.body) : null;')
-          replace('      // the far side of it, and you cannot tap what you cannot see.','      // the far side of it, and you cannot tap what you cannot see.') if False else None
-          replace('        .filter((hit) => hit.distance <= reach)','''        .filter((hit) => {
-          // The torso centre is not the calf centre. Keep the near-side guard,
-          // but locate its axis at this hit's height using existing geometry.
-          const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
-            ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
-            : reach;
-          return hit.distance <= limit;
-        })''')
+          replace('        .filter((hit) => hit.distance <= reach)','\n'.join(['        .filter((hit) => {','          // The torso centre is not the calf centre. Keep the near-side guard,','          // but locate its axis at this hit\'s height using existing geometry.','          const limit = pickingProfile?.axisAt(hit.point, pickingAxis)','            ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)','            : reach;','          return hit.distance <= limit;','        })']))
           p.write_text(s)
           p=Path('src/components/twin/twin-picking.profile.ts');s=p.read_text()
           old='      body.worldToLocal(local.copy(worldPoint));'
           assert s.count(old)==1
-          s=s.replace(old,'''      body.updateWorldMatrix(true, false);
-                if (!body.matrixWorld.elements.every(Number.isFinite) || Math.abs(body.matrixWorld.determinant()) < 1e-12)
-                  return false;
-                body.worldToLocal(local.copy(worldPoint));''')
+          s=s.replace(old,'\n'.join(['      body.updateWorldMatrix(true, false);','      if (!body.matrixWorld.elements.every(Number.isFinite) || Math.abs(body.matrixWorld.determinant()) < 1e-12)','        return false;','      body.worldToLocal(local.copy(worldPoint));']))
           p.write_text(s)
           p=Path('scripts/test-twin-camera-picking.mjs');s=p.read_text()
           old='const owned = hits.find((hit) => model.regionOf.has(hit.object));'
