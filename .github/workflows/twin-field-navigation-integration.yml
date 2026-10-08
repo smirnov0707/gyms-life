@@ -1,0 +1,133 @@
+name: Twin field and navigation integration
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-field-navigation-integration.yml]
+permissions:
+  contents: write
+concurrency:
+  group: twin-field-navigation-integration
+  cancel-in-progress: false
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      MAIN: 925931c4d9790a5ca010588be5e0991542f2abe4
+      OLD_BASE: 656f4a6cb8fba5cddcab8c7b14eda67e906b3910
+      PR_HEAD: b37315dab4d315f3106a74214f2ddfa895a8ee2d
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MAIN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply only the reviewed PR150 patch to released PR151
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git fetch --no-tags --depth=1 origin "$PR_HEAD" "$OLD_BASE"
+          mkdir -p test-results/twin-integration
+          python3 <<'PY'
+          from pathlib import Path
+          import subprocess,os,json,hashlib
+          def git(*args):return subprocess.check_output(['git',*args])
+          files=['docs/twin-back-boundary.md','src/components/twin/twin-boundary.material.ts','src/components/twin/twin-human.loader.ts','src/components/twin/twin-region-boundary.test.ts','src/components/twin/twin-region-boundary.ts']
+          base=os.environ['OLD_BASE'];pr=os.environ['PR_HEAD'];main=os.environ['MAIN']
+          changed=git('diff','--name-only',base,pr).decode().splitlines()
+          assert sorted(changed)==sorted(files),changed
+          assert git('rev-parse','HEAD').decode().strip()==main
+          # Never replace edits made after the old PR base.
+          for name in files:
+              before=subprocess.run(['git','show',base+':'+name],capture_output=True)
+              current=subprocess.run(['git','show',main+':'+name],capture_output=True)
+              assert before.returncode==current.returncode and before.stdout==current.stdout,name+' changed on main; needs manual reconciliation'
+          patch=git('diff','--binary',base,pr)
+          Path('/tmp/twin-field.patch').write_bytes(patch)
+          subprocess.run(['git','apply','--check','/tmp/twin-field.patch'],check=True)
+          subprocess.run(['git','apply','/tmp/twin-field.patch'],check=True)
+          for name in files:assert Path(name).read_bytes()==git('show',pr+':'+name),name
+          report={'main':main,'pr':pr,'oldBase':base,'files':{name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in files}}
+          Path('test-results/twin-integration/source.json').write_text(json.dumps(report,indent=2))
+          Path('/tmp/twin-field-files.json').write_text(json.dumps(files))
+          print('SOURCE_INTEGRATION',json.dumps(report))
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: TypeScript, full tests, toolchain, lint and both builds
+        run: |
+          set -euo pipefail
+          { npm run typecheck; npm test; npm run test:toolchain; npm run lint; npm run build:staging; npm run build; } >test-results/twin-integration/quality.log 2>&1 || { tail -100 test-results/twin-integration/quality.log; exit 1; }
+          tail -5 test-results/twin-integration/quality.log
+          grep -E 'Test Files|Tests |problems|# pass|# fail' test-results/twin-integration/quality.log
+      - name: Existing six navigation and twelve real muscle-picking groups
+        run: |
+          set -euo pipefail
+          node scripts/test-twin-camera-navigation.mjs 2>&1 | tee test-results/twin-integration/navigation.log
+          node scripts/test-twin-camera-picking.mjs 2>&1 | tee test-results/twin-integration/picking.log
+      - name: Back-edge comparison and unchanged skin-selection acceptance
+        run: |
+          set -euo pipefail
+          node scripts/test-twin-boundary-browser.mjs 2>&1 | tee test-results/twin-integration/boundary.log
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-integration/skin.log
+      - name: Publish a tested merge object without moving any branch or deploying
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const files=JSON.parse(readFileSync('/tmp/twin-field-files.json','utf8'));
+          const source=JSON.parse(readFileSync('test-results/twin-integration/source.json','utf8'));
+          const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim();
+          for(const name of files)assert.equal(createHash('sha256').update(readFileSync(name)).digest('hex'),source.files[name],name);
+          const changes=git('diff','--name-only').split('\n').filter(Boolean);
+          const untracked=git('ls-files','--others','--exclude-standard').split('\n').filter(Boolean);
+          assert.deepEqual([...changes,...untracked].sort(),files.slice().sort(),'Unexpected source changes');
+          const summaries={};
+          for(const [name,location,count] of [['navigation','twin-navigation',6],['picking','twin-navigation/picking',12],['boundary','twin-boundary',8]]) {
+            const r=JSON.parse(readFileSync(`test-results/${location}/results.json`,'utf8'));
+            assert.equal(r.results.length,count,name);assert.deepEqual(r.errors,[],name);assert.equal(r.failure,null,name);
+            summaries[name]={groups:r.results.length,errors:r.errors,failure:r.failure};
+          }
+          const api=async(p,method='GET',data)=>{
+            const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();
+          };
+          assert.equal((await api('git/ref/heads/main')).object.sha,source.main,'Main moved; re-review required');
+          assert.equal((await api('git/ref/heads/fix/twin-back-field-2026-10-08')).object.sha,source.pr,'PR moved; do not overwrite');
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'Merge released PR151 into back-field refinement; verify combined navigation and selection\n\nPreserve larger canvas and height-aware picking. Apply only the five reviewed PR150 files. Full type/test/lint/toolchain/build plus navigation, real picking, boundary and skin suites passed on this exact tree. No deployment.',tree:tree.sha,parents:[source.pr,source.main]});
+          const report={commit:commit.sha,tree:tree.sha,parents:[source.pr,source.main],summaries,files:source.files,branchesUpdated:false,deployed:false};
+          writeFileSync('test-results/twin-integration/verified.json',JSON.stringify(report,null,2));
+          console.log('VERIFIED_INTEGRATION',JSON.stringify(report));
+          JS
+      - name: Retain exact source and concise evidence summary
+        if: always()
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,shutil
+          p=Path('/tmp/twin-field-files.json')
+          if p.exists():
+              for name in json.loads(p.read_text()):
+                  target=Path('test-results/twin-integration/source')/name
+                  target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(name,target)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-field-navigation-integrated-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
