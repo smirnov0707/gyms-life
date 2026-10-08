@@ -1,0 +1,116 @@
+name: PR142 production acceptance
+on:
+  push:
+    branches: [diagnostics/pr142-twin-integration-2026-10-08]
+    paths: [.github/workflows/pr142-production-acceptance.yml]
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      EXPECTED_COMMIT: f16d58020f9a2be73abca98ddea62660d5268208
+      VERIFIED_HEAD: 2fac45ad84d7ec7d8c6cb0708d315726d2126455
+      GYMSLIFE_ORIGIN: https://gyms.life
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_COMMIT }}
+          fetch-depth: 3
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Require exact production identity and an unchanged release tree
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {execFileSync} from 'node:child_process';
+          import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          const e=process.env, out='test-results/production-browser';
+          mkdirSync(out,{recursive:true});
+          assert.equal(git('rev-parse','HEAD'),e.EXPECTED_COMMIT);
+          assert.equal(git('rev-parse',`${e.EXPECTED_COMMIT}^{tree}`),git('rev-parse',`${e.VERIFIED_HEAD}^{tree}`));
+          const bytes=readFileSync('scripts/smoke-production-browser.mjs');
+          const smokeBlob=createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+          assert.equal(smokeBlob,'e9fd373dd4b5a0c8f2b2429bcf545c87dc54033d');
+          const response=await fetch(`${e.GYMSLIFE_ORIGIN}/api/public/environment`,{cache:'no-store',signal:AbortSignal.timeout(30000)});
+          assert.equal(response.status,200);
+          const identity=await response.json();
+          writeFileSync(`${out}/identity-before.json`,JSON.stringify(identity,null,2));
+          assert.equal(identity.sourceCommit,e.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.target,'production');
+          assert.equal(identity.buildContext,'production');
+          writeFileSync(`${out}/source.json`,JSON.stringify({release:e.EXPECTED_COMMIT,verifiedHead:e.VERIFIED_HEAD,tree:git('rev-parse','HEAD^{tree}'),zeroFileReleaseDiff:true,smokeBlob,smokeUnmodified:true},null,2));
+          console.log('PASS: exact published production identity; release tree and public smoke unchanged.');
+          JS
+      - name: Render live public routes without opt-outs or error filtering
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/smoke-production-browser.mjs 2>&1 | tee test-results/production-browser/browser.log
+      - name: Require all twelve direct-browser results and recheck release gates
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const e=process.env, out='test-results/production-browser';
+          const results=JSON.parse(readFileSync(`${out}/results.json`,'utf8'));
+          assert.equal(results.origin,e.GYMSLIFE_ORIGIN);
+          assert.equal(results.direct,true);
+          assert.equal(results.results.length,12);
+          const expected=['/','/auth','/pricing'].flatMap(route=>['dark','light'].flatMap(scheme=>['desktop','phone'].map(viewport=>`${route}:${scheme}:${viewport}`))).sort();
+          assert.deepEqual(results.results.map(r=>`${r.route}:${r.scheme}:${r.viewport}`).sort(),expected);
+          for(const row of results.results) assert.deepEqual(row.why,[]);
+          const response=await fetch(`${e.GYMSLIFE_ORIGIN}/api/public/environment`,{cache:'no-store',signal:AbortSignal.timeout(30000)});
+          assert.equal(response.status,200);
+          const identity=await response.json();
+          writeFileSync(`${out}/identity-after.json`,JSON.stringify(identity,null,2));
+          assert.equal(identity.sourceCommit,e.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.target,'production');
+          assert.equal(identity.buildContext,'production');
+          const api=async(path)=>{
+            const r=await fetch(`https://api.github.com/repos/smirnov0707/gyms-life/${path}`,{headers:{Authorization:`Bearer ${e.GH_TOKEN}`,Accept:'application/vnd.github+json'},signal:AbortSignal.timeout(30000)});
+            assert.equal(r.status,200,`GitHub read failed: ${path}`);
+            return r.json();
+          };
+          const pr=await api('pulls/142');
+          assert.equal(pr.merged,true);
+          assert.equal(pr.head.sha,e.VERIFIED_HEAD);
+          assert.equal(pr.merge_commit_sha,e.EXPECTED_COMMIT);
+          const gates=[];
+          for(const [id,name] of [[37764665446,'Night Lab review'],[37764665594,'Offline identity browser'],[37764665617,'CI'],[37764665462,'Authentication browser'],[37764665549,'Public pages browser'],[37764665496,'Core workflows browser'],[37764665445,'Today browser']]) {
+            const run=await api(`actions/runs/${id}`);
+            assert.equal(run.head_sha,e.VERIFIED_HEAD);
+            assert.equal(run.name,name);
+            assert.equal(run.status,'completed');
+            assert.equal(run.conclusion,'success');
+            gates.push({id,name,head:run.head_sha,conclusion:run.conclusion});
+          }
+          writeFileSync(`${out}/release-verification.json`,JSON.stringify({release:e.EXPECTED_COMMIT,verifiedHead:e.VERIFIED_HEAD,merged:true,gates,publicCases:12,directBrowserTLS:true,previewOptOut:false,errorFiltering:false,securityPolicyChanged:false,scope:'Live public rendering and deployment identity only. No real sign-in, workout, payment or database mutation; not physical-iPhone acceptance.'},null,2));
+          console.log('PASS: 12/12 direct production cases, stable production identity and all seven green release gates.');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr142-production-release-verified
+          path: test-results/production-browser
+          retention-days: 14
+          if-no-files-found: error
