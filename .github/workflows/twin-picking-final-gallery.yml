@@ -1,0 +1,49 @@
+name: Twin final-source visual gallery
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-picking-final-gallery.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  gallery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 11574861850
+          run-id: 37833750004
+          github-token: ${{ github.token }}
+          path: /tmp/twin-final-evidence
+      - name: Retain exact synthetic PNGs, never production data or modified screenshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,readdirSync,statSync} from 'node:fs';
+          import path from 'node:path';
+          const files=[];function walk(dir){for(const name of readdirSync(dir)){const p=path.join(dir,name);statSync(p).isDirectory()?walk(p):files.push(p);}}walk('/tmp/twin-final-evidence');
+          const one=suffix=>{const found=files.filter(p=>p.endsWith('/'+suffix));assert.equal(found.length,1,suffix);return readFileSync(found[0]);};
+          const normal=JSON.parse(one('twin-navigation/results.json')),picking=JSON.parse(one('twin-navigation/picking/results.json'));
+          assert.equal(normal.results.length,6);assert.equal(picking.results.length,12);
+          for(const r of [normal,picking]){assert.equal(r.failure,null);assert.deepEqual(r.errors,[]);}
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          const branch=process.env.GITHUB_REF_NAME,head=(await api(`git/ref/heads/${branch}`)).object.sha;
+          assert.equal(head,process.env.GITHUB_SHA,'Diagnostic branch changed');
+          const names=['lt-dark-320-old-size.png','lt-dark-320-larger.png','320-dark-analysis-page.png','390-light-realistic-legs-selected.png','1280-dark-analysis-page.png','1280-light-realistic-back-selected.png'];
+          const tree=[];
+          for(const name of names){const blob=await api('git/blobs','POST',{content:one(name).toString('base64'),encoding:'base64'});tree.push({path:`docs/twin-final-navigation-review/${name}`,mode:'100644',type:'blob',sha:blob.sha});}
+          const body=['# Final-source Twin size and picking review','', 'Reviewed application head: **2e22301c0e64931e38fd077d552560b3dfcce63d**. Exact passed source from run **37833750004**, artifact **11574861850**, digest **5edbfcf77e7242833b2ed641066daae8936e81d39f40e7480ca9d66c769c63f6**. Official artifact download verified that digest.','', 'Six original navigation groups and twelve actual Body/Muscles picking groups passed. These are unedited synthetic screenshots of real components and registered generic models. No real account or physical-device claim. The first pair compares the same body at the old/new viewport heights; lower-body/back selected crops are intentional focused views. Tiny fixture counters are not production copy.','', ...names.flatMap(name=>[`## ${name}`,`![${name}](${name})`,''])].join('\n');
+          tree.push({path:'docs/twin-final-navigation-review/README.md',mode:'100644',type:'blob',content:body});
+          const base=await api(`git/commits/${head}`);
+          const created=await api('git/trees','POST',{base_tree:base.tree.sha,tree});
+          const commit=await api('git/commits','POST',{message:'docs(diagnostics): final Twin size and real selection screenshots',tree:created.sha,parents:[head]});
+          await api(`git/refs/heads/${branch}`,'PATCH',{sha:commit.sha,force:false});
+          console.log('FINAL_GALLERY',commit.sha,`https://github.com/${process.env.GITHUB_REPOSITORY}/blob/${commit.sha}/docs/twin-final-navigation-review/README.md`);
+          JS
