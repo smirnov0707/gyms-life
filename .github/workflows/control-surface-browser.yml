@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "src/components/ui/button.tsx"
+      - "src/components/ui/calendar.tsx"
       - "src/components/ui/input.tsx"
       - "src/components/ui/textarea.tsx"
       - "src/components/system/SystemNotice.tsx"
@@ -11,11 +12,13 @@ on:
       - "src/styles/system-notice.css"
       - "tests/control-browser/**"
       - "scripts/test-control-surface-browser.mjs"
+      - "scripts/test-calendar-control-browser.mjs"
       - ".github/workflows/control-surface-browser.yml"
   push:
     branches: [main]
     paths:
       - "src/components/ui/button.tsx"
+      - "src/components/ui/calendar.tsx"
       - "src/components/ui/input.tsx"
       - "src/components/ui/textarea.tsx"
       - "src/components/system/SystemNotice.tsx"
@@ -24,6 +27,7 @@ on:
       - "src/styles/system-notice.css"
       - "tests/control-browser/**"
       - "scripts/test-control-surface-browser.mjs"
+      - "scripts/test-calendar-control-browser.mjs"
       - ".github/workflows/control-surface-browser.yml"
 permissions:
   contents: read
@@ -50,6 +54,10 @@ jobs:
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-control-surface-browser.mjs
+        env:
+          CONTROL_BROWSER_ENGINE: ${{ matrix.engine }}
+      - name: Verify real calendar layout and native interactions
+        run: node scripts/test-calendar-control-browser.mjs
         env:
           CONTROL_BROWSER_ENGINE: ${{ matrix.engine }}
       - uses: actions/upload-artifact@v4
