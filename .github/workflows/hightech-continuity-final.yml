@@ -1,0 +1,115 @@
+name: High-tech continuity final acceptance
+on:
+  push:
+    branches: [diagnostics/hightech-continuity-2026-10-08]
+    paths: [.github/workflows/hightech-continuity-final.yml]
+permissions:
+  contents: write
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: f16d58020f9a2be73abca98ddea62660d5268208
+      FEATURE_BRANCH: feat/endurance-high-tech-continuity-2026-10-08
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Replay the exact candidate recipe and harden repeated unavailable readback
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import urllib.request, subprocess
+          url='https://raw.githubusercontent.com/smirnov0707/gyms-life/f449ab00c63452526c124deec6bdd326ab0258da/.github/workflows/hightech-continuity-candidate.yml'
+          text=urllib.request.urlopen(url,timeout=30).read().decode('utf8')
+          lines=text.splitlines();blocks=[];i=0
+          while i<len(lines):
+              if lines[i]=='        run: |':
+                  i+=1;body=[]
+                  while i<len(lines) and (lines[i].startswith('          ') or not lines[i]):
+                      body.append(lines[i][10:] if lines[i] else '');i+=1
+                  blocks.append('\n'.join(body)+'\n')
+              else:i+=1
+          assert len(blocks)==5, len(blocks)
+          for index in [0,1]:subprocess.run(['bash','-euo','pipefail','-c',blocks[index]],check=True)
+          p=Path('src/components/QuickRunLog.tsx');s=p.read_text()
+          old='applyEnrichment(sessionId, result, Boolean(restoredSessionId));'
+          assert s.count(old)==1
+          s=s.replace(old,'applyEnrichment(sessionId, result, Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired));')
+          p.write_text(s)
+          p=Path('tests/core-browser/endurance-log-fixtures.ts');s=p.read_text()
+          old='  if (query.get("retry") === "needs-confirmation") return outcome("needs_confirmation");'
+          assert s.count(old)==1
+          s=s.replace(old,old+'\n  if (query.get("retry") === "load-unavailable") {\n    const unavailable: EnduranceRaceEnrichmentResult = { ...outcome("unavailable"), raceEnrichment: { status: "unavailable", linked: false, retryable: true, stage: "load" } };\n    return unavailable;\n  }')
+          p.write_text(s)
+          p=Path('scripts/test-core-run-continuity.mjs');s=p.read_text();end=s.rfind('\n}');assert end>0
+          extra=r'''
+            {
+              const {page,context}=await prepare('scenario=unavailable&retry=load-unavailable');
+              await save(page); await page.reload();
+              await page.locator('[data-run-follow-up-check]').click();
+              await expect(page.getByRole('status')).toContainText('The earlier run could not be verified.');
+              for(let attempt=0;attempt<2;attempt++) {
+                await page.getByRole('button',{name:'Retry plan check',exact:true}).click();
+                await expect(page.getByRole('button',{name:'Retry plan check',exact:true})).toBeEnabled();
+                await expect(page.getByRole('status')).toContainText('The earlier run could not be verified.');
+              }
+              expect(await state(page)).toMatchObject({records:1,saves:1,retries:3,trainingEvents:0});
+              expect(await page.evaluate(p=>Object.keys(sessionStorage).filter(k=>k.startsWith(p)).length,prefix)).toBe(1);
+              await context.close(); record('Run continuity: repeated unavailable readback stays unverified and never creates a new run');
+            }
+          '''
+          p.write_text(s[:end]+extra+s[end:])
+          Path('/tmp/hightech-quality.sh').write_text(blocks[2])
+          focused=blocks[3].replace('!==21','!==22').replace('14 original + 7 new','14 original + 8 new')
+          Path('/tmp/hightech-browser.sh').write_text(focused)
+          publish=blocks[4]
+          old="const commit=await api('git/commits','POST',"
+          assert publish.count(old)==1
+          before="""let previous=null;
+          const refResponse=await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/${process.env.FEATURE_BRANCH}`,{headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json'}});
+          if(refResponse.ok) {
+            previous=(await refResponse.json()).object.sha;
+            const prior=await api(`git/commits/${previous}`);
+            assert.equal(prior.parents.length,1);assert.equal(prior.parents[0].sha,base);
+            assert.ok(prior.message.startsWith('feat(endurance): high-tech run console and owner-scoped follow-up continuity'));
+          } else assert.equal(refResponse.status,404);
+          """
+          publish=publish.replace(old,before+old)
+          publish=publish.replace('parents:[base]','parents:[previous ?? base]').replace('21 real-component groups','22 real-component groups')
+          old="await api('git/refs','POST',{ref:`refs/heads/${process.env.FEATURE_BRANCH}`,sha:commit.sha});"
+          assert publish.count(old)==1
+          publish=publish.replace(old,"if(previous) await api(`git/refs/heads/${process.env.FEATURE_BRANCH}`,'PATCH',{sha:commit.sha,force:false}); else "+old)
+          Path('/tmp/hightech-publish.sh').write_text(publish)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Verify all unit tests, TypeScript, lint, toolchain and both builds
+        shell: bash
+        run: bash /tmp/hightech-quality.sh
+      - name: Verify all 22 real run groups in Chromium and WebKit
+        shell: bash
+        run: bash /tmp/hightech-browser.sh
+      - name: Publish final tested source without deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: bash /tmp/hightech-publish.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hightech-continuity-final-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
