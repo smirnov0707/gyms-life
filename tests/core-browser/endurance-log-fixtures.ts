@@ -1,3 +1,4 @@
+import { ManualRunSubmissionSchema } from "@/lib/endurance-submission.schema";
 import type { EnduranceRaceEnrichmentResult } from "@/lib/endurance-race-enrichment.service";
 import { ManualEnduranceActivitySchema } from "@/lib/endurance-activity.schema";
 import { buildEnduranceTrainingCredit } from "@/lib/endurance-training-credit.engine";
@@ -8,7 +9,9 @@ const sessionId = "20000000-0000-4000-8000-000000000002";
 const goalId = "30000000-0000-4000-8000-000000000003";
 const state = {
   saves: 0,
-  records: 0,
+  records: Object.keys(JSON.parse(localStorage.getItem("synthetic-manual-runs") ?? "{}")).length,
+  deliveries: 0,
+  lastSubmission: null as unknown,
   retries: 0,
   confirmations: 0,
   refreshes: 0,
@@ -45,10 +48,14 @@ function outcome(
         : { status, linked: status === "matched", retryable: false },
   };
 }
-export async function logEnduranceActivity({ data }: { data: unknown }) {
+async function recordSyntheticActivity({ data }: { data: unknown }) {
   state.saves++;
   const activity = ManualEnduranceActivitySchema.parse(data);
   await delay();
+  if (query.get("submission") === "held")
+    await new Promise<void>((resolve) =>
+      Object.assign(window, { __releaseManualResponse: resolve }),
+    );
   if (query.get("scenario") === "save-fails") throw new Error("Synthetic primary failure");
   state.records++;
   const scenario = query.get("scenario");
@@ -57,7 +64,9 @@ export async function logEnduranceActivity({ data }: { data: unknown }) {
     session: {
       id: sessionId,
       started_at: activity.startedAt,
-      finished_at: new Date().toISOString(),
+      finished_at: new Date(
+        Date.parse(activity.startedAt) + activity.durationSeconds * 1000,
+      ).toISOString(),
     },
     activity,
     credit: buildEnduranceTrainingCredit(activity),
@@ -90,4 +99,49 @@ export async function confirmRaceSessionMatchFn() {
 export async function refreshRunLogFixture() {
   state.refreshes++;
   if (query.get("refresh") === "fail") throw new Error("Synthetic screen refresh failure");
+}
+
+// Deliberately synthetic server persistence, separate from the real IndexedDB
+// request journal. This survives fixture reload to model a lost HTTP response.
+export async function logEnduranceActivity({ data }: { data: unknown }) {
+  state.deliveries++;
+  const request = ManualRunSubmissionSchema.parse(data);
+  state.lastSubmission = request;
+  const key = `${request.ownerId}:${request.requestId}`;
+  const stored: Record<string, Awaited<ReturnType<typeof recordSyntheticActivity>>> = JSON.parse(
+    localStorage.getItem("synthetic-manual-runs") ?? "{}",
+  );
+  const already = stored[key];
+  if (already)
+    return {
+      ...already,
+      submission: {
+        ownerId: request.ownerId,
+        requestId: request.requestId,
+        persistence: "replayed" as const,
+      },
+    };
+  if (
+    query.get("submission") === "fail-before" &&
+    !localStorage.getItem("synthetic-delivery-failed")
+  ) {
+    localStorage.setItem("synthetic-delivery-failed", "1");
+    throw new TypeError("Synthetic network failure before reaching server");
+  }
+  const result = await recordSyntheticActivity({ data: request.activity });
+  stored[key] = result;
+  localStorage.setItem("synthetic-manual-runs", JSON.stringify(stored));
+  if (query.get("submission") === "response-lost")
+    throw new TypeError("Synthetic response lost after commit");
+  return {
+    ...result,
+    submission: {
+      ownerId:
+        query.get("submission") === "wrong-owner"
+          ? "99999999-9999-4999-8999-999999999999"
+          : request.ownerId,
+      requestId: request.requestId,
+      persistence: "created" as const,
+    },
+  };
 }
