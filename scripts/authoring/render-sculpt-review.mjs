@@ -15,6 +15,7 @@ const root = process.cwd();
 const server = await createServer({
   configFile: false,
   root: path.join(root, "tests/twin-browser"),
+  resolve: { alias: { "@": path.join(root, "src") } },
   plugins: [
     {
       name: "exact-review-model",

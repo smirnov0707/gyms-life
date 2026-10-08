@@ -50,6 +50,12 @@ jobs:
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-twin-browser.mjs
+      - name: Verify visible skin and selection in the real WebGL scene
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/twin-skin
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-skin/browser.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -57,3 +63,10 @@ jobs:
           path: test-results/twin
           retention-days: 7
           if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-skin-clarity-evidence
+          path: test-results/twin-skin
+          retention-days: 14
+          if-no-files-found: error

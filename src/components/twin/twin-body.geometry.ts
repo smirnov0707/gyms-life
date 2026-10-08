@@ -1,6 +1,8 @@
 import { BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial } from "three";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import surface from "./twin-body.surface.json";
+import { TWIN_SKIN_MATERIAL } from "./twin-surface.style";
+import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
 
 /**
  * Generic, locally authored body surface. Not a personal scan, body-composition
@@ -34,11 +36,7 @@ export function createTwinBody() {
     geometry.setAttribute("normal", normals);
     geometry.setIndex(indices);
     geometry.computeBoundingSphere();
-    const material = new MeshStandardMaterial({
-      color: "#657076",
-      roughness: 0.48,
-      metalness: 0.22,
-    });
+    const material = createTwinAnatomyMaterial(TWIN_SKIN_MATERIAL);
     const mesh = new Mesh(geometry, material);
     mesh.name = `twin-region-${id}`;
     body.add(mesh);
