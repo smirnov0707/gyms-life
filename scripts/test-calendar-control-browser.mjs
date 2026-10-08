@@ -21,11 +21,15 @@ const server = await createServer({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.join(root, "src") } },
   optimizeDeps: { entries: [path.join(root, "tests/control-browser/calendar.html")] },
-  server: { host: "127.0.0.1", port: 4190, strictPort: true, fs: { allow: [root] } },
+  server: { host: "127.0.0.1", port: 0, strictPort: true, fs: { allow: [root] } },
 });
 try {
   await server.listen();
-  const origin = "http://127.0.0.1:4190";
+  // Use an OS-assigned HTTP port, not 4190 (reserved for Sieve in WebKit).
+  // Browser protections and the same-origin request allowlist remain intact.
+  const address = server.httpServer?.address();
+  if (!address || typeof address === "string") throw new Error("Missing calendar HTTP address");
+  const origin = `http://127.0.0.1:${address.port}`;
   browser = await (engine === "webkit" ? webkit : chromium).launch();
   for (const theme of ["dark", "light"]) {
     for (const width of [320, 390, 1280]) {
