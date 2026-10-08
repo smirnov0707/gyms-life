@@ -1,0 +1,67 @@
+name: Twin navigation final acceptance
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-nav-acceptance.yml]
+permissions:
+  contents: write
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: 656f4a6cb8fba5cddcab8c7b14eda67e906b3910
+      FEATURE: feat/twin-vertical-navigation-2026-10-08
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Prepare the checksum-verified candidate then correct the visible-mesh test point
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import urllib.request,subprocess
+          url='https://raw.githubusercontent.com/smirnov0707/gyms-life/137c276f567d9013dc34d0feda8c7e93bd16a308/.github/workflows/twin-nav-verified.yml'
+          text=urllib.request.urlopen(url,timeout=30).read().decode()
+          lines=text.splitlines();start=lines.index('        run: |')+1;body=[]
+          for line in lines[start:]:
+              if line and not line.startswith('          '):break
+              body.append(line[10:] if line else '')
+          subprocess.run(['bash','-euo','pipefail','-c','\n'.join(body)],check=True)
+          p=Path('scripts/test-twin-camera-navigation.mjs');s=p.read_text()
+          old='          await page.mouse.click(b.x + b.width * 0.56, b.y + b.height * 0.5);'
+          new='          // Click the visible thigh shared by both registered meshes, not the gap beside a calf.\n          await page.mouse.click(b.x + b.width * 0.6, b.y + b.height * 0.4);'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new))
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Complete TypeScript, tests, toolchain, lint and both builds
+        run: bash /tmp/twin-quality.sh
+      - name: Real 3D navigation, gestures and unchanged skin acceptance
+        run: bash /tmp/twin-browser.sh
+      - name: Publish tested files only to a new feature branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash /tmp/twin-publish.sh
+      - name: Retain changed source after verification
+        if: always()
+        run: test ! -f /tmp/twin-retain.sh || bash /tmp/twin-retain.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-navigation-final-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
