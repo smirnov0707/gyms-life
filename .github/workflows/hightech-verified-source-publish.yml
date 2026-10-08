@@ -50,23 +50,25 @@ jobs:
           const zip=Buffer.from(await download.arrayBuffer());
           assert.equal(createHash('sha256').update(zip).digest('hex'),digest);
           writeFileSync('verified-source.zip',zip);
-          execFileSync('python3',['-c',`import json,zipfile,collections
-with zipfile.ZipFile('verified-source.zip') as z:
-    results=json.loads(z.read('hightech-results.json'))
-    assert results['errors']==[]
-    assert len(results['results'])==44
-    assert collections.Counter((r['engine'],r['status']) for r in results['results'])=={('chromium','passed'):22,('webkit','passed'):22}
-    assert len({(r['engine'],r['name']) for r in results['results']})==44
-    paths=json.loads(z.read('candidate-files.json'))
-    expected=['docs/high-tech-experience.md','scripts/test-core-endurance-log.mjs','scripts/test-core-run-continuity.mjs','src/components/QuickRunLog.tsx','src/components/system/SystemNotice.tsx','src/lib/endurance-follow-up-store.test.ts','src/lib/endurance-follow-up-store.ts','src/lib/use-endurance-follow-up.ts','src/styles/system-notice.css','tests/core-browser/endurance-log-fixtures.ts']
-    assert sorted(paths)==sorted(expected)
-    files={p:z.read('candidate-source/'+p).decode('utf-8') for p in paths}
-    assert 'pendingWrites' in files['src/lib/use-endurance-follow-up.ts']
-    assert 'color: var(--foreground)' in files['src/styles/system-notice.css']
-    assert 'headingStyle.color' in files['scripts/test-core-run-continuity.mjs']
-    with open('verified-source.json','w') as f: json.dump(files,f)
-`],{stdio:'inherit'});
+          const python=[
+            'import json,zipfile,collections',
+            'with zipfile.ZipFile("verified-source.zip") as z:',
+            '    results=json.loads(z.read("hightech-results.json"))',
+            '    assert results["errors"]==[]',
+            '    assert len(results["results"])==44',
+            '    assert collections.Counter((r["engine"],r["status"]) for r in results["results"])=={("chromium","passed"):22,("webkit","passed"):22}',
+            '    assert len({(r["engine"],r["name"]) for r in results["results"]})==44',
+            '    paths=json.loads(z.read("candidate-files.json"))',
+            '    files={p:z.read("candidate-source/"+p).decode("utf-8") for p in paths}',
+            '    with open("verified-source.json","w") as f: json.dump(files,f)',
+          ].join('\n');
+          execFileSync('python3',['-c',python],{stdio:'inherit'});
           const files=JSON.parse(readFileSync('verified-source.json','utf8'));
+          const expected=['docs/high-tech-experience.md','scripts/test-core-endurance-log.mjs','scripts/test-core-run-continuity.mjs','src/components/QuickRunLog.tsx','src/components/system/SystemNotice.tsx','src/lib/endurance-follow-up-store.test.ts','src/lib/endurance-follow-up-store.ts','src/lib/use-endurance-follow-up.ts','src/styles/system-notice.css','tests/core-browser/endurance-log-fixtures.ts'];
+          assert.deepEqual(Object.keys(files).sort(),expected.sort());
+          assert.ok(files['src/lib/use-endurance-follow-up.ts'].includes('pendingWrites'));
+          assert.ok(files['src/styles/system-notice.css'].includes('color: var(--foreground)'));
+          assert.ok(files['scripts/test-core-run-continuity.mjs'].includes('headingStyle.color'));
           const baseCommit=await api(`git/commits/${base}`);
           const tree=await api('git/trees','POST',{base_tree:baseCommit.tree.sha,tree:Object.entries(files).map(([path,content])=>({path,content,mode:'100644',type:'blob'}))});
           const commit=await api('git/commits','POST',{message:'feat(ux): high-tech run console and resilient saved-run follow-up continuity\n\nExact ten-file source from verified artifact 11547714293, run 37772645380. All 2420 unit/contract tests, TypeScript, lint, toolchain, both builds and 22 real-component groups in each Chromium/WebKit passed. Retain owner-scoped references across navigation, never stale consent; reconcile refused local writes and preserve readable theme headings. Shared SystemNotice is the first whole-system design primitive, not a complete redesign. No production deployment or schema changes. Full normal PR gates still required.',tree:tree.sha,parents:[base]});
