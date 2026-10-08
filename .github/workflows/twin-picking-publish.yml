@@ -23,7 +23,7 @@ jobs:
           node-version: 22
       - uses: actions/download-artifact@v4
         with:
-          artifact-ids: 11575480343
+          artifact-ids: 11574861850
           run-id: 37833750004
           github-token: ${{ github.token }}
           path: /tmp/verified-height-picking
@@ -45,8 +45,8 @@ jobs:
           walk('/tmp/verified-height-picking');
           const one=(suffix)=>{const matches=entries.filter(p=>p.endsWith('/'+suffix));assert.equal(matches.length,1,suffix);return matches[0];};
           const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
-          const metadata=await api('actions/artifacts/11575480343');
-          assert.equal(metadata.digest,'sha256:093ceb04e296df5b1cbd38f9fcad0bd170941f334e25e2006dda528e2387c9d38');
+          const metadata=await api('actions/artifacts/11574861850');
+          assert.equal(metadata.digest,'sha256:5edbfcf77e7242833b2ed641066daae8936e81d39f40e7480ca9d66c769c63f6');
           assert.equal(metadata.workflow_run.id,37833750004);
           assert.equal(metadata.workflow_run.head_sha,'7bd550053ef0c20708de9762d7247a5a02b4d6d6');
           const jobs=await api('actions/runs/37833750004/jobs?per_page=10');
@@ -72,7 +72,7 @@ jobs:
           const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:source.map(f=>({...f,mode:'100644',type:'blob'}))});
           const commit=await api('git/commits','POST',{message:'fix(twin): keep visible calf selection after vertical camera navigation\n\nUse height-aware axes derived from existing triangles, retaining near-side protection and unchanged geometry. TypeScript, 2519 tests, toolchain, lint, both builds, six original navigation groups and twelve real-pointer Body/Muscles groups passed in run 37833750004. Reuse the exact retained formatted source; that run failed only its subsequent PR-read permission check. This finalizer creates an object only, not a ref or deploy.',tree:tree.sha,parents:[base]});
           const output='test-results/twin-finalized';mkdirSync(output,{recursive:true});
-          const report={commit:commit.sha,tree:tree.sha,parent:base,sourceRun:37833750004,sourceArtifact:11575480343,sourceArtifactDigest:metadata.digest,quality:{typecheck:'passed',unitTests:2519,unitFiles:311,toolchain:'passed',lint:'passed',buildStaging:'passed',buildMain:'passed'},navigationGroups:6,pickingGroups:12,files:source.map(f=>({path:f.path,sha256:createHash('sha256').update(f.content).digest('hex')})),publicationRecovery:'Original tests succeeded; explicit pull-requests:read corrects only the failed metadata check. No test rerun or altered evidence.',prUpdated:false,deployed:false};
+          const report={commit:commit.sha,tree:tree.sha,parent:base,sourceRun:37833750004,sourceArtifact:11574861850,sourceArtifactDigest:metadata.digest,quality:{typecheck:'passed',unitTests:2519,unitFiles:311,toolchain:'passed',lint:'passed',buildStaging:'passed',buildMain:'passed'},navigationGroups:6,pickingGroups:12,files:source.map(f=>({path:f.path,sha256:createHash('sha256').update(f.content).digest('hex')})),publicationRecovery:'Original tests succeeded; explicit pull-requests:read corrects only the failed metadata check. No test rerun or altered evidence.',prUpdated:false,deployed:false};
           writeFileSync(path.join(output,'verified-height-picking.json'),JSON.stringify(report,null,2));
           for(const f of source){const target=path.join(output,'reviewed-source',f.path);mkdirSync(path.dirname(target),{recursive:true});writeFileSync(target,f.content);}
           copyFileSync(one('twin-navigation/results.json'),path.join(output,'navigation-results.json'));
