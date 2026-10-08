@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Route, TimerReset } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { baseLang, useI18n } from "@/lib/i18n";
-import { logEnduranceActivity } from "@/lib/endurance-activity.functions";
+import { logEnduranceActivity, retryEnduranceRaceSync } from "@/lib/endurance-activity.functions";
+import type { EnduranceRaceSyncResult } from "@/lib/endurance-race-sync.schema";
 import { confirmRaceSessionMatchFn } from "@/lib/endurance-session-match.functions";
 
 export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void> }) {
@@ -13,6 +14,12 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
   const english = baseLang(lang) === "en";
   const logActivity = useServerFn(logEnduranceActivity);
   const confirmMatch = useServerFn(confirmRaceSessionMatchFn);
+  const retrySync = useServerFn(retryEnduranceRaceSync);
+  const busy = useRef(false);
+  const [deferredSync, setDeferredSync] = useState<{
+    sessionId: string;
+    phase: "matching" | "insights";
+  } | null>(null);
   const [environment, setEnvironment] = useState<"outdoor" | "treadmill">("outdoor");
   const [minutes, setMinutes] = useState("");
   const [distanceKm, setDistanceKm] = useState("");
@@ -25,7 +32,61 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     intent: "easy" | "long" | "tempo" | "intervals" | "recovery" | "race";
   } | null>(null);
 
+  const applySync = (sessionId: string, result: EnduranceRaceSyncResult) => {
+    setDeferredSync(
+      result.raceSync.status === "deferred" ? { sessionId, phase: result.raceSync.phase } : null,
+    );
+    if (result.raceMatch?.status === "needs_confirmation") {
+      setPendingMatch({
+        sessionId,
+        raceGoalId: result.raceMatch.raceGoalId,
+        planSessionKey: result.raceMatch.plannedSessionKey,
+        intent: result.raceMatch.intent,
+      });
+    } else setPendingMatch(null);
+  };
+
+  const refreshToday = async () => {
+    try {
+      await onLogged?.();
+    } catch {
+      // This callback is presentation refresh, not the durable save operation.
+      toast.warning(
+        english
+          ? "Run saved. The dashboard could not refresh; do not save it again."
+          : "Bėgimas išsaugotas. Nepavyko atnaujinti ekrano; nesaugok jo dar kartą.",
+      );
+    }
+  };
+
+  const retrySavedRun = async () => {
+    if (!deferredSync || busy.current) return;
+    busy.current = true;
+    setSaving(true);
+    try {
+      const result = await retrySync({ data: { workoutSessionId: deferredSync.sessionId } });
+      applySync(deferredSync.sessionId, result);
+      window.dispatchEvent(
+        new CustomEvent("gymslife:endurance-updated", {
+          detail: { raceIntelligence: result.raceIntelligence },
+        }),
+      );
+      await refreshToday();
+    } catch {
+      // Preserve the saved session ID for the next attempt; never call logActivity here.
+      toast.error(
+        english
+          ? "Run is saved. Plan sync is still unavailable."
+          : "Bėgimas išsaugotas. Plano susiejimas vis dar nepasiekiamas.",
+      );
+    } finally {
+      busy.current = false;
+      setSaving(false);
+    }
+  };
+
   const submit = async () => {
+    if (busy.current) return;
     const duration = Number(minutes);
     const distance = Number(distanceKm.replace(",", "."));
     const effort = rpe === "" ? null : Number(rpe);
@@ -38,6 +99,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
       toast.error(english ? "Add duration and distance." : "Įrašyk trukmę ir atstumą.");
       return;
     }
+    busy.current = true;
     setSaving(true);
     try {
       const result = await logActivity({
@@ -52,16 +114,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
           perceivedEffort: effort,
         },
       });
-      if (result.raceMatch?.status === "needs_confirmation" && result.raceMatch.intent) {
-        setPendingMatch({
-          sessionId: result.session.id,
-          raceGoalId: result.raceMatch.raceGoalId,
-          planSessionKey: result.raceMatch.plannedSessionKey,
-          intent: result.raceMatch.intent,
-        });
-      } else {
-        setPendingMatch(null);
-      }
+      applySync(result.session.id, result);
       setMinutes("");
       setDistanceKm("");
       setRpe("");
@@ -71,17 +124,19 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
           detail: { raceIntelligence: result.raceIntelligence ?? null },
         }),
       );
-      await onLogged?.();
+      await refreshToday();
       toast.success(english ? "Run credited to today." : "Bėgimas užskaitytas šiandienai.");
     } catch {
       toast.error(english ? "Run could not be saved." : "Nepavyko išsaugoti bėgimo.");
     } finally {
+      busy.current = false;
       setSaving(false);
     }
   };
 
   const acceptMatch = async () => {
-    if (!pendingMatch) return;
+    if (!pendingMatch || busy.current) return;
+    busy.current = true;
     setSaving(true);
     try {
       await confirmMatch({
@@ -92,6 +147,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
         },
       });
       setPendingMatch(null);
+      setDeferredSync(null);
       window.dispatchEvent(new CustomEvent("gymslife:endurance-updated"));
       toast.success(
         english ? "Run linked to race preparation." : "Bėgimas susietas su pasiruošimo planu.",
@@ -101,6 +157,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
         english ? "Could not confirm the race session." : "Nepavyko patvirtinti plano sesijos.",
       );
     } finally {
+      busy.current = false;
       setSaving(false);
     }
   };
@@ -156,6 +213,33 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
         {saving ? <Loader2 className="size-4 animate-spin" /> : null}
         {english ? "Credit this run" : "Užskaityti bėgimą"}
       </Button>
+      {deferredSync ? (
+        <div className="rounded-[1.25rem] border border-border bg-surface p-3" aria-busy={saving}>
+          <p role="status" className="text-sm text-foreground">
+            {deferredSync.phase === "insights"
+              ? english
+                ? "Run saved and linked. Plan analysis could not refresh."
+                : "Bėgimas išsaugotas ir susietas. Nepavyko atnaujinti plano analizės."
+              : english
+                ? "Run saved. Linking it to your race plan could not be completed."
+                : "Bėgimas išsaugotas. Susiejimo su pasiruošimo planu nepavyko užbaigti."}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {english
+              ? "Retry only this saved run's plan sync. It will not record another workout."
+              : "Kartojamas tik šio išsaugoto bėgimo susiejimas. Nauja treniruotė nebus kuriama."}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 min-h-11"
+            disabled={saving}
+            onClick={() => void retrySavedRun()}
+          >
+            {english ? "Retry plan sync" : "Pakartoti plano susiejimą"}
+          </Button>
+        </div>
+      ) : null}
       {pendingMatch ? (
         <div className="rounded-[1.25rem] border border-primary/30 bg-primary/5 p-3">
           <p className="text-sm font-semibold">
