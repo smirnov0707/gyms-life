@@ -33,7 +33,7 @@ jobs:
           rep('for (const width of [320, 390, 1280])','for (const width of [320])')
           rep('for (const theme of ["dark", "light"])','for (const theme of ["dark"])')
           rep('for (const appearance of ["realistic", "analysis"])','for (const appearance of ["analysis"])')
-          rep('legacyPointHit: inspect(.6,.4),','''legacyPointHit: inspect(.6,.4),
+          rep('legacyPointHit: inspect(.6, .4),','''legacyPointHit: inspect(.6, .4),
             diagnosis: (() => {
               independentRay.setFromCamera(new Vector2(point.u * 2 - 1, 1 - point.v * 2), camera);
               return {
