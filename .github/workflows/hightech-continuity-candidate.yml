@@ -1,0 +1,658 @@
+name: High-tech continuity candidate
+on:
+  push:
+    branches: [diagnostics/hightech-continuity-2026-10-08]
+    paths: [.github/workflows/hightech-continuity-candidate.yml]
+permissions:
+  contents: write
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: f16d58020f9a2be73abca98ddea62660d5268208
+      FEATURE_BRANCH: feat/endurance-high-tech-continuity-2026-10-08
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Prepare isolated candidate against exact reviewed source
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import pathlib, subprocess, json
+          root=pathlib.Path('.')
+          def git(*args):
+              return subprocess.check_output(['git','-c',f'safe.directory={root.resolve()}',*args],text=True).strip()
+          assert git('rev-parse','HEAD')=='f16d58020f9a2be73abca98ddea62660d5268208'
+          assert git('rev-parse','HEAD:src/components/QuickRunLog.tsx')=='0fac7b1572f47a3102d645f9eaf376cc25a56388'
+          files={}
+          files['src/lib/endurance-follow-up-store.ts']=r'''import { z } from "zod";
+
+          export const ENDURANCE_FOLLOW_UP_PREFIX = "gyms_life_run_follow_up_v1:";
+          type StoragePort = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+          const uuid = z.string().uuid();
+          const queueSchema = z.object({
+            version: z.literal(1),
+            ownerId: uuid,
+            sessionIds: z.array(uuid).max(64),
+          }).strict();
+
+          /** Local navigation hints only. The authenticated server rechecks all evidence. */
+          export function readEnduranceFollowUps(storage: StoragePort, ownerId: string): string[] {
+            const owner = uuid.parse(ownerId);
+            const raw = storage.getItem(ENDURANCE_FOLLOW_UP_PREFIX + owner);
+            if (raw === null) return [];
+            const queue = queueSchema.parse(JSON.parse(raw));
+            if (queue.ownerId !== owner || new Set(queue.sessionIds).size !== queue.sessionIds.length)
+              throw new Error("ENDURANCE_FOLLOW_UP_INVALID");
+            return queue.sessionIds;
+          }
+
+          /** Never overwrite an unreadable queue or silently evict another pending check. */
+          export function updateEnduranceFollowUps(
+            storage: StoragePort, ownerId: string, sessionId: string, pending: boolean,
+          ): string[] {
+            uuid.parse(sessionId);
+            const current = readEnduranceFollowUps(storage, ownerId);
+            const next = pending
+              ? current.includes(sessionId) ? current : [...current, sessionId]
+              : current.filter((id) => id !== sessionId);
+            if (next.length > 64) throw new Error("ENDURANCE_FOLLOW_UP_FULL");
+            if (JSON.stringify(current) === JSON.stringify(next)) return next;
+            const key = ENDURANCE_FOLLOW_UP_PREFIX + ownerId;
+            if (next.length === 0) {
+              storage.removeItem(key);
+              if (storage.getItem(key) !== null) throw new Error("ENDURANCE_FOLLOW_UP_NOT_CLEARED");
+            } else {
+              const raw = JSON.stringify({ version: 1, ownerId, sessionIds: next });
+              storage.setItem(key, raw);
+              if (storage.getItem(key) !== raw) throw new Error("ENDURANCE_FOLLOW_UP_NOT_RETAINED");
+            }
+            return next;
+          }
+          '''
+          files['src/lib/endurance-follow-up-store.test.ts']=r'''import { describe, expect, it } from "vitest";
+          import { ENDURANCE_FOLLOW_UP_PREFIX as PREFIX, readEnduranceFollowUps, updateEnduranceFollowUps } from "./endurance-follow-up-store";
+          const owner = "10000000-0000-4000-8000-000000000001";
+          const foreign = "10000000-0000-4000-8000-000000000002";
+          const first = "20000000-0000-4000-8000-000000000001";
+          const second = "20000000-0000-4000-8000-000000000002";
+          function memory() {
+            const values = new Map<string, string>();
+            return {
+              values,
+              getItem: (key: string) => values.get(key) ?? null,
+              setItem: (key: string, value: string) => { values.set(key, value); },
+              removeItem: (key: string) => { values.delete(key); },
+            };
+          }
+          describe("owned saved-run follow-up hints", () => {
+            it("has no pending checks without stored evidence", () => {
+              expect(readEnduranceFollowUps(memory(), owner)).toEqual([]);
+            });
+            it("survives a new reader without retaining workout measurements or plan guesses", () => {
+              const s = memory();
+              updateEnduranceFollowUps(s, owner, first, true);
+              expect(readEnduranceFollowUps(s, owner)).toEqual([first]);
+              expect(JSON.parse(s.getItem(PREFIX + owner)!)).toEqual({version: 1, ownerId: owner, sessionIds: [first]});
+            });
+            it("retains independent pending runs and makes repeat updates idempotent", () => {
+              const s = memory();
+              updateEnduranceFollowUps(s, owner, first, true);
+              updateEnduranceFollowUps(s, owner, second, true);
+              expect(updateEnduranceFollowUps(s, owner, first, true)).toEqual([first, second]);
+            });
+            it("finishing one check cannot clear another", () => {
+              const s = memory();
+              updateEnduranceFollowUps(s, owner, first, true);
+              updateEnduranceFollowUps(s, owner, second, true);
+              expect(updateEnduranceFollowUps(s, owner, first, false)).toEqual([second]);
+              expect(readEnduranceFollowUps(s, owner)).toEqual([second]);
+            });
+            it("cleans the receipt only after the last check is complete or dismissed", () => {
+              const s = memory();
+              updateEnduranceFollowUps(s, owner, first, true);
+              expect(updateEnduranceFollowUps(s, owner, first, false)).toEqual([]);
+              expect(s.getItem(PREFIX + owner)).toBeNull();
+            });
+            it("isolates accounts on reads and writes", () => {
+              const s = memory();
+              updateEnduranceFollowUps(s, foreign, first, true);
+              expect(readEnduranceFollowUps(s, owner)).toEqual([]);
+              updateEnduranceFollowUps(s, owner, second, true);
+              updateEnduranceFollowUps(s, owner, second, false);
+              expect(readEnduranceFollowUps(s, foreign)).toEqual([first]);
+            });
+            it.each([
+              "not-json",
+              JSON.stringify({version: 2, ownerId: owner, sessionIds: [first]}),
+              JSON.stringify({version: 1, ownerId: foreign, sessionIds: [first]}),
+              JSON.stringify({version: 1, ownerId: owner, sessionIds: ["bad"]}),
+              JSON.stringify({version: 1, ownerId: owner, sessionIds: [first, first]}),
+              JSON.stringify({version: 1, ownerId: owner, sessionIds: [first], distance: 5000}),
+            ])("does not overwrite invalid or foreign hint data: %s", (raw) => {
+              const s = memory(); s.setItem(PREFIX + owner, raw);
+              expect(() => readEnduranceFollowUps(s, owner)).toThrow();
+              expect(() => updateEnduranceFollowUps(s, owner, second, true)).toThrow();
+              expect(s.getItem(PREFIX + owner)).toBe(raw);
+            });
+            it("does not turn an unreadable queue into an empty queue", () => {
+              const s = memory();
+              s.getItem = () => { throw new Error("refused"); };
+              expect(() => updateEnduranceFollowUps(s, owner, first, true)).toThrow("refused");
+              expect(s.values.size).toBe(0);
+            });
+            it("detects a silently refused write", () => {
+              const s = memory(); s.setItem = () => {};
+              expect(() => updateEnduranceFollowUps(s, owner, first, true)).toThrow("NOT_RETAINED");
+            });
+            it("detects a silently refused removal", () => {
+              const s = memory(); updateEnduranceFollowUps(s, owner, first, true);
+              s.removeItem = () => {};
+              expect(() => updateEnduranceFollowUps(s, owner, first, false)).toThrow("NOT_CLEARED");
+              expect(readEnduranceFollowUps(s, owner)).toEqual([first]);
+            });
+            it("never silently evicts an older check at capacity", () => {
+              const s = memory();
+              const ids = Array.from({length: 64}, (_, i) => `30000000-0000-4000-8000-${String(i).padStart(12, "0")}`);
+              const raw = JSON.stringify({version: 1, ownerId: owner, sessionIds: ids});
+              s.setItem(PREFIX + owner, raw);
+              expect(() => updateEnduranceFollowUps(s, owner, first, true)).toThrow("FULL");
+              expect(s.getItem(PREFIX + owner)).toBe(raw);
+            });
+            it("rejects invalid input before accessing storage", () => {
+              const s = memory();
+              expect(() => updateEnduranceFollowUps(s, owner, "bad", true)).toThrow();
+              expect(() => readEnduranceFollowUps(s, "bad")).toThrow();
+              expect(s.values.size).toBe(0);
+            });
+          });
+          '''
+          files['src/lib/use-endurance-follow-up.ts']=r'''import { useCallback, useEffect, useRef, useState } from "react";
+          import { offlineIdentity } from "./offline-identity";
+          import { readEnduranceFollowUps, updateEnduranceFollowUps } from "./endurance-follow-up-store";
+          const changed = "gymslife:endurance-follow-up-changed";
+
+          export function useEnduranceFollowUp(ownerId: string | null) {
+            const [sessionIds, setSessionIds] = useState<string[]>([]);
+            const [storageUnavailable, setStorageUnavailable] = useState(false);
+            const memory = useRef<string[]>([]);
+            const load = useCallback(() => {
+              if (!ownerId || offlineIdentity.current() !== ownerId) return;
+              try {
+                const ids = readEnduranceFollowUps(window.sessionStorage, ownerId);
+                memory.current = ids;
+                setSessionIds(ids);
+                setStorageUnavailable(false);
+              } catch {
+                setStorageUnavailable(true);
+                console.warn("[Endurance] FOLLOW_UP_READ_UNAVAILABLE");
+              }
+            }, [ownerId]);
+            useEffect(() => {
+              load();
+              window.addEventListener(changed, load);
+              return () => window.removeEventListener(changed, load);
+            }, [load]);
+            const remember = (sessionId: string, pending: boolean) => {
+              if (!ownerId || offlineIdentity.current() !== ownerId) return;
+              try {
+                const ids = updateEnduranceFollowUps(window.sessionStorage, ownerId, sessionId, pending);
+                memory.current = ids;
+                setSessionIds(ids);
+                setStorageUnavailable(false);
+                window.dispatchEvent(new Event(changed));
+              } catch {
+                // Saving the workout already succeeded. Retention failure is secondary.
+                memory.current = pending
+                  ? [...new Set([...memory.current, sessionId])]
+                  : memory.current.filter((id) => id !== sessionId);
+                setSessionIds(memory.current);
+                setStorageUnavailable(true);
+                console.warn("[Endurance] FOLLOW_UP_RETENTION_UNAVAILABLE");
+              }
+            };
+            return { sessionIds, storageUnavailable, remember, reload: load };
+          }
+          '''
+          files['src/components/system/SystemNotice.tsx']=r'''import type { ReactNode } from "react";
+          import { CircleDot } from "lucide-react";
+          import "@/styles/system-notice.css";
+
+          /** One reusable, theme-aware operational surface; no invented live status. */
+          export function SystemNotice({ eyebrow, title, children, actions }: {
+            eyebrow: string;
+            title: string;
+            children?: ReactNode;
+            actions?: ReactNode;
+          }) {
+            return (
+              <section className="gl-system-notice border border-border bg-surface text-foreground" data-system-notice>
+                <div className="gl-system-notice__eyebrow text-muted-foreground">
+                  <CircleDot className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span>{eyebrow}</span>
+                </div>
+                <h3 className="gl-system-notice__title">{title}</h3>
+                {children ? <div className="gl-system-notice__body text-muted-foreground">{children}</div> : null}
+                {actions ? <div className="gl-system-notice__actions">{actions}</div> : null}
+              </section>
+            );
+          }
+          '''
+          files['src/styles/system-notice.css']=r'''/* Shared operational UI: hierarchy and real state, not decorative telemetry. */
+          .gl-system-notice {
+            min-width: 0;
+            border-radius: 1rem;
+            padding: 1rem;
+          }
+          .gl-system-notice__eyebrow {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-size: .6875rem;
+            font-weight: 600;
+            letter-spacing: .12em;
+            line-height: 1.5;
+            text-transform: uppercase;
+          }
+          .gl-system-notice__title {
+            margin-top: .5rem;
+            font-size: .9375rem;
+            font-weight: 600;
+            line-height: 1.45;
+            letter-spacing: -.015em;
+          }
+          .gl-system-notice__body { margin-top: .5rem; font-size: .8125rem; line-height: 1.6; }
+          .gl-system-notice__actions { margin-top: .875rem; }
+          .gl-run-console { min-width: 0; }
+          .gl-run-console header p { font-size: .6875rem; font-weight: 600; letter-spacing: .14em; }
+          .gl-run-console header h3 { margin-top: .375rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -.02em; }
+          .gl-run-console label { display: grid; min-width: 0; gap: .375rem; }
+          .gl-run-console label > span { font-size: .75rem; line-height: 1.5; }
+          .gl-run-console input { min-height: 2.75rem; font-variant-numeric: tabular-nums; }
+          .gl-run-console button { min-height: 2.75rem; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+          .gl-run-console [aria-pressed="true"] { border-width: 2px; font-weight: 600; }
+          .gl-run-follow-up-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+          .gl-run-follow-up-ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .75rem; font-variant-numeric: tabular-nums; }
+          @media (prefers-reduced-motion: no-preference) {
+            .gl-system-notice { animation: gl-system-notice-enter 180ms ease-out both; }
+            .gl-run-console button { transition: background-color 160ms ease-out, border-color 160ms ease-out; }
+          }
+          @keyframes gl-system-notice-enter {
+            from { opacity: 0; transform: translateY(2px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          '''
+          files['docs/high-tech-experience.md']=r'''# GYMS.LIFE — high-tech experience standard
+
+          User direction: a world-class, high-tech system, with the clarity and precision they associate with SpaceX and Tesla. This is a quality reference, not an affiliation or a request to copy branding.
+
+          ## One coherent system
+          Preserve TODAY / MY TWIN / LAB / COACH. Do not add another top-level product or dashboard. TODAY communicates one decision and primary action. MY TWIN connects evidence to the body. LAB reveals complexity on demand. COACH is the conversational control surface.
+
+          ## Visual and interaction rules
+          - Use the existing dark/light theme and typography tokens, restrained graphite surfaces, readable text and tabular numbers. The generic 3D Twin stays naturally skin-toned; personal textures are not repainted.
+          - One filled primary action per task. Selection is not another primary action: environment toggles use outlined, pressed states.
+          - A system state must identify what happened and what the user can do. Separate saved, awaiting confirmation, unavailable, linked and not applicable. Never label a local hint as freshly verified server evidence.
+          - No fake live dots, simulated processing counters, invented confidence, decorative health readings, neon overload or perpetual animations. Subtle transitions follow actual state changes and respect reduced motion.
+          - Keep touch targets at least 44 CSS pixels, persistent field labels, keyboard focus, narrow-screen wrapping and equivalent light-theme readability.
+          - Components must share primitives instead of developing different visual dialects. SystemNotice is an initial shared operational surface, currently applied to the run console. This is not yet an entire-app redesign.
+
+          ## This increment: run continuity
+          After an acknowledged run needs a plan check or user confirmation, retain only an owner-scoped list of saved session references. No distance, effort, health values, race classification or consent is stored in that list. Returning to the screen or reloading the same tab surfaces the references but performs no automatic network action. Explicit recheck uses the existing authenticated service, which rereads the saved workout. An earlier match suggestion is never restored as fresh evidence or automatically accepted.
+
+          Multiple unresolved runs are retained independently. A verified terminal result or explicit rejection clears only that run's hint. Storage failures are visibly separate from workout persistence; corrupt hints are not overwritten and a full queue never silently evicts another run. The queue is limited to 64 references. The guarantee covers surviving same-tab session storage, not closing the tab, another device, deletion/eviction or a global retry ledger. The server remains the source of truth. No schema, privileges, AI providers or physiological calculations change.
+
+          ## Acceptance boundary
+          Automated tests must use the real run component, both pinned browser engines, dark/light narrow layouts, remount/reload, multiple runs, explicit consent, failed storage and foreign/corrupt receipts. Full CI, Core and Today regressions remain release gates. Synthetic browser/service tests are not physical-device or live-database acceptance.
+          '''
+          for path,content in files.items():
+              p=root/path
+              assert not p.exists(), path
+              p.parent.mkdir(parents=True,exist_ok=True)
+              p.write_text(content,encoding='utf8')
+          p=root/'src/components/QuickRunLog.tsx'
+          source=p.read_text()
+          def rep(old,new,count=1):
+              global source
+              assert source.count(old)==count,(old[:100],source.count(old),count)
+              source=source.replace(old,new)
+          rep('import { useRef, useState } from "react";', 'import { useRef, useState } from "react";\nimport { useEnduranceFollowUp } from "@/lib/use-endurance-follow-up";\nimport { SystemNotice } from "@/components/system/SystemNotice";')
+          rep('  const queryClient = useQueryClient();','  const queryClient = useQueryClient();\n  const followUp = useEnduranceFollowUp(ownerId);')
+          rep('    enrichment: EnduranceRaceEnrichmentState;\n  } | null>(null);','    enrichment: EnduranceRaceEnrichmentState;\n    verificationRequired?: boolean;\n  } | null>(null);')
+          rep('  const applyEnrichment = (sessionId: string, result: EnduranceRaceEnrichmentResult) => {\n    setSavedRun({ sessionId, enrichment: result.raceEnrichment });', '''  const applyEnrichment = (sessionId: string, result: EnduranceRaceEnrichmentResult, restored = false) => {
+              followUp.remember(sessionId, result.raceEnrichment.retryable || result.raceEnrichment.status === "needs_confirmation");
+              setSavedRun({ sessionId, enrichment: result.raceEnrichment, verificationRequired: restored && result.raceEnrichment.status === "unavailable" && result.raceEnrichment.stage === "load" });''')
+          rep('  const retryPlanCheck = async () => {','  const retryPlanCheck = async (restoredSessionId?: string) => {\n    const sessionId = restoredSessionId ?? savedRun?.sessionId;')
+          rep('      !savedRun?.enrichment.retryable ||','      !sessionId ||\n      (restoredSessionId ? !followUp.sessionIds.includes(restoredSessionId) : !savedRun?.enrichment.retryable) ||')
+          rep('workoutSessionId: savedRun.sessionId','workoutSessionId: sessionId')
+          rep('      applyEnrichment(savedRun.sessionId, result);','      applyEnrichment(sessionId, result, Boolean(restoredSessionId));')
+          rep('''      toast.error(
+                  english
+                    ? "Run remains saved. The plan check is still unavailable."
+                    : "Bėgimas lieka išsaugotas. Plano susiejimo patikra vis dar nepasiekiama.",
+                );''','''      toast.error(
+                  restoredSessionId
+                    ? english ? "The earlier run could not be verified. No new save was sent." : "Ankstesnio bėgimo patikrinti nepavyko. Nauja įrašymo užklausa nesiųsta."
+                    : english ? "Run remains saved. The plan check is still unavailable." : "Bėgimas lieka išsaugotas. Plano susiejimo patikra vis dar nepasiekiama.",
+                );''')
+          rep('''      setSavedRun({
+                  sessionId: pendingMatch.sessionId,
+                  enrichment: { status: "matched", linked: true, retryable: false },
+                });''','''      followUp.remember(pendingMatch.sessionId, false);
+                setSavedRun({
+                  sessionId: pendingMatch.sessionId,
+                  enrichment: { status: "matched", linked: true, retryable: false },
+                });''')
+          rep('''      setSavedRun({
+                  sessionId: pendingMatch.sessionId,
+                  enrichment: { status: "unavailable", linked: false, retryable: true, stage: "link" },
+                });''','''      followUp.remember(pendingMatch.sessionId, true);
+                setSavedRun({
+                  sessionId: pendingMatch.sessionId,
+                  enrichment: { status: "unavailable", linked: false, retryable: true, stage: "link" },
+                });''')
+          rep('              onClick={() => setPendingMatch(null)}','              onClick={() => { followUp.remember(pendingMatch.sessionId, false); setPendingMatch(null); }}')
+          rep('''  return (
+              <div className="grid gap-3">''','''  const restoredIds = followUp.sessionIds.filter((id) => id !== savedRun?.sessionId);
+            return (
+              <div className="gl-run-console grid gap-4" data-run-console>
+                <header>
+                  <p className="text-muted-foreground">ENDURANCE</p>
+                  <h3>{english ? "Record your run" : "Įrašyti bėgimą"}</h3>
+                </header>
+                {followUp.storageUnavailable ? (
+                  <div data-follow-up-storage-warning role="alert">
+                    <SystemNotice eyebrow={english ? "CONTINUITY" : "TĘSTINUMAS"} title={english ? "Follow-up recovery is unavailable" : "Laukiančių patikrų atkūrimas nepasiekiamas"}
+                      actions={<Button type="button" variant="outline" onClick={followUp.reload} disabled={saving} className="w-full">{english ? "Retry follow-up recovery" : "Pakartoti patikrų atkūrimą"}</Button>}>
+                      {english ? "This does not undo a saved run. The notice may not survive leaving this screen; do not record the same run again." : "Tai neatšaukia išsaugoto bėgimo. Pranešimas gali neišlikti išėjus iš ekrano; to paties bėgimo iš naujo neįrašyk."}
+                    </SystemNotice>
+                  </div>
+                ) : null}
+                {restoredIds.length > 0 ? (
+                  <div data-run-follow-up>
+                    <SystemNotice eyebrow={english ? "CONTINUE" : "TĘSTI"} title={english ? "An earlier plan check needs attention" : "Liko ankstesnių plano patikrų"}>
+                      <p>{english ? "Recheck saved data to continue. No new run is created and no earlier suggestion is accepted automatically." : "Tęsk patikrinęs išsaugotus duomenis. Naujas bėgimas nekuriamas, ankstesnis pasiūlymas nepatvirtinamas automatiškai."}</p>
+                      <ul className="mt-3 grid gap-2">
+                        {restoredIds.map((id) => <li className="gl-run-follow-up-row" key={id}>
+                          <span className="gl-run-follow-up-ref">#{id.slice(0, 8)}</span>
+                          <Button type="button" variant="outline" data-run-follow-up-check disabled={saving || !submission.ready} onClick={() => void retryPlanCheck(id)}>{english ? "Check plan" : "Patikrinti planą"}</Button>
+                        </li>)}
+                      </ul>
+                    </SystemNotice>
+                  </div>
+                ) : null}''')
+          for environment in ['outdoor','treadmill']:
+              old='''          variant={
+                      (submission.pending?.activity.environment ?? environment) === "'''+environment+'''"
+                        ? "default"
+                        : "outline"
+                    }'''
+              rep(old,'''          variant="outline"
+                    aria-pressed={(submission.pending?.activity.environment ?? environment) === "'''+environment+'''"}''')
+          rep('''      <div className="grid grid-cols-2 gap-2">
+                  <Input''','''      <div className="grid grid-cols-2 gap-3">
+                  <label><span className="text-muted-foreground">{english ? "Duration · min" : "Trukmė · min"}</span>
+                  <Input''')
+          rep('''          aria-label={english ? "Duration in minutes" : "Trukmė minutėmis"}
+                  />
+                  <Input''','''          aria-label={english ? "Duration in minutes" : "Trukmė minutėmis"}
+                  /></label>
+                  <label><span className="text-muted-foreground">{english ? "Distance · km" : "Atstumas · km"}</span>
+                  <Input''')
+          rep('''          aria-label={english ? "Distance in kilometres" : "Atstumas kilometrais"}
+                  />
+                </div>
+                <Input''','''          aria-label={english ? "Distance in kilometres" : "Atstumas kilometrais"}
+                  /></label>
+                </div>
+                <label><span className="text-muted-foreground">{english ? "Perceived effort · optional" : "Juntamos pastangos · nebūtina"}</span>
+                <Input''')
+          rep('''        aria-label={english ? "Perceived effort from 1 to 10" : "Juntamos pastangos nuo 1 iki 10"}
+                />''','''        aria-label={english ? "Perceived effort from 1 to 10" : "Juntamos pastangos nuo 1 iki 10"}
+                /></label>''')
+          rep('''        disabled={saving || !submission.ready}
+                  onClick={() => void submit()}''','''        disabled={saving || !submission.ready}
+                  variant={pendingMatch ? "outline" : "default"}
+                  onClick={() => void submit()}''')
+          rep('''            {savedRun.enrichment.linked
+                        ? english''','''            {savedRun.verificationRequired
+                        ? english ? "The earlier run could not be verified. No new save was sent." : "Ankstesnio bėgimo patikrinti nepavyko. Nauja įrašymo užklausa nesiųsta."
+                        : savedRun.enrichment.linked
+                        ? english''')
+          p.write_text(source,encoding='utf8')
+          fixtures=root/'tests/core-browser/endurance-log-fixtures.ts'
+          text=fixtures.read_text()
+          needle='  if (query.get("scenario") === "retry-fails") throw new Error("Synthetic secondary failure");'
+          assert text.count(needle)==1
+          text=text.replace(needle,needle+'\n  if (query.get("retry") === "needs-confirmation") return outcome("needs_confirmation");')
+          fixtures.write_text(text)
+          (root/'test-results').mkdir(exist_ok=True)
+          (root/'test-results/candidate-files.json').write_text(json.dumps(sorted([*files,'src/components/QuickRunLog.tsx','tests/core-browser/endurance-log-fixtures.ts','scripts/test-core-endurance-log.mjs','scripts/test-core-run-continuity.mjs'])))
+          PY
+      - name: Add real-component continuity and visual acceptance cases
+        shell: bash
+        run: |
+          cat > scripts/test-core-run-continuity.mjs <<'JS'
+          import { expect } from '@playwright/test';
+          import path from 'node:path';
+          const prefix='gyms_life_run_follow_up_v1:';
+          export async function verifyRunContinuity({open,record,artifacts}) {
+            const prepare=async(query,lang='en')=>{
+              const opened=await open(`screen=runlog&${query}&lang=${lang}`,{width:320,height:844});
+              await opened.page.emulateMedia({reducedMotion:'reduce'});
+              return opened;
+            };
+            const save=async(page,lt=false)=>{
+              await page.getByRole('textbox',{name:lt?'Trukmė minutėmis':'Duration in minutes'}).fill('30');
+              await page.getByRole('textbox',{name:lt?'Atstumas kilometrais':'Distance in kilometres'}).fill('5');
+              await page.getByRole('button',{name:lt?'Užskaityti bėgimą':'Credit this run',exact:true}).click();
+              await expect(page.locator('[data-sonner-toast][data-type="success"]')).toBeVisible();
+            };
+            const state=page=>page.evaluate(()=>window.__enduranceLog);
+            for(const theme of ['dark','light']) {
+              const {page,context}=await prepare(`scenario=unavailable&theme=${theme}`,'lt');
+              await save(page,true);
+              const id=(await state(page)).lastSubmissionId;
+              const originalUrl=page.url();
+              await page.goto(originalUrl.replace('screen=runlog','screen=training'));
+              await page.goto(originalUrl);
+              const panel=page.locator('[data-run-follow-up]');
+              await expect(panel).toContainText('Liko ankstesnių plano patikrų');
+              expect(await state(page)).toMatchObject({saves:1,records:1,retries:0});
+              await expect(page.getByRole('button',{name:'Taip, užskaityti',exact:true})).toHaveCount(0);
+              expect(await panel.locator('[data-system-notice]').evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+              const buttons=page.locator('[data-run-console] button');
+              for(const button of await buttons.all()) {
+                const bounds=await button.boundingBox();
+                if(bounds) { expect(bounds.height).toBeGreaterThanOrEqual(44); expect(bounds.x).toBeGreaterThanOrEqual(0); expect(bounds.x+bounds.width).toBeLessThanOrEqual(321); }
+              }
+              expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+              await expect(page.getByRole('button',{name:'Lauke',exact:true})).toHaveAttribute('aria-pressed','true');
+              await expect(page.getByText('Trukmė · min',{exact:true})).toBeVisible();
+              await page.screenshot({path:path.join(artifacts,`run-continuity-${theme}-320.png`),fullPage:true});
+              await panel.locator('[data-run-follow-up-check]').click();
+              await expect(page.getByRole('status')).toContainText('Išsaugotas bėgimas susietas su planu.');
+              expect(await state(page)).toMatchObject({saves:1,records:1,retries:1,trainingEvents:0,lastRetry:{workoutSessionId:id}});
+              expect(Object.keys((await state(page)).lastRetry)).toEqual(['workoutSessionId']);
+              await page.reload();
+              await expect(page.getByRole('button',{name:'Užskaityti bėgimą',exact:true})).toBeEnabled();
+              await expect(page.locator('[data-run-follow-up]')).toHaveCount(0);
+              await context.close();
+              record(`Run continuity ${theme}: navigation restores references only, explicit check reuses saved ID, readable 320px and reduced motion`);
+            }
+            {
+              const {page,context}=await prepare('scenario=unavailable');
+              await save(page); const first=(await state(page)).lastSubmissionId;
+              await expect(page.getByRole('button',{name:'Credit this run',exact:true})).toBeEnabled();
+              await save(page); const second=(await state(page)).lastSubmissionId;
+              expect(second).not.toBe(first);
+              await page.reload();
+              const checks=page.locator('[data-run-follow-up-check]');
+              await expect(checks).toHaveCount(2);
+              await checks.first().click();
+              await expect(checks).toHaveCount(1);
+              expect((await state(page)).lastRetry).toEqual({workoutSessionId:first});
+              await checks.first().click();
+              await expect(checks).toHaveCount(0);
+              expect(await state(page)).toMatchObject({records:2,saves:2,retries:2,lastRetry:{workoutSessionId:second}});
+              await context.close(); record('Run continuity: two unresolved runs survive reload; completing one preserves the other');
+            }
+            for(const accept of [true,false]) {
+              const {page,context}=await prepare('scenario=needs-confirmation&retry=needs-confirmation');
+              await save(page);
+              await expect(page.getByRole('button',{name:'Yes, count it',exact:true})).toBeVisible();
+              await page.reload();
+              await expect(page.locator('[data-run-follow-up-check]')).toBeVisible();
+              await expect(page.getByRole('button',{name:'Yes, count it',exact:true})).toHaveCount(0);
+              expect((await state(page)).confirmations).toBe(0);
+              await page.locator('[data-run-follow-up-check]').click();
+              await page.getByRole('button',{name:accept?'Yes, count it':'No',exact:true}).click();
+              await expect.poll(()=>page.evaluate(p=>Object.keys(sessionStorage).filter(k=>k.startsWith(p)),prefix)).toEqual([]);
+              expect(await state(page)).toMatchObject({saves:1,records:1,confirmations:accept?1:0});
+              await page.reload();
+              await expect(page.getByRole('button',{name:'Credit this run',exact:true})).toBeEnabled();
+              await expect(page.locator('[data-run-follow-up-check]')).toHaveCount(0);
+              await context.close(); record(`Run continuity: restored suggestion requires new evidence and explicit ${accept?'acceptance':'rejection'}`);
+            }
+            {
+              const {page,context}=await prepare('scenario=unavailable');
+              await save(page);
+              const corrupted=await page.evaluate(p=>{
+                const key=Object.keys(sessionStorage).find(k=>k.startsWith(p));
+                const value=JSON.parse(sessionStorage.getItem(key));
+                value.ownerId='99999999-9999-4999-8999-999999999999';
+                sessionStorage.setItem(key,JSON.stringify(value));
+                return {key,raw:sessionStorage.getItem(key)};
+              },prefix);
+              await page.reload();
+              await expect(page.locator('[data-follow-up-storage-warning]')).toBeVisible();
+              await expect(page.locator('[data-run-follow-up-check]')).toHaveCount(0);
+              expect(await page.evaluate(k=>sessionStorage.getItem(k),corrupted.key)).toBe(corrupted.raw);
+              expect((await state(page)).retries).toBe(0);
+              await context.close(); record('Run continuity: foreign hint payload is not rendered, overwritten or automatically retried');
+            }
+            {
+              const {page,context}=await prepare('scenario=unavailable');
+              await page.evaluate(p=>{
+                const original=Storage.prototype.setItem;
+                Storage.prototype.setItem=function(key,value){ if(key.startsWith(p)) throw Error('Synthetic follow-up storage refusal'); return original.call(this,key,value); };
+              },prefix);
+              await save(page);
+              await expect(page.locator('[data-follow-up-storage-warning]')).toBeVisible();
+              await expect(page.getByRole('button',{name:'Retry plan check',exact:true})).toBeEnabled();
+              await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0);
+              expect(await state(page)).toMatchObject({saves:1,records:1,trainingEvents:1});
+              await context.close(); record('Run continuity: secondary retention refusal never misreports the acknowledged save');
+            }
+          }
+          JS
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('scripts/test-core-endurance-log.mjs');s=p.read_text()
+          needle='export async function verifyEnduranceRunLog({ open, record, artifacts }) {'
+          assert s.count(needle)==1
+          s='import { verifyRunContinuity } from "./test-core-run-continuity.mjs";\n'+s.replace(needle,needle+'\n  await verifyRunContinuity({ open, record, artifacts });')
+          p.write_text(s)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format and verify complete application quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          execFileSync('./node_modules/.bin/prettier',['--write',...JSON.parse(readFileSync('test-results/candidate-files.json','utf8'))],{stdio:'inherit'});
+          JS
+          npm run typecheck
+          npm run test
+          npm run test:toolchain
+          npm run lint
+          npm run build:staging
+          npm run build
+      - name: Run unchanged original run cases and new continuity cases in both engines
+        shell: bash
+        run: |
+          cat > scripts/.verify-hightech-candidate.mjs <<'JS'
+          import {spawn} from 'node:child_process';
+          import {mkdir,writeFile} from 'node:fs/promises';
+          import {chromium,webkit,expect} from '@playwright/test';
+          import {verifyEnduranceRunLog} from './test-core-endurance-log.mjs';
+          const server=spawn(process.execPath,['scripts/test-core-browser.mjs','--serve-only'],{stdio:['ignore','pipe','pipe']});
+          let browser;
+          const results=[];const errors=[];
+          try {
+            await new Promise((resolve,reject)=>{
+              const timer=setTimeout(()=>reject(Error('Fixture start timed out')),60000);
+              server.stdout.on('data',b=>{process.stdout.write(b);if(String(b).includes('Core synthetic fixture:')){clearTimeout(timer);resolve();}});
+              server.stderr.on('data',b=>process.stderr.write(b));
+              server.once('exit',code=>{clearTimeout(timer);reject(Error(`Fixture exited ${code}`));});
+            });
+            for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
+              const artifacts=`test-results/hightech-${engine}`;await mkdir(artifacts,{recursive:true});
+              browser=await type.launch();
+              const open=async(query,viewport)=>{
+                const context=await browser.newContext({viewport,locale:'en-GB',timezoneId:'Europe/Vilnius'});
+                const page=await context.newPage();page.on('pageerror',e=>errors.push({engine,message:String(e)}));
+                await page.goto(`http://127.0.0.1:4184/index.html?${query}`);
+                await expect(page.getByTestId('synthetic-watermark')).toBeVisible({timeout:30000});
+                return {page,context};
+              };
+              const before=results.length;
+              await verifyEnduranceRunLog({open,artifacts,record:name=>{results.push({engine,name,status:'passed'});console.log('PASS',engine,name);}});
+              if(results.length-before!==21)throw Error(`Expected 14 original + 7 new groups, got ${results.length-before}`);
+              await browser.close();browser=null;
+            }
+            if(errors.length)throw Error(JSON.stringify(errors));
+          } finally {
+            await browser?.close();server.kill('SIGTERM');
+            await writeFile('test-results/hightech-results.json',JSON.stringify({results,errors,scope:'Real components with synthetic services; no live account/DB/device acceptance'},null,2));
+          }
+          JS
+          node scripts/.verify-hightech-candidate.mjs
+      - name: Publish only verified application files to a new feature branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          const base=process.env.BASE,repo=process.env.GITHUB_REPOSITORY;
+          const api=async(path,method='GET',data)=>{
+            const r=await fetch(`https://api.github.com/repos/${repo}/${path}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            if(!r.ok)throw Error(`GitHub ${method} ${path}: ${r.status}`);
+            return r.json();
+          };
+          assert.equal((await api('git/ref/heads/main')).object.sha,base,'Main changed; integrate before publishing');
+          const files=JSON.parse(readFileSync('test-results/candidate-files.json','utf8'));
+          assert.equal(files.length,10);assert.equal(new Set(files).size,10);
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse',`${base}^{tree}`),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'feat(endurance): high-tech run console and owner-scoped follow-up continuity\n\nPreserve pending plan checks across navigation and same-tab reload. Restore references, not stale consent. Share a theme-aware operational surface; visible labels, pressed environment selection and reduced motion. Full quality and 21 real-component groups per pinned browser passed before publication. No deployment or schema changes.',tree:tree.sha,parents:[base]});
+          await api('git/refs','POST',{ref:`refs/heads/${process.env.FEATURE_BRANCH}`,sha:commit.sha});
+          const manifest={commit:commit.sha,base,branch:process.env.FEATURE_BRANCH,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),deployed:false};
+          writeFileSync('test-results/verified-candidate.json',JSON.stringify(manifest,null,2));
+          console.log(JSON.stringify(manifest,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hightech-continuity-candidate-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
