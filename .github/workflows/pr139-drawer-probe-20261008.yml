@@ -35,8 +35,10 @@ jobs:
           const expectedCommit = '0529180e77d2e4ee9a93dabcc8ba5b9007cd00ba';
           const out = 'test-results/drawer-probe';
           mkdirSync(out, { recursive: true });
+          // Do not retain idle metadata sockets while spawnSync blocks the parent event loop.
+          const request = (url) => fetch(url, { headers: { connection: 'close' }, signal: AbortSignal.timeout(30000) });
           async function identity() {
-            const r = await fetch(`${origin}/api/public/environment`, { signal: AbortSignal.timeout(30000) });
+            const r = await request(`${origin}/api/public/environment`);
             assert.equal(r.status, 200);
             const data = await r.json();
             assert.equal(data.sourceCommit, expectedCommit, 'Preview moved away from the checked release');
@@ -46,6 +48,14 @@ jobs:
           }
           const before = await identity();
           writeFileSync(`${out}/identity-before.json`, JSON.stringify(before, null, 2));
+          // Public read only: record production identity independently, without claiming acceptance.
+          try {
+            const live = await request('https://gyms.life/api/public/environment');
+            const body = await live.text();
+            writeFileSync(`${out}/production-environment.json`, JSON.stringify({ status: live.status, body: body.slice(0, 5000), scope: 'Public deployment identity only, not application or database health' }, null, 2));
+          } catch (error) {
+            writeFileSync(`${out}/production-environment.json`, JSON.stringify({ status: 'unavailable', error: String(error) }, null, 2));
+          }
           const original = readFileSync('scripts/smoke-production-browser.mjs', 'utf8');
           const bytes = Buffer.from(original);
           const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
@@ -62,7 +72,7 @@ jobs:
             ['documented-hidden', 'scripts/.pr139-drawer-smoke.mjs', '?ntl-drawer-state=hidden'],
           ]) {
             rmSync('test-results/production-browser', { recursive: true, force: true });
-            const html = await fetch(`${origin}/${suffix}`, { signal: AbortSignal.timeout(30000) });
+            const html = await request(`${origin}/${suffix}`);
             assert.equal(html.status, 200);
             const csp = html.headers.get('content-security-policy');
             assert.ok(csp, 'CSP must remain present');
