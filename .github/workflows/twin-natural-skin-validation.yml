@@ -5,6 +5,9 @@ on:
     paths: [.github/workflows/twin-natural-skin-validation.yml]
 permissions:
   contents: write
+concurrency:
+  group: natural-twin-candidate
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -44,53 +47,9 @@ jobs:
           assert.ok(start > 0 && end > start);
           source = source.slice(0, start) + '        // Selection-only comparison: clearing preserves the exact camera pose.\n        await choose(page, region);\n        await choose(page, "");\n' + source.slice(end);
           writeFileSync('scripts/test-twin-skin-browser.mjs', source);
+          writeFileSync('.github/workflows/twin-skin-browser.yml', readFileSync('../harness/diagnostics/twin-natural-skin/browser-workflow.yml'));
           const files = JSON.parse(readFileSync('twin-skin-changed-files.json', 'utf8'));
-          files.push('scripts/test-twin-skin-browser.mjs');
-          const workflow = `name: Twin skin visibility browser
-          on:
-            pull_request:
-              paths: &paths
-                - 'src/components/twin/**'
-                - 'scripts/test-twin-skin-browser.mjs'
-                - '.github/workflows/twin-skin-browser.yml'
-                - '.github/playwright-image.json'
-                - 'public/models/**'
-                - 'package*.json'
-            push:
-              branches: [main]
-              paths: *paths
-          permissions:
-            contents: read
-          concurrency:
-            group: twin-skin-${{ github.ref }}
-            cancel-in-progress: true
-          jobs:
-            browser:
-              runs-on: ubuntu-latest
-              timeout-minutes: 15
-              container:
-                image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
-                options: --init
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - run: node scripts/verify-ci-browser-runtime.mjs
-                - run: node scripts/test-twin-skin-browser.mjs
-                - uses: actions/upload-artifact@v4
-                  if: always()
-                  with:
-                    name: twin-skin-visibility
-                    path: test-results/twin-skin
-                    retention-days: 14
-                    if-no-files-found: error
-          `;
-          // Remove only the heredoc indentation, not YAML nesting.
-          writeFileSync('.github/workflows/twin-skin-browser.yml', workflow.split('\n').map((line, i) => i ? line.replace(/^          /, '') : line).join('\n'));
-          files.push('.github/workflows/twin-skin-browser.yml');
+          files.push('scripts/test-twin-skin-browser.mjs', '.github/workflows/twin-skin-browser.yml');
           writeFileSync('twin-skin-changed-files.json', JSON.stringify(files, null, 2));
           JS
       - run: npm ci
