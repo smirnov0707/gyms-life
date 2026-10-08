@@ -1,0 +1,111 @@
+name: Twin navigation exact candidate
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-nav-candidate.yml]
+permissions:
+  contents: write
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: 656f4a6cb8fba5cddcab8c7b14eda67e906b3910
+      FEATURE: feat/twin-vertical-navigation-2026-10-08
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verify the transferred patch before applying any source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p test-results/twin-candidate
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync} from 'node:fs';
+          import {inflateSync} from 'node:zlib';
+          import {createHash} from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.BASE);
+          const res=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/git/blobs/8e9ed4da3dfa9242561574de3b1aa2af6f381c56`,{headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json'}});
+          assert.ok(res.ok,`Cannot read candidate source: ${res.status}`);
+          const transferred=Buffer.from((await res.json()).content,'base64');
+          writeFileSync('test-results/twin-candidate/transferred.deflate',transferred);
+          assert.equal(createHash('sha256').update(transferred).digest('hex'),'36005351e64234eabe153b88371cf51e1c8c43f0632b97a89690e4c140c1f2fc','Candidate transfer must match local verified bytes');
+          const patch=inflateSync(transferred);
+          assert.equal(createHash('sha256').update(patch).digest('hex'),'117af3e9affe51e9a31c88863bbf4eb95582336afadf14d9e4c418953d6f7481');
+          writeFileSync('/tmp/twin-navigation.patch',patch);
+          git('apply','--check','/tmp/twin-navigation.patch');
+          git('apply','/tmp/twin-navigation.patch');
+          const files=['src/components/twin/BodySceneStage.tsx','src/components/twin/twin-scene.model.ts','src/components/twin/twin-scene.runtime.ts','src/components/twin/twin-camera.navigation.ts','src/components/twin/twin-camera.navigation.test.ts','src/components/twin/twin-camera-navigation.css','scripts/test-twin-camera-navigation.mjs','tests/twin-browser/navigation.html','tests/twin-browser/navigation-fixture.tsx','.github/workflows/twin-camera-navigation.yml','docs/twin-camera-navigation.md'];
+          writeFileSync('test-results/twin-candidate/files.json',JSON.stringify(files,null,2));
+          JS
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Complete quality gates on the exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          { npm run typecheck; npm run test; npm run test:toolchain; npm run lint; npm run build:staging; npm run build; } 2>&1 | tee test-results/twin-candidate/quality.log
+      - name: Real 3D navigation, touch gestures and preserved skin selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-twin-camera-navigation.mjs 2>&1 | tee test-results/twin-candidate/navigation.log
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-candidate/skin.log
+      - name: Publish only tested source to a new feature branch, never main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const git=(...a)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...a],{encoding:'utf8'}).trim();
+          const api=async(path,method='GET',data)=>{
+            const res=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${path}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            assert.ok(res.ok,`${method} ${path}: ${res.status}`);return res.json();
+          };
+          assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main changed; integrate explicitly');
+          const files=JSON.parse(readFileSync('test-results/twin-candidate/files.json','utf8'));
+          assert.equal(files.length,11);
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse',`${process.env.BASE}^{tree}`),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'feat(twin): larger body view and bounded vertical camera navigation\n\nKeep 360-degree orbit, broaden safe tilt, add bounded two-finger vertical pan, visible up/down/reset controls and upper/lower presets. Preserve near-side region picking after moving the focus. Exact-source quality/build, real navigation and existing skin tests passed before publication. No production deployment or data changes.',tree:tree.sha,parents:[process.env.BASE]});
+          await api('git/refs','POST',{ref:`refs/heads/${process.env.FEATURE}`,sha:commit.sha});
+          writeFileSync('test-results/twin-candidate/verified.json',JSON.stringify({commit:commit.sha,tree:tree.sha,base:process.env.BASE,branch:process.env.FEATURE,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),deployed:false},null,2));
+          console.log('Verified feature commit',commit.sha);
+          JS
+      - name: Retain final source after all test discovery
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,shutil
+          manifest=Path('test-results/twin-candidate/files.json')
+          if manifest.exists():
+              for name in json.loads(manifest.read_text()):
+                  target=Path('test-results/twin-candidate/source')/name
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(name,target)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-navigation-candidate-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
