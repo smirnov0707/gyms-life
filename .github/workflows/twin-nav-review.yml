@@ -1,0 +1,51 @@
+name: Twin navigation diagnostic review
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-nav-review.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 299a9bc935de265e993d5531ac98dc2439d7cc54
+          persist-credentials: false
+      - name: Read verified diagnostic evidence and compare exact source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import urllib.request,os,zipfile,io,hashlib,difflib,json
+          from pathlib import Path
+          req=urllib.request.Request('https://api.github.com/repos/smirnov0707/gyms-life/actions/artifacts/11572172842/zip',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          data=urllib.request.urlopen(req,timeout=45).read()
+          assert hashlib.sha256(data).hexdigest()=='34d26d38d454a07630bfac0f58674e54887b9b3e1788c754b278fd458f14bf3e'
+          z=zipfile.ZipFile(io.BytesIO(data))
+          print('EVIDENCE_FILES',json.dumps(z.namelist()))
+          out=Path('test-results/navigation-review');out.mkdir(parents=True,exist_ok=True)
+          for path in ['scripts/test-twin-camera-navigation.mjs','src/components/twin/twin-scene.runtime.ts','src/components/twin/twin-camera.navigation.ts','src/components/twin/BodySceneStage.tsx','src/components/twin/twin-camera-navigation.css','tests/twin-browser/navigation-fixture.tsx']:
+              matches=[n for n in z.namelist() if n.endswith('/'+path)]
+              if len(matches)!=1:
+                  print('SOURCE_NOT_UNIQUE',path,matches);continue
+              candidate=z.read(matches[0]).decode();current=Path(path).read_text()
+              diff=''.join(difflib.unified_diff(current.splitlines(True),candidate.splitlines(True),fromfile='PR151/'+path,tofile='diagnostic/'+path))
+              print('SOURCE_DIFF',path,'\n'+diff[:35000])
+              if path.endswith('test-twin-camera-navigation.mjs'):
+                  print('PICKING_TEST_LINES','\n'.join(f'{i+1}: {line}' for i,line in enumerate(candidate.splitlines()) if 145<=i<=250))
+              (out/(Path(path).name+'.diff.txt')).write_text(diff)
+          for n in z.namelist():
+              if n.endswith('failure.json') or (n.endswith('results.json') and 'twin-navigation/' in n):
+                  print('DIAGNOSTIC_RESULT',n,z.read(n).decode()[:30000])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twin-navigation-source-review
+          path: test-results/navigation-review
+          retention-days: 14
+          if-no-files-found: error
