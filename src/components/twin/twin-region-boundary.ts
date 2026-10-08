@@ -1,131 +1,159 @@
-import { Float32BufferAttribute, type BufferGeometry } from "three";
+import { DataTexture, LinearFilter, RedFormat, Vector4, type BufferGeometry } from "three";
 
-/** Presentation distance on the registered metre-scale generic body, not physiology. */
+/** Graphic transition on the metre-scale generic mesh, not an anatomical measurement. */
 export const TWIN_BACK_FEATHER_METRES = 0.025;
+const SIZE = 256;
+export type TwinBoundaryField = { texture: DataTexture; bounds: Vector4 };
+
+const smooth = (low: number, high: number, value: number) => {
+  const t = Math.max(0, Math.min(1, (value - low) / (high - low)));
+  return t * t * (3 - 2 * t);
+};
+const clampPixel = (value: number) => Math.max(0, Math.min(SIZE - 1, value));
+
+/** Separable, bounded Gaussian smoothing of a graphic distance field. */
+function blur(input: Float32Array, sigma: number, horizontal: boolean): Float32Array {
+  const radius = Math.min(24, Math.max(1, Math.ceil(3 * sigma)));
+  const weights: number[] = [];
+  let sum = 0;
+  for (let k = -radius; k <= radius; k++) {
+    const weight = Math.exp(-(k * k) / (2 * sigma * sigma));
+    weights.push(weight);
+    sum += weight;
+  }
+  const result = new Float32Array(SIZE * SIZE);
+  for (let y = 0; y < SIZE; y++)
+    for (let x = 0; x < SIZE; x++) {
+      let value = 0;
+      for (let k = -radius; k <= radius; k++) {
+        const sample = horizontal ? y * SIZE + clampPixel(x + k) : clampPixel(y + k) * SIZE + x;
+        value += input[sample]! * weights[k + radius]!;
+      }
+      result[y * SIZE + x] = value / sum;
+    }
+  return result;
+}
 
 /**
- * Fade a region's colour inside its existing open boundary, not its geometry.
- * Coincident vertices are joined in the working graph only (UV/normal seams are
- * not borders). Source positions, indices, normals and raycasting never change.
- * Multi-source Dijkstra is capped at the feather width, once per asset load.
+ * Only for the verified posterior Body surface: rasterize its existing
+ * XY triangle footprint and smooth the signed interior distance. The
+ * fragment shader samples the result, independent of coarse vertices.
+ * No position, topology, normal, UV or picking mutation. One 64KiB R8
+ * texture, no extra mesh/draw call and no per-frame CPU calculation.
  */
-export function createTwinBoundaryMask(
+export function createTwinBoundaryField(
   geometry: BufferGeometry,
   width = TWIN_BACK_FEATHER_METRES,
-): Float32BufferAttribute {
-  if (!Number.isFinite(width) || width <= 0 || width > 0.1)
+): TwinBoundaryField {
+  if (!Number.isFinite(width) || width < 0.001 || width > 0.1)
     throw new Error("TWIN_BOUNDARY_WIDTH_INVALID");
-  const positions = geometry.getAttribute("position");
+  const p = geometry.getAttribute("position");
   const index = geometry.getIndex();
-  if (!positions || positions.itemSize !== 3 || positions.count < 3 || positions.count > 65536)
+  if (!p || p.itemSize !== 3 || p.count < 3 || p.count > 65536)
     throw new Error("TWIN_BOUNDARY_POSITIONS_INVALID");
-  const count = index?.count ?? positions.count;
-  if (count % 3 !== 0 || count > 196608) throw new Error("TWIN_BOUNDARY_TRIANGLES_INVALID");
-
-  const unique = new Map<string, number>();
-  const vertexOf: number[] = [];
-  const points: Array<[number, number, number]> = [];
-  for (let i = 0; i < positions.count; i++) {
-    const point: [number, number, number] = [
-      positions.getX(i),
-      positions.getY(i),
-      positions.getZ(i),
-    ];
-    if (!point.every(Number.isFinite)) throw new Error("TWIN_BOUNDARY_POSITION_NONFINITE");
-    // Exact positions only: nearby, disconnected surfaces must not be welded.
-    const key = point.join(",");
-    let vertex = unique.get(key);
-    if (vertex === undefined) {
-      vertex = points.length;
-      unique.set(key, vertex);
-      points.push(point);
-    }
-    vertexOf.push(vertex);
+  const count = index?.count ?? p.count;
+  if (count < 3 || count % 3 !== 0 || count > 196608)
+    throw new Error("TWIN_BOUNDARY_TRIANGLES_INVALID");
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i),
+      y = p.getY(i),
+      z = p.getZ(i);
+    if (![x, y, z].every((v) => Number.isFinite(v) && Math.abs(v) <= 10))
+      throw new Error("TWIN_BOUNDARY_POSITION_INVALID");
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
   }
-  const edges = new Map<string, { a: number; b: number; count: number }>();
-  const adjacency: Array<Map<number, number>> = points.map(() => new Map());
+  if (maxX <= minX || maxY <= minY) throw new Error("TWIN_BOUNDARY_PROJECTION_EMPTY");
+  minX -= width * 2;
+  minY -= width * 2;
+  maxX += width * 2;
+  maxY += width * 2;
+  const sx = (maxX - minX) / SIZE,
+    sy = (maxY - minY) / SIZE;
+  const inside = new Uint8Array(SIZE * SIZE);
+  const edge = (a: [number, number], b: [number, number], x: number, y: number) =>
+    (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]);
   for (let i = 0; i < count; i += 3) {
-    const triangle = [0, 1, 2].map((corner) => {
-      const source = index ? index.getX(i + corner) : i + corner;
-      if (!Number.isInteger(source) || source < 0 || source >= positions.count)
+    const points = [0, 1, 2].map((corner): [number, number] => {
+      const vertex = index ? index.getX(i + corner) : i + corner;
+      if (!Number.isInteger(vertex) || vertex < 0 || vertex >= p.count)
         throw new Error("TWIN_BOUNDARY_INDEX_INVALID");
-      return vertexOf[source]!;
+      return [(p.getX(vertex) - minX) / sx, (p.getY(vertex) - minY) / sy];
     });
-    if (new Set(triangle).size !== 3) throw new Error("TWIN_BOUNDARY_DEGENERATE_TRIANGLE");
-    for (let corner = 0; corner < 3; corner++) {
-      const a = triangle[corner]!;
-      const b = triangle[(corner + 1) % 3]!;
-      const key = a < b ? `${a}:${b}` : `${b}:${a}`;
-      const previous = edges.get(key);
-      if (previous) {
-        previous.count++;
-        if (previous.count > 2) throw new Error("TWIN_BOUNDARY_NONMANIFOLD");
-      } else {
-        edges.set(key, { a, b, count: 1 });
-        const pa = points[a]!;
-        const pb = points[b]!;
-        const distance = Math.hypot(pa[0] - pb[0], pa[1] - pb[1], pa[2] - pb[2]);
-        if (!Number.isFinite(distance) || distance === 0)
-          throw new Error("TWIN_BOUNDARY_EDGE_INVALID");
-        adjacency[a]!.set(b, distance);
-        adjacency[b]!.set(a, distance);
+    const a = points[0]!,
+      b = points[1]!,
+      c = points[2]!;
+    if (Math.abs(edge(a, b, c[0], c[1])) < 1e-10) continue;
+    const left = clampPixel(Math.floor(Math.min(a[0], b[0], c[0])));
+    const right = clampPixel(Math.ceil(Math.max(a[0], b[0], c[0])));
+    const bottom = clampPixel(Math.floor(Math.min(a[1], b[1], c[1])));
+    const top = clampPixel(Math.ceil(Math.max(a[1], b[1], c[1])));
+    for (let y = bottom; y <= top; y++)
+      for (let x = left; x <= right; x++) {
+        const u = edge(a, b, x + 0.5, y + 0.5);
+        const v = edge(b, c, x + 0.5, y + 0.5);
+        const w = edge(c, a, x + 0.5, y + 0.5);
+        if ((u >= -1e-8 && v >= -1e-8 && w >= -1e-8) || (u <= 1e-8 && v <= 1e-8 && w <= 1e-8))
+          inside[y * SIZE + x] = 1;
       }
-    }
   }
-
-  // Small binary heap, ordered by distance. Each relaxation is O(log V).
-  const heap: Array<{ vertex: number; distance: number }> = [];
-  const push = (entry: { vertex: number; distance: number }) => {
-    heap.push(entry);
-    let at = heap.length - 1;
-    while (at > 0) {
-      const parent = Math.floor((at - 1) / 2);
-      if (heap[parent]!.distance <= entry.distance) break;
-      heap[at] = heap[parent]!;
-      at = parent;
+  if (!inside.some((value) => value === 1)) throw new Error("TWIN_BOUNDARY_PROJECTION_EMPTY");
+  // Two-pass eight-neighbour chamfer distance, not a body measurement.
+  const distance = new Float32Array(SIZE * SIZE).fill(width * 2);
+  for (let y = 1; y < SIZE - 1; y++)
+    for (let x = 1; x < SIZE - 1; x++) {
+      const at = y * SIZE + x;
+      if ([at - 1, at + 1, at - SIZE, at + SIZE].some((n) => inside[n] !== inside[at]))
+        distance[at] = 0;
     }
-    heap[at] = entry;
-  };
-  const pop = () => {
-    const first = heap[0]!;
-    const last = heap.pop()!;
-    if (heap.length) {
-      let at = 0;
-      while (at * 2 + 1 < heap.length) {
-        let child = at * 2 + 1;
-        if (child + 1 < heap.length && heap[child + 1]!.distance < heap[child]!.distance) child++;
-        if (last.distance <= heap[child]!.distance) break;
-        heap[at] = heap[child]!;
-        at = child;
-      }
-      heap[at] = last;
+  const diagonal = Math.hypot(sx, sy);
+  for (let y = 1; y < SIZE - 1; y++)
+    for (let x = 1; x < SIZE - 1; x++) {
+      const at = y * SIZE + x;
+      distance[at] = Math.min(
+        distance[at]!,
+        distance[at - 1]! + sx,
+        distance[at - SIZE]! + sy,
+        distance[at - SIZE - 1]! + diagonal,
+        distance[at - SIZE + 1]! + diagonal,
+      );
     }
-    return first;
-  };
-  const distance = new Float64Array(points.length).fill(width);
-  for (const edge of edges.values()) {
-    if (edge.count !== 1) continue;
-    for (const vertex of [edge.a, edge.b]) {
-      if (distance[vertex] === 0) continue;
-      distance[vertex] = 0;
-      push({ vertex, distance: 0 });
+  for (let y = SIZE - 2; y > 0; y--)
+    for (let x = SIZE - 2; x > 0; x--) {
+      const at = y * SIZE + x;
+      distance[at] = Math.min(
+        distance[at]!,
+        distance[at + 1]! + sx,
+        distance[at + SIZE]! + sy,
+        distance[at + SIZE - 1]! + diagonal,
+        distance[at + SIZE + 1]! + diagonal,
+      );
     }
+  const signed = new Float32Array(distance.length);
+  for (let i = 0; i < distance.length; i++) signed[i] = inside[i] ? distance[i]! : -distance[i]!;
+  const softened = blur(blur(signed, (width * 0.22) / sx, true), (width * 0.22) / sy, false);
+  const bytes = new Uint8Array(SIZE * SIZE);
+  for (let i = 0; i < bytes.length; i++) {
+    // The second term keeps the original footprint border neutral.
+    bytes[i] = inside[i]
+      ? Math.round(
+          255 *
+            smooth(width * 0.16, width * 0.8, softened[i]!) *
+            smooth(0, width * 0.12, distance[i]!),
+        )
+      : 0;
   }
-  while (heap.length) {
-    const entry = pop();
-    if (entry.distance !== distance[entry.vertex]) continue;
-    for (const [neighbor, length] of adjacency[entry.vertex]!) {
-      const next = entry.distance + length;
-      if (next >= distance[neighbor]!) continue;
-      distance[neighbor] = next;
-      push({ vertex: neighbor, distance: next });
-    }
-  }
-  return new Float32BufferAttribute(
-    vertexOf.map((vertex) => {
-      const t = Math.min(1, Math.max(0, distance[vertex]! / width));
-      return t * t * (3 - 2 * t);
-    }),
-    1,
-  );
+  const texture = new DataTexture(bytes, SIZE, SIZE, RedFormat);
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.generateMipmaps = false;
+  texture.flipY = false;
+  texture.needsUpdate = true;
+  return { texture, bounds: new Vector4(minX, minY, maxX - minX, maxY - minY) };
 }
