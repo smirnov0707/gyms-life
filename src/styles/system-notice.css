@@ -3,6 +3,7 @@
   min-width: 0;
   border-radius: 1rem;
   padding: 1rem;
+  overflow-wrap: anywhere;
 }
 .gl-system-notice__eyebrow {
   display: flex;
@@ -15,6 +16,7 @@
   text-transform: uppercase;
 }
 .gl-system-notice__title {
+  color: var(--foreground);
   margin-top: .5rem;
   font-size: .9375rem;
   font-weight: 600;
@@ -24,8 +26,8 @@
 .gl-system-notice__body { margin-top: .5rem; font-size: .8125rem; line-height: 1.6; }
 .gl-system-notice__actions { margin-top: .875rem; }
 .gl-run-console { min-width: 0; }
-.gl-run-console header p { font-size: .6875rem; font-weight: 600; letter-spacing: .14em; }
-.gl-run-console header h3 { margin-top: .375rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -.02em; }
+.gl-run-console header p { color: var(--muted-foreground); font-size: .6875rem; font-weight: 600; letter-spacing: .14em; }
+.gl-run-console header h3 { color: var(--foreground); margin-top: .375rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -.02em; }
 .gl-run-console label { display: grid; min-width: 0; gap: .375rem; }
 .gl-run-console label > span { font-size: .75rem; line-height: 1.5; }
 .gl-run-console input { min-height: 2.75rem; font-variant-numeric: tabular-nums; }

@@ -1,13 +1,12 @@
 /* Shared controls also cover authentication, settings, Coach and portalled UI. */
 .ui-button {
+  min-width: 0;
   border-radius: 12px;
   font-weight: 650;
   letter-spacing: -0.01em;
-  transition:
-    background-color 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms var(--ease-out);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  touch-action: manipulation;
 }
 
 .ui-button-primary {
@@ -30,6 +29,9 @@
 
 .ui-input {
   border-radius: 12px;
+  color: var(--foreground);
+  caret-color: var(--primary);
+  font-variant-numeric: tabular-nums;
   background: color-mix(in srgb, var(--surface-2) 60%, transparent);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 3%);
 }
@@ -37,6 +39,15 @@
 .ui-input:focus-visible {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-dim);
+}
+
+.ui-input[aria-invalid="true"] {
+  border-color: var(--destructive);
+}
+
+.ui-input[aria-invalid="true"]:focus-visible {
+  outline-color: var(--destructive);
+  box-shadow: none;
 }
 
 ::selection {
@@ -49,19 +60,42 @@
   outline-offset: 3px;
 }
 
-@media (hover: hover) {
-  .ui-button:not(:disabled):hover {
+@media (pointer: coarse) {
+  .ui-button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ui-button {
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 100ms var(--ease-out);
+  }
+
+  .ui-input {
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .ui-button:not(:disabled):not([aria-disabled="true"]):active {
+    transform: translateY(1px);
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ui-button:not(:disabled):not([aria-disabled="true"]):hover {
     transform: translateY(-1px);
   }
-  .ui-button-primary:not(:disabled):hover {
+  .ui-button-primary:not(:disabled):not([aria-disabled="true"]):hover {
     box-shadow:
       0 8px 24px -10px var(--primary-glow),
       inset 0 1px 0 rgb(255 255 255 / 30%);
   }
-}
-
-.ui-button:not(:disabled):active {
-  transform: translateY(1px);
+  .ui-button:not(:disabled):not([aria-disabled="true"]):hover:active {
+    transform: translateY(1px);
+  }
 }
 
 /* Applies to older utilities and dialog animations as well as the new shell. */
@@ -73,6 +107,22 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .ui-button,
+  .ui-input {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .ui-button:focus-visible,
+  .ui-input:focus-visible {
+    outline-color: Highlight;
+  }
+  .ui-input[aria-invalid="true"] {
+    border-style: dashed;
   }
 }
 

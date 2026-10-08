@@ -63,6 +63,24 @@ export async function verifyRunContinuity({ open, record, artifacts }) {
       "true",
     );
     await expect(page.getByText("Trukmė · min", { exact: true })).toBeVisible();
+    const headingStyle = await page.locator("[data-run-console] header h3").evaluate((el) => {
+      const probe = document.createElement("span");
+      probe.style.color = "var(--foreground)";
+      el.parentElement.append(probe);
+      const expected = getComputedStyle(probe).color;
+      const actual = getComputedStyle(el);
+      const result = {
+        expected,
+        color: actual.color,
+        opacity: actual.opacity,
+        size: parseFloat(actual.fontSize),
+      };
+      probe.remove();
+      return result;
+    });
+    expect(headingStyle.color).toBe(headingStyle.expected);
+    expect(headingStyle.opacity).toBe("1");
+    expect(headingStyle.size).toBeGreaterThanOrEqual(16);
     await page.screenshot({
       path: path.join(artifacts, `run-continuity-${theme}-320.png`),
       fullPage: true,
@@ -169,7 +187,8 @@ export async function verifyRunContinuity({ open, record, artifacts }) {
     await page.evaluate((p) => {
       const original = Storage.prototype.setItem;
       Storage.prototype.setItem = function (key, value) {
-        if (key.startsWith(p)) throw Error("Synthetic follow-up storage refusal");
+        if (key.startsWith(p) && !window.__allowFollowUpRetention)
+          throw Error("Synthetic follow-up storage refusal");
         return original.call(this, key, value);
       };
     }, prefix);
@@ -178,8 +197,20 @@ export async function verifyRunContinuity({ open, record, artifacts }) {
     await expect(page.getByRole("button", { name: "Retry plan check", exact: true })).toBeEnabled();
     await expect(page.locator('[data-sonner-toast][data-type="error"]')).toHaveCount(0);
     expect(await state(page)).toMatchObject({ saves: 1, records: 1, trainingEvents: 1 });
+    await page.getByRole("button", { name: "Retry follow-up recovery", exact: true }).click();
+    await expect(page.locator("[data-follow-up-storage-warning]")).toBeVisible();
+    await page.evaluate(() => {
+      window.__allowFollowUpRetention = true;
+    });
+    await page.getByRole("button", { name: "Retry follow-up recovery", exact: true }).click();
+    await expect(page.locator("[data-follow-up-storage-warning]")).toHaveCount(0);
+    await page.reload();
+    await expect(page.locator("[data-run-follow-up-check]")).toHaveCount(1);
+    expect(await state(page)).toMatchObject({ saves: 1, records: 1, retries: 0 });
     await context.close();
-    record("Run continuity: secondary retention refusal never misreports the acknowledged save");
+    record(
+      "Run continuity: refused retention remains visible and recovers the pending hint before clearing the warning",
+    );
   }
   {
     const { page, context } = await prepare("scenario=unavailable&retry=load-unavailable");
