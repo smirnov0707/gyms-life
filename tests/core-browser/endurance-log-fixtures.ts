@@ -80,6 +80,14 @@ export async function retryEnduranceRaceEnrichmentFn({ data }: { data: unknown }
   state.lastRetry = data;
   await delay();
   if (query.get("scenario") === "retry-fails") throw new Error("Synthetic secondary failure");
+  if (query.get("retry") === "needs-confirmation") return outcome("needs_confirmation");
+  if (query.get("retry") === "load-unavailable") {
+    const unavailable: EnduranceRaceEnrichmentResult = {
+      ...outcome("unavailable"),
+      raceEnrichment: { status: "unavailable", linked: false, retryable: true, stage: "load" },
+    };
+    return unavailable;
+  }
   state.linked = true;
   return outcome("matched", true);
 }
