@@ -310,3 +310,9 @@ export { getWeeklyIntelligenceReview } from "./weekly-functions";
 export { getTwinTrendHistory, forecastProgress } from "./observed-functions";
 
 export { getTwinRewindHistory, getTwinEvidenceWindow } from "./rewind-fixtures";
+
+export {
+  logEnduranceActivity,
+  retryEnduranceRaceEnrichmentFn,
+  confirmRaceSessionMatchFn,
+} from "./endurance-log-fixtures";
