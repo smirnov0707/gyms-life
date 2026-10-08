@@ -1,4 +1,5 @@
 import { Group, Mesh, type Object3D } from "three";
+import { createTwinBoundaryMask } from "./twin-region-boundary";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
@@ -6,6 +7,7 @@ import { TWIN_SKIN_MATERIAL, TWIN_EYE_MATERIAL } from "./twin-surface.style";
 import { parseTwinSculptContours, parseTwinSculptCompetition } from "./twin-sculpt.contours";
 import {
   MAX_TWIN_ASSET_BYTES,
+  TWIN_REGISTERED_ASSETS,
   verifyTwinAsset,
   type TwinBodyProvenance,
 } from "./twin-body.provenance";
@@ -109,11 +111,19 @@ function build(
     // The kept skin is the one mesh that is not a region: it carries no
     // reading, so it is the silhouette rather than a data surface.
     const preset = sourceName === "Eyes" ? TWIN_EYE_MATERIAL : TWIN_SKIN_MATERIAL;
+    const featherBack =
+      appearance === "realistic" &&
+      region === "back" &&
+      provenance.sha256 ===
+        TWIN_REGISTERED_ASSETS.find((asset) => asset.path === "public/models/twin-body-v2.glb")
+          ?.sha256;
+    if (featherBack)
+      object.geometry.setAttribute("_twin_mask", createTwinBoundaryMask(object.geometry));
     disposeMaterial(object);
     object.material = createTwinAnatomyMaterial(
       preset,
       appearance === "realistic"
-        ? {}
+        ? { regionMask: featherBack }
         : {
             ...(object.userData["twinSculptContours"] !== undefined &&
             object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3

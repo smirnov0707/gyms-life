@@ -1,0 +1,50 @@
+name: Twin boundary comparison
+on:
+  pull_request:
+    paths:
+      - "src/components/twin/**"
+      - "scripts/test-twin-boundary-browser.mjs"
+      - "tests/twin-browser/**"
+      - "public/models/**"
+      - ".github/workflows/twin-boundary-browser.yml"
+      - ".github/playwright-image.json"
+      - "package*.json"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/twin/**"
+      - "scripts/test-twin-boundary-browser.mjs"
+      - "tests/twin-browser/**"
+      - "public/models/**"
+      - ".github/workflows/twin-boundary-browser.yml"
+      - ".github/playwright-image.json"
+      - "package*.json"
+permissions:
+  contents: read
+concurrency:
+  group: twin-boundary-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Compare the real scene with and without the new boundary mask
+        run: node scripts/test-twin-boundary-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-boundary-comparison
+          path: test-results/twin-boundary
+          if-no-files-found: error
+          retention-days: 14
