@@ -1,0 +1,113 @@
+name: PR143 runtime gate repair validation
+on:
+  push:
+    branches: [diagnostics/pr143-runtime-gates-2026-10-08]
+    paths: [.github/workflows/pr143-runtime-gates.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4e2c4a5b7388b442a49e8cd946fbb27fd7230cdf
+          path: app
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+          path: baseline
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Full quality and both builds without deployment
+        run: |
+          set -o pipefail
+          mkdir -p test-results/pr143-gates
+          npm run typecheck 2>&1 | tee test-results/pr143-gates/typecheck.log
+          npm test 2>&1 | tee test-results/pr143-gates/tests.log
+          npm run lint 2>&1 | tee test-results/pr143-gates/lint.log
+          npm run build:staging 2>&1 | tee test-results/pr143-gates/build-staging.log
+          npm run build 2>&1 | tee test-results/pr143-gates/build.log
+      - name: Reproduce the actual shader before and after comparison
+        run: |
+          set -euo pipefail
+          material=src/components/twin/twin-anatomy.material.ts
+          cp "$material" "$RUNNER_TEMP/pr143-material.ts"
+          trap 'cp "$RUNNER_TEMP/pr143-material.ts" "$material"' EXIT
+          cp ../baseline/src/components/twin/twin-anatomy.material.ts "$material"
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/pr143-gates/shader-before
+          cp "$RUNNER_TEMP/pr143-material.ts" "$material"
+          node scripts/authoring/render-sculpt-review.mjs tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb test-results/pr143-gates/shader-after
+          cmp "$material" "$RUNNER_TEMP/pr143-material.ts"
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const before = JSON.parse(readFileSync('test-results/pr143-gates/shader-before/render-evidence.json', 'utf8'));
+          const after = JSON.parse(readFileSync('test-results/pr143-gates/shader-after/render-evidence.json', 'utf8'));
+          assert.equal(before.assetSha256, 'e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31');
+          assert.equal(after.assetSha256, before.assetSha256);
+          assert.equal(before.rows.length, 4);
+          assert.deepEqual(after.rows, before.rows);
+          console.log('PASS all four before/after render modes, same geometry and asset; all console-error checks retained.');
+          JS
+      - name: Recheck actual UI skin and posterior focus in both themes
+        run: |
+          set -o pipefail
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/pr143-gates/skin-browser.log
+      - name: Retain source-specific result without advancing any application branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const skin = JSON.parse(readFileSync('test-results/twin-skin/results.json', 'utf8'));
+          assert.equal(skin.results.length, 8);
+          assert.ok(skin.results.every(row => row.status === 'passed'));
+          assert.deepEqual(skin.errors, []);
+          const testLog = readFileSync('test-results/pr143-gates/tests.log', 'utf8').replace(/\u001b\[[0-9;]*m/g, '');
+          const report = {
+            testedCommit: '4e2c4a5b7388b442a49e8cd946fbb27fd7230cdf',
+            parent: 'c95995f21e28d9c26ed11df7ca64150dedd1a9dd',
+            run: process.env.GITHUB_RUN_ID,
+            scope: 'Two test-harness repairs only; application skin/UI source unchanged from PR143. No production deployment or live user activity.',
+            status: 'passed',
+            checks: ['typecheck', 'all unit/contract tests', 'full lint', 'staging build', 'production build', 'four before and four after shader renders', 'eight real UI skin cases'],
+            testSummary: testLog.split('\n').filter(line => /Test Files|Tests\s+[0-9]/.test(line)),
+            files: ['scripts/ci-browser-runtime.test.ts','scripts/authoring/render-sculpt-review.mjs'].map(path => ({path, sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),
+            rendered: skin,
+            productionChanged: false,
+          };
+          writeFileSync('test-results/pr143-gates/verification.json', JSON.stringify(report,null,2));
+          const response = await fetch('https://api.github.com/repos/smirnov0707/gyms-life/contents/diagnostics/pr143-gates-result.json', {
+            method:'PUT', headers:{Authorization:'Bearer '+process.env.GH_TOKEN, Accept:'application/vnd.github+json','Content-Type':'application/json'},
+            body:JSON.stringify({branch:'diagnostics/pr143-runtime-gates-2026-10-08',message:'test(evidence): retain exact PR143 gate repair verification',content:Buffer.from(JSON.stringify(report,null,2)).toString('base64')}),
+          });
+          assert.ok(response.ok, 'Unable to retain report: ' + response.status);
+          console.log(JSON.stringify(report,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr143-runtime-gates-verified
+          path: |
+            app/test-results/pr143-gates
+            app/test-results/twin-skin
+          retention-days: 14
+          if-no-files-found: error
