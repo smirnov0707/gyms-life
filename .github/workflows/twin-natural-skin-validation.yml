@@ -1,0 +1,175 @@
+name: Natural Twin skin candidate
+on:
+  push:
+    branches: [diagnostics/twin-natural-skin-2026-10-08]
+    paths: [.github/workflows/twin-natural-skin-validation.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+          path: app
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply the bounded visual change and prepare regression tests
+        working-directory: app
+        shell: bash
+        run: |
+          node ../harness/diagnostics/twin-natural-skin/apply.mjs
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          let source = readFileSync('../harness/diagnostics/twin-natural-skin/browser.mjs', 'utf8');
+          const command = '  handle.command(region === "back" ? "back" : "front");';
+          assert.equal(source.split(command).length, 2);
+          source = source.replace(command, '  if (region) handle.command(region === "back" ? "back" : "front");');
+          const start = source.indexOf('        // Match each camera pose');
+          const end = source.indexOf('        const baseline =', start);
+          assert.ok(start > 0 && end > start);
+          source = source.slice(0, start) + '        // Selection-only comparison: clearing preserves the exact camera pose.\n        await choose(page, region);\n        await choose(page, "");\n' + source.slice(end);
+          writeFileSync('scripts/test-twin-skin-browser.mjs', source);
+          const files = JSON.parse(readFileSync('twin-skin-changed-files.json', 'utf8'));
+          files.push('scripts/test-twin-skin-browser.mjs');
+          const workflow = `name: Twin skin visibility browser
+          on:
+            pull_request:
+              paths: &paths
+                - 'src/components/twin/**'
+                - 'scripts/test-twin-skin-browser.mjs'
+                - '.github/workflows/twin-skin-browser.yml'
+                - '.github/playwright-image.json'
+                - 'public/models/**'
+                - 'package*.json'
+            push:
+              branches: [main]
+              paths: *paths
+          permissions:
+            contents: read
+          concurrency:
+            group: twin-skin-${{ github.ref }}
+            cancel-in-progress: true
+          jobs:
+            browser:
+              runs-on: ubuntu-latest
+              timeout-minutes: 15
+              container:
+                image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+                options: --init
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+                    cache: npm
+                - run: npm ci
+                - run: node scripts/verify-ci-browser-runtime.mjs
+                - run: node scripts/test-twin-skin-browser.mjs
+                - uses: actions/upload-artifact@v4
+                  if: always()
+                  with:
+                    name: twin-skin-visibility
+                    path: test-results/twin-skin
+                    retention-days: 14
+                    if-no-files-found: error
+          `;
+          // Remove only the heredoc indentation, not YAML nesting.
+          writeFileSync('.github/workflows/twin-skin-browser.yml', workflow.split('\n').map((line, i) => i ? line.replace(/^          /, '') : line).join('\n'));
+          files.push('.github/workflows/twin-skin-browser.yml');
+          writeFileSync('twin-skin-changed-files.json', JSON.stringify(files, null, 2));
+          JS
+      - run: npm ci
+        working-directory: app
+      - name: Format only changed source files
+        working-directory: app
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const files = JSON.parse(readFileSync('twin-skin-changed-files.json', 'utf8'));
+          execFileSync('node', ['node_modules/prettier/bin/prettier.cjs', '--write', ...files], {stdio:'inherit'});
+          JS
+      - run: node scripts/verify-ci-browser-runtime.mjs
+        working-directory: app
+      - name: Typecheck all tests lint and both builds without deployment
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/twin-skin-validation
+          npm run typecheck 2>&1 | tee test-results/twin-skin-validation/typecheck.log
+          npm test 2>&1 | tee test-results/twin-skin-validation/tests.log
+          npm run lint 2>&1 | tee test-results/twin-skin-validation/lint.log
+          npm run build:staging 2>&1 | tee test-results/twin-skin-validation/staging-build.log
+          npm run build 2>&1 | tee test-results/twin-skin-validation/build.log
+      - name: Verify real rendered skin and muscle selection pixels
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-skin-validation/browser.log
+      - name: Run the unchanged complete Twin browser suite
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/test-twin-browser.mjs 2>&1 | tee test-results/twin-skin-validation/canonical-twin.log
+      - name: Publish only verified source to the isolated feature branch
+        working-directory: app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const repo = 'smirnov0707/gyms-life';
+          const base = '20e2d1613e9a0b1a4408d461c717847fe5c2f9c3';
+          const branch = 'fix/twin-natural-skin-2026-10-08';
+          const paths = JSON.parse(readFileSync('twin-skin-changed-files.json', 'utf8'));
+          assert.equal(new Set(paths).size, 9);
+          assert.ok(paths.every(p => p.startsWith('src/components/twin/') || p === 'docs/twin-natural-skin.md' || p === 'scripts/test-twin-skin-browser.mjs' || p === '.github/workflows/twin-skin-browser.yml'));
+          const request = async (endpoint, method = 'GET', body) => {
+            const r = await fetch('https://api.github.com/repos/' + repo + endpoint, {
+              method, headers: {Authorization: 'Bearer ' + process.env.GH_TOKEN, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json'},
+              ...(body ? {body: JSON.stringify(body)} : {}),
+            });
+            const result = await r.json();
+            assert.ok(r.ok, method + ' ' + endpoint + ': ' + r.status + ' ' + (result.message ?? ''));
+            return result;
+          };
+          const parent = await request('/git/commits/' + base);
+          const tree = await request('/git/trees', 'POST', {base_tree: parent.tree.sha, tree: paths.map(p => ({path:p, mode:'100644', type:'blob', content:readFileSync(p,'utf8')}))});
+          const commit = await request('/git/commits', 'POST', {message:'fix(twin): natural skin and visible muscle selection without changing evidence\n\nUse warm non-metallic skin in analysis and Body modes, including neutral mask areas and simplified 3D fallback. Use neutral front/back lighting and an independent blue selection tint plus masked edge so unknown regions no longer select as black. Preserve model assets, provenance, geometry, camera controls, evidence values and semantic colours.\n\nVerified typecheck, all unit tests, full lint, both builds, rendered skin/selection pixel comparisons and the unchanged canonical Twin suite before publishing. No database or production changes. Full PR release gates remain required.', tree: tree.sha, parents:[base]});
+          await request('/git/refs', 'POST', {ref:'refs/heads/' + branch, sha:commit.sha});
+          const files = paths.map(p => ({path:p, sha256:createHash('sha256').update(readFileSync(p)).digest('hex')}));
+          writeFileSync('test-results/twin-skin-validation/published.json', JSON.stringify({base, branch, commit:commit.sha, tree:tree.sha, files}, null, 2));
+          console.log('Published verified visual change', commit.sha, branch);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-natural-skin-validation
+          path: |
+            app/test-results/twin-skin-validation
+            app/test-results/twin-skin
+            app/test-results/twin
+          retention-days: 14
+          if-no-files-found: error
