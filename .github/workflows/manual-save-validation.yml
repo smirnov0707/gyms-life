@@ -1,0 +1,89 @@
+name: Manual run save recovery validation
+on:
+  push:
+    branches: [diagnostics/endurance-initial-save-2026-10-08]
+    paths: [.github/workflows/manual-save-validation.yml, 'diagnostics/manual-save-*', diagnostics/apply-manual-save.py]
+permissions:
+  contents: write
+concurrency:
+  group: manual-run-save-recovery-candidate
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: payload
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+          path: app
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply only checksum-verified candidate files
+        run: python3 payload/diagnostics/apply-manual-save.py app
+      - run: npm ci
+        working-directory: app
+      - run: node scripts/verify-ci-browser-runtime.mjs
+        working-directory: app
+      - name: Typecheck, unit contracts, full lint and both builds
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee test-results/manual-save/typecheck.log
+          npm test 2>&1 | tee test-results/manual-save/tests.log
+          npm run lint 2>&1 | tee test-results/manual-save/lint.log
+          npm run build:staging 2>&1 | tee test-results/manual-save/build-staging.log
+          npm run build 2>&1 | tee test-results/manual-save/build.log
+      - name: Native storage and real UI in pinned Chromium and WebKit
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          cp ../payload/diagnostics/manual-save-focused.mjs scripts/.manual-save-focused.mjs
+          node scripts/.manual-save-focused.mjs 2>&1 | tee test-results/manual-save/browser.log
+      - name: Publish only verified application files to an isolated branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const crypto = require('node:crypto');
+            const { owner, repo } = context.repo;
+            const base = '20e2d1613e9a0b1a4408d461c717847fe5c2f9c3';
+            const manifest = JSON.parse(fs.readFileSync('app/test-results/manual-save/manifest.json', 'utf8'));
+            const focused = JSON.parse(fs.readFileSync('app/test-results/manual-save/focused.json', 'utf8'));
+            if (manifest.baseCommit !== base || manifest.baseTree !== '66f143c9828384067e1d5fe051f5442c33741d4a' || manifest.files.length !== 11) throw new Error('Unexpected manifest');
+            if (focused.engines.length !== 2 || focused.engines.some(e => e.status !== 'passed' || e.checks.length !== 17 || e.errors.length)) throw new Error('Incomplete browser evidence');
+            const current = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
+            if (current.data.object.sha !== base) throw new Error('Main moved; rebase and reverify');
+            const entries = manifest.files.map(file => {
+              if (file.path.startsWith('/') || file.path.split('/').includes('..')) throw new Error('Unsafe path');
+              const data = fs.readFileSync(`app/${file.path}`);
+              const digest = crypto.createHash('sha1').update(`blob ${data.length}\0`).update(data).digest('hex');
+              if (digest !== file.blob) throw new Error(`Verified file changed: ${file.path}`);
+              return { path: file.path, mode: '100644', type: 'blob', content: data.toString('utf8') };
+            });
+            const tree = await github.rest.git.createTree({ owner, repo, base_tree: manifest.baseTree, tree: entries });
+            const commit = await github.rest.git.createCommit({ owner, repo, tree: tree.data.sha, parents: [base], message: 'fix(endurance): recover original manual saves using owner-bound request identity\n\nRetain the original request in native IndexedDB before delivery, use a deterministic owner/request primary key and immutable evidence marker, validate receipts, and read back exact owned records after lost replies. Preserve the legacy loaded-client action contract and existing secondary enrichment. Replayed delivery refreshes views without a second training-completed event.\n\nCandidate validation: all unit contracts, typecheck, full lint, staging and production builds and 17 real-component/native-storage scenario groups in each pinned Chromium and WebKit engine. No deployment, schema changes or live SQL/RLS acceptance. Guarantee is scoped to retaining the same owner/request key and existing database record; it is not global deduplication across independent submissions.' });
+            const branch = 'fix/endurance-initial-save-recovery-2026-10-08';
+            await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: commit.data.sha });
+            fs.writeFileSync('app/test-results/manual-save/published.json', JSON.stringify({ branch, commit: commit.data.sha, tree: tree.data.sha, base, files: manifest.files, scope: 'Candidate branch only; full PR gates and live acceptance remain required' }, null, 2));
+            core.info(`Published verified candidate ${commit.data.sha}`);
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manual-run-save-recovery-evidence
+          path: app/test-results/manual-save
+          retention-days: 14
+          if-no-files-found: error
