@@ -41,10 +41,10 @@ jobs:
                       body.append(lines[i][10:] if lines[i] else '');i+=1
                   blocks.append('\n'.join(body)+'\n')
               else:i+=1
-          assert len(blocks)==6,len(blocks)
+          assert len(blocks)==5,len(blocks)
           subprocess.run(['bash','-euo','pipefail','-c',blocks[0]],check=True)
           Path('/tmp/hightech-format.sh').write_text(blocks[1])
-          Path('/tmp/hightech-retain.sh').write_text(blocks[5])
+          Path('/tmp/hightech-retain.sh').write_text(blocks[4])
           p=Path('scripts/test-core-run-continuity.mjs');s=p.read_text()
           old='await expect(page.locator(\'[data-sonner-toast][data-type="success"]\')).toBeVisible();'
           assert s.count(old)==1
