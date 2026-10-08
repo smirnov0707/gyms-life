@@ -2,9 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { EnduranceActivitySchema, type EnduranceActivity } from "./endurance-activity.schema";
 import { buildEnduranceTrainingCredit } from "./endurance-training-credit.engine";
-import { matchCompletedRunToPlan } from "./endurance-session-matching.engine";
-import { loadActiveRacePrep } from "./endurance-race-prep.service";
-import { dayInTimeZone } from "./local-day";
+import { synchronizeEnduranceRace } from "./endurance-race-sync.service";
+import type { EnduranceRaceSyncResult } from "./endurance-race-sync.schema";
 
 type Client = SupabaseClient<Database>;
 
@@ -42,79 +41,15 @@ export async function recordEnduranceActivity(supabase: Client, userId: string, 
 
   if (error) throw error;
 
-  let raceMatch = null;
-  let raceIntelligence = null;
-  if (activity.kind === "run") {
-    try {
-      const { loadPersistedProfileTimeZone } = await import("./user-context.server");
-      const timeZone = await loadPersistedProfileTimeZone(supabase, userId);
-      const today = dayInTimeZone(new Date(activity.startedAt), timeZone);
-      const prep = await loadActiveRacePrep(supabase, userId, today, timeZone);
-      if (prep.status === "active") {
-        const completedKeys = new Set(prep.completedSessionKeys);
-        const remaining = prep.effectiveSessions.filter(
-          (session) => session.sessionKey && !completedKeys.has(session.sessionKey),
-        );
-        const match = matchCompletedRunToPlan(remaining, {
-          distanceMeters: activity.distanceMeters,
-          durationMinutes: activity.durationSeconds / 60,
-          perceivedEffort: activity.perceivedEffort,
-        });
-        const matchedSession =
-          match.status === "no_match" ? null : (remaining[match.plannedIndex] ?? null);
-        raceMatch =
-          match.status === "no_match"
-            ? match
-            : {
-                ...match,
-                raceGoalId: prep.goalId,
-                intent: matchedSession?.intent ?? null,
-              };
-        if (
-          raceMatch.status === "confident" &&
-          raceMatch.intent !== null &&
-          matchedSession?.sessionKey
-        ) {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { error: matchError } = await supabaseAdmin
-            .from("workout_sessions")
-            .update({
-              endurance_race_goal_id: prep.goalId,
-              endurance_plan_session_key: matchedSession.sessionKey,
-              endurance_session_intent: raceMatch.intent,
-              endurance_match_source: "system_confident",
-              endurance_match_score: raceMatch.score,
-            })
-            .eq("id", data.id)
-            .eq("user_id", userId);
-          if (matchError) throw matchError;
-          const { tryPersistCurrentEnduranceAdaptation } =
-            await import("./endurance-adaptation-refresh.service");
-          await tryPersistCurrentEnduranceAdaptation(supabase, userId, today, timeZone);
-        }
-        const refreshedPrep = await loadActiveRacePrep(supabase, userId, today, timeZone);
-        raceIntelligence =
-          refreshedPrep.status === "active"
-            ? {
-                goalId: refreshedPrep.goalId,
-                decision: refreshedPrep.intelligence,
-                readiness: refreshedPrep.readiness,
-              }
-            : null;
-      }
-    } catch {
-      // Race classification is enrichment. A successfully recorded run must
-      // never be rolled back or reported as failed because optional race
-      // preparation evidence was temporarily unavailable.
-      raceMatch = null;
-    }
-  }
+  const sync: EnduranceRaceSyncResult =
+    activity.kind === "run"
+      ? await synchronizeEnduranceRace(supabase, userId, { workoutSessionId: data.id })
+      : { raceMatch: null, raceIntelligence: null, raceSync: { status: "not_applicable" } };
 
   return {
     session: data,
     activity: activity satisfies EnduranceActivity,
     credit,
-    raceMatch,
-    raceIntelligence,
+    ...sync,
   };
 }
