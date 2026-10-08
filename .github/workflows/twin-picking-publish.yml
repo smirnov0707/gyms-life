@@ -39,7 +39,8 @@ jobs:
           import {createHash} from 'node:crypto';
           import path from 'node:path';
           const base=process.env.PR_HEAD;
-          const allowed=['scripts/test-twin-camera-picking.mjs','.github/workflows/twin-camera-navigation.yml','src/components/twin/twin-picking.profile.ts','src/components/twin/twin-picking.profile.test.ts','docs/twin-height-aware-picking.md','src/components/twin/twin-scene.runtime.ts'];
+          const hidden='.github/workflows/twin-camera-navigation.yml';
+          const allowed=['scripts/test-twin-camera-picking.mjs',hidden,'src/components/twin/twin-picking.profile.ts','src/components/twin/twin-picking.profile.test.ts','docs/twin-height-aware-picking.md','src/components/twin/twin-scene.runtime.ts'];
           const entries=[];
           function walk(dir){for(const name of readdirSync(dir)){const p=path.join(dir,name);statSync(p).isDirectory()?walk(p):entries.push(p);}}
           walk('/tmp/verified-height-picking');
@@ -66,13 +67,19 @@ jobs:
           assert.match(log,/Tests\s+2519 passed/);
           assert.match(log,/Test Files\s+311 passed/);
           const pr=await api('pulls/151');assert.equal(pr.head.sha,base);assert.equal(pr.state,'open');assert.equal(pr.merged,false);
+          // upload-artifact excludes .github by default. The acceptance recipe
+          // downloaded this exact immutable YAML and formatted only TS/MJS files.
+          const recipe=await api('contents/.github/workflows/twin-picking-profile.yml?ref=7bd550053ef0c20708de9762d7247a5a02b4d6d6');
+          assert.ok(Buffer.from(recipe.content,'base64').toString().includes('SOURCE: 6c1066fdc2413796ae5a548e618435d098e2213a'));
+          const yaml=await api(`contents/${hidden}?ref=6c1066fdc2413796ae5a548e618435d098e2213a`);
+          assert.equal(yaml.sha,'b69f5a506dc809a38d610b4e6581a0ceab86c606');assert.equal(yaml.encoding,'base64');
           const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
           assert.equal(git('rev-parse','HEAD'),base);
-          const source=allowed.map(name=>({path:name,content:readFileSync(one('reviewed-source/'+name),'utf8')}));
+          const source=allowed.map(name=>({path:name,content:name===hidden?Buffer.from(yaml.content,'base64').toString('utf8'):readFileSync(one('reviewed-source/'+name),'utf8')}));
           const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:source.map(f=>({...f,mode:'100644',type:'blob'}))});
-          const commit=await api('git/commits','POST',{message:'fix(twin): keep visible calf selection after vertical camera navigation\n\nUse height-aware axes derived from existing triangles, retaining near-side protection and unchanged geometry. TypeScript, 2519 tests, toolchain, lint, both builds, six original navigation groups and twelve real-pointer Body/Muscles groups passed in run 37833750004. Reuse the exact retained formatted source; that run failed only its subsequent PR-read permission check. This finalizer creates an object only, not a ref or deploy.',tree:tree.sha,parents:[base]});
+          const commit=await api('git/commits','POST',{message:'fix(twin): keep visible calf selection after vertical camera navigation\n\nUse height-aware axes derived from existing triangles, retaining near-side protection and unchanged geometry. TypeScript, 2519 tests, toolchain, lint, both builds, six original navigation groups and twelve real-pointer Body/Muscles groups passed in run 37833750004. Reuse retained formatted source and exact immutable workflow. That run failed only its subsequent PR-read permission check. This finalizer creates an object only, not a ref or deploy.',tree:tree.sha,parents:[base]});
           const output='test-results/twin-finalized';mkdirSync(output,{recursive:true});
-          const report={commit:commit.sha,tree:tree.sha,parent:base,sourceRun:37833750004,sourceArtifact:11574861850,sourceArtifactDigest:metadata.digest,quality:{typecheck:'passed',unitTests:2519,unitFiles:311,toolchain:'passed',lint:'passed',buildStaging:'passed',buildMain:'passed'},navigationGroups:6,pickingGroups:12,files:source.map(f=>({path:f.path,sha256:createHash('sha256').update(f.content).digest('hex')})),publicationRecovery:'Original tests succeeded; explicit pull-requests:read corrects only the failed metadata check. No test rerun or altered evidence.',prUpdated:false,deployed:false};
+          const report={commit:commit.sha,tree:tree.sha,parent:base,sourceRun:37833750004,sourceArtifact:11574861850,sourceArtifactDigest:metadata.digest,quality:{typecheck:'passed',unitTests:2519,unitFiles:311,toolchain:'passed',lint:'passed',buildStaging:'passed',buildMain:'passed'},navigationGroups:6,pickingGroups:12,files:source.map(f=>({path:f.path,sha256:createHash('sha256').update(f.content).digest('hex'),source:f.path===hidden?'immutable original YAML blob b69f5a506dc809a38d610b4e6581a0ceab86c606':'verified artifact'})),publicationRecovery:'Original tests succeeded. Correct PR metadata read permission and recover unchanged hidden YAML omitted by artifact defaults. No changed application content or rerun claims.',prUpdated:false,deployed:false};
           writeFileSync(path.join(output,'verified-height-picking.json'),JSON.stringify(report,null,2));
           for(const f of source){const target=path.join(output,'reviewed-source',f.path);mkdirSync(path.dirname(target),{recursive:true});writeFileSync(target,f.content);}
           copyFileSync(one('twin-navigation/results.json'),path.join(output,'navigation-results.json'));
@@ -83,5 +90,6 @@ jobs:
         with:
           name: twin-finalized-picking-manifest
           path: test-results/twin-finalized
+          include-hidden-files: true
           retention-days: 14
           if-no-files-found: error
