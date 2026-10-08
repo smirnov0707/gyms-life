@@ -1,0 +1,82 @@
+name: Twin strict height picking acceptance
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-height-acceptance.yml]
+permissions:
+  contents: write
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: 299a9bc935de265e993d5531ac98dc2439d7cc54
+      SOURCE: 3d4df1a37e878924c64cad8e21e53b57cf760ba8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Load the pinned reviewed recipe and integrate strict-safe source
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import urllib.request,subprocess
+          from pathlib import Path
+          url='https://raw.githubusercontent.com/smirnov0707/gyms-life/cc061b1312e33216208978408d93a6afe78b3186/.github/workflows/twin-picking-height.yml'
+          lines=urllib.request.urlopen(url,timeout=30).read().decode().splitlines()
+          blocks=[];i=0
+          while i<len(lines):
+              line=lines[i]
+              if line=='        run: |':
+                  i+=1;body=[]
+                  while i<len(lines) and (not lines[i] or lines[i].startswith('          ')):
+                      body.append(lines[i][10:] if lines[i] else '');i+=1
+                  blocks.append('\n'.join(body)+'\n')
+              elif line.startswith('      - run: '):
+                  blocks.append(line[len('      - run: '):]+'\n');i+=1
+              elif line.startswith('        run: '):
+                  blocks.append(line[len('        run: '):]+'\n');i+=1
+              else:i+=1
+          assert len(blocks)==11,len(blocks)
+          assert blocks[2].strip()=='npm ci'
+          assert blocks[7].strip()=='node scripts/test-twin-camera-navigation.mjs'
+          assert blocks[8].strip()=='node scripts/test-twin-camera-picking.mjs'
+          for index,body in enumerate(blocks):Path('/tmp/height-'+str(index)+'.sh').write_text(body)
+          for index in [0,1]:subprocess.run(['bash','-euo','pipefail','/tmp/height-'+str(index)+'.sh'],check=True)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format changed files and verify geometric regressions
+        run: bash -euo pipefail /tmp/height-4.sh && bash -euo pipefail /tmp/height-5.sh
+      - name: Full typecheck, units, toolchain, lint and both builds
+        shell: bash
+        run: |
+          mkdir -p test-results/twin-height
+          bash -euo pipefail /tmp/height-6.sh > /tmp/height-quality.log 2>&1 || { tail -n 100 /tmp/height-quality.log; exit 1; }
+          grep -E 'Test Files|Tests |problems|errors|built in|# pass|# fail|Registered calf' /tmp/height-quality.log || true
+      - name: Original six navigation groups
+        run: bash -euo pipefail /tmp/height-7.sh
+      - name: Twelve real leg and back picking groups
+        run: bash -euo pipefail /tmp/height-8.sh
+      - name: Retain exact tested commit without branch advancement
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash -euo pipefail /tmp/height-9.sh
+      - name: Retain exact source even on failure
+        if: always()
+        run: test ! -f /tmp/height-10.sh || bash -euo pipefail /tmp/height-10.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-strict-height-picking-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
