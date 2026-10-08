@@ -1,0 +1,70 @@
+name: Twin picking cause diagnosis
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-picking-cause.yml]
+permissions:
+  contents: read
+jobs:
+  diagnosis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 299a9bc935de265e993d5531ac98dc2439d7cc54
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Add read-only hit diagnostics in test transform only
+        run: |
+          python3 <<'PY'
+          import urllib.request
+          from pathlib import Path
+          s=urllib.request.urlopen('https://raw.githubusercontent.com/smirnov0707/gyms-life/316711dde60381c249988241ea97b68d98f1ea47/scripts/test-twin-camera-picking.mjs',timeout=30).read().decode()
+          def rep(old,new):
+              global s
+              assert s.count(old)==1,(old,s.count(old));s=s.replace(old,new)
+          rep('for (const width of [320, 390, 1280])','for (const width of [320])')
+          rep('for (const theme of ["dark", "light"])','for (const theme of ["dark"])')
+          rep('for (const appearance of ["realistic", "analysis"])','for (const appearance of ["analysis"])')
+          rep('legacyPointHit: inspect(.6,.4),','''legacyPointHit: inspect(.6,.4),
+            diagnosis: (() => {
+              independentRay.setFromCamera(new Vector2(point.u * 2 - 1, 1 - point.v * 2), camera);
+              return {
+                ray: {origin: independentRay.ray.origin.toArray(), direction: independentRay.ray.direction.toArray()},
+                cutoff: twinNearSideReach(independentRay.ray, camera.position, target),
+                hits: independentRay.intersectObjects(model.meshes, false).slice(0, 12).map(hit => ({
+                  region: model.regionOf.get(hit.object) ?? null, distance: hit.distance,
+                  point: hit.point.toArray(), normal: hit.face?.normal.clone().transformDirection(hit.object.matrixWorld).toArray(),
+                  facing: hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld).dot(independentRay.ray.direction) : null,
+                }))
+              };
+            })(),''')
+          rep('assert.ok(point, `${name}: no visible interior ${region} triangle`);','assert.ok(point, `${name}: no visible interior ${region} triangle`); console.log("PROJECTED_TARGET", JSON.stringify(point));')
+          rep('page.on("pageerror", (error) => errors.push(`${name}: ${error}`));','page.on("pageerror", (error) => errors.push(`${name}: ${error}`)); page.on("console", m => {if(m.text().startsWith("PICKING_DEBUG")) console.log(m.text());});')
+          old='return { code: code.replace(anchor, probe + anchor), map: null };'
+          new='''const guarded = code.replace(
+            'if (!start || event.button !== 0 || !isTwinTap(maxTravel, multiplePointers)) return;',
+            'console.log("PICKING_DEBUG_GUARD", JSON.stringify({start, button: event.button, maxTravel, multiplePointers, x: event.clientX, y: event.clientY})); if (!start || event.button !== 0 || !isTwinTap(maxTravel, multiplePointers)) return;'
+          ).replace('if (region) options.onSelect(region);', 'console.log("PICKING_DEBUG_RESULT", JSON.stringify({region, reach, camera:camera.position.toArray(), target:controls.target.toArray(), hits:raycaster.intersectObjects(model.meshes,false).slice(0,6).map(h=>({region:model.regionOf.get(h.object),distance:h.distance,point:h.point.toArray()}))})); if (region) options.onSelect(region);');
+          return { code: guarded.replace(anchor, probe + anchor), map: null };'''
+          rep(old,new)
+          Path('scripts/test-twin-camera-picking.mjs').write_text(s)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Reproduce the observed miss without relaxing selection assertions
+        run: node scripts/test-twin-camera-picking.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-picking-cause-evidence
+          path: test-results/twin-navigation
+          retention-days: 14
+          if-no-files-found: error
