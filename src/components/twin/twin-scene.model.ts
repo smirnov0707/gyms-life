@@ -247,13 +247,19 @@ export type TwinCameraCommand =
   | "right"
   | "rotate-left"
   | "rotate-right"
+  | "pan-up"
+  | "pan-down"
+  | "tilt-up"
+  | "tilt-down"
+  | "upper-body"
+  | "lower-body"
   | "zoom-in"
   | "zoom-out"
   | "reset";
 export type TwinCameraPose = { yaw: number; pitch: number; distance: number };
 export const TWIN_CAMERA = {
-  minPitch: Math.PI * 0.37,
-  maxPitch: Math.PI * 0.58,
+  minPitch: Math.PI * 0.22,
+  maxPitch: Math.PI * 0.78,
   defaultPitch: Math.PI * 0.48,
   // Close enough to fill the frame with one muscle. This was 0.58, which is a
   // magnification of about 1.35x — the athlete could never get near enough to
@@ -318,6 +324,9 @@ export function moveTwinCamera(
   if (command === "right") next.yaw = Math.PI / 2;
   if (command === "rotate-left") next.yaw -= TWIN_CAMERA.step;
   if (command === "rotate-right") next.yaw += TWIN_CAMERA.step;
+  if (command === "tilt-up") next.pitch -= TWIN_CAMERA.step / 2;
+  if (command === "tilt-down") next.pitch += TWIN_CAMERA.step / 2;
+  if (command === "upper-body" || command === "lower-body") next.pitch = Math.PI / 2;
   if (command === "zoom-in") next.distance *= 0.88;
   if (command === "zoom-out") next.distance /= 0.88;
   if (command === "reset") {
