@@ -1,0 +1,50 @@
+name: PR139 exact failure excerpt
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-error-excerpt-20261008.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  excerpt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = 'diagnostics/pr139-repro-2026-10-07';
+            const runId = 37686999792;
+            const jobId = 113017273306;
+            const expected = '94b96529de1e2c57355488c33c69a7378e75738e';
+            const run = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+            if (run.data.head_sha !== expected || run.data.status !== 'completed') {
+              throw new Error('Unexpected or incomplete source run');
+            }
+            const job = await github.rest.actions.getJobForWorkflowRun({ owner, repo, job_id: jobId });
+            if (job.data.run_id !== runId) throw new Error('Job does not belong to source run');
+            const response = await github.rest.actions.downloadJobLogsForWorkflowRun({ owner, repo, job_id: jobId });
+            const raw = typeof response.data === 'string' ? response.data : Buffer.from(response.data).toString('utf8');
+            const lines = raw.replace(/\x1b\[[0-9;]*m/g, '').split('\n');
+            const exit = lines.findIndex(line => line.includes('##[error]Process completed'));
+            if (exit < 0) throw new Error('No failed process boundary in decoded log');
+            const clean = line => line.replace(/^\S+Z\s*/, '');
+            const report = {
+              sourceCommit: expected, runId, jobId, conclusion: run.data.conclusion,
+              sourceUrl: job.data.html_url,
+              lastPassed: lines.slice(0, exit).filter(line => /\bPASS /.test(line)).slice(-8).map(clean),
+              captureRetries: lines.slice(0, exit).filter(line => line.includes('BROWSER_EVIDENCE_RETRY')).map(clean),
+              failureTail: lines.slice(Math.max(0, exit - 110), exit + 1).map(clean).join('\n').slice(-14000),
+              scope: 'Existing failed CI evidence only. No rerun, application changes or production deployment.'
+            };
+            const ref = await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+            if (ref.data.object.sha !== context.sha) throw new Error('Diagnostic branch changed; refusing write');
+            const path = 'diagnostics/pr139-failure-94b96529-20261008.json';
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, branch, path,
+              message: 'chore(diagnostics): record verified PR139 failure evidence',
+              content: Buffer.from(JSON.stringify(report, null, 2) + '\n').toString('base64')
+            });
+            core.info(`Saved bounded failure report: ${path}`);
