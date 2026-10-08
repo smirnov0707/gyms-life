@@ -25,15 +25,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Replay the exact candidate recipe and harden repeated unavailable readback
+      - name: Restore the exact candidate and require an acknowledged save before navigation
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import urllib.request, subprocess
-          url='https://raw.githubusercontent.com/smirnov0707/gyms-life/f449ab00c63452526c124deec6bdd326ab0258da/.github/workflows/hightech-continuity-candidate.yml'
-          text=urllib.request.urlopen(url,timeout=30).read().decode('utf8')
-          lines=text.splitlines();blocks=[];i=0
+          import urllib.request, subprocess, re
+          url='https://raw.githubusercontent.com/smirnov0707/gyms-life/c1ec10c11372f776486f80e5d18e2f97c8b23e5c/.github/workflows/hightech-continuity-final.yml'
+          source=urllib.request.urlopen(url,timeout=30).read().decode('utf8')
+          lines=source.splitlines();blocks=[];i=0
           while i<len(lines):
               if lines[i]=='        run: |':
                   i+=1;body=[]
@@ -41,82 +41,34 @@ jobs:
                       body.append(lines[i][10:] if lines[i] else '');i+=1
                   blocks.append('\n'.join(body)+'\n')
               else:i+=1
-          assert len(blocks)==5, len(blocks)
-          for index in [0,1]:subprocess.run(['bash','-euo','pipefail','-c',blocks[index]],check=True)
+          assert len(blocks)==6,len(blocks)
+          subprocess.run(['bash','-euo','pipefail','-c',blocks[0]],check=True)
+          Path('/tmp/hightech-format.sh').write_text(blocks[1])
+          Path('/tmp/hightech-retain.sh').write_text(blocks[5])
+          p=Path('scripts/test-core-run-continuity.mjs');s=p.read_text()
+          old='await expect(page.locator(\'[data-sonner-toast][data-type="success"]\')).toBeVisible();'
+          assert s.count(old)==1
+          new=old+'''
+              // An earlier toast may still be visible. The current form must receive
+              // its own acknowledgement and finish refreshing before navigation.
+              await expect(page.getByRole('textbox',{name:lt?'Trukmė minutėmis':'Duration in minutes'})).toHaveValue('');
+              await expect(page.getByRole('button',{name:lt?'Užskaityti bėgimą':'Credit this run',exact:true})).toBeEnabled();'''
+          p.write_text(s.replace(old,new))
           p=Path('src/components/QuickRunLog.tsx');s=p.read_text()
-          old='applyEnrichment(sessionId, result, Boolean(restoredSessionId));'
-          assert s.count(old)==1
-          s=s.replace(old,'applyEnrichment(sessionId, result, Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired));')
-          p.write_text(s)
-          p=Path('tests/core-browser/endurance-log-fixtures.ts');s=p.read_text()
-          old='  if (query.get("retry") === "needs-confirmation") return outcome("needs_confirmation");'
-          assert s.count(old)==1
-          s=s.replace(old,old+'\n  if (query.get("retry") === "load-unavailable") {\n    const unavailable: EnduranceRaceEnrichmentResult = { ...outcome("unavailable"), raceEnrichment: { status: "unavailable", linked: false, retryable: true, stage: "load" } };\n    return unavailable;\n  }')
-          p.write_text(s)
-          p=Path('scripts/test-core-run-continuity.mjs');s=p.read_text();end=s.rfind('\n}');assert end>0
-          extra=r'''
-            {
-              const {page,context}=await prepare('scenario=unavailable&retry=load-unavailable');
-              await save(page); await page.reload();
-              await page.locator('[data-run-follow-up-check]').click();
-              await expect(page.getByRole('status')).toContainText('The earlier run could not be verified.');
-              for(let attempt=0;attempt<2;attempt++) {
-                await page.getByRole('button',{name:'Retry plan check',exact:true}).click();
-                await expect(page.getByRole('button',{name:'Retry plan check',exact:true})).toBeEnabled();
-                await expect(page.getByRole('status')).toContainText('The earlier run could not be verified.');
-              }
-              expect(await state(page)).toMatchObject({records:1,saves:1,retries:3,trainingEvents:0});
-              expect(await page.evaluate(p=>Object.keys(sessionStorage).filter(k=>k.startsWith(p)).length,prefix)).toBe(1);
-              await context.close(); record('Run continuity: repeated unavailable readback stays unverified and never creates a new run');
-            }
-          '''
-          p.write_text(s[:end]+extra+s[end:])
-          quality=blocks[2]
-          start=quality.index("node --input-type=module <<'JS'\n")
-          end=quality.index('\nJS\n',start)+len('\nJS\n')
-          quality=quality[:start]+quality[end:]
-          for command in ['npm run typecheck','npm run test\n','npm run test:toolchain','npm run lint','npm run build:staging','npm run build\n']:
-              assert command in quality,command
-          assert 'prettier' not in quality
-          Path('/tmp/hightech-quality.sh').write_text(quality)
-          focused=blocks[3].replace('!==21','!==22').replace('14 original + 7 new','14 original + 8 new')
-          Path('/tmp/hightech-browser.sh').write_text(focused)
-          publish=blocks[4]
-          old="const commit=await api('git/commits','POST',"
-          assert publish.count(old)==1
-          before="""let previous=null;
-          const refResponse=await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/${process.env.FEATURE_BRANCH}`,{headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json'}});
-          if(refResponse.ok) {
-            previous=(await refResponse.json()).object.sha;
-            const prior=await api(`git/commits/${previous}`);
-            assert.equal(prior.parents.length,1);assert.equal(prior.parents[0].sha,base);
-            assert.ok(prior.message.startsWith('feat(endurance): high-tech run console and owner-scoped follow-up continuity'));
-          } else assert.equal(refResponse.status,404);
-          """
-          publish=publish.replace(old,before+old)
-          publish=publish.replace('parents:[base]','parents:[previous ?? base]').replace('21 real-component groups','22 real-component groups')
-          old="await api('git/refs','POST',{ref:`refs/heads/${process.env.FEATURE_BRANCH}`,sha:commit.sha});"
-          assert publish.count(old)==1
-          publish=publish.replace(old,"if(previous) await api(`git/refs/heads/${process.env.FEATURE_BRANCH}`,'PATCH',{sha:commit.sha,force:false}); else "+old)
-          Path('/tmp/hightech-publish.sh').write_text(publish)
+          start=s.index('  const retryPlanCheck =');end=s.index('  const acceptMatch =',start)
+          part=s[start:end]
+          part,n=re.subn(r'\brestoredSessionId(?=\s*\n\s*\? english)', '(Boolean(restoredSessionId) || Boolean(savedRun?.verificationRequired))',part)
+          assert n==1,n
+          old='await refreshSavedRun(false, result.raceIntelligence);'
+          assert part.count(old)==1
+          part=part.replace(old,'if (!(result.raceEnrichment.status === "unavailable" && result.raceEnrichment.stage === "load")) '+old)
+          p.write_text(s[:start]+part+s[end:])
           PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
-      - name: Apply only formatting fixes using the existing installed ESLint rules
+      - name: Format only with installed ESLint rules
         shell: bash
-        run: |
-          node --input-type=module <<'JS'
-          import assert from 'node:assert/strict';
-          import {readFileSync,writeFileSync} from 'node:fs';
-          import {ESLint} from 'eslint';
-          const paths=JSON.parse(readFileSync('test-results/candidate-files.json','utf8')).filter(p=>/\.(?:ts|tsx|mjs)$/.test(p));
-          const formatter=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
-          const results=await formatter.lintFiles(paths);
-          await ESLint.outputFixes(results);
-          for(const result of results) assert.equal(result.errorCount,0,JSON.stringify({file:result.filePath,messages:result.messages}));
-          writeFileSync('test-results/formatting.json',JSON.stringify({onlyRule:'prettier/prettier',paths,dependenciesChanged:false},null,2));
-          console.log('PASS: formatting only; full unchanged lint and tests still required.');
-          JS
+        run: bash /tmp/hightech-format.sh
       - name: Verify all unit tests, TypeScript, lint, toolchain and both builds
         shell: bash
         run: |
@@ -132,22 +84,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: bash /tmp/hightech-publish.sh
-      - name: Retain final source only after test discovery and verification have ended
+      - name: Retain final source after test discovery ends
         if: always()
         shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          import json, shutil
-          manifest=Path('test-results/candidate-files.json')
-          if manifest.exists():
-              for name in json.loads(manifest.read_text()):
-                  source=Path(name)
-                  if source.exists():
-                      target=Path('test-results/candidate-source')/name
-                      target.parent.mkdir(parents=True,exist_ok=True)
-                      shutil.copyfile(source,target)
-          PY
+        run: bash /tmp/hightech-retain.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
