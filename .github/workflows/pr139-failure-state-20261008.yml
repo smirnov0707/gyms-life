@@ -1,0 +1,41 @@
+name: PR139 failed navigation state
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-failure-state-20261008.yml]
+permissions:
+  actions: read
+  contents: write
+jobs:
+  state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 37686999792
+          name: today-browser-evidence
+          path: evidence
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        with:
+          script: |
+            const fs = require('node:fs');
+            const { owner, repo } = context.repo;
+            const branch = 'diagnostics/pr139-repro-2026-10-07';
+            const source = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: 37686999792 });
+            if (source.data.head_sha !== '94b96529de1e2c57355488c33c69a7378e75738e') throw new Error('Wrong source run');
+            const failure = JSON.parse(fs.readFileSync('evidence/failure.json', 'utf8'));
+            const results = JSON.parse(fs.readFileSync('evidence/results.json', 'utf8'));
+            const testedCommit = fs.readFileSync('evidence/tested-commit.txt', 'utf8').trim();
+            const report = { sourceHead: source.data.head_sha, testedCommit, run: source.data.html_url, failure, lastPassed: results.slice(-8) };
+            const data = JSON.stringify(report, null, 2) + '\n';
+            if (data.length > 20000) throw new Error('Unexpected report size');
+            const ref = await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+            if (ref.data.object.sha !== context.sha) throw new Error('Diagnostic branch changed');
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, branch, path: 'diagnostics/pr139-failure-state-94b96529.json',
+              message: 'chore(diagnostics): record original navigation failure state',
+              content: Buffer.from(data).toString('base64')
+            });
+            core.info('Saved verified failure state without screenshot payloads.');
