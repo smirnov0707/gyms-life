@@ -32,6 +32,7 @@ import { TWIN_SKIN_COLOR, twinSurfaceStyle } from "./twin-surface.style";
 import { setTwinAnatomySelection } from "./twin-anatomy.material";
 import { createTwinStageDecor } from "./twin-stage.scene";
 import { createTwinCameraFrame } from "./twin-camera.framing";
+import { createTwinPickingProfile } from "./twin-picking.profile";
 import type { TwinBodyProvenance } from "./twin-body.provenance";
 import { loadTwinIdentityShell, type TwinIdentityShellModel } from "./twin-identity-shell.loader";
 import {
@@ -156,6 +157,7 @@ export function mountTwinScene(
     const target = new Vector3(0, TWIN_FRAME.eyeHeight, 0);
     let fitDistance = fittedTwinDistance(0.7);
     let bodyFrame: ReturnType<typeof createTwinCameraFrame> | null = null;
+    let pickingProfile: ReturnType<typeof createTwinPickingProfile> = null;
     camera.position.set(0, TWIN_FRAME.eyeHeight, fitDistance);
     const controls = new OrbitControls(camera, canvas);
     cleanups.push(() => controls.dispose());
@@ -541,6 +543,7 @@ export function mountTwinScene(
     function frameBody(nextFrame: ReturnType<typeof createTwinCameraFrame>) {
       const offset = camera.position.clone().sub(controls.target);
       bodyFrame = nextFrame;
+      pickingProfile = createTwinPickingProfile(model.body);
       target.copy(nextFrame.target);
       controls.target.copy(target);
       camera.position.copy(target).add(offset);
@@ -607,6 +610,7 @@ export function mountTwinScene(
         );
     };
     const raycaster = new Raycaster();
+    const pickingAxis = new Vector3();
     const up = (event: PointerEvent) => {
       move(event);
       const start = pointers.get(event.pointerId);
@@ -636,7 +640,14 @@ export function mountTwinScene(
       const reach = twinNearSideReach(raycaster.ray, camera.position, target);
       const region = raycaster
         .intersectObjects(model.meshes, false)
-        .filter((hit) => hit.distance <= reach)
+        .filter((hit) => {
+          // The torso centre can sit in front of a visible calf. Keep the
+          // near-side guard, but use actual geometry at this hit's height.
+          const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
+            ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
+            : reach;
+          return hit.distance <= limit;
+        })
         .map((hit) => (hit.object instanceof Mesh ? model.regionOf.get(hit.object) : undefined))
         .find((candidate) => candidate !== undefined);
       if (region) options.onSelect(region);

@@ -7,7 +7,7 @@ on:
       - "src/components/future-lab-*.css"
       - "src/styles.css"
       - "tests/twin-browser/**"
-      - "scripts/test-twin-camera-navigation.mjs"
+      - "scripts/test-twin-camera-*.mjs"
       - "public/models/**"
       - ".github/workflows/twin-camera-navigation.yml"
   push:
@@ -18,7 +18,7 @@ on:
       - "src/components/future-lab-*.css"
       - "src/styles.css"
       - "tests/twin-browser/**"
-      - "scripts/test-twin-camera-navigation.mjs"
+      - "scripts/test-twin-camera-*.mjs"
       - "public/models/**"
       - ".github/workflows/twin-camera-navigation.yml"
 permissions:
@@ -29,7 +29,7 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
       options: --init
@@ -42,6 +42,8 @@ jobs:
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - run: node scripts/test-twin-camera-navigation.mjs
+      - name: Actual leg and back picking after camera navigation in both models
+        run: node scripts/test-twin-camera-picking.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
