@@ -1,0 +1,106 @@
+name: Twin skin clarity validation
+on:
+  push:
+    branches: [diagnostics/twin-skin-clarity-2026-10-08]
+    paths: [.github/workflows/twin-skin-clarity-validation.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+          path: app
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply exact source-checked visual edits
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, pathlib, shutil
+          changes=json.loads(pathlib.Path('../candidate/diagnostics/twin-skin-edits.json').read_text())
+          for name, item in changes.items():
+              p=pathlib.Path(name)
+              old=p.read_text()
+              assert hashlib.sha256(old.encode()).hexdigest()==item['before'], 'Unexpected base: '+name
+              lines=old.splitlines(keepends=True)
+              for start,end,text in reversed(item['edits']):
+                  lines[start:end]=[text]
+              new=''.join(lines)
+              assert hashlib.sha256(new.encode()).hexdigest()==item['sha256'], 'Unexpected output: '+name
+              p.write_text(new)
+          extra=['src/components/twin/twin-surface.style.ts','src/components/twin/twin-surface.style.test.ts','scripts/test-twin-skin-browser.mjs']
+          for name in extra:
+              p=pathlib.Path(name)
+              assert not p.exists(), 'Refuse replacement of unrelated file'
+              shutil.copyfile(pathlib.Path('../candidate')/name,p)
+          pathlib.Path('test-results/twin-skin-quality').mkdir(parents=True,exist_ok=True)
+          pathlib.Path('test-results/twin-skin-quality/paths.json').write_text(json.dumps(list(changes)+extra))
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Full quality and builds without deploying
+        run: |
+          set -o pipefail
+          npx prettier --write src/components/twin/twin-surface.style.ts src/components/twin/twin-surface.style.test.ts scripts/test-twin-skin-browser.mjs
+          npm run typecheck 2>&1 | tee test-results/twin-skin-quality/typecheck.log
+          npm test 2>&1 | tee test-results/twin-skin-quality/tests.log
+          npm run lint 2>&1 | tee test-results/twin-skin-quality/lint.log
+          npm run build:staging 2>&1 | tee test-results/twin-skin-quality/build-staging.log
+          npm run build 2>&1 | tee test-results/twin-skin-quality/build.log
+      - name: Inspect real 3D pixels and native region selection
+        run: |
+          set -o pipefail
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/twin-skin-quality/browser.log
+      - name: Publish only verified application changes to new branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const api='https://api.github.com/repos/smirnov0707/gyms-life';
+          async function request(path,method='GET',body) {
+            const r=await fetch(api+path,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(30000)});
+            if(!r.ok) throw new Error(`GitHub ${method} ${path}: ${r.status}`);
+            return r.json();
+          }
+          const base='20e2d1613e9a0b1a4408d461c717847fe5c2f9c3';
+          const current=await request('/git/ref/heads/main');
+          assert.equal(current.object.sha,base,'main changed; review before promotion');
+          const paths=JSON.parse(readFileSync('test-results/twin-skin-quality/paths.json','utf8'));
+          const result=JSON.parse(readFileSync('test-results/twin-skin/results.json','utf8'));
+          assert.equal(result.results.length,8);
+          assert.deepEqual(result.errors,[]);
+          const tree=await request('/git/trees','POST',{base_tree:'66f143c9828384067e1d5fe051f5442c33741d4a',tree:paths.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await request('/git/commits','POST',{message:'fix(twin): natural skin and visible selection even without muscle evidence\n\nUse one skin-forward non-metallic material across generic anatomy, neutral seams and fallback; retain distinct verified body assets. Selection is separate from physiological evidence, with an opaque mask-aware edge cue. Explicit region selection focuses the existing camera, including back-facing regions.\n\nValidated: full typecheck, unit tests, lint, both builds; eight real WebGL route/theme/appearance/width combinations with skin/selection pixel checks and screenshots. No database, identity texture, geometry or physiological calculation changes. Full normal PR gates remain required.',tree:tree.sha,parents:[base]});
+          await request('/git/refs','POST',{ref:'refs/heads/fix/twin-skin-clarity-2026-10-08',sha:commit.sha});
+          writeFileSync('test-results/twin-skin-quality/published.json',JSON.stringify({base,sha:commit.sha,tree:tree.sha,paths},null,2));
+          console.log(`Published checked Twin candidate ${commit.sha}`);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-skin-clarity-evidence
+          path: |
+            app/test-results/twin-skin
+            app/test-results/twin-skin-quality
+          retention-days: 14
+          if-no-files-found: error
