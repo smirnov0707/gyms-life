@@ -60,6 +60,7 @@ const COPY = {
     scene:
       "Interactive human body. Drag to rotate; pinch to zoom. Keyboard: left/right arrows rotate, plus/minus zoom, Home resets.",
     hint: "Drag to rotate 360° · Pinch or scroll to zoom",
+    selectionHint: "Bright edge = selected region, not a health reading.",
     loading: "Preparing 3D… 2D remains available.",
     fallback: "3D is unavailable on this device. Your evidence is still available in 2D.",
     timeout: "The 3D model took too long to load. Your evidence is still available in 2D.",
@@ -86,6 +87,7 @@ const COPY = {
     scene:
       "Interaktyvus žmogaus kūnas. Tempk, kad pasuktum; suglausk pirštus, kad keistum mastelį. Klaviatūra: rodyklės suka, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
     hint: "Tempk ir suk 360° · Mastelį keisk dviem pirštais",
+    selectionHint: "Šviesus kontūras žymi pasirinkimą, ne sveikatos rodiklį.",
     loading: "Ruošiamas 3D… 2D vaizdas lieka pasiekiamas.",
     fallback: "3D šiame įrenginyje nepasiekiamas. Tavo duomenys lieka pasiekiami 2D vaizde.",
     timeout: "3D modelio įkėlimas užtruko per ilgai. Tavo duomenys lieka pasiekiami 2D vaizde.",
@@ -141,13 +143,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
   const [mobileViewport, setMobileViewport] = useState(false);
   const mobileDisclosure = compactMobileControls && mobileViewport;
   useEffect(() => {
-    if (!compactMobileControls) return;
     const query = window.matchMedia("(max-width: 639px)");
     const update = () => setMobileViewport(query.matches);
     update();
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
-  }, [compactMobileControls]);
+  }, []);
   const host = useRef<HTMLDivElement>(null);
   const scene = useRef<TwinSceneHandle | null>(null);
   const latest = useRef(props);
@@ -398,7 +399,10 @@ export function BodySceneStage(props: BodySceneStageProps) {
             aria-label={copy.region}
             value={selectedRegion && isTwinBodyRegion(selectedRegion) ? selectedRegion : ""}
             onChange={(event) => {
-              if (event.target.value) selectRegion(event.target.value);
+              if (event.target.value) {
+                selectRegion(event.target.value);
+                if (show3D) scene.current?.focus(event.target.value);
+              }
             }}
             className="min-h-11 w-full min-w-0 appearance-none rounded-xl border border-white/15 bg-[#101615] py-2 pl-3 pr-10 text-sm text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300"
           >
@@ -446,12 +450,15 @@ export function BodySceneStage(props: BodySceneStageProps) {
         }}
         className="mx-3 mb-3 rounded-2xl border border-white/10 bg-black/30 p-3"
       >
-        {mobileDisclosure && appearanceControls ? (
+        {mobileViewport && appearanceControls ? (
           <div className="mb-2">{appearanceControls}</div>
         ) : null}
         {mobileDisclosure && layerControls}
         {(presentation === "cockpit" || mobileDisclosure) && rendererControls}
         <p className="text-xs leading-relaxed text-neutral-300">{copy.hint}</p>
+        <p data-twin-selection-hint className="mt-1 text-xs leading-relaxed text-neutral-300">
+          {copy.selectionHint}
+        </p>
         <div className="flex flex-wrap justify-center gap-1 pt-2">
           {show3D &&
             (

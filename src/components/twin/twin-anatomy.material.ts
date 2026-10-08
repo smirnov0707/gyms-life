@@ -7,8 +7,16 @@ import {
 } from "three";
 import type { TwinSculptContour, TwinSculptCompetition } from "./twin-sculpt.contours";
 
+import { TWIN_SKIN_COLOR } from "./twin-surface.style";
+
+const selectionWeights = new WeakMap<MeshStandardMaterial, { value: number }>();
+export function setTwinAnatomySelection(material: MeshStandardMaterial, selected: boolean) {
+  const uniform = selectionWeights.get(material);
+  if (uniform) uniform.value = selected ? 1 : 0;
+}
+
 /**
- * A cool edge on the existing surface keeps the dark anatomical silhouette
+ * A restrained edge on the existing surface keeps the anatomical silhouette
  * readable. This is constant studio lighting, independent of every data layer.
  * Opaque depth testing preserves the atlas's overlapping muscle boundaries;
  * additional translucent shells would wash those boundaries out.
@@ -30,9 +38,16 @@ export function createTwinAnatomyMaterial(
   } = {},
 ): MeshStandardMaterial {
   const material = new MeshStandardMaterial(parameters);
+  const selection = { value: 0 };
+  selectionWeights.set(material, selection);
   material.onBeforeCompile = (shader) => {
+    shader.uniforms["twinSelected"] = selection;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <common>",
+      "#include <common>\nuniform float twinSelected;",
+    );
     if (regionMask) {
-      shader.uniforms["twinNeutral"] = { value: new Color(0x354956) };
+      shader.uniforms["twinNeutral"] = { value: new Color(TWIN_SKIN_COLOR) };
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
@@ -168,10 +183,14 @@ export function createTwinAnatomyMaterial(
       `#include <emissivemap_fragment>
       ${regionMask ? "totalEmissiveRadiance *= twinSurfaceMask;" : ""}
       float twinRim = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 6.0);
-      totalEmissiveRadiance += vec3(0.14, 0.38, 0.46) * twinRim * 0.18;`,
+      totalEmissiveRadiance += vec3(0.22, 0.28, 0.3) * twinRim * 0.06;
+      // An opaque, depth-tested edge cue. No translucent duplicate meshes.
+      float twinSelectedEdge = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 2.0);
+      totalEmissiveRadiance += vec3(0.75, 0.94, 1.0) * twinSelectedEdge * twinSelected * 0.55
+        ${regionMask ? "* twinSurfaceMask" : ""};`,
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-rim-v7-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
+    `twin-anatomy-skin-selection-v8-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }
