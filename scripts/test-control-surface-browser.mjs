@@ -52,8 +52,11 @@ try {
         });
         await context.route("**/*", (route) => {
           const url = new URL(route.request().url());
-          if (url.origin === origin && route.request().method() === "GET") return route.continue();
-          errors.push(`Unexpected request: ${route.request().method()} ${url.origin}${url.pathname}`);
+          if (url.origin === origin && route.request().method() === "GET")
+            return route.continue();
+          errors.push(
+            `Unexpected request: ${route.request().method()} ${url.origin}${url.pathname}`,
+          );
           return route.abort();
         });
         const page = await context.newPage();
@@ -86,7 +89,11 @@ try {
             exact: true,
           });
           const compact = page.getByRole("button", { name: "Select mode", exact: true });
-          for (const control of [primary, input, page.getByRole("button", { name: "Open instrument" })]) {
+          for (const control of [
+            primary,
+            input,
+            page.getByRole("button", { name: "Open instrument" }),
+          ]) {
             const box = await control.boundingBox();
             expect(box).not.toBeNull();
             expect(box.height).toBeGreaterThanOrEqual(44);
@@ -95,9 +102,15 @@ try {
           }
           const compactBox = await compact.boundingBox();
           expect(compactBox.height).toBeGreaterThanOrEqual(width < 600 ? 44 : 36);
-          expect(await primary.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
-          expect(await primary.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
-          expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+          expect(
+            await primary.evaluate((el) => el.scrollWidth - el.clientWidth),
+          ).toBeLessThanOrEqual(1);
+          expect(
+            await primary.evaluate((el) => el.scrollHeight - el.clientHeight),
+          ).toBeLessThanOrEqual(1);
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+          ).toBeLessThanOrEqual(1);
           await primary.click();
           await expect(page.getByLabel("Local submissions")).toHaveText("1");
           await compact.click();
@@ -118,22 +131,31 @@ try {
             await compact.focus();
             await page.keyboard.down("Space");
             expect(await compact.evaluate((el) => getComputedStyle(el).transform)).toBe("none");
-            expect(await compact.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0s");
+            expect(await compact.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe(
+              "0s",
+            );
             await page.keyboard.up("Space");
           } else if (width === 1280) {
             await compact.hover();
             await page.mouse.down();
-            await expect.poll(() => compact.evaluate((el) => {
-              const transform = getComputedStyle(el).transform;
-              return transform === "none" ? 0 : new DOMMatrixReadOnly(transform).m42;
-            })).toBe(1);
+            await expect
+              .poll(() =>
+                compact.evaluate((el) => {
+                  const transform = getComputedStyle(el).transform;
+                  return transform === "none" ? 0 : new DOMMatrixReadOnly(transform).m42;
+                }),
+              )
+              .toBe(1);
             await page.mouse.up();
           }
           await page.getByRole("link", { name: "Open details" }).click();
           await expect(page).toHaveURL(/#details$/);
           await expect(page.getByLabel("Local submissions")).toHaveText("1");
           if (motion === "reduce") {
-            await page.screenshot({ path: path.join(artifacts, `controls-${theme}-${width}.png`), fullPage: true });
+            await page.screenshot({
+              path: path.join(artifacts, `controls-${theme}-${width}.png`),
+              fullPage: true,
+            });
           }
           const name = `${engine} ${theme} ${width}px ${motion}`;
           results.push({ name, status: "passed" });
@@ -145,20 +167,30 @@ try {
     }
   }
   if (results.length !== 12 || errors.length)
-    throw new Error(`Control acceptance incomplete: ${JSON.stringify({ results: results.length, errors })}`);
+    throw new Error(
+      `Control acceptance incomplete: ${JSON.stringify({ results: results.length, errors })}`,
+    );
 } catch (error) {
   failure = String(error);
   throw error;
 } finally {
   await browser?.close();
   await server.close();
-  await writeFile(path.join(artifacts, "results.json"), JSON.stringify({
-    engine,
-    source: process.env.GITHUB_SHA ?? null,
-    expectedGroups: 12,
-    results,
-    errors,
-    failure,
-    scope: "Real shared controls and production CSS with local synthetic interactions. No account, backend mutation or physical-device acceptance.",
-  }, null, 2));
+  await writeFile(
+    path.join(artifacts, "results.json"),
+    JSON.stringify(
+      {
+        engine,
+        source: process.env.GITHUB_SHA ?? null,
+        expectedGroups: 12,
+        results,
+        errors,
+        failure,
+        scope:
+          "Real shared controls and production CSS with local synthetic interactions. No account, backend mutation or physical-device acceptance.",
+      },
+      null,
+      2,
+    ),
+  );
 }

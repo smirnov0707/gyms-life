@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - "src/components/AppShell.tsx"
+      - "src/components/ui/**"
+      - "src/ui-design-system.css"
+      - "src/styles.css"
       - "src/lib/command-search*"
       - "scripts/test-command-center-browser.mjs"
       - "scripts/test-core-command-center.mjs"
@@ -11,6 +14,9 @@ on:
     branches: [main]
     paths:
       - "src/components/AppShell.tsx"
+      - "src/components/ui/**"
+      - "src/ui-design-system.css"
+      - "src/styles.css"
       - "src/lib/command-search*"
       - "scripts/test-command-center-browser.mjs"
       - "scripts/test-core-command-center.mjs"
