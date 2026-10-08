@@ -983,6 +983,12 @@ try {
     });
     await linked.page.getByText("Open My Twin", { exact: true }).click();
     await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();
+    // The fixture link reloads the document; URL commit is not React readiness.
+    // Use the same bounded mount barrier as initial route entry, then keep
+    // the original short semantic assertions unchanged.
+    await expect(linked.page).toHaveURL(/[?&]screen=twin(?:&|$)/);
+    expect(new URL(linked.page.url()).searchParams.get("route")).toBe("/twin");
+    await expect(linked.page.locator(".twin-screen")).toBeVisible({ timeout: 30_000 });
     await expect(linked.page.getByRole("tab", { name: "Body", exact: true })).toHaveAttribute(
       "aria-selected",
       "true",
