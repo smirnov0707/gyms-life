@@ -1,0 +1,98 @@
+name: Twin picking exact-source acceptance
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-picking-verified.yml]
+permissions:
+  contents: write
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      PR_HEAD: 299a9bc935de265e993d5531ac98dc2439d7cc54
+      SOURCE: 316711dde60381c249988241ea97b68d98f1ea47
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PR_HEAD }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Materialize only the two reviewed test files
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import os,urllib.request
+          from pathlib import Path
+          for name in ['scripts/test-twin-camera-picking.mjs','.github/workflows/twin-camera-navigation.yml']:
+              url='https://raw.githubusercontent.com/smirnov0707/gyms-life/'+os.environ['SOURCE']+'/'+name
+              Path(name).write_bytes(urllib.request.urlopen(url,timeout=30).read())
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Apply installed formatting rules to new test only and require zero lint errors
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {ESLint} from 'eslint';
+          const linter=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await linter.lintFiles(['scripts/test-twin-camera-picking.mjs']);
+          await ESLint.outputFixes(results);
+          for(const result of results) assert.equal(result.errorCount,0,JSON.stringify(result.messages));
+          JS
+      - name: Preserve all original navigation groups
+        run: node scripts/test-twin-camera-navigation.mjs
+      - name: Verify actual leg and back clicks in both registered models
+        run: node scripts/test-twin-camera-picking.mjs
+      - name: Create tested commit object only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const base=process.env.PR_HEAD;
+          const files=['scripts/test-twin-camera-picking.mjs','.github/workflows/twin-camera-navigation.yml'];
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),base);
+          assert.equal(git('diff','--','src'),'', 'Application code must be unchanged');
+          const api=async(path,method='GET',data)=>{
+            const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${path}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            if(!r.ok)throw Error(`${method} ${path}: ${r.status}`);
+            return r.json();
+          };
+          const normal=JSON.parse(readFileSync('test-results/twin-navigation/results.json','utf8'));
+          const picking=JSON.parse(readFileSync('test-results/twin-navigation/picking/results.json','utf8'));
+          assert.equal(normal.results.length,6);assert.equal(picking.results.length,12);
+          assert.deepEqual(normal.errors,[]);assert.deepEqual(picking.errors,[]);
+          assert.equal(normal.failure,null);assert.equal(picking.failure,null);
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'test(twin): actual leg/back picking after navigation in both registered models\n\nKeep all original camera acceptance. Add independent read-only triangle projection and real pointer selection in twelve Body/Muscles cases. No application changes. Both exact-source scene suites passed before publication.',tree:tree.sha,parents:[base]});
+          const report={commit:commit.sha,tree:tree.sha,parent:base,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),normalGroups:normal.results.length,pickingGroups:picking.results.length,prUpdated:false,deployed:false};
+          writeFileSync('test-results/twin-navigation/verified-picking.json',JSON.stringify(report,null,2));
+          console.log('VERIFIED_COMMIT',JSON.stringify(report));
+          JS
+      - name: Retain exact test source after execution
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p test-results/twin-navigation/reviewed-source
+          cp scripts/test-twin-camera-picking.mjs test-results/twin-navigation/reviewed-source/
+          cp .github/workflows/twin-camera-navigation.yml test-results/twin-navigation/reviewed-source/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-picking-exact-evidence
+          path: test-results/twin-navigation
+          retention-days: 14
+          if-no-files-found: error
