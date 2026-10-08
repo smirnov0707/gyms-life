@@ -1,0 +1,98 @@
+name: PR139 production acceptance
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-production-acceptance-20261008.yml]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a465c64446ace43ae0e7626aced427d23b377346
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Require the expected production build before testing public pages
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          import { setTimeout as delay } from 'node:timers/promises';
+          const out = 'test-results/production-acceptance';
+          mkdirSync(out, { recursive: true });
+          const expectedCommit = 'a465c64446ace43ae0e7626aced427d23b377346';
+          const observations = [];
+          let accepted = false;
+          for (let attempt = 1; attempt <= 24; attempt++) {
+            let observation;
+            try {
+              const response = await fetch('https://gyms.life/api/public/environment', {
+                headers: { connection: 'close', 'cache-control': 'no-cache' },
+                signal: AbortSignal.timeout(15000),
+              });
+              const text = await response.text();
+              let identity;
+              try { identity = JSON.parse(text); } catch { identity = { unparseable: text.slice(0, 2000) }; }
+              observation = { attempt, at: new Date().toISOString(), httpStatus: response.status, identity };
+              accepted = response.status === 200 && identity.sourceCommit === expectedCommit && identity.buildContext === 'production' && identity.target === 'production' && identity.status === 'compatible';
+            } catch (error) {
+              observation = { attempt, at: new Date().toISOString(), error: String(error) };
+            }
+            observations.push(observation);
+            console.log('PRODUCTION_IDENTITY ' + JSON.stringify(observation));
+            writeFileSync(`${out}/deployment-identity.json`, JSON.stringify({ expectedCommit, accepted, observations, scope: 'Public deployment identity, not authenticated or database acceptance' }, null, 2));
+            if (accepted) break;
+            if (attempt < 24) await delay(15000);
+          }
+          assert.equal(accepted, true, 'Expected compatible production build was not published within the bounded deploy check');
+          JS
+      - name: Unchanged strict public browser smoke on the production domain
+        shell: bash
+        env:
+          GYMSLIFE_ORIGIN: https://gyms.life
+        run: |
+          set -o pipefail
+          node scripts/smoke-production-browser.mjs 2>&1 | tee test-results/production-acceptance/public-browser.log
+      - name: Verify all cases and recheck immutable deployment identity
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const result = JSON.parse(readFileSync('test-results/production-browser/results.json', 'utf8'));
+          assert.equal(result.origin, 'https://gyms.life');
+          assert.equal(result.direct, true, 'Browser must reach actual production over TLS');
+          assert.equal(result.results.length, 12);
+          for (const row of result.results) assert.deepEqual(row.why, [], JSON.stringify(row));
+          const response = await fetch('https://gyms.life/api/public/environment', { headers: { connection: 'close', 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(15000) });
+          const identity = await response.json();
+          writeFileSync('test-results/production-acceptance/identity-after.json', JSON.stringify({ httpStatus: response.status, identity }, null, 2));
+          assert.equal(response.status, 200);
+          assert.equal(identity.sourceCommit, 'a465c64446ace43ae0e7626aced427d23b377346');
+          assert.equal(identity.buildContext, 'production');
+          assert.equal(identity.target, 'production');
+          assert.equal(identity.status, 'compatible');
+          writeFileSync('test-results/production-acceptance/acceptance.json', JSON.stringify({ status: 'passed', sourceCommit: identity.sourceCommit, publicBrowserCases: 12, directTls: true, drawerOptOut: false, cspModified: false, consoleErrorsFiltered: false, scope: 'Public landing, login and password reset rendering in both themes at desktop and phone widths. No login submissions, email delivery, payment, database writes or authenticated user flows are claimed.' }, null, 2));
+          console.log('PASS Production identity and all 12 unchanged public browser cases');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr139-production-acceptance-evidence
+          path: |
+            test-results/production-acceptance
+            test-results/production-browser
+          retention-days: 14
+          if-no-files-found: error
