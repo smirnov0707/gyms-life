@@ -1,0 +1,79 @@
+{
+  "sourceCommit": "cc378262d020a196e6dacaa47911261914dbdb07",
+  "scope": "Existing real-component screenshots with synthetic evidence only. Not production, not a real user, not a new browser run. Visual acceptance is not inferred from test success.",
+  "artifacts": [
+    {
+      "id": 11564260282,
+      "sha256": "50584c03951cd33b0f77052361834adf54152c2db1d109a78acf482fce0a1924",
+      "passedGroups": 8
+    },
+    {
+      "id": 11562594606,
+      "sha256": "64bb4271f477fc1d916b8dc63ad014f23c8006a292b76191b80f1dbacae8d58f",
+      "passedGroups": 24
+    },
+    {
+      "id": 11563751419,
+      "sha256": "45338b6ae57b03b254747fbbcbd5d45d6e70e08868dcf20014f673a693a18bef",
+      "passedGroups": 24
+    }
+  ],
+  "images": [
+    {
+      "path": "docs/pr148-visual-review/320-dark-analysis-page.png",
+      "sha256": "45f4cd8025b41d3045c979899d9fef87149e6552b01dbbf793b2d9ab8780f741",
+      "width": 320,
+      "height": 1311,
+      "artifactId": 11564260282
+    },
+    {
+      "path": "docs/pr148-visual-review/320-light-analysis-page.png",
+      "sha256": "e201f32d73592b4bddac81c96ad33ac974862cc3f0ab1e2e9019473e291daeb5",
+      "width": 320,
+      "height": 1311,
+      "artifactId": 11564260282
+    },
+    {
+      "path": "docs/pr148-visual-review/320-dark-realistic-page.png",
+      "sha256": "e42b37cdcc1c7c9336a09566a86bd8113e3b34503bcaae8492b6073b5a8a19fa",
+      "width": 320,
+      "height": 1320,
+      "artifactId": 11564260282
+    },
+    {
+      "path": "docs/pr148-visual-review/320-dark-analysis-selected-back-no-data.png",
+      "sha256": "00d567562396e84128b7a320dfb760fac114ca9f4a82f1a3d6c38a2fdf16a39e",
+      "width": 270,
+      "height": 396,
+      "artifactId": 11564260282
+    },
+    {
+      "path": "docs/pr148-visual-review/webkit-lt-dark-320-text1.png",
+      "sha256": "c7915cb86b778d2205e67616a23ce01b35232d621bc915b7fd2772e1c4867283",
+      "width": 320,
+      "height": 1000,
+      "artifactId": 11562594606
+    },
+    {
+      "path": "docs/pr148-visual-review/webkit-lt-dark-320-text2.png",
+      "sha256": "c5ef96d0ec57d7a80dcf6c69d9e7fdd01433a65d5c60e3f9c4e9661c1a0cd8cb",
+      "width": 320,
+      "height": 1000,
+      "artifactId": 11562594606
+    },
+    {
+      "path": "docs/pr148-visual-review/chromium-lt-light-320-text1.png",
+      "sha256": "b8ebc5ae1b16ba47e5f8eb992d9a2b41a41ea835b80e2579a01ced1439ddd5a4",
+      "width": 320,
+      "height": 1000,
+      "artifactId": 11563751419
+    },
+    {
+      "path": "docs/pr148-visual-review/chromium-lt-light-320-text2.png",
+      "sha256": "5a921a3b03bf202903576d45b83084fb4450769d64ad71abafbab6137b5791cd",
+      "width": 320,
+      "height": 1000,
+      "artifactId": 11563751419
+    }
+  ]
+}
