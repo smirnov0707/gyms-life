@@ -16,9 +16,11 @@ let browser;
 const server = await createServer({
   configFile: false,
   root: path.join(root, "tests/control-browser"),
+  cacheDir: path.join(root, "node_modules/.vite-calendar-control"),
   publicDir: path.join(root, "public"),
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.join(root, "src") } },
+  optimizeDeps: { entries: [path.join(root, "tests/control-browser/calendar.html")] },
   server: { host: "127.0.0.1", port: 4190, strictPort: true, fs: { allow: [root] } },
 });
 try {
@@ -43,10 +45,22 @@ try {
         return route.abort();
       });
       const page = await context.newPage();
-      page.on("pageerror", (error) => errors.push(String(error)));
+      const diagnostics = [];
+      page.on("pageerror", (error) => errors.push(`${name}: ${String(error)}`));
+      page.on("console", (message) => {
+        if (message.type() === "error") errors.push(`${name}: console: ${message.text()}`);
+      });
+      page.on("response", (response) => {
+        if (response.status() >= 400)
+          errors.push(`${name}: asset ${response.status()} ${new URL(response.url()).pathname}`);
+      });
+      page.on("requestfailed", (request) => {
+        diagnostics.push({ url: request.url(), failure: request.failure()?.errorText });
+      });
       let geometry = null;
       try {
-        await page.goto(`${origin}/calendar.html?theme=${theme}`);
+        const response = await page.goto(`${origin}/calendar.html?theme=${theme}`);
+        expect(response?.status()).toBe(200);
         const calendar = page.locator('[data-slot="calendar"]');
         const days = calendar.locator("button[data-day]");
         await expect(days.filter({ hasText: /^14$/ })).toBeVisible();
@@ -112,7 +126,15 @@ try {
         await expect(page.getByLabel("Form submissions")).toHaveText("0");
         results.push({ name, status: "passed", geometry });
       } catch (error) {
-        results.push({ name, status: "failed", geometry, reason: String(error) });
+        const reason = String(error);
+        results.push({ name, status: "failed", geometry, reason, diagnostics });
+        console.error("CALENDAR_FAILURE", name, reason, JSON.stringify(diagnostics));
+        const htmlPath = path.join(artifacts, `${theme}-${width}-failed.html`);
+        await writeFile(htmlPath, await page.content());
+        await page.screenshot({
+          path: path.join(artifacts, `${theme}-${width}-failed.png`),
+          fullPage: true,
+        });
       } finally {
         await context.close();
       }
