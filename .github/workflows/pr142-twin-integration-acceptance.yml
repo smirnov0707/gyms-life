@@ -1,0 +1,141 @@
+name: PR142 Twin integration acceptance
+on:
+  push:
+    branches: [diagnostics/pr142-twin-integration-2026-10-08]
+    paths: [.github/workflows/pr142-twin-integration-acceptance.yml]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      EXPECTED_COMMIT: 2fac45ad84d7ec7d8c6cb0708d315726d2126455
+      RECOVERY_COMMIT: 4825db1212a03254f2cc024a160ab08bdd07a265
+      TWIN_COMMIT: 89c3f8b8af6e8ada0c76b89df789541fff477d05
+      COMMON_BASE: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+      GYMSLIFE_ORIGIN: https://deploy-preview-142--singular-vacherin-57448d.netlify.app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_COMMIT }}
+          fetch-depth: 6
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Prove both implementations are preserved by exact blob identity
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {execFileSync} from 'node:child_process';
+          import {mkdirSync,writeFileSync} from 'node:fs';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          const e=process.env;
+          assert.equal(git('rev-parse','HEAD'),e.EXPECTED_COMMIT);
+          const recovery=['docs/endurance-manual-submission.md','scripts/test-core-endurance-log.mjs','src/components/QuickRunLog.tsx','src/components/TodayDecision.tsx','src/lib/endurance-activity.functions.ts','src/lib/endurance-activity.service.ts','src/lib/endurance-submission-store.test.ts','src/lib/endurance-submission-store.ts','src/lib/endurance-submission.schema.ts','src/lib/endurance-submission.service.test.ts','src/lib/endurance-submission.service.ts','src/lib/training-view-refresh.test.ts','src/lib/training-view-refresh.ts','src/lib/use-manual-endurance-submission.ts','tests/core-browser/endurance-log-fixtures.ts'].sort();
+          const twin=['.github/workflows/twin-browser.yml','scripts/authoring/render-sculpt-review.mjs','scripts/test-twin-skin-browser.mjs','src/components/twin/BodySceneStage.tsx','src/components/twin/twin-anatomy.material.ts','src/components/twin/twin-body.geometry.ts','src/components/twin/twin-human.loader.ts','src/components/twin/twin-scene.runtime.ts','src/components/twin/twin-surface.style.test.ts','src/components/twin/twin-surface.style.ts'].sort();
+          const changed=(a,b)=>git('diff','--name-only',a,b).split('\n').filter(Boolean).sort();
+          assert.deepEqual(changed(e.COMMON_BASE,e.RECOVERY_COMMIT),recovery);
+          assert.deepEqual(changed(e.COMMON_BASE,e.TWIN_COMMIT),twin);
+          assert.deepEqual(recovery.filter(p=>twin.includes(p)),[]);
+          assert.deepEqual(changed(e.TWIN_COMMIT,e.EXPECTED_COMMIT),recovery);
+          assert.deepEqual(changed(e.RECOVERY_COMMIT,e.EXPECTED_COMMIT),twin);
+          const files=[];
+          for(const [ref,paths] of [[e.RECOVERY_COMMIT,recovery],[e.TWIN_COMMIT,twin]]) {
+            for(const path of paths) {
+              const blob=git('rev-parse',`${ref}:${path}`);
+              assert.equal(git('rev-parse',`${e.EXPECTED_COMMIT}:${path}`),blob,path);
+              files.push({path,source:ref,blob});
+            }
+          }
+          mkdirSync('test-results/integration',{recursive:true});
+          writeFileSync('test-results/integration/source-manifest.json',JSON.stringify({commit:e.EXPECTED_COMMIT,files,noImplementationChanges:true,scope:'Combined real application sources. No deployment or live account mutations.'},null,2));
+          console.log('PASS: exact 15 recovery files plus exact 10 released Twin files; no other changes.');
+          JS
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Run the full unchanged Twin suite on the combined application
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/integration
+          node scripts/test-twin-browser.mjs 2>&1 | tee test-results/integration/twin-browser.log
+      - name: Recheck all eight skin and selected-muscle combinations
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/test-twin-skin-browser.mjs 2>&1 | tee test-results/integration/skin-browser.log
+      - name: Require exact deployed preview and prepare the strict public smoke
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const out='test-results/production-browser';
+          mkdirSync(out,{recursive:true});
+          const r=await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`,{signal:AbortSignal.timeout(30000)});
+          assert.equal(r.status,200);
+          const identity=await r.json();
+          writeFileSync(`${out}/identity-before.json`,JSON.stringify(identity,null,2));
+          assert.equal(identity.sourceCommit,process.env.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.buildContext,'deploy-preview');
+          assert.equal(identity.target,'staging');
+          const original=readFileSync('scripts/smoke-production-browser.mjs','utf8');
+          const bytes=Buffer.from(original);
+          assert.equal(createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),'e9fd373dd4b5a0c8f2b2429bcf545c87dc54033d');
+          const from='await page.goto(`${ORIGIN}${route}`, { waitUntil: "networkidle", timeout: 90000 });';
+          const to='await page.goto(`${ORIGIN}${route}?ntl-drawer-state=hidden`, { waitUntil: "networkidle", timeout: 90000 });';
+          assert.equal(original.split(from).length,2);
+          const script=original.replace(from,to);
+          assert.equal(script.replace(to,from),original);
+          writeFileSync('scripts/.pr142-integration-public-smoke.mjs',script);
+          writeFileSync(`${out}/scope.json`,JSON.stringify({commit:process.env.EXPECTED_COMMIT,scope:'Public /, /auth, /pricing rendering only. No sign-in, workout, payment, database or production mutation.',previewDrawerOptOut:true,errorFiltering:false,securityPolicyChanged:false},null,2));
+          JS
+      - name: Render all twelve preview route theme and viewport cases
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/.pr142-integration-public-smoke.mjs 2>&1 | tee test-results/production-browser/browser.log
+      - name: Verify completed visual and public results and final identity
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const skin=JSON.parse(readFileSync('test-results/twin-skin/results.json','utf8'));
+          assert.equal(skin.results.length,8);
+          assert.equal(new Set(skin.results.map(x=>x.name)).size,8);
+          assert.deepEqual(skin.errors,[]);
+          for(const row of skin.results) { assert.equal(row.status,'passed'); assert.deepEqual(row.errors,[]); }
+          const out='test-results/production-browser';
+          const results=JSON.parse(readFileSync(`${out}/results.json`,'utf8'));
+          assert.equal(results.origin,process.env.GYMSLIFE_ORIGIN);
+          assert.equal(results.direct,true);
+          assert.equal(results.results.length,12);
+          assert.equal(new Set(results.results.map(r=>`${r.route}:${r.scheme}:${r.viewport}`)).size,12);
+          for(const row of results.results) assert.deepEqual(row.why,[]);
+          const r=await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`,{signal:AbortSignal.timeout(30000)});
+          assert.equal(r.status,200);
+          const identity=await r.json();
+          writeFileSync(`${out}/identity-after.json`,JSON.stringify(identity,null,2));
+          assert.equal(identity.sourceCommit,process.env.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.buildContext,'deploy-preview');
+          assert.equal(identity.target,'staging');
+          console.log('PASS: 8 real Twin visual cases and 12 direct-browser preview cases on the combined source.');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr142-twin-integration-acceptance
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
