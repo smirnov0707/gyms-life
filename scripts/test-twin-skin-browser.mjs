@@ -72,7 +72,12 @@ try {
         if (theme === "light") await page.getByRole("button", { name: "Light theme", exact: true }).click();
         await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
         if (appearance === "realistic") {
-          await page.getByRole("button", { name: lt ? "Kūnas" : "Body", exact: true }).click();
+          const appearanceButton = page.getByRole("button", { name: lt ? "Kūnas" : "Body", exact: true });
+          const toggle = page.getByRole("button", { name: /^(View controls|Vaizdo valdymas)$/ });
+          // The mobile appearance selector lives inside the native view disclosure.
+          if (!(await appearanceButton.isVisible())) await toggle.click();
+          await appearanceButton.click();
+          if ((await toggle.getAttribute("aria-expanded")) === "true") await toggle.click();
           await expect(page.locator('[data-twin-stage="3d"]')).toHaveAttribute("data-twin-appearance", "realistic", { timeout: 45000 });
         }
         await expect(page.locator("canvas")).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
