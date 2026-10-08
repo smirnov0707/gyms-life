@@ -1,0 +1,51 @@
+name: Command center browser
+on:
+  pull_request:
+    paths:
+      - "src/components/AppShell.tsx"
+      - "src/lib/command-search*"
+      - "scripts/test-command-center-browser.mjs"
+      - "scripts/test-core-command-center.mjs"
+      - ".github/workflows/command-center-browser.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/AppShell.tsx"
+      - "src/lib/command-search*"
+      - "scripts/test-command-center-browser.mjs"
+      - "scripts/test-core-command-center.mjs"
+      - ".github/workflows/command-center-browser.yml"
+permissions:
+  contents: read
+concurrency:
+  group: command-center-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: node scripts/test-command-center-browser.mjs
+        env:
+          CORE_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: command-center-${{ matrix.engine }}-evidence
+          path: test-results/command-center
+          retention-days: 14
+          if-no-files-found: error
