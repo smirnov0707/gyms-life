@@ -1,0 +1,107 @@
+name: PR148 synthetic visual review
+on:
+  push:
+    branches: [diagnostics/pr148-visual-review-2026-10-08]
+    paths: [.github/workflows/pr148-visual-review.yml]
+permissions:
+  contents: read
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Verify existing artifact bytes and publish a diagnostic-only image gallery
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 <<'PY'
+          import os, json, io, zipfile, hashlib, base64, struct
+          import urllib.request, urllib.error, urllib.parse
+          repo = os.environ['GITHUB_REPOSITORY']
+          source = 'cc378262d020a196e6dacaa47911261914dbdb07'
+          branch = 'diagnostics/pr148-visual-review-2026-10-08'
+          parent = os.environ['GITHUB_SHA']
+          assert repo == 'smirnov0707/gyms-life'
+          assert os.environ['GITHUB_REF'] == 'refs/heads/' + branch
+          root = 'https://api.github.com/repos/' + repo + '/'
+          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'}
+          def api(path, method='GET', payload=None):
+              request = urllib.request.Request(root + path, headers=headers, method=method, data=None if payload is None else json.dumps(payload).encode())
+              with urllib.request.urlopen(request, timeout=45) as response:
+                  return json.load(response)
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, hdrs, newurl):
+                  return None
+          def download(artifact_id):
+              request = urllib.request.Request(root + f'actions/artifacts/{artifact_id}/zip', headers=headers)
+              try:
+                  with urllib.request.build_opener(NoRedirect).open(request, timeout=45) as response:
+                      return response.read()
+              except urllib.error.HTTPError as error:
+                  if error.code not in (301,302,303,307,308):
+                      raise
+                  location = error.headers['Location']
+                  assert urllib.parse.urlparse(location).scheme == 'https'
+                  # Follow signed storage URL without forwarding repository credentials.
+                  with urllib.request.urlopen(location, timeout=45) as response:
+                      return response.read()
+          plans = [
+              (11564260282, '50584c03951cd33b0f77052361834adf54152c2db1d109a78acf482fce0a1924', 8, [
+                  '320-dark-analysis-page.png', '320-light-analysis-page.png',
+                  '320-dark-realistic-page.png', '320-dark-analysis-selected-back-no-data.png']),
+              (11562594606, '64bb4271f477fc1d916b8dc63ad014f23c8006a292b76191b80f1dbacae8d58f', 24, [
+                  'webkit-lt-dark-320-text1.png', 'webkit-lt-dark-320-text2.png']),
+              (11563751419, '45338b6ae57b03b254747fbbcbd5d45d6e70e08868dcf20014f673a693a18bef', 24, [
+                  'chromium-lt-light-320-text1.png', 'chromium-lt-light-320-text2.png']),
+          ]
+          files = {}
+          manifest = {'sourceCommit': source, 'scope': 'Existing real-component screenshots with synthetic evidence only. Not production, not a real user, not a new browser run. Visual acceptance is not inferred from test success.', 'artifacts': [], 'images': []}
+          for artifact_id, expected, expected_groups, wanted in plans:
+              metadata = api(f'actions/artifacts/{artifact_id}')
+              assert not metadata['expired']
+              assert metadata['workflow_run']['head_sha'] == source
+              assert metadata['digest'] == 'sha256:' + expected
+              data = download(artifact_id)
+              assert len(data) < 20000000
+              assert hashlib.sha256(data).hexdigest() == expected
+              with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                  reports = [name for name in archive.namelist() if name == 'results.json' or name.endswith('/results.json')]
+                  assert len(reports) == 1
+                  report = json.loads(archive.read(reports[0]))
+                  assert len(report['results']) == expected_groups
+                  assert all(item['status'] == 'passed' for item in report['results'])
+                  assert not report['errors']
+                  assert not report.get('failure')
+                  manifest['artifacts'].append({'id': artifact_id, 'sha256': expected, 'passedGroups': expected_groups})
+                  for suffix in wanted:
+                      matches = [name for name in archive.namelist() if name == suffix or name.endswith('/' + suffix)]
+                      assert len(matches) == 1, (suffix, matches)
+                      image = archive.read(matches[0])
+                      assert image.startswith(b'\x89PNG\r\n\x1a\n')
+                      width, height = struct.unpack('>II', image[16:24])
+                      assert width <= 1280 and height <= 10000
+                      path = 'docs/pr148-visual-review/' + suffix
+                      files[path] = image
+                      manifest['images'].append({'path': path, 'sha256': hashlib.sha256(image).hexdigest(), 'width': width, 'height': height, 'artifactId': artifact_id})
+          files['docs/pr148-visual-review/manifest.json'] = json.dumps(manifest, indent=2).encode()
+          markdown = '# PR148 — synthetic visual review\n\nExact source: `' + source + '`. These are existing CI screenshots, not generated designs or real-user data. No production source or deployment is changed.\n\n'
+          for entry in manifest['images']:
+              name = entry['path'].split('/')[-1]
+              markdown += '## ' + name + '\n\n![' + name + '](' + name + ')\n\n'
+          files['docs/pr148-visual-review/README.md'] = markdown.encode()
+          assert api('git/ref/heads/' + branch)['object']['sha'] == parent
+          base_tree = api('git/commits/' + parent)['tree']['sha']
+          elements = []
+          for path, data in files.items():
+              assert path.startswith('docs/pr148-visual-review/')
+              blob = api('git/blobs', 'POST', {'content': base64.b64encode(data).decode(), 'encoding': 'base64'})
+              elements.append({'path': path, 'mode': '100644', 'type': 'blob', 'sha': blob['sha']})
+          tree = api('git/trees', 'POST', {'base_tree': base_tree, 'tree': elements})
+          commit = api('git/commits', 'POST', {'message': 'docs(review): retain exact synthetic PR148 screenshots and verified artifact manifest', 'tree': tree['sha'], 'parents': [parent]})
+          assert api('git/ref/heads/' + branch)['object']['sha'] == parent
+          api('git/refs/heads/' + branch, 'PATCH', {'sha': commit['sha'], 'force': False})
+          print(json.dumps({'galleryCommit': commit['sha'], 'sourceCommit': source, 'images': manifest['images'], 'productionChanged': False}, indent=2))
+          PY
