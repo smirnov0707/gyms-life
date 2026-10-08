@@ -1,3 +1,7 @@
+import { useAuth } from "@/lib/auth";
+import { useManualEnduranceSubmission } from "@/lib/use-manual-endurance-submission";
+import { EnduranceSubmissionStorageError } from "@/lib/endurance-submission-store";
+import { offlineIdentity } from "@/lib/offline-identity";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Route, TimerReset } from "lucide-react";
@@ -5,18 +9,33 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { baseLang, useI18n } from "@/lib/i18n";
-import {
-  logEnduranceActivity,
-  retryEnduranceRaceEnrichmentFn,
-} from "@/lib/endurance-activity.functions";
+import { retryEnduranceRaceEnrichmentFn } from "@/lib/endurance-activity.functions";
 import type { EnduranceRaceEnrichmentResult } from "@/lib/endurance-race-enrichment.service";
 import type { EnduranceRaceEnrichmentState } from "@/lib/endurance-race-enrichment.schema";
 import { confirmRaceSessionMatchFn } from "@/lib/endurance-session-match.functions";
 
 export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void> }) {
+  const { user, loading } = useAuth();
+  const ownerId = loading ? null : (user?.id ?? null);
+  return (
+    <QuickRunLogForm
+      key={ownerId ?? "signed-out"}
+      ownerId={ownerId}
+      {...(onLogged ? { onLogged } : {})}
+    />
+  );
+}
+
+function QuickRunLogForm({
+  ownerId,
+  onLogged,
+}: {
+  ownerId: string | null;
+  onLogged?: () => void | Promise<void>;
+}) {
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
-  const logActivity = useServerFn(logEnduranceActivity);
+  const submission = useManualEnduranceSubmission(ownerId);
   const confirmMatch = useServerFn(confirmRaceSessionMatchFn);
   const retryEnrichment = useServerFn(retryEnduranceRaceEnrichmentFn);
   const inFlight = useRef(false);
@@ -54,6 +73,8 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     newRun: boolean,
     raceIntelligence: EnduranceRaceEnrichmentResult["raceIntelligence"] = null,
   ) => {
+    if (!ownerId || !submission.isMounted() || offlineIdentity.current() !== ownerId) return;
+    const scope = offlineIdentity.capture(ownerId);
     try {
       if (newRun) window.dispatchEvent(new CustomEvent("gymslife:training-completed"));
       window.dispatchEvent(
@@ -61,6 +82,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
       );
       await onLogged?.();
     } catch {
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       console.warn("[Endurance] SAVED_RUN_VIEW_REFRESH_FAILED");
       toast.warning(
         english
@@ -72,9 +94,14 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
 
   const submit = async () => {
     if (inFlight.current) return;
-    const duration = Number(minutes.replace(",", "."));
-    const distance = Number(distanceKm.replace(",", "."));
-    const effort = rpe === "" ? null : Number(rpe);
+    if (!ownerId || !submission.ready || offlineIdentity.current() !== ownerId) return;
+    const scope = offlineIdentity.capture(ownerId);
+    const retained = submission.pending?.activity;
+    const duration = retained ? retained.durationSeconds / 60 : Number(minutes.replace(",", "."));
+    const distance = retained
+      ? Number(retained.distanceMeters) / 1000
+      : Number(distanceKm.replace(",", "."));
+    const effort = retained ? retained.perceivedEffort : rpe === "" ? null : Number(rpe);
     if (
       !Number.isFinite(duration) ||
       duration <= 0 ||
@@ -96,30 +123,47 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
     inFlight.current = true;
     setSaving(true);
     try {
-      let result;
+      let acknowledged;
       try {
-        result = await logActivity({
-          data: {
+        acknowledged = await submission.submit(
+          retained ?? {
             kind: "run",
             environment,
             source: "manual",
-            startedAt: new Date(Date.now() - duration * 60_000).toISOString(),
+            startedAt: new Date(Date.now() - Math.round(duration * 60) * 1000).toISOString(),
             durationSeconds: Math.round(duration * 60),
             distanceMeters: Math.round(distance * 1000),
             averageHeartRateBpm: null,
             perceivedEffort: effort,
           },
-        });
-      } catch {
-        toast.error(english ? "Run could not be saved." : "Nepavyko išsaugoti bėgimo.");
+        );
+      } catch (error) {
+        if (!scope.isCurrent()) return;
+        toast.error(
+          error instanceof EnduranceSubmissionStorageError
+            ? english
+              ? "This browser could not retain the request safely. No save was sent."
+              : "Naršyklė negali saugiai išlaikyti užklausos. Įrašymas nepradėtas."
+            : english
+              ? "Save could not be confirmed. Retry the same request; do not record a second run."
+              : "Išsaugojimas nepatvirtintas. Pakartok tą pačią užklausą, nekurk antro bėgimo.",
+        );
         return;
       }
+      if (!acknowledged || !scope.isCurrent()) return;
+      const { result, cleanupFailed, created } = acknowledged;
       applyEnrichment(result.session.id, result);
       setMinutes("");
       setDistanceKm("");
       setRpe("");
-      toast.success(english ? "Run credited to today." : "Bėgimas užskaitytas šiandienai.");
-      await refreshSavedRun(true, result.raceIntelligence);
+      toast.success(english ? "Run saved." : "Bėgimas išsaugotas.");
+      if (cleanupFailed)
+        toast.warning(
+          english
+            ? "Run saved, but the local receipt could not be cleared. Recheck the same request."
+            : "Bėgimas išsaugotas, bet vietinio patvirtinimo pašalinti nepavyko. Tikrink tą pačią užklausą.",
+        );
+      await refreshSavedRun(created, result.raceIntelligence);
     } finally {
       inFlight.current = false;
       setSaving(false);
@@ -127,14 +171,23 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
   };
 
   const retryPlanCheck = async () => {
-    if (inFlight.current || !savedRun?.enrichment.retryable) return;
+    if (
+      inFlight.current ||
+      !savedRun?.enrichment.retryable ||
+      !ownerId ||
+      offlineIdentity.current() !== ownerId
+    )
+      return;
+    const scope = offlineIdentity.capture(ownerId);
     inFlight.current = true;
     setSaving(true);
     try {
       const result = await retryEnrichment({ data: { workoutSessionId: savedRun.sessionId } });
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       applyEnrichment(savedRun.sessionId, result);
       await refreshSavedRun(false, result.raceIntelligence);
     } catch {
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       toast.error(
         english
           ? "Run remains saved. The plan check is still unavailable."
@@ -147,7 +200,9 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
   };
 
   const acceptMatch = async () => {
-    if (!pendingMatch || inFlight.current) return;
+    if (!pendingMatch || inFlight.current || !ownerId || offlineIdentity.current() !== ownerId)
+      return;
+    const scope = offlineIdentity.capture(ownerId);
     inFlight.current = true;
     setSaving(true);
     try {
@@ -158,6 +213,7 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
           planSessionKey: pendingMatch.planSessionKey,
         },
       });
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       setSavedRun({
         sessionId: pendingMatch.sessionId,
         enrichment: { status: "matched", linked: true, retryable: false },
@@ -168,8 +224,10 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
       );
       await refreshSavedRun(false);
     } catch {
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       // A lost response may follow a committed confirmation. Re-read the saved
       // run before offering another classification, never log another workout.
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       setSavedRun({
         sessionId: pendingMatch.sessionId,
         enrichment: { status: "unavailable", linked: false, retryable: true, stage: "link" },
@@ -186,6 +244,32 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
 
   return (
     <div className="grid gap-3">
+      {submission.storageUnavailable ? (
+        <div role="alert" className="rounded-2xl border border-border bg-surface p-3 text-sm">
+          <p>
+            {english
+              ? "Local recovery is unavailable. No new save will be sent until it can be checked."
+              : "Vietinis atkūrimas nepasiekiamas. Nauja įrašymo užklausa nebus siunčiama, kol jo nepatikrinsime."}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 min-h-11 w-full whitespace-normal"
+            onClick={submission.reload}
+          >
+            {english ? "Retry local recovery" : "Pakartoti vietinį atkūrimą"}
+          </Button>
+        </div>
+      ) : submission.pending ? (
+        <p
+          role="status"
+          className="rounded-2xl border border-border bg-surface p-3 text-sm leading-relaxed"
+        >
+          {english
+            ? "An earlier save is awaiting confirmation. Recheck the same run without creating another record."
+            : "Ankstesnis įrašymas laukia patvirtinimo. Patikrink tą patį bėgimą, nekurdamas naujo įrašo."}
+        </p>
+      ) : null}
       <div
         className="grid grid-cols-2 gap-2"
         role="group"
@@ -193,18 +277,26 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
       >
         <Button
           type="button"
-          variant={environment === "outdoor" ? "default" : "outline"}
+          variant={
+            (submission.pending?.activity.environment ?? environment) === "outdoor"
+              ? "default"
+              : "outline"
+          }
           className="min-h-11"
-          disabled={saving}
+          disabled={saving || Boolean(submission.pending)}
           onClick={() => setEnvironment("outdoor")}
         >
           <Route className="size-4" /> {english ? "Outdoor" : "Lauke"}
         </Button>
         <Button
           type="button"
-          variant={environment === "treadmill" ? "default" : "outline"}
+          variant={
+            (submission.pending?.activity.environment ?? environment) === "treadmill"
+              ? "default"
+              : "outline"
+          }
           className="min-h-11"
-          disabled={saving}
+          disabled={saving || Boolean(submission.pending)}
           onClick={() => setEnvironment("treadmill")}
         >
           <TimerReset className="size-4" /> {english ? "Treadmill" : "Takelis"}
@@ -212,33 +304,50 @@ export function QuickRunLog({ onLogged }: { onLogged?: () => void | Promise<void
       </div>
       <div className="grid grid-cols-2 gap-2">
         <Input
-          disabled={saving}
+          disabled={saving || Boolean(submission.pending)}
           inputMode="decimal"
-          value={minutes}
+          value={
+            submission.pending ? String(submission.pending.activity.durationSeconds / 60) : minutes
+          }
           onChange={(e) => setMinutes(e.target.value)}
           placeholder={english ? "Minutes" : "Minutės"}
           aria-label={english ? "Duration in minutes" : "Trukmė minutėmis"}
         />
         <Input
-          disabled={saving}
+          disabled={saving || Boolean(submission.pending)}
           inputMode="decimal"
-          value={distanceKm}
+          value={
+            submission.pending
+              ? String(Number(submission.pending.activity.distanceMeters) / 1000)
+              : distanceKm
+          }
           onChange={(e) => setDistanceKm(e.target.value)}
           placeholder="km"
           aria-label={english ? "Distance in kilometres" : "Atstumas kilometrais"}
         />
       </div>
       <Input
-        disabled={saving}
+        disabled={saving || Boolean(submission.pending)}
         inputMode="numeric"
-        value={rpe}
+        value={submission.pending ? String(submission.pending.activity.perceivedEffort ?? "") : rpe}
         onChange={(e) => setRpe(e.target.value)}
         placeholder={english ? "Effort 1–10 (optional)" : "Pastangos 1–10 (nebūtina)"}
         aria-label={english ? "Perceived effort from 1 to 10" : "Juntamos pastangos nuo 1 iki 10"}
       />
-      <Button type="button" className="min-h-11" disabled={saving} onClick={() => void submit()}>
+      <Button
+        type="button"
+        className="min-h-11"
+        disabled={saving || !submission.ready}
+        onClick={() => void submit()}
+      >
         {saving ? <Loader2 className="size-4 animate-spin" /> : null}
-        {english ? "Credit this run" : "Užskaityti bėgimą"}
+        {submission.pending
+          ? english
+            ? "Recheck this save"
+            : "Pakartoti išsaugojimo patikrą"
+          : english
+            ? "Credit this run"
+            : "Užskaityti bėgimą"}
       </Button>
       {savedRun?.enrichment.retryable ? (
         <div className="rounded-2xl border border-border bg-surface p-3">

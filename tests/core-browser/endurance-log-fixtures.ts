@@ -1,3 +1,5 @@
+import { ManualEnduranceSubmissionSchema } from "@/lib/endurance-submission.schema";
+import { offlineIdentity } from "@/lib/offline-identity";
 import type { EnduranceRaceEnrichmentResult } from "@/lib/endurance-race-enrichment.service";
 import { ManualEnduranceActivitySchema } from "@/lib/endurance-activity.schema";
 import { buildEnduranceTrainingCredit } from "@/lib/endurance-training-credit.engine";
@@ -8,6 +10,8 @@ const sessionId = "20000000-0000-4000-8000-000000000002";
 const goalId = "30000000-0000-4000-8000-000000000003";
 const state = {
   saves: 0,
+  lastSubmissionId: "",
+  submissionIds: [] as string[],
   records: 0,
   retries: 0,
   confirmations: 0,
@@ -45,7 +49,7 @@ function outcome(
         : { status, linked: status === "matched", retryable: false },
   };
 }
-export async function logEnduranceActivity({ data }: { data: unknown }) {
+async function logLegacyActivity({ data }: { data: unknown }) {
   state.saves++;
   const activity = ManualEnduranceActivitySchema.parse(data);
   await delay();
@@ -90,4 +94,43 @@ export async function confirmRaceSessionMatchFn() {
 export async function refreshRunLogFixture() {
   state.refreshes++;
   if (query.get("refresh") === "fail") throw new Error("Synthetic screen refresh failure");
+}
+
+// Synthetic persistence survives reload; these records never reach a real account.
+const persistedKey = "synthetic-manual-endurance-submission";
+let storedReply: Awaited<ReturnType<typeof logLegacyActivity>> | null = null;
+const prior = sessionStorage.getItem(persistedKey);
+if (prior) {
+  const parsed = JSON.parse(prior);
+  storedReply = parsed.reply;
+  Object.assign(state, parsed.state);
+}
+export async function logEnduranceActivity({ data }: { data: unknown }) {
+  const submission = ManualEnduranceSubmissionSchema.parse(data);
+  state.submissionIds.push(submission.submissionId);
+  state.lastSubmissionId = submission.submissionId;
+  let disposition: "created" | "replayed";
+  if (storedReply?.session.id === submission.submissionId) {
+    state.saves++;
+    disposition = "replayed";
+    await delay();
+  } else {
+    disposition = "created";
+    const logged = await logLegacyActivity({ data: submission.activity });
+    storedReply = { ...logged, session: { ...logged.session, id: submission.submissionId } };
+  }
+  sessionStorage.setItem(persistedKey, JSON.stringify({ reply: storedReply, state }));
+  if (query.get("scenario") === "initial-response-lost" && disposition === "created")
+    throw new Error("Synthetic response lost after primary commit");
+  if (query.get("scenario") === "identity-changed")
+    offlineIdentity.set("99999999-9999-4999-8999-999999999999");
+  if (!storedReply) throw new Error("Synthetic reply missing");
+  return {
+    ...storedReply,
+    manualSubmission: {
+      ownerId: query.get("scenario") === "foreign-receipt" ? goalId : submission.ownerId,
+      submissionId: submission.submissionId,
+      disposition,
+    },
+  };
 }

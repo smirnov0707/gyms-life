@@ -64,7 +64,7 @@ export async function verifyEnduranceRunLog({ open, record, artifacts }) {
       retries: 1,
       trainingEvents: 1,
       enduranceEvents: 2,
-      lastRetry: { workoutSessionId: "20000000-0000-4000-8000-000000000002" },
+      lastRetry: { workoutSessionId: (await values(page)).lastSubmissionId },
     });
     expect(Object.keys((await values(page)).lastRetry)).toEqual(["workoutSessionId"]);
     await expect(page.getByRole("button", { name: "Pakartoti plano patikrą" })).toHaveCount(0);
@@ -134,5 +134,108 @@ export async function verifyEnduranceRunLog({ open, record, artifacts }) {
     expect(await values(page)).toMatchObject({ saves: 0, records: 0 });
     await context.close();
     record("Run log: invalid effort never reaches persistence");
+  }
+  for (const reload of [false, true]) {
+    const { page, context } = await prepare("scenario=initial-response-lost&theme=light", "lt");
+    await page.getByRole("button", { name: "Užskaityti bėgimą", exact: true }).click();
+    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toBeVisible();
+    const original = await values(page);
+    expect(original).toMatchObject({ saves: 1, records: 1, trainingEvents: 0 });
+    if (reload) await page.reload();
+    const retry = page.getByRole("button", { name: "Pakartoti išsaugojimo patikrą", exact: true });
+    await expect(retry).toBeEnabled();
+    await expect(page.getByRole("textbox", { name: "Trukmė minutėmis" })).toHaveValue("30");
+    await expect(page.getByRole("textbox", { name: "Trukmė minutėmis" })).toBeDisabled();
+    await retry.click();
+    await expect(page.locator('[data-sonner-toast][data-type="success"]')).toBeVisible();
+    expect(await values(page)).toMatchObject({
+      saves: 2,
+      records: 1,
+      trainingEvents: 0,
+      lastSubmissionId: original.lastSubmissionId,
+    });
+    expect((await values(page)).submissionIds).toEqual([
+      original.lastSubmissionId,
+      original.lastSubmissionId,
+    ]);
+    expect(
+      await page.evaluate(() =>
+        Object.keys(sessionStorage).filter((key) =>
+          key.startsWith("gyms_life_pending_manual_run_v1:"),
+        ),
+      ),
+    ).toEqual([]);
+    await page.screenshot({
+      path: path.join(artifacts, `manual-save-recovered-${reload ? "reload" : "same-page"}-lt.png`),
+      fullPage: true,
+    });
+    await context.close();
+    record(
+      `Manual save: lost primary response reuses one record ${reload ? "after reload" : "without reload"}`,
+    );
+  }
+  {
+    const { page, context } = await prepare("scenario=matched");
+    await page.evaluate(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (key, value) {
+        if (key.startsWith("gyms_life_pending_manual_run_v1:"))
+          throw new Error("Synthetic refused receipt write");
+        return original.call(this, key, value);
+      };
+    });
+    await page.getByRole("button", { name: "Credit this run", exact: true }).click();
+    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toContainText(
+      "No save was sent.",
+    );
+    expect(await values(page)).toMatchObject({ saves: 0, records: 0, trainingEvents: 0 });
+    await context.close();
+    record("Manual save: refused local retention sends no write");
+  }
+  {
+    const { page, context } = await prepare("scenario=foreign-receipt");
+    await page.getByRole("button", { name: "Credit this run", exact: true }).click();
+    await expect(page.locator('[data-sonner-toast][data-type="error"]')).toBeVisible();
+    await expect(page.locator('[data-sonner-toast][data-type="success"]')).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Recheck this save", exact: true }),
+    ).toBeEnabled();
+    expect(await values(page)).toMatchObject({ records: 1, trainingEvents: 0 });
+    await context.close();
+    record("Manual save: a foreign acknowledgement cannot clear the retained request");
+  }
+  {
+    const { page, context } = await prepare("scenario=matched");
+    await page.evaluate(() => {
+      const original = Storage.prototype.removeItem;
+      window.__restoreReceiptRemoval = () => {
+        Storage.prototype.removeItem = original;
+      };
+      Storage.prototype.removeItem = function (key) {
+        if (key.startsWith("gyms_life_pending_manual_run_v1:")) return;
+        return original.call(this, key);
+      };
+    });
+    await page.getByRole("button", { name: "Credit this run", exact: true }).click();
+    await expect(page.locator('[data-sonner-toast][data-type="warning"]')).toBeVisible();
+    expect(await values(page)).toMatchObject({ records: 1, trainingEvents: 1 });
+    await page.evaluate(() => window.__restoreReceiptRemoval());
+    await page.getByRole("button", { name: "Recheck this save", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Credit this run", exact: true })).toBeEnabled();
+    expect(await values(page)).toMatchObject({ saves: 2, records: 1, trainingEvents: 1 });
+    await context.close();
+    record("Manual save: receipt-cleanup failure never creates a second record or completion");
+  }
+  {
+    const { page, context } = await prepare("scenario=identity-changed");
+    await page.getByRole("button", { name: "Credit this run", exact: true }).click();
+    await expect.poll(async () => (await values(page)).records).toBe(1);
+    await expect(
+      page.getByRole("button", { name: "Recheck this save", exact: true }),
+    ).toBeEnabled();
+    await expect(page.locator('[data-sonner-toast][data-type="success"]')).toHaveCount(0);
+    expect(await values(page)).toMatchObject({ trainingEvents: 0, refreshes: 0 });
+    await context.close();
+    record("Manual save: an identity change ignores the old account's response");
   }
 }
