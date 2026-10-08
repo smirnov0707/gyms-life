@@ -1,0 +1,90 @@
+name: Publish verified high-tech source
+on:
+  push:
+    branches: [diagnostics/hightech-continuity-2026-10-08]
+    paths: [.github/workflows/hightech-verified-source-publish.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify immutable test evidence and publish the ten source files only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync,readFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+          const repo='smirnov0707/gyms-life';
+          const base='f16d58020f9a2be73abca98ddea62660d5268208';
+          const branch='feat/hightech-run-continuity-verified-2026-10-08';
+          const run=37772645380,artifact=11547714293;
+          const digest='82d0e69147ecd26fdefc1cc7c61ac5029ec7339b1c5af3c8977de2bef2010c95';
+          const api=async(path,method='GET',data)=>{
+            const response=await fetch(`https://api.github.com/repos/${repo}/${path}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            assert.ok(response.ok,`${method} ${path}: ${response.status}`);
+            return response.json();
+          };
+          assert.equal((await api('git/ref/heads/main')).object.sha,base,'Main changed');
+          const job=(await api(`actions/runs/${run}/jobs`)).jobs[0];
+          assert.equal(job.id,113295731476);
+          for(const name of ['Verify all unit tests, TypeScript, lint, toolchain and both builds','Verify all 22 real run groups in Chromium and WebKit','Retain final source after test discovery ends']) {
+            assert.equal(job.steps.find(s=>s.name===name)?.conclusion,'success',name);
+          }
+          assert.equal(job.steps.find(s=>s.name==='Publish final tested source without deployment')?.conclusion,'failure');
+          const metadata=await api(`actions/artifacts/${artifact}`);
+          assert.equal(metadata.workflow_run.id,run);assert.equal(metadata.digest,`sha256:${digest}`);
+          const download=await fetch(`https://api.github.com/repos/${repo}/actions/artifacts/${artifact}/zip`,{headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`}});
+          assert.ok(download.ok);
+          const zip=Buffer.from(await download.arrayBuffer());
+          assert.equal(createHash('sha256').update(zip).digest('hex'),digest);
+          writeFileSync('verified-source.zip',zip);
+          execFileSync('python3',['-c',`import json,zipfile,collections
+with zipfile.ZipFile('verified-source.zip') as z:
+    results=json.loads(z.read('hightech-results.json'))
+    assert results['errors']==[]
+    assert len(results['results'])==44
+    assert collections.Counter((r['engine'],r['status']) for r in results['results'])=={('chromium','passed'):22,('webkit','passed'):22}
+    assert len({(r['engine'],r['name']) for r in results['results']})==44
+    paths=json.loads(z.read('candidate-files.json'))
+    expected=['docs/high-tech-experience.md','scripts/test-core-endurance-log.mjs','scripts/test-core-run-continuity.mjs','src/components/QuickRunLog.tsx','src/components/system/SystemNotice.tsx','src/lib/endurance-follow-up-store.test.ts','src/lib/endurance-follow-up-store.ts','src/lib/use-endurance-follow-up.ts','src/styles/system-notice.css','tests/core-browser/endurance-log-fixtures.ts']
+    assert sorted(paths)==sorted(expected)
+    files={p:z.read('candidate-source/'+p).decode('utf-8') for p in paths}
+    assert 'pendingWrites' in files['src/lib/use-endurance-follow-up.ts']
+    assert 'color: var(--foreground)' in files['src/styles/system-notice.css']
+    assert 'headingStyle.color' in files['scripts/test-core-run-continuity.mjs']
+    with open('verified-source.json','w') as f: json.dump(files,f)
+`],{stdio:'inherit'});
+          const files=JSON.parse(readFileSync('verified-source.json','utf8'));
+          const baseCommit=await api(`git/commits/${base}`);
+          const tree=await api('git/trees','POST',{base_tree:baseCommit.tree.sha,tree:Object.entries(files).map(([path,content])=>({path,content,mode:'100644',type:'blob'}))});
+          const commit=await api('git/commits','POST',{message:'feat(ux): high-tech run console and resilient saved-run follow-up continuity\n\nExact ten-file source from verified artifact 11547714293, run 37772645380. All 2420 unit/contract tests, TypeScript, lint, toolchain, both builds and 22 real-component groups in each Chromium/WebKit passed. Retain owner-scoped references across navigation, never stale consent; reconcile refused local writes and preserve readable theme headings. Shared SystemNotice is the first whole-system design primitive, not a complete redesign. No production deployment or schema changes. Full normal PR gates still required.',tree:tree.sha,parents:[base]});
+          const reread=await api(`git/commits/${commit.sha}`);
+          assert.deepEqual(reread.parents.map(p=>p.sha),[base]);assert.equal(reread.tree.sha,tree.sha);
+          const comparison=await api(`compare/${base}...${commit.sha}`);
+          assert.deepEqual(comparison.files.map(f=>f.filename).sort(),Object.keys(files).sort());
+          const beforePublish=await api('git/ref/heads/main');assert.equal(beforePublish.object.sha,base);
+          await api('git/refs','POST',{ref:`refs/heads/${branch}`,sha:commit.sha});
+          assert.equal((await api(`git/ref/heads/${branch}`)).object.sha,commit.sha);
+          const manifest={commit:commit.sha,tree:tree.sha,base,branch,sourceRun:run,sourceArtifact:artifact,artifactSha256:digest,unitTests:2420,unitFiles:304,browserGroups:{chromium:22,webkit:22},files:Object.entries(files).map(([path,content])=>({path,sha256:createHash('sha256').update(content).digest('hex')})),deployed:false};
+          writeFileSync('evidence/verified-publish.json',JSON.stringify(manifest,null,2));
+          console.log(JSON.stringify(manifest,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hightech-verified-publication
+          path: evidence
+          retention-days: 14
+          if-no-files-found: error
