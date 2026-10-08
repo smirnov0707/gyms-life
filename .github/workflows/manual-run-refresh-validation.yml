@@ -1,0 +1,113 @@
+name: Manual run recovery and view refresh
+on:
+  push:
+    branches: [diagnostics/manual-run-idempotency-2026-10-08]
+    paths:
+      - diagnostics/manual-run-refresh/**
+      - .github/workflows/manual-run-refresh-validation.yml
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: app
+          ref: 55019356b06bfdde524ed7122ef9f8c3e7cbc504
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply checked view refresh delta without changing recording semantics
+        working-directory: app
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, pathlib, subprocess
+          root = pathlib.Path.cwd()
+          source = root.parent/'candidate/diagnostics/manual-run-refresh'
+          data = base64.b64decode((source/'patch.xz.b64').read_text(), validate=True)
+          assert hashlib.sha256(data).hexdigest() == '1d23a8a2b70efd4d8c33c796546a34d398781bd29c2b88b53cce88f06b7bccb7'
+          patch = root.parent/'manual-run-refresh.patch'; patch.write_bytes(lzma.decompress(data))
+          git = ['git','-c',f'safe.directory={root}']
+          assert subprocess.check_output(git+['rev-parse','HEAD'],text=True).strip() == '55019356b06bfdde524ed7122ef9f8c3e7cbc504'
+          subprocess.run(git+['apply','--check',str(patch)],check=True)
+          subprocess.run(git+['apply',str(patch)],check=True)
+          manifest = json.loads((source/'manifest.json').read_text())
+          assert len(manifest)==len(set(row['path'] for row in manifest))==6
+          for row in manifest:
+              assert '..' not in pathlib.Path(row['path']).parts
+              assert hashlib.sha256((root/row['path']).read_bytes()).hexdigest()==row['sha256'],row['path']
+          out=root/'test-results/manual-save';out.mkdir(parents=True,exist_ok=True)
+          (out/'verified-manifest.json').write_text(json.dumps(manifest,indent=2))
+          print('PASS six exact view-refresh delta digests')
+          PY
+      - run: npm ci
+        working-directory: app
+      - run: node scripts/verify-ci-browser-runtime.mjs
+        working-directory: app
+      - name: Full quality and both builds
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee test-results/manual-save/typecheck.log
+          npm test 2>&1 | tee test-results/manual-save/tests.log
+          npm run lint 2>&1 | tee test-results/manual-save/lint.log
+          npm run test:toolchain 2>&1 | tee test-results/manual-save/toolchain.log
+          npm run build:staging 2>&1 | tee test-results/manual-save/build-staging.log
+          npm run build 2>&1 | tee test-results/manual-save/build.log
+      - name: Recheck recovery and real owner-scoped cache invalidation in both engines
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          cp ../candidate/diagnostics/manual-run-idempotency/verify-browser.mjs .manual-run-browser.mjs
+          node .manual-run-browser.mjs 2>&1 | tee test-results/manual-save/browser.log
+      - name: Fast-forward only the checked feature branch with verified delta
+        working-directory: app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const parent='55019356b06bfdde524ed7122ef9f8c3e7cbc504';
+          const branch='fix/manual-run-idempotency-2026-10-08';
+          const manifest=JSON.parse(readFileSync('test-results/manual-save/verified-manifest.json','utf8'));
+          const files=manifest.map(row=>{const content=readFileSync(row.path,'utf8');assert.equal(createHash('sha256').update(content).digest('hex'),row.sha256);return{path:row.path,mode:'100644',type:'blob',content};});
+          const summary=JSON.parse(readFileSync('test-results/manual-save/browser-summary.json','utf8'));
+          assert.equal(summary.length,2);for(const r of summary){assert.equal(r.status,'passed');assert.equal(r.results.length,14);assert.deepEqual(r.errors,[]);}
+          async function api(path,method='GET',body){
+            const res=await fetch('https://api.github.com/repos/smirnov0707/gyms-life'+path,{method,headers:{authorization:`Bearer ${process.env.GH_TOKEN}`,accept:'application/vnd.github+json','content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(30000)});
+            const data=await res.json();if(!res.ok)throw new Error(`GitHub ${method} ${path}: ${res.status} ${data.message}`);return data;
+          }
+          assert.equal((await api('/git/ref/heads/main')).object.sha,'20e2d1613e9a0b1a4408d461c717847fe5c2f9c3');
+          assert.equal((await api('/git/ref/heads/'+branch)).object.sha,parent);
+          const baseTree=(await api('/git/commits/'+parent)).tree.sha;
+          const tree=await api('/git/trees','POST',{base_tree:baseTree,tree:files});
+          const commit=await api('/git/commits','POST',{message:'fix(endurance): refresh Today and owner-scoped Twin evidence after recovered saves\n\nInvalidate race and Endurance Twin queries for the current owner. Let Today react to evidence updates and coalesce related synchronous events without fabricating another training completion. Check unsubscription and foreign-owner isolation. All quality gates, both builds and all fourteen real run-form groups passed in both pinned browsers before this delta was published. Full PR gates and live acceptance remain required.',tree:tree.sha,parents:[parent]});
+          await api('/git/refs/heads/'+branch,'PATCH',{sha:commit.sha,force:false});
+          writeFileSync('test-results/manual-save/published.json',JSON.stringify({branch,commit:commit.sha,parent,tree:tree.sha,files:manifest,scope:'Verified feature only, not deployed'},null,2));
+          console.log('PASS verified feature head '+commit.sha);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manual-run-refresh-verification
+          path: app/test-results/manual-save
+          retention-days: 14
+          if-no-files-found: error
