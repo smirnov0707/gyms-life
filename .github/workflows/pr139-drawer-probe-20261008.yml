@@ -1,0 +1,116 @@
+name: PR139 documented drawer isolation
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-drawer-probe-20261008.yml]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0529180e77d2e4ee9a93dabcc8ba5b9007cd00ba
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Compare native preview rendering with documented drawer opt-out
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          import { spawnSync } from 'node:child_process';
+          const origin = 'https://deploy-preview-139--singular-vacherin-57448d.netlify.app';
+          const expectedCommit = '0529180e77d2e4ee9a93dabcc8ba5b9007cd00ba';
+          const out = 'test-results/drawer-probe';
+          mkdirSync(out, { recursive: true });
+          async function identity() {
+            const r = await fetch(`${origin}/api/public/environment`, { signal: AbortSignal.timeout(30000) });
+            assert.equal(r.status, 200);
+            const data = await r.json();
+            assert.equal(data.sourceCommit, expectedCommit, 'Preview moved away from the checked release');
+            assert.equal(data.buildContext, 'deploy-preview');
+            assert.equal(data.status, 'compatible');
+            return data;
+          }
+          const before = await identity();
+          writeFileSync(`${out}/identity-before.json`, JSON.stringify(before, null, 2));
+          const original = readFileSync('scripts/smoke-production-browser.mjs', 'utf8');
+          const bytes = Buffer.from(original);
+          const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+          assert.equal(blob, 'e9fd373dd4b5a0c8f2b2429bcf545c87dc54033d', 'Unexpected smoke source');
+          const from = 'await page.goto(`${ORIGIN}${route}`, { waitUntil: "networkidle", timeout: 90000 });';
+          const to = 'await page.goto(`${ORIGIN}${route}?ntl-drawer-state=hidden`, { waitUntil: "networkidle", timeout: 90000 });';
+          assert.equal(original.split(from).length, 2, 'Exactly one URL construction must change');
+          const candidate = original.replace(from, to);
+          writeFileSync('scripts/.pr139-drawer-smoke.mjs', candidate);
+          assert.equal(candidate.replace(to, from), original, 'No assertion or error filter may change');
+          const outcomes = [];
+          for (const [mode, script, suffix] of [
+            ['baseline', 'scripts/smoke-production-browser.mjs', ''],
+            ['documented-hidden', 'scripts/.pr139-drawer-smoke.mjs', '?ntl-drawer-state=hidden'],
+          ]) {
+            rmSync('test-results/production-browser', { recursive: true, force: true });
+            const html = await fetch(`${origin}/${suffix}`, { signal: AbortSignal.timeout(30000) });
+            assert.equal(html.status, 200);
+            const csp = html.headers.get('content-security-policy');
+            assert.ok(csp, 'CSP must remain present');
+            await html.arrayBuffer();
+            const run = spawnSync(process.execPath, [script], {
+              env: { ...process.env, GYMSLIFE_ORIGIN: origin }, encoding: 'utf8',
+              timeout: 240000, maxBuffer: 8 * 1024 * 1024,
+            });
+            const log = (run.stdout ?? '') + (run.stderr ?? '');
+            writeFileSync(`${out}/${mode}.log`, log);
+            console.log(log);
+            const entry = { mode, exitCode: run.status, signal: run.signal, error: run.error?.message, csp };
+            outcomes.push(entry);
+            writeFileSync(`${out}/comparison.json`, JSON.stringify({ expectedCommit, blob, outcomes }, null, 2));
+            assert.equal(run.signal, null, `${mode} did not complete`);
+            assert.ok([0, 1].includes(run.status), `${mode} had an infrastructure failure`);
+            const results = JSON.parse(readFileSync('test-results/production-browser/results.json', 'utf8'));
+            cpSync('test-results/production-browser', `${out}/${mode}`, { recursive: true });
+            assert.equal(results.origin, origin);
+            assert.equal(results.direct, true, 'Require the actual browser TLS path');
+            assert.equal(results.results.length, 12, 'All route/theme/viewport cases must finish');
+            entry.passed = results.results.filter(r => r.why.length === 0).length;
+            entry.failed = results.results.length - entry.passed;
+            entry.results = results.results;
+          }
+          const after = await identity();
+          writeFileSync(`${out}/identity-after.json`, JSON.stringify(after, null, 2));
+          assert.equal(readFileSync('scripts/smoke-production-browser.mjs', 'utf8'), original);
+          const report = {
+            scope: 'Public preview rendering only; not authentication, database, payment, or release approval.',
+            documentation: 'https://docs.netlify.com/deploy/review-deploys/netlify-drawer-for-feedback/troubleshoot-the-netlify-drawer/',
+            expectedCommit, sourceBlob: blob,
+            onlyCandidateDifference: 'Add the documented ntl-drawer-state=hidden URL parameter.',
+            outcomes,
+          };
+          writeFileSync(`${out}/comparison.json`, JSON.stringify(report, null, 2));
+          assert.equal(outcomes[0].csp, outcomes[1].csp, 'CSP must not be weakened or rewritten');
+          for (const row of outcomes[0].results) {
+            for (const why of row.why) assert.match(why, /^uncaught: Framing 'https:\/\/app\.netlify\.com\/' violates the following Content Security Policy directive:/, 'Unexpected baseline failure');
+          }
+          assert.equal(outcomes[1].exitCode, 0, 'Documented drawer opt-out did not resolve all failures');
+          assert.equal(outcomes[1].passed, 12);
+          console.log('PASS 12 strict preview cases with unchanged CSP and no error filtering');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr139-documented-drawer-evidence
+          path: test-results/drawer-probe
+          retention-days: 3
+          if-no-files-found: error
