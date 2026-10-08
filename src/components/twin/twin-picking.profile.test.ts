@@ -14,46 +14,48 @@ import { twinNearSideReach } from "./twin-camera.navigation";
 
 function body(indexed = true) {
   const root = new Group();
-  for (const [size, centre] of [
-    [
-      [0.3, 0.7, 0.24],
-      [0, 0.4, -0.12],
-    ],
-    [
-      [0.55, 0.75, 0.32],
-      [0, 1.2, 0.1],
-    ],
-  ] as const) {
-    const source = new BoxGeometry(size[0], size[1], size[2]);
+  for (const { size, centre } of [
+    { size: new Vector3(0.3, 0.7, 0.24), centre: new Vector3(0, 0.4, -0.12) },
+    { size: new Vector3(0.55, 0.75, 0.32), centre: new Vector3(0, 1.2, 0.1) },
+  ]) {
+    const source = new BoxGeometry(size.x, size.y, size.z);
     const mesh = new Mesh(indexed ? source : source.toNonIndexed());
     if (!indexed) source.dispose();
-    mesh.position.set(centre[0], centre[1], centre[2]);
+    mesh.position.copy(centre);
     root.add(mesh);
   }
   return root;
 }
 function dispose(root: Group) {
   root.traverse((object) => {
-    if (object instanceof Mesh) object.geometry.dispose();
+    if (!(object instanceof Mesh)) return;
+    object.geometry.dispose();
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach((material) => material.dispose());
   });
+}
+function requireProfile(root: Group) {
+  const profile = createTwinPickingProfile(root);
+  expect(profile).not.toBeNull();
+  if (!profile) throw new Error("Test body must have a valid picking profile");
+  return profile;
 }
 
 describe("height-aware graphical picking axis", () => {
   it.each([true, false])("uses actual triangle sections, indexed=%s", (indexed) => {
     const root = body(indexed),
-      profile = createTwinPickingProfile(root),
+      profile = requireProfile(root),
       out = new Vector3();
-    expect(profile).not.toBeNull();
-    expect(profile!.axisAt(new Vector3(0, 0.5, 0), out)).toBe(true);
+    expect(profile.axisAt(new Vector3(0, 0.5, 0), out)).toBe(true);
     expect(out.z).toBeCloseTo(-0.12);
     expect(out.x).toBeCloseTo(0);
-    expect(profile!.axisAt(new Vector3(0, 1.2, 0), out)).toBe(true);
+    expect(profile.axisAt(new Vector3(0, 1.2, 0), out)).toBe(true);
     expect(out.z).toBeCloseTo(0.1);
     dispose(root);
   });
   it("accepts a visible calf that the whole-body centre incorrectly rejects", () => {
     const root = body(),
-      profile = createTwinPickingProfile(root)!;
+      profile = requireProfile(root);
     const front = new Vector3(0, 0.5, 0),
       camera = new Vector3(0, 0.5, 3);
     const ray = new Ray(camera, front.clone().sub(camera).normalize());
@@ -68,7 +70,7 @@ describe("height-aware graphical picking axis", () => {
   });
   it("still rejects the far back through a front torso gap", () => {
     const root = body(),
-      profile = createTwinPickingProfile(root)!,
+      profile = requireProfile(root),
       axis = new Vector3();
     const camera = new Vector3(0, 1.2, 3),
       front = new Vector3(0, 1.2, 0.26),
@@ -83,7 +85,7 @@ describe("height-aware graphical picking axis", () => {
     "keeps near/far separation at yaw %s",
     (yaw) => {
       const root = body(),
-        profile = createTwinPickingProfile(root)!,
+        profile = requireProfile(root),
         axis = new Vector3();
       const centre = new Vector3(0, 0.5, -0.12);
       const direction = new Vector3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -97,13 +99,24 @@ describe("height-aware graphical picking axis", () => {
       dispose(root);
     },
   );
+  it("keeps the calf selectable when the camera is tilted", () => {
+    const root = body(),
+      profile = requireProfile(root),
+      axis = new Vector3();
+    const camera = new Vector3(0, 1.4, 3),
+      front = new Vector3(0, 0.5, 0);
+    const ray = new Ray(camera, front.clone().sub(camera).normalize());
+    profile.axisAt(front, axis);
+    expect(camera.distanceTo(front)).toBeLessThan(twinNearSideReach(ray, camera, axis));
+    dispose(root);
+  });
   it("handles parent translation, scale and later body sway without rebuilding", () => {
     const root = body(),
       parent = new Group();
     parent.add(root);
     parent.position.set(2, 3, -4);
     parent.scale.set(0.5, 2, 1.4);
-    const profile = createTwinPickingProfile(root)!,
+    const profile = requireProfile(root),
       axis = new Vector3();
     root.rotation.z = 0.003;
     parent.rotation.y = 0.7;
@@ -116,15 +129,11 @@ describe("height-aware graphical picking axis", () => {
   });
   it("does not mutate triangle, UV, normal or index buffers", () => {
     const root = body();
-    const before = root.children.map((object) => {
-      const mesh = object as Mesh;
-      return JSON.stringify(mesh.geometry.toJSON());
-    });
-    const profile = createTwinPickingProfile(root)!;
+    const meshes = root.children.filter((object): object is Mesh => object instanceof Mesh);
+    const before = meshes.map((mesh) => JSON.stringify(mesh.geometry.toJSON()));
+    const profile = requireProfile(root);
     profile.axisAt(new Vector3(0, 0.5, 0), new Vector3());
-    expect(
-      root.children.map((object) => JSON.stringify((object as Mesh).geometry.toJSON())),
-    ).toEqual(before);
+    expect(meshes.map((mesh) => JSON.stringify(mesh.geometry.toJSON()))).toEqual(before);
     dispose(root);
   });
   it("returns no profile for empty, flat or invalid geometry", () => {
@@ -140,10 +149,29 @@ describe("height-aware graphical picking axis", () => {
   });
   it("rejects nonfinite hits without changing caller output", () => {
     const root = body(),
-      profile = createTwinPickingProfile(root)!,
+      profile = requireProfile(root),
       out = new Vector3(1, 2, 3);
     expect(profile.axisAt(new Vector3(NaN, 0, 0), out)).toBe(false);
     expect(out.toArray()).toEqual([1, 2, 3]);
+    dispose(root);
+  });
+  it("fails closed after a later singular body transform", () => {
+    const root = body(),
+      profile = requireProfile(root),
+      out = new Vector3(1, 2, 3);
+    root.scale.y = 0;
+    expect(profile.axisAt(new Vector3(0, 0.5, 0), out)).toBe(false);
+    expect(out.toArray()).toEqual([1, 2, 3]);
+    dispose(root);
+  });
+  it("handles hits at both profile endpoints without missing array values", () => {
+    const root = body(),
+      profile = requireProfile(root),
+      out = new Vector3();
+    expect(profile.axisAt(new Vector3(0, -10, 0), out)).toBe(true);
+    expect(out.toArray().every(Number.isFinite)).toBe(true);
+    expect(profile.axisAt(new Vector3(0, 10, 0), out)).toBe(true);
+    expect(out.toArray().every(Number.isFinite)).toBe(true);
     dispose(root);
   });
 });

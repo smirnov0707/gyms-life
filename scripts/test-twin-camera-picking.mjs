@@ -20,7 +20,7 @@ const probe = `
         const inspect = (u: number, v: number) => {
           independentRay.setFromCamera(new Vector2(u * 2 - 1, 1 - v * 2), camera);
           const hits = independentRay.intersectObjects(model.meshes, false);
-          const owned = hits.find((hit) => model.regionOf.has(hit.object));
+          const owned = hits[0]; // The closest surface, including non-region occluders.
           return owned ? model.regionOf.get(owned.object) : null;
         };
         const candidates: Array<{ u: number; v: number; score: number }> = [];

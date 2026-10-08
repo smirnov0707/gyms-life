@@ -21,6 +21,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
+import { createTwinPickingProfile } from "./twin-picking.profile";
 import {
   clampTwinTargetY,
   moveTwinTargetY,
@@ -32,7 +33,6 @@ import { TWIN_SKIN_COLOR, twinSurfaceStyle } from "./twin-surface.style";
 import { setTwinAnatomySelection } from "./twin-anatomy.material";
 import { createTwinStageDecor } from "./twin-stage.scene";
 import { createTwinCameraFrame } from "./twin-camera.framing";
-import { createTwinPickingProfile } from "./twin-picking.profile";
 import type { TwinBodyProvenance } from "./twin-body.provenance";
 import { loadTwinIdentityShell, type TwinIdentityShellModel } from "./twin-identity-shell.loader";
 import {
@@ -157,7 +157,6 @@ export function mountTwinScene(
     const target = new Vector3(0, TWIN_FRAME.eyeHeight, 0);
     let fitDistance = fittedTwinDistance(0.7);
     let bodyFrame: ReturnType<typeof createTwinCameraFrame> | null = null;
-    let pickingProfile: ReturnType<typeof createTwinPickingProfile> = null;
     camera.position.set(0, TWIN_FRAME.eyeHeight, fitDistance);
     const controls = new OrbitControls(camera, canvas);
     cleanups.push(() => controls.dispose());
@@ -238,6 +237,8 @@ export function mountTwinScene(
 
     let model: TwinBodyModel | TwinIdentityShellModel | ReturnType<typeof createTwinBody> =
       createTwinBody();
+    let pickingProfile = createTwinPickingProfile(model.body);
+    const pickingAxis = new Vector3();
     // The generated surface is no longer shown while the figure downloads. It
     // is a mannequin, and for the seconds a 1.2 MB glTF takes on a phone it
     // stood in the athlete's stage looking like their twin. Nothing is added
@@ -275,6 +276,7 @@ export function mountTwinScene(
     cleanups.push(() => {
       humanLoad.abort();
       model.dispose();
+      pickingProfile = null;
       twinBodyRoot.clear();
       scene.clear();
     });
@@ -543,7 +545,9 @@ export function mountTwinScene(
     function frameBody(nextFrame: ReturnType<typeof createTwinCameraFrame>) {
       const offset = camera.position.clone().sub(controls.target);
       bodyFrame = nextFrame;
-      pickingProfile = createTwinPickingProfile(model.body);
+      // Rebuild once for a replacement body, never for a camera gesture or frame.
+      // Identity Shells have no analytical regions and need no picking profile.
+      pickingProfile = model.regionMeshes.size > 0 ? createTwinPickingProfile(model.body) : null;
       target.copy(nextFrame.target);
       controls.target.copy(target);
       camera.position.copy(target).add(offset);
@@ -610,7 +614,6 @@ export function mountTwinScene(
         );
     };
     const raycaster = new Raycaster();
-    const pickingAxis = new Vector3();
     const up = (event: PointerEvent) => {
       move(event);
       const start = pointers.get(event.pointerId);
@@ -641,8 +644,8 @@ export function mountTwinScene(
       const region = raycaster
         .intersectObjects(model.meshes, false)
         .filter((hit) => {
-          // The torso centre can sit in front of a visible calf. Keep the
-          // near-side guard, but use actual geometry at this hit's height.
+          // The torso centre is not the calf centre. Keep the near-side guard,
+          // but locate its axis at this hit's height using existing geometry.
           const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
             ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
             : reach;
