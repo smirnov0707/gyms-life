@@ -1,0 +1,94 @@
+name: PR143 preview acceptance
+on:
+  push:
+    branches: [diagnostics/pr143-runtime-gates-2026-10-08]
+    paths: [.github/workflows/pr143-preview-acceptance.yml]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      EXPECTED_COMMIT: dba48c7cd06f34dc306a71efb56fad4d2db7ba7f
+      EXPECTED_CONTEXT: deploy-preview
+      EXPECTED_TARGET: staging
+      GYMSLIFE_ORIGIN: https://deploy-preview-143--singular-vacherin-57448d.netlify.app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_COMMIT }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Verify exact deployment and prepare unchanged strict checks
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const out='test-results/production-browser';
+          mkdirSync(out,{recursive:true});
+          const response=await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`,{signal:AbortSignal.timeout(30000),headers:{connection:'close'}});
+          assert.equal(response.status,200);
+          const identity=await response.json();
+          writeFileSync(`${out}/identity-before.json`,JSON.stringify(identity,null,2));
+          assert.equal(identity.sourceCommit,process.env.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.buildContext,process.env.EXPECTED_CONTEXT);
+          assert.equal(identity.target,process.env.EXPECTED_TARGET);
+          const original=readFileSync('scripts/smoke-production-browser.mjs','utf8');
+          const bytes=Buffer.from(original);
+          const sha=createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+          assert.equal(sha,'e9fd373dd4b5a0c8f2b2429bcf545c87dc54033d');
+          const from='await page.goto(`${ORIGIN}${route}`, { waitUntil: "networkidle", timeout: 90000 });';
+          const to='await page.goto(`${ORIGIN}${route}?ntl-drawer-state=hidden`, { waitUntil: "networkidle", timeout: 90000 });';
+          assert.equal(original.split(from).length,2);
+          const script=original.replace(from,to);
+          assert.equal(script.replace(to,from),original);
+          writeFileSync('scripts/.pr143-public-smoke.mjs',script);
+          writeFileSync(`${out}/scope.json`,JSON.stringify({sourceCommit:process.env.EXPECTED_COMMIT,scope:'Public /, /auth, /pricing rendering only; no real account, workout, payment or database mutation.',previewDrawerOptOut:true,errorFiltering:false,securityPolicyChanged:false},null,2));
+          JS
+      - name: Render all public route theme and viewport combinations
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/.pr143-public-smoke.mjs 2>&1 | tee test-results/production-browser/browser.log
+      - name: Require all results and identical deployment after rendering
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const out='test-results/production-browser';
+          const results=JSON.parse(readFileSync(`${out}/results.json`,'utf8'));
+          assert.equal(results.origin,process.env.GYMSLIFE_ORIGIN);
+          assert.equal(results.direct,true);
+          assert.equal(results.results.length,12);
+          assert.equal(new Set(results.results.map(r=>`${r.route}:${r.scheme}:${r.viewport}`)).size,12);
+          for(const row of results.results) assert.deepEqual(row.why,[]);
+          const response=await fetch(`${process.env.GYMSLIFE_ORIGIN}/api/public/environment`,{signal:AbortSignal.timeout(30000),headers:{connection:'close'}});
+          assert.equal(response.status,200);
+          const identity=await response.json();
+          assert.equal(identity.sourceCommit,process.env.EXPECTED_COMMIT);
+          assert.equal(identity.status,'compatible');
+          assert.equal(identity.buildContext,process.env.EXPECTED_CONTEXT);
+          assert.equal(identity.target,process.env.EXPECTED_TARGET);
+          writeFileSync(`${out}/identity-after.json`,JSON.stringify(identity,null,2));
+          console.log('PASS all 12 strict public cases and exact preview identity before/after');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr143-preview-public-acceptance
+          path: test-results/production-browser
+          retention-days: 14
+          if-no-files-found: error
