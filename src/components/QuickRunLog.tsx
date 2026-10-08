@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { refreshEnduranceQueryCaches } from "@/lib/training-view-refresh";
 import { useAuth } from "@/lib/auth";
 import { useManualEnduranceSubmission } from "@/lib/use-manual-endurance-submission";
 import { EnduranceSubmissionStorageError } from "@/lib/endurance-submission-store";
@@ -36,6 +38,7 @@ function QuickRunLogForm({
   const { lang } = useI18n();
   const english = baseLang(lang) === "en";
   const submission = useManualEnduranceSubmission(ownerId);
+  const queryClient = useQueryClient();
   const confirmMatch = useServerFn(confirmRaceSessionMatchFn);
   const retryEnrichment = useServerFn(retryEnduranceRaceEnrichmentFn);
   const inFlight = useRef(false);
@@ -80,6 +83,8 @@ function QuickRunLogForm({
       window.dispatchEvent(
         new CustomEvent("gymslife:endurance-updated", { detail: { raceIntelligence } }),
       );
+      await refreshEnduranceQueryCaches(queryClient, ownerId);
+      if (!scope.isCurrent() || !submission.isMounted()) return;
       await onLogged?.();
     } catch {
       if (!scope.isCurrent() || !submission.isMounted()) return;

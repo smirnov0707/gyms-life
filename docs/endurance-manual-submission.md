@@ -34,3 +34,5 @@ Server tests execute actual supabase-js request construction against scripted HT
 The real QuickRunLog is exercised with synthetic services in the existing Core browser suite, including original saved-run enrichment cases plus six primary-save recovery scenarios. Browser fixtures retain their simulated server result across reload and count writes separately from endpoint calls. This is not a live authenticated production transaction or a live PostgreSQL concurrency acceptance test.
 
 Production schema was inspected read-only while preparing this change: `workout_sessions` has RLS enabled, `PRIMARY KEY (id)` and `workout_sessions_snapshot_immutable`. No SQL mutations, migrations, policy changes, dependencies or production configuration changes are required by this patch.
+
+Recovered saves also invalidate the current owner's race-preparation and Endurance Twin caches. Today listens to evidence refresh events without requiring a fabricated second completion; synchronous completion/update events are coalesced into one read. Foreign-owner query caches are untouched.

@@ -146,8 +146,33 @@ export async function verifyEnduranceRunLog({ open, record, artifacts }) {
     await expect(retry).toBeEnabled();
     await expect(page.getByRole("textbox", { name: "Trukmė minutėmis" })).toHaveValue("30");
     await expect(page.getByRole("textbox", { name: "Trukmė minutėmis" })).toBeDisabled();
+    const queryOwner = await page.evaluate(() => {
+      const key = Object.keys(sessionStorage).find((key) =>
+        key.startsWith("gyms_life_pending_manual_run_v1:"),
+      );
+      const owner = key.split(":")[1];
+      window.__coreQueries.setQueryData(["endurance-twin", owner], { synthetic: true });
+      window.__coreQueries.setQueryData(["active-race-prep", owner], { synthetic: true });
+      window.__coreQueries.setQueryData(["endurance-twin", "foreign-test-owner"], {
+        synthetic: true,
+      });
+      return owner;
+    });
     await retry.click();
     await expect(page.locator('[data-sonner-toast][data-type="success"]')).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (owner) => ({
+            twin: window.__coreQueries.getQueryState(["endurance-twin", owner])?.isInvalidated,
+            race: window.__coreQueries.getQueryState(["active-race-prep", owner])?.isInvalidated,
+            foreign: window.__coreQueries.getQueryState(["endurance-twin", "foreign-test-owner"])
+              ?.isInvalidated,
+          }),
+          queryOwner,
+        ),
+      )
+      .toEqual({ twin: true, race: true, foreign: false });
     expect(await values(page)).toMatchObject({
       saves: 2,
       records: 1,
