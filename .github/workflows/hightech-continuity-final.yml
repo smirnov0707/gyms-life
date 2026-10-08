@@ -30,7 +30,7 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import urllib.request, subprocess
+          import urllib.request, subprocess, json, shutil
           url='https://raw.githubusercontent.com/smirnov0707/gyms-life/f449ab00c63452526c124deec6bdd326ab0258da/.github/workflows/hightech-continuity-candidate.yml'
           text=urllib.request.urlopen(url,timeout=30).read().decode('utf8')
           lines=text.splitlines();blocks=[];i=0
@@ -71,7 +71,14 @@ jobs:
             }
           '''
           p.write_text(s[:end]+extra+s[end:])
-          Path('/tmp/hightech-quality.sh').write_text(blocks[2])
+          quality=blocks[2]
+          start=quality.index("node --input-type=module <<'JS'\n")
+          end=quality.index('\nJS\n',start)+len('\nJS\n')
+          quality=quality[:start]+quality[end:]
+          for command in ['npm run typecheck','npm run test\n','npm run test:toolchain','npm run lint','npm run build:staging','npm run build\n']:
+              assert command in quality,command
+          assert 'prettier' not in quality
+          Path('/tmp/hightech-quality.sh').write_text(quality)
           focused=blocks[3].replace('!==21','!==22').replace('14 original + 7 new','14 original + 8 new')
           Path('/tmp/hightech-browser.sh').write_text(focused)
           publish=blocks[4]
@@ -92,15 +99,23 @@ jobs:
           assert publish.count(old)==1
           publish=publish.replace(old,"if(previous) await api(`git/refs/heads/${process.env.FEATURE_BRANCH}`,'PATCH',{sha:commit.sha,force:false}); else "+old)
           Path('/tmp/hightech-publish.sh').write_text(publish)
+          for name in json.loads(Path('test-results/candidate-files.json').read_text()):
+              target=Path('test-results/candidate-source')/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(name,target)
           PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - name: Verify all unit tests, TypeScript, lint, toolchain and both builds
         shell: bash
-        run: bash /tmp/hightech-quality.sh
+        run: |
+          set -o pipefail
+          bash /tmp/hightech-quality.sh 2>&1 | tee test-results/quality.log
       - name: Verify all 22 real run groups in Chromium and WebKit
         shell: bash
-        run: bash /tmp/hightech-browser.sh
+        run: |
+          set -o pipefail
+          bash /tmp/hightech-browser.sh 2>&1 | tee test-results/browser.log
       - name: Publish final tested source without deployment
         env:
           GH_TOKEN: ${{ github.token }}
