@@ -1,0 +1,181 @@
+{
+  "testedCommit": "af4e64fbd9e7f00cbdd02c11c45f57f3d948fabf",
+  "parent": "c95995f21e28d9c26ed11df7ca64150dedd1a9dd",
+  "run": "37755834030",
+  "scope": "Two test-harness repairs only; application skin/UI source unchanged from PR143. No production deployment or live user activity.",
+  "status": "passed",
+  "checks": [
+    "typecheck",
+    "all unit/contract tests",
+    "full lint",
+    "staging build",
+    "production build",
+    "four before and four after shader renders",
+    "eight real UI skin cases"
+  ],
+  "testSummary": [
+    " Test Files  300 passed (300)",
+    "      Tests  2352 passed (2352)"
+  ],
+  "files": [
+    {
+      "path": "scripts/ci-browser-runtime.test.ts",
+      "sha256": "5aeeb8614772f63c7b21a86a83e9fb52d8fdc2e0e786fd768dad27bbb6d34cf1"
+    },
+    {
+      "path": "scripts/authoring/render-sculpt-review.mjs",
+      "sha256": "e87dfee566bdebf5fa97773bc03d739bcc9ea656ac6e2397f7e4422aa44740f7"
+    }
+  ],
+  "rendered": {
+    "scope": "Real TwinSnapshotView and registered GLBs, synthetic evidence only; no live user data.",
+    "results": [
+      {
+        "name": "1280-dark-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 35042,
+          "blue": 2899,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 31794,
+          "blue": 6001,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "1280-dark-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 37669,
+          "blue": 3650,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 33558,
+          "blue": 7669,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "1280-light-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 35042,
+          "blue": 2900,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 31794,
+          "blue": 6001,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "1280-light-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 37669,
+          "blue": 3650,
+          "width": 622,
+          "height": 540
+        },
+        "selected": {
+          "skin": 33558,
+          "blue": 7669,
+          "width": 622,
+          "height": 540
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-dark-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 18749,
+          "blue": 1534,
+          "width": 270,
+          "height": 396
+        },
+        "selected": {
+          "skin": 17022,
+          "blue": 3218,
+          "width": 270,
+          "height": 396
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-dark-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 22734,
+          "blue": 2229,
+          "width": 270,
+          "height": 420
+        },
+        "selected": {
+          "skin": 20241,
+          "blue": 4665,
+          "width": 270,
+          "height": 420
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-light-analysis",
+        "status": "passed",
+        "before": {
+          "skin": 18749,
+          "blue": 1534,
+          "width": 270,
+          "height": 396
+        },
+        "selected": {
+          "skin": 17022,
+          "blue": 3218,
+          "width": 270,
+          "height": 396
+        },
+        "measurement": 77,
+        "errors": []
+      },
+      {
+        "name": "320-light-realistic",
+        "status": "passed",
+        "before": {
+          "skin": 22734,
+          "blue": 2229,
+          "width": 270,
+          "height": 420
+        },
+        "selected": {
+          "skin": 20241,
+          "blue": 4665,
+          "width": 270,
+          "height": 420
+        },
+        "measurement": 77,
+        "errors": []
+      }
+    ],
+    "errors": []
+  },
+  "productionChanged": false
+}
