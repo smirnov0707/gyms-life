@@ -1,0 +1,31 @@
+name: Twin navigation source snapshot
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-navigation-source.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 656f4a6cb8fba5cddcab8c7b14eda67e906b3910
+          persist-credentials: false
+      - name: Archive tracked source only; no credentials, environment or deployment
+        shell: bash
+        run: |
+          mkdir -p /tmp/twin-navigation-source
+          git rev-parse HEAD > /tmp/twin-navigation-source/base.txt
+          git rev-parse HEAD^{tree} > /tmp/twin-navigation-source/tree.txt
+          git ls-files -z | tar --null -T - -czf /tmp/twin-navigation-source/source.tar.gz
+          cd /tmp/twin-navigation-source
+          sha256sum source.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twin-navigation-reviewed-source
+          path: /tmp/twin-navigation-source
+          retention-days: 7
+          if-no-files-found: error
