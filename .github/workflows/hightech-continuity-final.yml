@@ -30,7 +30,7 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import urllib.request, subprocess, json, shutil
+          import urllib.request, subprocess
           url='https://raw.githubusercontent.com/smirnov0707/gyms-life/f449ab00c63452526c124deec6bdd326ab0258da/.github/workflows/hightech-continuity-candidate.yml'
           text=urllib.request.urlopen(url,timeout=30).read().decode('utf8')
           lines=text.splitlines();blocks=[];i=0
@@ -99,13 +99,24 @@ jobs:
           assert publish.count(old)==1
           publish=publish.replace(old,"if(previous) await api(`git/refs/heads/${process.env.FEATURE_BRANCH}`,'PATCH',{sha:commit.sha,force:false}); else "+old)
           Path('/tmp/hightech-publish.sh').write_text(publish)
-          for name in json.loads(Path('test-results/candidate-files.json').read_text()):
-              target=Path('test-results/candidate-source')/name
-              target.parent.mkdir(parents=True,exist_ok=True)
-              shutil.copyfile(name,target)
           PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Apply only formatting fixes using the existing installed ESLint rules
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const paths=JSON.parse(readFileSync('test-results/candidate-files.json','utf8')).filter(p=>/\.(?:ts|tsx|mjs)$/.test(p));
+          const formatter=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await formatter.lintFiles(paths);
+          await ESLint.outputFixes(results);
+          for(const result of results) assert.equal(result.errorCount,0,JSON.stringify({file:result.filePath,messages:result.messages}));
+          writeFileSync('test-results/formatting.json',JSON.stringify({onlyRule:'prettier/prettier',paths,dependenciesChanged:false},null,2));
+          console.log('PASS: formatting only; full unchanged lint and tests still required.');
+          JS
       - name: Verify all unit tests, TypeScript, lint, toolchain and both builds
         shell: bash
         run: |
@@ -121,6 +132,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: bash /tmp/hightech-publish.sh
+      - name: Retain final source only after test discovery and verification have ended
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json, shutil
+          manifest=Path('test-results/candidate-files.json')
+          if manifest.exists():
+              for name in json.loads(manifest.read_text()):
+                  source=Path(name)
+                  if source.exists():
+                      target=Path('test-results/candidate-source')/name
+                      target.parent.mkdir(parents=True,exist_ok=True)
+                      shutil.copyfile(source,target)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
