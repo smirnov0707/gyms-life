@@ -1,0 +1,60 @@
+name: Twin layer readability
+on:
+  pull_request:
+    paths:
+      - "src/components/twin/**"
+      - "src/components/future-lab-*.css"
+      - "src/styles.css"
+      - "src/ui-design-system.css"
+      - "tests/twin-browser/layer-controls*"
+      - "scripts/test-twin-layer-controls-browser.mjs"
+      - "scripts/audit-twin-region-surfaces.mjs"
+      - ".github/workflows/twin-layer-controls.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/twin/**"
+      - "src/components/future-lab-*.css"
+      - "src/styles.css"
+      - "src/ui-design-system.css"
+      - "tests/twin-browser/layer-controls*"
+      - "scripts/test-twin-layer-controls-browser.mjs"
+      - "scripts/audit-twin-region-surfaces.mjs"
+      - ".github/workflows/twin-layer-controls.yml"
+permissions:
+  contents: read
+concurrency:
+  group: twin-layer-controls-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Audit the shipped region surfaces without modifying them
+        run: node scripts/audit-twin-region-surfaces.mjs
+      - name: Verify unbroken labels, text resizing and keyboard selection
+        run: node scripts/test-twin-layer-controls-browser.mjs
+        env:
+          TWIN_CONTROL_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-layer-readability-${{ matrix.engine }}
+          path: test-results/twin-layer-controls
+          retention-days: 14
+          if-no-files-found: error

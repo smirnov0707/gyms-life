@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import type { TwinSnapshot } from "@/lib/digital-twin.schema";
 import type { BodyView } from "./body-map.geometry";
 import { BodySceneStage } from "./BodySceneStage";
-import { TWIN_LAYERS, mapTwinScene, type TwinLayer } from "./twin-scene.model";
+import { mapTwinScene, type TwinLayer } from "./twin-scene.model";
 import { twinLayerCopy, formatTwinValue } from "./twin-layer.copy";
+import { TwinLayerControls } from "./TwinLayerControls";
 import type { TwinVisualAppearance } from "./twin-human.loader";
 export type TwinStageProps = {
   snapshot: TwinSnapshot;
@@ -66,34 +67,12 @@ export function TwinStage({
           : {})}
       layerControls={
         showLayerControls ? (
-          <div
-            data-twin-layer-controls
-            role="group"
-            aria-label={copy.selector}
-            // One column per layer, so a third option does not wrap on to a row of
-            // its own and leave the selector twice as tall as it needs to be.
-            className="mx-3 mb-2 grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1"
-          >
-            {TWIN_LAYERS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                style={{
-                  minWidth: props.presentation === "cockpit" ? 30 : 44,
-                  minHeight: props.presentation === "cockpit" ? 30 : 44,
-                  flexShrink: 0,
-                }}
-                aria-pressed={layer === option}
-                onClick={() => onLayerChange(option)}
-                // Balanced across two lines rather than broken mid-word: at
-                // 320px "Atsistatymas" and "Registruotas tūris" split into
-                // "Atsistatym / as" and "Registruot / as tūris".
-                className={`min-h-11 min-w-11 text-balance rounded-xl px-2 py-1 text-[11px] font-medium leading-tight text-neutral-200 transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-300 sm:px-3 sm:text-xs ${layer === option ? "bg-white/10 text-white" : ""}`}
-              >
-                {copy.label[option]}
-              </button>
-            ))}
-          </div>
+          <TwinLayerControls
+            layer={layer}
+            onLayerChange={onLayerChange}
+            language={props.language}
+            compact={props.presentation === "cockpit"}
+          />
         ) : null
       }
     />
