@@ -14,7 +14,7 @@ jobs:
       options: --init
     env:
       PR_HEAD: 299a9bc935de265e993d5531ac98dc2439d7cc54
-      SOURCE: 0fa7fd5bef08e67e2ccda42e4c65151af82b9078
+      SOURCE: 6c1066fdc2413796ae5a548e618435d098e2213a
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,6 +34,9 @@ jobs:
           for name in files:
               url='https://raw.githubusercontent.com/smirnov0707/gyms-life/'+os.environ['SOURCE']+'/'+name
               Path(name).write_bytes(urllib.request.urlopen(url,timeout=30).read())
+          fixture=Path('src/components/twin/twin-picking.profile.test.ts');text=fixture.read_text()
+          assert text.count('  ]) {')==1
+          fixture.write_text(text.replace('  ]) {','  ] as const) {'))
           path=Path('src/components/twin/twin-scene.runtime.ts');s=path.read_text()
           def rep(old,new):
               global s
