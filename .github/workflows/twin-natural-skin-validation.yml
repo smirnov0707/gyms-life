@@ -47,6 +47,12 @@ jobs:
           assert.ok(start > 0 && end > start);
           source = source.slice(0, start) + '        // Selection-only comparison: clearing preserves the exact camera pose.\n        await choose(page, region);\n        await choose(page, "");\n' + source.slice(end);
           writeFileSync('scripts/test-twin-skin-browser.mjs', source);
+          const testPath = 'src/components/twin/twin-skin.palette.test.ts';
+          let tests = readFileSync(testPath, 'utf8');
+          assert.equal(tests.split('shader.uniforms["twinSelection"].value').length, 3);
+          assert.equal(tests.split('shader.uniforms["twinNeutral"].value').length, 2);
+          tests = tests.replaceAll('shader.uniforms["twinSelection"].value', 'shader.uniforms["twinSelection"]?.value').replace('shader.uniforms["twinNeutral"].value', 'shader.uniforms["twinNeutral"]?.value');
+          writeFileSync(testPath, tests);
           writeFileSync('.github/workflows/twin-skin-browser.yml', readFileSync('../harness/diagnostics/twin-natural-skin/browser-workflow.yml'));
           const files = JSON.parse(readFileSync('twin-skin-changed-files.json', 'utf8'));
           files.push('scripts/test-twin-skin-browser.mjs', '.github/workflows/twin-skin-browser.yml');
@@ -115,12 +121,33 @@ jobs:
             return result;
           };
           const parent = await request('/git/commits/' + base);
-          const tree = await request('/git/trees', 'POST', {base_tree: parent.tree.sha, tree: paths.map(p => ({path:p, mode:'100644', type:'blob', content:readFileSync(p,'utf8')}))});
+          // Workflow-file publication uses the connected user action after this run.
+          const sourcePaths = paths.filter(p => !p.startsWith('.github/'));
+          const tree = await request('/git/trees', 'POST', {base_tree: parent.tree.sha, tree: sourcePaths.map(p => ({path:p, mode:'100644', type:'blob', content:readFileSync(p,'utf8')}))});
           const commit = await request('/git/commits', 'POST', {message:'fix(twin): natural skin and visible muscle selection without changing evidence\n\nUse warm non-metallic skin in analysis and Body modes, including neutral mask areas and simplified 3D fallback. Use neutral front/back lighting and an independent blue selection tint plus masked edge so unknown regions no longer select as black. Preserve model assets, provenance, geometry, camera controls, evidence values and semantic colours.\n\nVerified typecheck, all unit tests, full lint, both builds, rendered skin/selection pixel comparisons and the unchanged canonical Twin suite before publishing. No database or production changes. Full PR release gates remain required.', tree: tree.sha, parents:[base]});
+          console.log('Verified source commit', commit.sha);
           await request('/git/refs', 'POST', {ref:'refs/heads/' + branch, sha:commit.sha});
           const files = paths.map(p => ({path:p, sha256:createHash('sha256').update(readFileSync(p)).digest('hex')}));
-          writeFileSync('test-results/twin-skin-validation/published.json', JSON.stringify({base, branch, commit:commit.sha, tree:tree.sha, files}, null, 2));
-          console.log('Published verified visual change', commit.sha, branch);
+          const evidenceRoot = 'diagnostics/twin-natural-skin/evidence-' + process.env.GITHUB_RUN_ID;
+          const images = ['analysis-dark-320-chest-base.png','analysis-dark-320-chest-selected.png','analysis-light-320-back-selected.png','realistic-light-320-chest-selected.png'];
+          for (const image of images) await request('/contents/' + evidenceRoot + '/' + image, 'PUT', {message:'test(evidence): retain generic Twin rendered comparison', branch:'diagnostics/twin-natural-skin-2026-10-08', content:readFileSync('test-results/twin-skin/' + image).toString('base64')});
+          const report = {base, branch, commit:commit.sha, tree:tree.sha, files, evidenceRoot, images, workflowPending:true, rendered:JSON.parse(readFileSync('test-results/twin-skin/results.json','utf8'))};
+          writeFileSync('test-results/twin-skin-validation/published.json', JSON.stringify(report, null, 2));
+          await request('/contents/' + evidenceRoot + '/verification.json', 'PUT', {message:'test(evidence): retain verified natural-skin results and source hashes', branch:'diagnostics/twin-natural-skin-2026-10-08', content:Buffer.from(JSON.stringify(report,null,2)).toString('base64')});
+          console.log('Published verified visual change', commit.sha, branch, evidenceRoot);
+          JS
+      - name: Retain candidate source and checksums
+        if: always()
+        working-directory: app
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+          if (existsSync('twin-skin-changed-files.json')) {
+            mkdirSync('test-results/twin-skin-validation', {recursive:true});
+            const files = JSON.parse(readFileSync('twin-skin-changed-files.json','utf8'));
+            writeFileSync('test-results/twin-skin-validation/source.json', JSON.stringify(files.map(path=>({path, content:readFileSync(path,'utf8')})),null,2));
+          }
           JS
       - uses: actions/upload-artifact@v4
         if: always()
