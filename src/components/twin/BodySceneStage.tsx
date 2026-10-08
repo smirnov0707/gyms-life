@@ -1,5 +1,16 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, Minus, Plus, RotateCcw, RotateCw, Settings2, Undo2 } from "lucide-react";
+import {
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  Minus,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  Settings2,
+  Undo2,
+} from "lucide-react";
+import "./twin-camera-navigation.css";
 import { BodyMap } from "./BodyMap";
 import { viewShowing, type BodyView } from "./body-map.geometry";
 import {
@@ -58,8 +69,8 @@ export type BodySceneStageProps = {
 const COPY = {
   en: {
     scene:
-      "Interactive human body. Drag to rotate; pinch to zoom. Keyboard: left/right arrows rotate, plus/minus zoom, Home resets.",
-    hint: "Drag to rotate 360° · Pinch or scroll to zoom",
+      "Interactive human body. Drag sideways to rotate 360 degrees, vertically to tilt. Two fingers move the view vertically or pinch to zoom. Keyboard: left/right rotate, up/down move vertically, Shift+up/down tilt, plus/minus zoom, Home resets.",
+    hint: "Drag to rotate 360° and tilt · Two fingers move up/down or zoom · Right-drag moves up/down",
     selectionHint: "Bright edge = selected region, not a health reading.",
     loading: "Preparing 3D… 2D remains available.",
     fallback: "3D is unavailable on this device. Your evidence is still available in 2D.",
@@ -69,6 +80,13 @@ const COPY = {
     back: "Back",
     left: "Left side",
     right: "Right side",
+    panUp: "Move view up",
+    panDown: "Move view down",
+    tiltUp: "Look from above",
+    tiltDown: "Look from below",
+    upperBody: "Upper body",
+    lowerBody: "Lower body",
+    navigation: "Vertical view controls",
     rotateLeft: "Rotate left",
     rotateRight: "Rotate right",
     zoomIn: "Zoom in",
@@ -85,8 +103,8 @@ const COPY = {
   },
   lt: {
     scene:
-      "Interaktyvus žmogaus kūnas. Tempk, kad pasuktum; suglausk pirštus, kad keistum mastelį. Klaviatūra: rodyklės suka, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
-    hint: "Tempk ir suk 360° · Mastelį keisk dviem pirštais",
+      "Interaktyvus žmogaus kūnas. Tempk į šonus, kad suktum 360 laipsnių, aukštyn ar žemyn – kad keistum kampą. Dviem pirštais perkelk vaizdą arba keisk mastelį. Klaviatūra: kairėn ir dešinėn suka, aukštyn ir žemyn perkelia, Shift ir vertikalios rodyklės keičia kampą, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
+    hint: "Vienu pirštu suk ir keisk kampą · Dviem perkelk aukštyn / žemyn ar keisk mastelį · Pele perkelk laikydamas dešinį mygtuką",
     selectionHint: "Šviesus kontūras žymi pasirinkimą, ne sveikatos rodiklį.",
     loading: "Ruošiamas 3D… 2D vaizdas lieka pasiekiamas.",
     fallback: "3D šiame įrenginyje nepasiekiamas. Tavo duomenys lieka pasiekiami 2D vaizde.",
@@ -96,6 +114,13 @@ const COPY = {
     back: "Nugara",
     left: "Kairysis šonas",
     right: "Dešinysis šonas",
+    panUp: "Apžiūrėti aukščiau",
+    panDown: "Apžiūrėti žemiau",
+    tiltUp: "Žiūrėti iš aukščiau",
+    tiltDown: "Žiūrėti iš žemiau",
+    upperBody: "Kūno viršus",
+    lowerBody: "Kūno apačia",
+    navigation: "Vertikalus vaizdo valdymas",
     rotateLeft: "Pasukti kairėn",
     rotateRight: "Pasukti dešinėn",
     zoomIn: "Priartinti",
@@ -325,6 +350,27 @@ export function BodySceneStage(props: BodySceneStageProps) {
               className={`absolute inset-0 ${show3D ? "" : "invisible pointer-events-none"}`}
             />
           )}
+          {show3D && presentation === "full" && (
+            <div data-twin-navigation role="group" aria-label={copy.navigation}>
+              {(
+                [
+                  ["pan-up", ArrowUp, copy.panUp],
+                  ["pan-down", ArrowDown, copy.panDown],
+                ] as const
+              ).map(([action, Icon, name]) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => command(action)}
+                  style={controlStyle}
+                  aria-label={name}
+                  title={name}
+                >
+                  <Icon aria-hidden="true" className="size-4" />
+                </button>
+              ))}
+            </div>
+          )}
           {!show3D && (
             <div className="absolute inset-0 mx-auto max-w-[370px]">
               <BodyMap
@@ -465,6 +511,8 @@ export function BodySceneStage(props: BodySceneStageProps) {
               [
                 ["rotate-left", RotateCcw, copy.rotateLeft],
                 ["rotate-right", RotateCw, copy.rotateRight],
+                ["tilt-up", ArrowUp, copy.tiltUp],
+                ["tilt-down", ArrowDown, copy.tiltDown],
                 ["zoom-in", Plus, copy.zoomIn],
                 ["zoom-out", Minus, copy.zoomOut],
                 ["reset", Undo2, copy.reset],
@@ -502,6 +550,26 @@ export function BodySceneStage(props: BodySceneStageProps) {
             </button>
           ))}
         </div>
+        {show3D && (
+          <div className="mt-2 flex flex-wrap justify-center gap-1">
+            {(
+              [
+                ["upper-body", copy.upperBody],
+                ["lower-body", copy.lowerBody],
+              ] as const
+            ).map(([action, name]) => (
+              <button
+                key={action}
+                type="button"
+                style={controlStyle}
+                className={controlClass}
+                onClick={() => command(action)}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
         {show3D && (
           <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-3 text-xs text-neutral-300">
             <input
