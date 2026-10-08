@@ -1,15 +1,13 @@
-# Generic Body back-selection edge
+# Twin posterior selection edge — per-fragment refinement
 
-Base: released PR148, commit 3967daa8504ba53f28b60d913235e3020f303981.
+Base: PR149 f74861f5875bb93ba5ef248c608570b642fa5679 on released main 3967daa8.
 
-The recorded realistic back selection had hard triangular teeth. Its region primitive used a solid selected material with no boundary mask. Analysis is a different, authored contour/mask surface and is unchanged here.
+The first vertex-distance prototype passed automated checks but still showed coarse triangular transitions in screenshots. It is replaced, not shipped alongside another competing path.
 
-This increment applies a bounded interior colour feather only to the verified generic Body asset's back region. It derives distances from the existing open edges on a working adjacency graph once on load. Coincident seam vertices share distances but no source vertices are welded or moved. An extra scalar attribute drives the existing opaque material's colour/emission mask. The region interior retains the existing selection colour; the border approaches the original neutral skin. There are no duplicate meshes, extra draw calls, new animation loops, topology changes or added glow. The 0.025 metre width is a presentation parameter on a metre-scale generic mesh, not an anatomical measurement.
+The registered generic Body back alone now uses a 256 × 256 single-channel field derived from its own XY triangle footprint. A smoothed signed chamfer-distance field softens the selection transition inside that footprint. A guard term keeps its existing border neutral. Per-fragment sampling avoids dependence on the coarse mesh's vertex spacing. Roughness returns to the neutral skin value with the same mask, preventing a selected-material sheen from retaining a hard triangle boundary.
 
-The byte-verified registered asset is the scope gate. Other regions, the separate Analysis asset, candidate models and private Identity Shells are not feathered. No physiology, evidence state, canonical region IDs, picking geometry, GLB file, database, dependency or AI provider changes.
+This is graphic treatment, not an anatomical measurement, personal scan, muscle-growth estimate or evidence source. Application is still gated by registered asset identity, Body appearance and back region. The Analysis model, other regions and personal Identity Shells are unchanged. Positions, indices, normals, UVs and picking stay intact; no asset bytes, database, providers or dependencies change.
 
-## Verification and boundaries
+One R8 field is 65,536 bytes before driver overhead, with no mipmaps. No mesh or draw call is added. It is generated once per model load and disposed with its material; this is not a physical-iPhone performance claim.
 
-15 unit/integration cases exercise synthetic meshes and the actual registered GLBs. They verify preserved positions/indices/normals/UVs, bounded mask values, a visible full-weight interior, seam handling, malformed inputs and loader scoping. The paired browser test renders the actual Twin fixture at 390/1280px in both themes, with synthetic no-evidence state. Its test-only transform disables the new mask to retain a controlled reference; no such switch exists in the production app. It checks that the mask changes the image without erasing selection, confirms asset identity and preserves absent measurements. Edge-count metrics are descriptive and screenshots require review. Existing full Twin, Today, Core and CI gates still apply.
-
-Local targeted tests and changed-file lint passed using a supplied archived workspace whose loader source matches the reviewed main blob. Local Chromium navigation is policy-blocked; no policy bypass was attempted. Final acceptance must use the exact PR tree in CI, not the archived workspace's complete test count. This is not an anatomical-validation claim, physical-iPhone test or live-account acceptance.
+The source contract and full unit/TypeScript/lint/build gates must pass. The real WebGL comparison retains an unfeathered reference through a test-only source transform, never a production switch. It checks exact asset identity, absent evidence remaining absent, and a substantial visible back selection in both themes and two viewports. Screenshot review remains required. Neither synthetic browser tests nor public HTTP smoke establishes real-account or physical-device acceptance.

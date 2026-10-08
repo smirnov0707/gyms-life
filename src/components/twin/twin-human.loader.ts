@@ -1,5 +1,6 @@
 import { Group, Mesh, type Object3D } from "three";
-import { createTwinBoundaryMask } from "./twin-region-boundary";
+import { createTwinBoundaryField } from "./twin-region-boundary";
+import { createTwinBoundaryMaterial } from "./twin-boundary.material";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
@@ -117,38 +118,38 @@ function build(
       provenance.sha256 ===
         TWIN_REGISTERED_ASSETS.find((asset) => asset.path === "public/models/twin-body-v2.glb")
           ?.sha256;
-    if (featherBack)
-      object.geometry.setAttribute("_twin_mask", createTwinBoundaryMask(object.geometry));
     disposeMaterial(object);
-    object.material = createTwinAnatomyMaterial(
-      preset,
-      appearance === "realistic"
-        ? { regionMask: featherBack }
-        : {
-            ...(object.userData["twinSculptContours"] !== undefined &&
-            object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
-              ? {
-                  contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
-                  ...(object.userData["twinSculptCompetition"]
-                    ? {
-                        competition: parseTwinSculptCompetition(
-                          object.userData["twinSculptCompetition"],
-                        ),
-                      }
-                    : {}),
-                  contourFan: region === "chest" || region === "abs",
-                }
-              : {}),
-            regionMask:
-              object.userData["twinRegionMask"] === true &&
-              object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
-            fibers:
-              object.userData["twinFiberUV"] === true &&
-              object.geometry.getAttribute("uv")?.itemSize === 2 &&
-              region !== null &&
-              isTwinBodyRegion(region),
-          },
-    );
+    object.material = featherBack
+      ? createTwinBoundaryMaterial(preset, createTwinBoundaryField(object.geometry))
+      : createTwinAnatomyMaterial(
+          preset,
+          appearance === "realistic"
+            ? {}
+            : {
+                ...(object.userData["twinSculptContours"] !== undefined &&
+                object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
+                  ? {
+                      contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
+                      ...(object.userData["twinSculptCompetition"]
+                        ? {
+                            competition: parseTwinSculptCompetition(
+                              object.userData["twinSculptCompetition"],
+                            ),
+                          }
+                        : {}),
+                      contourFan: region === "chest" || region === "abs",
+                    }
+                  : {}),
+                regionMask:
+                  object.userData["twinRegionMask"] === true &&
+                  object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
+                fibers:
+                  object.userData["twinFiberUV"] === true &&
+                  object.geometry.getAttribute("uv")?.itemSize === 2 &&
+                  region !== null &&
+                  isTwinBodyRegion(region),
+              },
+        );
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 
