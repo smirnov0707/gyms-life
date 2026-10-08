@@ -1,0 +1,199 @@
+name: Twin height-aware picking acceptance
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-picking-height.yml]
+permissions:
+  contents: write
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: 299a9bc935de265e993d5531ac98dc2439d7cc54
+      SOURCE: 0fa7fd5bef08e67e2ccda42e4c65151af82b9078
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Integrate only reviewed picking source with strict replacement guards
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import os,urllib.request,json
+          from pathlib import Path
+          paths=['scripts/test-twin-camera-picking.mjs','.github/workflows/twin-camera-navigation.yml','src/components/twin/twin-picking.profile.ts','src/components/twin/twin-picking.profile.test.ts','docs/twin-height-aware-picking.md']
+          for name in paths:
+              url='https://raw.githubusercontent.com/smirnov0707/gyms-life/'+os.environ['SOURCE']+'/'+name
+              Path(name).write_bytes(urllib.request.urlopen(url,timeout=30).read())
+          p=Path('src/components/twin/twin-scene.runtime.ts');s=p.read_text()
+          def replace(old,new):
+              global s
+              assert s.count(old)==1,(old,s.count(old));s=s.replace(old,new)
+          replace('import { createTwinBody } from "./twin-body.geometry";','import { createTwinBody } from "./twin-body.geometry";\nimport { createTwinPickingProfile } from "./twin-picking.profile";')
+          replace('      createTwinBody();','      createTwinBody();\n    let pickingProfile = createTwinPickingProfile(model.body);\n    const pickingAxis = new Vector3();')
+          replace('      model.dispose();\n      twinBodyRoot.clear();','      model.dispose();\n      pickingProfile = null;\n      twinBodyRoot.clear();')
+          replace('      bodyFrame = nextFrame;','      bodyFrame = nextFrame;\n      // Rebuild once for a replacement body, never for a camera gesture or frame.\n      // Identity Shells have no analytical regions and need no picking profile.\n      pickingProfile = model.regionMeshes.size > 0 ? createTwinPickingProfile(model.body) : null;')
+          replace('      // the far side of it, and you cannot tap what you cannot see.','      // the far side of it, and you cannot tap what you cannot see.') if False else None
+          replace('        .filter((hit) => hit.distance <= reach)','''        .filter((hit) => {
+          // The torso centre is not the calf centre. Keep the near-side guard,
+          // but locate its axis at this hit's height using existing geometry.
+          const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
+            ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
+            : reach;
+          return hit.distance <= limit;
+        })''')
+          p.write_text(s)
+          p=Path('src/components/twin/twin-picking.profile.ts');s=p.read_text()
+          old='      body.worldToLocal(local.copy(worldPoint));'
+          assert s.count(old)==1
+          s=s.replace(old,'''      body.updateWorldMatrix(true, false);
+                if (!body.matrixWorld.elements.every(Number.isFinite) || Math.abs(body.matrixWorld.determinant()) < 1e-12)
+                  return false;
+                body.worldToLocal(local.copy(worldPoint));''')
+          p.write_text(s)
+          p=Path('scripts/test-twin-camera-picking.mjs');s=p.read_text()
+          old='const owned = hits.find((hit) => model.regionOf.has(hit.object));'
+          assert s.count(old)==1
+          s=s.replace(old,'const owned = hits[0]; // The closest surface, including non-region occluders.')
+          p.write_text(s)
+          paths += ['src/components/twin/twin-scene.runtime.ts','src/components/twin/twin-picking.registered.test.ts']
+          Path('/tmp/twin-height-files.json').write_text(json.dumps(paths))
+          PY
+      - name: Add regression against the actual registered calf and immutable assets
+        shell: bash
+        run: |
+          cat > src/components/twin/twin-picking.registered.test.ts <<'TS'
+          import { readFile } from "node:fs/promises";
+          import { createHash } from "node:crypto";
+          import { expect, it } from "vitest";
+          import { Mesh, Ray, Raycaster, Vector3 } from "three";
+          import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+          import { createTwinPickingProfile } from "./twin-picking.profile";
+          import { createTwinCameraFrame } from "./twin-camera.framing";
+          import { twinNearSideReach } from "./twin-camera.navigation";
+
+          it("accepts the recorded visible Analysis calf without moving a single vertex", async () => {
+            const bytes = new Uint8Array(await readFile("public/models/twin-selected-v1.glb"));
+            expect(createHash("sha256").update(bytes).digest("hex")).toBe("e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31");
+            const { scene } = await new GLTFLoader().parseAsync(bytes.buffer, "");
+            const meshes: Mesh[] = [];
+            scene.traverse(object => { if(object instanceof Mesh) meshes.push(object); });
+            const digest = () => meshes.map(mesh => {
+              const hash = createHash("sha256");
+              for(const name of Object.keys(mesh.geometry.attributes).sort())
+                hash.update(Buffer.from(mesh.geometry.getAttribute(name).array.buffer));
+              const index = mesh.geometry.getIndex();
+              if(index) hash.update(Buffer.from(index.array.buffer));
+              return hash.digest("hex");
+            });
+            const before = digest();
+            const frame = createTwinCameraFrame(scene);
+            const started = performance.now();
+            const profile = createTwinPickingProfile(scene);
+            const profileMs = performance.now() - started;
+            expect(profile).not.toBeNull();
+            const camera = new Vector3(0, 0.5185216140747072, 2.4197801786959428);
+            const direction = new Vector3(-0.030199411496845407, 0.025535432155555562, -0.9992176625990321);
+            const ray = new Ray(camera, direction);
+            const raycaster = new Raycaster(camera, direction);
+            const hit = raycaster.intersectObjects(meshes, false)[0];
+            expect(hit).toBeDefined();
+            if(!hit || !(hit.object instanceof Mesh)) throw new Error("Missing recorded calf surface");
+            const material = Array.isArray(hit.object.material) ? hit.object.material[0] : hit.object.material;
+            expect(material?.name).toBe("twin-region:legs");
+            expect(hit.distance).toBeCloseTo(2.3717988329959385, 5);
+            expect(hit.distance).toBeGreaterThan(twinNearSideReach(ray, camera, frame.target));
+            const axis = new Vector3();
+            expect(profile!.axisAt(hit.point, axis)).toBe(true);
+            expect(hit.distance).toBeLessThan(twinNearSideReach(ray, camera, axis));
+            expect(digest()).toEqual(before);
+            console.log("Registered calf regression", {profileMs, hit: hit.distance, oldReach: twinNearSideReach(ray, camera, frame.target), newReach: twinNearSideReach(ray, camera, axis), axis:axis.toArray()});
+            for(const mesh of meshes) {
+              mesh.geometry.dispose();
+              const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+              materials.forEach(material => material.dispose());
+            }
+          });
+          TS
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format changed code with installed rules and require zero lint errors
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const files=JSON.parse(readFileSync('/tmp/twin-height-files.json','utf8')).filter(p=>/\.(ts|mjs)$/.test(p));
+          const linter=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await linter.lintFiles(files);
+          await ESLint.outputFixes(results);
+          for(const result of results) assert.equal(result.errorCount,0,JSON.stringify(result.messages));
+          JS
+      - name: Verify recorded calf, conservative rejection, transforms and immutable geometry
+        run: npx vitest run src/components/twin/twin-picking.profile.test.ts src/components/twin/twin-picking.registered.test.ts src/components/twin/twin-camera.navigation.test.ts
+      - name: TypeScript, complete unit suite, toolchain and both builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/twin-height
+          { npm run typecheck; npm test; npm run test:toolchain; npm run lint; npm run build:staging; npm run build; } 2>&1 | tee test-results/twin-height/quality.log
+      - name: Preserve all original navigation groups
+        run: node scripts/test-twin-camera-navigation.mjs
+      - name: Verify actual visible leg and back clicks in both registered models
+        run: node scripts/test-twin-camera-picking.mjs
+      - name: Retain tested commit object without advancing any branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const base=process.env.BASE, files=JSON.parse(readFileSync('/tmp/twin-height-files.json','utf8'));
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),base);
+          assert.equal(git('diff','--','public','package.json','package-lock.json','src/components/twin/twin-human.loader.ts','src/components/twin/twin-anatomy.material.ts'),'', 'Assets, dependencies and materials must be unchanged');
+          const normal=JSON.parse(readFileSync('test-results/twin-navigation/results.json','utf8'));
+          const picking=JSON.parse(readFileSync('test-results/twin-navigation/picking/results.json','utf8'));
+          assert.equal(normal.results.length,6);assert.equal(picking.results.length,12);
+          for(const result of [normal,picking]) {assert.deepEqual(result.errors,[]);assert.equal(result.failure,null);}
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'fix(twin): select visible calves with height-aware near-side axes\n\nDerive local cross-sections once per loaded body. Preserve opposite-side rejection, assets, shaders, missing-evidence policy and all original navigation tests. Verify the recorded registered-mesh failure and real leg/back clicks in twelve Body/Muscles cases. TypeScript, full unit suite, toolchain, lint and both builds passed on these exact sources.',tree:tree.sha,parents:[base]});
+          const report={commit:commit.sha,tree:tree.sha,parent:base,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),normalGroups:normal.results.length,pickingGroups:picking.results.length,prUpdated:false,deployed:false};
+          writeFileSync('test-results/twin-height/verified.json',JSON.stringify(report,null,2));
+          console.log('VERIFIED_HEIGHT_COMMIT',JSON.stringify(report));
+          JS
+      - name: Retain exact changed source even on failure
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import json,shutil
+          from pathlib import Path
+          p=Path('/tmp/twin-height-files.json')
+          if p.exists():
+              for name in json.loads(p.read_text()):
+                  if Path(name).is_file():
+                      dst=Path('test-results/twin-height/source')/name
+                      dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(name,dst)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-height-aware-picking-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
