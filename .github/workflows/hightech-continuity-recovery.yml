@@ -1,0 +1,106 @@
+name: High-tech continuity recovery
+on:
+  push:
+    branches: [diagnostics/hightech-continuity-2026-10-08]
+    paths: [.github/workflows/hightech-continuity-recovery.yml]
+permissions:
+  contents: write
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: f16d58020f9a2be73abca98ddea62660d5268208
+      FEATURE_BRANCH: feat/endurance-high-tech-continuity-2026-10-08
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Prepare exact reviewed candidate and fix acknowledgement observation
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import urllib.request,subprocess
+          text=urllib.request.urlopen('https://raw.githubusercontent.com/smirnov0707/gyms-life/c1ec10c11372f776486f80e5d18e2f97c8b23e5c/.github/workflows/hightech-continuity-final.yml',timeout=30).read().decode()
+          lines=text.splitlines();start=lines.index('        run: |')+1;body=[]
+          for line in lines[start:]:
+              if line and not line.startswith('          '):break
+              body.append(line[10:] if line else '')
+          subprocess.run(['bash','-euo','pipefail','-c','\n'.join(body)],check=True)
+          p=Path('scripts/test-core-run-continuity.mjs');s=p.read_text()
+          old='    await expect(page.locator(\'[data-sonner-toast][data-type="success"]\')).toBeVisible();'
+          assert s.count(old)==1
+          s=s.replace(old,old+'''
+              // A previous success toast can still be visible while the next save is
+              // in flight. Observe this request's acknowledgement before navigating.
+              await expect(page.getByRole('textbox',{name:lt?'Trukmė minutėmis':'Duration in minutes'})).toHaveValue('');
+              await expect(page.getByRole('button',{name:lt?'Užskaityti bėgimą':'Credit this run',exact:true})).toBeEnabled();''')
+          p.write_text(s)
+          p=Path('src/components/QuickRunLog.tsx');s=p.read_text()
+          old='        restoredSessionId\n          ? english ? "The earlier run could not be verified.'
+          assert s.count(old)==1
+          s=s.replace(old,'        (restoredSessionId || savedRun?.verificationRequired)\n          ? english ? "The earlier run could not be verified.')
+          p.write_text(s)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format exact changed files without changing lint policy
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          execFileSync('./node_modules/.bin/prettier',['--write',...JSON.parse(readFileSync('test-results/candidate-files.json','utf8'))],{stdio:'inherit'});
+          JS
+      - name: TypeScript, complete unit suite, toolchain, lint, both builds
+        shell: bash
+        run: |
+          set -o pipefail
+          bash /tmp/hightech-quality.sh 2>&1 | tee test-results/quality.log
+      - name: All existing and new run continuity checks in both browsers
+        shell: bash
+        run: |
+          set -o pipefail
+          bash /tmp/hightech-browser.sh 2>&1 | tee test-results/browser.log
+      - name: Publish verified source to feature branch only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: bash /tmp/hightech-publish.sh
+      - name: Retain reproducible candidate source and screenshot evidence
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,shutil,tarfile,subprocess
+          manifest=Path('test-results/candidate-files.json')
+          if manifest.exists():
+              files=json.loads(manifest.read_text())
+              for name in files:
+                  if Path(name).is_file():
+                      target=Path('test-results/candidate-source')/name
+                      target.parent.mkdir(parents=True,exist_ok=True)
+                      shutil.copyfile(name,target)
+              tracked=subprocess.check_output(['git','-c',f'safe.directory={Path.cwd()}','ls-files','-z']).decode().split('\0')
+              with tarfile.open('test-results/candidate-workspace.tar.gz','w:gz') as archive:
+                  for name in sorted(set(tracked+files)):
+                      if name and Path(name).is_file(): archive.add(name,arcname=name,recursive=False)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hightech-continuity-recovery-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
