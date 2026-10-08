@@ -1,0 +1,96 @@
+name: Endurance reliability candidate validation
+on:
+  push:
+    branches: [diagnostics/endurance-reliability-2026-10-08]
+    paths:
+      - 'diagnostics/endurance-*'
+      - 'diagnostics/apply-endurance-candidate.py'
+      - '.github/workflows/endurance-reliability-validation.yml'
+permissions:
+  contents: write
+concurrency:
+  group: endurance-reliability-candidate
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: payload
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: a465c64446ace43ae0e7626aced427d23b377346
+          path: app
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply only digest-verified source changes
+        run: python3 payload/diagnostics/apply-endurance-candidate.py app
+      - run: npm ci
+        working-directory: app
+      - run: node scripts/verify-ci-browser-runtime.mjs
+        working-directory: app
+      - name: Typecheck, all tests, lint and both builds without deploying
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee test-results/endurance-reliability/typecheck.log
+          npm test 2>&1 | tee test-results/endurance-reliability/tests.log
+          npm run lint 2>&1 | tee test-results/endurance-reliability/lint.log
+          npm run build:staging 2>&1 | tee test-results/endurance-reliability/build-staging.log
+          npm run build 2>&1 | tee test-results/endurance-reliability/build.log
+      - name: Exercise the new real-component cases in Chromium and WebKit
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          cp ../payload/diagnostics/endurance-focused.mjs scripts/.endurance-focused.mjs
+          node scripts/.endurance-focused.mjs 2>&1 | tee test-results/endurance-reliability/browser.log
+      - name: Publish only verified files to an isolated feature branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const crypto = require('node:crypto');
+            const path = require('node:path');
+            const { owner, repo } = context.repo;
+            const base = 'a465c64446ace43ae0e7626aced427d23b377346';
+            const baseTree = '803d84ba505f2198237592f69836da02a4a5fe07';
+            const manifest = JSON.parse(fs.readFileSync('app/test-results/endurance-reliability/manifest.json', 'utf8'));
+            const focused = JSON.parse(fs.readFileSync('app/test-results/endurance-reliability/focused.json', 'utf8'));
+            if (manifest.baseCommit !== base || manifest.files.length !== 11) throw new Error('Unexpected candidate');
+            if (focused.engines.length !== 2 || focused.engines.some(e => e.status !== 'passed' || e.checks.length !== 8 || e.errors.length)) throw new Error('Incomplete browser validation');
+            const current = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
+            if (current.data.object.sha !== base) throw new Error('Main moved; rebase and reverify before publishing');
+            const entries = [];
+            for (const file of manifest.files) {
+              if (file.path.startsWith('/') || file.path.split('/').includes('..')) throw new Error('Invalid path');
+              const data = fs.readFileSync(path.join('app', file.path));
+              const digest = crypto.createHash('sha1').update(`blob ${data.length}\0`).update(data).digest('hex');
+              if (digest !== file.blob) throw new Error(`Verified source changed: ${file.path}`);
+              entries.push({ path: file.path, mode: '100644', type: 'blob', content: data.toString('utf8') });
+            }
+            const tree = await github.rest.git.createTree({ owner, repo, base_tree: baseTree, tree: entries });
+            const commit = await github.rest.git.createCommit({ owner, repo, tree: tree.data.sha, parents: [base], message: 'fix(endurance): retry saved run enrichment without duplicate credit\n\nSeparate saved-run persistence from optional race classification and UI refresh failures. Re-read owned completed evidence for retry, conditionally claim empty match metadata, preserve committed/concurrent links and report bounded enrichment states. Keep the original workout snapshot immutable. Add 25 service regressions and eight real-component browser groups to the existing Core suite.\n\nVerified against the pinned production source: typecheck, all 2337 tests, lint, staging and production builds (no deploy), and eight focused groups in each pinned Chromium/WebKit browser. Full PR CI and live authenticated acceptance remain required. No schema migration or global initial-insert idempotency is claimed.' });
+            const branch = 'fix/endurance-enrichment-retry-2026-10-08';
+            await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: commit.data.sha });
+            const result = { branch, commit: commit.data.sha, tree: tree.data.sha, base, files: manifest.files, scope: 'Candidate branch only; no merge, production deployment or live-user acceptance' };
+            fs.writeFileSync('app/test-results/endurance-reliability/published.json', JSON.stringify(result, null, 2));
+            core.info(JSON.stringify(result));
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: endurance-reliability-verification
+          path: app/test-results/endurance-reliability
+          retention-days: 14
+          if-no-files-found: error
