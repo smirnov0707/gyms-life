@@ -1,0 +1,84 @@
+name: Twin navigation verified candidate
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-nav-verified.yml]
+permissions:
+  contents: write
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: 656f4a6cb8fba5cddcab8c7b14eda67e906b3910
+      FEATURE: feat/twin-vertical-navigation-2026-10-08
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Recover exact local patch bytes then apply unchanged hash guards
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import urllib.request,subprocess
+          url='https://raw.githubusercontent.com/smirnov0707/gyms-life/f13ea0b63d7a9c4714b8d8b28cce8b0e529d82aa/.github/workflows/twin-nav-candidate.yml'
+          text=urllib.request.urlopen(url,timeout=30).read().decode()
+          lines=text.splitlines();blocks=[];i=0
+          while i<len(lines):
+              if lines[i]=='        run: |':
+                  i+=1;body=[]
+                  while i<len(lines) and (not lines[i] or lines[i].startswith('          ')):
+                      body.append(lines[i][10:] if lines[i] else '');i+=1
+                  blocks.append('\n'.join(body)+'\n')
+              else:i+=1
+          assert len(blocks)==5,len(blocks)
+          old="const transferred=Buffer.from((await res.json()).content,'base64');"
+          assert blocks[0].count(old)==1
+          new="""const corrupt=Buffer.from((await res.json()).content,'base64');
+          assert.equal(createHash('sha256').update(corrupt).digest('hex'),'07353062f12df35b7cdca417b816b020c2fd1a8f5c2220aafb6356d8ce3e8c93');
+          let encoded=corrupt.toString('base64');
+          assert.equal(encoded.length,18580);
+          // Exact transfer edits observed by comparison with retained local bytes.
+          // Both original SHA-256 guards below still have to pass unchanged.
+          for(const [start,end,before,after] of [[18580,18580,'','A=='],[12126,12127,'Z',''],[1752,1753,'o','u'],[1084,1084,'','7lV'],[611,612,'6','']]) {
+            assert.equal(encoded.slice(start,end),before);
+            encoded=encoded.slice(0,start)+after+encoded.slice(end);
+          }
+          assert.equal(encoded.length,18584);
+          const transferred=Buffer.from(encoded,'base64');"""
+          blocks[0]=blocks[0].replace(old,new)
+          for index,name in enumerate(['prepare','quality','browser','publish','retain']):
+              Path('/tmp/twin-'+name+'.sh').write_text(blocks[index])
+          subprocess.run(['bash','-euo','pipefail','/tmp/twin-prepare.sh'],check=True)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Complete TypeScript, tests, toolchain, lint and both builds
+        run: bash /tmp/twin-quality.sh
+      - name: Real scene navigation and unchanged skin acceptance
+        run: bash /tmp/twin-browser.sh
+      - name: Publish tested files only to a new feature branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash /tmp/twin-publish.sh
+      - name: Retain changed source after verification
+        if: always()
+        run: test ! -f /tmp/twin-retain.sh || bash /tmp/twin-retain.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-navigation-verified-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
