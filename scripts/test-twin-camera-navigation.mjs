@@ -70,7 +70,12 @@ try {
         distance:Number(el.dataset.twinDistance),home:Number(el.dataset.twinHomeY),
         fit:Number(el.dataset.twinFitDistance),height:Number(el.dataset.twinBodyHeight),
       }));
+      // Camera diagnostics describe the last PAINTED frame. Opening the long
+      // mobile disclosure may suspend the canvas offscreen. Bring it back before
+      // observing a command; do not disable the real offscreen power-saving path.
+      const showCanvas=()=>canvas.evaluate(el=>el.scrollIntoView({block:"center",behavior:"instant"}));
       const home=async()=>{
+        await showCanvas();
         await canvas.press("Home");
         await expect.poll(async()=>Math.abs((await read()).y-(await read()).home)).toBeLessThan(0.001);
         await expect.poll(async()=>Math.abs((await read()).yaw)).toBeLessThan(0.005);
@@ -101,8 +106,8 @@ try {
       await expect.poll(async()=>(await read()).y).toBeGreaterThan(pose.y);
       await canvas.press("Shift+ArrowUp");
       await expect.poll(async()=>(await read()).pitch).toBeLessThan(pose.pitch-0.05);
-      await counter.scrollIntoViewIfNeeded(); await expect(counter).toHaveText("0");
-      await canvas.scrollIntoViewIfNeeded();await home();
+      await expect(counter).toHaveText("0");
+      await home();
       let box=await canvas.boundingBox();
       const cx=box.x+box.width*0.5,cy=box.y+box.height*0.5;
       await page.mouse.move(cx,cy);await page.mouse.down();
@@ -113,21 +118,23 @@ try {
       await controls.click();
       const upper=stage.getByRole("button",{name:lt?"Kūno viršus":"Upper body",exact:true});
       const lower=stage.getByRole("button",{name:lt?"Kūno apačia":"Lower body",exact:true});
-      await upper.click();await expect.poll(async()=>(await read()).y).toBeGreaterThan(pose.home);
-      await lower.click();await expect.poll(async()=>(await read()).y).toBeLessThan(pose.home);
-      await controls.click();
+      await upper.click();await showCanvas();
+      await expect.poll(async()=>(await read()).y).toBeGreaterThan(pose.home);
+      await lower.click();await showCanvas();
+      await expect.poll(async()=>(await read()).y).toBeLessThan(pose.home);
+      await controls.click();await showCanvas();
       await canvas.screenshot({path:path.join(out,`${name}-lower-body.png`)});
       const choose=stage.getByRole("combobox",{name:lt?"Apžiūrėti regioną":"Inspect a region",exact:true});
-      await choose.selectOption("back");
+      await choose.selectOption("back");await showCanvas();
       await expect.poll(async()=>Math.abs((await read()).yaw)).toBeGreaterThan(3);
       await expect(page.locator("[data-camera-selection]")).toHaveText("back");
-      await choose.selectOption("legs");
+      await choose.selectOption("legs");await showCanvas();
       await expect.poll(async()=>(await read()).y).toBeLessThan(pose.home);
       await expect(page.locator("[data-camera-selection]")).toHaveText("legs");
       await expect(page.locator("[data-twin-reading-value]")).toHaveCount(0);
       await home();
       // Native right-button drag must pan, not select a region.
-      await canvas.scrollIntoViewIfNeeded();box=await canvas.boundingBox();
+      box=await canvas.boundingBox();
       const yBefore=(await read()).y, countBefore=await counter.innerText();
       await page.mouse.move(box.x+box.width*.5,box.y+box.height*.5);
       await page.mouse.down({button:"right"});
@@ -139,7 +146,7 @@ try {
       await expect(counter).toHaveText(countBefore);
       await home();
       if(width<600) {
-        await canvas.scrollIntoViewIfNeeded();box=await canvas.boundingBox();
+        box=await canvas.boundingBox();
         const client=await context.newCDPSession(page);
         const x=box.x+box.width*.5,y=box.y+box.height*.42;
         const points=(spread,dy)=>[{id:11,x:x-spread,y:y+dy},{id:12,x:x+spread,y:y+dy}];
@@ -169,6 +176,10 @@ try {
       results.push({name,status:"passed",height:largeHeight,baselineSkinPixels:baseline,largerSkinPixels:larger,
         pixelAreaRatio:larger/baseline,pose:await read(),trustedTwoFingerTest:width<600});
       console.log("PASS",JSON.stringify(results.at(-1)));
+    } catch(error) {
+      await page.screenshot({path:path.join(out,`${name}-failure.png`),fullPage:true});
+      await writeFile(path.join(out,`${name}-failure.json`),JSON.stringify(await page.locator("canvas").evaluateAll(canvases=>canvases.map(canvas=>({dataset:{...canvas.dataset},box:canvas.getBoundingClientRect().toJSON()}))),null,2));
+      throw error;
     } finally {await context.close();}
   }
   expect(results).toHaveLength(6);expect(errors).toEqual([]);
