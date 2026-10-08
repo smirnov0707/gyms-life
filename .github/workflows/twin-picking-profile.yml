@@ -1,0 +1,129 @@
+name: Twin height-aware picking acceptance
+on:
+  push:
+    branches: [diagnostics/twin-navigation-source-2026-10-08]
+    paths: [.github/workflows/twin-picking-profile.yml]
+permissions:
+  contents: write
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      PR_HEAD: 299a9bc935de265e993d5531ac98dc2439d7cc54
+      SOURCE: 0fa7fd5bef08e67e2ccda42e4c65151af82b9078
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PR_HEAD }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Materialize reviewed helper and integrate without altering other rendering behavior
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import os,urllib.request,json
+          from pathlib import Path
+          files=['scripts/test-twin-camera-picking.mjs','.github/workflows/twin-camera-navigation.yml','src/components/twin/twin-picking.profile.ts','src/components/twin/twin-picking.profile.test.ts','docs/twin-height-aware-picking.md']
+          for name in files:
+              url='https://raw.githubusercontent.com/smirnov0707/gyms-life/'+os.environ['SOURCE']+'/'+name
+              Path(name).write_bytes(urllib.request.urlopen(url,timeout=30).read())
+          path=Path('src/components/twin/twin-scene.runtime.ts');s=path.read_text()
+          def rep(old,new):
+              global s
+              assert s.count(old)==1,(old,s.count(old));s=s.replace(old,new)
+          anchor='import { createTwinCameraFrame } from "./twin-camera.framing";'
+          rep(anchor,anchor+'\nimport { createTwinPickingProfile } from "./twin-picking.profile";')
+          anchor='    let bodyFrame: ReturnType<typeof createTwinCameraFrame> | null = null;'
+          rep(anchor,anchor+'\n    let pickingProfile: ReturnType<typeof createTwinPickingProfile> = null;')
+          rep('      bodyFrame = nextFrame;','      bodyFrame = nextFrame;\n      pickingProfile = createTwinPickingProfile(model.body);')
+          rep('    const raycaster = new Raycaster();','    const raycaster = new Raycaster();\n    const pickingAxis = new Vector3();')
+          rep('        .filter((hit) => hit.distance <= reach)','''        .filter((hit) => {
+                    // The torso centre can sit in front of a visible calf. Keep the
+                    // near-side guard, but use actual geometry at this hit's height.
+                    const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
+                      ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
+                      : reach;
+                    return hit.distance <= limit;
+                  })''')
+          path.write_text(s)
+          files.append(str(path))
+          Path('test-results').mkdir(exist_ok=True)
+          Path('test-results/picking-files.json').write_text(json.dumps(files))
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format reviewed source with unchanged installed lint policy
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const files=JSON.parse(readFileSync('test-results/picking-files.json')).filter(p=>/\.(ts|mjs)$/.test(p));
+          const lint=new ESLint({fix:m=>m.ruleId==='prettier/prettier'});
+          const results=await lint.lintFiles(files);await ESLint.outputFixes(results);
+          for(const r of results)assert.equal(r.errorCount,0,JSON.stringify({file:r.filePath,messages:r.messages}));
+          JS
+      - name: Complete quality gates and both builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          { npm run typecheck && npm run test && npm run test:toolchain && npm run lint && npm run build:staging && npm run build; } 2>&1 | tee test-results/quality.log
+      - name: Preserve all original navigation and trusted touch groups
+        run: node scripts/test-twin-camera-navigation.mjs
+      - name: Actual leg and back clicks in both registered models
+        run: node scripts/test-twin-camera-picking.mjs
+      - name: Create exact verified commit object without updating PR or main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const base=process.env.PR_HEAD,files=JSON.parse(readFileSync('test-results/picking-files.json'));
+          const git=(...a)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...a],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),base);assert.equal(files.length,6);
+          const changed=git('diff','--name-only').split('\n').filter(Boolean);
+          for(const path of changed)assert.ok(files.includes(path),path);
+          const api=async(path,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${path}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${path}: ${r.status}`);return r.json();};
+          assert.equal((await api('pulls/151')).head.sha,base,'PR head changed; do not replace concurrent work');
+          const normal=JSON.parse(readFileSync('test-results/twin-navigation/results.json'));
+          const picking=JSON.parse(readFileSync('test-results/twin-navigation/picking/results.json'));
+          assert.equal(normal.results.length,6);assert.equal(picking.results.length,12);
+          assert.deepEqual(normal.errors,[]);assert.deepEqual(picking.errors,[]);
+          assert.equal(normal.failure,null);assert.equal(picking.failure,null);
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'fix(twin): preserve visible calf selection after vertical camera navigation\n\nUse height-aware axes derived from existing body triangles, not an arbitrary extended torso plane. Retain near-side protection, canonical regions and geometry. Full quality/build gates, six original navigation groups and twelve independent real-pointer picking groups passed before this commit object was created. No PR/main/deploy update by diagnostic runner.',tree:tree.sha,parents:[base]});
+          const result={commit:commit.sha,tree:tree.sha,parent:base,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),quality:'passed',normalGroups:6,pickingGroups:12,prUpdated:false,deployed:false};
+          writeFileSync('test-results/verified-height-picking.json',JSON.stringify(result,null,2));console.log('VERIFIED_HEIGHT_PICKING',JSON.stringify(result));
+          JS
+      - name: Retain exact final source after test discovery
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,shutil
+          p=Path('test-results/picking-files.json')
+          if p.exists():
+              for name in json.loads(p.read_text()):
+                  if Path(name).is_file():
+                      out=Path('test-results/reviewed-source')/name;out.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(name,out)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-height-picking-verified-evidence
+          path: test-results
+          retention-days: 14
+          if-no-files-found: error
