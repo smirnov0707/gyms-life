@@ -1,0 +1,133 @@
+name: Manual run idempotency candidate
+on:
+  push:
+    branches: [diagnostics/manual-run-idempotency-2026-10-08]
+    paths:
+      - diagnostics/manual-run-idempotency/**
+      - .github/workflows/manual-run-idempotency-validation.yml
+permissions:
+  contents: write
+concurrency:
+  group: manual-run-idempotency-candidate
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: app
+          ref: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Apply source and digest checked patch to the released main
+        working-directory: app
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, pathlib, subprocess
+          root = pathlib.Path.cwd()
+          source = root.parent / 'candidate/diagnostics/manual-run-idempotency'
+          data = base64.b64decode(''.join((source/f'payload-{i}.txt').read_text() for i in range(1,5)), validate=True)
+          assert hashlib.sha256(data).hexdigest() == '600820c07603eb46a12d8f3e7e77a2c16134afa3a1c1d1b86aaf9e025c6ca0f7'
+          patch = root.parent / 'manual-run.patch'
+          patch.write_bytes(lzma.decompress(data))
+          git = ['git', '-c', f'safe.directory={root}']
+          assert subprocess.check_output(git+['rev-parse','HEAD'], text=True).strip() == '20e2d1613e9a0b1a4408d461c717847fe5c2f9c3'
+          subprocess.run(git+['apply','--check',str(patch)], check=True)
+          subprocess.run(git+['apply',str(patch)], check=True)
+          manifest = json.loads((source/'manifest.json').read_text())
+          assert len(manifest) == len(set(row['path'] for row in manifest)) == 12
+          for row in manifest:
+              p = root / row['path']
+              assert p.is_relative_to(root) and '..' not in p.parts
+              assert hashlib.sha256(p.read_bytes()).hexdigest() == row['sha256'], row['path']
+          out = root/'test-results/manual-save'
+          out.mkdir(parents=True, exist_ok=True)
+          (out/'verified-manifest.json').write_text(json.dumps(manifest, indent=2))
+          (out/'base-commit.txt').write_text('20e2d1613e9a0b1a4408d461c717847fe5c2f9c3\n')
+          print('PASS source checked patch and all 12 file digests')
+          PY
+      - run: npm ci
+        working-directory: app
+      - run: node scripts/verify-ci-browser-runtime.mjs
+        working-directory: app
+      - name: All quality tests and both builds without deployment
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee test-results/manual-save/typecheck.log
+          npm test 2>&1 | tee test-results/manual-save/tests.log
+          npm run lint 2>&1 | tee test-results/manual-save/lint.log
+          npm run test:toolchain 2>&1 | tee test-results/manual-save/toolchain.log
+          npm run build:staging 2>&1 | tee test-results/manual-save/build-staging.log
+          npm run build 2>&1 | tee test-results/manual-save/build.log
+      - name: Existing and new recovery scenarios in both real browser engines
+        working-directory: app
+        shell: bash
+        run: |
+          set -o pipefail
+          cp ../candidate/diagnostics/manual-run-idempotency/verify-browser.mjs .manual-run-browser.mjs
+          node .manual-run-browser.mjs 2>&1 | tee test-results/manual-save/browser.log
+      - name: Publish only verified source to a new feature branch
+        working-directory: app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const base = '20e2d1613e9a0b1a4408d461c717847fe5c2f9c3';
+          const baseTree = '66f143c9828384067e1d5fe051f5442c33741d4a';
+          const branch = 'fix/manual-run-idempotency-2026-10-08';
+          const manifest = JSON.parse(readFileSync('test-results/manual-save/verified-manifest.json','utf8'));
+          const files = manifest.map(row => {
+            const content = readFileSync(row.path, 'utf8');
+            assert.equal(createHash('sha256').update(content).digest('hex'), row.sha256, row.path);
+            return { path: row.path, type: 'blob', mode: '100644', content };
+          });
+          const summary = JSON.parse(readFileSync('test-results/manual-save/browser-summary.json','utf8'));
+          assert.equal(summary.length, 2);
+          for (const r of summary) { assert.equal(r.status, 'passed'); assert.equal(r.results.length, 14); assert.deepEqual(r.errors, []); }
+          async function api(path, method='GET', body) {
+            const res = await fetch('https://api.github.com/repos/smirnov0707/gyms-life'+path, {
+              method, headers: { authorization: `Bearer ${process.env.GH_TOKEN}`, accept:'application/vnd.github+json', 'content-type':'application/json' },
+              ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(30000),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(`GitHub ${method} ${path} failed (${res.status}): ${data.message}`);
+            return data;
+          }
+          assert.equal((await api('/git/ref/heads/main')).object.sha, base, 'Main changed; do not publish a stale base');
+          assert.equal((await api('/git/commits/'+base)).tree.sha, baseTree);
+          const tree = await api('/git/trees','POST',{base_tree:baseTree,tree:files});
+          const commit = await api('/git/commits','POST',{
+            message:'fix(endurance): recover the original manual run after lost save responses\n\nRetain an owner-bound submission before sending, use its UUID as the existing workout primary key, and validate immutable provenance plus actual saved execution evidence on readback. Same-key replay returns the original session without overwriting its data. Recover the retained request after same-tab reload; reject invalid acknowledgements and stale identity responses. Keep the existing action and strict legacy compatibility.\n\nValidated with all unit/contract tests, full typecheck/lint, toolchain and both builds, and all 14 real run-form scenario groups per pinned Chromium/WebKit engine in the diagnostic workflow. No database write or migration, no production deployment, and no cross-device or permanent-deletion exactly-once guarantee. Full normal PR checks remain mandatory.',
+            tree:tree.sha,parents:[base],
+          });
+          await api('/git/refs','POST',{ref:'refs/heads/'+branch,sha:commit.sha});
+          writeFileSync('test-results/manual-save/published.json',JSON.stringify({branch,commit:commit.sha,base,tree:tree.sha,files:manifest,scope:'Verified candidate only; not deployed; full PR gates required'},null,2));
+          console.log('PASS published verified source '+commit.sha+' to '+branch);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manual-run-idempotency-verification
+          path: app/test-results/manual-save
+          retention-days: 14
+          if-no-files-found: error
