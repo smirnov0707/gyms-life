@@ -13,10 +13,10 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
       options: --init
     env:
-      EXPECTED_COMMIT: 338e237c5edb348d5e4cf706b622f89836d8ac79
-      EXPECTED_CONTEXT: deploy-preview
-      EXPECTED_TARGET: staging
-      GYMSLIFE_ORIGIN: https://deploy-preview-140--singular-vacherin-57448d.netlify.app
+      EXPECTED_COMMIT: 20e2d1613e9a0b1a4408d461c717847fe5c2f9c3
+      EXPECTED_CONTEXT: production
+      EXPECTED_TARGET: production
+      GYMSLIFE_ORIGIN: https://gyms.life
     steps:
       - uses: actions/checkout@v4
         with:
