@@ -1,0 +1,127 @@
+{
+  "results": [
+    {
+      "name": "lt-dark-320",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14093,
+      "largerSkinPixels": 37342,
+      "pixelAreaRatio": 2.649684240403037,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "lt-light-320",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14093,
+      "largerSkinPixels": 37342,
+      "pixelAreaRatio": 2.649684240403037,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "lt-dark-390",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14092,
+      "largerSkinPixels": 37343,
+      "pixelAreaRatio": 2.649943230201533,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "lt-light-390",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14092,
+      "largerSkinPixels": 37343,
+      "pixelAreaRatio": 2.649943230201533,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "en-dark-1280",
+      "status": "passed",
+      "height": 740,
+      "baselineSkinPixels": 33045,
+      "largerSkinPixels": 62202,
+      "pixelAreaRatio": 1.8823422605537903,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": false
+    },
+    {
+      "name": "en-light-1280",
+      "status": "passed",
+      "height": 740,
+      "baselineSkinPixels": 33045,
+      "largerSkinPixels": 62202,
+      "pixelAreaRatio": 1.8823422605537903,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": false
+    }
+  ],
+  "errors": [],
+  "failure": null,
+  "scope": "Actual shared Twin and shipped generic body with synthetic absent evidence. CDP sends trusted touch input in Chromium. Not physical iPhone or live-account acceptance."
+}
