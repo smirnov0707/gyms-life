@@ -15,6 +15,8 @@ const root = process.cwd();
 const server = await createServer({
   configFile: false,
   root: path.join(root, "tests/twin-browser"),
+  // Shared surface policies import the same application modules as the live scene.
+  resolve: { alias: { "@": path.join(root, "src") } },
   plugins: [
     {
       name: "exact-review-model",
