@@ -1,0 +1,164 @@
+name: PR139 Twin navigation validation
+on:
+  push:
+    branches: [diagnostics/pr139-repro-2026-10-07]
+    paths: [.github/workflows/pr139-navigation-validation-20261008.yml]
+permissions:
+  contents: write
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 94b96529de1e2c57355488c33c69a7378e75738e
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Prepare source-checked navigation candidate and control probes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import hashlib
+          p = Path('scripts/test-today-browser.mjs')
+          raw = p.read_bytes()
+          actual = hashlib.sha1(b'blob ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+          assert actual == '3f0791f7af274fdbc57645201ce3bc26b7722f29', actual
+          source = raw.decode()
+          marker = '    await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();'
+          assert source.count(marker) == 1
+          ready = '''
+              // The fixture link reloads the document; URL commit is not React readiness.
+              // Use the same bounded mount barrier as initial route entry, then keep
+              // the original short semantic assertions unchanged.
+              await expect(linked.page).toHaveURL(/[?&]screen=twin(?:&|$)/);
+              expect(new URL(linked.page.url()).searchParams.get("route")).toBe("/twin");
+              await expect(linked.page.locator(".twin-screen")).toBeVisible({ timeout: 30_000 });'''
+          candidate = source.replace(marker, marker + ready)
+          assert candidate.replace(marker + ready, marker) == source
+          p.write_text(candidate)
+          start_marker = '  // Capture the real route trees'
+          first = source.index('    const linked = await openPanel(')
+          last = source.index('    const offBody = await openPanel(', first)
+          original_block = source[first:last]
+          delay_marker = '    await linked.page.getByText("Open My Twin", { exact: true }).click();'
+          assert original_block.count(delay_marker) == 1
+          delay_setup = '''    if (probe.delayMs) {
+                await linked.page.route("**/fixture.tsx", async (route) => {
+                  if (!delayedRequests && new URL(linked.page.url()).searchParams.get("screen") === "twin") {
+                    delayedRequests++;
+                    await new Promise((resolve) => setTimeout(resolve, probe.delayMs));
+                  }
+                  await route.continue();
+                });
+              }
+          '''
+          blocks = {}
+          for mode, text in [('baseline', original_block), ('mounted-route', original_block.replace(marker, marker + ready))]:
+              text = text.replace('    const linked = await openPanel(', '    linked = await openPanel(', 1)
+              text = text.replace(delay_marker, delay_setup + delay_marker)
+              text = text.replace('    await linked.page.context().close();', '')
+              blocks[mode] = text
+          prefix = source[:source.index(start_marker)]
+          driver = '''
+            const probes = [
+              { mode: "baseline", delayMs: 0 },
+              { mode: "baseline", delayMs: 6500 },
+              { mode: "mounted-route", delayMs: 0 },
+              { mode: "mounted-route", delayMs: 0 },
+              { mode: "mounted-route", delayMs: 0 },
+              { mode: "mounted-route", delayMs: 6500 },
+            ];
+            const outcomes = [];
+            for (const probe of probes) {
+              let linked;
+              let delayedRequests = 0;
+              const started = Date.now();
+              try {
+                if (probe.mode === "baseline") {
+          ''' + blocks['baseline'] + '''
+                } else {
+          ''' + blocks['mounted-route'] + '''
+                }
+                outcomes.push({ ...probe, status: "passed", elapsedMs: Date.now() - started, delayedRequests, url: linked.page.url(), errors: linked.errors });
+              } catch (error) {
+                outcomes.push({ ...probe, status: "failed", elapsedMs: Date.now() - started, delayedRequests, url: linked?.page.url(), error: String(error), errors: linked?.errors });
+              } finally {
+                await linked?.page.context().close();
+              }
+              console.log("NAVIGATION_PROBE " + JSON.stringify(outcomes.at(-1)));
+            }
+            await writeFile(path.join(artifacts, "navigation-probes.json"), JSON.stringify({
+              sourceCommit: "94b96529de1e2c57355488c33c69a7378e75738e",
+              scope: "Real Today-to-Twin controls, Body selection, chest detail, impact, reload, back and history. Delay cases deliberately delay the fixture module; they are not production performance measurements.",
+              outcomes,
+            }, null, 2));
+            expect(outcomes.filter((item) => item.mode === "mounted-route")).toHaveLength(4);
+            expect(outcomes.filter((item) => item.mode === "mounted-route" && item.status !== "passed")).toEqual([]);
+            expect(outcomes.find((item) => item.mode === "mounted-route" && item.delayMs === 6500).delayedRequests).toBe(1);
+          } finally {
+            await browser?.close();
+            await server?.close();
+          }
+          '''
+          Path('scripts/.pr139-navigation-probes.mjs').write_text(prefix + driver)
+          PY
+          node_modules/.bin/prettier --write scripts/test-today-browser.mjs scripts/.pr139-navigation-probes.mjs
+          node --check scripts/test-today-browser.mjs
+          node --check scripts/.pr139-navigation-probes.mjs
+          node_modules/.bin/eslint scripts/test-today-browser.mjs
+      - name: Run native navigation probes without changing the canonical suite
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p test-results/today
+          node scripts/.pr139-navigation-probes.mjs 2>&1 | tee test-results/today/navigation-probes.log
+      - name: Save successful candidate and bounded diagnostic report
+        if: always()
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        env:
+          PROBE_JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const { owner, repo } = context.repo;
+            const branch = 'diagnostics/pr139-repro-2026-10-07';
+            const ref = await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+            if (ref.data.object.sha !== context.sha) throw new Error('Diagnostic branch changed; refusing writes');
+            const reportPath = 'test-results/today/navigation-probes.json';
+            const report = fs.existsSync(reportPath) ? JSON.parse(fs.readFileSync(reportPath, 'utf8')) : { outcomes: [] };
+            report.jobStatus = process.env.PROBE_JOB_STATUS;
+            report.scopeNote = 'Focused validation only. Full normal release gates remain mandatory.';
+            if (report.jobStatus === 'success') {
+              const candidate = await github.rest.repos.createOrUpdateFileContents({
+                owner, repo, branch, path: 'diagnostics/pr139-mounted-twin-candidate.mjs',
+                message: 'test(diagnostics): retain validated mounted-route candidate',
+                content: fs.readFileSync('scripts/test-today-browser.mjs').toString('base64')
+              });
+              report.candidateCommit = candidate.data.commit.sha;
+              report.candidateBlob = candidate.data.content.sha;
+            }
+            if (fs.existsSync('test-results/today/navigation-probes.log')) {
+              report.logTail = fs.readFileSync('test-results/today/navigation-probes.log', 'utf8').slice(-5000);
+            }
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, branch, path: 'diagnostics/pr139-mounted-twin-validation.json',
+              message: 'chore(diagnostics): retain native navigation probe results',
+              content: Buffer.from(JSON.stringify(report, null, 2) + '\n').toString('base64')
+            });
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr139-mounted-twin-navigation
+          path: test-results/today
+          retention-days: 3
+          if-no-files-found: warn
