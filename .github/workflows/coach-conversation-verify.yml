@@ -136,7 +136,7 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import re,json
+          import json
           def once(s,old,new):
               assert s.count(old)==1,(old,s.count(old))
               return s.replace(old,new,1)
@@ -152,12 +152,10 @@ jobs:
                 }''')
           p.write_text(s)
           p=Path('src/lib/i18n.tsx');s=p.read_text()
-          pattern=r'^\s*"coach\.cleared":\s*"[^"\n]*",\n'
-          lines=re.findall(pattern,s,re.M)
-          assert len(lines)==2,lines
-          assert s.count('"coach.cleared"')==2,'Unexpected non-dictionary reference'
-          p.write_text(re.sub(pattern,'',s,flags=re.M))
-          Path('test-results/coach-verification/removed-key.json').write_text(json.dumps({'key':'coach.cleared','removedEntries':len(lines),'reason':'No remaining production caller after shared clear-history state; dead-key guard is unchanged.'}))
+          old='  "coach.cleared": { lt: "Istorija išvalyta", en: "History cleared" },\n'
+          assert s.count('"coach.cleared"')==1,'Unexpected non-dictionary reference'
+          p.write_text(once(s,old,''))
+          Path('test-results/coach-verification/removed-key.json').write_text(json.dumps({'key':'coach.cleared','removedEntries':1,'reason':'The inspected bilingual property has no production caller after shared clear-history state; the dead-key test is unchanged.'}))
           p=Path('scripts/test-coach-conversation-browser.mjs');s=p.read_text()
           addition='''  {
               const h = await open("lang=lt&theme=light", 320);
