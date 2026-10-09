@@ -1,0 +1,302 @@
+name: Coach conversation exact-source verification
+on:
+  push:
+    branches: [diagnostics/coach-conversation-verify-2026-10-09]
+    paths: [.github/workflows/coach-conversation-verify.yml]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      SOURCE: c80accb84f0b6a674204e2f481770959496ed06f
+      BASE: d7f0adc2cdfb0b3aafc1e64341352f78ad3708d9
+    outputs:
+      summary: ${{ steps.retain.outputs.summary }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Add deterministic edit-revert regressions before changing session logic
+        shell: bash
+        run: |
+          mkdir -p test-results/coach-verification
+          cat > src/components/coach/conversation.draft-revision.test.ts <<'TS'
+          import { describe, expect, it, vi } from "vitest";
+          import { createCoachConversationSession } from "./conversation.session";
+
+          async function pending() {
+            let resolve: (value: unknown) => void = () => undefined;
+            let reject: (reason: unknown) => void = () => undefined;
+            const promise = new Promise<unknown>((yes, no) => { resolve = yes; reject = no; });
+            const ask = vi.fn<() => Promise<unknown>>().mockReturnValue(promise);
+            const session = createCoachConversationSession({
+              read: async () => ({ messages: [] }), ask,
+              clear: async () => ({ ok: true }), report: () => undefined,
+            }, true);
+            await session.start();
+            return { session, ask, resolve, reject };
+          }
+
+          describe("draft edit identity", () => {
+            it("preserves edited-and-restored submitted text", async () => {
+              const h = await pending();
+              h.session.setDraft("  My original question  ");
+              const send = h.session.send("en");
+              h.session.setDraft("A new question");
+              h.session.setDraft("  My original question  ");
+              h.resolve({ answer: "Earlier response" });
+              await send;
+              expect(h.session.getSnapshot().draft).toBe("  My original question  ");
+              expect(h.ask).toHaveBeenCalledTimes(1);
+            });
+            it("preserves edited-and-restored quick suggestion text", async () => {
+              const h = await pending();
+              const send = h.session.send("en", "Suggested question");
+              h.session.setDraft("Newly composed");
+              h.session.setDraft("Suggested question");
+              h.resolve({ answer: "Earlier response" });
+              await send;
+              expect(h.session.getSnapshot().draft).toBe("Suggested question");
+              expect(h.ask).toHaveBeenCalledTimes(1);
+            });
+            it("still clears an untouched submitted draft after acknowledgement", async () => {
+              const h = await pending();
+              h.session.setDraft("Untouched");
+              const send = h.session.send("en");
+              h.resolve({ answer: "Response" });
+              await send;
+              expect(h.session.getSnapshot().draft).toBe("");
+            });
+            it("does not treat an identical no-op setter as an edit", async () => {
+              const h = await pending();
+              h.session.setDraft("Untouched");
+              const send = h.session.send("en");
+              h.session.setDraft("Untouched");
+              h.resolve({ answer: "Response" });
+              await send;
+              expect(h.session.getSnapshot().draft).toBe("");
+            });
+            it("keeps a different newer draft without replaying the request", async () => {
+              const h = await pending();
+              h.session.setDraft("First");
+              const send = h.session.send("en");
+              h.session.setDraft("Second");
+              h.resolve({ answer: "Response" });
+              await send;
+              expect(h.session.getSnapshot().draft).toBe("Second");
+              expect(h.ask).toHaveBeenCalledTimes(1);
+            });
+            it("preserves edited-and-restored text after an ambiguous failure", async () => {
+              const h = await pending();
+              h.session.setDraft("Question");
+              const send = h.session.send("en");
+              h.session.setDraft("New text");
+              h.session.setDraft("Question");
+              h.reject(new Error("Synthetic lost acknowledgement"));
+              await send;
+              expect(h.session.getSnapshot().draft).toBe("Question");
+              expect(h.session.getSnapshot().needsRecheck).toBe(true);
+              expect(h.ask).toHaveBeenCalledTimes(1);
+            });
+          });
+          TS
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Require the two specifically predicted failures against the unchanged session
+        shell: bash
+        run: |
+          set +e
+          npx vitest run src/components/coach/conversation.draft-revision.test.ts --reporter=json --outputFile=test-results/coach-verification/baseline.json > test-results/coach-verification/baseline.log 2>&1
+          status=$?
+          set -e
+          test "$status" -eq 1
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const r=JSON.parse(readFileSync('test-results/coach-verification/baseline.json','utf8'));
+          assert.equal(r.numTotalTests,6);assert.equal(r.numFailedTests,2);assert.equal(r.numPassedTests,4);
+          const failed=r.testResults.flatMap(t=>t.assertionResults).filter(t=>t.status==='failed').map(t=>t.title).sort();
+          assert.deepEqual(failed,['preserves edited-and-restored quick suggestion text','preserves edited-and-restored submitted text']);
+          console.log('REPRODUCED_DRAFT_RACE',JSON.stringify(failed));
+          JS
+      - name: Apply bounded session, browser regression and obsolete-key corrections
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re,json
+          def once(s,old,new):
+              assert s.count(old)==1,(old,s.count(old))
+              return s.replace(old,new,1)
+          p=Path('src/components/coach/conversation.session.ts');s=p.read_text()
+          s=once(s,'  let nextTurn = 0;','  let nextTurn = 0;\n  let draftRevision = 0;')
+          anchor='    const draftAtStart = suggestion !== undefined && state.draft === "" ? suggestion : state.draft;'
+          s=once(s,anchor,anchor+'\n    const draftAtSend = draftRevision;')
+          s=once(s,'submittedDraft && state.draft === draftAtStart','submittedDraft && draftRevision === draftAtSend')
+          s=once(s,'      if (active && authenticated) publish({ draft });','''      if (active && authenticated && draft !== state.draft) {
+                  // Text equality cannot identify an edit followed by undo/retyping.
+                  draftRevision++;
+                  publish({ draft });
+                }''')
+          p.write_text(s)
+          p=Path('src/lib/i18n.tsx');s=p.read_text()
+          pattern=r'^\s*"coach\.cleared":\s*"[^"\n]*",\n'
+          lines=re.findall(pattern,s,re.M)
+          assert len(lines)==2,lines
+          assert s.count('"coach.cleared"')==2,'Unexpected non-dictionary reference'
+          p.write_text(re.sub(pattern,'',s,flags=re.M))
+          Path('test-results/coach-verification/removed-key.json').write_text(json.dumps({'key':'coach.cleared','removedEntries':len(lines),'reason':'No remaining production caller after shared clear-history state; dead-key guard is unchanged.'}))
+          p=Path('scripts/test-coach-conversation-browser.mjs');s=p.read_text()
+          addition='''  {
+              const h = await open("lang=lt&theme=light", 320);
+              try {
+                await expect(h.conversation).toHaveAttribute("data-coach-history-state", "ready");
+                await h.page.evaluate(() => window.__conversationTest.setHold("send", true));
+                const original = "Kodėl siūlomas atsistatymas?";
+                await h.draft.fill(original);
+                await h.send.click();
+                await h.draft.fill("Kitas klausimas");
+                await h.draft.fill(original);
+                await h.page.evaluate(() => window.__conversationTest.release("send"));
+                await expect(h.turns.last()).toHaveText(`Answer for ${original}`);
+                await expect(h.draft).toHaveValue(original);
+                assert.equal((await counts(h.page)).sends, 1);
+                await h.conversation.screenshot({ path: path.join(out, `${engine}-edited-restored-draft.png`) });
+                results.push({ name: "editing then restoring the same text keeps the newer draft", status: "passed" });
+              } finally { await h.context.close(); }
+            }
+          '''
+          s=once(s,'  assert.equal(results.length, 24);',addition+'  assert.equal(results.length, 25);')
+          s=once(s,'expectedGroups: 24,','expectedGroups: 25,')
+          p.write_text(s)
+          p=Path('docs/coach-conversation-recovery.md')
+          p.write_text(p.read_text()+'''\n\n## Draft edit identity regression\n\nA text-equality guard missed editing a submitted draft and then restoring its\noriginal text before the answer arrived. The acknowledgement belonged to the\nolder edit, not the newer same-valued draft. A monotonic in-memory draft revision\nnow controls acknowledgement clearing; identical no-op setters do not advance\nit. Two deterministic cases must fail against the prior session before this fix\nis applied. All six revision cases, the original session suite and one additional\nactual-route edit/retype case per browser remain required. No question is\nresubmitted automatically and no draft is persisted across owner changes.\n''')
+          PY
+      - name: Format only PR source files and explicit follow-up files with installed rules
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const files=['scripts/test-coach-conversation-browser.mjs','src/components/CoachMemory.tsx','src/components/coach/CoachConversationProvider.tsx','src/components/coach/CoachHistoryNotice.tsx','src/components/coach/conversation.copy.ts','src/components/coach/conversation.session.test.ts','src/components/coach/conversation.session.ts','src/routes/_authenticated/coach.tsx','tests/coach-conversation-browser/fixture.tsx','tests/coach-conversation-browser/services.ts','src/components/coach/conversation.draft-revision.test.ts','src/lib/i18n.tsx'];
+          const eslint=new ESLint({fix:m=>m.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(files);await ESLint.outputFixes(results);
+          for(const result of results)assert.equal(result.errorCount,0,JSON.stringify({file:result.filePath,messages:result.messages}));
+          writeFileSync('test-results/coach-verification/source-files.json',JSON.stringify([...files,'docs/coach-conversation-recovery.md'],null,2));
+          JS
+      - name: Verify fixed regressions, TypeScript, full tests, toolchain, lint and both builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vitest run src/components/coach/conversation.draft-revision.test.ts src/components/coach/conversation.session.test.ts src/lib/i18n-dead-keys.test.ts 2>&1 | tee test-results/coach-verification/focused.log
+          npm run typecheck 2>&1 | tee test-results/coach-verification/typecheck.log
+          npm test 2>&1 | tee test-results/coach-verification/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/coach-verification/toolchain.log
+          npm run lint 2>&1 | tee test-results/coach-verification/lint.log
+          npm run build:staging 2>&1 | tee test-results/coach-verification/build-staging.log
+          npm run build 2>&1 | tee test-results/coach-verification/build.log
+      - name: Actual conversation and unchanged consent coverage in both engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          for engine in chromium webkit; do
+            COACH_BROWSER_ENGINE="$engine" node scripts/test-coach-conversation-browser.mjs 2>&1 | tee "test-results/coach-verification/conversation-$engine.log"
+            COACH_BROWSER_ENGINE="$engine" node scripts/test-coach-consent-browser.mjs 2>&1 | tee "test-results/coach-verification/consent-$engine.log"
+          done
+      - name: Materialize only exact tested blobs; do not change any reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.SOURCE);
+          const files=JSON.parse(readFileSync('test-results/coach-verification/source-files.json','utf8'));
+          for(const name of git('diff','--name-only').split('\n').filter(Boolean))assert.ok(files.includes(name),`Unexpected changed source ${name}`);
+          const browserResults=[];
+          for(const engine of ['chromium','webkit'])for(const [suite,count] of [['coach-conversation',25],['coach-consent',21]]){
+            const r=JSON.parse(readFileSync(`test-results/${suite}/${engine}/results.json`,'utf8'));
+            assert.equal(r.results.length,count);assert.deepEqual(r.errors,[]);assert.equal(r.failure,null);
+            assert.ok(r.results.every(row=>row.status==='passed'));
+            browserResults.push({suite,engine,groups:r.results.length});
+          }
+          const api=async(p,method='GET',data)=>{
+            const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();
+          };
+          assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main advanced; reconcile before publication');
+          assert.equal((await api('pulls/159')).head.sha,process.env.SOURCE,'PR advanced; do not overwrite another change');
+          const entries=[];
+          for(const path of files){
+            const content=readFileSync(path,'utf8'),bytes=Buffer.from(content);
+            const expected=createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+            const blob=await api('git/blobs','POST',{content,encoding:'utf-8'});assert.equal(blob.sha,expected);
+            entries.push({path,mode:'100644',type:'blob',sha:blob.sha,sha256:createHash('sha256').update(bytes).digest('hex')});
+          }
+          const manifest={source:process.env.SOURCE,base:process.env.BASE,sourceTree:git('rev-parse','HEAD^{tree}'),entries,browserResults,refsChanged:false,deployed:false};
+          writeFileSync('test-results/coach-verification/verified-manifest.json',JSON.stringify(manifest,null,2));
+          console.log('VERIFIED_COACH_BLOBS',JSON.stringify(manifest));
+          JS
+      - name: Retain bounded results and exact post-test files
+        id: retain
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,os,re,shutil
+          out=Path('test-results/coach-verification');out.mkdir(parents=True,exist_ok=True)
+          manifest=out/'source-files.json'
+          if manifest.exists():
+              for name in json.loads(manifest.read_text()):
+                  p=out/'reviewed-source'/name;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(name,p)
+          report={'logs':{},'browsers':[],'manifest':None}
+          for p in out.glob('*.log'):
+              lines=re.sub(r'\x1b\[[0-9;]*[A-Za-z]','',p.read_text(errors='replace')).splitlines()
+              report['logs'][p.name]=[line[:500] for line in lines if re.search(r'Test Files|Tests |# tests|# pass|# fail|problems \(|built in|AssertionError|Error:|Expected|Received|FAIL ',line)][-12:]
+          for suite in ['coach-conversation','coach-consent']:
+              for p in Path('test-results',suite).glob('*/results.json'):
+                  r=json.loads(p.read_text());report['browsers'].append({'suite':suite,'engine':r['engine'],'groups':len(r['results']),'errors':r['errors'][:3],'failure':r['failure']})
+          p=out/'verified-manifest.json'
+          if p.exists():report['manifest']=json.loads(p.read_text())
+          (out/'summary.json').write_text(json.dumps(report,indent=2))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('summary='+json.dumps(report,separators=(',',':'))+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coach-conversation-verified-source
+          path: |
+            test-results/coach-verification
+            test-results/coach-conversation
+            test-results/coach-consent
+          retention-days: 14
+          if-no-files-found: error
+  report:
+    needs: verify
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bounded diagnostic result, not a release approval
+        env:
+          RESULT: ${{ needs.verify.result }}
+          REPORT: ${{ needs.verify.outputs.summary }}
+        run: |
+          printf 'VERIFICATION_RESULT=%s\n%s\n' "$RESULT" "$REPORT"
