@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CoachComposer } from "@/components/coach/CoachComposer";
 import { cn } from "@/lib/utils";
 import { CoachMemory } from "@/components/CoachMemory";
 import { AiPersonalizationConsentCard } from "@/components/coach/AiPersonalizationConsentCard";
@@ -53,8 +52,6 @@ function CoachConversation() {
   const busy = state.operation !== "idle";
   const signedOut = state.historyState === "signed_out";
   const blocked = busy || signedOut || state.needsRecheck || state.confirmClear;
-  const tooLong = state.draft.trim().length > 1000;
-  const retryingQuestion = state.unconfirmedQuestion === state.draft.trim();
   const showEmpty = state.historyState === "ready" && messages.length === 0 && !busy;
 
   return (
@@ -150,43 +147,7 @@ function CoachConversation() {
             ) : null}
           </div>
         </div>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void session.send(lang);
-          }}
-          className="relative border-t border-border bg-surface-2/60 p-3 backdrop-blur-xl sm:p-4"
-          data-coach-composer
-        >
-          <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-border bg-surface-2 p-1.5 focus-within:border-primary/40">
-            <Input
-              value={state.draft}
-              onChange={(event) => session.setDraft(event.target.value)}
-              disabled={signedOut}
-              aria-label={t("coach.ph")}
-              aria-invalid={tooLong}
-              placeholder={t("coach.ph")}
-              data-coach-draft
-              className="min-w-0 border-0 bg-transparent shadow-none focus-visible:ring-0"
-            />
-            <Button
-              type="submit"
-              disabled={blocked || !state.draft.trim() || tooLong}
-              aria-label={retryingQuestion ? copy.sendAgain : t("coach.send")}
-              title={retryingQuestion ? copy.sendAgain : t("coach.send")}
-              size="icon"
-              className="min-h-11 min-w-11 shrink-0 rounded-xl"
-              data-coach-send
-            >
-              <Send className="size-4" />
-            </Button>
-          </div>
-          {tooLong ? (
-            <p role="status" className="mt-2 text-sm text-foreground">
-              {copy.limit}
-            </p>
-          ) : null}
-        </form>
+        <CoachComposer />
       </section>
       <details className="fl-luxury-disclosure mt-4 rounded-2xl border border-border bg-surface/70">
         <summary className="min-h-11 cursor-pointer list-none px-4 py-3 text-xs font-semibold text-muted-foreground">

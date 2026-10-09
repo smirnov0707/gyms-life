@@ -1,0 +1,73 @@
+/* A scoped multiline surface. The conversation session remains the source of truth. */
+.fl-coach-page [data-coach-composer] .fl-coach-composer-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.fl-coach-page [data-coach-composer] .fl-coach-composer-input:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.fl-coach-page [data-coach-composer] [data-coach-draft] {
+  display: block;
+  box-sizing: border-box;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+  resize: none;
+  outline: none;
+}
+.fl-coach-page [data-coach-composer] [data-coach-draft]::placeholder {
+  color: var(--muted-foreground);
+}
+.fl-coach-page [data-coach-composer] .fl-coach-composer-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px 12px;
+  max-width: 48rem;
+  margin: 10px auto 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.fl-coach-page [data-coach-composer-help] {
+  flex: 1 1 13rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fl-coach-page [data-coach-draft-count] {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+/* On phones the send target gets its own row rather than squeezing enlarged text. */
+@media (max-width: 639px) {
+  .fl-coach-page [data-coach-composer] .fl-coach-composer-input {
+    flex-wrap: wrap;
+  }
+  .fl-coach-page [data-coach-composer] [data-coach-draft] {
+    flex-basis: 100%;
+  }
+  .fl-coach-page [data-coach-composer] [data-coach-send] {
+    margin-left: auto;
+  }
+}
