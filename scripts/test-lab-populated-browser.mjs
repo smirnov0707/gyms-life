@@ -159,6 +159,12 @@ try {
           document.documentElement.style.fontSize = "200%";
         });
       await page.evaluate(() => document.fonts.ready);
+      // A requested scale is not an applied scale. Wait for the browser's real
+      // root-font result before judging component typography at that scale.
+      await expect(page.locator("html")).toHaveCSS("font-size", `${16 * scale}px`);
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
 
       const audit = await deck.evaluate((el) => {
         const rgba = (value) => {
@@ -211,11 +217,13 @@ try {
           samples,
           overlaps,
           rootFontSize: css.fontSize,
+          rootInlineFontSize: document.documentElement.style.fontSize,
           theme: document.documentElement.className,
           overflow: document.documentElement.scrollWidth > innerWidth + 1,
         };
       });
       await writeFile(path.join(out, `${name}-audit.json`), JSON.stringify(audit, null, 2));
+      assert.equal(audit.rootFontSize, `${16 * scale}px`, "Root scale must remain applied");
       assert.ok(
         audit.samples.length >= 15,
         "The readability check must inspect real populated text",
