@@ -44,6 +44,11 @@ jobs:
           old='expect(html).not.toContain("data-lab-history");'
           assert s.count(old)==1
           p.write_text(s.replace(old,'expect(html).not.toMatch(/\\sdata-lab-history=/);'))
+          p=Path('scripts/test-lab-availability-browser.mjs')
+          s=p.read_text()
+          old='      "@tanstack/react-query",'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,old+'\n      "@tanstack/react-router",\n      "use-sync-external-store/shim/with-selector.js",'))
           PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
