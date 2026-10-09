@@ -1,102 +1,150 @@
-import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useState } from "react";
-import { History, Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { clearCoachMessages, listCoachMessages } from "@/lib/plan.functions";
+import { useContext } from "react";
+import { History, Trash2 } from "lucide-react";
 import { baseLang, useI18n } from "@/lib/i18n";
-import { errorMessage } from "@/lib/error-message";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-type Row = { id: string; role: "user" | "coach"; content: string; createdAt: string };
+import { CoachConversationProvider } from "@/components/coach/CoachConversationProvider";
+import {
+  CoachConversationContext,
+  useCoachConversation,
+} from "@/components/coach/conversation.context";
+import { CoachHistoryNotice } from "@/components/coach/CoachHistoryNotice";
+import { coachVisibleMessages } from "@/components/coach/conversation.session";
+import { conversationCopy } from "@/components/coach/conversation.copy";
 
 export function CoachMemory() {
-  const { t, lang } = useI18n();
-  const list = useServerFn(listCoachMessages);
-  const clear = useServerFn(clearCoachMessages);
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await list({ data: { limit: 200 } });
-      setRows(res.messages);
-    } catch (error) {
-      toast.error(errorMessage(error, t("common.error")));
-    } finally {
-      setLoading(false);
-    }
-  }, [list, t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
+  const shared = useContext(CoachConversationContext);
+  return shared ? <MemoryPanel standalone={false} /> : <StandaloneMemory />;
+}
+function StandaloneMemory() {
+  const { user } = useAuth();
   return (
-    <div className="mx-auto grid max-w-3xl gap-6">
+    <CoachConversationProvider key={user?.id ?? "signed-out"} authenticated={Boolean(user)}>
+      <MemoryPanel standalone />
+    </CoachConversationProvider>
+  );
+}
+function MemoryPanel({ standalone }: { standalone: boolean }) {
+  const { t, lang } = useI18n();
+  const copy = conversationCopy(lang);
+  const { session, state } = useCoachConversation();
+  const rows = coachVisibleMessages(state);
+  const busy =
+    state.operation !== "idle" ||
+    state.historyState === "loading" ||
+    state.historyState === "refreshing";
+  const signedOut = state.historyState === "signed_out";
+  return (
+    <section className="mx-auto grid w-full min-w-0 max-w-3xl gap-4" data-coach-memory>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-3 text-4xl sm:text-5xl">
-            <History className="size-7 text-primary" />
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+            <History className="size-5 shrink-0 text-primary" aria-hidden="true" />
             {baseLang(lang) === "en" ? "Coach memory" : "Coach atmintis"}
-          </h1>
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">{t("coach.historySub")}</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={loading || rows.length === 0}
-            onClick={async () => {
-              try {
-                await clear({});
-                setRows([]);
-                toast.success(t("coach.cleared"));
-              } catch (error) {
-                toast.error(errorMessage(error, t("common.error")));
+        {!signedOut ? (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-normal"
+              disabled={busy || state.confirmClear}
+              onClick={() => void session.load()}
+              data-memory-refresh
+            >
+              {copy.retry}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-normal"
+              disabled={
+                busy ||
+                state.historyState !== "ready" ||
+                state.history.length === 0 ||
+                state.needsRecheck ||
+                state.confirmClear
               }
-            }}
-          >
-            <Trash2 className="size-4" /> {t("coach.clear")}
-          </Button>
-        </div>
-      </div>
-
-      <div className="panel min-h-[40vh] p-5">
-        {loading ? (
-          <div className="grid place-items-center py-16">
-            <Loader2 className="size-6 animate-spin text-primary" />
+              onClick={() => session.requestClear()}
+              data-memory-clear
+            >
+              <Trash2 className="size-4 shrink-0" aria-hidden="true" /> {t("coach.clear")}
+            </Button>
           </div>
-        ) : rows.length === 0 ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">
+        ) : null}
+      </div>
+      {standalone ? <CoachHistoryNotice /> : null}
+      {state.clearConfirmed ? (
+        <p role="status" className="text-sm text-foreground" data-memory-cleared>
+          {t("coach.cleared")}
+        </p>
+      ) : null}
+      {state.confirmClear ? (
+        <div
+          className="rounded-xl border border-border bg-surface-2 p-3 text-sm text-foreground"
+          data-memory-confirm
+        >
+          <p>{copy.clearConfirm}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-normal"
+              onClick={() => session.cancelClear()}
+            >
+              {copy.cancel}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-h-11 whitespace-normal"
+              onClick={() => void session.clear()}
+              data-memory-confirm-clear
+            >
+              {copy.clearAccept}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      <div className="min-w-0 rounded-xl border border-border bg-surface p-3">
+        {state.historyState === "ready" && rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground" data-memory-empty>
             {t("coach.historyEmpty")}
           </p>
         ) : (
-          <div className="grid gap-3">
-            {rows.map((m) => (
-              <div
-                key={m.id}
-                className={cn("grid gap-1", m.role === "user" ? "justify-items-end" : "")}
+          <div className="grid min-w-0 gap-3">
+            {rows.map((message) => (
+              <article
+                key={message.id}
+                className={cn(
+                  "grid min-w-0 gap-1",
+                  message.role === "user" ? "justify-items-end" : "",
+                )}
+                data-memory-row
               >
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  {new Date(m.createdAt).toLocaleString()}
+                <span className="text-xs text-muted-foreground">
+                  {message.createdAt
+                    ? new Date(message.createdAt).toLocaleString(lang)
+                    : copy.visit}
                 </span>
-                <div
+                <p
                   className={cn(
-                    "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                    m.role === "user"
+                    "max-w-[90%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    message.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-surface-2 text-foreground",
                   )}
                 >
-                  {m.content}
-                </div>
-              </div>
+                  {message.text}
+                </p>
+              </article>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
