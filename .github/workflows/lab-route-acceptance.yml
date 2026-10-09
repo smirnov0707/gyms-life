@@ -1,0 +1,141 @@
+name: Active Lab route exact-source acceptance
+on:
+  push:
+    branches: [diagnostics/lab-read-recovery-2026-10-09]
+    paths: [.github/workflows/lab-route-acceptance.yml]
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    outputs:
+      commit: ${{ steps.record.outputs.commit }}
+    env:
+      SOURCE: abe730051753c22ae696099d1e69f19ac01785d4
+      BASE: d825d6853af2a8bb0716b3e0a519a5241be3eef6
+      PREPARATION: a448a850b2623e253bacde8c3558e4972efcef02
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Prepare only the inspected active-route changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/lab-route-recovery
+          curl --fail --silent --show-error --location "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${PREPARATION}/scripts/diagnostics/prepare-lab-route-recovery.py" -o "$RUNNER_TEMP/prepare-lab-route-recovery.py"
+          python3 "$RUNNER_TEMP/prepare-lab-route-recovery.py"
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format the exact candidate with the installed rules
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const files=['src/components/LabView.tsx','src/components/lab/LabDecisionHistory.tsx','src/components/lab/lab-read.copy.ts','src/components/lab/lab-view.copy.ts','src/components/lab/useLabReadRecovery.ts','src/components/future-lab/LabCommandDeck.tsx','src/components/lab/lab-availability.test.tsx','tests/lab-browser/fixture.tsx','tests/lab-browser/services.ts','scripts/test-lab-availability-browser.mjs'];
+          const eslint=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(files);
+          await ESLint.outputFixes(results);
+          for(const result of results)assert.equal(result.errorCount,0,JSON.stringify({file:result.filePath,messages:result.messages}));
+          writeFileSync('test-results/lab-route-recovery/source-files.json',JSON.stringify([...files,'.github/workflows/lab-availability-browser.yml','docs/lab-read-state-recovery.md'],null,2));
+          JS
+      - name: TypeScript and rendered availability cases including the active route component
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee test-results/lab-route-recovery/typecheck.log
+          npx vitest run src/components/lab/lab-availability.test.tsx 2>&1 | tee test-results/lab-route-recovery/lab-tests.log
+      - name: All application tests, toolchain, lint and both builds without deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test 2>&1 | tee test-results/lab-route-recovery/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/lab-route-recovery/toolchain.log
+          npm run lint 2>&1 | tee test-results/lab-route-recovery/lint.log
+          npm run build:staging 2>&1 | tee test-results/lab-route-recovery/build-staging.log
+          npm run build 2>&1 | tee test-results/lab-route-recovery/build.log
+      - name: Same recovery matrix on both Lab surfaces in Chromium and WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          LAB_BROWSER_ENGINE=chromium node scripts/test-lab-availability-browser.mjs 2>&1 | tee test-results/lab-route-recovery/browser-chromium.log
+          LAB_BROWSER_ENGINE=webkit node scripts/test-lab-availability-browser.mjs 2>&1 | tee test-results/lab-route-recovery/browser-webkit.log
+      - name: Record the exact tested tree; do not update a branch or deploy
+        id: record
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync,appendFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.SOURCE);
+          const files=JSON.parse(readFileSync('test-results/lab-route-recovery/source-files.json','utf8'));
+          for(const path of git('diff','--name-only').split('\n').filter(Boolean))assert.ok(files.includes(path),`Unexpected changed file ${path}`);
+          const browsers=['chromium','webkit'].map(engine=>JSON.parse(readFileSync(`test-results/lab-availability/${engine}/results.json`,'utf8')));
+          for(const result of browsers){
+            assert.equal(result.results.length,30);assert.deepEqual(result.errors,[]);assert.equal(result.failure,null);
+            for(const surface of ['overview','deck'])assert.equal(result.results.filter(group=>group.surface===surface&&group.status==='passed').length,15);
+          }
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main advanced; reconcile first');
+          assert.equal((await api('pulls/155')).head.sha,process.env.SOURCE,'PR head advanced; reconcile first');
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'fix(lab): connect truthful read recovery to the active Lab command deck\n\nShare copy and authenticated non-cancelling retry with the legacy overview; preserve cached snapshots and label their freshness in the live route. Add closed-by-default truthful decision history without importing the old page. Both surfaces passed the same 15 browser groups in Chromium and WebKit, together with full quality and both builds. No branch update or deployment; normal final-head checks remain required.',tree:tree.sha,parents:[process.env.SOURCE]});
+          const manifest={commit:commit.sha,tree:tree.sha,source:process.env.SOURCE,base:process.env.BASE,preparation:process.env.PREPARATION,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),browsers:browsers.map(({engine,results})=>({engine,groups:results.length})),branchUpdated:false,deployed:false};
+          writeFileSync('test-results/lab-route-recovery/verified-source.json',JSON.stringify(manifest,null,2));
+          appendFileSync(process.env.GITHUB_OUTPUT,`commit=${commit.sha}\n`);
+          console.log('VERIFIED_ACTIVE_LAB',JSON.stringify(manifest));
+          JS
+      - name: Retain candidate source and evidence after execution
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import shutil
+          paths=['src/components/LabView.tsx','src/components/lab/LabDecisionHistory.tsx','src/components/lab/lab-read.copy.ts','src/components/lab/lab-view.copy.ts','src/components/lab/useLabReadRecovery.ts','src/components/future-lab/LabCommandDeck.tsx','src/components/lab/lab-availability.test.tsx','tests/lab-browser/fixture.tsx','tests/lab-browser/services.ts','scripts/test-lab-availability-browser.mjs','.github/workflows/lab-availability-browser.yml','docs/lab-read-state-recovery.md']
+          for name in paths:
+              source=Path(name)
+              if source.exists():
+                  target=Path('test-results/lab-route-recovery/reviewed-source')/name
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(source,target)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: active-lab-route-recovery-evidence
+          path: |
+            test-results/lab-route-recovery
+            test-results/lab-availability
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
+  report:
+    needs: candidate
+    name: Verified active Lab ${{ needs.candidate.outputs.commit }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exact tested candidate reference
+        env:
+          VERIFIED_COMMIT: ${{ needs.candidate.outputs.commit }}
+        run: |
+          printf 'Verified active Lab candidate: %s\n' "$VERIFIED_COMMIT"
+          printf '30 browser groups per engine, both builds, typecheck, unit/contract suite, toolchain and lint completed. No branch was updated; no production release was made.\n'
