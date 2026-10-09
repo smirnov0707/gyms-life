@@ -1,0 +1,71 @@
+/* Readability on the active Lab workbench only. No global type, Twin, or
+   Today layout overrides. Shared decision rows use their own semantic styles. */
+[data-lab-command-deck].fl-lab-page .fl-page-heading {
+  flex-wrap: wrap;
+}
+
+[data-lab-command-deck].fl-lab-page .fl-page-heading > div {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+[data-lab-command-deck].fl-lab-page .fl-page-heading h1 {
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  line-height: 1.4;
+}
+
+[data-lab-command-deck] [data-lab-read-label] {
+  max-width: 100%;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+[data-lab-command-deck].fl-lab-page .fl-investigation-card h2 {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  letter-spacing: 0.025em;
+  color: var(--foreground);
+}
+
+[data-lab-command-deck] .fl-investigation-card p,
+[data-lab-command-deck] .fl-investigation-card span {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+[data-lab-command-deck] .fl-investigation-card p {
+  color: var(--foreground);
+}
+
+[data-lab-command-deck] .fl-secondary-details > summary,
+[data-lab-command-deck] .fl-investigation-card details > summary {
+  min-height: 44px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+[data-lab-command-deck] .fl-investigation-card details > summary span {
+  font-size: inherit;
+}
+
+[data-lab-evidence] dt,
+[data-lab-evidence] dd {
+  overflow-wrap: anywhere;
+}
+
+[data-lab-evidence-source],
+[data-lab-decision-meta],
+[data-lab-outcome] {
+  line-height: 1.6;
+}
+
+[data-lab-history] [data-lab-history-heading] {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+  color: var(--foreground);
+}

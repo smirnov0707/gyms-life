@@ -1,6 +1,7 @@
 import { baseLang, useI18n } from "@/lib/i18n";
 import type { AthleteHypothesis } from "@/lib/athlete-hypothesis.schema";
 import { WhyThisDisclosure } from "@/components/intelligence/WhyThisDisclosure";
+import "@/components/lab/lab-readability.css";
 
 function metricLabel(key: string, english: boolean) {
   switch (key) {
@@ -25,12 +26,16 @@ export function HypothesisEvidence({ evidence }: { evidence: AthleteHypothesis["
       summary={english ? "Why this? · Evidence" : "Kodėl taip? · Įrodymai"}
       className="mt-3 bg-accent/[0.03]"
     >
-      <dl className="space-y-2 p-3">
+      <dl className="space-y-3 p-3" data-lab-evidence>
         {evidence.map((item) => (
-          <div key={item.key} className="flex items-start justify-between gap-3 text-[10px]">
-            <dt className="text-muted-foreground">
+          <div
+            key={item.key}
+            className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 text-sm"
+            data-lab-evidence-row={item.key}
+          >
+            <dt className="min-w-0 flex-1 basis-40 leading-relaxed text-foreground">
               {metricLabel(item.key, english)}
-              <span className="mt-0.5 block text-[9px]">
+              <span className="mt-1 block text-xs text-foreground" data-lab-evidence-source>
                 {item.source === "user_reported"
                   ? english
                     ? "Self-reported"
@@ -44,7 +49,7 @@ export function HypothesisEvidence({ evidence }: { evidence: AthleteHypothesis["
                       : "Apskaičiuota"}
               </span>
             </dt>
-            <dd className="shrink-0 font-mono text-foreground">
+            <dd className="max-w-full font-mono leading-relaxed text-foreground">
               {new Intl.NumberFormat(
                 lang,
                 item.unit === "ratio"
