@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { Brain, ChevronDown, FlaskConical, Loader2 } from "lucide-react";
+import { useId, useState } from "react";
+import { Brain, ChevronDown, FlaskConical } from "lucide-react";
 import { PredictionCalibrationPanel } from "@/components/PredictionCalibrationPanel";
 import { baseLang, useI18n, type Lang } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import { useLabOverview } from "@/components/future-lab/lab-overview.query";
+import { LabDecisionHistory } from "@/components/lab/LabDecisionHistory";
+import { LabReadNotice } from "@/components/lab/LabReadNotice";
 import type {
   AthleteHypothesis,
   AthleteHypothesisStatusSchema,
@@ -45,6 +48,8 @@ type Copy = {
   otherInvestigations: string;
   decisionHistory: string;
 };
+
+export type { Copy as LabCopy };
 
 function copyFor(lang: Lang): Copy {
   if (baseLang(lang) === "en") {
@@ -249,29 +254,38 @@ function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; co
   );
 }
 
-function DecisionRow({ decision, copy }: { decision: LabDecision; copy: Copy }) {
-  return (
-    <article className="flex items-start justify-between gap-4 border-b border-border py-3 last:border-b-0">
-      <div className="min-w-0">
-        <p className="text-sm text-foreground">{copy.actionLabel[decision.action]}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          {decision.decisionOn} · {copy.basisLabel[decision.basis]}
-        </p>
-      </div>
-      <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-        {decision.outcome ? copy.outcomeLabel[decision.outcome] : copy.noOutcome}
-      </span>
-    </article>
-  );
-}
-
-export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy }) {
+export function LabOverviewView({
+  data,
+  copy,
+  onRetry,
+  refreshing = false,
+  refreshFailed = false,
+}: {
+  data: LabOverview;
+  copy: Copy;
+  onRetry?: () => void;
+  refreshing?: boolean;
+  refreshFailed?: boolean;
+}) {
+  const { lang } = useI18n();
+  const language = baseLang(lang);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const historyId = useId();
   const primary = data.hypotheses[0] ?? null;
   const secondary = data.hypotheses.slice(1);
+  const notice = refreshFailed ? "stale" : data.unreadable.length > 0 ? "partial" : refreshing ? "refreshing" : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-lab-overview>
+      {notice ? (
+        <LabReadNotice
+          mode={notice}
+          language={language}
+          sources={data.unreadable}
+          onRetry={onRetry}
+          retrying={refreshing}
+        />
+      ) : null}
       <section className="fl-premium-stage fl-lab-hero relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
         <div
           aria-hidden="true"
@@ -281,7 +295,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
               "radial-gradient(60% 120% at 0% 0%, rgba(16,185,129,.10), transparent 64%), radial-gradient(55% 90% at 100% 100%, rgba(245,158,11,.05), transparent 68%)",
           }}
         />
-
         <div className="relative">
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
             <FlaskConical className="size-4" /> {copy.eyebrow}
@@ -292,7 +305,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
             {copy.description}
           </p>
-
           {primary ? (
             <div className="mt-8 grid gap-7 border-t border-white/[0.06] pt-7 lg:grid-cols-[1fr_260px] lg:items-end">
               <div>
@@ -309,7 +321,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
                   </span>
                 </div>
               </div>
-
               <div className="rounded-[1.5rem] border border-white/[0.07] bg-black/30 p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
@@ -342,7 +353,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           )}
         </div>
       </section>
-
       {secondary.length > 0 ? (
         <section className="fl-premium-card rounded-[1.75rem] border border-border bg-surface-2 px-5 py-2 sm:px-6">
           <p className="pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
@@ -355,14 +365,13 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           </div>
         </section>
       ) : null}
-
       <PredictionCalibrationPanel data={data.predictionCalibration} />
-
       <section className="fl-premium-card overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
           type="button"
           onClick={() => setHistoryOpen((open) => !open)}
           aria-expanded={historyOpen}
+          aria-controls={historyId}
           className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
         >
           <div>
@@ -370,77 +379,12 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
             <p className="mt-1 text-xs text-muted-foreground">{copy.accuracyNote}</p>
           </div>
           <ChevronDown
-            className={`size-4 shrink-0 text-muted-foreground transition-transform ${historyOpen ? "rotate-180" : ""}`}
+            className={`size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${historyOpen ? "rotate-180" : ""}`}
           />
         </button>
-
         {historyOpen ? (
-          <div className="grid gap-0 border-t border-border lg:grid-cols-2">
-            <div className="px-5 py-4 sm:px-6 lg:border-r lg:border-border">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {copy.decisionsTitle}
-              </p>
-              {/* Named before the list, because it changes how the list reads:
-                  an empty journal under this line means "not read", not
-                  "nothing happened". */}
-              {data.unreadable.length > 0 ? (
-                <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-xs leading-relaxed text-amber-600 light:text-amber-700 dark:text-amber-300">
-                  {copy.unreadableNote(
-                    data.unreadable.map((source) => copy.unreadableLabel[source]).join(", "),
-                  )}
-                </p>
-              ) : null}
-              {data.decisions.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
-              ) : (
-                <div className="mt-1">
-                  {data.decisions.map((decision) => (
-                    <DecisionRow key={decision.id} decision={decision} copy={copy} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="px-5 py-4 sm:px-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {copy.accuracyTitle}
-              </p>
-              <div className="mt-2 space-y-3">
-                {data.decisionAccuracy.byBasis.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
-                ) : (
-                  data.decisionAccuracy.byBasis.map((entry) => (
-                    <div
-                      key={entry.basis}
-                      className="flex items-center justify-between gap-4 border-b border-border py-3 last:border-b-0"
-                    >
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          {copy.basisLabel[entry.basis]}
-                        </p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">
-                          {copy.answeredOf(entry.answered, entry.proposed)}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        {entry.fitRate === null ? (
-                          <p className="max-w-36 text-[10px] leading-relaxed text-muted-foreground">
-                            {copy.accuracyPending(data.decisionAccuracy.minimumAnswered)}
-                          </p>
-                        ) : (
-                          <p className="font-mono text-2xl text-foreground">
-                            {Math.round(entry.fitRate * 100)}%
-                            <span className="ml-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                              {copy.fitRate}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          <div id={historyId}>
+            <LabDecisionHistory data={data} copy={copy} language={language} />
           </div>
         ) : null}
       </section>
@@ -450,24 +394,37 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
 
 export function LabView() {
   const { lang } = useI18n();
+  const { user } = useAuth();
   const copy = copyFor(lang);
-  const { data, isLoading, isError } = useLabOverview();
+  const { data, isLoading, isError, isFetching, refetch } = useLabOverview();
+  const retry = () => {
+    if (!user || isFetching) return;
+    // Do not cancel/restart an in-flight read when the control is activated twice.
+    void refetch({ cancelRefetch: false, throwOnError: false }).catch(() => {
+      console.warn("[Lab] REFRESH_UNAVAILABLE");
+    });
+  };
 
-  if (isLoading) {
+  if (!data) {
     return (
-      <section className="rounded-3xl border border-border bg-surface-2 p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
-        </div>
-      </section>
+      <LabReadNotice
+        mode={isLoading ? "loading" : "unavailable"}
+        language={baseLang(lang)}
+        onRetry={user && !isLoading ? retry : undefined}
+        retrying={isFetching}
+      />
     );
   }
 
-  if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
-  }
-
-  return <LabOverviewView data={data} copy={copy} />;
+  return (
+    <LabOverviewView
+      data={data}
+      copy={copy}
+      onRetry={user ? retry : undefined}
+      refreshing={isFetching}
+      refreshFailed={isError}
+    />
+  );
 }
 
 export { copyFor as labCopyFor };

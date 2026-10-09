@@ -1,0 +1,71 @@
+name: Lab availability browser
+on:
+  pull_request:
+    paths:
+      - "src/components/LabView.tsx"
+      - "src/components/lab/**"
+      - "src/components/system/**"
+      - "src/components/future-lab/lab-overview.query.ts"
+      - "src/components/ui/button.tsx"
+      - "src/styles/**"
+      - "src/styles.css"
+      - "src/components/future-lab-*.css"
+      - "src/lib/lab*"
+      - "src/lib/decision-accuracy*"
+      - "tests/lab-browser/**"
+      - "scripts/test-lab-availability-browser.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/lab-availability-browser.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/components/LabView.tsx"
+      - "src/components/lab/**"
+      - "src/components/system/**"
+      - "src/components/future-lab/lab-overview.query.ts"
+      - "src/components/ui/button.tsx"
+      - "src/styles/**"
+      - "src/styles.css"
+      - "src/components/future-lab-*.css"
+      - "src/lib/lab*"
+      - "src/lib/decision-accuracy*"
+      - "tests/lab-browser/**"
+      - "scripts/test-lab-availability-browser.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/lab-availability-browser.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lab-availability-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: node scripts/test-lab-availability-browser.mjs
+        env:
+          LAB_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lab-availability-${{ matrix.engine }}
+          path: test-results/lab-availability
+          retention-days: 14
+          if-no-files-found: error
