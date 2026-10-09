@@ -1,0 +1,189 @@
+name: Coach conversation final-source acceptance
+on:
+  push:
+    branches: [diagnostics/coach-conversation-2026-10-09]
+    paths: [.github/workflows/coach-conversation-final.yml]
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: write
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    outputs:
+      summary: ${{ steps.retain.outputs.summary }}
+    env:
+      SOURCE: 316fe652b04fea11c3b662f1e5e566ff64ee05b0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Separate non-component context exports without changing session behavior
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/components/coach/CoachConversationProvider.tsx');s=p.read_text()
+          marker='\nexport function useCoachConversation() {'
+          assert s.count(marker)==1
+          provider,tail=s.split(marker,1)
+          declaration='export const CoachConversationContext = createContext<CoachConversationSession | null>(null);'
+          assert provider.count(declaration)==1
+          context='import { createContext, useContext, useSyncExternalStore } from "react";\nimport type { CoachConversationSession } from "./conversation.session";\n\n'+declaration+'\n'+marker+tail
+          Path('src/components/coach/conversation.context.ts').write_text(context)
+          provider=provider.replace(declaration,'import { CoachConversationContext } from "./conversation.context";')
+          for line in ['  createContext,\n','  useContext,\n','  useSyncExternalStore,\n','  type CoachConversationSession,\n']:
+              assert provider.count(line)==1,line
+              provider=provider.replace(line,'',1)
+          p.write_text(provider+'\n')
+          for name,module,target in [
+              ('src/components/coach/CoachHistoryNotice.tsx','./CoachConversationProvider','./conversation.context'),
+              ('src/routes/_authenticated/coach.tsx','@/components/coach/CoachConversationProvider','@/components/coach/conversation.context'),
+              ('src/components/CoachMemory.tsx','@/components/coach/CoachConversationProvider','@/components/coach/conversation.context'),
+          ]:
+              p=Path(name);s=p.read_text()
+              pattern=re.compile(r'import \{([^{};]+)\} from '+re.escape('"'+module+'"')+r';')
+              matches=list(pattern.finditer(s));assert len(matches)==1,name
+              names=[value.strip() for value in matches[0].group(1).split(',') if value.strip()]
+              assert set(names)<=set(['CoachConversationProvider','CoachConversationContext','useCoachConversation'])
+              kept=[n for n in names if n=='CoachConversationProvider'];moved=[n for n in names if n!='CoachConversationProvider']
+              replacement=('import { '+', '.join(kept)+' } from "'+module+'";\n' if kept else '')+'import { '+', '.join(moved)+' } from "'+target+'";'
+              p.write_text(s[:matches[0].start()]+replacement+s[matches[0].end():])
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format only declared candidate files
+        shell: bash
+        run: |
+          mkdir -p test-results/coach-recovery
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const files=['src/components/coach/conversation.session.ts','src/components/coach/conversation.session.test.ts','src/components/coach/CoachConversationProvider.tsx','src/components/coach/conversation.context.ts','src/components/coach/conversation.copy.ts','src/components/coach/CoachHistoryNotice.tsx','src/routes/_authenticated/coach.tsx','src/components/CoachMemory.tsx','tests/coach-conversation-browser/fixture.tsx','tests/coach-conversation-browser/services.ts','scripts/test-coach-conversation-browser.mjs'];
+          writeFileSync('test-results/coach-recovery/source-files.json',JSON.stringify(files,null,2));
+          const eslint=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(files);await ESLint.outputFixes(results);
+          for(const r of results)assert.equal(r.errorCount,0,JSON.stringify({file:r.filePath,messages:r.messages}));
+          JS
+      - name: TypeScript, session cases, full tests and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee test-results/coach-recovery/typecheck.log
+          npx vitest run src/components/coach/conversation.session.test.ts 2>&1 | tee test-results/coach-recovery/session-tests.log
+          npm run test 2>&1 | tee test-results/coach-recovery/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/coach-recovery/toolchain.log
+      - name: Require no new lint warnings and build both targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run lint 2>&1 | tee test-results/coach-recovery/lint.log
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const log=readFileSync('test-results/coach-recovery/lint.log','utf8');
+          assert.match(log,/27 problems \(0 errors, 27 warnings\)/,'Existing warning baseline must not grow');
+          JS
+          npm run build:staging 2>&1 | tee test-results/coach-recovery/build-staging.log
+          npm run build 2>&1 | tee test-results/coach-recovery/build.log
+      - name: Conversation recovery and unchanged privacy behavior in both engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          COACH_BROWSER_ENGINE=chromium node scripts/test-coach-conversation-browser.mjs 2>&1 | tee test-results/coach-recovery/conversation-chromium.log
+          COACH_BROWSER_ENGINE=webkit node scripts/test-coach-conversation-browser.mjs 2>&1 | tee test-results/coach-recovery/conversation-webkit.log
+          COACH_BROWSER_ENGINE=chromium node scripts/test-coach-consent-browser.mjs 2>&1 | tee test-results/coach-recovery/consent-chromium.log
+          COACH_BROWSER_ENGINE=webkit node scripts/test-coach-consent-browser.mjs 2>&1 | tee test-results/coach-recovery/consent-webkit.log
+      - name: Preserve exact tested blobs only; never update a branch or deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const git=(...a)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...a],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.SOURCE);
+          const files=JSON.parse(readFileSync('test-results/coach-recovery/source-files.json','utf8'));
+          for(const name of git('diff','--name-only').split('\n').filter(Boolean))assert.ok(files.includes(name),`Unexpected source ${name}`);
+          const results=[];
+          for(const suite of ['coach-conversation','coach-consent'])for(const engine of ['chromium','webkit']){
+            const r=JSON.parse(readFileSync(`test-results/${suite}/${engine}/results.json`,'utf8'));
+            assert.equal(r.results.length,suite==='coach-conversation'?24:21);assert.deepEqual(r.errors,[]);assert.equal(r.failure,null);
+            assert.ok(r.results.every(group=>group.status==='passed'));
+            results.push({suite,engine,groups:r.results.length});
+          }
+          const entries=[];
+          for(const path of files){
+            const bytes=readFileSync(path),expected=createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+            const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/git/blobs`,{method:'POST',headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({content:bytes.toString('utf8'),encoding:'utf-8'})});
+            if(!r.ok)throw Error(`Could not retain blob: ${r.status}`);
+            const blob=await r.json();assert.equal(blob.sha,expected);
+            entries.push({path,mode:'100644',type:'blob',sha:blob.sha,sha256:createHash('sha256').update(bytes).digest('hex')});
+          }
+          writeFileSync('test-results/coach-recovery/verified-blobs.json',JSON.stringify({source:process.env.SOURCE,baseTree:git('rev-parse','HEAD^{tree}'),entries,results,refsChanged:false,deployed:false},null,2));
+          JS
+      - name: Retain exact source and bounded evidence summary
+        if: always()
+        id: retain
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import shutil,json,os,re
+          out=Path('test-results/coach-recovery');out.mkdir(parents=True,exist_ok=True)
+          p=out/'source-files.json'
+          if p.exists():
+              for name in json.loads(p.read_text()):
+                  source=Path(name)
+                  if source.exists():
+                      target=out/'reviewed-source'/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source,target)
+          summary={'logs':{},'browsers':[],'verified':None}
+          for p in out.glob('*.log'):
+              lines=re.sub(r'\x1b\[[0-9;]*[A-Za-z]','',p.read_text(errors='replace')).splitlines()
+              selected=[line[:800] for line in lines if re.search(r'Test Files|Tests |# tests|# pass|# fail|problems \(|built in|AssertionError|Error:|error TS|Expected|Received|FAIL ',line)]
+              summary['logs'][p.name]=selected[-15:]
+          for suite in ['coach-conversation','coach-consent']:
+              for p in Path('test-results',suite).glob('*/results.json'):
+                  r=json.loads(p.read_text());summary['browsers'].append({'suite':suite,'engine':r['engine'],'groups':len(r['results']),'errors':r['errors'][:3],'failure':r['failure']})
+          p=out/'verified-blobs.json'
+          if p.exists():summary['verified']=json.loads(p.read_text())
+          (out/'summary.json').write_text(json.dumps(summary,indent=2))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('summary='+json.dumps(summary,separators=(',',':'))+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coach-conversation-final-evidence
+          path: |
+            test-results/coach-recovery
+            test-results/coach-conversation
+            test-results/coach-consent
+          retention-days: 14
+          if-no-files-found: error
+  report:
+    needs: candidate
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exact candidate result and bounded evidence
+        env:
+          RESULT: ${{ needs.candidate.result }}
+          REPORT: ${{ needs.candidate.outputs.summary }}
+        run: |
+          printf 'Candidate result: %s\n' "$RESULT"
+          printf '%s\n' "$REPORT"
+          printf 'No branch, real user data, AI request, consent decision or production deployment changed.\n'
