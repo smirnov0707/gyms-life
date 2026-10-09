@@ -69,3 +69,47 @@
   letter-spacing: 0.08em;
   color: var(--foreground);
 }
+
+/* Evidence is one fraction, not two independent lines at enlarged text sizes. */
+[data-lab-command-deck] .fl-investigation-card span.text-cyan-300 {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Bound nested gutters and decorative icons, never the user's text scale.
+   The preceding browser checks caught overflow but not words broken in two. */
+@media (max-width: 639px) {
+  [data-lab-command-deck] .fl-investigation-card > .relative.flex.items-start {
+    gap: 8px;
+  }
+
+  [data-lab-command-deck] .fl-investigation-card > .relative.flex.items-start svg,
+  [data-lab-command-deck] .fl-investigation-card details > summary svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  [data-lab-command-deck] .fl-investigation-card > .relative.flex.items-start svg {
+    color: var(--accent);
+  }
+
+  [data-lab-command-deck].fl-lab-page .fl-investigation-card h2 {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  [data-lab-command-deck] .fl-investigation-card details > summary {
+    gap: 8px;
+    padding-inline: 12px;
+    overflow-wrap: normal;
+  }
+
+  [data-lab-command-deck] .fl-investigation-card details > summary span {
+    overflow-wrap: normal;
+  }
+
+  [data-lab-command-deck] [data-lab-evidence],
+  [data-lab-command-deck] [data-lab-history] > div {
+    padding-inline: 12px;
+  }
+}

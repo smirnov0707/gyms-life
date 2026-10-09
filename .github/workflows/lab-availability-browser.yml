@@ -85,6 +85,10 @@ jobs:
         run: node scripts/test-lab-populated-browser.mjs
         env:
           LAB_BROWSER_ENGINE: ${{ matrix.engine }}
+      - name: Keep words and evidence fractions intact at doubled mobile text
+        run: node scripts/test-lab-reflow-browser.mjs
+        env:
+          LAB_BROWSER_ENGINE: ${{ matrix.engine }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
