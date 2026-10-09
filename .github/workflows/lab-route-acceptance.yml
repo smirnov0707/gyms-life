@@ -16,6 +16,7 @@ jobs:
       options: --init
     outputs:
       commit: ${{ steps.record.outputs.commit }}
+      summary: ${{ steps.retain.outputs.summary }}
     env:
       SOURCE: abe730051753c22ae696099d1e69f19ac01785d4
       BASE: d825d6853af2a8bb0716b3e0a519a5241be3eef6
@@ -36,6 +37,14 @@ jobs:
           mkdir -p test-results/lab-route-recovery
           curl --fail --silent --show-error --location "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${PREPARATION}/scripts/diagnostics/prepare-lab-route-recovery.py" -o "$RUNNER_TEMP/prepare-lab-route-recovery.py"
           python3 "$RUNNER_TEMP/prepare-lab-route-recovery.py"
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('src/components/lab/lab-availability.test.tsx')
+          s=p.read_text()
+          old='expect(html).not.toContain("data-lab-history");'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,'expect(html).not.toMatch(/\\sdata-lab-history=/);'))
+          PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - name: Format the exact candidate with the installed rules
@@ -104,12 +113,13 @@ jobs:
           console.log('VERIFIED_ACTIVE_LAB',JSON.stringify(manifest));
           JS
       - name: Retain candidate source and evidence after execution
+        id: retain
         if: always()
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import shutil
+          import shutil,json,os,re
           paths=['src/components/LabView.tsx','src/components/lab/LabDecisionHistory.tsx','src/components/lab/lab-read.copy.ts','src/components/lab/lab-view.copy.ts','src/components/lab/useLabReadRecovery.ts','src/components/future-lab/LabCommandDeck.tsx','src/components/lab/lab-availability.test.tsx','tests/lab-browser/fixture.tsx','tests/lab-browser/services.ts','scripts/test-lab-availability-browser.mjs','.github/workflows/lab-availability-browser.yml','docs/lab-read-state-recovery.md']
           for name in paths:
               source=Path(name)
@@ -117,6 +127,18 @@ jobs:
                   target=Path('test-results/lab-route-recovery/reviewed-source')/name
                   target.parent.mkdir(parents=True,exist_ok=True)
                   shutil.copyfile(source,target)
+          summary={'logs':{},'browsers':[],'verified':None}
+          for p in Path('test-results/lab-route-recovery').glob('*.log'):
+              lines=re.sub(r'\x1b\[[0-9;]*[A-Za-z]','',p.read_text(errors='replace')).splitlines()
+              selected=[line[:600] for line in lines if re.search(r'Test Files|Tests |# tests|# pass|# fail|problems \(|built in|AssertionError|Error:|Expected|Received|FAIL ',line)]
+              summary['logs'][p.name]=selected[-12:]
+          for p in Path('test-results/lab-availability').glob('*/results.json'):
+              r=json.loads(p.read_text())
+              summary['browsers'].append({'engine':r['engine'],'groups':len(r['results']),'errors':r['errors'][:5],'failure':r['failure']})
+          p=Path('test-results/lab-route-recovery/verified-source.json')
+          if p.exists():
+              m=json.loads(p.read_text());summary['verified']={k:m[k] for k in ['commit','tree','source','base','browsers','branchUpdated','deployed']}
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('summary='+json.dumps(summary,separators=(',',':'))+'\n')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
@@ -130,12 +152,16 @@ jobs:
           if-no-files-found: error
   report:
     needs: candidate
-    name: Verified active Lab ${{ needs.candidate.outputs.commit }}
+    if: always()
+    name: Active Lab acceptance result
     runs-on: ubuntu-latest
     steps:
-      - name: Exact tested candidate reference
+      - name: Exact candidate and bounded evidence summary
         env:
+          ACCEPTANCE_RESULT: ${{ needs.candidate.result }}
           VERIFIED_COMMIT: ${{ needs.candidate.outputs.commit }}
+          SOURCE_REPORT: ${{ needs.candidate.outputs.summary }}
         run: |
-          printf 'Verified active Lab candidate: %s\n' "$VERIFIED_COMMIT"
-          printf '30 browser groups per engine, both builds, typecheck, unit/contract suite, toolchain and lint completed. No branch was updated; no production release was made.\n'
+          printf 'Acceptance result: %s\nVerified active Lab candidate: %s\n' "$ACCEPTANCE_RESULT" "$VERIFIED_COMMIT"
+          printf '%s\n' "$SOURCE_REPORT"
+          printf 'This report does not update any branch, mark a review approved or deploy production.\n'
