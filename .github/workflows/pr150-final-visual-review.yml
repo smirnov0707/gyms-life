@@ -1,0 +1,103 @@
+name: PR150 final visual review
+on:
+  push:
+    branches: [diagnostics/pr150-release-review-2026-10-09]
+    paths: [.github/workflows/pr150-final-visual-review.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 11578843112
+          run-id: 37844785179
+          github-token: ${{ github.token }}
+          path: /tmp/pr150-camera
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 11580135087
+          run-id: 37844785106
+          github-token: ${{ github.token }}
+          path: /tmp/pr150-boundary
+      - name: Validate final-head evidence and publish only synthetic review images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,readdirSync,statSync,mkdirSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import path from 'node:path';
+          const source='112037beafb47a294f285feb3138b3b4210e5919';
+          const repo=process.env.GITHUB_REPOSITORY, branch=process.env.GITHUB_REF_NAME;
+          assert.equal(branch,'diagnostics/pr150-release-review-2026-10-09');
+          const api=async(p,method='GET',data)=>{
+            const r=await fetch(`https://api.github.com/repos/${repo}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);
+            return r.json();
+          };
+          const evidence=[];
+          for(const [id,run,digest] of [[11578843112,37844785179,'a425593ed6598e25ea9bff6464e454119247a857b73224d32ac3a3aab95b5b94'],[11580135087,37844785106,'5e72258ccc456d94e426b3c3f19f680ad4c5702a783a52b098ff507f8dc28ae9']]){
+            const a=await api(`actions/artifacts/${id}`);
+            assert.equal(a.workflow_run.head_sha,source);assert.equal(a.workflow_run.id,run);
+            assert.equal(a.digest,`sha256:${digest}`);assert.equal(a.expired,false);
+            evidence.push({id,run,digest:a.digest,source:a.workflow_run.head_sha});
+          }
+          function walk(dir){return readdirSync(dir).flatMap(name=>{const p=path.join(dir,name);return statSync(p).isDirectory()?walk(p):[p];});}
+          const cameraFiles=walk('/tmp/pr150-camera'),boundaryFiles=walk('/tmp/pr150-boundary');
+          const one=(all,suffix)=>{const found=all.filter(p=>p.endsWith('/'+suffix));assert.equal(found.length,1,suffix);return found[0];};
+          const cameraReports=cameraFiles.filter(p=>p.endsWith('/results.json'));
+          const reports=cameraReports.map(p=>({path:p,data:JSON.parse(readFileSync(p,'utf8'))}));
+          assert.equal(reports.length,2);
+          assert.deepEqual(reports.map(r=>r.data.results.length).sort((a,b)=>a-b),[6,12]);
+          for(const r of reports){assert.deepEqual(r.data.errors,[]);assert.equal(r.data.failure,null);assert.ok(r.data.results.every(x=>x.status==='passed'));}
+          const boundaryImages=boundaryFiles.filter(p=>p.endsWith('.png')).sort();
+          assert.equal(boundaryImages.length,8,'Expect four real reference/refinement pairs');
+          console.log('BOUNDARY_FILES',JSON.stringify(boundaryFiles.map(p=>path.basename(p))));
+          for(const p of boundaryFiles.filter(p=>p.endsWith('.json'))){
+            const data=JSON.parse(readFileSync(p,'utf8'));
+            if('errors' in data) assert.deepEqual(data.errors,[]);
+            if('failure' in data) assert.equal(data.failure,null);
+            console.log('BOUNDARY_REPORT',JSON.stringify(data));
+          }
+          const cameraNames=['lt-dark-320-old-size.png','lt-dark-320-larger.png','lt-light-390-full.png','en-dark-1280-full.png'];
+          const images=[...boundaryImages.map(p=>({file:p,name:'boundary-'+path.basename(p)})),...cameraNames.map(n=>({file:one(cameraFiles,n),name:'camera-'+n}))];
+          const out='test-results/pr150-final-review';mkdirSync(out,{recursive:true});
+          const tree=[],manifest=[];
+          for(const image of images){
+            const bytes=readFileSync(image.file);assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+            writeFileSync(path.join(out,image.name),bytes);
+            const blob=await api('git/blobs','POST',{content:bytes.toString('base64'),encoding:'base64'});
+            tree.push({path:`docs/pr150-final-review/${image.name}`,mode:'100644',type:'blob',sha:blob.sha});
+            manifest.push({file:image.name,sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length});
+          }
+          const summary={source,evidence,cameraGroups:reports.find(r=>r.data.results.length===6).data.results,pickingGroups:reports.find(r=>r.data.results.length===12).data.results.map(r=>({name:r.name,status:r.status})),images:manifest,scope:'Actual final-head components and registered models; synthetic absent evidence. No live account, physical-device, WebKit-gesture or anatomical acceptance. Image bytes are not retouched. Boundary reference disables feathering, not the previous production version.'};
+          const json=JSON.stringify(summary,null,2);writeFileSync(path.join(out,'verification.json'),json);
+          tree.push({path:'docs/pr150-final-review/verification.json',mode:'100644',type:'blob',content:json});
+          const readme=['# PR150 final-head visual review','',`Exact application head: ${source}.`,'','All images originate from this exact head and synthetic missing-evidence fixtures. No account data, image generation or retouching. Boundary comparison reference disables feathering in the test transform; it is not a direct comparison against the old per-vertex production implementation. The camera comparison changes only viewport height to the old rule. Whole-body home captures should retain head and feet; lower-body focus intentionally crops upper parts. The stage is deliberately dark in either page theme. Fixture counters are test outputs, not app copy.','',...images.flatMap(i=>[`## ${i.name}`,`![${i.name}](${i.name})`,''])].join('\n');
+          writeFileSync(path.join(out,'README.md'),readme);tree.push({path:'docs/pr150-final-review/README.md',mode:'100644',type:'blob',content:readme});
+          const head=(await api(`git/ref/heads/${branch}`)).object.sha;assert.equal(head,process.env.GITHUB_SHA,'Diagnostic branch moved');
+          const parent=await api(`git/commits/${head}`);
+          const next=await api('git/trees','POST',{base_tree:parent.tree.sha,tree});
+          const commit=await api('git/commits','POST',{message:'docs(review): exact PR150 final-head synthetic screenshots and evidence',tree:next.sha,parents:[head]});
+          await api(`git/refs/heads/${branch}`,'PATCH',{sha:commit.sha,force:false});
+          console.log('FINAL_REVIEW_GALLERY',commit.sha,`https://github.com/${repo}/blob/${commit.sha}/docs/pr150-final-review/README.md`);
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: GYMS-LIFE-PR150-final-review
+          path: test-results/pr150-final-review
+          retention-days: 14
+          if-no-files-found: error
