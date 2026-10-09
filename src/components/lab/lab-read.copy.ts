@@ -3,6 +3,7 @@ import type { LabUnreadableSource } from "@/lib/lab.schema";
 export type LabReadMode = "loading" | "unavailable" | "partial" | "stale" | "refreshing";
 
 type LabReadCopy = {
+  label: Record<LabReadMode, string>;
   title: Record<LabReadMode, string>;
   description: Record<LabReadMode, string>;
   source: Record<LabUnreadableSource, string>;
@@ -18,6 +19,13 @@ type LabReadCopy = {
 export function labReadCopyFor(language: "lt" | "en"): LabReadCopy {
   if (language === "lt") {
     return {
+      label: {
+        loading: "Kraunama…",
+        unavailable: "Nepasiekiama",
+        partial: "Daliniai duomenys",
+        stale: "Ankstesni duomenys",
+        refreshing: "Atnaujinama…",
+      },
       title: {
         loading: "Kraunami laboratorijos duomenys…",
         unavailable: "Laboratorija šiuo metu nepasiekiama.",
@@ -50,6 +58,13 @@ export function labReadCopyFor(language: "lt" | "en"): LabReadCopy {
     };
   }
   return {
+    label: {
+      loading: "Loading…",
+      unavailable: "Unavailable",
+      partial: "Partial data",
+      stale: "Previous data",
+      refreshing: "Refreshing…",
+    },
     title: {
       loading: "Loading your Lab data…",
       unavailable: "Lab is temporarily unavailable.",

@@ -1,3 +1,4 @@
+import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,7 +56,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 vi.mock("@/lib/i18n", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/i18n")>();
-  return { ...actual, useI18n: () => ({ lang: mocks.language }) };
+  return { ...actual, useI18n: () => ({ lang: mocks.language, t: (key: string) => key }) };
 });
 const sources: LabUnreadableSource[] = ["decisions", "decision_evidence", "decision_outcomes"];
 const combinations = Array.from({ length: 8 }, (_, mask) =>
@@ -188,7 +189,7 @@ describe("Lab availability and recovery surfaces", () => {
     );
     expect(html).toContain('data-lab-read-state="partial"');
     expect(html).toContain(labReadCopyFor("en").source.decision_outcomes);
-    expect(html).not.toContain("data-lab-history");
+    expect(html).not.toMatch(/\sdata-lab-history=/);
   });
   it("keeps a single, more important stale notice when cached history is also partial", () => {
     const html = renderToStaticMarkup(
@@ -222,5 +223,96 @@ describe("Lab availability and recovery surfaces", () => {
       <LabOverviewView data={makeLabData()} copy={labCopyFor("en")} />,
     );
     expect(html).not.toContain("data-lab-read-state");
+  });
+});
+
+vi.mock("@/components/future-lab/forecast.query", () => ({
+  useStrengthForecast: () => ({ data: null, isError: false }),
+}));
+vi.mock("@/components/future-lab/ExperimentLedger", () => ({ ExperimentLedger: () => null }));
+
+describe("the actual Lab route command deck", () => {
+  for (const language of ["lt", "en", "de"] as const) {
+    it(`${language}: distinguishes unavailable data from an empty investigation`, () => {
+      mocks.language = language;
+      const html = renderToStaticMarkup(<LabCommandDeck />);
+      expect(html).toContain('data-lab-read-state="unavailable"');
+      expect(html).toContain(labReadCopyFor(baseLang(language)).retry);
+      expect(html).not.toContain("data-lab-overview");
+      expect(html).not.toContain(labCopyFor(language).decisionsEmpty);
+    });
+    it(`${language}: does not discard the cached snapshot after refresh failure`, () => {
+      mocks.language = language;
+      mocks.query.mockReturnValue({
+        data: makeLabData(),
+        isLoading: false,
+        isError: true,
+        isFetching: false,
+        refetch: mocks.refetch,
+      });
+      const html = renderToStaticMarkup(<LabCommandDeck />);
+      expect(html).toContain('data-lab-read-state="stale"');
+      expect(html).toContain(labReadCopyFor(baseLang(language)).label.stale);
+      expect(html).toContain("data-lab-overview");
+      expect(html.match(/\sdata-lab-decision=/g)).toHaveLength(4);
+      expect(html).not.toContain("Evidence loaded");
+      expect(html).not.toContain("Duomenys įkelti");
+    });
+  }
+  it.each(combinations.map((unreadable) => ({ unreadable })))(
+    "keeps each source-failure combination truthful in the live deck: $unreadable",
+    ({ unreadable }) => {
+      const html = renderToStaticMarkup(<LabCommandDeck />);
+      expect(html).toContain('data-lab-read-state="unavailable"');
+      mocks.query.mockReturnValue({
+        data: makeLabData(unreadable),
+        isLoading: false,
+        isError: false,
+        isFetching: false,
+        refetch: mocks.refetch,
+      });
+      const loaded = renderToStaticMarkup(<LabCommandDeck />);
+      expect(loaded.includes('data-lab-read-state="partial"')).toBe(unreadable.length > 0);
+      expect(loaded.includes("data-lab-fit-rate")).toBe(
+        !unreadable.includes("decisions") && !unreadable.includes("decision_outcomes"),
+      );
+      for (const source of unreadable)
+        expect(loaded).toContain(labReadCopyFor("en").source[source]);
+      expect(loaded.match(/<details[^>]*data-lab-command-history[^>]*>/)?.[0]).not.toContain(
+        " open",
+      );
+    },
+  );
+  it("exposes loading without an enabled retry or prior-owner records", () => {
+    mocks.query.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      isFetching: true,
+      refetch: mocks.refetch,
+    });
+    const html = renderToStaticMarkup(<LabCommandDeck />);
+    expect(html).toContain('data-lab-read-state="loading"');
+    expect(html).not.toContain("data-lab-overview");
+    expect(html).not.toContain(labReadCopyFor("en").retry);
+  });
+  it("never offers a manual read after sign-out", () => {
+    mocks.signedIn = false;
+    const html = renderToStaticMarkup(<LabCommandDeck />);
+    expect(html).not.toContain(labReadCopyFor("en").retry);
+    expect(mocks.refetch).not.toHaveBeenCalled();
+  });
+  it("labels a background refresh without hiding its cached rows", () => {
+    mocks.query.mockReturnValue({
+      data: makeLabData(),
+      isLoading: false,
+      isError: false,
+      isFetching: true,
+      refetch: mocks.refetch,
+    });
+    const html = renderToStaticMarkup(<LabCommandDeck />);
+    expect(html).toContain('data-lab-read-state="refreshing"');
+    expect(html).toContain(labReadCopyFor("en").label.refreshing);
+    expect(html.match(/\sdata-lab-decision=/g)).toHaveLength(4);
   });
 });

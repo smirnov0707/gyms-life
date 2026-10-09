@@ -1,5 +1,5 @@
 import type { LabOverview } from "@/lib/lab.schema";
-import type { LabCopy } from "@/components/LabView";
+import type { LabCopy } from "./lab-view.copy";
 import { labReadCopyFor } from "./lab-read.copy";
 
 /** Partial source failure never becomes an empty journal or an unanswered decision. */

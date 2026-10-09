@@ -1,10 +1,15 @@
+import { useId } from "react";
 import { FlaskConical, Gauge, ShieldCheck } from "lucide-react";
 import { baseLang, useI18n } from "@/lib/i18n";
 import { calibrationMaturityPercent } from "@/lib/prediction-calibration.engine";
 import { LabRosterRows } from "./FutureLabRoster";
 import { HypothesisEvidence } from "./HypothesisEvidence";
 import { FutureLabEmpty, FutureLabPanel } from "./FutureLabPanel";
-import { useLabOverview } from "./lab-overview.query";
+import { useLabReadRecovery } from "@/components/lab/useLabReadRecovery";
+import { LabReadNotice } from "@/components/lab/LabReadNotice";
+import { LabDecisionHistory } from "@/components/lab/LabDecisionHistory";
+import { labCopyFor } from "@/components/lab/lab-view.copy";
+import { labReadCopyFor } from "@/components/lab/lab-read.copy";
 import { useStrengthForecast } from "./forecast.query";
 import { EpistemicBoundary } from "./EpistemicBoundary";
 import { EvidenceAcquisitionPrompt } from "@/components/intelligence/EvidenceAcquisitionPrompt";
@@ -31,9 +36,12 @@ export function LabCommandDeck() {
   const { lang, t } = useI18n();
   const locale = baseLang(lang);
   const english = locale === "en";
-  const query = useLabOverview();
+  const query = useLabReadRecovery();
+  const historyId = useId();
   const forecastQuery = useStrengthForecast();
-  const data = query.isError ? undefined : query.data;
+  const data = query.data;
+  const historyCopy = labCopyFor(lang);
+  const readCopy = labReadCopyFor(locale);
   const nextEvidence = data
     ? selectEvidenceAcquisitionRecommendation(data.hypotheses, data.dataGaps)
     : null;
@@ -68,15 +76,17 @@ export function LabCommandDeck() {
         contradicted: "Paneigta",
       };
 
-  const investigationState = query.isError
-    ? "unavailable"
-    : !data
+  const investigationState = !data
+    ? query.readMode === "loading"
       ? "loading"
-      : (primary?.status ?? "idle");
+      : "unavailable"
+    : (primary?.status ?? "idle");
 
   return (
     <section
       className="fl-lab-page fl-panel overflow-hidden rounded-2xl border border-border bg-surface/90 p-4 sm:p-5"
+      data-lab-command-deck
+      data-lab-overview={data ? true : undefined}
       data-investigation-state={investigationState}
     >
       <header className="fl-page-heading flex items-start justify-between gap-3 border-b border-border/70 pb-3">
@@ -89,18 +99,28 @@ export function LabCommandDeck() {
             {english ? "Your evidence. Your investigations." : "Tavo duomenys. Tavo tyrimai."}
           </p>
         </div>
-        <span className="rounded-full border border-border px-2.5 py-1.5 text-[9px] text-muted-foreground">
-          {query.isError
-            ? english
-              ? "Unavailable"
-              : "Nepasiekiama"
-            : data
-              ? english
-                ? "Evidence loaded"
-                : "Duomenys įkelti"
-              : t("common.loading")}
+        <span
+          className="rounded-full border border-border px-2.5 py-1.5 text-[9px] text-muted-foreground"
+          data-lab-read-label
+        >
+          {query.readMode
+            ? readCopy.label[query.readMode]
+            : english
+              ? "Evidence loaded"
+              : "Duomenys įkelti"}
         </span>
       </header>
+      {query.readMode ? (
+        <div className="mt-3">
+          <LabReadNotice
+            mode={query.readMode}
+            language={locale}
+            sources={data?.unreadable ?? []}
+            onRetry={query.retry}
+            retrying={query.isFetching}
+          />
+        </div>
+      ) : null}
 
       <div className="fl-lab-workbench mt-3 grid items-start gap-3">
         <FutureLabPanel
@@ -108,7 +128,7 @@ export function LabCommandDeck() {
           title={english ? "Current investigation" : "Dabartinis tyrimas"}
           action={<FlaskConical className="size-4 text-cyan-300" />}
         >
-          {query.isError ? (
+          {!data && query.readMode !== "loading" ? (
             <FutureLabEmpty>{unknown}</FutureLabEmpty>
           ) : !data ? (
             <FutureLabEmpty>{t("common.loading")}</FutureLabEmpty>
@@ -131,7 +151,7 @@ export function LabCommandDeck() {
               </div>
               <p className="mt-2 text-[10px] text-muted-foreground">{statuses[primary.status]}</p>
               <HypothesisEvidence evidence={primary.evidence} />
-              {nextEvidence?.hypothesisId === primary.id ? (
+              {!query.isError && nextEvidence?.hypothesisId === primary.id ? (
                 <EvidenceAcquisitionPrompt
                   recommendation={nextEvidence}
                   english={english}
@@ -165,7 +185,7 @@ export function LabCommandDeck() {
         >
           <LabRosterRows
             data={data}
-            status={query.isError ? "error" : data ? "ready" : "loading"}
+            status={data ? "ready" : query.readMode === "loading" ? "loading" : "error"}
             tiles
           />
           <p className="mt-2 text-[9px] text-muted-foreground">
@@ -227,9 +247,9 @@ export function LabCommandDeck() {
                   <p className="mt-1 text-[10px] text-muted-foreground">
                     {calibration
                       ? `${calibration.totalEvaluated}/${calibration.minimumEvaluated} ${english ? "evaluated outcomes" : "įvertintų rezultatų"}`
-                      : query.isError
-                        ? unknown
-                        : t("common.loading")}
+                      : query.readMode === "loading"
+                        ? t("common.loading")
+                        : unknown}
                   </p>
                   <p className="mt-2 text-[9px] uppercase tracking-wider text-accent light:text-accent">
                     Shadow
@@ -272,6 +292,27 @@ export function LabCommandDeck() {
           </div>
         </details>
       </div>
+      {data ? (
+        <details className="fl-secondary-details mt-3" data-lab-command-history>
+          <summary
+            data-lab-history-toggle
+            aria-label={historyCopy.decisionHistory}
+            aria-describedby={`${historyId}-description`}
+            aria-controls={historyId}
+          >
+            {historyCopy.decisionHistory}
+          </summary>
+          <div className="fl-disclosed-content" id={historyId}>
+            <p
+              id={`${historyId}-description`}
+              className="mb-3 text-xs leading-relaxed text-muted-foreground"
+            >
+              {historyCopy.accuracyNote}
+            </p>
+            <LabDecisionHistory data={data} copy={historyCopy} language={locale} />
+          </div>
+        </details>
+      ) : null}
     </section>
   );
 }

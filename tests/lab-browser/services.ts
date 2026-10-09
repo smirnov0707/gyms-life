@@ -60,3 +60,17 @@ declare global {
   }
 }
 window.__labHarness = harness;
+
+// Independent live-route panels use synthetic read boundaries. Writes are forbidden.
+export async function forecastProgress() {
+  return null;
+}
+export async function listPersonalExperimentHistory() {
+  return { experiments: [], outcomes: [] };
+}
+export async function transitionPersonalExperiment(): Promise<never> {
+  throw new Error("Unexpected experiment mutation in read-only Lab acceptance");
+}
+export async function addPersonalExperimentOutcome(): Promise<never> {
+  throw new Error("Unexpected experiment mutation in read-only Lab acceptance");
+}

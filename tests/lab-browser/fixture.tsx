@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LangProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import { LabView } from "@/components/LabView";
+import { LabCommandDeck } from "@/components/future-lab/LabCommandDeck";
 import "./services";
 import "@/styles.css";
 import "@/components/future-lab-shell.css";
@@ -29,7 +30,7 @@ export function LabFixture() {
               Synthetic Lab records. No live account or server writes.
             </p>
             <div className="mx-auto w-full max-w-5xl">
-              <LabView />
+              {query.get("view") === "deck" ? <LabCommandDeck /> : <LabView />}
             </div>
           </main>
         </ThemeProvider>

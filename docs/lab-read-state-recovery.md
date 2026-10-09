@@ -11,3 +11,25 @@ Lab uses the shared SystemNotice surface for initial loading, unavailable reads,
 Retry calls the existing authenticated Lab query with cancelRefetch=false and throwOnError=false; it never offers a manual request to a signed-out visitor. This does not change the pre-existing service's reconciliation work. The existing owner/timezone query key is preserved. No new endpoint, AI request, database migration, dependency, Twin geometry, camera, picking or payment behavior is introduced.
 
 Acceptance includes all eight source-failure combinations, empty and populated history, readable outcomes, insufficient evidence, cached failures, locale fallback, both themes, reduced motion, narrow layouts, actual query retry/de-duplication and account-switch isolation. Browser fixtures use the real component and query hook with synthetic service boundaries. They are not a live account or physical-iPhone test.
+
+
+## Active route integration
+
+`src/routes/_authenticated/lab.tsx` renders `LabCommandDeck`, not `LabView`.
+The first candidate's 45 rendered unit cases and 15 browser groups per engine
+covered the legacy overview only. They did not prove the active route had recovery.
+This increment corrects that reachability gap rather than replacing the live route
+with the old layout.
+
+The live deck and legacy overview now share the authenticated retry/state hook and
+copy definitions. The live deck preserves cached data after a failed refresh,
+labels partial/stale/refreshing states instead of saying all evidence was loaded,
+and exposes the same truthful decision journal in a closed-by-default disclosure.
+A failed refresh does not propose a fresh evidence-acquisition action. Independent
+experiment and forecast panels retain their own query boundaries.
+
+The browser suite now runs the same 15 groups on each surface in each engine
+(30 groups per engine). Real components and query hooks are used; only service
+boundaries return synthetic data. This is not live-account, live-DB or physical
+mobile-device acceptance. Main, release markers, dependencies and user data are
+not changed by preparing this candidate.
