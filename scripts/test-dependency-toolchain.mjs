@@ -25,8 +25,10 @@ const syntheticImage = (sharp) =>
 for (const consumer of ["ipx", "miniflare", "ndarray-pixels"]) {
   test(`${consumer} resolves the patched Sharp/libheif and processes AVIF`, async () => {
     const { default: sharp } = await consumerImport(consumer, "sharp");
-    assert.equal(sharp.versions.sharp, "0.35.4");
-    assert.equal(sharp.versions.heif, "1.23.2");
+    assert.equal(sharp.versions.sharp, "0.35.5");
+    assert.equal(sharp.versions.heif, "1.23.5");
+    console.log("PATCHED_NATIVE_LIBRARIES", consumer, JSON.stringify(sharp.versions));
+    assert.equal(sharp.versions.rsvg, "2.63.2");
     const input = await syntheticImage(sharp).avif().toBuffer();
     const output = await sharp(input).resize(8, 4).png().toBuffer();
     const metadata = await sharp(output).metadata();
@@ -128,6 +130,93 @@ test(
         },
       );
       assert.match(stdout, /dry-run/i);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  },
+);
+
+for (const consumer of ["ipx", "miniflare", "ndarray-pixels"]) {
+  test(`${consumer} renders a benign SVG with the patched librsvg`, async () => {
+    const { default: sharp } = await consumerImport(consumer, "sharp");
+    const svg = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="12"><rect width="24" height="12" fill="#4682b4"/></svg>',
+    );
+    const output = await sharp(svg).resize(12, 6).png().toBuffer();
+    const metadata = await sharp(output).metadata();
+    assert.equal(metadata.width, 12);
+    assert.equal(metadata.height, 6);
+    assert.equal(metadata.format, "png");
+  });
+}
+test(
+  "Wrangler resolves the patched smol-toml and preserves configuration values",
+  { timeout: 10000 },
+  async () => {
+    const { parse } = await consumerImport("wrangler", "smol-toml");
+    const config = parse(await readFile("netlify.toml", "utf8"));
+    assert.equal(typeof config.build.command, "string");
+    assert.equal(typeof config.build.publish, "string");
+    const document = Array.from({ length: 4096 }, (_, i) => `key${i} = ${i}`).join("\n");
+    const parsed = parse(document);
+    assert.equal(Object.keys(parsed).length, 4096);
+    assert.equal(parsed.key0, 0);
+    assert.equal(parsed.key4095, 4095);
+  },
+);
+
+test(
+  "Wrangler consumes patched TOML objects while packaging an isolated Worker",
+  { timeout: 45000 },
+  async () => {
+    const directory = await scratch();
+    try {
+      await writeFile(
+        path.join(directory, "worker.mjs"),
+        "export default { fetch(request, env) { return new Response(env.SECURITY_CHECK); } };\n",
+      );
+      const config = path.join(directory, "wrangler.toml");
+      await writeFile(
+        config,
+        [
+          'name = "gyms-security-toml-smoke"',
+          'main = "worker.mjs"',
+          'compatibility_date = "2026-08-01"',
+          "[vars]",
+          'SECURITY_CHECK = "synthetic-config-only"',
+        ].join("\n") + "\n",
+      );
+      const { parse } = await consumerImport("wrangler", "smol-toml");
+      const parsed = parse(await readFile(config, "utf8"));
+      assert.equal(Object.getPrototypeOf(parsed), null);
+      assert.equal(parsed.vars.SECURITY_CHECK, "synthetic-config-only");
+      const { stdout } = await run(
+        process.execPath,
+        [
+          resolve("wrangler"),
+          "deploy",
+          "--dry-run",
+          "--config",
+          config,
+          "--outdir",
+          path.join(directory, "out"),
+        ],
+        {
+          cwd: directory,
+          timeout: 35000,
+          maxBuffer: 1024 * 1024,
+          env: {
+            PATH: process.env.PATH ?? "",
+            HOME: directory,
+            TMPDIR: directory,
+            CI: "true",
+            WRANGLER_SEND_METRICS: "false",
+            WRANGLER_LOG_PATH: path.join(directory, "wrangler.log"),
+          },
+        },
+      );
+      assert.match(stdout, /dry-run/i);
+      assert.match(stdout, /SECURITY_CHECK/);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

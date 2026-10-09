@@ -23,7 +23,8 @@ function atLeast(version: string, minimum: string): boolean {
 /** Static regression floors are not a substitute for the live npm audit job. */
 describe("dependency security remediation", () => {
   it.each([
-    ["sharp", "0.35.4"],
+    ["sharp", "0.35.5"],
+    ["smol-toml", "1.9.0"],
     ["toml", "4.2.0"],
     ["@netlify/functions-dev", "2.0.5"],
     ["@netlify/zip-it-and-ship-it", "15.5.1"],
@@ -47,6 +48,7 @@ describe("dependency security remediation", () => {
   it("keeps the resolved root synchronized with the checked-in manifest", () => {
     expect(lock.packages[""].dependencies).toEqual(manifest.dependencies);
     expect(lock.packages[""].devDependencies).toEqual(manifest.devDependencies);
-    expect(manifest.overrides.sharp).toBe("0.35.4");
+    expect(manifest.overrides.sharp).toBe("0.35.5");
+    expect(manifest.overrides["smol-toml"]).toBe("1.9.0");
   });
 });
