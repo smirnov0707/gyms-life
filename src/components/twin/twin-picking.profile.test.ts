@@ -5,10 +5,10 @@ import { twinNearSideReach } from "./twin-camera.navigation";
 
 function body(indexed = true) {
   const root = new Group();
-  for (const [size, centre] of [
+  for (const [size, centre] of ([
     [[0.3, 0.7, 0.24], [0, 0.4, -0.12]],
     [[0.55, 0.75, 0.32], [0, 1.2, 0.1]],
-  ]) {
+  ] as const)) {
     const source = new BoxGeometry(size[0], size[1], size[2]);
     const mesh = new Mesh(indexed ? source : source.toNonIndexed());
     if (!indexed) source.dispose();
