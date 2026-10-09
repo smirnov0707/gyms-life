@@ -2,7 +2,10 @@ import { useSyncExternalStore } from "react";
 
 const query = new URLSearchParams(location.search);
 let owner: { id: string } | null = { id: "synthetic-a" };
-const preferences = new Map([["synthetic-a", true], ["synthetic-b", false]]);
+const preferences = new Map([
+  ["synthetic-a", true],
+  ["synthetic-b", false],
+]);
 const subscribers = new Set<() => void>();
 const reads: Array<{ owner: string }> = [];
 const writes: Array<{ owner: string; granted: boolean }> = [];
@@ -15,7 +18,9 @@ const pendingWrites: Array<{ owner: string; release: () => void }> = [];
 const snapshot = () => owner;
 function subscribe(listener: () => void) {
   subscribers.add(listener);
-  return () => { subscribers.delete(listener); };
+  return () => {
+    subscribers.delete(listener);
+  };
 }
 export function useAuth() {
   return { user: useSyncExternalStore(subscribe, snapshot, snapshot) };
@@ -43,9 +48,15 @@ export async function recordAiPersonalizationConsent({ data }: { data: { granted
 }
 
 // The real Coach page and memory panel mount, but AI and destructive actions are forbidden.
-export async function listCoachMessages() { return { messages: [] }; }
-export async function askCoach(): Promise<never> { throw new Error("Forbidden live AI action"); }
-export async function clearCoachMessages(): Promise<never> { throw new Error("Forbidden history deletion"); }
+export async function listCoachMessages() {
+  return { messages: [] };
+}
+export async function askCoach(): Promise<never> {
+  throw new Error("Forbidden live AI action");
+}
+export async function clearCoachMessages(): Promise<never> {
+  throw new Error("Forbidden history deletion");
+}
 
 function releaseOwner(queue: typeof pendingReads, id?: string) {
   for (let index = queue.length - 1; index >= 0; index--) {
@@ -59,16 +70,32 @@ function releaseOwner(queue: typeof pendingReads, id?: string) {
 const harness = {
   reads,
   writes,
-  readable() { readFails = false; },
-  holdReads(value: boolean) { holdRead = value; },
-  holdWrites(value: boolean) { holdWrite = value; },
-  loseReply(value: boolean) { loseWriteReply = value; },
-  releaseReads(id?: string) { releaseOwner(pendingReads, id); },
-  releaseWrites(id?: string) { releaseOwner(pendingWrites, id); },
+  readable() {
+    readFails = false;
+  },
+  holdReads(value: boolean) {
+    holdRead = value;
+  },
+  holdWrites(value: boolean) {
+    holdWrite = value;
+  },
+  loseReply(value: boolean) {
+    loseWriteReply = value;
+  },
+  releaseReads(id?: string) {
+    releaseOwner(pendingReads, id);
+  },
+  releaseWrites(id?: string) {
+    releaseOwner(pendingWrites, id);
+  },
   setOwner(id: string | null) {
     owner = id ? { id } : null;
     for (const listener of subscribers) listener();
   },
 };
-declare global { interface Window { __consentTest: typeof harness; } }
+declare global {
+  interface Window {
+    __consentTest: typeof harness;
+  }
+}
 window.__consentTest = harness;

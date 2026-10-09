@@ -1,3 +1,4 @@
+import { SupportedLanguageSchema } from "@/lib/language.schema";
 import { describe, expect, it, vi } from "vitest";
 import { createConsentPreferenceSession } from "./consent-preference.session";
 import { consentPreferenceCopy, consentPreferenceStatus } from "./consent-preference.copy";
@@ -5,7 +6,10 @@ import { consentPreferenceCopy, consentPreferenceStatus } from "./consent-prefer
 function deferred() {
   let resolve!: (value: unknown) => void;
   let reject!: (reason: Error) => void;
-  const promise = new Promise<unknown>((yes, no) => { resolve = yes; reject = no; });
+  const promise = new Promise<unknown>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
   return { promise, resolve, reject };
 }
 
@@ -126,7 +130,8 @@ describe("Coach privacy preference read/write session", () => {
 
   it("ignores a read reply from a stopped lifecycle after StrictMode restarts it", async () => {
     const { session, services } = setup();
-    const old = deferred(), fresh = deferred();
+    const old = deferred(),
+      fresh = deferred();
     services.read.mockReturnValueOnce(old.promise).mockReturnValueOnce(fresh.promise);
     const first = session.start();
     session.stop();
@@ -142,7 +147,8 @@ describe("Coach privacy preference read/write session", () => {
   it("does not unlock or replace a fresh read when an earlier save completes", async () => {
     const { session, services } = setup();
     await session.start();
-    const oldSave = deferred(), freshRead = deferred();
+    const oldSave = deferred(),
+      freshRead = deferred();
     services.write.mockReturnValue(oldSave.promise);
     const saving = session.toggle();
     session.stop();
@@ -177,7 +183,9 @@ describe("Coach privacy preference read/write session", () => {
   });
 
   it("separates account instances and never fetches or writes when signed out", async () => {
-    const old = setup(), fresh = setup(), signedOut = setup(false);
+    const old = setup(),
+      fresh = setup(),
+      signedOut = setup(false);
     old.services.read.mockResolvedValue({ enabled: true });
     await old.session.start();
     old.session.stop();
@@ -203,7 +211,7 @@ describe("Coach privacy preference read/write session", () => {
 });
 
 describe("truthful, localized privacy status", () => {
-  it.each(["lt", "en", "de", "fr", "es", "pl", "ru", "lv"] as const)(
+  it.each(SupportedLanguageSchema.options)(
     "%s never describes an unread preference as enabled or disabled",
     (lang) => {
       const copy = consentPreferenceCopy(lang);

@@ -38,10 +38,15 @@ export function consentPreferenceCopy(lang: Lang) {
 export function consentPreferenceStatus(state: ConsentPreferenceState, lang: Lang): string {
   const copy = consentPreferenceCopy(lang);
   switch (state.status) {
-    case "ready": return state.enabled ? copy.active : copy.inactive;
-    case "unavailable": return copy.status[state.reason];
-    case "loading": return copy.status.loading;
-    case "saving": return copy.status.saving;
-    case "signed_out": return copy.status.signed_out;
+    case "ready":
+      return state.enabled ? copy.active : copy.inactive;
+    case "unavailable":
+      return copy.status[state.reason];
+    case "loading":
+      return copy.status.loading;
+    case "saving":
+      return copy.status.saving;
+    case "signed_out":
+      return copy.status.signed_out;
   }
 }

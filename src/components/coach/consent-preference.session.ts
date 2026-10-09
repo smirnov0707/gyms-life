@@ -31,7 +31,7 @@ export function createConsentPreferenceSession(
   const initial: ConsentPreferenceState = authenticated
     ? { status: "loading" }
     : { status: "signed_out" };
-  let state = initial;
+  let state: ConsentPreferenceState = initial;
   let active = false;
   let pending = false;
   let generation = 0;
@@ -88,7 +88,9 @@ export function createConsentPreferenceSession(
     getServerSnapshot: () => initial,
     subscribe(listener: () => void) {
       listeners.add(listener);
-      return () => { listeners.delete(listener); };
+      return () => {
+        listeners.delete(listener);
+      };
     },
     async start() {
       if (active) return;

@@ -19,7 +19,9 @@ const app = (
   <LangProvider>
     <ThemeProvider>
       <main className="min-h-screen bg-background p-4 text-foreground">
-        <p className="mb-4 text-xs" data-synthetic-coach>Synthetic Coach data. No live account.</p>
+        <p className="mb-4 text-xs" data-synthetic-coach>
+          Synthetic Coach data. No live account.
+        </p>
         <Coach />
       </main>
     </ThemeProvider>

@@ -22,13 +22,21 @@ function ConsentPreference({ authenticated }: { authenticated: boolean }) {
   const getConsent = useServerFn(getAiPersonalizationConsent);
   const recordConsent = useServerFn(recordAiPersonalizationConsent);
   const session = useMemo(
-    () => createConsentPreferenceSession({
-      read: () => getConsent(),
-      write: (granted) => recordConsent({ data: { granted } }),
-      report: (reason) => {
-        console.warn(reason === "read" ? "[Coach] CONSENT_READ_UNAVAILABLE" : "[Coach] CONSENT_SAVE_UNCONFIRMED");
-      },
-    }, authenticated),
+    () =>
+      createConsentPreferenceSession(
+        {
+          read: () => getConsent(),
+          write: (granted) => recordConsent({ data: { granted } }),
+          report: (reason) => {
+            console.warn(
+              reason === "read"
+                ? "[Coach] CONSENT_READ_UNAVAILABLE"
+                : "[Coach] CONSENT_SAVE_UNCONFIRMED",
+            );
+          },
+        },
+        authenticated,
+      ),
     [getConsent, recordConsent, authenticated],
   );
   const state = useSyncExternalStore(
@@ -56,8 +64,12 @@ function ConsentPreference({ authenticated }: { authenticated: boolean }) {
       <div className="flex min-w-0 items-start gap-3">
         <ShieldCheck className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground">{copy.eyebrow}</p>
-          <h2 id={titleId} className="mt-1 text-base font-semibold text-foreground">{copy.title}</h2>
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground">
+            {copy.eyebrow}
+          </p>
+          <h2 id={titleId} className="mt-1 text-base font-semibold text-foreground">
+            {copy.title}
+          </h2>
           <p
             id={statusId}
             role="status"
@@ -84,12 +96,21 @@ function ConsentPreference({ authenticated }: { authenticated: boolean }) {
           }}
           data-consent-action
         >
-          {busy ? <Loader2 className="size-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : null}
+          {busy ? (
+            <Loader2
+              className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+          ) : null}
           {state.status === "ready"
-            ? state.enabled ? copy.disable : copy.enable
+            ? state.enabled
+              ? copy.disable
+              : copy.enable
             : state.status === "saving"
               ? copy.status.saving
-              : state.status === "loading" ? copy.status.loading : copy.retry}
+              : state.status === "loading"
+                ? copy.status.loading
+                : copy.retry}
         </Button>
       ) : null}
     </section>
