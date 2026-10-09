@@ -37,7 +37,7 @@ jobs:
               return text.replace(old,new,1)
           p=Path('src/components/coach/conversation.session.ts');s=p.read_text()
           s=replace(s,'  clearUnconfirmed: boolean;','  clearUnconfirmed: boolean;\n  clearConfirmed: boolean;')
-          s=replace(s,'clearUnconfirmed: false, needsRecheck: false,','clearUnconfirmed: false, clearConfirmed: false, needsRecheck: false,')
+          s=replace(s,'unconfirmedQuestion: null, clearUnconfirmed: false, needsRecheck: false,','unconfirmedQuestion: null, clearUnconfirmed: false, clearConfirmed: false, needsRecheck: false,')
           s=replace(s,'  let nextTurn = 0;','  let nextTurn = 0;\n  let draftRevision = 0;')
           s=replace(s,'publish({ historyState: state.hasSnapshot ? "refreshing" : "loading" });','publish({ historyState: state.hasSnapshot ? "refreshing" : "loading", clearConfirmed: false });')
           s=replace(s,'    const turn: CoachTurn = Object.freeze({','    const submittedRevision = draftRevision;\n    const turn: CoachTurn = Object.freeze({')
@@ -188,6 +188,7 @@ jobs:
                   r=json.loads(p.read_text());summary['browsers'].append({'suite':suite,'engine':r['engine'],'groups':len(r['results']),'errors':r['errors'][:3],'failure':r['failure']})
           p=out/'verified-blobs.json'
           if p.exists():summary['verified']=json.loads(p.read_text())
+          (out/'summary.json').write_text(json.dumps(summary,indent=2))
           with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('summary='+json.dumps(summary,separators=(',',':'))+'\n')
           PY
       - uses: actions/upload-artifact@v4
