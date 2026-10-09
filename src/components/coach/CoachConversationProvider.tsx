@@ -1,19 +1,9 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { askCoach, clearCoachMessages, listCoachMessages } from "@/lib/plan.functions";
-import {
-  createCoachConversationSession,
-  type CoachConversationSession,
-} from "./conversation.session";
+import { createCoachConversationSession } from "./conversation.session";
 
-export const CoachConversationContext = createContext<CoachConversationSession | null>(null);
+import { CoachConversationContext } from "./conversation.context";
 
 /** The caller keys this provider by owner, so no prior-owner state is rendered. */
 export function CoachConversationProvider({
@@ -55,15 +45,4 @@ export function CoachConversationProvider({
       {children}
     </CoachConversationContext.Provider>
   );
-}
-
-export function useCoachConversation() {
-  const session = useContext(CoachConversationContext);
-  if (!session) throw new Error("Coach conversation provider is required");
-  const state = useSyncExternalStore(
-    session.subscribe,
-    session.getSnapshot,
-    session.getServerSnapshot,
-  );
-  return { session, state };
 }

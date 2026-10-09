@@ -4,11 +4,11 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CoachConversationProvider } from "@/components/coach/CoachConversationProvider";
 import {
   CoachConversationContext,
-  CoachConversationProvider,
   useCoachConversation,
-} from "@/components/coach/CoachConversationProvider";
+} from "@/components/coach/conversation.context";
 import { CoachHistoryNotice } from "@/components/coach/CoachHistoryNotice";
 import { coachVisibleMessages } from "@/components/coach/conversation.session";
 import { conversationCopy } from "@/components/coach/conversation.copy";

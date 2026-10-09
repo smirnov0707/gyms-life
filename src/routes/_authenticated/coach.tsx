@@ -7,10 +7,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CoachMemory } from "@/components/CoachMemory";
 import { AiPersonalizationConsentCard } from "@/components/coach/AiPersonalizationConsentCard";
-import {
-  CoachConversationProvider,
-  useCoachConversation,
-} from "@/components/coach/CoachConversationProvider";
+import { CoachConversationProvider } from "@/components/coach/CoachConversationProvider";
+import { useCoachConversation } from "@/components/coach/conversation.context";
 import { CoachHistoryNotice } from "@/components/coach/CoachHistoryNotice";
 import { coachVisibleMessages } from "@/components/coach/conversation.session";
 import { conversationCopy } from "@/components/coach/conversation.copy";

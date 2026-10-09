@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { useCoachConversation } from "./CoachConversationProvider";
+import { useCoachConversation } from "./conversation.context";
 import { conversationCopy } from "./conversation.copy";
 
 export function CoachHistoryNotice() {
