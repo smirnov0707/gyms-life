@@ -40,7 +40,10 @@ export function LabDecisionHistory({
                     {decision.decisionOn} · {copy.basisLabel[decision.basis]}
                   </p>
                 </div>
-                <span className="max-w-full text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground" data-lab-outcome>
+                <span
+                  className="max-w-full text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+                  data-lab-outcome
+                >
                   {decision.outcome
                     ? copy.outcomeLabel[decision.outcome]
                     : outcomesUnavailable

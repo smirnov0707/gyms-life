@@ -14,7 +14,7 @@ export function LabReadNotice({
   mode: LabReadMode;
   language: "lt" | "en";
   sources?: readonly LabUnreadableSource[];
-  onRetry?: () => void;
+  onRetry?: (() => void) | undefined;
   retrying?: boolean;
 }) {
   const copy = labReadCopyFor(language);
@@ -41,7 +41,8 @@ export function LabReadNotice({
         <p>{copy.description[mode]}</p>
         {sources.length > 0 ? (
           <p className="mt-2" data-lab-unreadable-sources>
-            {copy.missingSources}: {[...new Set(sources)].map((source) => copy.source[source]).join(", ")}.
+            {copy.missingSources}:{" "}
+            {[...new Set(sources)].map((source) => copy.source[source]).join(", ")}.
           </p>
         ) : null}
       </SystemNotice>

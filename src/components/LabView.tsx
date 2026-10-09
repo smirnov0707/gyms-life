@@ -263,7 +263,7 @@ export function LabOverviewView({
 }: {
   data: LabOverview;
   copy: Copy;
-  onRetry?: () => void;
+  onRetry?: (() => void) | undefined;
   refreshing?: boolean;
   refreshFailed?: boolean;
 }) {
@@ -273,7 +273,13 @@ export function LabOverviewView({
   const historyId = useId();
   const primary = data.hypotheses[0] ?? null;
   const secondary = data.hypotheses.slice(1);
-  const notice = refreshFailed ? "stale" : data.unreadable.length > 0 ? "partial" : refreshing ? "refreshing" : null;
+  const notice = refreshFailed
+    ? "stale"
+    : data.unreadable.length > 0
+      ? "partial"
+      : refreshing
+        ? "refreshing"
+        : null;
 
   return (
     <div className="space-y-4" data-lab-overview>
@@ -372,11 +378,15 @@ export function LabOverviewView({
           onClick={() => setHistoryOpen((open) => !open)}
           aria-expanded={historyOpen}
           aria-controls={historyId}
+          aria-label={copy.decisionHistory}
+          aria-describedby={`${historyId}-description`}
           className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
         >
           <div>
             <p className="text-sm font-semibold text-foreground">{copy.decisionHistory}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{copy.accuracyNote}</p>
+            <p id={`${historyId}-description`} className="mt-1 text-xs text-muted-foreground">
+              {copy.accuracyNote}
+            </p>
           </div>
           <ChevronDown
             className={`size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${historyOpen ? "rotate-180" : ""}`}

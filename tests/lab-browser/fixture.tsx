@@ -13,7 +13,10 @@ const query = new URLSearchParams(location.search);
 localStorage.setItem("forma_lang", query.get("lang") ?? "en");
 localStorage.setItem("forma_theme", query.get("theme") ?? "dark");
 const client = new QueryClient({
-  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false }, mutations: { retry: false } },
+  defaultOptions: {
+    queries: { retry: false, refetchOnWindowFocus: false },
+    mutations: { retry: false },
+  },
 });
 window.__labQueries = client;
 export function LabFixture() {
@@ -25,7 +28,9 @@ export function LabFixture() {
             <p className="mb-4 text-xs text-muted-foreground" data-testid="synthetic-lab">
               Synthetic Lab records. No live account or server writes.
             </p>
-            <div className="mx-auto w-full max-w-5xl"><LabView /></div>
+            <div className="mx-auto w-full max-w-5xl">
+              <LabView />
+            </div>
           </main>
         </ThemeProvider>
       </LangProvider>
