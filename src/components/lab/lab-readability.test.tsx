@@ -31,7 +31,9 @@ describe("readable hypothesis evidence preserves meaning", () => {
       maximumFractionDigits: 1,
     }).format(0.625);
     expect(html).toContain(ratio);
-    expect(html).toContain(new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(120.5));
+    expect(html).toContain(
+      new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(120.5),
+    );
     expect(JSON.stringify(evidence)).toBe(before);
     expect(html.match(/<details[^>]*>/)?.[0]).not.toContain(" open");
   });

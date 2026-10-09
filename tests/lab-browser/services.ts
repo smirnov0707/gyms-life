@@ -47,7 +47,8 @@ const harness = {
     held = value;
   },
   setReadable(empty = false) {
-    payload = populatedStatus && !empty ? makePopulatedLabData(populatedStatus) : makeLabData([], empty);
+    payload =
+      populatedStatus && !empty ? makePopulatedLabData(populatedStatus) : makeLabData([], empty);
   },
   release() {
     for (const resolve of pending.splice(0)) resolve();

@@ -19,8 +19,18 @@ export function makePopulatedLabData(statusInput: string) {
         canInfluenceDecision: status === "supported",
         evidence: [
           { key: "rated_sessions_28d", value: 12, unit: "sessions", source: "user_reported" },
-          { key: "usual_day_completion_rate_28d", value: 0.625, unit: "ratio", source: "calculated" },
-          { key: "synthetic_measured_observation", value: 120.5, unit: "count", source: "measured" },
+          {
+            key: "usual_day_completion_rate_28d",
+            value: 0.625,
+            unit: "ratio",
+            source: "calculated",
+          },
+          {
+            key: "synthetic_measured_observation",
+            value: 120.5,
+            unit: "count",
+            source: "measured",
+          },
         ],
       },
     ],
