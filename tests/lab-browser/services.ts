@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { makeLabData } from "./data";
+import { makePopulatedLabData } from "./populated-data";
 import type { LabOverview, LabUnreadableSource } from "@/lib/lab.schema";
 
 const params = new URLSearchParams(location.search);
@@ -9,7 +10,10 @@ const unreadable: LabUnreadableSource[] =
   source === "decisions" || source === "decision_evidence" || source === "decision_outcomes"
     ? [source]
     : [];
-let payload = makeLabData(unreadable, params.get("scenario") === "empty" || source === "decisions");
+const populatedStatus = params.get("hypothesis");
+let payload = populatedStatus
+  ? makePopulatedLabData(populatedStatus)
+  : makeLabData(unreadable, params.get("scenario") === "empty" || source === "decisions");
 let failed = params.get("scenario") === "unavailable";
 let held = false;
 let owner: { id: string } | null = { id: "10000000-0000-4000-8000-000000000001" };
@@ -43,7 +47,8 @@ const harness = {
     held = value;
   },
   setReadable(empty = false) {
-    payload = makeLabData([], empty);
+    payload =
+      populatedStatus && !empty ? makePopulatedLabData(populatedStatus) : makeLabData([], empty);
   },
   release() {
     for (const resolve of pending.splice(0)) resolve();

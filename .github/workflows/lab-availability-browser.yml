@@ -12,6 +12,7 @@ on:
       - "src/lib/theme.tsx"
       - "src/lib/evidence-acquisition.ts"
       - "src/lib/prediction-calibration*"
+      - "src/lib/athlete-hypothesis.schema.ts"
       - ".github/playwright-image.json"
       - "scripts/verify-ci-browser-runtime.mjs"
       - "src/components/ui/button.tsx"
@@ -21,7 +22,7 @@ on:
       - "src/lib/lab*"
       - "src/lib/decision-accuracy*"
       - "tests/lab-browser/**"
-      - "scripts/test-lab-availability-browser.mjs"
+      - "scripts/test-lab-*-browser.mjs"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/lab-availability-browser.yml"
@@ -38,6 +39,7 @@ on:
       - "src/lib/theme.tsx"
       - "src/lib/evidence-acquisition.ts"
       - "src/lib/prediction-calibration*"
+      - "src/lib/athlete-hypothesis.schema.ts"
       - ".github/playwright-image.json"
       - "scripts/verify-ci-browser-runtime.mjs"
       - "src/components/ui/button.tsx"
@@ -47,7 +49,7 @@ on:
       - "src/lib/lab*"
       - "src/lib/decision-accuracy*"
       - "tests/lab-browser/**"
-      - "scripts/test-lab-availability-browser.mjs"
+      - "scripts/test-lab-*-browser.mjs"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/lab-availability-browser.yml"
@@ -59,7 +61,7 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     container:
       image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
       options: --init
@@ -75,7 +77,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
-      - run: node scripts/test-lab-availability-browser.mjs
+      - name: Preserve the original 30 recovery groups on both Lab surfaces
+        run: node scripts/test-lab-availability-browser.mjs
+        env:
+          LAB_BROWSER_ENGINE: ${{ matrix.engine }}
+      - name: Populated hypotheses, readable metadata and enlarged text
+        run: node scripts/test-lab-populated-browser.mjs
+        env:
+          LAB_BROWSER_ENGINE: ${{ matrix.engine }}
+      - name: Keep words and evidence fractions intact at doubled mobile text
+        run: node scripts/test-lab-reflow-browser.mjs
         env:
           LAB_BROWSER_ENGINE: ${{ matrix.engine }}
       - uses: actions/upload-artifact@v4

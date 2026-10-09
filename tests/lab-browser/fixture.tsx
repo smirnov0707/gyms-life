@@ -1,6 +1,12 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { LangProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import { LabView } from "@/components/LabView";
@@ -38,6 +44,10 @@ export function LabFixture() {
     </QueryClientProvider>
   );
 }
+const router = createRouter({
+  routeTree: createRootRoute({ component: LabFixture }),
+  history: createMemoryHistory({ initialEntries: ["/"] }),
+});
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing Lab fixture root");
-createRoot(root).render(<LabFixture />);
+createRoot(root).render(<RouterProvider router={router} />);
