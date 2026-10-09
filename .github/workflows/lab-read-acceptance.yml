@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Respect exact optional props when forwarding an intentionally absent action
+      - name: Prepare strictly typed actions, accessible disclosure and isolated test fixtures
         run: |
           python3 <<'PY'
           from pathlib import Path
@@ -32,6 +32,20 @@ jobs:
               p=Path(name);s=p.read_text()
               assert s.count('onRetry?: () => void;')==1,name
               p.write_text(s.replace('onRetry?: () => void;','onRetry?: (() => void) | undefined;'))
+          p=Path('src/components/lab/lab-availability.test.tsx');s=p.read_text()
+          old='import { makeLabData } from "../../../tests/lab-browser/data";'
+          duplicate='import type { LabUnreadableSource } from "@/lib/lab.schema";\n'
+          assert s.count(old)==1 and s.count(duplicate)==1
+          fixture=Path('tests/lab-browser/data.ts').read_text().replace('export function makeLabData','function makeLabData')
+          p.write_text(s.replace(duplicate,'').replace(old,fixture))
+          p=Path('src/components/LabView.tsx');s=p.read_text()
+          old='          aria-controls={historyId}'
+          assert s.count(old)==1
+          s=s.replace(old,old+'\n          aria-label={copy.decisionHistory}\n          aria-describedby={`${historyId}-description`}')
+          old='<p className="mt-1 text-xs text-muted-foreground">{copy.accuracyNote}</p>'
+          assert s.count(old)==1
+          s=s.replace(old,'<p id={`${historyId}-description`} className="mt-1 text-xs text-muted-foreground">{copy.accuracyNote}</p>')
+          p.write_text(s)
           PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
@@ -87,7 +101,7 @@ jobs:
           assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main advanced; reconcile before publishing');
           const entries=files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}));
           const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:entries});
-          const commit=await api('git/commits','POST',{message:'fix(lab): verified truthful partial-history and query recovery surfaces\n\nPreserve strict optional-action types and format reviewed source with existing rules. Full quality/build/toolchain and 15 groups in each browser passed before object creation. No branch updated or production deployed; normal final-head checks remain required.',tree:tree.sha,parents:[process.env.SOURCE]});
+          const commit=await api('git/commits','POST',{message:'fix(lab): verified truthful partial-history and query recovery surfaces\n\nPreserve strict optional-action types, accessible history disclosure and isolated fixtures. Full quality/build/toolchain and 15 groups in each browser passed before object creation. No branch updated or production deployed; normal final-head checks remain required.',tree:tree.sha,parents:[process.env.SOURCE]});
           const all=[...files,'tests/lab-browser/index.html','docs/lab-read-state-recovery.md','.github/workflows/lab-availability-browser.yml'];
           const manifest={commit:commit.sha,tree:tree.sha,source:process.env.SOURCE,base:process.env.BASE,files:all.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),browsers:browsers.map(({engine,results})=>({engine,groups:results.length})),branchUpdated:false,deployed:false};
           writeFileSync('test-results/lab-recovery/verified-source.json',JSON.stringify(manifest,null,2));
