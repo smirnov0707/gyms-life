@@ -2,6 +2,8 @@ name: Twin camera navigation
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "package-lock.json"
       - "src/components/twin/**"
       - "src/components/TwinView.tsx"
       - "src/components/future-lab-*.css"
@@ -13,6 +15,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "package.json"
+      - "package-lock.json"
       - "src/components/twin/**"
       - "src/components/TwinView.tsx"
       - "src/components/future-lab-*.css"
