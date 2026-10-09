@@ -15,8 +15,16 @@ const element = document.getElementById("root");
 if (!element) throw new Error("Missing Coach fixture root");
 const component = Route.options.component;
 if (!component) throw new Error("Missing actual Coach route component");
-const page = <LangProvider><ThemeProvider><main className="min-h-screen bg-background p-4 text-foreground">
-  <p className="mb-3 text-xs" data-synthetic-conversation>Synthetic conversation. No real AI, account, or database calls.</p>
-  {createElement(component)}
-</main></ThemeProvider></LangProvider>;
+const page = (
+  <LangProvider>
+    <ThemeProvider>
+      <main className="min-h-screen bg-background p-4 text-foreground">
+        <p className="mb-3 text-xs" data-synthetic-conversation>
+          Synthetic conversation. No real AI, account, or database calls.
+        </p>
+        {createElement(component)}
+      </main>
+    </ThemeProvider>
+  </LangProvider>
+);
 createRoot(element).render(query.has("strict") ? <StrictMode>{page}</StrictMode> : page);

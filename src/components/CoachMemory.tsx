@@ -4,7 +4,11 @@ import { baseLang, useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { CoachConversationContext, CoachConversationProvider, useCoachConversation } from "@/components/coach/CoachConversationProvider";
+import {
+  CoachConversationContext,
+  CoachConversationProvider,
+  useCoachConversation,
+} from "@/components/coach/CoachConversationProvider";
 import { CoachHistoryNotice } from "@/components/coach/CoachHistoryNotice";
 import { coachVisibleMessages } from "@/components/coach/conversation.session";
 import { conversationCopy } from "@/components/coach/conversation.copy";
@@ -26,7 +30,10 @@ function MemoryPanel({ standalone }: { standalone: boolean }) {
   const copy = conversationCopy(lang);
   const { session, state } = useCoachConversation();
   const rows = coachVisibleMessages(state);
-  const busy = state.operation !== "idle" || state.historyState === "loading" || state.historyState === "refreshing";
+  const busy =
+    state.operation !== "idle" ||
+    state.historyState === "loading" ||
+    state.historyState === "refreshing";
   const signedOut = state.historyState === "signed_out";
   return (
     <section className="mx-auto grid w-full min-w-0 max-w-3xl gap-4" data-coach-memory>
@@ -40,40 +47,97 @@ function MemoryPanel({ standalone }: { standalone: boolean }) {
         </div>
         {!signedOut ? (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" className="min-h-11 whitespace-normal"
-              disabled={busy || state.confirmClear} onClick={() => void session.load()} data-memory-refresh>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-normal"
+              disabled={busy || state.confirmClear}
+              onClick={() => void session.load()}
+              data-memory-refresh
+            >
               {copy.retry}
             </Button>
-            <Button type="button" variant="outline" className="min-h-11 whitespace-normal"
-              disabled={busy || state.historyState !== "ready" || state.history.length === 0 || state.needsRecheck || state.confirmClear}
-              onClick={() => session.requestClear()} data-memory-clear>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-normal"
+              disabled={
+                busy ||
+                state.historyState !== "ready" ||
+                state.history.length === 0 ||
+                state.needsRecheck ||
+                state.confirmClear
+              }
+              onClick={() => session.requestClear()}
+              data-memory-clear
+            >
               <Trash2 className="size-4 shrink-0" aria-hidden="true" /> {t("coach.clear")}
             </Button>
           </div>
         ) : null}
       </div>
       {standalone ? <CoachHistoryNotice /> : null}
+      {state.clearConfirmed ? (
+        <p role="status" className="text-sm text-foreground" data-memory-cleared>
+          {t("coach.cleared")}
+        </p>
+      ) : null}
       {state.confirmClear ? (
-        <div className="rounded-xl border border-border bg-surface-2 p-3 text-sm text-foreground" data-memory-confirm>
+        <div
+          className="rounded-xl border border-border bg-surface-2 p-3 text-sm text-foreground"
+          data-memory-confirm
+        >
           <p>{copy.clearConfirm}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" className="min-h-11 whitespace-normal" onClick={() => session.cancelClear()}>{copy.cancel}</Button>
-            <Button type="button" variant="destructive" className="min-h-11 whitespace-normal" onClick={() => void session.clear()} data-memory-confirm-clear>{copy.clearAccept}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 whitespace-normal"
+              onClick={() => session.cancelClear()}
+            >
+              {copy.cancel}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-h-11 whitespace-normal"
+              onClick={() => void session.clear()}
+              data-memory-confirm-clear
+            >
+              {copy.clearAccept}
+            </Button>
           </div>
         </div>
       ) : null}
       <div className="min-w-0 rounded-xl border border-border bg-surface p-3">
         {state.historyState === "ready" && rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground" data-memory-empty>{t("coach.historyEmpty")}</p>
+          <p className="py-6 text-center text-sm text-muted-foreground" data-memory-empty>
+            {t("coach.historyEmpty")}
+          </p>
         ) : (
           <div className="grid min-w-0 gap-3">
             {rows.map((message) => (
-              <article key={message.id} className={cn("grid min-w-0 gap-1", message.role === "user" ? "justify-items-end" : "")} data-memory-row>
+              <article
+                key={message.id}
+                className={cn(
+                  "grid min-w-0 gap-1",
+                  message.role === "user" ? "justify-items-end" : "",
+                )}
+                data-memory-row
+              >
                 <span className="text-xs text-muted-foreground">
-                  {message.createdAt ? new Date(message.createdAt).toLocaleString(lang) : copy.visit}
+                  {message.createdAt
+                    ? new Date(message.createdAt).toLocaleString(lang)
+                    : copy.visit}
                 </span>
-                <p className={cn("max-w-[90%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-surface-2 text-foreground")}>
+                <p
+                  className={cn(
+                    "max-w-[90%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface-2 text-foreground",
+                  )}
+                >
                   {message.text}
                 </p>
               </article>
