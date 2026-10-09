@@ -1,0 +1,105 @@
+name: Residual dependency exposure review
+on:
+  push:
+    branches: [diagnostics/dependency-security-2026-10-09]
+    paths: [.github/workflows/dependency-exposure-review.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      REVIEWED_HEAD: cd5028e9d85ac4de4f25c73422ab6bfc0e3564f6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REVIEWED_HEAD }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build unchanged application locally; never call a deployment command
+        run: npm run build
+      - name: Record exact installed dependency chains and locally packaged function inputs
+        shell: bash
+        run: |
+          mkdir -p test-results/dependency-exposure
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
+          import { spawnSync, execFileSync } from 'node:child_process';
+          import { createHash } from 'node:crypto';
+          import path from 'node:path';
+          import { zipFunctions } from '@netlify/zip-it-and-ship-it';
+          const root=process.cwd(), out=path.join(root,'test-results/dependency-exposure');
+          const git=(...a)=>execFileSync('git',a,{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.REVIEWED_HEAD);
+          assert.equal(git('diff','--','src','public','netlify','supabase','package.json','package-lock.json'),'', 'Unexpected source modification');
+          for(const name of ['braces','node-forge']) {
+            const result=spawnSync('npm',['explain',name,'--json'],{encoding:'utf8',timeout:30000});
+            assert.equal(result.status,0,result.stderr);
+            const report=JSON.parse(result.stdout);
+            await writeFile(path.join(out,`${name}-dependency-chain.json`),JSON.stringify(report,null,2));
+          }
+          const folders=[];
+          for(const folder of ['.netlify/v1/functions','netlify/functions']) {
+            try {await access(path.join(root,folder));folders.push(path.join(root,folder));} catch {}
+          }
+          assert.ok(folders.length>0,'No function source directory');
+          await mkdir(path.join(out,'bundles'),{recursive:true});
+          const packaged=await zipFunctions(folders,path.join(out,'bundles'),{
+            basePath:root,repositoryRoot:root,
+            config:{'*':{nodeBundler:'esbuild'}},
+          });
+          assert.ok(packaged.some(p=>p.name==='server'),'SSR function not packaged');
+          const clean=v=>JSON.parse(JSON.stringify(v,(_key,value)=>typeof value==='string'?value.replaceAll(root+'/', ''):value));
+          const manifest=[];
+          for(const fn of packaged) {
+            const bytes=await readFile(fn.path);
+            assert.equal(bytes.subarray(0,2).toString('ascii'),'PK','Expected ZIP');
+            manifest.push({...clean(fn),archiveSha256:createHash('sha256').update(bytes).digest('hex')});
+          }
+          await writeFile(path.join(out,'packaging-manifest.json'),JSON.stringify(manifest,null,2));
+          console.log('PACKAGED_FUNCTIONS',JSON.stringify(manifest.map(f=>({name:f.name,fields:Object.keys(f),inputCount:Array.isArray(f.inputs)?f.inputs.length:null}))));
+          JS
+      - name: Inspect ZIP paths and generated import sites without executing handlers
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,zipfile,hashlib,re
+          root=Path.cwd();out=root/'test-results/dependency-exposure'
+          records=[]
+          for zpath in sorted((out/'bundles').glob('*.zip')):
+              with zipfile.ZipFile(zpath) as z:
+                  names=z.namelist()
+                  roots={name:[p for p in names if re.search(r'(?:^|/)node_modules/'+re.escape(name)+r'(?:/|$)',p)] for name in ['braces','node-forge']}
+                  references=[]
+                  for name in names:
+                      if not name.endswith(('.js','.mjs','.cjs','.json')):continue
+                      info=z.getinfo(name)
+                      if info.file_size>25_000_000:raise RuntimeError('Unexpected oversized archive entry')
+                      content=z.read(name).decode('utf8',errors='replace')
+                      for dep in ['braces','node-forge']:
+                          if re.search(r'''(?:from\s*|require\s*\(|import\s*\()["']'''+re.escape(dep)+r'''(?:/[\w./-]+)?["']''',content):
+                              references.append({'file':name,'package':dep,'evidence':'literal module import'})
+                  records.append({'archive':zpath.name,'sha256':hashlib.sha256(zpath.read_bytes()).hexdigest(),'fileCount':len(names),'packagePaths':roots,'literalReferences':references})
+          assert any(r['archive']=='server.zip' for r in records),'SSR archive missing from inspection'
+          report={'reviewedHead':'cd5028e9d85ac4de4f25c73422ab6bfc0e3564f6','localFunctionArchives':records,'limits':['Packaging uses installed zip-it-and-ship-it with esbuild, not a downloaded live Netlify deployment bundle.','No dependency-path/import matches are not proof that minified, embedded or dynamic code is absent.','Development/build tools still contain both advisories and remain exposed to untrusted build/configuration input.','No handlers, authenticated flows, personal data or provider calls executed. No deployment performed.']}
+          (out/'exposure-summary.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          # Bundle archives are deliberately not uploaded; keep only descriptive evidence.
+          for p in (out/'bundles').glob('*'):
+              if p.is_file():p.unlink()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-exposure-review
+          path: |
+            test-results/dependency-exposure/*.json
+          retention-days: 14
+          if-no-files-found: error
