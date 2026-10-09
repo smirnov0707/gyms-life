@@ -1,0 +1,15 @@
+# Coach conversation recovery — issue 157
+
+Base: released d7f0adc2cdfb0b3aafc1e64341352f78ad3708d9 (privacy PR158).
+
+The active Coach page and its memory panel now share one mounted-owner session and one 200-row history read (the conversation displays its latest 20 messages). The standalone memory component receives its own owner-keyed session. No auth/backend contract, provider, consent or storage schema is changed.
+
+A send may begin before an initial history read finishes. It synchronously invalidates that read's revision; neither its success nor failure can overwrite new local turns. A subsequent explicit read, while no send/delete is in flight, reconciles the canonical journal. No text matching or guessed database IDs are used. Local turn IDs and the label 'message from this visit' are presentation-only; timestamps are never fabricated. A loaded snapshot, a failed read, a refreshed snapshot and a confirmed empty journal remain distinguishable.
+
+The composer retains the exact submitted draft until a validated answer returns. A newer draft is not erased by a late answer; quick suggestions do not erase independently composed text. Failed, empty or malformed send replies are uncertain: the server may already have persisted the exchange. The exact question remains in the composer/visible retained-question notice. Recovery is an explicit read only, never an automatic askCoach call. Sending is blocked until that read succeeds; sending the same question again then remains an explicit, warned action, not an idempotent retry. Drafts are memory-only and deliberately do not survive an owner change or page unmount.
+
+The clear action requires a separate explicit confirmation and a confirmed journal read. It is serialized against sends/reads and immediately guarded against duplicate activation. A confirmed clear updates both conversation and memory; an unsent draft remains. A lost deletion acknowledgement retains the prior view as stale and allows only read recovery, not repeated deletion. Responses from a prior mount/account or an obsolete read revision cannot update a newer session. StrictMode cleanup/restart never replays a send or deletion.
+
+Limitations: local serialization does not provide cross-tab/server-side ordering or durable request IDs. A lost HTTP response does not prove the server operation stopped; even a fresh read cannot exclude a still-running server request. This increment does not claim end-to-end exactly-once AI execution or deletion. No real messages are submitted or deleted by tests. Existing privacy controls, orchestration and RLS remain in place.
+
+Acceptance must use deferred synthetic server adapters and the actual Coach route: send before initial load resolves; empty versus failed reads; intact/new drafts; malformed/lost replies; no automatic replay; same-tick repeated activation; account changes; StrictMode; confirmation/cancel/failed clear and shared-panel reconciliation. Full quality, both builds, existing consent tests and two-engine visual review remain release gates. No tests are claimed passed at initial candidate creation.
