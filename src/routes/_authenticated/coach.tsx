@@ -1,23 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { Loader2, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getAiPersonalizationConsent,
-  recordAiPersonalizationConsent,
-} from "@/lib/ai-personalization-consent.functions";
-import { AI_CONTEXT_WINDOW_LABEL, OTHER_PERSONALIZED_AI_TASK_COUNT } from "@/lib/ai-task-context";
-import { ACTIVE_MEMORY_FACT_LIMIT } from "@/lib/user-memory.schema";
-import { COACH_HISTORY_TURNS } from "@/lib/coach-message.schema";
 import { askCoach, listCoachMessages } from "@/lib/plan.functions";
 import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { aiErrorMessage } from "@/lib/ai-error";
-import { errorMessage } from "@/lib/error-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CoachMemory } from "@/components/CoachMemory";
+import { AiPersonalizationConsentCard } from "@/components/coach/AiPersonalizationConsentCard";
 
 export const Route = createFileRoute("/_authenticated/coach")({
   head: () => ({
@@ -202,111 +195,5 @@ function CoachPage() {
         </div>
       </details>
     </div>
-  );
-}
-
-function AiPersonalizationConsentCard() {
-  const { lang, t } = useI18n();
-  const getConsent = useServerFn(getAiPersonalizationConsent);
-  const recordConsent = useServerFn(recordAiPersonalizationConsent);
-  const [enabled, setEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const copy =
-    lang === "lt"
-      ? {
-          eyebrow: "AI PRIVATUMAS",
-          title: "Asmeninis kontekstas",
-          description: `Coach, Daily Brief ir dar ${OTHER_PERSONALIZED_AI_TASK_COUNT} funkcijos, kurios prie tavęs prisitaiko (planai, mityba, skenavimai, pasiūlymai), AI tiekėjui gali perduoti tik ${AI_CONTEXT_WINDOW_LABEL} dienų suvestines bei iki ${ACTIVE_MEMORY_FACT_LIMIT} aktyvių faktų, pirmenybių ir dėsningumų. Kad Coach neatsakinėtų taip, tarsi pokalbio nebūtų buvę, perduodami ir paskutiniai ${COACH_HISTORY_TURNS} šio pokalbio pranešimų. Neperduodami žali įrašai ir paskyros vardas.`,
-          active: "Asmeninis kontekstas įjungtas",
-          inactive: "Naudojami tik baziniai treniruočių nustatymai",
-          enable: "Įjungti",
-          disable: "Išjungti",
-          saved: "AI privatumo pasirinkimas išsaugotas.",
-        }
-      : {
-          eyebrow: "AI PRIVACY",
-          title: "Personal context",
-          description: `Coach, Daily Brief and ${OTHER_PERSONALIZED_AI_TASK_COUNT} other features that adapt to you — plans, meals, scans, suggestions — can send only ${AI_CONTEXT_WINDOW_LABEL}-day summaries and up to ${ACTIVE_MEMORY_FACT_LIMIT} active facts, preferences, and patterns. The last ${COACH_HISTORY_TURNS} messages of this conversation are sent too, so Coach does not answer as if it never happened. Raw records and your account name are never sent.`,
-          active: "Personal context enabled",
-          inactive: "Using basic training preferences only",
-          enable: "Enable",
-          disable: "Disable",
-          saved: "AI privacy preference saved.",
-        };
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const current = await getConsent();
-        if (active) setEnabled(current.enabled);
-      } catch (error) {
-        if (active) toast.error(errorMessage(error, t("common.error")));
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [getConsent, t]);
-
-  const toggle = async () => {
-    if (saving) return;
-    setSaving(true);
-    try {
-      const recorded = await recordConsent({ data: { granted: !enabled } });
-      setEnabled(recorded.enabled);
-      toast.success(copy.saved);
-    } catch (error) {
-      toast.error(errorMessage(error, t("common.error")));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <section className="fl-coach-consent fl-premium-card flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-2 px-4 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <span
-          className={cn(
-            "grid size-8 shrink-0 place-items-center rounded-xl border",
-            enabled
-              ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400 light:text-emerald-700"
-              : "border-border bg-foreground/[0.03] text-muted-foreground",
-          )}
-        >
-          <ShieldCheck className="size-4" />
-        </span>
-        <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-x-2 text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            <span>{copy.eyebrow}</span>
-            <span
-              className={
-                enabled ? "text-emerald-400 light:text-emerald-700" : "text-muted-foreground"
-              }
-            >
-              {loading ? "…" : enabled ? copy.active : copy.inactive}
-            </span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground" title={copy.description}>
-            {copy.title}
-          </p>
-        </div>
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        disabled={loading || saving}
-        onClick={toggle}
-        className="text-muted-foreground hover:text-foreground"
-        title={copy.description}
-      >
-        {saving ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-        {enabled ? copy.disable : copy.enable}
-      </Button>
-    </section>
   );
 }
