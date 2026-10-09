@@ -1,202 +1,20 @@
-import { useState } from "react";
-import { Brain, ChevronDown, FlaskConical, Loader2 } from "lucide-react";
+import { useId, useState } from "react";
+import { Brain, ChevronDown, FlaskConical } from "lucide-react";
 import { PredictionCalibrationPanel } from "@/components/PredictionCalibrationPanel";
-import { baseLang, useI18n, type Lang } from "@/lib/i18n";
-import { useLabOverview } from "@/components/future-lab/lab-overview.query";
+import { baseLang, useI18n } from "@/lib/i18n";
+import { labCopyFor as copyFor, type LabCopy as Copy } from "@/components/lab/lab-view.copy";
+export type { LabCopy } from "@/components/lab/lab-view.copy";
+import { useLabReadRecovery } from "@/components/lab/useLabReadRecovery";
+import { LabDecisionHistory } from "@/components/lab/LabDecisionHistory";
+import { LabReadNotice } from "@/components/lab/LabReadNotice";
 import type {
   AthleteHypothesis,
   AthleteHypothesisStatusSchema,
-  AthleteLearningDomainSchema,
 } from "@/lib/athlete-hypothesis.schema";
-import type { LabDecision, LabOverview, LabUnreadableSource } from "@/lib/lab.schema";
+import type { LabOverview } from "@/lib/lab.schema";
 import type { z } from "zod";
 
 type HypothesisStatus = z.infer<typeof AthleteHypothesisStatusSchema>;
-type LearningDomain = z.infer<typeof AthleteLearningDomainSchema>;
-
-type Copy = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  loading: string;
-  unavailable: string;
-  hypothesesTitle: string;
-  hypothesesEmpty: string;
-  decisionsTitle: string;
-  decisionsEmpty: string;
-  unreadableLabel: Record<LabUnreadableSource, string>;
-  unreadableNote: (sources: string) => string;
-  statusLabel: Record<HypothesisStatus, string>;
-  domainLabel: Record<LearningDomain, string>;
-  statementLabel: Record<string, string>;
-  statementFallback: string;
-  basisLabel: Record<LabDecision["basis"], string>;
-  actionLabel: Record<LabDecision["action"], string>;
-  outcomeLabel: Record<NonNullable<LabDecision["outcome"]>, string>;
-  noOutcome: string;
-  evidenceCount: (count: number) => string;
-  accuracyTitle: string;
-  accuracyNote: string;
-  accuracyPending: (needed: number) => string;
-  fitRate: string;
-  answeredOf: (answered: number, proposed: number) => string;
-  currentInvestigation: string;
-  evidenceProgress: string;
-  otherInvestigations: string;
-  decisionHistory: string;
-};
-
-function copyFor(lang: Lang): Copy {
-  if (baseLang(lang) === "en") {
-    return {
-      eyebrow: "LAB",
-      title: "What your system is learning",
-      description:
-        "Patterns are treated as hypotheses until your own evidence supports or contradicts them.",
-      loading: "Loading your Lab data…",
-      unavailable: "Lab is temporarily unavailable.",
-      hypothesesTitle: "Hypotheses",
-      hypothesesEmpty:
-        "No hypotheses are being tracked yet. Keep logging real training data and this will fill in.",
-      decisionsTitle: "Recent decisions",
-      decisionsEmpty: "No Today decisions in the last 14 days.",
-      unreadableLabel: {
-        decisions: "the decisions themselves",
-        decision_evidence: "the evidence behind them",
-        decision_outcomes: "what you did about them",
-      },
-      unreadableNote: (sources) =>
-        `Could not be read on this request: ${sources}. What is missing below is missing because of that, not because it is not there.`,
-      statusLabel: {
-        insufficient_evidence: "Not enough evidence yet",
-        monitoring: "Monitoring",
-        supported: "Supported",
-        contradicted: "Contradicted",
-      },
-      domainLabel: {
-        training_response: "Training response",
-        training_behavior: "Training behavior",
-        recovery: "Recovery",
-        nutrition: "Nutrition",
-        performance: "Performance",
-      },
-      statementLabel: {
-        "athlete.hypothesis.trainingResponse.repeatedLowFeeling":
-          "Recent sessions have repeatedly felt difficult.",
-        "athlete.hypothesis.trainingBehavior.usualDayFit":
-          "How well completed sessions fit your usual training days.",
-      },
-      statementFallback: "A new pattern is being tracked.",
-      basisLabel: {
-        safety_rule: "Safety rule",
-        current_day_fact: "Today's fact",
-        current_checkin: "Today's check-in",
-        observed_pattern: "Observed pattern",
-      },
-      actionLabel: {
-        generate_training_plan: "Build training plan",
-        complete_readiness: "Check readiness",
-        recover: "Recover",
-        train_adapted: "Train (adapted)",
-        train_as_planned: "Train as planned",
-        log_nutrition: "Log nutrition",
-      },
-      outcomeLabel: {
-        accepted: "Accepted",
-        dismissed: "Dismissed",
-        completed: "Completed",
-        not_helpful: "Marked not helpful",
-      },
-      noOutcome: "No response yet",
-      evidenceCount: (count) => `${count} evidence point${count === 1 ? "" : "s"}`,
-      accuracyTitle: "Decision fit",
-      accuracyNote:
-        "How often a proposed action was taken up. This measures fit with your day, not whether advice was medically or scientifically correct.",
-      accuracyPending: (needed) =>
-        `At least ${needed} answered decisions are needed before a rate is shown.`,
-      fitRate: "Taken up",
-      answeredOf: (answered, proposed) => `${answered} answered of ${proposed} proposed`,
-      currentInvestigation: "Current investigation",
-      evidenceProgress: "Evidence progress",
-      otherInvestigations: "Other investigations",
-      decisionHistory: "Decision history & fit",
-    };
-  }
-
-  return {
-    eyebrow: "LABORATORIJA",
-    title: "Ką tavo sistema mokosi suprasti",
-    description:
-      "Dėsningumai laikomi hipotezėmis tol, kol tavo paties duomenys juos patvirtina arba paneigia.",
-    loading: "Kraunami laboratorijos duomenys…",
-    unavailable: "Laboratorija šiuo metu nepasiekiama.",
-    hypothesesTitle: "Hipotezės",
-    hypothesesEmpty:
-      "Kol kas hipotezių nesekama. Toliau registruok realius treniruočių duomenis ir šis skyrius užsipildys.",
-    decisionsTitle: "Naujausi sprendimai",
-    decisionsEmpty: "Per pastarąsias 14 dienų šiandienos sprendimų nėra.",
-    unreadableLabel: {
-      decisions: "patys sprendimai",
-      decision_evidence: "juos pagrindę įrodymai",
-      decision_outcomes: "ką su jais padarei",
-    },
-    unreadableNote: (sources) =>
-      `Šios užklausos metu nepavyko perskaityti: ${sources}. Ko trūksta žemiau — trūksta dėl to, o ne dėl to, kad jo nėra.`,
-    statusLabel: {
-      insufficient_evidence: "Kol kas nepakanka įrodymų",
-      monitoring: "Stebima",
-      supported: "Patvirtinta",
-      contradicted: "Paneigta",
-    },
-    domainLabel: {
-      training_response: "Reakcija į treniruotę",
-      training_behavior: "Treniruočių įprotis",
-      recovery: "Atsistatymas",
-      nutrition: "Mityba",
-      performance: "Rezultatai",
-    },
-    statementLabel: {
-      "athlete.hypothesis.trainingResponse.repeatedLowFeeling":
-        "Paskutinės treniruotės pakartotinai jautėsi sunkios.",
-      "athlete.hypothesis.trainingBehavior.usualDayFit":
-        "Kaip baigtos treniruotės atitinka tavo įprastas treniruočių dienas.",
-    },
-    statementFallback: "Sekamas naujas dėsningumas.",
-    basisLabel: {
-      safety_rule: "Saugumo taisyklė",
-      current_day_fact: "Šios dienos faktas",
-      current_checkin: "Šiandienos check-in",
-      observed_pattern: "Pastebėtas dėsningumas",
-    },
-    actionLabel: {
-      generate_training_plan: "Sukurti planą",
-      complete_readiness: "Įvertinti pasiruošimą",
-      recover: "Atsistatymas",
-      train_adapted: "Treniruotė (adaptuota)",
-      train_as_planned: "Treniruotė pagal planą",
-      log_nutrition: "Registruoti mitybą",
-    },
-    outcomeLabel: {
-      accepted: "Priimta",
-      dismissed: "Atmesta",
-      completed: "Atlikta",
-      not_helpful: "Pažymėta kaip netinkama",
-    },
-    noOutcome: "Dar be atsakymo",
-    evidenceCount: (count) => `${count} įrodymo taškas(-ai)`,
-    accuracyTitle: "Sprendimų atitikimas",
-    accuracyNote:
-      "Kaip dažnai pasiūlytas veiksmas buvo priimtas. Tai matuoja atitikimą tavo dienai, o ne medicininį ar mokslinį patarimo teisingumą.",
-    accuracyPending: (needed) =>
-      `Reikia bent ${needed} atsakytų sprendimų, kad būtų rodomas santykis.`,
-    fitRate: "Priimta",
-    answeredOf: (answered, proposed) => `atsakyta ${answered} iš ${proposed} pasiūlytų`,
-    currentInvestigation: "Dabartinis tyrimas",
-    evidenceProgress: "Įrodymų progresas",
-    otherInvestigations: "Kiti tyrimai",
-    decisionHistory: "Sprendimų istorija ir atitikimas",
-  };
-}
 
 function statusTone(status: HypothesisStatus): string {
   // These rows sit on the page ground rather than the dark stage, so each
@@ -249,29 +67,44 @@ function HypothesisRow({ hypothesis, copy }: { hypothesis: AthleteHypothesis; co
   );
 }
 
-function DecisionRow({ decision, copy }: { decision: LabDecision; copy: Copy }) {
-  return (
-    <article className="flex items-start justify-between gap-4 border-b border-border py-3 last:border-b-0">
-      <div className="min-w-0">
-        <p className="text-sm text-foreground">{copy.actionLabel[decision.action]}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          {decision.decisionOn} · {copy.basisLabel[decision.basis]}
-        </p>
-      </div>
-      <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-        {decision.outcome ? copy.outcomeLabel[decision.outcome] : copy.noOutcome}
-      </span>
-    </article>
-  );
-}
-
-export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy }) {
+export function LabOverviewView({
+  data,
+  copy,
+  onRetry,
+  refreshing = false,
+  refreshFailed = false,
+}: {
+  data: LabOverview;
+  copy: Copy;
+  onRetry?: (() => void) | undefined;
+  refreshing?: boolean;
+  refreshFailed?: boolean;
+}) {
+  const { lang } = useI18n();
+  const language = baseLang(lang);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const historyId = useId();
   const primary = data.hypotheses[0] ?? null;
   const secondary = data.hypotheses.slice(1);
+  const notice = refreshFailed
+    ? "stale"
+    : data.unreadable.length > 0
+      ? "partial"
+      : refreshing
+        ? "refreshing"
+        : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-lab-overview>
+      {notice ? (
+        <LabReadNotice
+          mode={notice}
+          language={language}
+          sources={data.unreadable}
+          onRetry={onRetry}
+          retrying={refreshing}
+        />
+      ) : null}
       <section className="fl-premium-stage fl-lab-hero relative overflow-hidden rounded-[2rem] border border-white/[0.07] bg-[#050706] p-5 sm:p-7">
         <div
           aria-hidden="true"
@@ -281,7 +114,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
               "radial-gradient(60% 120% at 0% 0%, rgba(16,185,129,.10), transparent 64%), radial-gradient(55% 90% at 100% 100%, rgba(245,158,11,.05), transparent 68%)",
           }}
         />
-
         <div className="relative">
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400">
             <FlaskConical className="size-4" /> {copy.eyebrow}
@@ -292,7 +124,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500">
             {copy.description}
           </p>
-
           {primary ? (
             <div className="mt-8 grid gap-7 border-t border-white/[0.06] pt-7 lg:grid-cols-[1fr_260px] lg:items-end">
               <div>
@@ -309,7 +140,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
                   </span>
                 </div>
               </div>
-
               <div className="rounded-[1.5rem] border border-white/[0.07] bg-black/30 p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
@@ -342,7 +172,6 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           )}
         </div>
       </section>
-
       {secondary.length > 0 ? (
         <section className="fl-premium-card rounded-[1.75rem] border border-border bg-surface-2 px-5 py-2 sm:px-6">
           <p className="pt-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
@@ -355,92 +184,31 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
           </div>
         </section>
       ) : null}
-
       <PredictionCalibrationPanel data={data.predictionCalibration} />
-
       <section className="fl-premium-card overflow-hidden rounded-[1.75rem] border border-border bg-surface-2">
         <button
           type="button"
           onClick={() => setHistoryOpen((open) => !open)}
           aria-expanded={historyOpen}
+          aria-controls={historyId}
+          data-lab-history-toggle
+          aria-label={copy.decisionHistory}
+          aria-describedby={`${historyId}-description`}
           className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
         >
           <div>
             <p className="text-sm font-semibold text-foreground">{copy.decisionHistory}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{copy.accuracyNote}</p>
+            <p id={`${historyId}-description`} className="mt-1 text-xs text-muted-foreground">
+              {copy.accuracyNote}
+            </p>
           </div>
           <ChevronDown
-            className={`size-4 shrink-0 text-muted-foreground transition-transform ${historyOpen ? "rotate-180" : ""}`}
+            className={`size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${historyOpen ? "rotate-180" : ""}`}
           />
         </button>
-
         {historyOpen ? (
-          <div className="grid gap-0 border-t border-border lg:grid-cols-2">
-            <div className="px-5 py-4 sm:px-6 lg:border-r lg:border-border">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {copy.decisionsTitle}
-              </p>
-              {/* Named before the list, because it changes how the list reads:
-                  an empty journal under this line means "not read", not
-                  "nothing happened". */}
-              {data.unreadable.length > 0 ? (
-                <p className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-xs leading-relaxed text-amber-600 light:text-amber-700 dark:text-amber-300">
-                  {copy.unreadableNote(
-                    data.unreadable.map((source) => copy.unreadableLabel[source]).join(", "),
-                  )}
-                </p>
-              ) : null}
-              {data.decisions.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
-              ) : (
-                <div className="mt-1">
-                  {data.decisions.map((decision) => (
-                    <DecisionRow key={decision.id} decision={decision} copy={copy} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="px-5 py-4 sm:px-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {copy.accuracyTitle}
-              </p>
-              <div className="mt-2 space-y-3">
-                {data.decisionAccuracy.byBasis.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{copy.decisionsEmpty}</p>
-                ) : (
-                  data.decisionAccuracy.byBasis.map((entry) => (
-                    <div
-                      key={entry.basis}
-                      className="flex items-center justify-between gap-4 border-b border-border py-3 last:border-b-0"
-                    >
-                      <div>
-                        <p className="text-xs text-muted-foreground">
-                          {copy.basisLabel[entry.basis]}
-                        </p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">
-                          {copy.answeredOf(entry.answered, entry.proposed)}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        {entry.fitRate === null ? (
-                          <p className="max-w-36 text-[10px] leading-relaxed text-muted-foreground">
-                            {copy.accuracyPending(data.decisionAccuracy.minimumAnswered)}
-                          </p>
-                        ) : (
-                          <p className="font-mono text-2xl text-foreground">
-                            {Math.round(entry.fitRate * 100)}%
-                            <span className="ml-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                              {copy.fitRate}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          <div id={historyId}>
+            <LabDecisionHistory data={data} copy={copy} language={language} />
           </div>
         ) : null}
       </section>
@@ -451,23 +219,28 @@ export function LabOverviewView({ data, copy }: { data: LabOverview; copy: Copy 
 export function LabView() {
   const { lang } = useI18n();
   const copy = copyFor(lang);
-  const { data, isLoading, isError } = useLabOverview();
+  const { data, isLoading, isError, isFetching, retry } = useLabReadRecovery();
 
-  if (isLoading) {
+  if (!data) {
     return (
-      <section className="rounded-3xl border border-border bg-surface-2 p-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin text-primary" /> {copy.loading}
-        </div>
-      </section>
+      <LabReadNotice
+        mode={isLoading ? "loading" : "unavailable"}
+        language={baseLang(lang)}
+        onRetry={retry}
+        retrying={isFetching}
+      />
     );
   }
 
-  if (isError || !data) {
-    return <p className="text-sm text-muted-foreground">{copy.unavailable}</p>;
-  }
-
-  return <LabOverviewView data={data} copy={copy} />;
+  return (
+    <LabOverviewView
+      data={data}
+      copy={copy}
+      onRetry={retry}
+      refreshing={isFetching}
+      refreshFailed={isError}
+    />
+  );
 }
 
 export { copyFor as labCopyFor };
