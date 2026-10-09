@@ -1,0 +1,109 @@
+name: Dependency audit integrity verification
+on:
+  push:
+    branches: [diagnostics/audit-integrity-2026-10-09]
+    paths: [.github/workflows/audit-integrity-verification.yml]
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      BASE: a6eef9e170855603a873e2392adc9f6e05769713
+      SOURCE: 75a364f6935dd3ac69cecf98dc7853bd73a16398
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply installed formatting rules to the two new scripts only
+        shell: bash
+        run: |
+          mkdir -p test-results/audit-integrity
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {ESLint} from 'eslint';
+          const eslint=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(['scripts/dependency-audits.mjs','scripts/dependency-audits.selftest.mjs']);
+          await ESLint.outputFixes(results);
+          for(const result of results)assert.equal(result.errorCount,0,JSON.stringify(result.messages));
+          JS
+      - name: Run all isolated failure and CLI cases
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test scripts/dependency-audits.selftest.mjs 2>&1 | tee test-results/audit-integrity/selftests.tap
+      - name: Run both real registry audits through the new guard
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/dependency-audits.mjs 2>&1 | tee test-results/audit-integrity/audit.log
+      - name: Verify complete quality and both application builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee test-results/audit-integrity/typecheck.log
+          npm run test 2>&1 | tee test-results/audit-integrity/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/audit-integrity/toolchain.log
+          npm run lint 2>&1 | tee test-results/audit-integrity/lint.log
+          npm run build:staging 2>&1 | tee test-results/audit-integrity/build-staging.log
+          npm run build 2>&1 | tee test-results/audit-integrity/build.log
+      - name: Create tested four-file commit object only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const files=['.github/workflows/ci.yml','scripts/dependency-audits.mjs','scripts/dependency-audits.selftest.mjs','docs/dependency-audit-integrity.md'];
+          const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.SOURCE);
+          assert.equal(git('diff','--','src','public','supabase','netlify','package.json','package-lock.json','vite.config.ts'),'');
+          const audit=JSON.parse(readFileSync('test-results/dependency-security/audit-status.json','utf8'));
+          assert.equal(audit.passed,true);assert.equal(audit.results.length,2);
+          assert.ok(audit.results.every(r=>r.state!=='unavailable'));
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          const current=(await api('git/ref/heads/main')).object.sha;
+          assert.equal(current,process.env.BASE,'Main advanced: integrate before publishing');
+          const parent=await api(`git/commits/${process.env.BASE}`);
+          const tree=await api('git/trees','POST',{base_tree:parent.tree.sha,tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'fix(ci): fail closed when dependency audit evidence is unavailable\n\nPreserve vulnerability thresholds and both raw reports. Validate report schema/counts and process status, run both scopes, invalidate stale success, and do not treat network/parser errors as completed audits. All 51 isolated cases, both real registry reports and full quality/build/toolchain passed. No dependency or runtime changes; unresolved advisories remain open.',tree:tree.sha,parents:[process.env.BASE]});
+          const evidence={commit:commit.sha,tree:tree.sha,base:process.env.BASE,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),audit,branchCreated:false,deployed:false};
+          writeFileSync('test-results/audit-integrity/verified-commit.json',JSON.stringify(evidence,null,2));
+          console.log('VERIFIED_COMMIT',JSON.stringify(evidence));
+          JS
+      - name: Retain exact source after tests only
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import shutil
+          for name in ['.github/workflows/ci.yml','scripts/dependency-audits.mjs','scripts/dependency-audits.selftest.mjs','docs/dependency-audit-integrity.md']:
+              source=Path(name)
+              if source.exists():
+                  target=Path('test-results/audit-integrity/reviewed-source')/name
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(source,target)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-integrity-evidence
+          path: |
+            test-results/audit-integrity
+            test-results/dependency-security
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
