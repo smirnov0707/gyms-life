@@ -1,0 +1,240 @@
+name: Scoped dependency security remediation
+on:
+  push:
+    branches: [diagnostics/dependency-security-2026-10-09]
+    paths: [.github/workflows/dependency-security-remediation.yml]
+permissions:
+  contents: read
+jobs:
+  candidate:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: c504eb10dd1db804c6642fd8d9f796b834d4098d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Capture exact baseline and live registry advisories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/security-remediation
+          cp package-lock.json /tmp/gyms-security-before-lock.json
+          cp package.json /tmp/gyms-security-before-package.json
+          cat > /tmp/gyms-audit.mjs <<'JS'
+          import assert from 'node:assert/strict';
+          import {spawnSync} from 'node:child_process';
+          import {writeFileSync} from 'node:fs';
+          const [label,...extra]=process.argv.slice(2);
+          const result=spawnSync('npm',['audit','--json',...extra],{encoding:'utf8',timeout:90000});
+          assert.ok(result.status===0 || result.status===1, String(result.error ?? result.stderr));
+          const report=JSON.parse(result.stdout);
+          assert.ok(!report.error && report.metadata?.vulnerabilities && report.vulnerabilities, 'Audit service error is not a clean scan');
+          writeFileSync(`test-results/security-remediation/${label}.json`,JSON.stringify(report,null,2));
+          console.log(label,JSON.stringify(report.metadata.vulnerabilities));
+          JS
+          node /tmp/gyms-audit.mjs audit-before
+          node /tmp/gyms-audit.mjs production-before --omit=dev
+          npm view sharp@0.35.5 version dist.integrity engines optionalDependencies --json > test-results/security-remediation/registry-sharp.json
+          npm view smol-toml@1.9.0 version dist.integrity engines --json > test-results/security-remediation/registry-smol-toml.json
+          npm view braces version --json > test-results/security-remediation/registry-braces.json
+          npm view node-forge version --json > test-results/security-remediation/registry-node-forge.json
+      - name: Change only two reviewed resolution pins and strengthen regression floors
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('package.json'); manifest=json.loads(p.read_text())
+          assert manifest['overrides']['sharp']=='0.35.4'
+          assert 'smol-toml' not in manifest['overrides']
+          manifest['overrides']['sharp']='0.35.5'
+          manifest['overrides']['smol-toml']='1.9.0'
+          p.write_text(json.dumps(manifest,indent=2)+'\n')
+          p=Path('scripts/dependency-security.test.ts'); s=p.read_text()
+          assert s.count('"0.35.4"')==2
+          s=s.replace('"0.35.4"','"0.35.5"')
+          s=s.replace('["sharp", "0.35.5"],','["sharp", "0.35.5"],\n    ["smol-toml", "1.9.0"],')
+          s=s.replace('expect(manifest.overrides.sharp).toBe("0.35.5");','expect(manifest.overrides.sharp).toBe("0.35.5");\n    expect(manifest.overrides["smol-toml"]).toBe("1.9.0");')
+          p.write_text(s)
+          p=Path('scripts/test-dependency-toolchain.mjs');s=p.read_text()
+          assert s.count('"0.35.4"')==1
+          s=s.replace('"0.35.4"','"0.35.5"')
+          s=s.replace('assert.equal(sharp.versions.heif, "1.23.2");','assert.equal(sharp.versions.heif, "1.23.2");\n    assert.equal(sharp.versions.rsvg, "2.63.2");')
+          s += '''
+          for (const consumer of ["ipx", "miniflare", "ndarray-pixels"]) {
+            test(`${consumer} renders a benign SVG with the patched librsvg`, async () => {
+              const { default: sharp } = await consumerImport(consumer, "sharp");
+              const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="12"><rect width="24" height="12" fill="#4682b4"/></svg>');
+              const output = await sharp(svg).resize(12, 6).png().toBuffer();
+              const metadata = await sharp(output).metadata();
+              assert.equal(metadata.width, 12);
+              assert.equal(metadata.height, 6);
+              assert.equal(metadata.format, "png");
+            });
+          }
+          test("Wrangler resolves the patched smol-toml and preserves configuration values", { timeout: 10000 }, async () => {
+            const { parse } = await consumerImport("wrangler", "smol-toml");
+            const config = parse(await readFile("netlify.toml", "utf8"));
+            assert.equal(typeof config.build.command, "string");
+            assert.equal(typeof config.build.publish, "string");
+            const document = Array.from({ length: 4096 }, (_, i) => `key${i} = ${i}`).join("\\n");
+            const parsed = parse(document);
+            assert.equal(Object.keys(parsed).length, 4096);
+            assert.equal(parsed.key0, 0);
+            assert.equal(parsed.key4095, 4095);
+          });
+          '''
+          p.write_text(s)
+          PY
+          npm install --package-lock-only --ignore-scripts
+      - name: Reject unrelated dependency or application changes
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const read=p=>JSON.parse(readFileSync(p,'utf8'));
+          const before=read('/tmp/gyms-security-before-lock.json'),after=read('package-lock.json');
+          const original=read('/tmp/gyms-security-before-package.json'),manifest=read('package.json');
+          assert.deepEqual(manifest.dependencies,original.dependencies);
+          assert.deepEqual(manifest.devDependencies,original.devDependencies);
+          assert.deepEqual(manifest.scripts,original.scripts);
+          assert.equal(manifest.overrides.rolldown,original.overrides.rolldown);
+          const changes=[];
+          for(const p of new Set([...Object.keys(before.packages),...Object.keys(after.packages)])) {
+            const a=before.packages[p],b=after.packages[p];
+            if(JSON.stringify(a)===JSON.stringify(b)) continue;
+            const name=p.slice(p.lastIndexOf('node_modules/')+13);
+            assert.ok(name==='sharp'||name==='smol-toml'||name.startsWith('@img/sharp-'),`Unexpected lockfile change: ${p}`);
+            changes.push({path:p,before:a?.version??null,after:b?.version??null});
+          }
+          assert.ok(changes.some(c=>c.path==='node_modules/sharp'&&c.after==='0.35.5'));
+          assert.ok(changes.some(c=>c.path==='node_modules/smol-toml'&&c.after==='1.9.0'));
+          writeFileSync('test-results/security-remediation/lock-diff.json',JSON.stringify(changes,null,2));
+          console.log('SCOPED_LOCK_DIFF',JSON.stringify(changes));
+          JS
+      - run: npm ci
+      - name: Capture the remaining findings without hiding them
+        shell: bash
+        run: |
+          node /tmp/gyms-audit.mjs audit-after
+          node /tmp/gyms-audit.mjs production-after --omit=dev
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          const read=name=>JSON.parse(readFileSync(`test-results/security-remediation/${name}.json`,'utf8'));
+          const before=read('audit-before'),after=read('audit-after'),production=read('production-after');
+          assert.equal(production.metadata.vulnerabilities.total,0,'Production audit must remain clean');
+          assert.ok(!after.vulnerabilities.sharp&&!after.vulnerabilities['smol-toml'],'Targeted advisories remain');
+          const roots=Object.values(after.vulnerabilities).flatMap(v=>v.via.filter(x=>typeof x==='object'));
+          const unique=[...new Map(roots.map(v=>[v.url,v])).values()];
+          const summary={base:process.env.BASE,before:before.metadata.vulnerabilities,after:after.metadata.vulnerabilities,production:production.metadata.vulnerabilities,remaining:unique.map(v=>({name:v.name,url:v.url,title:v.title,severity:v.severity,range:v.range})),deployed:false};
+          writeFileSync('test-results/security-remediation/summary.json',JSON.stringify(summary,null,2));
+          mkdirSync('docs',{recursive:true});
+          writeFileSync('docs/dependency-security-2026-10-09.md',[
+            '# Scoped dependency security remediation — 2026-10-09','',
+            `Base: ${process.env.BASE}. Runtime source, Twin geometry/controls, providers and user data are unchanged.`,
+            '', '## Patches', '',
+            '- sharp 0.35.4 → 0.35.5, including bundled librsvg 2.63.2. Maintainer advisory: https://github.com/lovell/sharp/security/advisories/GHSA-wq5f-xc86-pv6w',
+            '- smol-toml → 1.9.0. Maintainer advisory: https://github.com/squirrelchat/smol-toml/security/advisories/GHSA-r4xh-jqrq-34v2',
+            '', 'Only exact resolution pins and their lock entries change. No broad npm update, force audit fix, major downgrade, renamed vulnerability, disabled audit or exception allowlist. The existing security floors are raised, never lowered.',
+            '', '## Recorded npm registry audits', '',
+            `Full dependency tree: ${summary.before.total} before → ${summary.after.total} after. Production-only tree: ${summary.production.total} findings. Counts are package-level advisory propagation, not independent exploits.`,
+            'A development-only classification does not prove zero deployment exposure; build tools execute during packaging. A clean npm report is not a comprehensive security assessment.',
+            '', '## Unresolved upstream advisories', '',
+            ...summary.remaining.map(v=>`- ${v.name}: ${v.title}. ${v.url}`),
+            '', 'The unresolved findings are retained in full audit evidence. braces and node-forge advisories have no published patch as reviewed on 2026-10-09. Do not accept untrusted glob/TOML/config input in development servers or packaging workflows. This patch does not claim to remediate them.',
+            '', '## Acceptance', '',
+            'Required: TypeScript, complete unit/contract suite, unchanged lint, both builds, actual consumer-resolved AVIF/SVG operations, Netlify configuration parsing and synthetic function packaging, Wrangler dry-run and TOML parsing, existing Twin navigation and actual muscle-picking regressions. No live account, production deploy or physical-iPhone test is implied.',
+            '', 'The candidate is not a production release; all normal final-head PR checks must also pass.'
+          ].join('\n')+'\n');
+          console.log('AUDIT_SUMMARY',JSON.stringify(summary));
+          JS
+      - name: Format only the two edited test files using existing lint policy
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {ESLint} from 'eslint';
+          const eslint=new ESLint({fix:m=>m.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(['scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs']);
+          await ESLint.outputFixes(results);
+          for(const result of results)assert.equal(result.errorCount,0,JSON.stringify(result.messages));
+          JS
+      - name: Complete code and actual toolchain acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee test-results/security-remediation/typecheck.log
+          npm run test 2>&1 | tee test-results/security-remediation/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/security-remediation/toolchain.log
+          npm run lint 2>&1 | tee test-results/security-remediation/lint.log
+          npm run build:staging 2>&1 | tee test-results/security-remediation/build-staging.log
+          npm run build 2>&1 | tee test-results/security-remediation/build.log
+      - name: Preserve larger Twin, gestures and actual muscle picking
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-ci-browser-runtime.mjs
+          node scripts/test-twin-camera-navigation.mjs 2>&1 | tee test-results/security-remediation/twin-navigation.log
+          node scripts/test-twin-camera-picking.mjs 2>&1 | tee test-results/security-remediation/twin-picking.log
+      - name: Create a tested commit object only; no branch, merge or deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const files=['package.json','package-lock.json','scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs','docs/dependency-security-2026-10-09.md'];
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.BASE);
+          assert.equal(git('diff','--','src','public','supabase','netlify','.github'),'', 'No application, assets, data or workflow changes may enter candidate');
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main changed; integration must be re-reviewed');
+          const navigation=JSON.parse(readFileSync('test-results/twin-navigation/results.json','utf8'));
+          const picking=JSON.parse(readFileSync('test-results/twin-navigation/picking/results.json','utf8'));
+          assert.equal(navigation.results.length,6);assert.equal(picking.results.length,12);
+          for(const report of [navigation,picking]){assert.deepEqual(report.errors,[]);assert.equal(report.failure,null);}
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'fix(security): patch Sharp/librsvg and smol-toml without changing Twin behavior\n\nOnly reviewed dependency resolutions, stronger security floors and actual consumer API tests. Record all unresolved upstream findings. Complete quality, build, toolchain and real Twin camera/picking acceptance passed before creating this candidate. No deployment.',tree:tree.sha,parents:[process.env.BASE]});
+          const evidence={commit:commit.sha,tree:tree.sha,base:process.env.BASE,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),cameraGroups:6,pickingGroups:12,branchCreated:false,deployed:false};
+          writeFileSync('test-results/security-remediation/verified-commit.json',JSON.stringify(evidence,null,2));
+          console.log('VERIFIED_COMMIT',JSON.stringify(evidence));
+          JS
+      - name: Retain candidate files after tests only
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import shutil
+          from pathlib import Path
+          for name in ['package.json','package-lock.json','scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs','docs/dependency-security-2026-10-09.md']:
+              if not Path(name).exists(): continue
+              target=Path('test-results/security-remediation/reviewed-source')/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(name,target)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scoped-security-remediation-evidence
+          path: |
+            test-results/security-remediation
+            test-results/twin-navigation
+          retention-days: 14
+          if-no-files-found: error
