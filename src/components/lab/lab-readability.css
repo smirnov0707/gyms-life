@@ -113,3 +113,21 @@
     padding-inline: 12px;
   }
 }
+
+/* The numeric readout and its caption may occupy separate lines. The caption
+   remains a whole label rather than inheriting the number's large line box. */
+[data-lab-command-deck] [data-lab-fit-rate] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  line-height: 1.2;
+}
+
+[data-lab-command-deck] [data-lab-fit-rate] > span {
+  margin-left: 0;
+  font-family: var(--font-sans);
+  line-height: 1.4;
+  white-space: nowrap;
+}

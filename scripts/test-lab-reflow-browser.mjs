@@ -95,6 +95,8 @@ try {
           await summary.focus();
           await page.keyboard.press("Enter");
           await expect(card.locator("[data-lab-evidence]")).toBeVisible();
+          await deck.locator("[data-lab-history-toggle]").click();
+          await expect(deck.locator("[data-lab-fit-rate]")).toBeVisible();
           await page.evaluate(() => {
             document.documentElement.style.fontSize = "200%";
           });
@@ -118,11 +120,15 @@ try {
             Math.max(...countLines) - Math.min(...countLines) < 1,
             `${name}: split evidence count`,
           );
-          const audit = await card.evaluate((el) => {
-            const targets = [el.querySelector("h2"), el.querySelector("details > summary span")];
+          const audit = await deck.evaluate((el) => {
+            const targets = [
+              el.querySelector(".fl-investigation-card h2"),
+              el.querySelector(".fl-investigation-card details > summary span"),
+              el.querySelector("[data-lab-fit-rate] > span"),
+            ];
             const words = [];
             for (const target of targets) {
-              if (!target) throw new Error("Missing heading or disclosure label");
+              if (!target) throw new Error("Missing heading, disclosure or fit label");
               const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
               for (let node = walker.nextNode(); node; node = walker.nextNode()) {
                 for (const match of node.textContent.matchAll(/[\p{L}\p{N}]+/gu)) {
@@ -144,6 +150,7 @@ try {
               rootFontSize: getComputedStyle(document.documentElement).fontSize,
               headingFontSize: parseFloat(getComputedStyle(targets[0]).fontSize),
               summaryFontSize: parseFloat(getComputedStyle(targets[1]).fontSize),
+              fitLabelFontSize: parseFloat(getComputedStyle(targets[2]).fontSize),
               theme: document.documentElement.className,
               overflow: document.documentElement.scrollWidth > innerWidth + 1,
             };
@@ -161,7 +168,8 @@ try {
             audit.headingFontSize >= 25.9 && audit.summaryFontSize >= 25.9,
             "Do not shrink text to make it fit",
           );
-          assert.ok(audit.words.length >= 5, "Inspect real heading and disclosure words");
+          assert.ok(audit.fitLabelFontSize >= 23.9, "Do not shrink the fit label");
+          assert.ok(audit.words.length >= 6, "Inspect real heading, disclosure and fit words");
           assert.deepEqual(
             audit.words.filter((word) => word.lines !== 1),
             [],
@@ -197,7 +205,7 @@ try {
         errors,
         failure,
         scope:
-          "Synthetic active Lab at doubled root font: intact heading/disclosure words and evidence fraction. Not device zoom or screen-reader certification.",
+          "Synthetic active Lab at doubled root font: intact heading/disclosure/fit words and evidence fraction. Not device zoom or screen-reader certification.",
       },
       null,
       2,
