@@ -42,10 +42,10 @@ export function createTwinPickingProfile(body: Object3D) {
   const minZ = new Float64Array(SLICE_COUNT).fill(Infinity);
   const maxZ = new Float64Array(SLICE_COUNT).fill(-Infinity);
   const include = (row: number, x: number, z: number) => {
-    minX[row] = Math.min(minX[row], x);
-    maxX[row] = Math.max(maxX[row], x);
-    minZ[row] = Math.min(minZ[row], z);
-    maxZ[row] = Math.max(maxZ[row], z);
+    minX[row] = Math.min(minX[row] ?? Infinity, x);
+    maxX[row] = Math.max(maxX[row] ?? -Infinity, x);
+    minZ[row] = Math.min(minZ[row] ?? Infinity, z);
+    maxZ[row] = Math.max(maxZ[row] ?? -Infinity, z);
   };
   const a = new Vector3(), b = new Vector3(), c = new Vector3();
   const edge = (row: number, y: number, left: Vector3, right: Vector3) => {
@@ -87,15 +87,15 @@ export function createTwinPickingProfile(body: Object3D) {
       if (![worldPoint.x, worldPoint.y, worldPoint.z].every(Number.isFinite)) return false;
       body.worldToLocal(local.copy(worldPoint));
       if (![local.x, local.y, local.z].every(Number.isFinite)) return false;
-      const row = Math.max(valid[0], Math.min(valid[valid.length - 1], (local.y - floor) / step));
+      const row = Math.max(valid[0] ?? 0, Math.min(valid[valid.length - 1] ?? SLICE_COUNT - 1, (local.y - floor) / step));
       const upperIndex = valid.findIndex((candidate) => candidate >= row);
-      const upper = valid[upperIndex < 0 ? valid.length - 1 : upperIndex];
-      const lower = valid[Math.max(0, upperIndex - 1)];
+      const upper = valid[upperIndex < 0 ? valid.length - 1 : upperIndex] ?? 0;
+      const lower = valid[Math.max(0, upperIndex - 1)] ?? upper;
       const weight = upper === lower ? 0 : (row - lower) / (upper - lower);
-      const x0 = (minX[lower] + maxX[lower]) / 2;
-      const z0 = (minZ[lower] + maxZ[lower]) / 2;
-      const x1 = (minX[upper] + maxX[upper]) / 2;
-      const z1 = (minZ[upper] + maxZ[upper]) / 2;
+      const x0 = ((minX[lower] ?? 0) + (maxX[lower] ?? 0)) / 2;
+      const z0 = ((minZ[lower] ?? 0) + (maxZ[lower] ?? 0)) / 2;
+      const x1 = ((minX[upper] ?? 0) + (maxX[upper] ?? 0)) / 2;
+      const z1 = ((minZ[upper] ?? 0) + (maxZ[upper] ?? 0)) / 2;
       out.set(x0 + (x1 - x0) * weight, local.y, z0 + (z1 - z0) * weight).applyMatrix4(body.matrixWorld);
       return [out.x, out.y, out.z].every(Number.isFinite);
     },
