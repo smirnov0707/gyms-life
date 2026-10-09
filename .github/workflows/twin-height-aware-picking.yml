@@ -1,0 +1,32 @@
+name: Twin height-aware picking validation
+on:
+  push:
+    branches: [fix/twin-height-aware-picking-2026-10-09]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run src/components/twin/twin-picking.profile.test.ts
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: node scripts/test-twin-camera-navigation.mjs
+      - run: node scripts/test-twin-camera-picking.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-height-aware-picking-evidence
+          path: test-results/twin-navigation
+          retention-days: 14
+          if-no-files-found: warn
