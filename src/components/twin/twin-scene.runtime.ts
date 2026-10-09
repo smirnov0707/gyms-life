@@ -21,6 +21,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
+import { createTwinPickingProfile } from "./twin-picking.profile";
 import {
   clampTwinTargetY,
   moveTwinTargetY,
@@ -236,6 +237,7 @@ export function mountTwinScene(
 
     let model: TwinBodyModel | TwinIdentityShellModel | ReturnType<typeof createTwinBody> =
       createTwinBody();
+    let pickingProfile = createTwinPickingProfile(model.body);
     // The generated surface is no longer shown while the figure downloads. It
     // is a mannequin, and for the seconds a 1.2 MB glTF takes on a phone it
     // stood in the athlete's stage looking like their twin. Nothing is added
@@ -314,6 +316,7 @@ export function mountTwinScene(
           model.dispose();
           model = human;
           twinBodyRoot.add(model.body);
+          pickingProfile = createTwinPickingProfile(model.body);
           // Preserve the orbit/zoom when replacing a late fallback; only the
           // frame changes. The geometry itself and its proportions do not.
           frameBody(nextFrame);
@@ -633,10 +636,18 @@ export function mountTwinScene(
       //
       // And the skin itself carries no reading, so a hit on a hand or a face
       // is skipped rather than treated as a miss.
-      const reach = twinNearSideReach(raycaster.ray, camera.position, target);
+      const fallbackReach = twinNearSideReach(raycaster.ray, camera.position, target);
+      const localAxis = new Vector3();
       const region = raycaster
         .intersectObjects(model.meshes, false)
-        .filter((hit) => hit.distance <= reach)
+        .filter((hit) => {
+          // Test the axis at each actual surface height. A torso-centre plane
+          // can otherwise hide a front calf after vertical navigation.
+          const reach = pickingProfile?.axisAt(hit.point, localAxis)
+            ? twinNearSideReach(raycaster.ray, camera.position, localAxis)
+            : fallbackReach;
+          return hit.distance <= reach;
+        })
         .map((hit) => (hit.object instanceof Mesh ? model.regionOf.get(hit.object) : undefined))
         .find((candidate) => candidate !== undefined);
       if (region) options.onSelect(region);
