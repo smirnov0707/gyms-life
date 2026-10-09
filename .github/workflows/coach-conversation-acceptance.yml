@@ -27,6 +27,71 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Preserve acknowledged deletion feedback and draft edit ownership
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          def replace(text,old,new):
+              assert text.count(old)==1,(old,text.count(old))
+              return text.replace(old,new,1)
+          p=Path('src/components/coach/conversation.session.ts');s=p.read_text()
+          s=replace(s,'  clearUnconfirmed: boolean;','  clearUnconfirmed: boolean;\n  clearConfirmed: boolean;')
+          s=replace(s,'clearUnconfirmed: false, needsRecheck: false,','clearUnconfirmed: false, clearConfirmed: false, needsRecheck: false,')
+          s=replace(s,'  let nextTurn = 0;','  let nextTurn = 0;\n  let draftRevision = 0;')
+          s=replace(s,'publish({ historyState: state.hasSnapshot ? "refreshing" : "loading" });','publish({ historyState: state.hasSnapshot ? "refreshing" : "loading", clearConfirmed: false });')
+          s=replace(s,'    const turn: CoachTurn = Object.freeze({','    const submittedRevision = draftRevision;\n    const turn: CoachTurn = Object.freeze({')
+          s=replace(s,'operation: "sending", historyState: "outdated", draft: draftAtStart,','operation: "sending", historyState: "outdated", draft: draftAtStart, clearConfirmed: false,')
+          s=replace(s,'submittedDraft && state.draft === draftAtStart','submittedDraft && draftRevision === submittedRevision && state.draft === draftAtStart')
+          s=replace(s,'publish({ operation: "clearing", confirmClear: false });','publish({ operation: "clearing", confirmClear: false, clearConfirmed: false });')
+          s=replace(s,'operation: "idle", clearUnconfirmed: false, needsRecheck: false,','operation: "idle", clearUnconfirmed: false, clearConfirmed: true, needsRecheck: false,')
+          s=replace(s,'      if (active && authenticated) publish({ draft });','      if (active && authenticated && state.draft !== draft) {\n        draftRevision++;\n        publish({ draft });\n      }')
+          p.write_text(s)
+          p=Path('src/components/CoachMemory.tsx');s=p.read_text()
+          s=replace(s,'      {state.confirmClear ? (','      {state.clearConfirmed ? (\n        <p role="status" className="text-sm text-foreground" data-memory-cleared>{t("coach.cleared")}</p>\n      ) : null}\n      {state.confirmClear ? (')
+          p.write_text(s)
+          p=Path('src/components/coach/conversation.copy.ts');s=p.read_text()
+          s=replace(s,'Neatsiųstas tekstas įvesties lauke liks.','Neišsiųstas tekstas įvesties lauke liks.')
+          p.write_text(s)
+          p=Path('scripts/test-coach-conversation-browser.mjs');s=p.read_text()
+          old='await expect(page.locator("[data-memory-empty]")).toBeVisible();'
+          s=replace(s,old,old+'\n      await expect(page.locator("[data-memory-cleared]")).toBeVisible();')
+          p.write_text(s)
+          p=Path('src/components/coach/conversation.session.test.ts')
+          p.write_text(p.read_text()+'''
+          describe("acknowledged clear feedback and draft revisions", () => {
+            it("does not erase a draft edited away and retyped to the same value", async () => {
+              const h = setup(), wait = deferred();
+              await h.session.start(); h.ask.mockReturnValueOnce(wait.promise);
+              h.session.setDraft("Question"); const sending = h.session.send("en");
+              h.session.setDraft("New thought"); h.session.setDraft("Question");
+              wait.resolve({ answer: "Answer" }); await sending;
+              expect(h.session.getSnapshot().draft).toBe("Question");
+              expect(h.ask).toHaveBeenCalledTimes(1);
+            });
+            it("shows deletion success only after a matching acknowledgement", async () => {
+              const h = setup(), wait = deferred(); await h.session.start();
+              expect(h.session.getSnapshot().clearConfirmed).toBe(false);
+              h.clear.mockReturnValueOnce(wait.promise); h.session.requestClear();
+              const clearing = h.session.clear();
+              expect(h.session.getSnapshot().clearConfirmed).toBe(false);
+              wait.resolve({ ok: true }); await clearing;
+              expect(h.session.getSnapshot().clearConfirmed).toBe(true);
+              await h.session.load();
+              expect(h.session.getSnapshot().clearConfirmed).toBe(false);
+            });
+            it("an empty recovery read after a lost clear reply is not an acknowledged deletion", async () => {
+              const h = setup(); await h.session.start();
+              h.clear.mockRejectedValueOnce(new Error("lost reply"));
+              h.session.requestClear(); await h.session.clear();
+              expect(h.session.getSnapshot().clearConfirmed).toBe(false);
+              h.read.mockResolvedValueOnce({ messages: [] }); await h.session.load();
+              expect(h.session.getSnapshot().history).toEqual([]);
+              expect(h.session.getSnapshot().clearConfirmed).toBe(false);
+            });
+          });
+          ''')
+          PY
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
       - name: Apply only repository formatting rules to the reviewed changed files
