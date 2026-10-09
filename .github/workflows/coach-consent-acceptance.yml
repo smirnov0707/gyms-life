@@ -1,0 +1,151 @@
+name: Coach consent exact-source acceptance
+on:
+  push:
+    branches: [diagnostics/coach-consent-recovery-2026-10-09]
+    paths: [.github/workflows/coach-consent-acceptance.yml]
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    outputs:
+      summary: ${{ steps.retain.outputs.summary }}
+    env:
+      SOURCE: 8ae3b28fc0a54c3235fa7db8b7497afd619a00bd
+      BASE: b46f71ee9fcd2ad545dcfdff962f569ec130114c
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Preserve the explicit state union and derive test locales from the domain schema
+        run: |
+          mkdir -p test-results/coach-consent-review
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('src/components/coach/consent-preference.session.ts');s=p.read_text()
+          old='  let state = initial;'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,'  let state: ConsentPreferenceState = initial;'))
+          p=Path('src/components/coach/consent-preference.session.test.ts');s=p.read_text()
+          old='["lt", "en", "de", "fr", "es", "pl", "ru", "lv"] as const'
+          assert s.count(old)==1
+          s='import { SupportedLanguageSchema } from "@/lib/language.schema";\n'+s.replace(old,'SupportedLanguageSchema.options')
+          p.write_text(s)
+          PY
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Format only the reviewed source files with installed rules
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync} from 'node:fs';
+          import {ESLint} from 'eslint';
+          const files=['src/routes/_authenticated/coach.tsx','src/components/coach/consent-preference.session.ts','src/components/coach/consent-preference.copy.ts','src/components/coach/AiPersonalizationConsentCard.tsx','src/components/coach/consent-preference.session.test.ts','tests/coach-browser/services.ts','tests/coach-browser/fixture.tsx','scripts/test-coach-consent-browser.mjs'];
+          writeFileSync('test-results/coach-consent-review/files.json',JSON.stringify(files));
+          const eslint=new ESLint({fix:message=>message.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(files);
+          await ESLint.outputFixes(results);
+          for(const result of results)assert.equal(result.errorCount,0,JSON.stringify({file:result.filePath,messages:result.messages}));
+          JS
+      - name: Check types and deterministic privacy recovery cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee test-results/coach-consent-review/typecheck.log
+          npx vitest run src/components/coach/consent-preference.session.test.ts 2>&1 | tee test-results/coach-consent-review/consent-tests.log
+      - name: Preserve full quality and both build targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run test 2>&1 | tee test-results/coach-consent-review/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/coach-consent-review/toolchain.log
+          npm run lint 2>&1 | tee test-results/coach-consent-review/lint.log
+          npm run build:staging 2>&1 | tee test-results/coach-consent-review/staging.log
+          npm run build 2>&1 | tee test-results/coach-consent-review/build.log
+      - name: Real Coach route with synthetic privacy requests in both engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          COACH_BROWSER_ENGINE=chromium node scripts/test-coach-consent-browser.mjs 2>&1 | tee test-results/coach-consent-review/chromium.log
+          COACH_BROWSER_ENGINE=webkit node scripts/test-coach-consent-browser.mjs 2>&1 | tee test-results/coach-consent-review/webkit.log
+      - name: Materialize only the exact tested formatted blobs; never update a branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.SOURCE);
+          const files=JSON.parse(readFileSync('test-results/coach-consent-review/files.json'));
+          for(const p of git('diff','--name-only').split('\n').filter(Boolean))assert.ok(files.includes(p),`Unexpected mutation ${p}`);
+          const browsers=['chromium','webkit'].map(engine=>JSON.parse(readFileSync(`test-results/coach-consent/${engine}/results.json`)));
+          for(const r of browsers){assert.equal(r.results.length,21);assert.deepEqual(r.errors,[]);assert.equal(r.failure,null);}
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main advanced; reconcile first');
+          const entries=[];
+          for(const path of files){
+            const bytes=readFileSync(path),content=bytes.toString('utf8');
+            const expected=createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+            const blob=await api('git/blobs','POST',{content,encoding:'utf-8'});
+            assert.equal(blob.sha,expected);
+            entries.push({path,mode:'100644',type:'blob',sha:blob.sha,sha256:createHash('sha256').update(bytes).digest('hex')});
+          }
+          const report={source:process.env.SOURCE,base:process.env.BASE,sourceTree:'f03159ed45556b3278a4ad8e8d55668837c91202',entries,browsers:browsers.map(r=>({engine:r.engine,groups:r.results.length})),refsChanged:false,deployed:false};
+          writeFileSync('test-results/coach-consent-review/verified-blobs.json',JSON.stringify(report,null,2));
+          console.log('VERIFIED_COACH_BLOBS',JSON.stringify(report));
+          JS
+      - name: Retain source, screenshots and bounded diagnostics
+        id: retain
+        if: always()
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import json,shutil,re,os
+          out=Path('test-results/coach-consent-review');out.mkdir(parents=True,exist_ok=True)
+          source=out/'files.json'
+          if source.exists():
+              for name in json.loads(source.read_text()):
+                  p=out/'reviewed-source'/name;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(name,p)
+          summary={'logs':{},'browsers':[]}
+          for p in out.glob('*.log'):
+              lines=re.sub(r'\x1b\[[0-9;]*[A-Za-z]','',p.read_text(errors='replace')).splitlines()
+              summary['logs'][p.name]=[s[:450] for s in lines if re.search(r'Tests |Test Files|FAIL|Error:|error TS|Expected|Received|problems \(|# tests|# pass|# fail|built in',s)][-10:]
+          for p in Path('test-results/coach-consent').glob('*/results.json'):
+              r=json.loads(p.read_text());summary['browsers'].append({'engine':r['engine'],'groups':len(r['results']),'errors':r['errors'][:3],'failure':r['failure']})
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('summary='+json.dumps(summary,separators=(',',':'))+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coach-consent-exact-source-evidence
+          path: |
+            test-results/coach-consent-review
+            test-results/coach-consent
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
+  report:
+    if: always()
+    needs: acceptance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bounded result; this step does not imply successful acceptance
+        env:
+          RESULT: ${{ needs.acceptance.result }}
+          SUMMARY: ${{ needs.acceptance.outputs.summary }}
+        run: |
+          printf 'Acceptance: %s\n%s\n' "$RESULT" "$SUMMARY"
