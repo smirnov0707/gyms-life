@@ -1,0 +1,210 @@
+name: Scoped security final acceptance
+on:
+  push:
+    branches: [diagnostics/dependency-security-2026-10-09]
+    paths: [.github/workflows/dependency-security-final.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  candidate:
+    permissions:
+      contents: write
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    env:
+      BASE: c504eb10dd1db804c6642fd8d9f796b834d4098d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: 11598144008
+          run-id: 37892258153
+          github-token: ${{ github.token }}
+          path: /tmp/security-reviewed
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reuse the exact scoped lockfile and strengthen native/configuration acceptance
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import json,shutil,os
+          from pathlib import Path
+          candidates=list(Path('/tmp/security-reviewed').rglob('summary.json'))
+          assert len(candidates)==1
+          root=candidates[0].parent
+          summary=json.loads(candidates[0].read_text()); assert summary['base']==os.environ['BASE']
+          Path('test-results/security-remediation').mkdir(parents=True,exist_ok=True)
+          for name in ['audit-before.json','audit-after.json','production-before.json','production-after.json','lock-diff.json','registry-sharp.json','registry-smol-toml.json','registry-braces.json','registry-node-forge.json','summary.json']:
+              shutil.copyfile(root/name,Path('test-results/security-remediation')/name)
+          files=['package.json','package-lock.json','scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs','docs/dependency-security-2026-10-09.md']
+          for name in files:
+              shutil.copyfile(root/'reviewed-source'/name,Path(name))
+          p=Path('scripts/test-dependency-toolchain.mjs');s=p.read_text()
+          assert s.count('assert.equal(sharp.versions.heif, "1.23.2");')==1
+          s=s.replace('assert.equal(sharp.versions.heif, "1.23.2");','assert.equal(sharp.versions.heif, "1.23.5");\n    console.log("PATCHED_NATIVE_LIBRARIES", consumer, JSON.stringify(sharp.versions));')
+          s += '''
+          test("Wrangler consumes patched TOML objects while packaging an isolated Worker", { timeout: 45000 }, async () => {
+            const directory = await scratch();
+            try {
+              await writeFile(path.join(directory, "worker.mjs"), 'export default { fetch(request, env) { return new Response(env.SECURITY_CHECK); } };\\n');
+              const config = path.join(directory, "wrangler.toml");
+              await writeFile(config, [
+                'name = "gyms-security-toml-smoke"',
+                'main = "worker.mjs"',
+                'compatibility_date = "2026-08-01"',
+                '[vars]',
+                'SECURITY_CHECK = "synthetic-config-only"',
+              ].join("\\n") + "\\n");
+              const { parse } = await consumerImport("wrangler", "smol-toml");
+              const parsed = parse(await readFile(config, "utf8"));
+              assert.equal(Object.getPrototypeOf(parsed), null);
+              assert.equal(parsed.vars.SECURITY_CHECK, "synthetic-config-only");
+              const { stdout } = await run(process.execPath, [resolve("wrangler"), "deploy", "--dry-run", "--config", config, "--outdir", path.join(directory, "out")], {
+                cwd: directory,
+                timeout: 35000,
+                maxBuffer: 1024 * 1024,
+                env: {
+                  PATH: process.env.PATH ?? "",
+                  HOME: directory,
+                  TMPDIR: directory,
+                  CI: "true",
+                  WRANGLER_SEND_METRICS: "false",
+                  WRANGLER_LOG_PATH: path.join(directory, "wrangler.log"),
+                },
+              });
+              assert.match(stdout, /dry-run/i);
+              assert.match(stdout, /SECURITY_CHECK/);
+            } finally {
+              await rm(directory, { recursive: true, force: true });
+            }
+          });
+          '''
+          p.write_text(s)
+          p=Path('docs/dependency-security-2026-10-09.md');s=p.read_text()
+          s += '\nThe first run detected an outdated exact libheif assertion (1.23.2); Sharp 0.35.5 actually resolves libheif 1.23.5. The assertion now requires that newer verified binary plus librsvg 2.63.2. No version check was deleted. A separate real Wrangler TOML dry-run verifies compatibility with smol-toml 1.9.0 null-prototype objects, in addition to the existing JSON dry-run. Both use isolated synthetic configs and never deploy.\n'
+          p.write_text(s)
+          PY
+      - run: npm ci
+      - name: Format only edited tests with unchanged lint policy
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {ESLint} from 'eslint';
+          const eslint=new ESLint({fix:m=>m.ruleId==='prettier/prettier'});
+          const results=await eslint.lintFiles(['scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs']);
+          await ESLint.outputFixes(results);
+          for(const result of results)assert.equal(result.errorCount,0,JSON.stringify(result.messages));
+          JS
+      - name: Recheck the live audit and every lockfile change
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync,spawnSync} from 'node:child_process';
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          const before=JSON.parse(git('show','HEAD:package-lock.json'));
+          const after=JSON.parse(readFileSync('package-lock.json','utf8'));
+          const original=JSON.parse(git('show','HEAD:package.json'));
+          const manifest=JSON.parse(readFileSync('package.json','utf8'));
+          assert.equal(git('rev-parse','HEAD'),process.env.BASE);
+          assert.deepEqual(manifest.dependencies,original.dependencies);
+          assert.deepEqual(manifest.devDependencies,original.devDependencies);
+          assert.deepEqual(manifest.scripts,original.scripts);
+          assert.deepEqual(manifest.overrides,{...original.overrides,sharp:'0.35.5','smol-toml':'1.9.0'});
+          const changes=[];
+          for(const p of new Set([...Object.keys(before.packages),...Object.keys(after.packages)])) {
+            const a=before.packages[p],b=after.packages[p];
+            if(JSON.stringify(a)===JSON.stringify(b))continue;
+            const name=p.slice(p.lastIndexOf('node_modules/')+13);
+            assert.ok(name==='sharp'||name==='smol-toml'||name.startsWith('@img/sharp-'),`Unexpected change ${p}`);
+            changes.push({path:p,before:a?.version??null,after:b?.version??null});
+          }
+          writeFileSync('test-results/security-remediation/lock-diff.json',JSON.stringify(changes,null,2));
+          for(const [name,args] of [['audit-after',[]],['production-after',['--omit=dev']]]) {
+            const r=spawnSync('npm',['audit','--json',...args],{encoding:'utf8',timeout:90000});
+            assert.ok(r.status===0||r.status===1,String(r.error??r.stderr));
+            const report=JSON.parse(r.stdout);
+            assert.ok(!report.error && report.metadata?.vulnerabilities && report.vulnerabilities);
+            assert.ok(!report.vulnerabilities.sharp&&!report.vulnerabilities['smol-toml']);
+            if(name==='production-after')assert.equal(report.metadata.vulnerabilities.total,0);
+            writeFileSync(`test-results/security-remediation/${name}.json`,JSON.stringify(report,null,2));
+            console.log(name,JSON.stringify(report.metadata.vulnerabilities));
+          }
+          JS
+      - name: TypeScript, all unit tests, consumer APIs, lint and both builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck 2>&1 | tee test-results/security-remediation/typecheck.log
+          npm run test 2>&1 | tee test-results/security-remediation/tests.log
+          npm run test:toolchain 2>&1 | tee test-results/security-remediation/toolchain.log
+          npm run lint 2>&1 | tee test-results/security-remediation/lint.log
+          npm run build:staging 2>&1 | tee test-results/security-remediation/build-staging.log
+          npm run build 2>&1 | tee test-results/security-remediation/build.log
+      - name: Preserve larger Twin, gestures and real muscle picking
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-ci-browser-runtime.mjs
+          node scripts/test-twin-camera-navigation.mjs 2>&1 | tee test-results/security-remediation/twin-navigation.log
+          node scripts/test-twin-camera-picking.mjs 2>&1 | tee test-results/security-remediation/twin-picking.log
+      - name: Create a tested commit object only; do not merge or deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const files=['package.json','package-lock.json','scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs','docs/dependency-security-2026-10-09.md'];
+          const git=(...args)=>execFileSync('git',['-c',`safe.directory=${process.cwd()}`,...args],{encoding:'utf8'}).trim();
+          assert.equal(git('rev-parse','HEAD'),process.env.BASE);
+          assert.equal(git('diff','--','src','public','supabase','netlify','.github'),'');
+          const api=async(p,method='GET',data)=>{const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/${p}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(`${method} ${p}: ${r.status}`);return r.json();};
+          assert.equal((await api('git/ref/heads/main')).object.sha,process.env.BASE,'Main changed; re-review integration');
+          const navigation=JSON.parse(readFileSync('test-results/twin-navigation/results.json','utf8'));
+          const picking=JSON.parse(readFileSync('test-results/twin-navigation/picking/results.json','utf8'));
+          assert.equal(navigation.results.length,6);assert.equal(picking.results.length,12);
+          for(const r of [navigation,picking]){assert.deepEqual(r.errors,[]);assert.equal(r.failure,null);}
+          const tree=await api('git/trees','POST',{base_tree:git('rev-parse','HEAD^{tree}'),tree:files.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))});
+          const commit=await api('git/commits','POST',{message:'fix(security): patch Sharp/librsvg and smol-toml with verified consumer compatibility\n\nUpdate only scoped dependency resolutions, raise regression floors and verify AVIF/SVG processing plus real Netlify/Wrangler JSON and TOML packaging. Retain unresolved upstream findings. Complete quality/build/toolchain and real Twin navigation/picking acceptance passed. No deployment.',tree:tree.sha,parents:[process.env.BASE]});
+          const evidence={commit:commit.sha,tree:tree.sha,base:process.env.BASE,files:files.map(path=>({path,sha256:createHash('sha256').update(readFileSync(path)).digest('hex')})),cameraGroups:6,pickingGroups:12,branchCreated:false,deployed:false};
+          writeFileSync('test-results/security-remediation/verified-commit.json',JSON.stringify(evidence,null,2));
+          console.log('VERIFIED_COMMIT',JSON.stringify(evidence));
+          JS
+      - name: Retain candidate source after execution only
+        if: always()
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import shutil
+          from pathlib import Path
+          for name in ['package.json','package-lock.json','scripts/dependency-security.test.ts','scripts/test-dependency-toolchain.mjs','docs/dependency-security-2026-10-09.md']:
+              if not Path(name).exists(): continue
+              target=Path('test-results/security-remediation/reviewed-source')/name
+              target.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(name,target)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-remediation-final-evidence
+          path: |
+            test-results/security-remediation
+            test-results/twin-navigation
+          retention-days: 14
+          if-no-files-found: error
