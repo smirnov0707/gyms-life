@@ -1,0 +1,84 @@
+name: Lab 155 visual evidence
+on:
+  push:
+    branches: [diagnostics/lab-read-recovery-2026-10-09]
+    paths: [.github/workflows/lab-155-visual-evidence.yml]
+permissions:
+  actions: read
+  contents: write
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify the final-head artifacts and retain synthetic screenshots without updating refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFileSync,readFileSync} from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          const repo=process.env.GITHUB_REPOSITORY;
+          assert.equal(repo,'smirnov0707/gyms-life');
+          const source='81624bd135cd13755306eb475eba2d2c640f060d';
+          const api=async(path,method='GET',data)=>{
+            const r=await fetch(`https://api.github.com/repos/${repo}/${path}`,{method,headers:{Authorization:`Bearer ${process.env.GH_TOKEN}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
+            if(!r.ok)throw Error(`${method} ${path}: ${r.status}`);
+            return r;
+          };
+          const pr=await(await api('pulls/155')).json();
+          assert.equal(pr.head.sha,source);
+          const original=await(await api(`git/commits/${source}`)).json();
+          const archives=[
+            {id:11606965789,engine:'webkit',digest:'9ded6dd8021daaff846a26d0f31c2c6cb39b34068e87063cc072deae70e7065c'},
+            {id:11606706101,engine:'chromium',digest:'82f3bb741ce5b61c309d4fac099fb455ed6a51c49fdd8045a917d100dfb30f4d'},
+          ];
+          const tree=[],manifest=[];
+          for(const archive of archives){
+            const metadata=await(await api(`actions/artifacts/${archive.id}`)).json();
+            assert.equal(metadata.workflow_run.head_sha,source);
+            assert.equal(metadata.workflow_run.id,37910693723);
+            assert.equal(metadata.expired,false);
+            const bytes=Buffer.from(await(await api(`actions/artifacts/${archive.id}/zip`)).arrayBuffer());
+            assert.equal(createHash('sha256').update(bytes).digest('hex'),archive.digest);
+            writeFileSync('screenshots.zip',bytes);
+            execFileSync('python3',['-c',`import json,zipfile,base64,os
+          with zipfile.ZipFile('screenshots.zip') as z:
+            names=z.namelist()
+            assert len(names)==len(set(names))
+            results=[json.loads(z.read(p)) for p in names if p.endswith('/results.json')]
+            assert len(results)==1
+            r=results[0]
+            assert r['failure'] is None and r['errors']==[] and len(r['results'])==30
+            assert sum(g.get('surface')=='deck' and g.get('status')=='passed' for g in r['results'])==15
+            images=[p for p in names if '-deck-' in p and p.endswith('-partial.png')]
+            assert len(images)==6
+            payload=[{'name':os.path.basename(p),'bytes':base64.b64encode(z.read(p)).decode()} for p in images]
+            json.dump(payload,open('screenshots.json','w'))`]);
+            for(const image of JSON.parse(readFileSync('screenshots.json','utf8'))){
+              const png=Buffer.from(image.bytes,'base64');
+              assert.ok(png.length<2_000_000 && png.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
+              const blob=await(await api('git/blobs','POST',{content:image.bytes,encoding:'base64'})).json();
+              assert.equal(blob.sha,createHash('sha1').update(`blob ${png.length}\0`).update(png).digest('hex'));
+              const path=`docs/reviews/lab-155/${image.name}`;
+              tree.push({path,mode:'100644',type:'blob',sha:blob.sha});
+              manifest.push({path,artifact:archive.id,engine:archive.engine,sha256:createHash('sha256').update(png).digest('hex')});
+            }
+          }
+          const text='# Lab #155 — synthetic screenshot review\n\nSource: `'+source+'`. Final-head Lab browser run 37910693723. These are existing unedited screenshots, not real user data or a visual approval. No application branch is updated.\n\n'+manifest.map(m=>'## '+m.path.split('/').at(-1)+'\n\n![]('+m.path.split('/').at(-1)+')\n').join('\n');
+          tree.push({path:'docs/reviews/lab-155/README.md',mode:'100644',type:'blob',content:text});
+          const savedTree=await(await api('git/trees','POST',{base_tree:original.tree.sha,tree})).json();
+          const commit=await(await api('git/commits','POST',{message:'docs(review): retain exact synthetic Lab 155 screenshots; no visual approval or release',tree:savedTree.sha,parents:[source]})).json();
+          const report={source,commit:commit.sha,tree:savedTree.sha,url:`https://github.com/${repo}/blob/${commit.sha}/docs/reviews/lab-155/README.md`,images:manifest,refsChanged:false,deployed:false};
+          console.log('VISUAL_EVIDENCE',JSON.stringify(report));
+          writeFileSync('lab-155-visual-manifest.json',JSON.stringify(report,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lab-155-visual-manifest
+          path: lab-155-visual-manifest.json
+          if-no-files-found: error
+          retention-days: 14
