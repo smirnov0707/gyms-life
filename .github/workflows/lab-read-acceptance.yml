@@ -37,7 +37,11 @@ jobs:
           duplicate='import type { LabUnreadableSource } from "@/lib/lab.schema";\n'
           assert s.count(old)==1 and s.count(duplicate)==1
           fixture=Path('tests/lab-browser/data.ts').read_text().replace('export function makeLabData','function makeLabData')
-          p.write_text(s.replace(duplicate,'').replace(old,fixture))
+          s=s.replace(duplicate,'').replace(old,fixture)
+          old='html.match(/data-lab-decision=""/g)'
+          assert s.count(old)==1
+          s=s.replace(old,'html.match(/\\sdata-lab-decision=/g)')
+          p.write_text(s)
           p=Path('src/components/LabView.tsx');s=p.read_text()
           old='          aria-controls={historyId}'
           assert s.count(old)==1
@@ -64,6 +68,11 @@ jobs:
           for(const result of results)assert.equal(result.errorCount,0,JSON.stringify({file:result.filePath,messages:result.messages}));
           writeFileSync('test-results/lab-recovery/source-files.json',JSON.stringify(files,null,2));
           JS
+      - name: Check all new Lab cases before the unchanged full suite
+        shell: bash
+        run: |
+          set -o pipefail
+          npx vitest run src/components/lab/lab-availability.test.tsx 2>&1 | tee test-results/lab-recovery/lab-tests.log
       - name: Full quality and both builds without deployment
         shell: bash
         run: |
