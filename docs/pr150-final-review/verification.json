@@ -1,0 +1,252 @@
+{
+  "source": "112037beafb47a294f285feb3138b3b4210e5919",
+  "evidence": [
+    {
+      "id": 11578843112,
+      "run": 37844785179,
+      "digest": "sha256:a425593ed6598e25ea9bff6464e454119247a857b73224d32ac3a3aab95b5b94",
+      "source": "112037beafb47a294f285feb3138b3b4210e5919"
+    },
+    {
+      "id": 11580135087,
+      "run": 37844785106,
+      "digest": "sha256:5e72258ccc456d94e426b3c3f19f680ad4c5702a783a52b098ff507f8dc28ae9",
+      "source": "112037beafb47a294f285feb3138b3b4210e5919"
+    }
+  ],
+  "cameraGroups": [
+    {
+      "name": "lt-dark-320",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14093,
+      "largerSkinPixels": 37342,
+      "pixelAreaRatio": 2.649684240403037,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "lt-light-320",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14093,
+      "largerSkinPixels": 37342,
+      "pixelAreaRatio": 2.649684240403037,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "lt-dark-390",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14092,
+      "largerSkinPixels": 37343,
+      "pixelAreaRatio": 2.649943230201533,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "lt-light-390",
+      "status": "passed",
+      "height": 573.90625,
+      "baselineSkinPixels": 14092,
+      "largerSkinPixels": 37343,
+      "pixelAreaRatio": 2.649943230201533,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": true
+    },
+    {
+      "name": "en-dark-1280",
+      "status": "passed",
+      "height": 740,
+      "baselineSkinPixels": 33045,
+      "largerSkinPixels": 62202,
+      "pixelAreaRatio": 1.8823422605537903,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": false
+    },
+    {
+      "name": "en-light-1280",
+      "status": "passed",
+      "height": 740,
+      "baselineSkinPixels": 33045,
+      "largerSkinPixels": 62202,
+      "pixelAreaRatio": 1.8823422605537903,
+      "pose": {
+        "y": 0.88,
+        "x": 0.0008,
+        "z": -0.0089,
+        "pitch": 1.508,
+        "yaw": 0,
+        "distance": 3.091,
+        "home": 0.88,
+        "fit": 3.091,
+        "height": 1.7
+      },
+      "trustedTwoFingerTest": false
+    }
+  ],
+  "pickingGroups": [
+    {
+      "name": "320-dark-realistic",
+      "status": "passed"
+    },
+    {
+      "name": "320-dark-analysis",
+      "status": "passed"
+    },
+    {
+      "name": "320-light-realistic",
+      "status": "passed"
+    },
+    {
+      "name": "320-light-analysis",
+      "status": "passed"
+    },
+    {
+      "name": "390-dark-realistic",
+      "status": "passed"
+    },
+    {
+      "name": "390-dark-analysis",
+      "status": "passed"
+    },
+    {
+      "name": "390-light-realistic",
+      "status": "passed"
+    },
+    {
+      "name": "390-light-analysis",
+      "status": "passed"
+    },
+    {
+      "name": "1280-dark-realistic",
+      "status": "passed"
+    },
+    {
+      "name": "1280-dark-analysis",
+      "status": "passed"
+    },
+    {
+      "name": "1280-light-realistic",
+      "status": "passed"
+    },
+    {
+      "name": "1280-light-analysis",
+      "status": "passed"
+    }
+  ],
+  "images": [
+    {
+      "file": "boundary-feathered-dark-1280.png",
+      "sha256": "facaf2c2de7b1f195ccbbdf4f452fae3626f9edf6404f18366ed32bd9759dd44",
+      "bytes": 168906
+    },
+    {
+      "file": "boundary-feathered-dark-390.png",
+      "sha256": "94f8fa17a016c9bc88bae251999c1e3945fef9fe54241eba2e83840e1a15e07c",
+      "bytes": 92106
+    },
+    {
+      "file": "boundary-feathered-light-1280.png",
+      "sha256": "facaf2c2de7b1f195ccbbdf4f452fae3626f9edf6404f18366ed32bd9759dd44",
+      "bytes": 168906
+    },
+    {
+      "file": "boundary-feathered-light-390.png",
+      "sha256": "94f8fa17a016c9bc88bae251999c1e3945fef9fe54241eba2e83840e1a15e07c",
+      "bytes": 92106
+    },
+    {
+      "file": "boundary-reference-dark-1280.png",
+      "sha256": "1537fd1c19aaf196888718f1a84a5618e60a119bc61e0e66ef7a47424a748b71",
+      "bytes": 161588
+    },
+    {
+      "file": "boundary-reference-dark-390.png",
+      "sha256": "d542cb198c561f6a603d1f48edcde9de9e9314ea8ad492f11800af120f420c78",
+      "bytes": 88972
+    },
+    {
+      "file": "boundary-reference-light-1280.png",
+      "sha256": "1537fd1c19aaf196888718f1a84a5618e60a119bc61e0e66ef7a47424a748b71",
+      "bytes": 161588
+    },
+    {
+      "file": "boundary-reference-light-390.png",
+      "sha256": "d542cb198c561f6a603d1f48edcde9de9e9314ea8ad492f11800af120f420c78",
+      "bytes": 88972
+    },
+    {
+      "file": "camera-lt-dark-320-old-size.png",
+      "sha256": "538621230435063a152eb497d6c44c8e2234e3dc16cbc5f066c95e42cf836bda",
+      "bytes": 101273
+    },
+    {
+      "file": "camera-lt-dark-320-larger.png",
+      "sha256": "02a04f022905a7ff0f979f4edcab49e8d3bf97d4e1cecb506423f85fea43fbf3",
+      "bytes": 156011
+    },
+    {
+      "file": "camera-lt-light-390-full.png",
+      "sha256": "7efc710342d35561731bae789909f589211e76be8369bc5f7a1b5830ded5d925",
+      "bytes": 288057
+    },
+    {
+      "file": "camera-en-dark-1280-full.png",
+      "sha256": "123f3a88c988841191a1e64b7b7a0bec86dfee851d4bce30536ca3548dbc22a3",
+      "bytes": 688218
+    }
+  ],
+  "scope": "Actual final-head components and registered models; synthetic absent evidence. No live account, physical-device, WebKit-gesture or anatomical acceptance. Image bytes are not retouched. Boundary reference disables feathering, not the previous production version."
+}
