@@ -42,7 +42,7 @@ const candidatePlugin = {
         ![
           "/models/twin-body-v2.glb",
           "/models/twin-anatomy-v1.glb",
-          "/models/twin-natural-v1.glb",
+          "/models/twin-natural-skin-v1.glb",
         ].includes(new URL(request.url, "http://localhost").pathname)
       )
         return next();
@@ -148,7 +148,7 @@ try {
       ? "MakeHuman graphical assets (CC0)"
       : "BodyParts3D";
   const expectedAnalysisBytes =
-    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-natural-v1.glb")));
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-natural-skin-v1.glb")));
   const expectedAnalysisSha = createHash("sha256").update(expectedAnalysisBytes).digest("hex");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-twin-asset-sha256",
@@ -746,7 +746,7 @@ try {
           sha256: createHash("sha256").update(candidateBytes).digest("hex"),
           bytes: candidateBytes.length,
           requests: candidateRequests,
-          servedAs: ["/models/twin-natural-v1.glb", "/models/twin-body-v2.glb"],
+          servedAs: ["/models/twin-natural-skin-v1.glb", "/models/twin-body-v2.glb"],
         },
         null,
         2,

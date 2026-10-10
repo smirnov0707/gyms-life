@@ -10,15 +10,23 @@ export function twinBreathOffset(point: Vector3, bounds: Box3): Vector3 {
   const height = bounds.max.y - bounds.min.y;
   const x = point.x - (bounds.min.x + bounds.max.x) / 2;
   const y = (point.y - bounds.min.y) / height;
-  const centre = 1 - smooth(0.085, 0.13, Math.abs(x) / height);
+  const centre = 1 - smooth(0.095, 0.155, Math.abs(x) / height);
   const rib = smooth(0.64, 0.72, y) * (1 - smooth(0.79, 0.86, y));
   const abdomen = smooth(0.51, 0.61, y) * (1 - smooth(0.67, 0.74, y));
   const front = smooth(-0.025, 0.07, point.z / height);
   return new Vector3(
-    x * 0.008 * rib * centre,
-    height * 0.00025 * rib * centre,
-    height * 0.0015 * (rib + 0.35 * abdomen * (1 - rib)) * centre * front,
+    x * 0.038 * rib * centre,
+    height * 0.0015 * rib * centre,
+    height * 0.0045 * (rib + 0.5 * abdomen * (1 - rib)) * centre * front,
   );
+}
+
+/** Shorter inhale, slower release and a soft resting pause; decorative, not measured. */
+export function twinBreathPhase(milliseconds: number): number {
+  const cycle = ((milliseconds % 5200) + 5200) % 5200;
+  if (cycle < 1900) return (1 - Math.cos((cycle / 1900) * Math.PI)) / 2;
+  if (cycle < 4900) return (1 + Math.cos(((cycle - 1900) / 3000) * Math.PI)) / 2;
+  return 0;
 }
 
 /** GPU morphs also drive Three's getVertexPosition/raycast: visual and hit surface stay together. */
@@ -96,7 +104,10 @@ export function createTwinBreathing(body: Object3D) {
   return {
     setPhase(phase: number) {
       for (const mesh of meshes)
-        if (mesh.morphTargetInfluences) mesh.morphTargetInfluences[0] = phase;
+        if (mesh.morphTargetInfluences)
+          mesh.morphTargetInfluences[0] = Number.isFinite(phase)
+            ? Math.max(0, Math.min(1, phase))
+            : 0;
     },
   };
 }

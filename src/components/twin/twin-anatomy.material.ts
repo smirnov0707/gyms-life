@@ -24,12 +24,14 @@ export function setTwinAnatomySelection(material: MeshStandardMaterial, selected
 export function createTwinAnatomyMaterial(
   parameters: MeshStandardMaterialParameters,
   {
+    neutralColor = TWIN_SKIN_COLOR,
     fibers = false,
     regionMask = false,
     contours = [],
     contourFan = false,
     competition,
   }: {
+    neutralColor?: number;
     fibers?: boolean;
     regionMask?: boolean;
     contours?: readonly TwinSculptContour[];
@@ -47,7 +49,7 @@ export function createTwinAnatomyMaterial(
       "#include <common>\nuniform float twinSelected;",
     );
     if (regionMask) {
-      shader.uniforms["twinNeutral"] = { value: new Color(TWIN_SKIN_COLOR) };
+      shader.uniforms["twinNeutral"] = { value: new Color(neutralColor) };
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
@@ -169,7 +171,11 @@ export function createTwinAnatomyMaterial(
     const maskCode = regionMask
       ? `
       float twinSurfaceMask = clamp(vTwinMask, 0.0, 1.0) ${contours.length ? "* twinContourMask" : ""};
-      diffuseColor.rgb = mix(twinNeutral, diffuseColor.rgb, twinSurfaceMask);
+      vec3 twinNeutralSurface = twinNeutral;
+      #ifdef USE_MAP
+        twinNeutralSurface *= sampledDiffuseColor.rgb;
+      #endif
+      diffuseColor.rgb = mix(twinNeutralSurface, diffuseColor.rgb, twinSurfaceMask);
     `
       : "";
     shader.fragmentShader = shader.fragmentShader.replace(

@@ -5,7 +5,7 @@ import path from "node:path";
 
 // Read only the shipped generic assets. Never loads a personal Identity Shell.
 const assets = [];
-for (const file of ["twin-natural-v1.glb", "twin-body-v2.glb"]) {
+for (const file of ["twin-natural-skin-v1.glb", "twin-body-v2.glb"]) {
   const bytes = await readFile(path.join("public/models", file));
   assert.equal(bytes.toString("ascii", 0, 4), "glTF");
   assert.equal(bytes.readUInt32LE(4), 2);

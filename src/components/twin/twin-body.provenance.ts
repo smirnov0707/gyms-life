@@ -10,6 +10,12 @@ export type TwinBodyProvenance = Readonly<{
 /** Registered bytes, not a URL or self-declared copyright. Registration is not visual approval. */
 export const TWIN_REGISTERED_ASSETS = [
   {
+    path: "public/models/twin-natural-skin-v1.glb",
+    source: "makehuman",
+    candidate: false,
+    sha256: "b21543c3c2113a8f95ff6843d4c6ce226352b0b61179144a663353fee2bebe70",
+  },
+  {
     path: "public/models/twin-natural-v1.glb",
     source: "makehuman",
     candidate: false,

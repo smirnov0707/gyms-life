@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { Box3, Mesh, Raycaster, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { createTwinBreathing, twinBreathOffset } from "./twin-breathing";
+import { createTwinBreathing, twinBreathOffset, twinBreathPhase } from "./twin-breathing";
 
 describe("decorative breathing", () => {
   it("keeps head, hands and feet fixed and limits the chest to millimetres", () => {
@@ -17,8 +17,21 @@ describe("decorative breathing", () => {
     const right = twinBreathOffset(new Vector3(0.08, 1.4, 0.14), box);
     expect(left.x).toBe(-right.x);
     expect(left.z).toBe(right.z);
-    expect(left.length()).toBeGreaterThan(0.002);
-    expect(left.length()).toBeLessThan(0.003);
+    expect(left.length()).toBeGreaterThan(0.007);
+    expect(left.length()).toBeLessThan(0.01);
+  });
+  it("has a bounded asymmetric cycle with a resting pause", () => {
+    expect(twinBreathPhase(0)).toBe(0);
+    expect(twinBreathPhase(1900)).toBe(1);
+    expect(twinBreathPhase(4900)).toBe(0);
+    expect(twinBreathPhase(5100)).toBe(0);
+    expect(twinBreathPhase(5200)).toBe(0);
+    expect(twinBreathPhase(950)).toBeCloseTo(0.5);
+    expect(twinBreathPhase(3400)).toBeCloseTo(0.5);
+    for (let t = -1000; t < 11000; t += 17) {
+      expect(twinBreathPhase(t)).toBeGreaterThanOrEqual(0);
+      expect(twinBreathPhase(t)).toBeLessThanOrEqual(1);
+    }
   });
   it("animates the actual registered mesh and raycast while preserving base coordinates", async () => {
     const bytes = new Uint8Array(await readFile("public/models/twin-natural-v1.glb"));
@@ -35,14 +48,14 @@ describe("decorative breathing", () => {
     breathing.setPhase(1);
     const inhaled = ray.intersectObjects(meshes, false)[0]!;
     expect(inhaled.object).toBe(resting.object);
-    expect(resting.distance - inhaled.distance).toBeGreaterThan(0.002);
-    expect(resting.distance - inhaled.distance).toBeLessThan(0.003);
+    expect(resting.distance - inhaled.distance).toBeGreaterThan(0.007);
+    expect(resting.distance - inhaled.distance).toBeLessThan(0.01);
     for (const [i, mesh] of meshes.entries()) {
       expect(Array.from(mesh.geometry.getAttribute("position").array)).toEqual(base[i]);
       const offsets = mesh.geometry.morphAttributes.position![0]!;
       for (let j = 0; j < offsets.count; j++) {
         const delta = new Vector3().fromBufferAttribute(offsets, j);
-        expect(delta.length()).toBeLessThan(0.0032);
+        expect(delta.length()).toBeLessThan(0.014);
       }
     }
     breathing.setPhase(0);

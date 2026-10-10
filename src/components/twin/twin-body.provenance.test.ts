@@ -15,10 +15,16 @@ afterEach(() => {
 describe("Twin asset provenance", () => {
   it("loads the selected surface with its exact region mapping and keeps Body separate", async () => {
     const url = twinHumanUrl("male");
-    expect(url).toBe("/models/twin-natural-v1.glb");
+    expect(url).toBe("/models/twin-natural-skin-v1.glb");
     expect(twinHumanUrl("female")).toBe(url);
     expect(twinHumanUrl("male", "realistic")).toBe("/models/twin-body-v2.glb");
     const bytes = await bytesOf(`public${url}`);
+    // Node has no image decoder; actual JPEG decoding is asserted in GPU browser tests.
+    vi.stubGlobal("self", globalThis);
+    vi.stubGlobal(
+      "createImageBitmap",
+      vi.fn(async () => ({ width: 2048, height: 2048, close() {} })),
+    );
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response(bytes)),
@@ -35,7 +41,7 @@ describe("Twin asset provenance", () => {
       "shoulders",
     ]);
     expect(model.provenance.sha256).toBe(
-      "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d",
+      "b21543c3c2113a8f95ff6843d4c6ce226352b0b61179144a663353fee2bebe70",
     );
     expect(model.provenance.candidate).toBe(false);
     for (const meshes of model.regionMeshes.values()) {

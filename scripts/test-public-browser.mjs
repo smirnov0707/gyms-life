@@ -164,7 +164,7 @@ try {
           await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
           await expect(page.locator("canvas")).toHaveAttribute(
             "data-twin-asset-sha256",
-            "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d",
+            "b21543c3c2113a8f95ff6843d4c6ce226352b0b61179144a663353fee2bebe70",
           );
           await expect
             .poll(async () => Number(await page.locator("canvas").getAttribute("data-twin-frames")))

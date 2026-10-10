@@ -19,7 +19,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { createTwinBreathing } from "./twin-breathing";
+import { createTwinBreathing, twinBreathPhase } from "./twin-breathing";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import { createTwinPickingProfile } from "./twin-picking.profile";
@@ -411,7 +411,7 @@ export function mountTwinScene(
         return;
       }
       lastPaint = time;
-      const breath = moving ? (1 - Math.cos((time * Math.PI * 2) / 5000)) / 2 : 0;
+      const breath = moving ? twinBreathPhase(time) : 0;
       breathing?.setPhase(breath);
       canvas.dataset["twinBreath"] = breath.toFixed(4);
       controls.update();

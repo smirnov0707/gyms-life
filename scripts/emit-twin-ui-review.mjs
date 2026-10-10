@@ -2,9 +2,9 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-const asset = await readFile("public/models/twin-natural-v1.glb");
+const asset = await readFile("public/models/twin-natural-skin-v1.glb");
 const assetSha256 = createHash("sha256").update(asset).digest("hex");
-if (assetSha256 !== "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d")
+if (assetSha256 !== "b21543c3c2113a8f95ff6843d4c6ce226352b0b61179144a663353fee2bebe70")
   throw new Error("Selected model differs from the confirmed baseline");
 
 const worldImages = [

@@ -50,6 +50,9 @@ try {
   browser = await (engine === "webkit" ? webkit : chromium).launch(
     engine === "chromium"
       ? {
+          ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+            ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+            : {}),
           args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
         }
       : {},
@@ -77,6 +80,9 @@ try {
     });
     const page = await context.newPage();
     page.on("pageerror", (error) => errors.push(String(error)));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
     try {
       await page.goto(`${origin}/navigation.html?lang=lt&theme=dark&scroll-test=1`);
       const canvas = page.locator("canvas");
@@ -85,7 +91,7 @@ try {
       await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
       await expect(canvas).toHaveAttribute(
         "data-twin-asset-sha256",
-        "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d",
+        "b21543c3c2113a8f95ff6843d4c6ce226352b0b61179144a663353fee2bebe70",
       );
       await expect(stage).toHaveAttribute("data-twin-appearance", "analysis");
       await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(0);
@@ -187,7 +193,7 @@ try {
           b = await sharp(inhale).raw().toBuffer();
         let changed = 0;
         for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > 5) changed++;
-        expect(changed).toBeGreaterThan(100);
+        expect(changed).toBeGreaterThan(800);
         await page.emulateMedia({ reducedMotion: "reduce" });
         await expect(canvas).toHaveAttribute("data-twin-breath", "0.0000");
         await page.waitForTimeout(250);
