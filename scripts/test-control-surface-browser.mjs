@@ -200,7 +200,12 @@ try {
           await expect(popover).toBeVisible();
           expect((await popover.boundingBox()).width).toBeLessThanOrEqual(width - 24);
           await page.keyboard.press("Escape");
+          await expect(popover).not.toBeVisible();
+          await expect(
+            page.getByRole("button", { name: "Read explanation", exact: true }),
+          ).toBeFocused();
           await page.getByRole("tab", { name: "Overview", exact: true }).focus();
+          await expect(page.getByRole("tab", { name: "Overview", exact: true })).toBeFocused();
           await page.keyboard.press("ArrowRight");
           await expect(page.getByRole("tab", { name: "History", exact: true })).toHaveAttribute(
             "aria-selected",

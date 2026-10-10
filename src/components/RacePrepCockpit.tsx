@@ -27,9 +27,8 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
       ? null
       : Math.round(data.progress.distanceCompletionRatio * 100);
   return (
-    <section className="fl-premium-card relative overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5">
-      <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-primary/10 blur-3xl" />
-      <div className="relative grid gap-5">
+    <section className="fl-endurance-cockpit fl-premium-card relative overflow-hidden rounded-sm border border-border bg-surface p-4 sm:p-5">
+      <div className="fl-endurance-grid relative grid gap-5">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="fl-eyebrow">RACE PREP · {phaseLabel(data.currentWeek.phase, english)}</p>
@@ -41,7 +40,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             {data.daysToRace} {english ? "days to race" : "d. iki starto"}
           </div>
         </header>
-        <div className="rounded-[1.5rem] border border-primary/25 bg-primary/5 p-4">
+        <div className="rounded-sm border border-primary/25 bg-primary/5 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="fl-eyebrow">{english ? "RACE INTELLIGENCE" : "RACE INTELLIGENCE"}</p>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">
@@ -93,7 +92,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
           ) : null}
         </div>
         {data.adaptationLesson.status !== "insufficient_evidence" ? (
-          <div className="rounded-[1.5rem] border border-border bg-background/30 p-4">
+          <div className="rounded-sm border border-border bg-background/30 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="fl-eyebrow">
                 {english ? "LEARNED ABOUT YOU" : "KĄ SISTEMA IŠMOKO APIE TAVE"}
@@ -129,7 +128,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
           </div>
         ) : null}
         {data.adaptation.action !== "hold" && data.adaptationStatus === "persisted" ? (
-          <div className="rounded-[1.5rem] border border-amber-500/25 bg-amber-500/5 p-4">
+          <div className="rounded-sm border border-amber-500/25 bg-amber-500/5 p-4">
             <p className="fl-eyebrow">{english ? "PLAN ADAPTATION" : "PLANO ADAPTACIJA"}</p>
             <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-lg font-semibold">
@@ -152,7 +151,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             </p>
           </div>
         ) : null}
-        <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+        <div className="rounded-sm border border-primary/20 bg-primary/5 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="fl-eyebrow">{english ? "RACE READINESS" : "PASIRENGIMAS STARTUI"}</p>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold">
@@ -194,7 +193,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
               : data.readiness.factors.join(" · ").replaceAll("_", " ")}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="fl-endurance-metrics grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Metric
             icon={<CalendarDays className="size-4" />}
             value={String(data.currentWeek.week)}
@@ -222,7 +221,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
           />
         </div>
         {data.efficiencyTrend.status !== "insufficient_evidence" ? (
-          <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/20 bg-primary/5 p-4">
             <p className="fl-eyebrow">{english ? "RUNNING EFFICIENCY" : "BĖGIMO EFEKTYVUMAS"}</p>
             <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-lg font-semibold">
@@ -254,7 +253,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
           </div>
         ) : null}
         {data.terrainResponse.status === "measured" ? (
-          <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
+          <div className="rounded-sm border border-border bg-background/25 p-4">
             <p className="fl-eyebrow">{english ? "TERRAIN RESPONSE" : "REAKCIJA Į RELJEFĄ"}</p>
             <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-lg font-semibold">
@@ -273,7 +272,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             </p>
           </div>
         ) : null}
-        <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
+        <div className="rounded-sm border border-border bg-background/25 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="fl-eyebrow">{english ? "PACE INTELLIGENCE" : "TEMPO INTELLIGENCE"}</p>
             <span className="text-xs font-semibold text-muted-foreground">
@@ -315,7 +314,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             ) : null}
           </div>
         </div>
-        <div className="rounded-[1.5rem] border border-border bg-background/25 p-4">
+        <div className="rounded-sm border border-border bg-background/25 p-4">
           <p className="fl-eyebrow">{english ? "LONG-RUN CAPACITY" : "ILGO BĖGIMO PAJĖGUMAS"}</p>
           <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-lg font-semibold">
@@ -356,7 +355,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
           </p>
         </div>
         {data.nextSession ? (
-          <div className="rounded-[1.5rem] border border-border bg-background/35 p-4">
+          <div className="rounded-sm border border-border bg-background/35 p-4">
             <p className="fl-eyebrow">{english ? "NEXT RUN" : "KITAS BĖGIMAS"}</p>
             <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-xl font-semibold capitalize">{data.nextSession.intent}</h3>
@@ -369,7 +368,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
             <p className="mt-2 text-sm text-muted-foreground">{data.nextSession.intensityCue}</p>
           </div>
         ) : data.adaptation.action === "recover" && data.adaptationStatus === "persisted" ? (
-          <div className="rounded-[1.5rem] border border-primary/20 bg-primary/5 p-4">
+          <div className="rounded-sm border border-primary/20 bg-primary/5 p-4">
             <p className="fl-eyebrow">{english ? "RECOVERY WINDOW" : "ATSISTATYMO LANGAS"}</p>
             <h3 className="mt-2 text-xl font-semibold">
               {english ? "No run prescribed right now" : "Šiuo metu bėgimas neskiriamas"}
@@ -397,7 +396,7 @@ export function RacePrepCockpit({ data }: { data: ActiveRacePrep }) {
 
 function Metric({ icon, value, label }: { icon: ReactNode; value: string; label: string }) {
   return (
-    <div className="rounded-[1.25rem] border border-border bg-background/30 p-3">
+    <div className="rounded-sm border border-border bg-background/30 p-3">
       <div className="flex items-center gap-2 text-primary">
         {icon}
         <span className="text-lg font-semibold text-foreground">{value}</span>
