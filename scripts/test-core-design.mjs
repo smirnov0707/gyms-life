@@ -187,9 +187,11 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
   {
     const { page, context } = await open("screen=training&shell=1&theme=light");
     const summary = page.locator("summary").first();
+    expect(await summary.evaluate((el) => getComputedStyle(el, "::after").content)).toBe('"+"');
     await summary.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByText("Synthetic session 1", { exact: true })).toBeVisible();
+    expect(await summary.evaluate((el) => getComputedStyle(el, "::after").content)).toBe('"−"');
     await page.keyboard.press("Enter");
     await expect(page.getByText("Synthetic session 1", { exact: true })).not.toBeVisible();
     await context.close();

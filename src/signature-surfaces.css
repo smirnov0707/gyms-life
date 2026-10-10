@@ -66,6 +66,11 @@
   letter-spacing: -0.035em;
   overflow-wrap: anywhere;
 }
+.ui-dialog-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
 .ui-dialog .ui-dialog-title,
 .ui-sheet .ui-dialog-title {
   padding-right: 36px;
@@ -205,13 +210,29 @@
   box-shadow: none;
 }
 .fl-context-route.fl-workspace details.fl-workspace-panel > summary {
+  position: relative;
   min-height: 56px;
+  padding-right: 56px;
 }
 .fl-context-route.fl-workspace details.fl-workspace-panel[open] > summary {
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
 .fl-context-route.fl-workspace details.fl-workspace-panel > summary::after {
+  content: "+";
+  position: absolute;
+  display: block;
+  right: 20px;
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+}
+.fl-context-route.fl-workspace details.fl-workspace-panel[open] > summary::after {
+  content: "−";
+  transform: translateY(-50%);
+}
+.fl-context-route.fl-workspace details.fl-workspace-panel > summary .lucide-chevron-down {
   display: none;
 }
 .fl-context-route.fl-workspace
