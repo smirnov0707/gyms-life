@@ -60,3 +60,36 @@ jobs:
           done
           echo "Production remained unavailable, unhealthy, or not running the released commit."
           exit 1
+
+  twin:
+    # The hourly HTTP check stays light. Every explicit release additionally
+    # proves the real deployed GLB decodes and breathes under the live CSP.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release production]'))
+    needs: live
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-noble@sha256:3bed4b1a12f2338642f3d8cba28e291deef3c66bd4a964bbeb3e57bbff511dbd
+      options: --init
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-ci-browser-runtime.mjs
+      - run: node scripts/smoke-twin-production-browser.mjs
+        env:
+          TWIN_BROWSER_ENGINE: ${{ matrix.engine }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: twin-production-${{ matrix.engine }}
+          path: test-results/twin-production-${{ matrix.engine }}
+          retention-days: 14
+          if-no-files-found: error

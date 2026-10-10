@@ -6,6 +6,7 @@ import { createServer } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import sharp from "sharp";
+import { CONTENT_SECURITY_POLICY } from "../src/lib/security-headers.server.ts";
 
 const root = process.cwd();
 const engine = process.env.TWIN_BROWSER_ENGINE || "chromium";
@@ -39,7 +40,14 @@ const server = await createServer({
       "three/addons/controls/OrbitControls.js",
     ],
   },
-  server: { host: "127.0.0.1", port: 0, fs: { allow: [root] } },
+  server: {
+    host: "127.0.0.1",
+    port: 0,
+    fs: { allow: [root] },
+    // Exercise the policy actually sent by SSR. A successful GLB download
+    // does not prove its embedded textures can decode under production CSP.
+    headers: { "Content-Security-Policy": CONTENT_SECURITY_POLICY },
+  },
 });
 const results = [],
   errors = [];
