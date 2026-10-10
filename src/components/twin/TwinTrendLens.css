@@ -17,7 +17,7 @@
   min-height: 44px;
   border-radius: 8px;
   text-align: left;
-  font: 500 clamp(25px, 3vw, 34px)/1.18 var(--font-display);
+  font: 650 clamp(25px, 3vw, 34px)/1.18 var(--font-display);
   letter-spacing: -0.04em;
 }
 .fl-trend-heading h2 svg {
@@ -51,7 +51,7 @@
   row-gap: 0;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface);
 }
@@ -75,7 +75,7 @@
   min-width: 0;
   min-height: 44px;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: var(--radius);
   padding: 10px 12px;
   background: var(--surface);
   color: var(--foreground);
@@ -115,7 +115,7 @@
   align-items: baseline;
   gap: 8px;
   margin: 12px 0 8px;
-  font: 500 clamp(38px, 4vw, 48px)/1.1 var(--font-display);
+  font: 650 clamp(38px, 4vw, 48px)/1.1 var(--font-display);
   letter-spacing: -0.06em;
   font-variant-numeric: tabular-nums;
 }

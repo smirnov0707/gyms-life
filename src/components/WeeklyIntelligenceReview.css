@@ -6,7 +6,7 @@
 }
 .fl-weekly-overview {
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: var(--radius);
   padding: 24px;
   background:
     radial-gradient(
@@ -26,7 +26,7 @@
   border-bottom: 1px solid var(--border);
 }
 .fl-weekly-review h3 {
-  font: 500 21px/1.4 var(--font-display);
+  font: 650 21px/1.4 var(--font-display);
   letter-spacing: -0.025em;
 }
 .fl-weekly-period > span {
@@ -68,7 +68,7 @@
 }
 .fl-weekly-metrics dd {
   margin-top: 12px;
-  font: 500 clamp(30px, 4vw, 42px)/1.2 var(--font-display);
+  font: 650 clamp(30px, 4vw, 42px)/1.2 var(--font-display);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -99,7 +99,7 @@
 }
 .fl-weekly-discoveries article {
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   background: var(--surface);
   padding: 24px;
   display: flex;
@@ -112,10 +112,10 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--primary) 10%, var(--surface-2));
   color: var(--primary);
-  font: 500 13px var(--font-display);
+  font: 650 13px var(--font-display);
 }
 .fl-weekly-discoveries article > p {
   font-size: 15px;
@@ -138,7 +138,7 @@
   flex-wrap: wrap;
   gap: 22px;
   border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
-  border-radius: 22px;
+  border-radius: var(--radius);
   padding: 24px;
   background: color-mix(in srgb, var(--primary) 5%, var(--surface));
 }
@@ -158,7 +158,7 @@
   padding: 12px 18px;
   background: var(--primary);
   color: var(--primary-foreground);
-  border-radius: 13px;
+  border-radius: var(--radius);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -186,7 +186,7 @@
 }
 .fl-weekly-coverage li {
   border: 1px solid var(--border);
-  border-radius: 13px;
+  border-radius: var(--radius);
   background: var(--surface);
   padding: 14px 16px;
   font-size: 12px;

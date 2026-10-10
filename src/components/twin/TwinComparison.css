@@ -5,7 +5,7 @@
 }
 .fl-comparison-heading h3 {
   margin-top: 10px;
-  font: 500 clamp(22px, 2.6vw, 29px)/1.2 var(--font-display);
+  font: 650 clamp(22px, 2.6vw, 29px)/1.2 var(--font-display);
   letter-spacing: -0.04em;
 }
 .fl-comparison-heading > p:last-child {
@@ -57,7 +57,7 @@
   margin: 0;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   background:
     radial-gradient(
       ellipse at center,
@@ -70,7 +70,7 @@
   display: flex;
   padding: 3px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 .fl-comparison-toggle button {
@@ -117,7 +117,7 @@
   min-height: 46px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: var(--radius);
   background: var(--surface);
   font-size: 13px;
   color: var(--foreground);
@@ -131,7 +131,7 @@
   margin: 22px 0 14px;
 }
 .fl-change-selection h4 {
-  font: 500 24px/1.2 var(--font-display);
+  font: 650 24px/1.2 var(--font-display);
   letter-spacing: -0.04em;
 }
 .fl-change-selection > span {
@@ -150,7 +150,7 @@
 .fl-change-metric {
   padding: 18px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 .fl-change-metric + .fl-change-metric {
@@ -172,7 +172,7 @@
 }
 .fl-change-metric dd {
   margin-top: 5px;
-  font: 500 22px/1.25 var(--font-display);
+  font: 650 22px/1.25 var(--font-display);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -276,7 +276,7 @@
   margin-top: 14px;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   color: var(--foreground);
   background: var(--surface);
 }
@@ -287,7 +287,7 @@
   width: 100%;
   min-height: 64px;
   padding: 20px;
-  border-radius: 20px;
+  border-radius: var(--radius);
   text-align: left;
 }
 .fl-evidence-toggle > svg {
@@ -327,7 +327,7 @@
 }
 .fl-evidence-counts > div {
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
@@ -337,7 +337,7 @@
 }
 .fl-evidence-counts dd {
   margin-top: 6px;
-  font: 500 26px/1.2 var(--font-display);
+  font: 650 26px/1.2 var(--font-display);
   letter-spacing: -0.04em;
 }
 .fl-evidence-events {

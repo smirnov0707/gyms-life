@@ -41,23 +41,21 @@ function copyFor(lang: Lang): Copy {
       loadFailed: "Could not load your active program.",
       tryAgain: "Try again in a moment.",
       noPlan: "You do not have an active training program yet.",
-      noPlanHint:
-        "Build your first program and GYMS.LIFE will use it as the training strategy behind Today.",
+      noPlanHint: "Create a program to get your daily training plan.",
       generate: "Build program",
       staleTitle: "Your training program needs to be rebuilt.",
-      staleHint: "The stored plan no longer matches the current program contract.",
+      staleHint: "Create an updated version to keep training.",
       regenerate: "Build again",
       eyebrow: "TRAINING SYSTEM",
       weeks: "weeks",
       daysPerWeek: "days / week",
       sessions: "sessions",
-      mission: "Current mission",
-      todayAction: "Your next action lives in Today",
-      todayHint:
-        "GYMS.LIFE combines this program with your current state before deciding what you should do now.",
+      mission: "Your goal",
+      todayAction: "Ready for today?",
+      todayHint: "Your next session, adjusted to your recovery.",
       openToday: "Open today's decision",
       inspectPlan: "Inspect full training strategy",
-      inspectPlanHint: "Program structure, session focus and prescribed exercise volume.",
+      inspectPlanHint: "Sessions, exercises and sets.",
       day: "Day",
       minutes: "min",
       removePlan: "Remove active program",
@@ -70,23 +68,21 @@ function copyFor(lang: Lang): Copy {
     loadFailed: "Nepavyko įkelti aktyvios programos.",
     tryAgain: "Pabandyk dar kartą po akimirkos.",
     noPlan: "Aktyvios treniruočių programos dar nėra.",
-    noPlanHint:
-      "Sukurk pirmą programą ir GYMS.LIFE naudos ją kaip treniruočių strategiją Today sprendimams.",
+    noPlanHint: "Susikurk programą ir gauk savo dienos treniruotę.",
     generate: "Sukurti programą",
     staleTitle: "Treniruočių programą reikia sukurti iš naujo.",
-    staleHint: "Išsaugota programa nebeatitinka dabartinio programos kontrakto.",
+    staleHint: "Susikurk atnaujintą versiją ir tęsk treniruotes.",
     regenerate: "Sukurti iš naujo",
     eyebrow: "TRENIRUOČIŲ SISTEMA",
     weeks: "savaitės",
     daysPerWeek: "dienos / sav.",
     sessions: "treniruotės",
-    mission: "Dabartinė misija",
-    todayAction: "Kitas tavo veiksmas yra Today",
-    todayHint:
-      "GYMS.LIFE sujungia šią programą su dabartine tavo būsena ir tik tada nusprendžia, ką geriausia daryti dabar.",
+    mission: "Tavo tikslas",
+    todayAction: "Pasiruošęs šiandienai?",
+    todayHint: "Kita treniruotė pagal tavo atsistatymą.",
     openToday: "Atidaryti šiandienos sprendimą",
     inspectPlan: "Peržiūrėti visą treniruočių strategiją",
-    inspectPlanHint: "Programos struktūra, treniruočių fokusas ir numatytas pratimų tūris.",
+    inspectPlanHint: "Treniruotės, pratimai ir serijos.",
     day: "Diena",
     minutes: "min",
     removePlan: "Pašalinti aktyvų planą",
@@ -111,15 +107,15 @@ export function ActivePlanLoader() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-64 animate-pulse rounded-[2rem] border border-border bg-foreground/[0.02]" />
-        <div className="h-16 animate-pulse rounded-[1.5rem] border border-border bg-foreground/[0.02]" />
+        <div className="h-64 animate-pulse rounded-sm border border-border bg-foreground/[0.02]" />
+        <div className="h-16 animate-pulse rounded-sm border border-border bg-foreground/[0.02]" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <section className="rounded-[2rem] border border-destructive/20 bg-destructive/[0.04] p-6">
+      <section className="rounded-sm border border-destructive/20 bg-destructive/[0.04] p-6">
         <p className="text-sm font-medium text-destructive">{copy.loadFailed}</p>
         <Button onClick={() => void refetch()} variant="outline" className="mt-3">
           {copy.tryAgain}
@@ -130,7 +126,7 @@ export function ActivePlanLoader() {
 
   if (!data || data.status === "NO_ACTIVE_PLAN") {
     return (
-      <section className="rounded-[2rem] border border-border bg-foreground/[0.02] p-6 sm:p-8">
+      <section className="rounded-sm border border-border bg-foreground/[0.02] p-6 sm:p-8">
         <p className="text-lg font-semibold text-foreground">{copy.noPlan}</p>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
           {copy.noPlanHint}
@@ -144,7 +140,7 @@ export function ActivePlanLoader() {
 
   if (data.status === "INVALID_PLAN") {
     return (
-      <section className="rounded-[2rem] border border-amber-400/20 bg-amber-400/[0.04] p-6 sm:p-8">
+      <section className="rounded-sm border border-amber-400/20 bg-amber-400/[0.04] p-6 sm:p-8">
         <p className="text-lg font-semibold text-foreground">{copy.staleTitle}</p>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
           {copy.staleHint}
@@ -279,7 +275,7 @@ export function ActivePlanLoader() {
                   {day.exercises.map((exercise) => (
                     <div
                       key={`${day.day}-${exercise.slug}`}
-                      className="rounded-xl border border-border bg-surface-2 px-3 py-3"
+                      className="rounded-sm border border-border bg-surface-2 px-3 py-3"
                     >
                       <p className="break-words text-sm font-medium text-foreground">
                         {exercise.name}

@@ -150,6 +150,63 @@ try {
           await page.getByRole("link", { name: "Open details" }).click();
           await expect(page).toHaveURL(/#details$/);
           await expect(page.getByLabel("Local submissions")).toHaveText("1");
+          // Actual portalled components must fit the viewport and keep keyboard focus.
+          const review = page.getByRole("button", { name: "Review session", exact: true });
+          await review.click();
+          const dialog = page.getByRole("dialog", { name: "Session details" });
+          await expect(dialog).toBeVisible();
+          const bounds = await dialog.boundingBox();
+          expect(bounds.x).toBeGreaterThanOrEqual(15);
+          expect(bounds.x + bounds.width).toBeLessThanOrEqual(width - 15);
+          expect(bounds.y).toBeGreaterThanOrEqual(15);
+          expect(bounds.y + bounds.height).toBeLessThanOrEqual(885);
+          const dialogSurface = await matchesToken(dialog, "backgroundColor", "--surface");
+          expect(dialogSurface.actual).toBe(dialogSurface.expected);
+          const close = dialog.getByRole("button", { name: "Close", exact: true });
+          await expect
+            .poll(async () => (await close.boundingBox()).width)
+            .toBeGreaterThanOrEqual(44);
+          await expect
+            .poll(async () => (await close.boundingBox()).height)
+            .toBeGreaterThanOrEqual(44);
+          if (motion === "reduce")
+            await page.screenshot({ path: path.join(artifacts, `dialog-${theme}-${width}.png`) });
+          await dialog.getByRole("button", { name: "Last detail action" }).scrollIntoViewIfNeeded();
+          await expect(dialog.getByRole("button", { name: "Last detail action" })).toBeInViewport();
+          await page.keyboard.press("Escape");
+          await expect(review).toBeFocused();
+          await page.getByRole("button", { name: "Session settings", exact: true }).click();
+          const sheet = page.getByRole("dialog", { name: "Session settings" });
+          await expect(sheet).toBeVisible();
+          await sheet.getByLabel("Session note").fill("Synthetic local note");
+          await page.keyboard.press("Escape");
+          await expect(sheet).not.toBeVisible();
+          const focus = page.getByRole("combobox", { name: "Training focus" });
+          await focus.click();
+          const option = page.getByRole("option", { name: "Endurance", exact: true });
+          await expect
+            .poll(async () => (await option.boundingBox()).height)
+            .toBeGreaterThanOrEqual(44);
+          await option.click();
+          await expect(focus).toContainText("Endurance");
+          await page.getByRole("button", { name: "More actions", exact: true }).click();
+          const item = page.getByRole("menuitem", { name: "Select this session", exact: true });
+          await expect
+            .poll(async () => (await item.boundingBox()).height)
+            .toBeGreaterThanOrEqual(44);
+          await item.click();
+          await page.getByRole("button", { name: "Read explanation", exact: true }).click();
+          const popover = page.locator(".ui-popover");
+          await expect(popover).toBeVisible();
+          expect((await popover.boundingBox()).width).toBeLessThanOrEqual(width - 24);
+          await page.keyboard.press("Escape");
+          await page.getByRole("tab", { name: "Overview", exact: true }).focus();
+          await page.keyboard.press("ArrowRight");
+          await expect(page.getByRole("tab", { name: "History", exact: true })).toHaveAttribute(
+            "aria-selected",
+            "true",
+          );
+          await expect(page.getByRole("tabpanel")).toHaveText("Saved session history");
           if (motion === "reduce") {
             await page.screenshot({
               path: path.join(artifacts, `controls-${theme}-${width}.png`),
