@@ -116,8 +116,9 @@ try {
       if (screen === "today") await expect(page.locator(".fl-plan-start")).toBeVisible();
       if (screen === "coach") await expect(page.locator("[data-coach-send]")).toBeVisible();
       if (screen === "signals") {
-        await expect(page.locator(".fl-twin-systems .fl-live-signals").getByRole("img"))
-          .toHaveCount(7);
+        await expect(
+          page.locator(".fl-twin-systems .fl-live-signals").getByRole("img"),
+        ).toHaveCount(7);
       }
       if (screen === "muscle") {
         // Detail is opened through the real body selector, not a separate route.
@@ -263,12 +264,25 @@ try {
             headingSize: parseFloat(getComputedStyle(heading).fontSize),
             rows: [...element.querySelectorAll(":scope > ul > li")].map((row) => {
               const box = row.getBoundingClientRect();
-              return { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
+              const label = row.querySelector(":scope > span:nth-child(2) > span:first-child");
+              const value = row.querySelector(":scope > span:last-child > span:first-child");
+              return {
+                top: box.top,
+                bottom: box.bottom,
+                left: box.left,
+                right: box.right,
+                labelSize: parseFloat(getComputedStyle(label).fontSize),
+                valueSize: parseFloat(getComputedStyle(value).fontSize),
+              };
             }),
           };
         });
         geometry.signals = layout;
         expect(layout.headingSize).toBeGreaterThanOrEqual(24);
+        for (const row of layout.rows) {
+          expect(row.labelSize).toBeGreaterThanOrEqual(13);
+          expect(row.valueSize).toBeGreaterThanOrEqual(22);
+        }
         if (width <= 390) {
           for (let index = 1; index < layout.rows.length; index++) {
             expect(layout.rows[index].top).toBeGreaterThanOrEqual(layout.rows[index - 1].bottom);
