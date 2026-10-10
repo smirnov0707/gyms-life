@@ -124,6 +124,7 @@ function build(
       texturedSkin && sourceMaterial instanceof MeshStandardMaterial ? sourceMaterial.map : null;
     if (texturedSkin && !map) throw new Error("Registered skin texture did not decode");
     if (texturedSkin && sourceName !== "Eyes") fitTwinChestTexture(object.geometry);
+    object.userData["twinNativeBlink"] = texturedSkin && sourceName === "twin-region:neutral";
     const preset = map
       ? { color: 0xffffff, roughness: sourceName === "Eyes" ? 0.32 : 0.76, metalness: 0, map }
       : sourceName === "Eyes"

@@ -87,7 +87,7 @@ try {
       return route.abort();
     });
     const page = await context.newPage();
-    if (viewport.width === 390) await page.clock.install();
+    if (viewport.width === 390 || viewport.width === 1280) await page.clock.install();
     page.on("pageerror", (error) => errors.push(String(error)));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
@@ -273,6 +273,8 @@ try {
         expect(changed).toBeGreaterThan(800);
         await page.emulateMedia({ reducedMotion: "reduce" });
         await expect(canvas).toHaveAttribute("data-twin-breath", "0.0000");
+        await expect(canvas).toHaveAttribute("data-twin-stance", "0.0000");
+        await expect(canvas).toHaveAttribute("data-twin-blink", "0.0000");
         await page.waitForTimeout(250);
         const frames = await canvas.getAttribute("data-twin-frames");
         await page.waitForTimeout(300);
@@ -299,6 +301,48 @@ try {
         await canvas.press("ArrowRight");
         await canvas.evaluate((element) => element.blur());
         await canvas.screenshot({ path: path.join(out, "eye-three-quarter.png") });
+        await canvas.press("Home");
+        for (let step = 0; step < 10; step++) await canvas.press("+");
+        for (let step = 0; step < 4; step++) await canvas.press("ArrowUp");
+        await canvas.evaluate((element) => element.blur());
+        await page.clock.pauseAt(new Date(Date.now() + 100));
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        const motionTime = await page.evaluate(() => performance.now());
+        await page.clock.fastForward((2500 - (motionTime % 31000) + 31000) % 31000);
+        await canvas.screenshot({ path: path.join(out, "idle-eyes-open.png") });
+        await page.clock.fastForward(170);
+        await page.clock.runFor(40);
+        for (
+          let frame = 0;
+          frame < 10 && Number(await canvas.getAttribute("data-twin-blink")) < 0.99;
+          frame++
+        )
+          await page.clock.runFor(10);
+        expect(Number(await canvas.getAttribute("data-twin-blink"))).toBeGreaterThan(0.95);
+        await canvas.screenshot({ path: path.join(out, "idle-eyes-closed.png") });
+        await page.clock.fastForward(500);
+        expect(Number(await canvas.getAttribute("data-twin-blink"))).toBe(0);
+        await canvas.screenshot({ path: path.join(out, "idle-eyes-reopened.png") });
+        await canvas.press("Home");
+        await page.clock.runFor(50);
+        const stance = await canvas.getAttribute("data-twin-stance");
+        const firstPose = await canvas.screenshot({ path: path.join(out, "idle-body-first.png") });
+        await page.clock.fastForward(4200);
+        expect(await canvas.getAttribute("data-twin-stance")).not.toBe(stance);
+        const secondPose = await canvas.screenshot({
+          path: path.join(out, "idle-body-second.png"),
+        });
+        const firstPixels = await sharp(firstPose).raw().toBuffer();
+        const secondPixels = await sharp(secondPose).raw().toBuffer();
+        let poseChangedChannels = 0;
+        for (let i = 0; i < firstPixels.length; i++)
+          if (Math.abs(firstPixels[i] - secondPixels[i]) > 5) poseChangedChannels++;
+        expect(poseChangedChannels).toBeGreaterThan(2000);
+        await page.clock.resume();
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await expect(canvas).toHaveAttribute("data-twin-stance", "0.0000");
+        await expect(canvas).toHaveAttribute("data-twin-blink", "0.0000");
+        results.push({ name, idleAndBlink: "passed", poseChangedChannels });
         // Review vessel placement on the actual mesh from both sides, including
         // the dorsal hands and calves that a torso-only capture cannot show.
         for (const region of ["hands", "calves"]) {
@@ -326,6 +370,16 @@ try {
         }
         expect(eyeTextures[1].retained).toBeLessThanOrEqual(eyeTextures[0].retained);
         results.push({ name, eyeTextures });
+        await canvas.press("Home");
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        const movingStance = await canvas.getAttribute("data-twin-stance");
+        await expect.poll(() => canvas.getAttribute("data-twin-stance")).not.toBe(movingStance);
+        const movingBox = await canvas.boundingBox();
+        await canvas.click({
+          position: { x: movingBox.width * 0.535, y: movingBox.height * 0.267 },
+        });
+        await expect(page.locator("[data-camera-selection]")).toHaveText("chest");
+        results.push({ name, movingRegionPick: "passed" });
       }
       results.push({
         name,
@@ -343,6 +397,8 @@ try {
             bodyY: document.body.scrollTop,
             rootY: document.documentElement.scrollTop,
             innerHeight,
+            animationTime: performance.now(),
+            animationState: document.querySelector("canvas")?.dataset,
             scrolling: document.scrollingElement?.tagName,
             pointers: window.__scrollPointers,
             ancestors: (() => {

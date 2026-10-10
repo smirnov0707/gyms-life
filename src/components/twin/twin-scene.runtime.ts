@@ -20,6 +20,8 @@ import {
   WebGLRenderer,
 } from "three";
 import { createTwinBreathing, twinBreathPhase } from "./twin-breathing";
+import { createTwinIdleMotion } from "./twin-idle-motion";
+import { TWIN_REGISTERED_ASSETS } from "./twin-body.provenance";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import { createTwinPickingProfile } from "./twin-picking.profile";
@@ -241,6 +243,7 @@ export function mountTwinScene(
     let model: TwinBodyModel | TwinIdentityShellModel | ReturnType<typeof createTwinBody> =
       createTwinBody();
     let breathing: ReturnType<typeof createTwinBreathing> | null = null;
+    let idleMotion: ReturnType<typeof createTwinIdleMotion> | null = null;
     let pickingProfile = createTwinPickingProfile(model.body);
     const pickingAxis = new Vector3();
     // The generated surface is no longer shown while the figure downloads. It
@@ -320,6 +323,14 @@ export function mountTwinScene(
           model.dispose();
           model = human;
           breathing = "provenance" in human ? createTwinBreathing(human.body) : null;
+          idleMotion =
+            "provenance" in human &&
+            human.provenance.sha256 ===
+              TWIN_REGISTERED_ASSETS.find(
+                (asset) => asset.path === "public/models/twin-natural-skin-v1.glb",
+              )?.sha256
+              ? createTwinIdleMotion(human.body)
+              : null;
           twinBodyRoot.add(model.body);
           // Preserve the orbit/zoom when replacing a late fallback; only the
           // frame changes. The geometry itself and its proportions do not.
@@ -390,7 +401,10 @@ export function mountTwinScene(
       lastPaint = time;
       const breath = moving ? twinBreathPhase(time) : 0;
       breathing?.setPhase(breath);
+      const idle = idleMotion?.setTime(time, moving);
       canvas.dataset["twinBreath"] = breath.toFixed(4);
+      canvas.dataset["twinStance"] = (idle?.stance ?? 0).toFixed(4);
+      canvas.dataset["twinBlink"] = (idle?.blink ?? 0).toFixed(4);
       controls.update();
       try {
         renderer.render(scene, camera);
@@ -648,7 +662,9 @@ export function mountTwinScene(
         .filter((hit) => {
           // The torso centre is not the calf centre. Keep the near-side guard,
           // but locate its axis at this hit's height using existing geometry.
-          const limit = pickingProfile?.axisAt(hit.point, pickingAxis)
+          const hasAxis = pickingProfile?.axisAt(hit.point, pickingAxis);
+          if (hasAxis) idleMotion?.moveAxis(pickingAxis);
+          const limit = hasAxis
             ? twinNearSideReach(raycaster.ray, camera.position, pickingAxis)
             : reach;
           return hit.distance <= limit;
