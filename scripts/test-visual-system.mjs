@@ -96,8 +96,8 @@ export async function reviewVisualSystem({ openPanel, artifacts, record, assertI
     await expect(page.locator("#main-content")).toBeFocused();
     await page.locator("#main-content").blur();
     if (test.screen === "coach") {
-      const composer = page.locator(".fl-coach-conversation form input");
-      const send = page.locator(".fl-coach-conversation form button");
+      const composer = page.locator(".fl-coach-conversation [data-coach-draft]");
+      const send = page.locator(".fl-coach-conversation [data-coach-send]");
       await expect(send).toBeDisabled();
       await composer.fill("Explain my training signals");
       await expect(send).toBeEnabled();
