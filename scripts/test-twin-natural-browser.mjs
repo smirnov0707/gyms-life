@@ -107,19 +107,37 @@ try {
       if (engine === "chromium") {
         const cdp = await context.newCDPSession(page);
         // Real one-finger swipe starts on the model, not a page margin.
-        await cdp.send("Input.synthesizeScrollGesture", {
-          x: box.x + box.width / 2,
-          y: box.y + box.height * 0.7,
-          yDistance: -130,
-          speed: 250,
-          gestureSourceType: "touch",
+        await canvas.evaluate((el) => {
+          window.__scrollPointers = [];
+          for (const name of ["pointerdown", "pointermove", "pointercancel", "pointerup"])
+            el.addEventListener(
+              name,
+              (event) =>
+                window.__scrollPointers.push({
+                  type: event.type,
+                  y: event.clientY,
+                  prevented: event.defaultPrevented,
+                }),
+              { passive: true },
+            );
         });
+        const point = (dy) => [
+          { id: 1, x: box.x + box.width / 2, y: box.y + box.height * 0.72 - dy },
+        ];
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: point(0) });
+        for (let dy = 6; dy <= 132; dy += 6) {
+          await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: point(dy) });
+          await page.waitForTimeout(20);
+        }
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
         await cdp.detach();
       } else {
-        // Playwright WebKit has no trusted swipe API. Native wheel plus computed
-        // touch-action validates the page path; physical iPhone is separate QA.
+        // Playwright mobile WebKit has neither trusted swipe nor wheel APIs.
+        // Native PageDown (wheel on desktop) tests scroll ownership; touch-action
+        // and mobile rendering are checked separately. No physical iPhone claim.
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-        await page.mouse.wheel(0, 180);
+        if (viewport.width < 1000) await page.keyboard.press("PageDown");
+        else await page.mouse.wheel(0, 180);
       }
       await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(scroll + 40);
       expect(Number(await canvas.getAttribute("data-twin-yaw"))).toBeCloseTo(yaw, 2);
@@ -135,6 +153,22 @@ try {
         .poll(async () => Number(await canvas.getAttribute("data-twin-yaw")))
         .not.toBe(yaw);
       await canvas.screenshot({ path: path.join(out, `${name}-side.png`) });
+      if (viewport.width === 390) {
+        const settings = page.getByRole("button", { name: "Vaizdo valdymas", exact: true });
+        for (const [preset, label] of [
+          ["Kūno viršus", "torso-front"],
+          ["Kairysis šonas", "torso-side"],
+          ["Nugara", "torso-back"],
+        ]) {
+          await settings.click();
+          await page.getByRole("button", { name: preset, exact: true }).click();
+          await settings.click();
+          await canvas.evaluate((el) =>
+            el.scrollIntoView({ block: "center", behavior: "instant" }),
+          );
+          await canvas.screenshot({ path: path.join(out, `${name}-${label}.png`) });
+        }
+      }
       // Resize/rotate without remount: camera refits the same verified body.
       if (viewport.width === 390) {
         await page.setViewportSize({ width: 844, height: 390 });
@@ -170,6 +204,36 @@ try {
       await page.screenshot({ path: path.join(out, `${name}-page.png`), fullPage: true });
       results.push({ name, height, scroll: "passed", interaction: "passed" });
     } catch (error) {
+      console.log(
+        "SCROLL_DIAGNOSTICS",
+        JSON.stringify(
+          await page.evaluate(() => ({
+            windowY: scrollY,
+            bodyY: document.body.scrollTop,
+            rootY: document.documentElement.scrollTop,
+            innerHeight,
+            scrolling: document.scrollingElement?.tagName,
+            pointers: window.__scrollPointers,
+            ancestors: (() => {
+              const rows = [];
+              let el = document.querySelector("canvas");
+              while (el) {
+                const s = getComputedStyle(el);
+                rows.push({
+                  tag: el.tagName,
+                  touch: s.touchAction,
+                  overflow: s.overflowY,
+                  top: el.getBoundingClientRect().top,
+                  height: el.clientHeight,
+                  scrollHeight: el.scrollHeight,
+                });
+                el = el.parentElement;
+              }
+              return rows;
+            })(),
+          })),
+        ),
+      );
       await page.screenshot({ path: path.join(out, `${name}-failure.png`), fullPage: true });
       throw error;
     } finally {

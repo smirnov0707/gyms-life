@@ -79,7 +79,7 @@ try {
     "data-twin-asset-sha256",
     createHash("sha256").update(selectedBytes).digest("hex"),
   );
-  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(0);
   record("session replay credits the actual loaded model through the shared renderer");
   await expect(inspect()).toHaveText("2 sets");
   await controls(true);
