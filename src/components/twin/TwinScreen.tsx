@@ -111,6 +111,7 @@ export function TwinScreen({
           {/* Each panel stays mounted only while selected: the figure is a WebGL
           scene, and three of them holding contexts open is not free. */}
           <div
+            key={active}
             role="tabpanel"
             id={`twin-panel-${active}`}
             aria-labelledby={`twin-tab-${active}`}

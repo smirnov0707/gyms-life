@@ -313,6 +313,23 @@ try {
         await summary.press("Enter");
         await expect(content).toBeHidden();
         await expect(summary).toBeFocused();
+        if (width === 320 && theme === "dark") {
+          // Native disclosure state must not leak between reused tab panels.
+          await summary.press("Enter");
+          const tabs = page.locator('.twin-screen > [role="tablist"]');
+          const signalsTab = tabs.getByRole("tab", { name: "Rodikliai", exact: true });
+          const bodyTab = tabs.getByRole("tab", { name: "Kūnas", exact: true });
+          await signalsTab.press("ArrowLeft");
+          await expect(bodyTab).toBeFocused();
+          const muscles = page.locator(".fl-twin-body > details").first();
+          await expect(muscles).toHaveJSProperty("open", false);
+          await muscles.locator(":scope > summary").press("Enter");
+          await expect(muscles).toHaveJSProperty("open", true);
+          await bodyTab.press("ArrowRight");
+          await expect(signalsTab).toBeFocused();
+          await expect(evidence).toHaveJSProperty("open", false);
+          await expect(content).toBeHidden();
+        }
       }
       if (screen === "futureme" && width === 390) {
         expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(28);
