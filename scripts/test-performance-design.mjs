@@ -103,6 +103,8 @@ try {
                 fontSize: parseFloat(style.fontSize),
                 fontWeight: style.fontWeight,
                 radius: style.borderRadius,
+                background: style.backgroundColor,
+                backgroundImage: style.backgroundImage,
               };
             };
             return {
@@ -112,6 +114,7 @@ try {
               ),
               action: measure(".fl-plan-start, [data-coach-send], .fl-strength-summary > button"),
               dock: measure(".fl-mobile-navigation"),
+              command: measure(".fl-today-command"),
             };
           });
           // Capture before asserting so a failure remains visually reviewable.
