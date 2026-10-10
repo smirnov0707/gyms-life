@@ -92,6 +92,13 @@ try {
     if (activeView === "deck") await expect(page.locator("[data-lab-command-deck]")).toBeVisible();
     return { context, page };
   };
+  const openHistory = async (page) => {
+    const methods = page.locator(".fl-lab-methods");
+    if ((await methods.count()) && (await methods.getAttribute("open")) === null) {
+      await methods.locator(":scope > summary").click();
+    }
+    await page.locator("[data-lab-history-toggle]").click();
+  };
   const count = (page) => page.evaluate(() => window.__labHarness.requests.length);
   const finish = (page) =>
     page.evaluate(() => {
@@ -127,7 +134,7 @@ try {
             await expect(page.locator("[data-lab-history-toggle]")).toHaveAccessibleName(
               historyName(lt),
             );
-            await page.locator("[data-lab-history-toggle]").click();
+            await openHistory(page);
             await expect(page.locator("[data-lab-decision]")).toHaveCount(4);
             await expect(page.locator("[data-lab-fit-unavailable]")).toBeVisible();
             await expect(page.locator("[data-lab-fit-rate]")).toHaveCount(0);
@@ -225,7 +232,7 @@ try {
       const { page, context } = await open("source=decisions&lang=en&theme=dark");
       try {
         await expect(page.locator('[data-lab-read-state="partial"]')).toBeVisible();
-        await page.locator("[data-lab-history-toggle]").click();
+        await openHistory(page);
         await expect(page.locator("[data-lab-decisions]")).toContainText(
           "Decision history could not be read.",
         );

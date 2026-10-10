@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
@@ -48,7 +48,8 @@ function ExerciseRow({ exercise }: { exercise: TrainingPlanDay["exercises"][numb
 }
 
 function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
   return (
     <>
       <div className="flex items-baseline justify-between gap-3 px-3">
@@ -65,11 +66,6 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
           />
         </div>
       ) : null}
-      <ul className="mt-2 px-3">
-        {workout.exercises.map((exercise) => (
-          <ExerciseRow key={`${exercise.slug}-${exercise.name}`} exercise={exercise} />
-        ))}
-      </ul>
       <div className="px-3 pb-3 pt-3">
         <Link
           to="/workout/$day"
@@ -79,6 +75,16 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
           {t("tp.start")}
         </Link>
       </div>
+      <details className="fl-plan-details">
+        <summary>
+          {english ? "View exercises" : "Peržiūrėti pratimus"} ({workout.exercises.length})
+        </summary>
+        <ul className="px-3 pb-3">
+          {workout.exercises.map((exercise) => (
+            <ExerciseRow key={`${exercise.slug}-${exercise.name}`} exercise={exercise} />
+          ))}
+        </ul>
+      </details>
     </>
   );
 }

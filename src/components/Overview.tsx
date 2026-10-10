@@ -178,16 +178,40 @@ export function Overview() {
             {greeting}
             {firstName ? `, ${firstName}` : ""}
           </h1>
-          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
+          {planReadFailed ? <p>{t("ov.planReadFailed")}</p> : null}
         </header>
         <section
           className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"
           aria-label={english ? "Today's command" : "Šiandienos sprendimas"}
         >
+          <div className="fl-today-plan grid min-w-0 content-start gap-3">
+            <TodaysPlanPanel />
+            <TodayRaceCommand />
+            <details className="fl-surface fl-today-execution group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "I ran today" : "Šiandien bėgau"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickRunLog
+                  onLogged={async () => {
+                    await queryClient.invalidateQueries({ queryKey: ["todays-workout", user?.id] });
+                  }}
+                />
+              </div>
+            </details>
+            <details className="fl-surface fl-today-execution group">
+              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
+                {english ? "Log food" : "Įrašyti maistą"}
+              </summary>
+              <div className="border-t border-border p-4">
+                <QuickFoodLog compact />
+                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
+                </Link>
+              </div>
+            </details>
+          </div>
           <div className="fl-today-command-copy grid min-w-0 content-start gap-3">
-            <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-primary">
-              {english ? "TODAY COMMAND" : "ŠIANDIENOS VEIKSMAS"}
-            </p>
             {readinessScore != null && Number.isFinite(readinessScore) ? (
               <ReadinessCard
                 compact
@@ -232,33 +256,6 @@ export function Overview() {
               workoutDay={today?.day ?? null}
               primaryTrainingActionHandled={Boolean(today)}
             />
-          </div>
-          <div className="fl-today-plan grid min-w-0 content-start gap-3">
-            <TodaysPlanPanel />
-            <TodayRaceCommand />
-            <details className="fl-surface fl-today-execution group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "I ran today" : "Šiandien bėgau"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickRunLog
-                  onLogged={async () => {
-                    await queryClient.invalidateQueries({ queryKey: ["todays-workout", user?.id] });
-                  }}
-                />
-              </div>
-            </details>
-            <details className="fl-surface fl-today-execution group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food" : "Įrašyti maistą"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickFoodLog compact />
-                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
-                </Link>
-              </div>
-            </details>
           </div>
         </section>
 

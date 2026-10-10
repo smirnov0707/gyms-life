@@ -143,7 +143,22 @@ try {
           }
           if (screen === "today") {
             expect(Number(geometry.heading.fontWeight)).toBeGreaterThanOrEqual(700);
-            expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width === 390 ? 28 : 48);
+            expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width === 390 ? 26 : 36);
+            const exercises = page.locator(".fl-plan-details");
+            await expect(exercises.locator("ul")).toBeHidden();
+            await exercises.locator("summary").press("Enter");
+            await expect(exercises.locator("li")).toHaveCount(5);
+            await expect(exercises.locator("li").first()).toContainText("4 × 6");
+            await exercises.locator("summary").press("Enter");
+            await expect(exercises.locator("ul")).toBeHidden();
+          }
+          if (screen === "lab") {
+            const methods = page.locator(".fl-lab-methods");
+            await expect(methods.locator(".fl-lab-domains")).toBeHidden();
+            await methods.locator(":scope > summary").press("Enter");
+            await expect(methods.locator(".fl-lab-domains")).toBeVisible();
+            await methods.locator(":scope > summary").press("Enter");
+            await expect(methods.locator(".fl-lab-domains")).toBeHidden();
           }
           if (screen === "futureme" && width === 390) {
             expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(28);

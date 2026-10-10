@@ -530,6 +530,9 @@ try {
           shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
         ).toBeVisible();
 
+        const methods = shown.page.locator(".fl-lab-methods");
+        await expect(methods).not.toHaveAttribute("open", "");
+        await methods.locator(":scope > summary").press("Enter");
         const domainsDisclosure = shown.page.locator(".fl-lab-domains");
         const domains = domainsDisclosure.getByRole("region", {
           name: "Evidence domains",
@@ -573,6 +576,8 @@ try {
             exact: true,
           }),
         ).toBeHidden();
+        await methods.locator(":scope > summary").press("Enter");
+        await expect(methods).not.toHaveAttribute("open", "");
         record(
           `Lab ${viewport.name} keeps one investigation primary and supporting evidence on demand`,
         );
@@ -1084,6 +1089,7 @@ try {
     // 3. Recovery projections live in Twin Systems; prediction calibration lives in Lab.
     // Recovery unknown-state semantics are exercised later in both real recovery contexts.
     const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
+    await openDetails(evidenceLab.page.locator(".fl-lab-methods"));
     const calibrationSummary = evidenceLab.page
       .locator("details > summary")
       .filter({ hasText: /^Prediction calibration/ });
@@ -1143,6 +1149,10 @@ try {
     await openTodayExecutionLayer(planned.page);
     const plan = planned.page.getByRole("region", { name: "Today's plan" });
     await expect(plan.getByText("Upper body focus")).toBeVisible();
+    const exercises = plan.locator(".fl-plan-details");
+    await expect(exercises.locator("ul")).toBeHidden();
+    await exercises.locator("summary").press("Enter");
+    await expect(exercises.locator("ul")).toBeVisible();
     const benchRow = plan.getByRole("listitem").filter({
       has: planned.page.getByText("Bench press", { exact: true }),
     });
@@ -1231,6 +1241,7 @@ try {
     });
     await expect(lab.page.getByText("Source available", { exact: true })).toHaveCount(0);
     await expect(lab.page.getByText("Rules defined", { exact: true })).toHaveCount(0);
+    await openDetails(lab.page.locator(".fl-lab-methods"));
     const failedDomains = lab.page.locator(".fl-lab-domains");
     const failedRoster = failedDomains.locator(".fl-lab-roster-tiles");
     await expect(failedRoster).toBeHidden();
@@ -1930,6 +1941,7 @@ try {
     // 21. Prediction learning now has one canonical surface in Lab. Evidence
     //     maturity is calibration progress, never a second confidence dashboard.
     const evidence = await openPanel("?shell=1&screen=lab&evidence=some");
+    await openDetails(evidence.page.locator(".fl-lab-methods"));
     const evidenceCalibrationSummary = evidence.page
       .locator("details > summary")
       .filter({ hasText: /^Prediction calibration/ });
