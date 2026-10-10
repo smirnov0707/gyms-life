@@ -125,6 +125,14 @@ export async function verifyIntakeDesign({ open, record, artifacts }) {
               .bottom,
             dockTop: document.querySelector(".fl-mobile-navigation").getBoundingClientRect().top,
           }));
+          await writeFile(
+            path.join(artifacts, `intake-goal-${theme}-${width}-geometry.json`),
+            JSON.stringify(geometry, null, 2),
+          );
+          await page.screenshot({
+            path: path.join(artifacts, `intake-goal-${theme}-${width}-viewport.png`),
+            animations: "disabled",
+          });
           expect(geometry.actionBottom).toBeLessThan(geometry.dockTop);
         }
         const name = `intake-${screen}-${theme}-${width}`;

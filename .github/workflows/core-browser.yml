@@ -59,7 +59,7 @@ jobs:
         run: npm run test:browser:core
         env:
           CORE_BROWSER_ENGINE: ${{ matrix.engine }}
-          CORE_BROWSER_REVIEW_EMIT: ${{ matrix.engine == 'chromium' && '1' || '0' }}
+          CORE_BROWSER_REVIEW_EMIT: "0"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

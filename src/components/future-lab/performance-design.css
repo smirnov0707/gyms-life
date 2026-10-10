@@ -408,6 +408,10 @@
   .future-lab-app.fl-performance-shell .fl-shell-main {
     padding: 14px 14px 100px;
   }
+  .future-lab-app.fl-performance-shell .fl-shell-main:has(.fl-intake-workspace) {
+    padding-top: 4px;
+    padding-inline: max(12px, var(--sal, 0px)) max(12px, var(--sar, 0px));
+  }
   .future-lab-app.fl-performance-shell .fl-dashboard .fl-performance-masthead {
     padding: 0 0 14px;
   }
