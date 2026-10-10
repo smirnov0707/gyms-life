@@ -84,7 +84,6 @@ const baseDict = {
   "nav.dashboard": { lt: "Apžvalga", en: "Dashboard" },
   "nav.today": { lt: "Šiandien", en: "Today" },
   "nav.training": { lt: "Treniruotės", en: "Training" },
-  "nav.twin": { lt: "Dvynys", en: "Twin" },
   "nav.lab": { lt: "Laboratorija", en: "Lab" },
   "nav.moreDescription": {
     lt: "Ką nori padaryti dabar? GYMS.LIFE atveria tinkamą įrankį, o ne dar vieną programą.",
@@ -115,7 +114,6 @@ const baseDict = {
     lt: "Skaidri tavo validuotų duomenų suvestinė",
     en: "A transparent summary of your validated data",
   },
-  "nav.coach": { lt: "Intelligence", en: "Intelligence" },
   "theme.label": { lt: "Tema", en: "Theme" },
   "theme.light": { lt: "Šviesi", en: "Light" },
   "theme.dark": { lt: "Tamsi", en: "Dark" },
@@ -208,7 +206,6 @@ const baseDict = {
   "dash.morning": { lt: "Labas rytas", en: "Good morning" },
   "dash.afternoon": { lt: "Laba diena", en: "Good afternoon" },
   "dash.evening": { lt: "Labas vakaras", en: "Good evening" },
-  "dash.welcomeBack": { lt: "Malonu matyti", en: "Good to see you" },
   "dash.streak": { lt: "Serija", en: "Streak" },
   "dash.regenerate": { lt: "Generuoti naują planą", en: "Generate a new plan" },
 
