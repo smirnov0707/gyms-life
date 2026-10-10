@@ -1,13 +1,5 @@
 import { useState, type ComponentProps, type ReactNode } from "react";
-import {
-  ArrowUpRight,
-  Activity,
-  Orbit,
-  FlaskConical,
-  MessageCircle,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Activity, Orbit, FlaskConical, MessageCircle, Eye, EyeOff } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Logo, LangSwitch } from "./Brand";
 import { ThemeToggle } from "./ThemeToggle";
@@ -29,26 +21,22 @@ export function AuthFrame({
     {
       icon: Activity,
       title: lt ? "Šiandien" : "Today",
-      detail: lt ? "Tavo dienos kryptis" : "Your direction for the day",
     },
     {
       icon: Orbit,
-      title: lt ? "Mano Twin" : "My Twin",
-      detail: lt ? "Pažink savo kūną" : "Understand your body",
+      title: lt ? "Mano dvynys" : "My Twin",
     },
     {
       icon: FlaskConical,
       title: "Lab",
-      detail: lt ? "Atrask savo dėsningumus" : "Discover your patterns",
     },
     {
       icon: MessageCircle,
-      title: "Intelligence",
-      detail: lt ? "Klausk su savo kontekstu" : "Ask with your context",
+      title: lt ? "Treneris" : "Coach",
     },
   ];
   return (
-    <div className="fl-auth">
+    <div className="fl-auth fl-auth-signature">
       <header className="fl-auth-header">
         <Logo href="/" />
         <div className="fl-auth-preferences">
@@ -62,31 +50,25 @@ export function AuthFrame({
             <span /> {lt ? "TAVO ASMENINĖ FUTURE LAB" : "YOUR PERSONAL FUTURE LAB"}
           </div>
           <p className="fl-auth-statement">
-            {lt ? "Kasdien." : "Every day."}
+            {lt ? "Tavo kitas" : "Your next"}
             <br />
-            <span>{lt ? "Arčiau savęs." : "More you."}</span>
+            <span>{lt ? "lygis." : "level."}</span>
           </p>
           <p className="fl-auth-story-copy">
             {lt
-              ? "Treniruotės, atsistatymas ir tavo kūno istorija. Viena erdvė kitam žingsniui."
-              : "Training, recovery and the story of your body. One space for your next step."}
+              ? "Treniruokis. Pažink savo kūną. Judėk pirmyn."
+              : "Train. Understand your body. Move forward."}
           </p>
-          <div className="fl-auth-orbit" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <Orbit />
-            <span>GYMS.LIFE</span>
+          <div className="fl-auth-art" aria-hidden="true">
+            <img src="/images/athletic-motion-v1.webp" alt="" width="1536" height="1024" />
           </div>
           <div className="fl-auth-worlds">
-            {worlds.map(({ icon: Icon, title: world, detail }) => (
+            {worlds.map(({ icon: Icon, title: world }) => (
               <div key={world}>
                 <Icon aria-hidden="true" />
                 <span>
                   <strong>{world}</strong>
-                  <small>{detail}</small>
                 </span>
-                <ArrowUpRight aria-hidden="true" />
               </div>
             ))}
           </div>

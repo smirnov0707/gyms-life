@@ -6,6 +6,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SystemNotice } from "@/components/system/SystemNotice";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import "@/styles.css";
 import "./fixture.css";
 
@@ -71,6 +101,74 @@ function Controls() {
           Theme-aware text and keyboard controls without simulated telemetry.
         </SystemNotice>
       </div>
+      <section aria-label="Portal and navigation controls">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline">Review session</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Session details</DialogTitle>
+              <DialogDescription>
+                Local synthetic content for narrow screens and keyboard navigation.
+              </DialogDescription>
+            </DialogHeader>
+            {Array.from({ length: 20 }, (_, i) => (
+              <p key={i}>
+                Exercise {i + 1}. Your recorded sets and technique notes remain readable inside the
+                scrollable dialog.
+              </p>
+            ))}
+            <Button variant="outline">Last detail action</Button>
+          </DialogContent>
+        </Dialog>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline">Session settings</Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetTitle>Session settings</SheetTitle>
+            <SheetDescription>Adjust your local view.</SheetDescription>
+            <label htmlFor="sheet-note">Session note</label>
+            <Input id="sheet-note" />
+          </SheetContent>
+        </Sheet>
+        <Select defaultValue="strength">
+          <SelectTrigger aria-label="Training focus">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="strength">Strength</SelectItem>
+            <SelectItem value="endurance">Endurance</SelectItem>
+          </SelectContent>
+        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">More actions</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onSelect={() => setSelected(true)}>
+              Select this session
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline">Read explanation</Button>
+          </PopoverTrigger>
+          <PopoverContent>
+            Based on your saved entries. Unknown values remain unknown.
+          </PopoverContent>
+        </Popover>
+        <Tabs defaultValue="overview">
+          <TabsList aria-label="Detail sections">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview">Session overview</TabsContent>
+          <TabsContent value="history">Saved session history</TabsContent>
+        </Tabs>
+      </section>
     </main>
   );
 }

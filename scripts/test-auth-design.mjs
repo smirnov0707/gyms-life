@@ -55,6 +55,23 @@ export async function reviewAuthDesign({ open, record, output, engine }) {
         if (state.name === "expired")
           await expect(page.locator(".fl-auth-card [role=alert]")).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
+        const art = page.locator(".fl-auth-art img");
+        await expect
+          .poll(() => art.evaluate((img) => img.complete && img.naturalWidth > 0))
+          .toBe(true);
+        const layout = await page.locator(".fl-auth-layout").evaluate((el) => {
+          const card = el.querySelector(".fl-auth-card");
+          const story = el.querySelector(".fl-auth-story");
+          return {
+            cardTop: card.getBoundingClientRect().top,
+            storyTop: story.getBoundingClientRect().top,
+            formGround: getComputedStyle(card).backgroundColor,
+            titleWeight: getComputedStyle(card.querySelector("h1")).fontWeight,
+          };
+        });
+        expect(layout.formGround).toBe("rgba(0, 0, 0, 0)");
+        expect(Number(layout.titleWeight)).toBeGreaterThanOrEqual(700);
+        if (width === 390) expect(layout.cardTop).toBeLessThan(layout.storyTop);
         expect(
           await page.evaluate(
             () =>

@@ -17,7 +17,7 @@
   min-height: 44px;
   border-radius: 8px;
   text-align: left;
-  font: 500 clamp(25px, 3vw, 34px)/1.18 var(--font-display);
+  font: 650 clamp(25px, 3vw, 34px)/1.18 var(--font-display);
   letter-spacing: -0.04em;
 }
 .fl-rewind-heading h2 svg {
@@ -48,7 +48,7 @@
 .fl-rewind-history {
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
 }
@@ -88,7 +88,7 @@
   gap: 12px;
   text-align: left;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 12px;
 }
 .fl-rewind-history button:disabled {
@@ -148,7 +148,7 @@
 }
 .fl-rewind-selected-heading {
   padding: 24px;
-  border-radius: 20px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background:
     radial-gradient(
@@ -174,7 +174,7 @@
 }
 .fl-rewind-selected-heading h3 {
   margin: 14px 0 10px;
-  font: 500 clamp(22px, 2.6vw, 29px)/1.3 var(--font-display);
+  font: 650 clamp(22px, 2.6vw, 29px)/1.3 var(--font-display);
   letter-spacing: -0.045em;
 }
 .fl-rewind-selected-heading > span {
@@ -200,7 +200,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--surface);
 }
@@ -222,7 +222,7 @@
 }
 .fl-rewind-value {
   margin: 9px 0 13px;
-  font: 500 clamp(21px, 2.4vw, 30px)/1.2 var(--font-display);
+  font: 650 clamp(21px, 2.4vw, 30px)/1.2 var(--font-display);
   letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -246,7 +246,7 @@
 }
 .fl-rewind-disclosure {
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--surface);
   margin-top: 12px;
 }
@@ -315,7 +315,7 @@
   min-height: 320px;
   padding: 32px;
   border: 1px dashed var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
 }
 .fl-rewind-prompt svg {
   width: 26px;
@@ -323,7 +323,7 @@
   color: var(--primary);
 }
 .fl-rewind-prompt h3 {
-  font: 500 24px/1.2 var(--font-display);
+  font: 650 24px/1.2 var(--font-display);
   letter-spacing: -0.04em;
 }
 .fl-rewind-prompt p {

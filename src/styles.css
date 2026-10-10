@@ -7,6 +7,7 @@
 @import "./auth-workspace.css";
 @import "./public-workspace.css";
 @import "./landing-workspace.css";
+@import "./signature-surfaces.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -94,7 +95,7 @@
 }
 
 :root {
-  --radius: 0.375rem;
+  --radius: 0.25rem;
   --background: #07080a;
   --foreground: #f4f6f4;
   --surface: #131516;

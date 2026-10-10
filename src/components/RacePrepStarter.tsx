@@ -60,7 +60,7 @@ export function RacePrepStarter() {
   };
 
   return (
-    <section className="fl-premium-card grid gap-4 rounded-[2rem] border border-border bg-surface p-4 sm:p-5">
+    <section className="fl-endurance-starter fl-premium-card grid gap-4 rounded-sm border border-border bg-surface p-4 sm:p-5">
       <div>
         <p className="fl-eyebrow">ENDURANCE OS</p>
         <h2 className="mt-2 text-2xl font-semibold">
@@ -68,8 +68,8 @@ export function RacePrepStarter() {
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {english
-            ? "Your recent running becomes the baseline. The plan adapts from evidence, not guesswork."
-            : "Tavo naujausi bėgimai tampa atskaitos tašku. Planas adaptuojamas pagal duomenis, ne spėjimus."}
+            ? "A plan built around your recent runs."
+            : "Planas pagal tavo naujausius bėgimus."}
         </p>
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -77,7 +77,8 @@ export function RacePrepStarter() {
           <Button
             key={item.value}
             type="button"
-            variant={distance === item.value ? "default" : "outline"}
+            variant="outline"
+            aria-pressed={distance === item.value}
             className="min-h-11 px-2"
             onClick={() => setDistance(item.value)}
           >
@@ -97,7 +98,8 @@ export function RacePrepStarter() {
             <Button
               key={n}
               type="button"
-              variant={sessions === n ? "default" : "outline"}
+              variant="outline"
+              aria-pressed={sessions === n}
               className="min-h-11"
               onClick={() => setSessions(n)}
             >

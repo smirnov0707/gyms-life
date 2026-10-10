@@ -83,10 +83,18 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
               .filter((font) => font.status === "loaded")
               .map((font) => font.family),
             titleFont: getComputedStyle(el.querySelector("h1")).fontFamily,
+            titleCase: getComputedStyle(el.querySelector("h1")).textTransform,
+            heroGround: getComputedStyle(el.querySelector(".fl-workspace-hero")).backgroundColor,
+            panelCorners: [...el.querySelectorAll(".fl-workspace-panel")].map((panel) =>
+              parseFloat(getComputedStyle(panel).borderTopLeftRadius),
+            ),
           };
         });
         expect(audit.overflow).toBe(false);
         expect(audit.titleFont).toContain("Space Grotesk");
+        expect(audit.titleCase).toBe("uppercase");
+        expect(audit.heroGround).toBe("rgba(0, 0, 0, 0)");
+        for (const corner of audit.panelCorners) expect(corner).toBeLessThanOrEqual(4);
         expect(audit.fonts.some((name) => name.includes("Manrope"))).toBe(true);
         expect(audit.fonts.some((name) => name.includes("Space Grotesk"))).toBe(true);
         for (const sample of audit.samples)
@@ -138,7 +146,7 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
               : page.locator(".fl-plan-next > a");
           const box = await action.boundingBox();
           const dock = await page.locator(".fl-mobile-navigation").boundingBox();
-          expect(box.y + box.height).toBeLessThan(dock.y);
+          expect(box.y + box.height).toBeLessThanOrEqual(dock.y - 16);
         }
         const name = `context-${screen}-${theme}-${width}`;
         const png = await page.screenshot({
@@ -179,9 +187,11 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
   {
     const { page, context } = await open("screen=training&shell=1&theme=light");
     const summary = page.locator("summary").first();
+    expect(await summary.evaluate((el) => getComputedStyle(el, "::after").content)).toBe('"+"');
     await summary.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByText("Synthetic session 1", { exact: true })).toBeVisible();
+    expect(await summary.evaluate((el) => getComputedStyle(el, "::after").content)).toBe('"−"');
     await page.keyboard.press("Enter");
     await expect(page.getByText("Synthetic session 1", { exact: true })).not.toBeVisible();
     await context.close();
