@@ -87,6 +87,7 @@ try {
       return route.abort();
     });
     const page = await context.newPage();
+    if (viewport.width === 390) await page.clock.install();
     page.on("pageerror", (error) => errors.push(String(error)));
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(message.text());
@@ -193,10 +194,17 @@ try {
         await canvas.press("Home");
         await page.emulateMedia({ reducedMotion: "no-preference" });
         const breath = async () => Number(await canvas.getAttribute("data-twin-breath"));
-        await expect.poll(breath, { timeout: 8000, intervals: [60] }).toBeLessThan(0.08);
+        // Freeze the browser clock at each phase. A screenshot can take long
+        // enough on a loaded CI runner for a live breath to leave that phase.
+        await page.clock.pauseAt(new Date(Date.now() + 100));
+        const time = await page.evaluate(() => performance.now());
+        await page.clock.runFor(((5000 - (time % 5200) + 5200) % 5200) + 1);
+        expect(await breath()).toBeLessThan(0.08);
         const rest = await canvas.screenshot({ path: path.join(out, "rest.png") });
-        await expect.poll(breath, { timeout: 8000, intervals: [60] }).toBeGreaterThan(0.92);
+        await page.clock.runFor(2100);
+        expect(await breath()).toBeGreaterThan(0.92);
         const inhale = await canvas.screenshot({ path: path.join(out, "inhale.png") });
+        await page.clock.resume();
         const a = await sharp(rest).raw().toBuffer(),
           b = await sharp(inhale).raw().toBuffer();
         let changed = 0;
