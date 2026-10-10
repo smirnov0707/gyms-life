@@ -28,3 +28,9 @@ The separate BodyParts3D Body appearance, identity shells and database are uncha
 The textured natural model uses a rest-space procedural finish: modest roughness variation and a bounded shading-normal perturbation that fades before becoming subpixel. Positions, silhouettes, breathing morphs and picking geometry are unchanged. Eyes are excluded; no extra textures, requests or decoded images are created. The detail is decorative and is not derived from athlete measurements.
 
 Each material now retains its authored neutral roughness through selection/data updates. Previously the shared state loop reset all region materials to 0.72 even when the loaded skin used 0.76, creating a different finish from adjoining neutral skin. Feathered region edges keep their neutral roughness. A regression test covers repeated selection/deselection without roughness drift; the natural browser evidence includes a close head/shoulder view under the production CSP.
+
+## Eye reflections
+
+The verified natural model's fitted eyes use a separate opaque physical material over the unchanged brown-eye atlas. A clear coating and two neutral studio reflectors make the iris/eye surface readable without emissive glow or a second transparent cornea mesh. The small 256×128 reflection texture is generated locally, owned by that eye material and released with the model; no external environment file or additional request is needed. Other models and personal Identity Shells retain their own eye presentation.
+
+Natural-model browser evidence includes front and three-quarter face views. A real render/dispose check loads the model twice, verifies the reflection texture is disposed exactly once per model, and checks that retained GPU texture counts do not grow between cycles. Native eye geometry, UVs, body regions and breathing are unchanged.

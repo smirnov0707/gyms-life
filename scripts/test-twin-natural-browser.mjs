@@ -234,6 +234,21 @@ try {
         for (let step = 0; step < 3; step++) await canvas.press("ArrowUp");
         await canvas.evaluate((element) => element.blur());
         await canvas.screenshot({ path: path.join(out, "skin-finish-detail.png") });
+        await canvas.press("ArrowRight");
+        await canvas.press("ArrowRight");
+        await canvas.evaluate((element) => element.blur());
+        await canvas.screenshot({ path: path.join(out, "eye-three-quarter.png") });
+        const eyeTextures = await page.evaluate(async () => {
+          const { reviewEyeMaterialLifetime } = await import("/eye-material-review.ts");
+          return reviewEyeMaterialLifetime();
+        });
+        for (const cycle of eyeTextures) {
+          expect(cycle.peak).toBeGreaterThanOrEqual(3);
+          expect(cycle.retained).toBeLessThan(cycle.peak);
+          expect(cycle.disposals).toBe(1);
+        }
+        expect(eyeTextures[1].retained).toBeLessThanOrEqual(eyeTextures[0].retained);
+        results.push({ name, eyeTextures });
       }
       results.push({ name, height, scroll: "passed", interaction: "passed" });
     } catch (error) {
