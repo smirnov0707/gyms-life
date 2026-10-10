@@ -467,7 +467,7 @@ try {
     await page.getByRole("button", { name: "2D", exact: true }).click();
     await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible();
     const viewport = await page.locator("[data-twin-viewport]").boundingBox();
-    const body = await page.getByRole("img", { name: "Body map, back view" }).boundingBox();
+    const body = await page.getByRole("img", { name: /^Body map,/ }).boundingBox();
     expect(body.height).toBeGreaterThanOrEqual(viewport.height - 1);
     expect(body.width).toBeGreaterThanOrEqual(Math.min(320, viewport.width - 1));
     if (engine === "chromium") {
