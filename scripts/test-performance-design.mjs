@@ -86,6 +86,13 @@ try {
           await expect(page.locator("#main-content")).not.toBeEmpty();
           if (screen === "today") await expect(page.locator(".fl-plan-start")).toBeVisible();
           if (screen === "coach") await expect(page.locator("[data-coach-send]")).toBeVisible();
+          if (screen === "muscle") {
+            // Detail is opened through the real body selector, not a separate route.
+            await page.locator("summary").filter({ hasText: /^Muscles$/ }).click();
+            await page.getByRole("button", { name: /^Chest(?:\s|$)/ }).first().click();
+            await expect(page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+            await page.evaluate(() => scrollTo(0, 0));
+          }
           // Wait for mounted canvas assets without disabling the fallback renderer.
           await page.waitForTimeout(1200);
           const geometry = await page.evaluate(() => {
