@@ -4,6 +4,7 @@ import { createTwinBoundaryMaterial } from "./twin-boundary.material";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
+import { createTwinEyeMaterial } from "./twin-eye.material";
 import { TWIN_SKIN_MATERIAL, TWIN_EYE_MATERIAL } from "./twin-surface.style";
 import { parseTwinSculptContours, parseTwinSculptCompetition } from "./twin-sculpt.contours";
 import {
@@ -133,37 +134,40 @@ function build(
         TWIN_REGISTERED_ASSETS.find((asset) => asset.path === "public/models/twin-body-v2.glb")
           ?.sha256;
     disposeMaterial(object);
-    object.material = featherBack
-      ? createTwinBoundaryMaterial(preset, createTwinBoundaryField(object.geometry))
-      : createTwinAnatomyMaterial(
-          preset,
-          appearance === "realistic"
-            ? {}
-            : {
-                neutralColor: preset.color,
-                skinVeins: texturedSkin && sourceName !== "Eyes",
-                skinDetail: texturedSkin && sourceName !== "Eyes",
-                ...(object.userData["twinSculptContours"] !== undefined &&
-                object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
-                  ? {
-                      contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
-                      ...(object.userData["twinSculptCompetition"]
-                        ? {
-                            competition: parseTwinSculptCompetition(
-                              object.userData["twinSculptCompetition"],
-                            ),
-                          }
-                        : {}),
-                      contourFan: region === "chest" || region === "abs",
-                    }
-                  : {}),
-                regionMask:
-                  object.userData["twinRegionMask"] === true &&
-                  object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
-                // Decorative UV stripes looked like ridges in otherwise smooth skin.
-                fibers: false,
-              },
-        );
+    object.material =
+      sourceName === "Eyes" && map
+        ? createTwinEyeMaterial(map)
+        : featherBack
+          ? createTwinBoundaryMaterial(preset, createTwinBoundaryField(object.geometry))
+          : createTwinAnatomyMaterial(
+              preset,
+              appearance === "realistic"
+                ? {}
+                : {
+                    neutralColor: preset.color,
+                    skinVeins: texturedSkin && sourceName !== "Eyes",
+                    skinDetail: texturedSkin && sourceName !== "Eyes",
+                    ...(object.userData["twinSculptContours"] !== undefined &&
+                    object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
+                      ? {
+                          contours: parseTwinSculptContours(object.userData["twinSculptContours"]),
+                          ...(object.userData["twinSculptCompetition"]
+                            ? {
+                                competition: parseTwinSculptCompetition(
+                                  object.userData["twinSculptCompetition"],
+                                ),
+                              }
+                            : {}),
+                          contourFan: region === "chest" || region === "abs",
+                        }
+                      : {}),
+                    regionMask:
+                      object.userData["twinRegionMask"] === true &&
+                      object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
+                    // Decorative UV stripes looked like ridges in otherwise smooth skin.
+                    fibers: false,
+                  },
+            );
     baseColorOf.set(object, preset.color);
     meshes.push(object);
 
@@ -217,7 +221,10 @@ function disposeObject(root: Object3D): void {
     if (!(object instanceof Mesh)) return;
     object.geometry.dispose();
     for (const material of Array.isArray(object.material) ? object.material : [object.material])
-      if (material instanceof MeshStandardMaterial && material.map) textures.add(material.map);
+      if (material instanceof MeshStandardMaterial) {
+        if (material.map) textures.add(material.map);
+        if (material.envMap) textures.add(material.envMap);
+      }
     disposeMaterial(object);
   });
   for (const texture of textures) {
