@@ -94,11 +94,11 @@
 }
 
 :root {
-  --radius: 0.875rem;
-  --background: #07080a;
+  --radius: 0.375rem;
+  --background: #090a0b;
   --foreground: #f4f6f4;
-  --surface: #101216;
-  --surface-2: #181b21;
+  --surface: #131516;
+  --surface-2: #1d2021;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: #15181d;
@@ -150,8 +150,8 @@
 /* Light mode overrides */
 .light {
   color-scheme: light;
-  --background: #f4f5f2;
-  --foreground: #1d2119;
+  --background: #f2f3f1;
+  --foreground: #1b1e1b;
   --surface: #ffffff;
   --surface-2: #eceee7;
   --popover: #ffffff;
@@ -611,3 +611,4 @@ button {
     animation: none;
   }
 }
+

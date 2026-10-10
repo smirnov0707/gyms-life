@@ -1,0 +1,371 @@
+/* Performance direction: flat carbon surfaces, machined edges and large type.
+ * The extra shell class makes these rules independent of lazy route CSS order.
+ * Theme colours, state semantics and the deliberate dark Twin stage stay shared. */
+.future-lab-app.fl-performance {
+  background: var(--background);
+}
+
+.future-lab-app.fl-performance::before,
+.future-lab-app.fl-performance::after,
+.future-lab-app.fl-performance .fl-today-command::after,
+.future-lab-app.fl-performance .fl-lab-page::after,
+.future-lab-app.fl-performance .fl-coach-conversation::before {
+  display: none;
+}
+
+.future-lab-app.fl-performance .fl-shell-header {
+  background: color-mix(in srgb, var(--background) 96%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.future-lab-app.fl-performance .fl-shell-header-inner {
+  height: 72px;
+  padding-inline: 28px;
+}
+
+.future-lab-app.fl-performance .fl-brand-wordmark > span {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.055em;
+}
+
+.future-lab-app.fl-performance .fl-brand-mark {
+  filter: none;
+}
+
+.future-lab-app.fl-performance .fl-desktop-navigation {
+  align-self: stretch;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.future-lab-app.fl-performance .fl-desktop-navigation a {
+  align-self: stretch;
+  padding-inline: 24px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-weight: 700;
+  letter-spacing: 0.065em;
+}
+
+.future-lab-app.fl-performance .fl-desktop-navigation a[aria-current="page"] {
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.future-lab-app.fl-performance .fl-desktop-navigation a[aria-current="page"]::after {
+  inset: auto 24px 0;
+  height: 3px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.future-lab-app.fl-performance :is(.fl-shell-icon-button, .fl-profile-control, .fl-night-status) {
+  border-radius: 5px;
+  box-shadow: none;
+  background: var(--surface);
+}
+
+.future-lab-app.fl-performance .fl-shell-main {
+  padding: 20px 28px 36px;
+}
+
+.future-lab-app.fl-performance :is(.fl-panel, .fl-surface, .fl-live-signals, .fl-todays-plan,
+  .fl-sleep-analysis, .fl-evidence, .fl-outlook, .fl-intelligence-card, .fl-brief > section,
+  .fl-premium-card, .fl-context-heading, .fl-context-hero, .fl-luxury-disclosure,
+  .fl-secondary-details, .fl-coach-conversation) {
+  border-radius: 6px;
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+.future-lab-app.fl-performance :is(.fl-world-title, .fl-context-title,
+  .fl-page-heading h1, .fl-future-heading h1) {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.4vw, 60px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.055em !important;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.future-lab-app.fl-performance :is(.fl-page-eyebrow, .fl-world-kicker) {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted-foreground);
+}
+
+.future-lab-app.fl-performance :is(.fl-page-heading, .fl-world-header) {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.future-lab-app.fl-performance :is(.fl-page-intro, .fl-world-subtitle) {
+  max-width: 65ch;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-performance-masthead {
+  position: relative;
+  padding: 4px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-performance-masthead::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  width: 56px;
+  height: 3px;
+  background: var(--primary);
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-greeting h1 {
+  margin: 7px 0 0;
+  font-size: clamp(36px, 4.4vw, 64px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-greeting .fl-mobile-page-name {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-greeting > p:last-child {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.future-lab-app.fl-performance .fl-today-command {
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  gap: 24px;
+}
+
+.future-lab-app.fl-performance .fl-today-command-copy {
+  padding: 20px;
+  border-left: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-readiness-card {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-readiness-summary {
+  padding: 16px 0;
+  border: 0;
+  background: none;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-readiness-summary > div:first-child,
+.future-lab-app.fl-performance .fl-dashboard .fl-readiness-summary > div:first-child svg {
+  width: 80px;
+  height: 80px;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-readiness-summary > div:first-child > span {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-readiness-summary > div:last-child > p:last-child {
+  font-size: 18px;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan {
+  border-radius: 6px;
+  border-top: 2px solid var(--primary);
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan header {
+  padding: 12px 16px 8px;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan h2 {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan > div,
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan > ul {
+  padding-inline: 16px;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan > div > p:first-child {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan .fl-plan-exercise {
+  min-height: 33px;
+  padding-block: 5px;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-plan-exercise .fl-plan-exercise-name {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-todays-plan li > span:last-child {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.future-lab-app.fl-performance .fl-workout-motion-preview {
+  border-radius: 3px;
+  border-color: var(--border);
+}
+
+.future-lab-app.fl-performance .fl-dashboard .fl-plan-start {
+  min-height: 52px;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  box-shadow: none;
+}
+
+.future-lab-app.fl-performance .fl-today-execution {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.future-lab-app.fl-performance .fl-today-execution > summary {
+  min-height: 44px;
+  padding: 12px 16px;
+}
+
+.future-lab-app.fl-performance .fl-lab-page,
+.future-lab-app.fl-performance .fl-journal-page {
+  border-radius: 6px;
+  background: none;
+  box-shadow: none;
+}
+
+.future-lab-app.fl-performance .fl-lab-page .fl-investigation-card {
+  padding: 24px;
+  border-left: 2px solid var(--accent);
+}
+
+.future-lab-app.fl-performance .fl-lab-page .fl-investigation-card h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.future-lab-app.fl-performance .fl-lab-domains .fl-lab-roster-tiles > li {
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.future-lab-app.fl-performance .fl-mobile-navigation {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--background) 96%, transparent);
+  border-color: var(--border);
+  box-shadow: 0 -12px 24px -18px var(--background);
+}
+
+.future-lab-app.fl-performance .fl-mobile-navigation a {
+  border-radius: 4px;
+}
+
+.future-lab-app.fl-performance :is(.twin-screen > [role="tablist"],
+  .twin-screen [data-twin-cockpit], .twin-home--cockpit, .twin-muscle-detail,
+  .twin-detail-readout, .twin-detail-impact) {
+  border-radius: 6px;
+}
+
+.future-lab-app.fl-performance .twin-screen > [role="tablist"] {
+  padding: 4px;
+  background: var(--surface);
+}
+
+.future-lab-app.fl-performance .twin-screen > [role="tablist"] [role="tab"] {
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 1199px) and (min-width: 760px) {
+  .future-lab-app.fl-performance .fl-shell-header-inner {
+    padding-inline: 16px;
+    gap: 12px;
+  }
+  .future-lab-app.fl-performance .fl-desktop-navigation a {
+    padding-inline: 15px;
+  }
+}
+
+@media (max-width: 759px) {
+  .future-lab-app.fl-performance .fl-shell-header-inner {
+    height: 60px;
+    padding-inline: 14px;
+  }
+  .future-lab-app.fl-performance .fl-shell-main {
+    padding: 14px 14px 100px;
+  }
+  .future-lab-app.fl-performance .fl-dashboard .fl-performance-masthead {
+    padding: 0 0 14px;
+  }
+  .future-lab-app.fl-performance .fl-dashboard .fl-greeting h1 {
+    font-size: clamp(28px, 8vw, 40px);
+  }
+  .future-lab-app.fl-performance .fl-dashboard .fl-greeting > p:last-child {
+    margin-top: 6px;
+    font-size: 11px;
+  }
+  .future-lab-app.fl-performance .fl-today-command {
+    gap: 16px;
+  }
+  .future-lab-app.fl-performance .fl-today-command-copy {
+    padding: 16px;
+  }
+  .future-lab-app.fl-performance .fl-dashboard .fl-plan-start {
+    min-height: 54px;
+  }
+  .future-lab-app.fl-performance .fl-dashboard .fl-todays-plan > div > p:first-child {
+    font-size: 20px;
+  }
+  .future-lab-app.fl-performance :is(.fl-world-title, .fl-context-title,
+    .fl-page-heading h1, .fl-future-heading h1) {
+    font-size: 32px;
+  }
+  .future-lab-app.fl-performance :is(.fl-page-heading, .fl-world-header) {
+    padding-bottom: 12px;
+  }
+  .future-lab-app.fl-performance .fl-lab-page .fl-investigation-card {
+    padding: 16px;
+  }
+  .future-lab-app.fl-performance .fl-coach-page .fl-world-header {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+}

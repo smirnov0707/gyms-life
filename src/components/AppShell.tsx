@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/drawer";
 import "./future-lab-shell.css";
 import "./future-lab-visual-system.css";
+import "./future-lab/performance-design.css";
 
 const futureNavItems = PRIMARY_WORLD_NAV;
 
@@ -385,7 +386,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         : "today";
 
   return (
-    <div className="future-lab-app">
+    <div className="future-lab-app fl-performance">
       <a href="#main-content" className="fl-skip-link">
         {baseLang(lang) === "en" ? "Skip to content" : "Pereiti prie turinio"}
       </a>
@@ -447,3 +448,4 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 };
 
 export default AppShell;
+
