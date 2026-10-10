@@ -224,8 +224,10 @@ try {
       });
       await writeFile(path.join(out, `${name}-audit.json`), JSON.stringify(audit, null, 2));
       assert.equal(audit.rootFontSize, `${16 * scale}px`, "Root scale must remain applied");
+      // Healthy reads no longer add a status badge. The 14 populated evidence,
+      // decision and heading samples still require the same contrast and scale.
       assert.ok(
-        audit.samples.length >= 15,
+        audit.samples.length >= 14,
         "The readability check must inspect real populated text",
       );
       for (const sample of audit.samples) {
