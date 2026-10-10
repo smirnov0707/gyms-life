@@ -1,11 +1,18 @@
 /* The full My Twin page gets more working space. Today and muscle detail
    retain their bounded layouts; the generic stage still fits its actual mesh. */
-.twin-screen [data-twin-cockpit] [data-twin-stage][data-twin-presentation="full"] [data-twin-viewport] {
-  height: clamp(440px, 68svh, 760px);
+.twin-screen
+  [data-twin-cockpit]
+  [data-twin-stage][data-twin-presentation="full"]
+  [data-twin-viewport] {
+  height: clamp(220px, calc(100svh - 320px), 580px);
+  min-height: 0;
 }
 @media (min-width: 1024px) {
-  .twin-screen [data-twin-cockpit] [data-twin-stage][data-twin-presentation="full"] [data-twin-viewport] {
-    height: clamp(540px, 74svh, 900px);
+  .twin-screen
+    [data-twin-cockpit]
+    [data-twin-stage][data-twin-presentation="full"]
+    [data-twin-viewport] {
+    height: clamp(360px, calc(100svh - 260px), 820px);
   }
 }
 /* Explicit hit targets on the deliberate dark 3D canvas, not page surfaces. */
@@ -31,4 +38,28 @@
   outline: 2px solid #b8f4ff;
   outline-offset: 2px;
 }
-[data-twin-navigation] button:hover { background: #183042; }
+[data-twin-navigation] button:hover {
+  background: #183042;
+}
+
+[data-twin-interaction-toggle] {
+  position: absolute;
+  z-index: 2;
+  bottom: 8px;
+  right: 8px;
+  padding: 0 14px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 12px;
+  background: rgba(4, 10, 20, 0.9);
+  color: #e9edfa;
+  font-size: 12px;
+  font-weight: 600;
+}
+[data-twin-interaction-toggle][aria-pressed="true"] {
+  border-color: #c4f34b;
+}
+[data-twin-interaction-toggle]:focus-visible {
+  outline: 2px solid #c4f34b;
+  outline-offset: 2px;
+}

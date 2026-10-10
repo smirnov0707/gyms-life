@@ -166,7 +166,7 @@ try {
           }
           await expect(canvas).toHaveAttribute("data-twin-appearance", appearance);
           await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
-          const file = appearance === "realistic" ? "twin-body-v2.glb" : "twin-selected-v1.glb";
+          const file = appearance === "realistic" ? "twin-body-v2.glb" : "twin-natural-v1.glb";
           const assetHash = createHash("sha256")
             .update(await readFile(path.join(root, "public/models", file)))
             .digest("hex");

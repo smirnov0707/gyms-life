@@ -47,7 +47,7 @@ export function twinHumanUrl(
   _variant: TwinHumanVariant,
   appearance: TwinVisualAppearance = "analysis",
 ): string {
-  return appearance === "realistic" ? "/models/twin-body-v2.glb" : "/models/twin-selected-v1.glb";
+  return appearance === "realistic" ? "/models/twin-body-v2.glb" : "/models/twin-natural-v1.glb";
 }
 
 /**
@@ -143,11 +143,8 @@ function build(
                 regionMask:
                   object.userData["twinRegionMask"] === true &&
                   object.geometry.getAttribute("_twin_mask")?.itemSize === 1,
-                fibers:
-                  object.userData["twinFiberUV"] === true &&
-                  object.geometry.getAttribute("uv")?.itemSize === 2 &&
-                  region !== null &&
-                  isTwinBodyRegion(region),
+                // Decorative UV stripes looked like ridges in otherwise smooth skin.
+                fibers: false,
               },
         );
     baseColorOf.set(object, preset.color);

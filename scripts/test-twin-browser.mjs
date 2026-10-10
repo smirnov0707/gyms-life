@@ -42,7 +42,7 @@ const candidatePlugin = {
         ![
           "/models/twin-body-v2.glb",
           "/models/twin-anatomy-v1.glb",
-          "/models/twin-selected-v1.glb",
+          "/models/twin-natural-v1.glb",
         ].includes(new URL(request.url, "http://localhost").pathname)
       )
         return next();
@@ -148,7 +148,7 @@ try {
       ? "MakeHuman graphical assets (CC0)"
       : "BodyParts3D";
   const expectedAnalysisBytes =
-    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-selected-v1.glb")));
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-natural-v1.glb")));
   const expectedAnalysisSha = createHash("sha256").update(expectedAnalysisBytes).digest("hex");
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-twin-asset-sha256",
@@ -160,7 +160,7 @@ try {
     { timeout: 45_000 },
   );
   await expect(page.locator("[data-twin-credit]")).toContainText(expectedCredit);
-  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
   record("visible model source and review status match the exact downloaded GLB");
 
   const stage = page.locator("[data-twin-stage]").first();
@@ -182,7 +182,7 @@ try {
     "data-twin-asset-sha256",
     expectedAnalysisSha,
   );
-  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(1);
+  await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(candidate ? 1 : 0);
   record("selected Muscles is the default; Body and Muscles retain distinct verified assets");
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(artifacts, "desktop-front.png"), fullPage: true });
@@ -503,6 +503,7 @@ try {
     .poll(async () => Number(await mobileCanvas.getAttribute("data-twin-frames")))
     .toBeGreaterThan(framesBeforeReset);
   await page.screenshot({ path: path.join(artifacts, "mobile-before-pinch.png") });
+  await page.locator("[data-twin-interaction-toggle]").click();
   const mobileBox = await mobileCanvas.boundingBox();
   const center = {
     x: mobileBox.x + mobileBox.width / 2,
@@ -745,7 +746,7 @@ try {
           sha256: createHash("sha256").update(candidateBytes).digest("hex"),
           bytes: candidateBytes.length,
           requests: candidateRequests,
-          servedAs: ["/models/twin-selected-v1.glb", "/models/twin-body-v2.glb"],
+          servedAs: ["/models/twin-natural-v1.glb", "/models/twin-body-v2.glb"],
         },
         null,
         2,

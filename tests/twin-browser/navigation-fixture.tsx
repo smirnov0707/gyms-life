@@ -45,6 +45,7 @@ export function NavigationFixture() {
           setSelections((count) => count + 1);
         }}
       />
+      {query.has("scroll-test") && <div style={{ height: 900 }} aria-hidden="true" />}
       <output data-camera-selection>{selection}</output>
       <output data-camera-selections>{selections}</output>
     </main>

@@ -36,6 +36,8 @@ jobs:
         run: node scripts/authoring/audit-native-glb.mjs tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb test-results/native-geometry/intersections.audit.json
       - name: Audit the exact selected public model used by the application
         run: node scripts/authoring/audit-native-glb.mjs public/models/twin-selected-v1.glb test-results/native-geometry/selected-intersections.audit.json
+      - name: Audit natural model geometry
+        run: node scripts/authoring/audit-native-glb.mjs public/models/twin-natural-v1.glb test-results/native-geometry/natural-intersections.audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

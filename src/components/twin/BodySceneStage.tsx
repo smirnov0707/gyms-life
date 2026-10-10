@@ -69,8 +69,10 @@ export type BodySceneStageProps = {
 const COPY = {
   en: {
     scene:
-      "Interactive human body. Drag sideways to rotate 360 degrees, vertically to tilt. Two fingers move the view vertically or pinch to zoom. Keyboard: left/right rotate, up/down move vertically, Shift+up/down tilt, plus/minus zoom, Home resets.",
-    hint: "Drag to rotate 360° and tilt · Two fingers move up/down or zoom · Right-drag moves up/down",
+      "Interactive human body. Swipe to scroll; enable Control 3D for touch gestures. Drag sideways to rotate 360 degrees, vertically to tilt. Two fingers move the view vertically or pinch to zoom. Keyboard: left/right rotate, up/down move vertically, Shift+up/down tilt, plus/minus zoom, Home resets.",
+    interact: "Control 3D",
+    done: "Done",
+    hint: "Swipe to scroll. Tap a region. Enable Control 3D to rotate, tilt or pinch to zoom.",
     selectionHint: "Bright edge = selected region, not a health reading.",
     loading: "Preparing 3D… 2D remains available.",
     fallback: "3D is unavailable on this device. Your evidence is still available in 2D.",
@@ -103,8 +105,10 @@ const COPY = {
   },
   lt: {
     scene:
-      "Interaktyvus žmogaus kūnas. Tempk į šonus, kad suktum 360 laipsnių, aukštyn ar žemyn – kad keistum kampą. Dviem pirštais perkelk vaizdą arba keisk mastelį. Klaviatūra: kairėn ir dešinėn suka, aukštyn ir žemyn perkelia, Shift ir vertikalios rodyklės keičia kampą, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
-    hint: "Vienu pirštu suk ir keisk kampą · Dviem perkelk aukštyn / žemyn ar keisk mastelį · Pele perkelk laikydamas dešinį mygtuką",
+      "Interaktyvus žmogaus kūnas. Brauk, kad slinktum puslapį; lietimo gestams įjunk „Valdyti 3D“. Tempk į šonus, kad suktum 360 laipsnių, aukštyn ar žemyn – kad keistum kampą. Dviem pirštais perkelk vaizdą arba keisk mastelį. Klaviatūra: kairėn ir dešinėn suka, aukštyn ir žemyn perkelia, Shift ir vertikalios rodyklės keičia kampą, pliusas ir minusas keičia mastelį, Home atkuria vaizdą.",
+    interact: "Valdyti 3D",
+    done: "Baigti",
+    hint: "Brauk, kad slinktum puslapį. Bakstelėk regioną. Įjunk „Valdyti 3D“, kad suktum, keistum kampą ar mastelį.",
     selectionHint: "Šviesus kontūras žymi pasirinkimą, ne sveikatos rodiklį.",
     loading: "Ruošiamas 3D… 2D vaizdas lieka pasiekiamas.",
     fallback: "3D šiame įrenginyje nepasiekiamas. Tavo duomenys lieka pasiekiami 2D vaizde.",
@@ -184,6 +188,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
   const [timedOut, setTimedOut] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [motion, setMotion] = useState(true);
+  const [interaction, setInteraction] = useState(false);
   useEffect(() => {
     latest.current = props;
   });
@@ -248,6 +253,9 @@ export function BodySceneStage(props: BodySceneStageProps) {
   useEffect(() => {
     if (ready && focusRegion !== undefined) scene.current?.focus(focusRegion);
   }, [focusRegion, ready]);
+  useEffect(() => {
+    scene.current?.setInteraction(interaction);
+  }, [interaction, ready]);
   useEffect(() => {
     scene.current?.setMotion(motion);
   }, [motion, ready]);
@@ -349,6 +357,20 @@ export function BodySceneStage(props: BodySceneStageProps) {
               ref={host}
               className={`absolute inset-0 ${show3D ? "" : "invisible pointer-events-none"}`}
             />
+          )}
+          {show3D && (
+            <button
+              type="button"
+              data-twin-interaction-toggle
+              aria-pressed={interaction}
+              onClick={() => setInteraction((value) => !value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setInteraction(false);
+              }}
+              style={controlStyle}
+            >
+              {interaction ? copy.done : copy.interact}
+            </button>
           )}
           {show3D && presentation === "full" && (
             <div data-twin-navigation role="group" aria-label={copy.navigation}>
