@@ -294,29 +294,29 @@ export function LabCommandDeck() {
               </div>
             </details>
           </div>
-          {data ? (
-            <details className="fl-secondary-details mt-3" data-lab-command-history>
-              <summary
-                data-lab-history-toggle
-                aria-label={historyCopy.decisionHistory}
-                aria-describedby={`${historyId}-description`}
-                aria-controls={historyId}
-              >
-                {historyCopy.decisionHistory}
-              </summary>
-              <div className="fl-disclosed-content" id={historyId}>
-                <p
-                  id={`${historyId}-description`}
-                  className="mb-3 text-xs leading-relaxed text-muted-foreground"
-                >
-                  {historyCopy.accuracyNote}
-                </p>
-                <LabDecisionHistory data={data} copy={historyCopy} language={locale} />
-              </div>
-            </details>
-          ) : null}
         </div>
       </details>
+      {data ? (
+        <details className="fl-secondary-details mt-3" data-lab-command-history>
+          <summary
+            data-lab-history-toggle
+            aria-label={historyCopy.decisionHistory}
+            aria-describedby={`${historyId}-description`}
+            aria-controls={historyId}
+          >
+            {historyCopy.decisionHistory}
+          </summary>
+          <div className="fl-disclosed-content" id={historyId}>
+            <p
+              id={`${historyId}-description`}
+              className="mb-3 text-xs leading-relaxed text-muted-foreground"
+            >
+              {historyCopy.accuracyNote}
+            </p>
+            <LabDecisionHistory data={data} copy={historyCopy} language={locale} />
+          </div>
+        </details>
+      ) : null}
     </section>
   );
 }
