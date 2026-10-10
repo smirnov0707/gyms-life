@@ -30,7 +30,7 @@ import {
   twinNearSideReach,
   twinPresetDistance,
 } from "./twin-camera.navigation";
-import { TWIN_SKIN_COLOR, twinSurfaceStyle } from "./twin-surface.style";
+import { TWIN_SKIN_COLOR, twinSurfaceStyle, twinNeutralRoughness } from "./twin-surface.style";
 import { setTwinAnatomySelection } from "./twin-anatomy.material";
 import { createTwinStageDecor } from "./twin-stage.scene";
 import { createTwinCameraFrame } from "./twin-camera.framing";
@@ -470,6 +470,7 @@ export function mountTwinScene(
             hasSelection: isTwinBodyRegion(selectedRegion ?? ""),
             appearance,
             baseColor: base?.get(mesh) ?? TWIN_SKIN_COLOR,
+            baseRoughness: twinNeutralRoughness(material),
           });
           material.color.copy(style.color);
           material.emissive.copy(style.emissive);

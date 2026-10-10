@@ -1,4 +1,4 @@
-import { Color } from "three";
+import { Color, type MeshStandardMaterial } from "three";
 import { TWIN_DISPLAY_COLORS, TWIN_TONE_GLOW, type TwinDisplayTone } from "./twin-scene.model";
 
 /** Generic presentation colour, not an estimate of the athlete's skin or identity. */
@@ -8,6 +8,17 @@ export const TWIN_EYE_MATERIAL = { color: 0x30211b, roughness: 0.42, metalness: 
 /** Selection is a UI cue, not recovery, workload or a diagnosis. */
 export const TWIN_SELECTION_COLOR = 0x20bfff;
 
+const neutralRoughness = new WeakMap<MeshStandardMaterial, number>();
+/** Capture once, before selection changes it; deselection restores the authored finish. */
+export function twinNeutralRoughness(material: MeshStandardMaterial): number {
+  let value = neutralRoughness.get(material);
+  if (value === undefined) {
+    value = material.roughness;
+    neutralRoughness.set(material, value);
+  }
+  return value;
+}
+
 /** One visual policy for anatomical assets and the generated fallback. No data is mutated. */
 export function twinSurfaceStyle({
   tone,
@@ -15,12 +26,14 @@ export function twinSurfaceStyle({
   hasSelection,
   appearance,
   baseColor = TWIN_SKIN_COLOR,
+  baseRoughness = TWIN_SKIN_MATERIAL.roughness,
 }: {
   tone: TwinDisplayTone;
   selected: boolean;
   hasSelection: boolean;
   appearance: "analysis" | "realistic";
   baseColor?: number;
+  baseRoughness?: number;
 }) {
   const hasEvidence = tone !== "unknown" && tone !== "not_in_session";
   const signal = new Color(hasEvidence ? TWIN_DISPLAY_COLORS[tone] : TWIN_SELECTION_COLOR);
@@ -43,7 +56,7 @@ export function twinSurfaceStyle({
     color: new Color(baseColor).lerp(signal, tint),
     emissive: signal,
     emissiveIntensity: Math.min(0.4, glow / Math.max(signal.r, signal.g, signal.b, 0.25)),
-    roughness: selected ? 0.62 : 0.72,
+    roughness: selected ? Math.max(0, baseRoughness - 0.1) : baseRoughness,
     metalness: 0,
   };
 }

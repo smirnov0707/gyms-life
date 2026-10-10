@@ -9,6 +9,11 @@ import type { TwinSculptContour, TwinSculptCompetition } from "./twin-sculpt.con
 
 import { TWIN_SKIN_COLOR } from "./twin-surface.style";
 import { TWIN_SKIN_VEIN_COLOR, TWIN_SKIN_VEIN_DECLARATIONS } from "./twin-skin-veins";
+import {
+  TWIN_SKIN_DETAIL_DECLARATIONS,
+  TWIN_SKIN_DETAIL_ROUGHNESS,
+  TWIN_SKIN_DETAIL_NORMAL,
+} from "./twin-skin-detail";
 
 const selectionWeights = new WeakMap<MeshStandardMaterial, { value: number }>();
 export function setTwinAnatomySelection(material: MeshStandardMaterial, selected: boolean) {
@@ -27,6 +32,7 @@ export function createTwinAnatomyMaterial(
   {
     neutralColor = TWIN_SKIN_COLOR,
     skinVeins = false,
+    skinDetail = false,
     fibers = false,
     regionMask = false,
     contours = [],
@@ -35,6 +41,7 @@ export function createTwinAnatomyMaterial(
   }: {
     neutralColor?: number;
     skinVeins?: boolean;
+    skinDetail?: boolean;
     fibers?: boolean;
     regionMask?: boolean;
     contours?: readonly TwinSculptContour[];
@@ -51,7 +58,7 @@ export function createTwinAnatomyMaterial(
       "#include <common>",
       "#include <common>\nuniform float twinSelected;",
     );
-    if (skinVeins) {
+    if (skinVeins || skinDetail) {
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
@@ -63,8 +70,26 @@ export function createTwinAnatomyMaterial(
         );
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <common>",
-        "#include <common>\n" + TWIN_SKIN_VEIN_DECLARATIONS,
+        "#include <common>\nvarying vec3 vTwinSkinPosition;\nvarying vec3 vTwinSkinNormal;\n" +
+          (skinVeins ? TWIN_SKIN_VEIN_DECLARATIONS : "") +
+          (skinDetail ? TWIN_SKIN_DETAIL_DECLARATIONS : ""),
       );
+    }
+    if (skinDetail) {
+      shader.uniforms["twinNeutralRoughness"] = { value: parameters.roughness ?? 0.76 };
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\nuniform float twinNeutralRoughness;")
+        .replace(
+          "#include <roughnessmap_fragment>",
+          "#include <roughnessmap_fragment>\nfloat twinSkinSelectionMask = " +
+            (regionMask ? "twinSurfaceMask" : "1.0") +
+            ";\n" +
+            TWIN_SKIN_DETAIL_ROUGHNESS,
+        )
+        .replace(
+          "#include <normal_fragment_maps>",
+          "#include <normal_fragment_maps>\n" + TWIN_SKIN_DETAIL_NORMAL,
+        );
     }
     if (regionMask) {
       shader.uniforms["twinNeutral"] = { value: new Color(neutralColor) };
@@ -219,6 +244,6 @@ export function createTwinAnatomyMaterial(
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-skin-selection-v9-${skinVeins ? "veins" : "plain-skin"}-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
+    `twin-anatomy-skin-selection-v10-${skinDetail ? "detail" : "smooth"}-${skinVeins ? "veins" : "plain-skin"}-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }

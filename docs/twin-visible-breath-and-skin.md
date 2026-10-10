@@ -22,3 +22,9 @@ python scripts/authoring/texture-natural-twin.py /path/to/posed-correspondence.n
 Python authoring uses NumPy, SciPy and Pillow. The embedded 2048px JPEG adds approximately 431 KB. Runtime uses the verified GLB's sRGB texture, keeps data/selection masks, and releases the shared textures and decoded ImageBitmaps when the scene is disposed. A decoding failure cannot silently claim a textured result.
 
 The separate BodyParts3D Body appearance, identity shells and database are unchanged. This improves the generic model; it is not a claim of photorealism, a real person's likeness or anatomical validation.
+
+## Skin finish
+
+The textured natural model uses a rest-space procedural finish: modest roughness variation and a bounded shading-normal perturbation that fades before becoming subpixel. Positions, silhouettes, breathing morphs and picking geometry are unchanged. Eyes are excluded; no extra textures, requests or decoded images are created. The detail is decorative and is not derived from athlete measurements.
+
+Each material now retains its authored neutral roughness through selection/data updates. Previously the shared state loop reset all region materials to 0.72 even when the loaded skin used 0.76, creating a different finish from adjoining neutral skin. Feathered region edges keep their neutral roughness. A regression test covers repeated selection/deselection without roughness drift; the natural browser evidence includes a close head/shoulder view under the production CSP.
