@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -12,17 +12,61 @@ function resizeComposer(element: HTMLTextAreaElement) {
   const style = getComputedStyle(element);
   const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
   const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-  const scrollTop = element.scrollTop;
-  element.style.height = "0px";
-  const size = coachComposerHeight(
-    element.scrollHeight,
-    parseFloat(style.lineHeight),
-    padding,
-    border,
-  );
-  element.style.height = `${size.height}px`;
-  element.style.overflowY = size.overflowing ? "auto" : "hidden";
-  element.scrollTop = scrollTop;
+  // Measure an independent field: the visible field's scroll position and caret
+  // can keep its scrollHeight enlarged after a long draft is replaced.
+  const measure = document.createElement("textarea");
+  for (const property of [
+    "font-family",
+    "font-size",
+    "font-weight",
+    "font-style",
+    "line-height",
+    "letter-spacing",
+    "text-indent",
+    "text-transform",
+    "tab-size",
+    "padding-top",
+    "padding-bottom",
+    "padding-left",
+    "padding-right",
+    "border-top-width",
+    "border-bottom-width",
+    "border-left-width",
+    "border-right-width",
+    "border-style",
+    "box-sizing",
+    "white-space",
+    "overflow-wrap",
+    "word-break",
+  ]) {
+    measure.style.setProperty(property, style.getPropertyValue(property), "important");
+  }
+  Object.assign(measure.style, {
+    position: "absolute",
+    visibility: "hidden",
+    pointerEvents: "none",
+    width: `${element.getBoundingClientRect().width}px`,
+    height: "0px",
+    minHeight: "0px",
+    maxHeight: "none",
+    overflow: "hidden",
+  });
+  measure.tabIndex = -1;
+  measure.setAttribute("aria-hidden", "true");
+  measure.value = element.value;
+  document.body.appendChild(measure);
+  try {
+    const size = coachComposerHeight(
+      measure.scrollHeight,
+      parseFloat(style.lineHeight),
+      padding,
+      border,
+    );
+    element.style.height = `${size.height}px`;
+    element.style.overflowY = size.overflowing ? "auto" : "hidden";
+  } finally {
+    measure.remove();
+  }
 }
 
 /** View only: the existing mounted-owner session still owns all drafts and sends. */
@@ -43,7 +87,7 @@ export function CoachComposer() {
   const sendLabel =
     state.unconfirmedQuestion === state.draft.trim() ? copy.sendAgain : t("coach.send");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (field.current) resizeComposer(field.current);
   }, [state.draft]);
 

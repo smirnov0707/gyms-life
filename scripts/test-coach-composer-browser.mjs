@@ -121,6 +121,19 @@ try {
           await expect(page.locator("[data-coach-composer-help]")).toContainText(
             lang === "lt" ? "nauja eilutė" : "new line",
           );
+          await expect
+            .poll(() =>
+              draft.evaluate((el) => {
+                const style = getComputedStyle(el);
+                return (
+                  el.getBoundingClientRect().height >=
+                  2 * parseFloat(style.lineHeight) +
+                    parseFloat(style.paddingTop) +
+                    parseFloat(style.paddingBottom)
+                );
+              }),
+            )
+            .toBe(true);
           const initial = await draft.boundingBox();
           assert.ok(initial && initial.height >= 44);
           await draft.fill("First line");

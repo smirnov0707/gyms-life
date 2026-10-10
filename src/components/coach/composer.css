@@ -27,7 +27,8 @@
   background: transparent;
   color: var(--foreground);
   font-family: inherit;
-  font-size: 1rem;
+  /* Retain the iOS minimum while allowing the athlete's enlarged root text. */
+  font-size: max(1rem, 16px) !important;
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
