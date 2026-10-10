@@ -32,6 +32,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/verify-ci-browser-runtime.mjs
+      - name: Render share artwork for design review
+        if: matrix.engine == 'chromium'
+        run: |
+          npm run build:share-card
+          mkdir -p test-results/performance-design/generated
+          cp public/share-card.png scripts/share-card.inputs.json test-results/performance-design/generated/
+          tar -czf test-results/performance-design/generated/prettier.tgz -C node_modules prettier
       - run: node scripts/test-performance-design.mjs
         env:
           DESIGN_BROWSER_ENGINE: ${{ matrix.engine }}

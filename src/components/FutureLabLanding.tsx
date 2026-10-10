@@ -11,10 +11,10 @@ import {
   ChevronDown,
   ShieldCheck,
   MoveUpRight,
-  Dumbbell,
 } from "lucide-react";
 import { PublicFrame } from "./PublicFrame";
 import { baseLang, useI18n } from "@/lib/i18n";
+import "./future-lab/signature-design.css";
 const LandingTwin = lazy(() => import("./LandingTwin"));
 
 /**
@@ -31,46 +31,50 @@ const LandingTwin = lazy(() => import("./LandingTwin"));
  */
 export const copy = {
   en: {
-    eyebrow: "TRAINING YOU CAN CHECK",
-    title: "Train on the record.",
-    accent: "Not on a guess.",
+    eyebrow: "BUILT AROUND YOU",
+    title: "Your next",
+    accent: "level.",
     intro:
-      "175 exercises with technique and the mistakes to avoid, sets that survive a dead signal, and a body map built only from what you actually logged. Free while GYMS.LIFE is in beta.",
+      "Training, your Digital Twin and a coach with context. 175 exercises. One connected experience. Free in beta.",
     start: "Build my routine",
     explore: "Explore the experience",
-    note: "No subscription yet. Nothing invented about your body.",
+    note: "Free during beta · No subscription",
+    twinTitle: "See the work.\nKnow your body.",
+    twinText: "Your training has a shape. Explore it, muscle by muscle.",
+    twinLink: "Try your Twin",
+    movementLabel: "Exercises. Real technique.",
     preview: "EXPLORE YOUR DIGITAL TWIN",
     demo: "Interactive anatomy demo",
     loading: "Preparing your anatomy preview…",
     demoNote:
       "A shared body model, not a personal scan. Select a muscle group to explore. Personal measurements appear only when you add data.",
     worldsTag: "ONE CONNECTED EXPERIENCE",
-    worldsTitle: "Less scattered. More you.",
+    worldsTitle: "One system.\nYour whole rhythm.",
     worldsIntro:
       "Your day, your body, your insights and your coach — connected around the work you actually do.",
     worlds: [
       {
         title: "Today",
         kicker: "FIND YOUR FOCUS",
-        text: "Your next session, daily check-in and training context. A clear place to begin.",
+        text: "One clear next step. Your session is ready when you are.",
         detail: "Plan · Train · Reflect",
       },
       {
         title: "My Twin",
         kicker: "SEE YOUR PROGRESS",
-        text: "Explore muscle groups and the training you log. Keep your body measurements and progress together.",
+        text: "See where you trained. Keep your measurements and progress together.",
         detail: "Body · Training load · Progress",
       },
       {
         title: "Lab",
         kicker: "SEE WHAT HELD UP",
-        text: "Every suggestion the app made is written down with what happened next. When the evidence is too thin to tell, the Lab says so instead of scoring itself.",
+        text: "Suggestions meet results. See what held up and what is still unknown.",
         detail: "Proposed · Outcome · Still unknown",
       },
       {
-        title: "Intelligence",
+        title: "Coach",
         kicker: "ASK WITH CONTEXT",
-        text: "Bring your goals and training history into the conversation. Get help turning a question into a next step.",
+        text: "A conversation with your goals and training history already in context.",
         detail: "Context · Conversation · Action",
       },
     ],
@@ -130,49 +134,53 @@ export const copy = {
     ],
     pricing: "View pricing",
     finalTag: "YOUR NEXT CHAPTER",
-    finalTitle: "Make room for\na stronger tomorrow.",
-    finalText: "Bring your intention. Start with one step.",
+    finalTitle: "The next move\nis yours.",
+    finalText: "Start with today.",
   },
   lt: {
-    eyebrow: "TRENIRUOTĖS, KURIAS GALIMA PATIKRINTI",
-    title: "Treniruokis pagal įrašą.",
-    accent: "Ne pagal spėjimą.",
+    eyebrow: "SUKURTA APLINK TAVE",
+    title: "Tavo kitas",
+    accent: "lygis.",
     intro:
-      "175 pratimai su technika ir dažniausiomis klaidomis, serijos, kurios išlieka nutrūkus ryšiui, ir kūno žemėlapis, sudėtas tik iš to, ką tikrai užregistravai. Beta etape — be mokėjimo.",
+      "Treniruotės, skaitmeninis dvynys ir treneris vienoje vietoje. 175 pratimai. Tavo ritmu. Beta etape nemokamai.",
     start: "Sukurti savo rutiną",
     explore: "Atrasti galimybes",
-    note: "Prenumeratos dar nėra. Apie tavo kūną nieko neišgalvojama.",
+    note: "Beta etape nemokamai · Be prenumeratos",
+    twinTitle: "Matyk savo darbą.\nPažink savo kūną.",
+    twinText: "Tavo treniruotės turi formą. Atrask ją, raumuo po raumens.",
+    twinLink: "Išbandyti dvynį",
+    movementLabel: "Pratimai. Taisyklinga technika.",
     preview: "PAŽINK SAVO SKAITMENINĮ DVYNĮ",
     demo: "Interaktyvi anatomijos demonstracija",
     loading: "Ruošiama anatomijos peržiūra…",
     demoNote:
       "Bendrinis kūno modelis, ne tavo skenavimas. Pasirink raumenų grupę ir apžiūrėk. Asmeniniai rodikliai atsiranda tik įvedus duomenis.",
     worldsTag: "VIENA SUSIETA PATIRTIS",
-    worldsTitle: "Daugiau aiškumo. Daugiau tavęs.",
+    worldsTitle: "Viena sistema.\nVisas tavo ritmas.",
     worldsIntro: "Tavo diena, kūnas, įžvalgos ir treneris — susieti su tuo, ką iš tiesų darai.",
     worlds: [
       {
         title: "Šiandien",
         kicker: "ATRASK DIENOS KRYPTĮ",
-        text: "Artimiausia treniruotė, dienos savijauta ir treniruočių kontekstas. Aiški vieta pradėti.",
+        text: "Vienas aiškus kitas žingsnis. Treniruotė laukia tavęs.",
         detail: "Planuok · Treniruokis · Apmąstyk",
       },
       {
         title: "Mano dvynys",
         kicker: "MATYK SAVO PROGRESĄ",
-        text: "Apžiūrėk raumenų grupes ir registruotas treniruotes. Kūno rodikliai ir progresas vienoje vietoje.",
+        text: "Matyk, ką treniravai. Kūno rodikliai ir progresas vienoje vietoje.",
         detail: "Kūnas · Krūvis · Progresas",
       },
       {
         title: "Lab",
         kicker: "MATYK, KAS PASITVIRTINO",
-        text: "Kiekvienas programos pasiūlymas užrašomas kartu su tuo, kas nutiko toliau. Kai duomenų per mažai, kad būtų galima spręsti, Lab tai pasako, o ne vertina save.",
+        text: "Pasiūlymai susitinka su rezultatais. Matyk, kas pasitvirtino, o kas dar nežinoma.",
         detail: "Pasiūlyta · Rezultatas · Dar nežinoma",
       },
       {
-        title: "Intelligence",
+        title: "Treneris",
         kicker: "KLAUSK SU KONTEKSTU",
-        text: "Kalbėkis atsižvelgdamas į savo tikslus ir treniruočių istoriją. Paversk klausimą konkrečiu kitu žingsniu.",
+        text: "Pokalbis, kuriame tavo tikslai ir treniruočių istorija jau turi vietą.",
         detail: "Kontekstas · Pokalbis · Veiksmas",
       },
     ],
@@ -232,8 +240,8 @@ export const copy = {
     ],
     pricing: "Peržiūrėti kainodarą",
     finalTag: "TAVO NAUJA PRADŽIA",
-    finalTitle: "Atrask vietos\nstipresniam rytojui.",
-    finalText: "Atsinešk norą. Pradėk nuo vieno žingsnio.",
+    finalTitle: "Kitas žingsnis —\ntavo.",
+    finalText: "Pradėk nuo šiandien.",
   },
 };
 const icons = [Activity, Fingerprint, FlaskConical, MessageCircle];
@@ -243,13 +251,20 @@ export function FutureLabLanding() {
   const c = copy[baseLang(lang)];
   return (
     <PublicFrame page="home">
-      <div className="fl-landing">
+      <div className="fl-landing fl-landing--signature">
         <section className="fl-landing-hero" aria-labelledby="landing-title">
+          <img
+            className="fl-landing-hero-art"
+            src="/images/athletic-motion-v1.webp"
+            alt=""
+            aria-hidden="true"
+            width={1536}
+            height={1024}
+            fetchPriority="high"
+          />
           <div className="fl-landing-intro">
             <p className="fl-public-eyebrow">
-              <span className="fl-landing-star" aria-hidden="true">
-                ✳
-              </span>
+              <span className="fl-signature-line" aria-hidden="true" />
               {c.eyebrow}
             </p>
             <h1 id="landing-title">
@@ -270,6 +285,47 @@ export function FutureLabLanding() {
             </div>
             <p className="fl-landing-note">{c.note}</p>
           </div>
+          <a className="fl-landing-twin-link" href="#digital-twin">
+            <Fingerprint aria-hidden="true" />
+            {c.twinLink}
+            <ArrowUpRight aria-hidden="true" />
+          </a>
+        </section>
+        <section id="experience" className="fl-landing-section" aria-labelledby="experience-title">
+          <header className="fl-landing-section-head">
+            <div>
+              <p className="fl-public-eyebrow">{c.worldsTag}</p>
+              <h2 id="experience-title">{c.worldsTitle}</h2>
+            </div>
+            <p>{c.worldsIntro}</p>
+          </header>
+          <div className="fl-landing-worlds">
+            {c.worlds.map((world, index) => {
+              const Icon = icons[index]!;
+              return (
+                <article key={world.title} className="fl-landing-world">
+                  <div className="fl-landing-world-top">
+                    <Icon aria-hidden="true" />
+                    <span>0{index + 1}</span>
+                  </div>
+                  <h3>{world.title}</h3>
+                  <p>{world.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+        <section
+          id="digital-twin"
+          className="fl-landing-twin-feature fl-landing-section"
+          aria-labelledby="twin-feature-title"
+        >
+          <div className="fl-landing-twin-copy">
+            <p className="fl-public-eyebrow">DIGITAL TWIN</p>
+            <h2 id="twin-feature-title">{c.twinTitle}</h2>
+            <p>{c.twinText}</p>
+            <span className="fl-twin-feature-index" aria-hidden="true">02</span>
+          </div>
           <div className="fl-landing-preview" aria-label={c.demo}>
             <div className="fl-landing-preview-head">
               <Fingerprint aria-hidden="true" />
@@ -289,32 +345,6 @@ export function FutureLabLanding() {
               <strong>{c.demo}</strong>
               <p>{c.demoNote}</p>
             </div>
-          </div>
-        </section>
-        <section id="experience" className="fl-landing-section" aria-labelledby="experience-title">
-          <header className="fl-landing-section-head">
-            <div>
-              <p className="fl-public-eyebrow">{c.worldsTag}</p>
-              <h2 id="experience-title">{c.worldsTitle}</h2>
-            </div>
-            <p>{c.worldsIntro}</p>
-          </header>
-          <div className="fl-landing-worlds">
-            {c.worlds.map((world, index) => {
-              const Icon = icons[index]!;
-              return (
-                <article key={world.title} className="fl-landing-world">
-                  <div className="fl-landing-world-top">
-                    <Icon aria-hidden="true" />
-                    <span>0{index + 1}</span>
-                  </div>
-                  <p className="fl-landing-kicker">{world.kicker}</p>
-                  <h3>{world.title}</h3>
-                  <p>{world.text}</p>
-                  <small>{world.detail}</small>
-                </article>
-              );
-            })}
           </div>
         </section>
         <section className="fl-landing-routine fl-landing-section" aria-labelledby="routine-title">
@@ -342,11 +372,9 @@ export function FutureLabLanding() {
         <section className="fl-landing-library" aria-labelledby="library-title">
           <div className="fl-landing-library-art" aria-hidden="true">
             <div>
-              <Dumbbell />
-              <span>GYMS.LIFE / MOVEMENT</span>
+              <strong>175</strong>
+              <span>{c.movementLabel}</span>
             </div>
-            <span className="fl-landing-orbit" />
-            <span className="fl-landing-orbit fl-landing-orbit-two" />
           </div>
           <div>
             <p className="fl-public-eyebrow">{c.libraryTag}</p>
@@ -387,9 +415,6 @@ export function FutureLabLanding() {
           </div>
         </section>
         <section className="fl-landing-final" aria-labelledby="final-title">
-          <span className="fl-landing-star" aria-hidden="true">
-            ✳
-          </span>
           <p className="fl-public-eyebrow">{c.finalTag}</p>
           <h2 id="final-title">{c.finalTitle}</h2>
           <p>{c.finalText}</p>

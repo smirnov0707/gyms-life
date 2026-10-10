@@ -113,7 +113,12 @@ try {
         await document.fonts.ready;
       });
       await expect(page.locator("#main-content")).not.toBeEmpty();
-      if (screen === "today") await expect(page.locator(".fl-plan-start")).toBeVisible();
+      if (screen === "today") {
+        await expect(page.locator(".fl-plan-start")).toBeVisible();
+        await expect
+          .poll(() => page.locator(".fl-session-art").evaluate((image) => image.naturalWidth))
+          .toBeGreaterThan(0);
+      }
       if (screen === "coach") await expect(page.locator("[data-coach-send]")).toBeVisible();
       if (screen === "signals") {
         await expect(
@@ -193,6 +198,18 @@ try {
       if (screen === "today") {
         expect(Number(geometry.heading.fontWeight)).toBeGreaterThanOrEqual(700);
         expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width <= 390 ? 26 : 36);
+        const session = page.locator(".fl-session-hero");
+        const sessionTitle = await session.locator("h3").evaluate((element) => {
+          const bounds = element.getBoundingClientRect();
+          return {
+            size: parseFloat(getComputedStyle(element).fontSize),
+            fits: element.scrollWidth <= bounds.width + 1,
+          };
+        });
+        expect(sessionTitle.size).toBeGreaterThanOrEqual(width <= 390 ? 38 : 48);
+        expect(sessionTitle.fits).toBe(true);
+        await expect(session.locator(".fl-session-meta")).toContainText("49");
+        await expect(session.locator(".fl-session-meta")).toContainText("5");
         const exercises = page.locator(".fl-plan-details");
         await expect(exercises.locator("ul")).toBeHidden();
         await exercises.locator("summary").press("Enter");

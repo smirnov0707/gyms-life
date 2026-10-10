@@ -41,6 +41,7 @@ import {
 import "./future-lab-shell.css";
 import "./future-lab-visual-system.css";
 import "./future-lab/performance-design.css";
+import "./future-lab/signature-design.css";
 
 const futureNavItems = PRIMARY_WORLD_NAV;
 

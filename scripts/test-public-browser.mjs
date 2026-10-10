@@ -144,6 +144,24 @@ try {
     for (const theme of ["dark", "light"])
       for (const width of [1440, 390]) {
         const { page, context } = await open(`${state.query}&theme=${theme}`, width);
+        if (state.name.startsWith("home")) {
+          const art = page.locator(".fl-landing-hero-art");
+          await expect(art).toBeVisible();
+          await expect
+            .poll(() => art.evaluate((image) => image.naturalWidth))
+            .toBeGreaterThan(0);
+          const hero = page.locator(".fl-landing-hero");
+          const headingSize = await hero
+            .locator("h1")
+            .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+          expect(headingSize).toBeGreaterThanOrEqual(width === 1440 ? 100 : 44);
+          await expect(hero.locator('a[href="/auth?mode=up"]')).toBeVisible();
+          await page.screenshot({
+            path: path.join(output, `signature-${state.name}-${theme}-${width}.png`),
+            animations: "disabled",
+          });
+          await page.locator(".fl-landing-preview").scrollIntoViewIfNeeded();
+        }
         if (state.name.startsWith("home") && engine === "chromium") {
           await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
           await expect(page.locator("canvas")).toHaveAttribute(
@@ -179,6 +197,7 @@ try {
           "/",
         );
         const name = `public-${state.name}-${theme}-${width}.png`;
+        await page.evaluate(() => scrollTo(0, 0));
         const buffer = await page.screenshot({
           path: path.join(output, name),
           fullPage: true,
