@@ -44,9 +44,14 @@ try {
   assert.equal(response.status(), 200);
   assert(response.headers()["content-security-policy"], "Live SSR must send its CSP");
   const stage = page.locator("#digital-twin [data-twin-stage]");
-  await stage.scrollIntoViewIfNeeded();
   const canvas = stage.locator("canvas");
-  await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 45000 });
+  // Hydration replaces the SSR placeholder while the lazy Twin is loading.
+  // Re-resolve that section through the transition, but keep the loaded-human
+  // assertion: a stable fallback must still fail this check.
+  await expect(async () => {
+    await page.locator("#digital-twin").scrollIntoViewIfNeeded();
+    await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 1500 });
+  }).toPass({ timeout: 45000, intervals: [500, 1000] });
   await expect(canvas).toHaveAttribute("data-twin-asset-sha256", assetSha256);
   await expect(canvas).toBeVisible();
   const breath = async () => Number(await canvas.getAttribute("data-twin-breath"));
