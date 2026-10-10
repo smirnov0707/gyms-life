@@ -40,7 +40,9 @@ const candidatePath =
 // of silently rendering the production asset and passing the visual gate.
 const candidateBytes = candidate ? await readFile(path.join(root, candidatePath)) : null;
 const expectedAnalysisSha = createHash("sha256")
-  .update(candidateBytes ?? (await readFile(path.join(root, "public/models/twin-natural-v1.glb"))))
+  .update(
+    candidateBytes ?? (await readFile(path.join(root, "public/models/twin-natural-skin-v1.glb"))),
+  )
   .digest("hex");
 if (
   candidateBytes &&
@@ -61,7 +63,7 @@ const candidatePlugin = {
         ![
           "/models/twin-body-v2.glb",
           "/models/twin-anatomy-v1.glb",
-          "/models/twin-natural-v1.glb",
+          "/models/twin-natural-skin-v1.glb",
         ].includes(new URL(request.url, "http://localhost").pathname)
       )
         return next();
@@ -2101,7 +2103,7 @@ try {
           sha256: createHash("sha256").update(candidateBytes).digest("hex"),
           bytes: candidateBytes.length,
           requests: candidateRequests,
-          servedAs: ["/models/twin-natural-v1.glb", "/models/twin-body-v2.glb"],
+          servedAs: ["/models/twin-natural-skin-v1.glb", "/models/twin-body-v2.glb"],
         },
         null,
         2,

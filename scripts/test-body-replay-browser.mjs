@@ -74,7 +74,7 @@ try {
     "MakeHuman graphical assets (CC0)",
   );
   await expect(page.locator("[data-twin-stage]")).toHaveAttribute("data-twin-source", "makehuman");
-  const selectedBytes = await readFile(path.join(root, "public/models/twin-natural-v1.glb"));
+  const selectedBytes = await readFile(path.join(root, "public/models/twin-natural-skin-v1.glb"));
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-twin-asset-sha256",
     createHash("sha256").update(selectedBytes).digest("hex"),
