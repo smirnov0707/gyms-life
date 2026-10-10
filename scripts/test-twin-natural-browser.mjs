@@ -157,10 +157,65 @@ try {
       await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(scroll + 40);
       expect(Number(await canvas.getAttribute("data-twin-yaw"))).toBeCloseTo(yaw, 2);
       await expect(page.locator("[data-camera-selections]")).toHaveText("0");
+      const zoomControls = stage.locator("[data-twin-zoom-controls]");
+      await expect(zoomControls).toHaveCount(0);
       await toggle.click();
       await expect(canvas).toHaveCSS("touch-action", "none");
       await expect(toggle).toHaveText("Baigti");
+      const zoomIn = zoomControls.getByRole("button", { name: "Priartinti", exact: true });
+      const zoomOut = zoomControls.getByRole("button", { name: "Nutolinti", exact: true });
+      const reset = zoomControls.getByRole("button", { name: "Atkurti vaizdą", exact: true });
+      const distance = async () => Number(await canvas.getAttribute("data-twin-distance"));
+      await canvas.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
+      const originalDistance = await distance();
+      // Use the real touch targets, with settings closed, even in landscape.
+      for (const button of [zoomIn, zoomOut, reset]) {
+        const target = await button.boundingBox();
+        const bounds = await canvas.boundingBox();
+        const done = await toggle.boundingBox();
+        expect(target.width).toBeGreaterThanOrEqual(44);
+        expect(target.height).toBeGreaterThanOrEqual(44);
+        expect(target.x).toBeGreaterThanOrEqual(bounds.x);
+        expect(target.y).toBeGreaterThanOrEqual(bounds.y);
+        expect(target.x + target.width).toBeLessThanOrEqual(done.x - 4);
+        expect(target.y + target.height).toBeLessThanOrEqual(bounds.y + bounds.height);
+      }
+      await zoomIn.tap();
+      await expect.poll(distance).toBeLessThan(originalDistance * 0.95);
+      await zoomOut.tap();
+      await expect
+        .poll(async () => Math.abs((await distance()) - originalDistance))
+        .toBeLessThan(0.002);
+      await zoomIn.tap();
+      await stage.getByRole("button", { name: "Apžiūrėti aukščiau", exact: true }).tap();
+      await canvas.press("ArrowRight");
+      await reset.tap();
+      await expect
+        .poll(async () => Math.abs((await distance()) - originalDistance))
+        .toBeLessThan(0.002);
+      await expect
+        .poll(async () => Math.abs(Number(await canvas.getAttribute("data-twin-yaw"))))
+        .toBeLessThan(0.005);
+      await expect
+        .poll(async () =>
+          Math.abs(
+            Number(await canvas.getAttribute("data-twin-target-y")) -
+              Number(await canvas.getAttribute("data-twin-home-y")),
+          ),
+        )
+        .toBeLessThan(0.002);
+      await expect(page.locator("[data-camera-selections]")).toHaveText("0");
+      await stage
+        .locator("[data-twin-viewport]")
+        .screenshot({ path: path.join(out, `${name}-touch-controls.png`) });
+      await reset.press("Escape");
+      await expect(toggle).toBeFocused();
+      await expect(zoomControls).toHaveCount(0);
+      await expect(canvas).toHaveCSS("touch-action", "pan-y pinch-zoom");
       await toggle.click();
+      await expect(zoomIn).toBeVisible();
+      await toggle.click();
+      await expect(zoomControls).toHaveCount(0);
       await expect(canvas).toHaveCSS("touch-action", "pan-y pinch-zoom");
       await canvas.evaluate((el) => el.scrollIntoView({ block: "center", behavior: "instant" }));
       await canvas.press("ArrowRight");
@@ -250,7 +305,13 @@ try {
         expect(eyeTextures[1].retained).toBeLessThanOrEqual(eyeTextures[0].retained);
         results.push({ name, eyeTextures });
       }
-      results.push({ name, height, scroll: "passed", interaction: "passed" });
+      results.push({
+        name,
+        height,
+        scroll: "passed",
+        interaction: "passed",
+        touchZoomAndReset: "passed",
+      });
     } catch (error) {
       console.log(
         "SCROLL_DIAGNOSTICS",

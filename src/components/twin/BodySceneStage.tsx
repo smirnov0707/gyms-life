@@ -93,6 +93,7 @@ const COPY = {
     rotateRight: "Rotate right",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
+    zoomControls: "Zoom and reset view",
     reset: "Reset view",
     region: "Inspect a region",
     choose: "Choose a region",
@@ -129,6 +130,7 @@ const COPY = {
     rotateRight: "Pasukti dešinėn",
     zoomIn: "Priartinti",
     zoomOut: "Nutolinti",
+    zoomControls: "Mastelis ir vaizdo atkūrimas",
     reset: "Atkurti vaizdą",
     region: "Apžiūrėti regioną",
     choose: "Pasirink regioną",
@@ -168,6 +170,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
   const copy = COPY[language];
   const controlsId = useId();
   const controlToggle = useRef<HTMLButtonElement>(null);
+  const interactionToggle = useRef<HTMLButtonElement>(null);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [mobileViewport, setMobileViewport] = useState(false);
   const mobileDisclosure = compactMobileControls && mobileViewport;
@@ -263,6 +266,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
     host.current?.querySelector("canvas")?.setAttribute("aria-label", copy.scene);
   }, [copy.scene, ready]);
   const show3D = mode === "3d" && ready && !failed;
+  const showQuickControls = show3D && interaction && presentation === "full";
+  const zoomCommands = [
+    ["zoom-in", Plus, copy.zoomIn],
+    ["zoom-out", Minus, copy.zoomOut],
+    ["reset", Undo2, copy.reset],
+  ] as const;
   const command = (action: TwinCameraCommand) => scene.current?.command(action);
   const selectRegion = (region: string) => {
     onSelectRegion(region);
@@ -332,6 +341,12 @@ export function BodySceneStage(props: BodySceneStageProps) {
       <div className={presentation === "cockpit" ? "twin-cockpit-scene" : "contents"}>
         <div
           data-twin-viewport
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && interaction) {
+              setInteraction(false);
+              interactionToggle.current?.focus();
+            }
+          }}
           className={
             presentation === "cockpit"
               ? "relative min-h-0 min-w-0"
@@ -360,17 +375,31 @@ export function BodySceneStage(props: BodySceneStageProps) {
           )}
           {show3D && (
             <button
+              ref={interactionToggle}
               type="button"
               data-twin-interaction-toggle
               aria-pressed={interaction}
               onClick={() => setInteraction((value) => !value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setInteraction(false);
-              }}
               style={controlStyle}
             >
               {interaction ? copy.done : copy.interact}
             </button>
+          )}
+          {showQuickControls && (
+            <div data-twin-zoom-controls role="group" aria-label={copy.zoomControls}>
+              {zoomCommands.map(([action, Icon, name]) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => command(action)}
+                  aria-label={name}
+                  title={name}
+                  style={controlStyle}
+                >
+                  <Icon aria-hidden="true" className="size-4" />
+                </button>
+              ))}
+            </div>
           )}
           {show3D && presentation === "full" && (
             <div data-twin-navigation role="group" aria-label={copy.navigation}>
@@ -535,9 +564,7 @@ export function BodySceneStage(props: BodySceneStageProps) {
                 ["rotate-right", RotateCw, copy.rotateRight],
                 ["tilt-up", ArrowUp, copy.tiltUp],
                 ["tilt-down", ArrowDown, copy.tiltDown],
-                ["zoom-in", Plus, copy.zoomIn],
-                ["zoom-out", Minus, copy.zoomOut],
-                ["reset", Undo2, copy.reset],
+                ...(showQuickControls ? [] : zoomCommands),
               ] as const
             ).map(([action, Icon, name]) => (
               <button

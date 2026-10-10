@@ -24,7 +24,17 @@
   display: grid;
   gap: 4px;
 }
-[data-twin-navigation] button {
+[data-twin-zoom-controls] {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+[data-twin-navigation] button,
+[data-twin-zoom-controls] button {
   display: grid;
   place-items: center;
   min-width: 44px;
@@ -34,11 +44,13 @@
   color: #e9edfa;
   background: rgba(4, 10, 20, 0.88);
 }
-[data-twin-navigation] button:focus-visible {
+[data-twin-navigation] button:focus-visible,
+[data-twin-zoom-controls] button:focus-visible {
   outline: 2px solid #b8f4ff;
   outline-offset: 2px;
 }
-[data-twin-navigation] button:hover {
+[data-twin-navigation] button:hover,
+[data-twin-zoom-controls] button:hover {
   background: #183042;
 }
 
