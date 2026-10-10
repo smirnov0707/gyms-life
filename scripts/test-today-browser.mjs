@@ -500,7 +500,7 @@ try {
         await expect(journal).toBeVisible();
         await expect(
           journal.getByRole("heading", {
-            name: "Your history, with memory attached.",
+            name: "Your history",
             exact: true,
           }),
         ).toBeVisible();
@@ -530,6 +530,9 @@ try {
           shown.page.getByRole("heading", { name: "Current investigation", exact: true }),
         ).toBeVisible();
 
+        const methods = shown.page.locator(".fl-lab-methods");
+        await expect(methods).not.toHaveAttribute("open", "");
+        await methods.locator(":scope > summary").press("Enter");
         const domainsDisclosure = shown.page.locator(".fl-lab-domains");
         const domains = domainsDisclosure.getByRole("region", {
           name: "Evidence domains",
@@ -573,6 +576,8 @@ try {
             exact: true,
           }),
         ).toBeHidden();
+        await methods.locator(":scope > summary").press("Enter");
+        await expect(methods).not.toHaveAttribute("open", "");
         record(
           `Lab ${viewport.name} keeps one investigation primary and supporting evidence on demand`,
         );
@@ -631,8 +636,8 @@ try {
       }
       if (screen === "today" && viewport.name === "mobile") {
         await expect(shown.page.locator(".fl-today-command")).toBeVisible();
-        await expect(shown.page.locator(".fl-today-command .fl-greeting")).toHaveCount(1);
-        await expect(shown.page.locator(".fl-today-root > .fl-greeting")).toHaveCount(0);
+        await expect(shown.page.locator(".fl-today-command .fl-greeting")).toHaveCount(0);
+        await expect(shown.page.locator(".fl-today-root > .fl-greeting")).toHaveCount(1);
         await expect(shown.page.locator(".fl-today-plan")).toBeVisible();
         await expect(shown.page.locator(".fl-today-twin")).toBeHidden();
         await expect(shown.page.locator(".fl-today-twin-mobile")).toBeVisible();
@@ -641,6 +646,11 @@ try {
 
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
+        const greeting = await shown.page.locator(".fl-today-root > .fl-greeting").boundingBox();
+        expect(
+          greeting.y + greeting.height,
+          "Today heading precedes the session",
+        ).toBeLessThanOrEqual(plan.y);
         const context = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,
@@ -981,8 +991,8 @@ try {
       viewport: { width: 390, height: 844 },
       locale: "en-US",
     });
-    await linked.page.getByText("Open My Twin", { exact: true }).click();
-    await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();
+    await linked.page.getByText("Open your Twin", { exact: true }).click();
+    await linked.page.getByRole("link", { name: "Explore your body and progress" }).click();
     // The fixture link reloads the document; URL commit is not React readiness.
     // Use the same bounded mount barrier as initial route entry, then keep
     // the original short semantic assertions unchanged.
@@ -1079,6 +1089,7 @@ try {
     // 3. Recovery projections live in Twin Systems; prediction calibration lives in Lab.
     // Recovery unknown-state semantics are exercised later in both real recovery contexts.
     const evidenceLab = await openPanel("?shell=1&screen=lab&scenario=empty", { locale: "en-US" });
+    await openDetails(evidenceLab.page.locator(".fl-lab-methods"));
     const calibrationSummary = evidenceLab.page
       .locator("details > summary")
       .filter({ hasText: /^Prediction calibration/ });
@@ -1138,6 +1149,10 @@ try {
     await openTodayExecutionLayer(planned.page);
     const plan = planned.page.getByRole("region", { name: "Today's plan" });
     await expect(plan.getByText("Upper body focus")).toBeVisible();
+    const exercises = plan.locator(".fl-plan-details");
+    await expect(exercises.locator("ul")).toBeHidden();
+    await exercises.locator("summary").press("Enter");
+    await expect(exercises.locator("ul")).toBeVisible();
     const benchRow = plan.getByRole("listitem").filter({
       has: planned.page.getByText("Bench press", { exact: true }),
     });
@@ -1226,6 +1241,7 @@ try {
     });
     await expect(lab.page.getByText("Source available", { exact: true })).toHaveCount(0);
     await expect(lab.page.getByText("Rules defined", { exact: true })).toHaveCount(0);
+    await openDetails(lab.page.locator(".fl-lab-methods"));
     const failedDomains = lab.page.locator(".fl-lab-domains");
     const failedRoster = failedDomains.locator(".fl-lab-roster-tiles");
     await expect(failedRoster).toBeHidden();
@@ -1467,7 +1483,7 @@ try {
       fullPage: true,
     });
 
-    await twin.page.getByRole("tab", { name: "Timeline" }).click();
+    await twin.page.getByRole("tab", { name: "History" }).click();
 
     await openTwinMemory(twin.page);
     await expect(
@@ -1480,7 +1496,7 @@ try {
         viewport: { width: 390, height: 844 },
       },
     );
-    await baselineMemory.page.getByRole("tab", { name: "Timeline" }).click();
+    await baselineMemory.page.getByRole("tab", { name: "History" }).click();
     await openTwinMemory(baselineMemory.page);
     await expect(
       baselineMemory.page.getByText("There is no earlier saved observation to compare yet", {
@@ -1496,7 +1512,7 @@ try {
         viewport: { width: 390, height: 844 },
       },
     );
-    await changedMemory.page.getByRole("tab", { name: "Timeline" }).click();
+    await changedMemory.page.getByRole("tab", { name: "History" }).click();
     await openTwinMemory(changedMemory.page);
     const latestMemoryChanges = changedMemory.page.getByRole("region", { name: "Latest changes" });
     await expect(latestMemoryChanges.getByText("Strengthened", { exact: true })).toBeVisible();
@@ -1515,7 +1531,7 @@ try {
       "?panel=twin&twin=regions&scenario=reference&uncertainty=training&view=journal",
       { viewport: { width: 390, height: 844 } },
     );
-    await uncertaintyTwin.page.getByRole("tab", { name: "Timeline" }).click();
+    await uncertaintyTwin.page.getByRole("tab", { name: "History" }).click();
     await openTwinMemory(uncertaintyTwin.page);
     await expect(
       uncertaintyTwin.page.getByText("WHAT WOULD REDUCE UNCERTAINTY", { exact: true }),
@@ -1566,10 +1582,12 @@ try {
       fullPage: true,
     });
 
-    await twin.page.getByRole("tab", { name: "Systems" }).click();
+    await twin.page.getByRole("tab", { name: "Signals" }).click();
     await expect(twin.page.getByRole("region", { name: "Live signals" })).toBeVisible({
       timeout: 30000,
     });
+    await expect(twin.page.getByText(/colours come from logged sets alone/)).toBeHidden();
+    await openTwinSystemsEvidence(twin.page);
     const systemsText = await twin.page.innerText("body");
     expect(systemsText).toMatch(/colours come from logged sets alone/);
     await expect(table).toHaveCount(0);
@@ -1925,6 +1943,7 @@ try {
     // 21. Prediction learning now has one canonical surface in Lab. Evidence
     //     maturity is calibration progress, never a second confidence dashboard.
     const evidence = await openPanel("?shell=1&screen=lab&evidence=some");
+    await openDetails(evidence.page.locator(".fl-lab-methods"));
     const evidenceCalibrationSummary = evidence.page
       .locator("details > summary")
       .filter({ hasText: /^Prediction calibration/ });

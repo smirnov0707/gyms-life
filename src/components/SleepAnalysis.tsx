@@ -43,12 +43,14 @@ function Stages({ night }: { night: StagedNight }) {
     <>
       {/* Ordered deepest first so the panel reads the same every night, and
           only the stages that arrived get a row. */}
-      <ul className="mt-3 space-y-2">
+      <ul className="fl-analysis-rows mt-4">
         {bars.bars.map((bar) => (
-          <li key={bar.stage} className="text-xs">
-            <span className="flex items-baseline justify-between gap-3">
-              <span className="text-muted-foreground">{t(`sl.stage.${bar.stage}` as TKey)}</span>
-              <span className="shrink-0 tabular-nums text-muted-foreground">
+          <li key={bar.stage} className="text-[13px]">
+            <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="fl-analysis-label text-foreground">
+                {t(`sl.stage.${bar.stage}` as TKey)}
+              </span>
+              <span className="fl-analysis-value tabular-nums text-muted-foreground">
                 {t("sl.minutes").replace("{minutes}", String(Math.round(bar.minutes)))}
                 {bar.share === null ? null : (
                   <span className="ml-2 font-semibold text-foreground">{percent(bar.share)}</span>
@@ -56,7 +58,7 @@ function Stages({ night }: { night: StagedNight }) {
               </span>
             </span>
             {bar.widthPercent === null ? null : (
-              <span className="mt-1 block h-1 rounded-full bg-white/5">
+              <span className="fl-analysis-track mt-2 block h-1 rounded-full bg-border">
                 <span
                   className={`block h-1 rounded-full ${
                     // The stage colours belong to a share of the night. A
@@ -74,18 +76,16 @@ function Stages({ night }: { night: StagedNight }) {
 
       {bars.basis === "night" ? null : (
         <>
-          <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
-            {t("sl.partial")}
-          </p>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("sl.partial")}</p>
           {bars.basis === "reported" ? (
-            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {t("sl.barsReported")}
             </p>
           ) : null}
         </>
       )}
       {night.unattributedMinutes === null ? null : (
-        <p className="mt-2 text-[10px] leading-relaxed text-amber-300 light:text-amber-700/80">
+        <p className="mt-2 text-xs leading-relaxed text-amber-300 light:text-amber-700">
           {t("sl.unattributed").replace("{minutes}", String(night.unattributedMinutes))}
         </p>
       )}
@@ -127,11 +127,11 @@ export function SleepAnalysis() {
   return (
     <section
       aria-label={t("sl.title")}
-      className="fl-sleep-analysis rounded-[1.35rem] border border-border bg-surface p-4"
+      className="fl-analysis-panel fl-sleep-analysis rounded-md border border-border bg-surface p-4"
     >
-      <p className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.2em] text-primary">
-        <Moon aria-hidden="true" className="size-3" /> {t("sl.title")}
-      </p>
+      <h3 className="fl-analysis-title flex items-center gap-2 text-lg font-semibold text-foreground">
+        <Moon aria-hidden="true" className="size-4 shrink-0" /> {t("sl.title")}
+      </h3>
 
       {!night ? null : night.status === "unreadable" ? (
         <p className="mt-3 text-xs leading-relaxed text-amber-300 light:text-amber-700">
@@ -140,25 +140,19 @@ export function SleepAnalysis() {
       ) : night.status === "absent" ? (
         <>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("sl.absent")}</p>
-          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-            {t("sl.absentHow")}
-          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("sl.absentHow")}</p>
         </>
       ) : (
         <>
-          <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-sm font-semibold text-foreground">
+          <p className="mt-4 grid gap-1">
+            <span className="fl-sleep-duration text-2xl font-semibold text-foreground">
               {durationLine(night.sleepHours)}
             </span>
-            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              {whenLabel(night.ageDays)}
-            </span>
+            <span className="text-xs text-muted-foreground">{whenLabel(night.ageDays)}</span>
           </p>
 
           {night.status === "duration_only" ? (
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              {t("sl.noStages")}
-            </p>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("sl.noStages")}</p>
           ) : (
             <Stages night={night} />
           )}

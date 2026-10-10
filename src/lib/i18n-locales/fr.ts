@@ -2,7 +2,6 @@
 export const locale: Record<string, string> = {
   "l3.pr.feature.body": "Scanner de composition corporelle et readiness quotidienne",
   "nav.dashboard": "Tableau de bord",
-  "nav.coach": "Intelligence",
   "theme.label": "Thème",
   "theme.light": "Clair",
   "theme.dark": "Sombre",
@@ -75,7 +74,6 @@ export const locale: Record<string, string> = {
   "dash.morning": "Bonjour",
   "dash.afternoon": "Bon après-midi",
   "dash.evening": "Bonsoir",
-  "dash.welcomeBack": "Ravi de vous revoir",
   "dash.streak": "Série en cours",
   "dash.regenerate": "Générer un nouveau programme",
   "plan.day": "Jour",

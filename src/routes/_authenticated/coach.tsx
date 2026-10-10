@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { baseLang, useI18n, type TKey } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { CoachComposer } from "@/components/coach/CoachComposer";
@@ -61,16 +61,13 @@ function CoachConversation() {
     >
       <header className="fl-world-header flex flex-wrap items-start justify-between gap-4 pb-5">
         <div>
-          <p className="fl-world-kicker flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-400 light:text-emerald-700">
-            <Sparkles className="size-3.5" /> GYMS.LIFE INTELLIGENCE
-          </p>
           <h1 className="fl-world-title mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            {english ? "Ask your system" : "Klausk savo sistemos"}
+            {english ? "Your coach" : "Tavo treneris"}
           </h1>
           <p className="fl-world-subtitle mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
             {english
-              ? "Ask why Today chose an action, what your Twin is showing, what the Lab is investigating, or what Future is simulating."
-              : "Klausk, kodėl Today pasirinko veiksmą, ką rodo Twin, ką tiria Lab arba ką modeliuoja Future."}
+              ? "Ask about training, food or recovery."
+              : "Klausk apie treniruotes, mitybą ar atsistatymą."}
           </p>
         </div>
       </header>
@@ -97,13 +94,7 @@ function CoachConversation() {
               className="fl-coach-empty flex min-h-[260px] flex-col items-center justify-center text-center"
               data-coach-confirmed-empty
             >
-              <span className="grid size-14 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
-                <Sparkles className="size-5" />
-              </span>
-              <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-                {t("coach.sub")}
-              </p>
-              <div className="mt-6 flex max-w-2xl flex-wrap justify-center gap-2">
+              <div className="fl-coach-suggestions grid w-full max-w-2xl grid-cols-2 gap-2">
                 {QUICK.map((key) => (
                   <button
                     key={key}

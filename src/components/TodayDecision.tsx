@@ -365,9 +365,7 @@ export function TodayDecision({
   if (compact) {
     return (
       <section className="fl-surface fl-today-decision">
-        <p className="fl-eyebrow">{copy.eyebrow}</p>
         <h2>{action.title}</h2>
-        <p className="fl-decision-summary">{action.summary}</p>
         {!(
           primaryTrainingActionHandled &&
           (decision.action === "train_as_planned" || decision.action === "train_adapted")
@@ -380,6 +378,7 @@ export function TodayDecision({
         ) : null}
         <details className="fl-disclosure">
           <summary>{copy.evidence}</summary>
+          <p className="fl-decision-summary">{action.summary}</p>
           <ul>
             {decision.evidence.map((item) => (
               <li key={item.position}>{copy.evidenceLabel[item.key](item.value)}</li>

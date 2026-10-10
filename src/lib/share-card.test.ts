@@ -136,7 +136,7 @@ describe("what the head promises", () => {
     expect(description).toMatch(/beta/i);
     // The claims the rewritten page makes, and the abstract one it dropped.
     expect(description).not.toMatch(/Your next step\.$/);
-    expect(`${hero.title} ${hero.accent}`).toBe("Train on the record. Not on a guess.");
+    expect(`${hero.title} ${hero.accent}`).toBe("Your next level.");
   });
 
   it("no longer carries the line the page stopped making", () => {

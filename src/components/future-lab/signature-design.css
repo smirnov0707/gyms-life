@@ -1,0 +1,612 @@
+/* Signature direction: an original motion study, oversized type and quiet tools.
+ * These two deliberate dark media stages keep their palette in either theme.
+ * The sculpture is decorative brand artwork, never an athlete's body or data. */
+.fl-landing.fl-landing--signature .fl-landing-hero,
+.future-lab-app.fl-performance-shell .fl-session-hero {
+  --primary: #c8fa3c;
+  --primary-foreground: #0b0f03;
+  --foreground: #f4f6f4;
+  --muted-foreground: #afb5b2;
+  --action-start: #d2fe52;
+  --action-end: #b3e832;
+  --ring: #c8fa3c;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #07080a;
+  color: var(--foreground);
+}
+
+.fl-landing.fl-landing--signature {
+  width: min(1320px, calc(100% - 64px));
+}
+
+.fl-landing.fl-landing--signature .fl-landing-hero {
+  display: flex;
+  align-items: center;
+  min-height: 680px;
+  margin-top: 20px;
+  padding: 64px 56px 88px;
+  border: 1px solid rgb(244 246 244 / 12%);
+  border-radius: 4px;
+}
+
+.fl-landing--signature .fl-landing-hero-art,
+.future-lab-app.fl-performance-shell .fl-session-art {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  animation: fl-signature-art-enter 1200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-hero::before,
+.future-lab-app.fl-performance-shell .fl-session-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, #07080af5, #07080a99 40%, #07080a00 72%);
+  pointer-events: none;
+}
+
+.fl-landing--signature .fl-landing-intro {
+  position: relative;
+  z-index: 1;
+  width: 62%;
+  padding: 0;
+  animation: fl-signature-copy-enter 700ms ease-out both;
+}
+
+.fl-landing.fl-landing--signature h1 {
+  margin: 30px 0 24px;
+  font-size: clamp(64px, 7.6vw, 112px);
+  font-weight: 700;
+  line-height: 0.88;
+  letter-spacing: -0.075em;
+  text-transform: uppercase;
+  text-wrap: initial;
+  color: var(--foreground);
+}
+
+.fl-landing.fl-landing--signature h1 span {
+  color: var(--primary);
+}
+
+.fl-landing--signature .fl-signature-line {
+  width: 28px;
+  height: 2px;
+  background: currentColor;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-hero .fl-public-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-lead {
+  max-width: 350px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--muted-foreground);
+}
+
+.fl-landing--signature .fl-landing-actions {
+  margin-top: 28px;
+  gap: 12px 24px;
+}
+
+.fl-landing--signature .fl-landing-primary {
+  min-height: 56px;
+  border-radius: 3px;
+  gap: 28px;
+}
+
+.fl-landing--signature .fl-landing-note {
+  font-size: 12px;
+}
+
+.fl-landing--signature .fl-landing-twin-link {
+  position: absolute;
+  right: 32px;
+  bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid rgb(244 246 244 / 25%);
+  border-radius: 3px;
+  background: #07080ad9;
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.fl-landing--signature a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 5px;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-section {
+  padding-block: 80px;
+}
+
+.fl-landing.fl-landing--signature h2 {
+  font-size: clamp(36px, 4.4vw, 64px);
+  line-height: 1.03;
+  letter-spacing: -0.055em;
+}
+
+.fl-landing--signature .fl-landing-worlds {
+  gap: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.fl-landing.fl-landing--signature .fl-landing-world {
+  min-height: 245px;
+  padding: 26px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.fl-landing--signature .fl-landing-world:last-child {
+  border-right: 0;
+}
+
+.fl-landing--signature .fl-landing-world-top {
+  margin-bottom: 42px;
+  color: var(--muted-foreground);
+}
+
+.fl-landing--signature .fl-landing-world-top svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-world h3 {
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-world h3 + p {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.fl-landing--signature .fl-landing-twin-feature {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 64px;
+}
+
+.fl-landing--signature .fl-landing-twin-copy > p:last-of-type {
+  max-width: 300px;
+  color: var(--muted-foreground);
+  font-size: 15px;
+}
+
+.fl-landing--signature .fl-twin-feature-index {
+  display: block;
+  margin-top: 32px;
+  font-family: var(--font-display);
+  font-size: 140px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  color: color-mix(in srgb, var(--foreground) 12%, transparent);
+}
+
+.fl-landing.fl-landing--signature .fl-landing-preview {
+  --foreground: #f4f6f4;
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  border-radius: 4px;
+  border-color: #333839;
+  background: #111516;
+  box-shadow: none;
+}
+
+.fl-landing--signature .fl-landing-preview::after,
+.fl-landing--signature .fl-landing-preview::before {
+  display: none;
+}
+
+/* The anatomy fallback is a full scene, not one of the landing's 20px icons. */
+.fl-landing--signature .fl-landing-twin [data-twin-viewport] svg[role="img"] {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fl-landing--signature .fl-landing-preview-head,
+.fl-landing--signature .fl-landing-demo {
+  border-color: #333839;
+  background: none;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-library {
+  padding: 40px;
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.fl-landing--signature .fl-landing-library-art {
+  min-height: 310px;
+  border-radius: 0;
+  border: 0;
+  background: none;
+}
+
+.fl-landing--signature .fl-landing-library-art > div {
+  position: static;
+  transform: none;
+}
+
+.fl-landing--signature .fl-landing-library-art strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(100px, 14vw, 210px);
+  font-weight: 700;
+  letter-spacing: -0.1em;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.fl-landing.fl-landing--signature .fl-landing-library-art span {
+  display: block;
+  margin-top: 16px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+
+.fl-landing.fl-landing--signature .fl-landing-final {
+  border-radius: 4px;
+  background: var(--surface);
+  padding-block: 80px;
+}
+
+.fl-landing.fl-landing--signature .fl-landing-final h2 {
+  font-size: clamp(46px, 7vw, 96px);
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-todays-plan:has(.fl-session-hero) {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-todays-plan > .fl-session-hero {
+  display: grid;
+  min-height: 400px;
+  padding: 32px;
+}
+
+.future-lab-app.fl-performance-shell .fl-session-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  max-width: 75%;
+}
+
+.future-lab-app.fl-performance-shell .fl-session-copy .fl-session-kicker {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.future-lab-app.fl-performance-shell .fl-session-copy h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.3vw, 60px);
+  font-weight: 700;
+  line-height: 0.96;
+  letter-spacing: -0.06em;
+  color: var(--foreground);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.future-lab-app.fl-performance-shell .fl-session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.future-lab-app.fl-performance-shell .fl-session-meta strong {
+  margin-right: 4px;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-session-hero .fl-plan-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100%, 310px);
+  min-height: 56px;
+  gap: 20px;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 3px;
+  background: linear-gradient(110deg, var(--action-start), var(--action-end));
+  color: var(--primary-foreground);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.future-lab-app.fl-performance-shell .fl-session-hero .fl-plan-start:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+.future-lab-app.fl-performance-shell .fl-session-hero .fl-plan-start:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 5px;
+}
+
+.future-lab-app.fl-performance-shell .fl-plan-technique {
+  padding: 16px;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-today-command-copy {
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 8px 0 16px;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary > div:first-child,
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary > div:first-child svg {
+  width: 112px;
+  height: 112px;
+  filter: none;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary > div:first-child > span {
+  font-size: 42px;
+}
+
+.future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary > div:last-child {
+  text-align: left;
+}
+
+.future-lab-app.fl-performance-shell
+  .fl-dashboard
+  .fl-readiness-summary
+  > div:last-child
+  > p:first-child {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.future-lab-app.fl-performance-shell
+  .fl-dashboard
+  .fl-readiness-summary
+  > div:last-child
+  > p:last-child {
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+@keyframes fl-signature-art-enter {
+  from {
+    opacity: 0.65;
+    transform: scale(1.035);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fl-signature-copy-enter {
+  from {
+    opacity: 0.6;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1000px) {
+  .fl-landing.fl-landing--signature .fl-landing-hero {
+    padding-inline: 32px;
+    min-height: 640px;
+  }
+  .fl-landing.fl-landing--signature h1 {
+    font-size: 72px;
+  }
+  .fl-landing--signature .fl-landing-intro {
+    width: 80%;
+  }
+  .fl-landing--signature .fl-landing-hero-art {
+    object-position: 65% center;
+    opacity: 0.8;
+  }
+  .fl-landing--signature .fl-landing-twin-feature {
+    gap: 32px;
+  }
+  .fl-landing--signature .fl-landing-world:nth-child(2) {
+    border-right: 0;
+  }
+  .fl-landing--signature .fl-landing-world:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 759px) {
+  .future-lab-app.fl-performance-shell .fl-dashboard .fl-todays-plan > .fl-session-hero {
+    min-height: 340px;
+    padding: 24px 20px;
+  }
+  .future-lab-app.fl-performance-shell .fl-session-art {
+    object-position: 62% center;
+  }
+  .future-lab-app.fl-performance-shell .fl-session-copy {
+    max-width: 100%;
+    gap: 20px;
+  }
+  .future-lab-app.fl-performance-shell .fl-session-copy h3 {
+    max-width: 260px;
+    font-size: 38px;
+  }
+  .future-lab-app.fl-performance-shell .fl-session-hero::before {
+    background: linear-gradient(90deg, #07080aed, #07080a80);
+  }
+  .future-lab-app.fl-performance-shell .fl-dashboard .fl-today-command-copy {
+    padding: 20px;
+  }
+  .future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary {
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 16px;
+  }
+  .future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary > div:first-child,
+  .future-lab-app.fl-performance-shell .fl-dashboard .fl-readiness-summary > div:first-child svg {
+    width: 80px;
+    height: 80px;
+  }
+  .future-lab-app.fl-performance-shell
+    .fl-dashboard
+    .fl-readiness-summary
+    > div:first-child
+    > span {
+    font-size: 30px;
+  }
+  .future-lab-app.fl-performance-shell
+    .fl-dashboard
+    .fl-readiness-summary
+    > div:last-child
+    > p:last-child {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .fl-landing.fl-landing--signature {
+    width: calc(100% - 24px);
+  }
+  .fl-landing.fl-landing--signature .fl-landing-hero {
+    align-items: flex-end;
+    min-height: 700px;
+    margin-top: 8px;
+    padding: 240px 24px 28px;
+  }
+  .fl-landing--signature .fl-landing-intro {
+    width: 100%;
+  }
+  .fl-landing--signature .fl-landing-hero-art {
+    height: 370px;
+    object-fit: cover;
+    object-position: 77% center;
+  }
+  .fl-landing.fl-landing--signature .fl-landing-hero::before {
+    background: linear-gradient(0deg, #07080a 44%, #07080a00 84%);
+  }
+  .fl-landing.fl-landing--signature h1 {
+    margin: 22px 0;
+    font-size: clamp(46px, 11.5vw, 72px);
+    line-height: 0.92;
+  }
+  .fl-landing.fl-landing--signature .fl-landing-lead {
+    font-size: 14px;
+  }
+  .fl-landing--signature .fl-landing-actions {
+    align-items: stretch;
+    gap: 6px;
+    margin: 22px 0 10px;
+  }
+  .fl-landing--signature .fl-landing-actions > a {
+    width: 100%;
+  }
+  .fl-landing--signature .fl-landing-twin-link {
+    top: 16px;
+    right: 16px;
+    bottom: auto;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .fl-landing.fl-landing--signature .fl-landing-section {
+    padding: 48px 8px;
+  }
+  .fl-landing--signature .fl-landing-twin-feature {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fl-landing--signature .fl-twin-feature-index {
+    display: none;
+  }
+  .fl-landing.fl-landing--signature .fl-landing-world {
+    padding: 20px 16px;
+    min-height: 210px;
+  }
+  .fl-landing--signature .fl-landing-world-top {
+    margin-bottom: 30px;
+  }
+  .fl-landing.fl-landing--signature .fl-landing-world h3 {
+    font-size: 23px;
+  }
+  .fl-landing.fl-landing--signature .fl-landing-library {
+    padding: 24px;
+  }
+  .fl-landing--signature .fl-landing-library-art {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 359px) {
+  .fl-landing.fl-landing--signature .fl-landing-world {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-landing--signature .fl-landing-hero-art,
+  .fl-landing--signature .fl-landing-intro,
+  .future-lab-app.fl-performance-shell .fl-session-art {
+    animation: none;
+  }
+  .future-lab-app.fl-performance-shell .fl-session-hero .fl-plan-start {
+    transition: none;
+  }
+  .future-lab-app.fl-performance-shell .fl-session-hero .fl-plan-start:hover {
+    transform: none;
+  }
+}

@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList } from "lucide-react";
+import { ArrowUpRight, ClipboardList } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { baseLang, useI18n } from "@/lib/i18n";
 import { browserTimeZone } from "@/lib/local-day";
 import { getTodaysWorkout } from "@/lib/todays-workout.functions";
 import type { TrainingPlanDay } from "@/lib/training-plan.schema";
@@ -48,37 +48,66 @@ function ExerciseRow({ exercise }: { exercise: TrainingPlanDay["exercises"][numb
 }
 
 function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const english = baseLang(lang) === "en";
+  const count = workout.exercises.length;
+  const plural = new Intl.PluralRules(english ? "en" : "lt").select(count);
+  const exerciseLabel = english
+    ? plural === "one"
+      ? "exercise"
+      : "exercises"
+    : plural === "one"
+      ? "pratimas"
+      : plural === "few"
+        ? "pratimai"
+        : "pratimų";
   return (
     <>
-      <div className="flex items-baseline justify-between gap-3 px-3">
-        <p className="min-w-0 truncate text-sm font-semibold text-foreground">{workout.title}</p>
-        <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-          {workout.estimated_minutes} min
-        </p>
-      </div>
-      {workout.exercises[0] ? (
-        <div className="px-3 pt-1">
-          <WorkoutMotionPreview
-            slug={workout.exercises[0].slug}
-            title={workout.exercises[0].name}
-          />
+      <div className="fl-session-hero">
+        <img
+          className="fl-session-art"
+          src="/images/athletic-motion-v1.webp"
+          alt=""
+          aria-hidden="true"
+          width={1536}
+          height={1024}
+          fetchPriority="high"
+        />
+        <div className="fl-session-copy">
+          <p className="fl-session-kicker">{english ? "YOUR NEXT MOVE" : "TAVO KITAS ŽINGSNIS"}</p>
+          <h3>{workout.title}</h3>
+          <div className="fl-session-meta">
+            <span>
+              <strong>{workout.estimated_minutes}</strong> min
+            </span>
+            <span>
+              <strong>{count}</strong> {exerciseLabel}
+            </span>
+          </div>
+          <Link to="/workout/$day" params={{ day: String(day) }} className="fl-plan-start">
+            {t("tp.start")}
+            <ArrowUpRight aria-hidden="true" size={20} />
+          </Link>
         </div>
-      ) : null}
-      <ul className="mt-2 px-3">
-        {workout.exercises.map((exercise) => (
-          <ExerciseRow key={`${exercise.slug}-${exercise.name}`} exercise={exercise} />
-        ))}
-      </ul>
-      <div className="px-3 pb-3 pt-3">
-        <Link
-          to="/workout/$day"
-          params={{ day: String(day) }}
-          className="fl-plan-start flex min-h-11 w-full items-center justify-center rounded-full border border-primary/40 bg-primary/10 px-4 text-xs font-bold uppercase tracking-[0.14em] text-foreground transition-colors hover:bg-primary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          {t("tp.start")}
-        </Link>
       </div>
+      <details className="fl-plan-details">
+        <summary>
+          {english ? "View exercises" : "Peržiūrėti pratimus"} ({workout.exercises.length})
+        </summary>
+        {workout.exercises[0] ? (
+          <div className="fl-plan-technique">
+            <WorkoutMotionPreview
+              slug={workout.exercises[0].slug}
+              title={workout.exercises[0].name}
+            />
+          </div>
+        ) : null}
+        <ul className="px-3 pb-3">
+          {workout.exercises.map((exercise) => (
+            <ExerciseRow key={`${exercise.slug}-${exercise.name}`} exercise={exercise} />
+          ))}
+        </ul>
+      </details>
     </>
   );
 }

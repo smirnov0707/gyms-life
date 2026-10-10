@@ -14,7 +14,7 @@
 .fl-workspace-hero,
 .fl-workspace-panel {
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 6px;
   background: var(--surface);
   box-shadow: 0 8px 30px color-mix(in srgb, var(--background) 30%, transparent);
 }
@@ -22,25 +22,19 @@
   position: relative;
   overflow: hidden;
   padding: clamp(22px, 3.5vw, 42px);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary) 8%, var(--surface)),
-    var(--surface) 62%
-  );
+  border-top: 2px solid var(--primary);
+  background: var(--surface);
 }
 .fl-workspace-hero::after {
   position: absolute;
   content: "";
   pointer-events: none;
-  width: 250px;
-  height: 250px;
-  top: -165px;
-  right: 6%;
-  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 28px color-mix(in srgb, var(--primary) 3%, transparent),
-    0 0 0 60px color-mix(in srgb, var(--primary) 2%, transparent);
+  width: 72px;
+  height: 72px;
+  top: -38px;
+  right: -38px;
+  border: 1px solid var(--border);
+  transform: rotate(45deg);
 }
 .fl-workspace-eyebrow {
   display: flex;

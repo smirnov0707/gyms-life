@@ -1,7 +1,7 @@
 /* Shared controls also cover authentication, settings, Coach and portalled UI. */
 .ui-button {
   min-width: 0;
-  border-radius: 12px;
+  border-radius: 5px;
   font-weight: 650;
   letter-spacing: -0.01em;
   line-height: 1.4;
@@ -20,7 +20,7 @@
 
 .ui-card {
   border-color: var(--border);
-  border-radius: 20px;
+  border-radius: 6px;
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 60%),
     var(--card);
@@ -28,7 +28,7 @@
 }
 
 .ui-input {
-  border-radius: 12px;
+  border-radius: 5px;
   color: var(--foreground);
   caret-color: var(--primary);
   font-variant-numeric: tabular-nums;

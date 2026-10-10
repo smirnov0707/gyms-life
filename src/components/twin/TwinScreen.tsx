@@ -111,6 +111,7 @@ export function TwinScreen({
           {/* Each panel stays mounted only while selected: the figure is a WebGL
           scene, and three of them holding contexts open is not free. */}
           <div
+            key={active}
             role="tabpanel"
             id={`twin-panel-${active}`}
             aria-labelledby={`twin-tab-${active}`}
@@ -142,22 +143,14 @@ export function TwinScreen({
                 </details>
               </section>
             ) : active === "systems" ? (
-              <section className="fl-twin-systems fl-premium-card rounded-3xl border border-border bg-surface p-4 md:p-5">
-                <header>
-                  <p className="fl-eyebrow">{t("tw.tabSystems")}</p>
-                  <h2 className="mt-2 text-lg font-semibold text-foreground">
-                    {t("tw.systemsTitle")}
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-                    {t("tw.systemsNote")}
-                  </p>
-                </header>
-                <div className="mt-4">
-                  <LiveSignals />
-                </div>
-                <details className="fl-secondary-details mt-4">
+              <section className="fl-twin-systems grid min-w-0 gap-4">
+                <LiveSignals />
+                <details className="fl-secondary-details">
                   <summary>{t("tw.systemsTitle")}</summary>
                   <div className="fl-disclosed-content grid gap-4 lg:grid-cols-2">
+                    <p className="text-xs leading-relaxed text-muted-foreground lg:col-span-2">
+                      {t("tw.systemsNote")}
+                    </p>
                     <RecoveryOutlook />
                     <SleepAnalysis />
                   </div>

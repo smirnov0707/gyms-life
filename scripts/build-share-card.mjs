@@ -55,9 +55,10 @@ const accentLine = pick("accent");
 const eyebrow = pick("eyebrow");
 const note = pick("note");
 
-const [manrope, grotesk] = await Promise.all([
+const [manrope, grotesk, motion] = await Promise.all([
   readFile(path.join(root, "public/fonts/manrope-variable.ttf")),
   readFile(path.join(root, "public/fonts/space-grotesk-variable.ttf")),
+  readFile(path.join(root, "public/images/athletic-motion-v1.webp")),
 ]);
 
 const page = `<!doctype html>
@@ -69,8 +70,10 @@ const page = `<!doctype html>
     width: ${WIDTH}px; height: ${HEIGHT}px; overflow: hidden;
     background: ${palette.background};
     background-image:
-      radial-gradient(ellipse 70% 55% at 88% 12%, color-mix(in srgb, ${palette.primary} 13%, transparent), transparent 70%),
-      radial-gradient(ellipse 60% 50% at 6% 94%, color-mix(in srgb, ${palette.accent} 9%, transparent), transparent 70%);
+      linear-gradient(90deg, ${palette.background}, transparent 95%),
+      url(data:image/webp;base64,${motion.toString("base64")});
+    background-size: cover;
+    background-position: center;
     color: ${palette.foreground};
     font-family: "Manrope", sans-serif;
     display: flex; flex-direction: column; justify-content: space-between;
@@ -83,13 +86,14 @@ const page = `<!doctype html>
   .eyebrow { font-size: 17px; font-weight: 700; letter-spacing: 0.22em; color: ${palette.primary}; }
   h1 {
     font-family: "Space Grotesk", sans-serif; font-weight: 700;
-    font-size: 86px; line-height: 0.98; letter-spacing: -0.035em; margin-top: 22px;
+    font-size: 104px; line-height: 0.9; letter-spacing: -0.06em; margin-top: 22px;
+    text-transform: uppercase;
   }
   h1 .accent { color: ${palette.primary}; display: block; }
   .facts { display: flex; gap: 14px; align-items: center; margin-top: 34px; flex-wrap: wrap; }
   .fact {
     font-size: 19px; font-weight: 600; color: ${palette.foreground};
-    border: 1px solid ${palette.border}; border-radius: 999px; padding: 10px 20px;
+    border-right: 1px solid ${palette.border}; padding: 6px 18px 6px 0;
   }
   .fact b { color: ${palette.primary}; font-variant-numeric: tabular-nums; }
   .note { font-size: 18px; color: ${palette.muted}; }

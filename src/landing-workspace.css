@@ -40,10 +40,11 @@
   padding: 54px 0 80px;
 }
 .fl-landing h1 {
-  font-size: clamp(44px, 5.1vw, 72px);
-  line-height: 1.04;
+  font-size: clamp(44px, 5.4vw, 78px);
+  line-height: 0.98;
   margin: 27px 0;
   letter-spacing: -0.06em;
+  text-transform: uppercase;
 }
 .fl-landing h1 span {
   color: var(--primary);
@@ -84,9 +85,9 @@
 .fl-landing-primary {
   background: linear-gradient(135deg, var(--action-start), var(--action-end));
   color: var(--primary-foreground);
-  border-radius: 14px;
+  border-radius: 4px;
   padding: 16px 26px;
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--primary) 18%, transparent);
+  box-shadow: none;
   transition:
     filter 140ms ease,
     box-shadow 140ms ease,

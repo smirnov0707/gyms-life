@@ -148,7 +148,8 @@ try {
     await expect(page.getByTestId("synthetic-watermark")).toBeVisible({ timeout: 30000 });
     return { page, context };
   };
-  // Exercise the newly changed boundary first; all existing checks still run.
+  // Exercise the mobile intake boundary first; all existing checks still run.
+  await ran("intake-design", () => verifyIntakeDesign({ open, record, artifacts }));
   await ran("endurance-run-log", () => verifyEnduranceRunLog({ open, record, artifacts }));
   await ran("comparison-design", () => verifyComparisonDesign({ open, record, artifacts }));
   await ran("rewind-design", () => verifyRewindDesign({ open, record, artifacts }));
@@ -298,7 +299,6 @@ try {
   }
   await ran("core-design", () => verifyCoreDesign({ open, record, artifacts }));
   await ran("session-design", () => verifySessionDesign({ open, record, artifacts }));
-  await ran("intake-design", () => verifyIntakeDesign({ open, record, artifacts }));
   expect(errors).toEqual([]);
 } catch (error) {
   // Controlled fixtures only: retain the observed failure instead of hiding it with a retry.

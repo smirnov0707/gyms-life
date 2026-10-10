@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/auth";
-import { baseLang, formatLocale, useI18n, type TKey } from "@/lib/i18n";
+import { baseLang, formatLocale, useI18n, type Lang, type TKey } from "@/lib/i18n";
 import { PRIMARY_WORLD_NAV } from "@/lib/nav-map";
 import {
   CONTEXT_ACTIONS,
@@ -40,8 +40,21 @@ import {
 } from "@/components/ui/drawer";
 import "./future-lab-shell.css";
 import "./future-lab-visual-system.css";
+import "./future-lab/performance-design.css";
+import "./future-lab/signature-design.css";
 
 const futureNavItems = PRIMARY_WORLD_NAV;
+
+const lithuanianWorldLabels: Record<(typeof futureNavItems)[number]["to"], string> = {
+  "/app": "ŠIANDIEN",
+  "/twin": "DVYNYS",
+  "/lab": "LAB",
+  "/coach": "TRENERIS",
+};
+
+function worldLabel(item: (typeof futureNavItems)[number], lang: Lang) {
+  return baseLang(lang) === "lt" ? lithuanianWorldLabels[item.to] : item.label;
+}
 
 const ACTION_ICONS: Record<ContextAction["intent"], typeof Dumbbell> = {
   workout: Dumbbell,
@@ -75,7 +88,7 @@ function MoreNavigation({ world }: { world: ProductWorld }) {
     ? filterCommandItems(
         futureNavItems.map((item) => ({
           ...item,
-          searchLabel: item.label,
+          searchLabel: worldLabel(item, lang),
           keywords: COMMAND_KEYWORDS[item.to],
         })),
         query,
@@ -268,7 +281,7 @@ function MoreNavigation({ world }: { world: ProductWorld }) {
                   className="flex min-h-11 items-center gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3"
                 >
                   <item.icon aria-hidden="true" className="size-5 text-primary" />
-                  <span className="flex-1 text-sm font-semibold">{item.label}</span>
+                  <span className="flex-1 text-sm font-semibold">{worldLabel(item, lang)}</span>
                   <ArrowUpRight aria-hidden="true" className="size-4 text-muted-foreground" />
                 </Link>
               </DrawerClose>
@@ -370,10 +383,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const isActive = (to: string) =>
     location.pathname === to || location.pathname.startsWith(`${to}/`);
   const navTitle = (to: string): string | undefined => {
-    if (to === "/app") return t("dash.welcomeBack");
-    if (to === "/twin") return t("nav.twin");
-    if (to === "/coach") return t("nav.coach");
-    return undefined;
+    if (to === "/lab") return t("nav.lab");
+    const item = futureNavItems.find((entry) => entry.to === to);
+    return item ? worldLabel(item, lang) : undefined;
   };
   const profileLabel = baseLang(lang) === "en" ? "My profile" : "Mano profilis";
   const actionWorld: ProductWorld = location.pathname.startsWith("/twin")
@@ -385,7 +397,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         : "today";
 
   return (
-    <div className="future-lab-app">
+    <div className="future-lab-app fl-performance-shell">
       <a href="#main-content" className="fl-skip-link">
         {baseLang(lang) === "en" ? "Skip to content" : "Pereiti prie turinio"}
       </a>
@@ -400,7 +412,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 title={navTitle(item.to)}
                 aria-current={isActive(item.to) ? "page" : undefined}
               >
-                {item.label}
+                {worldLabel(item, lang)}
               </Link>
             ))}
           </nav>
@@ -437,7 +449,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               aria-current={isActive(item.to) ? "page" : undefined}
             >
               <Icon aria-hidden="true" size={18} strokeWidth={1.7} />
-              <span>{item.label}</span>
+              <span>{worldLabel(item, lang)}</span>
             </Link>
           );
         })}
