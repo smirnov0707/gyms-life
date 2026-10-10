@@ -113,7 +113,15 @@ try {
         await expect(page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
         await page.evaluate(() => scrollTo(0, 0));
       }
-      // Wait for mounted canvas assets without disabling the fallback renderer.
+      // Require the shipped figure before capturing Twin evidence. A timer alone
+      // can photograph a blank stage while the first model request is loading.
+      if (["twin", "muscle"].includes(screen)) {
+        const canvas = page.locator("canvas[data-twin-frames]").first();
+        await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60_000 });
+        await expect
+          .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+          .toBeGreaterThanOrEqual(1);
+      }
       await page.waitForTimeout(1200);
       const geometry = await page.evaluate(() => {
         const measure = (selector) => {
