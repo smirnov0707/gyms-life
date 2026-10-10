@@ -141,6 +141,7 @@ function build(
             ? {}
             : {
                 neutralColor: preset.color,
+                skinVeins: texturedSkin && sourceName !== "Eyes",
                 ...(object.userData["twinSculptContours"] !== undefined &&
                 object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
                   ? {

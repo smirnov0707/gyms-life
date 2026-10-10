@@ -91,7 +91,12 @@ describe("skin-forward Twin selection", () => {
     expect(shader.fragmentShader).toContain("twinSelected * 0.55");
     expect(shader.fragmentShader).not.toContain("\\n");
     expect(shader.fragmentShader).toContain("* twinSurfaceMask");
-    expect(material.customProgramCacheKey()).toContain("skin-selection-v8");
+    const veined = createTwinAnatomyMaterial(TWIN_SKIN_MATERIAL, {
+      regionMask: true,
+      skinVeins: true,
+    });
+    expect(material.customProgramCacheKey()).not.toBe(veined.customProgramCacheKey());
+    veined.dispose();
     expect(material.transparent).toBe(false);
     material.dispose();
   });
