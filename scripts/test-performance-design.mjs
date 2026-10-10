@@ -82,7 +82,9 @@ try {
         },
       });
     });
-    const name = navigation ? `navigation-${lang}-${theme}-${width}` : `${screen}-${theme}-${width}`;
+    const name = navigation
+      ? `navigation-${lang}-${theme}-${width}`
+      : `${screen}-${theme}-${width}`;
     try {
       await page.goto(
         `${origin}/index.html?shell=1&screen=${screen}&scenario=reference&theme=${theme}&lang=${lang}`,
@@ -217,7 +219,9 @@ try {
         await buttons.first().press("End");
         await expect(buttons.last()).toBeFocused();
         await expect(buttons.last()).toHaveAttribute("aria-selected", "true");
-        await expect(page.getByRole("heading", { name: "Tavo istorija", exact: true })).toBeVisible();
+        await expect(
+          page.getByRole("heading", { name: "Tavo istorija", exact: true }),
+        ).toBeVisible();
         await buttons.last().press("Home");
         await expect(buttons.first()).toBeFocused();
         await expect(buttons.first()).toHaveAttribute("aria-selected", "true");
