@@ -13,7 +13,9 @@ const CONTENT_SECURITY_POLICY = [
   "font-src 'self' data:",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://cdn.jsdelivr.net https://storage.googleapis.com",
+  // GLTFLoader's ImageBitmapLoader fetches object URLs for textures embedded
+  // in the verified GLB. img-src alone covers <img>, not this local fetch.
+  "connect-src 'self' blob: https://*.supabase.co wss://*.supabase.co https://*.paddle.com https://cdn.jsdelivr.net https://storage.googleapis.com",
   "frame-src https://checkout.paddle.com",
   "worker-src 'self' blob:",
 ].join("; ");
