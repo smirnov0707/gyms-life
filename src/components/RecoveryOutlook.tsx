@@ -259,4 +259,3 @@ export function RecoveryOutlook({ compact = false }: { compact?: boolean }) {
     </section>
   );
 }
-

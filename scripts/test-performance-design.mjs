@@ -341,6 +341,7 @@ try {
             return {
               background,
               surface,
+              height: bounds.height,
               title: measure(panel.querySelector("h3")),
               labels: [...panel.querySelectorAll(".fl-analysis-label")].map(measure),
               values: [...panel.querySelectorAll(".fl-analysis-value")].map(measure),
@@ -352,6 +353,7 @@ try {
         expect(analysis).toHaveLength(2);
         for (const panel of analysis) {
           expect(panel.background).toBe(panel.surface);
+          if (width >= 1280) expect(panel.height).toBeLessThanOrEqual(650);
           expect(panel.title.size).toBeGreaterThanOrEqual(18);
           for (const label of panel.labels) expect(label.size).toBeGreaterThanOrEqual(13);
           for (const value of panel.values) expect(value.size).toBeGreaterThanOrEqual(14);
@@ -362,9 +364,9 @@ try {
           }
         }
         expect(
-          await content.locator(".fl-sleep-duration").evaluate((element) =>
-            parseFloat(getComputedStyle(element).fontSize),
-          ),
+          await content
+            .locator(".fl-sleep-duration")
+            .evaluate((element) => parseFloat(getComputedStyle(element).fontSize)),
         ).toBeGreaterThanOrEqual(24);
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),

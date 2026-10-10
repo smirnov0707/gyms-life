@@ -148,15 +148,11 @@ export function SleepAnalysis() {
             <span className="fl-sleep-duration text-2xl font-semibold text-foreground">
               {durationLine(night.sleepHours)}
             </span>
-            <span className="text-xs text-muted-foreground">
-              {whenLabel(night.ageDays)}
-            </span>
+            <span className="text-xs text-muted-foreground">{whenLabel(night.ageDays)}</span>
           </p>
 
           {night.status === "duration_only" ? (
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              {t("sl.noStages")}
-            </p>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{t("sl.noStages")}</p>
           ) : (
             <Stages night={night} />
           )}
@@ -165,4 +161,3 @@ export function SleepAnalysis() {
     </section>
   );
 }
-
