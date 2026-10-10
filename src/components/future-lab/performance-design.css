@@ -290,6 +290,10 @@
   background: var(--surface);
 }
 
+.future-lab-app.fl-performance-shell .fl-strength-summary > button {
+  min-height: 44px;
+}
+
 .future-lab-app.fl-performance-shell .fl-mobile-navigation {
   border-radius: 8px;
   background: color-mix(in srgb, var(--background) 96%, transparent);
