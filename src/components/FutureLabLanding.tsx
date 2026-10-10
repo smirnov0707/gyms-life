@@ -93,7 +93,7 @@ export const copy = {
       },
       {
         title: "Look back. Move forward.",
-        text: "Review your history with your Twin and Intelligence. Adjust your next step with context.",
+        text: "Review your history with your Twin and coach. Adjust your next step with context.",
       },
     ],
     libraryTag: "MOVE WITH INTENTION",
@@ -199,7 +199,7 @@ export const copy = {
       },
       {
         title: "Įvertink. Judėk toliau.",
-        text: "Peržiūrėk istoriją su dvyniu ir Intelligence. Koreguok kitą žingsnį atsižvelgdamas į kontekstą.",
+        text: "Peržiūrėk istoriją su dvyniu ir treneriu. Koreguok kitą žingsnį atsižvelgdamas į kontekstą.",
       },
     ],
     libraryTag: "JUDĖK KRYPTINGAI",
@@ -324,7 +324,9 @@ export function FutureLabLanding() {
             <p className="fl-public-eyebrow">DIGITAL TWIN</p>
             <h2 id="twin-feature-title">{c.twinTitle}</h2>
             <p>{c.twinText}</p>
-            <span className="fl-twin-feature-index" aria-hidden="true">02</span>
+            <span className="fl-twin-feature-index" aria-hidden="true">
+              02
+            </span>
           </div>
           <div className="fl-landing-preview" aria-label={c.demo}>
             <div className="fl-landing-preview-head">

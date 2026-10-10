@@ -84,11 +84,7 @@ function Session({ workout, day }: { workout: TrainingPlanDay; day: number }) {
               <strong>{count}</strong> {exerciseLabel}
             </span>
           </div>
-          <Link
-            to="/workout/$day"
-            params={{ day: String(day) }}
-            className="fl-plan-start"
-          >
+          <Link to="/workout/$day" params={{ day: String(day) }} className="fl-plan-start">
             {t("tp.start")}
             <ArrowUpRight aria-hidden="true" size={20} />
           </Link>

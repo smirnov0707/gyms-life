@@ -147,9 +147,7 @@ try {
         if (state.name.startsWith("home")) {
           const art = page.locator(".fl-landing-hero-art");
           await expect(art).toBeVisible();
-          await expect
-            .poll(() => art.evaluate((image) => image.naturalWidth))
-            .toBeGreaterThan(0);
+          await expect.poll(() => art.evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
           const hero = page.locator(".fl-landing-hero");
           const headingSize = await hero
             .locator("h1")
