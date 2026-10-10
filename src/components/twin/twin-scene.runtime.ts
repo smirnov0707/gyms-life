@@ -32,7 +32,6 @@ import {
 } from "./twin-camera.navigation";
 import { TWIN_SKIN_COLOR, twinSurfaceStyle, twinNeutralRoughness } from "./twin-surface.style";
 import { setTwinAnatomySelection } from "./twin-anatomy.material";
-import { createTwinStageDecor } from "./twin-stage.scene";
 import { createTwinCameraFrame } from "./twin-camera.framing";
 import type { TwinBodyProvenance } from "./twin-body.provenance";
 import { loadTwinIdentityShell, type TwinIdentityShellModel } from "./twin-identity-shell.loader";
@@ -197,7 +196,7 @@ export function mountTwinScene(
     });
 
     // Broad neutral key and fill preserve warm skin on front AND back views.
-    // The apparatus stays cool; it no longer dictates the body's colour.
+    // The room plate is decorative; neutral lights keep skin readable.
     scene.add(new HemisphereLight(0xfff1e5, 0x44322d, 1.1));
     const lights = [
       [[1.8, 2.8, 2.6], 0xfff3e8, 2.1],
@@ -210,25 +209,6 @@ export function mountTwinScene(
       light.position.set(position[0], position[1], position[2]);
       scene.add(light);
     }
-
-    // The apparatus the figure stands in: the lit platform, the rings behind
-    // it, the floor grid and the particles. Decoration only — nothing in it
-    // reads the athlete's data, and it never changes with it.
-    //
-    // Built now and shown with the body, not before it. An empty lit platform
-    // is a promise that something is about to stand on it, and while the file
-    // downloads the athlete is meant to be looking at the 2D map instead.
-    const decor = createTwinStageDecor(TWIN_FRAME.height);
-    let stageShown = false;
-    const showStage = () => {
-      if (stageShown) return;
-      stageShown = true;
-      scene.add(decor.group);
-    };
-    cleanups.push(() => {
-      scene.remove(decor.group);
-      decor.dispose();
-    });
 
     // A body with nothing under it floats. There is no floor in this scene, so
     // the contact is a painted ellipse of shade rather than a shadow map the
@@ -276,7 +256,6 @@ export function mountTwinScene(
     let humanPending = options.human !== false;
     if (!humanPending) {
       twinBodyRoot.add(model.body);
-      showStage();
     }
     canvas.dataset["twinBody"] = humanPending ? "loading" : "surface";
     canvas.dataset["twinAppearance"] = appearance;
@@ -286,7 +265,6 @@ export function mountTwinScene(
       humanPending = false;
       twinBodyRoot.add(model.body);
       frameBody(createTwinCameraFrame(model.body));
-      showStage();
       canvas.dataset["twinBody"] = "surface";
       canvas.dataset["twinSource"] = "generated";
       applyState();
@@ -346,7 +324,6 @@ export function mountTwinScene(
           // Preserve the orbit/zoom when replacing a late fallback; only the
           // frame changes. The geometry itself and its proportions do not.
           frameBody(nextFrame);
-          showStage();
           humanPending = false;
           if ("provenance" in human) {
             canvas.dataset["twinBody"] = "human";

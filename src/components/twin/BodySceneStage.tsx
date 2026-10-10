@@ -367,6 +367,18 @@ export function BodySceneStage(props: BodySceneStageProps) {
                     : "relative h-[clamp(240px,calc(100svh_-_580px),540px)] w-full lg:h-[540px]"
           }
         >
+          {show3D && (
+            <img
+              data-twin-gym-backdrop
+              src="/assets/ai/twin-private-gym-v1.webp"
+              width={1024}
+              height={1536}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              decoding="async"
+            />
+          )}
           {mode === "3d" && (
             <div
               ref={host}

@@ -5,6 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { isTwinBodyRegion, type TwinBodyRegion } from "./twin-scene.model";
 import { createTwinAnatomyMaterial } from "./twin-anatomy.material";
 import { createTwinEyeMaterial } from "./twin-eye.material";
+import { fitTwinChestTexture } from "./twin-skin-uv";
 import { TWIN_SKIN_MATERIAL, TWIN_EYE_MATERIAL } from "./twin-surface.style";
 import { parseTwinSculptContours, parseTwinSculptCompetition } from "./twin-sculpt.contours";
 import {
@@ -122,6 +123,7 @@ function build(
     const map =
       texturedSkin && sourceMaterial instanceof MeshStandardMaterial ? sourceMaterial.map : null;
     if (texturedSkin && !map) throw new Error("Registered skin texture did not decode");
+    if (texturedSkin && sourceName !== "Eyes") fitTwinChestTexture(object.geometry);
     const preset = map
       ? { color: 0xffffff, roughness: sourceName === "Eyes" ? 0.32 : 0.76, metalness: 0, map }
       : sourceName === "Eyes"
