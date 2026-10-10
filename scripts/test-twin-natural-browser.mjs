@@ -230,6 +230,10 @@ try {
         for (let step = 0; step < 6; step++) await canvas.press("+");
         await canvas.evaluate((element) => element.blur());
         await canvas.screenshot({ path: path.join(out, "veins-front-detail.png") });
+        for (let step = 0; step < 4; step++) await canvas.press("+");
+        for (let step = 0; step < 3; step++) await canvas.press("ArrowUp");
+        await canvas.evaluate((element) => element.blur());
+        await canvas.screenshot({ path: path.join(out, "skin-finish-detail.png") });
       }
       results.push({ name, height, scroll: "passed", interaction: "passed" });
     } catch (error) {

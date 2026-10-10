@@ -4,9 +4,6 @@
  * A pigment layer leaves silhouette, normals, breathing and picking untouched.
  */
 export const TWIN_SKIN_VEIN_DECLARATIONS = /* glsl */ `
-varying vec3 vTwinSkinPosition;
-varying vec3 vTwinSkinNormal;
-
 float twinVeinStrand(vec2 p, vec2 span, vec4 bends, float radius) {
   float t = clamp((p.y - span.x) / (span.y - span.x), 0.0, 1.0);
   float a = 1.0 - t;

@@ -3,7 +3,12 @@ import { Color, MeshStandardMaterial, type WebGLRenderer } from "three";
 import { createTwinBody } from "./twin-body.geometry";
 import { createTwinAnatomyMaterial, setTwinAnatomySelection } from "./twin-anatomy.material";
 import { TWIN_DISPLAY_COLORS, TWIN_TONE_GLOW, type TwinDisplayTone } from "./twin-scene.model";
-import { TWIN_SKIN_COLOR, TWIN_SKIN_MATERIAL, twinSurfaceStyle } from "./twin-surface.style";
+import {
+  TWIN_SKIN_COLOR,
+  TWIN_SKIN_MATERIAL,
+  twinSurfaceStyle,
+  twinNeutralRoughness,
+} from "./twin-surface.style";
 
 const style = (
   tone: TwinDisplayTone,
@@ -12,6 +17,21 @@ const style = (
 ) => twinSurfaceStyle({ tone, selected, appearance, hasSelection: selected });
 
 describe("skin-forward Twin selection", () => {
+  it("restores each material's own finish across repeated selection and data updates", () => {
+    const material = new MeshStandardMaterial({ roughness: 0.76 });
+    for (const selected of [false, true, true, false, true, false]) {
+      const next = twinSurfaceStyle({
+        tone: "unknown",
+        selected,
+        hasSelection: selected,
+        appearance: "analysis",
+        baseRoughness: twinNeutralRoughness(material),
+      });
+      material.roughness = next.roughness;
+      expect(material.roughness).toBeCloseTo(selected ? 0.66 : 0.76);
+    }
+    material.dispose();
+  });
   it.each(["analysis", "realistic"] as const)(
     "keeps missing evidence skin-coloured in %s",
     (appearance) => {
