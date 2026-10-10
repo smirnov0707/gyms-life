@@ -25,6 +25,7 @@ const browser = await (engine === "webkit" ? webkit : chromium).launch(
     : {},
 );
 const errors = [];
+const browserNotices = [];
 let report = { engine, origin, ok: false };
 let page;
 try {
@@ -38,6 +39,15 @@ try {
   page = await context.newPage();
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
+    // WebKit reports an ignored Chromium-only keyboard-resize hint as an
+    // error. Retain that exact browser notice; all app/CSP/texture errors fail.
+    if (
+      engine === "webkit" &&
+      message.text() === 'Viewport argument key "interactive-widget" not recognized and ignored.'
+    ) {
+      browserNotices.push(message.text());
+      return;
+    }
     if (message.type() === "error") errors.push(message.text());
   });
   const response = await page.goto(origin, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -65,6 +75,9 @@ try {
   await page?.screenshot({ path: path.join(out, "failure.png"), fullPage: true });
   throw error;
 } finally {
-  await writeFile(path.join(out, "report.json"), JSON.stringify({ ...report, errors }, null, 2));
+  await writeFile(
+    path.join(out, "report.json"),
+    JSON.stringify({ ...report, errors, browserNotices }, null, 2),
+  );
   await browser.close();
 }
