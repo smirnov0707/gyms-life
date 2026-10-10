@@ -43,9 +43,19 @@ try {
   }));
   for (const theme of ["dark", "light"]) {
     reviewCases.push({ width: 320, screen: "today", theme, lang: "lt", navigation: false });
+    reviewCases.push({ width: 320, screen: "signals", theme, lang: "lt", navigation: false });
   }
   for (const width of [1440, 390]) {
-    for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal", "coach"]) {
+    for (const screen of [
+      "today",
+      "twin",
+      "muscle",
+      "signals",
+      "futureme",
+      "lab",
+      "journal",
+      "coach",
+    ]) {
       for (const theme of ["dark", "light"]) {
         reviewCases.push({ width, screen, theme, lang: "en", navigation: false });
       }
@@ -89,8 +99,10 @@ try {
       ? `navigation-${lang}-${theme}-${width}`
       : `${screen}-${theme}-${width}`;
     try {
+      const routeScreen = screen === "signals" ? "twin" : screen;
+      const view = screen === "signals" ? "&view=systems" : "";
       await page.goto(
-        `${origin}/index.html?shell=1&screen=${screen}&scenario=reference&theme=${theme}&lang=${lang}`,
+        `${origin}/index.html?shell=1&screen=${routeScreen}&scenario=reference&theme=${theme}&lang=${lang}${view}`,
       );
       await expect(page.locator(".future-lab-app.fl-performance-shell")).toBeVisible({
         timeout: 60_000,
@@ -103,6 +115,10 @@ try {
       await expect(page.locator("#main-content")).not.toBeEmpty();
       if (screen === "today") await expect(page.locator(".fl-plan-start")).toBeVisible();
       if (screen === "coach") await expect(page.locator("[data-coach-send]")).toBeVisible();
+      if (screen === "signals") {
+        await expect(page.locator(".fl-twin-systems .fl-live-signals").getByRole("img"))
+          .toHaveCount(7);
+      }
       if (screen === "muscle") {
         // Detail is opened through the real body selector, not a separate route.
         await page
@@ -229,6 +245,61 @@ try {
         await methods.locator(":scope > summary").press("Enter");
         await expect(methods.locator(".fl-lab-domains")).toBeHidden();
       }
+      if (screen === "signals") {
+        const signals = page.locator(".fl-twin-systems > .fl-live-signals");
+        const rows = signals.locator(":scope > ul > li");
+        await expect(rows).toHaveCount(7);
+        await expect(signals.getByRole("img")).toHaveCount(7);
+        const evidence = page.locator(".fl-twin-systems > details");
+        const summary = evidence.locator(":scope > summary");
+        await expect(summary).toHaveText(
+          lang === "lt" ? "Miegas ir atsistatymas" : "Sleep & recovery",
+        );
+        const content = evidence.locator(":scope > div");
+        await expect(content).toBeHidden();
+        const layout = await signals.evaluate((element) => {
+          const heading = element.querySelector("h2");
+          return {
+            headingSize: parseFloat(getComputedStyle(heading).fontSize),
+            rows: [...element.querySelectorAll(":scope > ul > li")].map((row) => {
+              const box = row.getBoundingClientRect();
+              return { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
+            }),
+          };
+        });
+        geometry.signals = layout;
+        expect(layout.headingSize).toBeGreaterThanOrEqual(24);
+        if (width <= 390) {
+          for (let index = 1; index < layout.rows.length; index++) {
+            expect(layout.rows[index].top).toBeGreaterThanOrEqual(layout.rows[index - 1].bottom);
+          }
+          expect(layout.rows.at(-1).bottom).toBeLessThanOrEqual(geometry.dock.y);
+          const box = await summary.boundingBox();
+          expect(box.height).toBeGreaterThanOrEqual(44);
+          expect(box.y + box.height).toBeLessThanOrEqual(geometry.dock.y);
+        } else {
+          expect(Math.abs(layout.rows[0].top - layout.rows[1].top)).toBeLessThanOrEqual(1);
+          expect(layout.rows[1].left).toBeGreaterThanOrEqual(layout.rows[0].right);
+        }
+        await summary.press("Enter");
+        await expect(content).toBeVisible();
+        await expect(content.locator(":scope > p")).toBeVisible();
+        await expect(content.locator(".fl-sleep-analysis")).toBeVisible();
+        await expect(content.locator(":scope > section")).toHaveCount(2);
+        if (width === 320) {
+          await page.screenshot({
+            path: `${artifacts}/${name}-analysis-open.png`,
+            fullPage: true,
+            animations: "disabled",
+          });
+        }
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+        ).toBeLessThanOrEqual(1);
+        await summary.press("Enter");
+        await expect(content).toBeHidden();
+        await expect(summary).toBeFocused();
+      }
       if (screen === "futureme" && width === 390) {
         expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(28);
       }
@@ -310,8 +381,8 @@ try {
   await browser?.close();
   server.kill("SIGTERM");
 }
-if (results.length !== 32 || results.some((result) => result.status !== "passed")) {
+if (results.length !== 38 || results.some((result) => result.status !== "passed")) {
   throw new Error(
-    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/32 views`,
+    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/38 views`,
   );
 }

@@ -1586,6 +1586,8 @@ try {
     await expect(twin.page.getByRole("region", { name: "Live signals" })).toBeVisible({
       timeout: 30000,
     });
+    await expect(twin.page.getByText(/colours come from logged sets alone/)).toBeHidden();
+    await openTwinSystemsEvidence(twin.page);
     const systemsText = await twin.page.innerText("body");
     expect(systemsText).toMatch(/colours come from logged sets alone/);
     await expect(table).toHaveCount(0);
