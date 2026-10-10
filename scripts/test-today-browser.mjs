@@ -500,7 +500,7 @@ try {
         await expect(journal).toBeVisible();
         await expect(
           journal.getByRole("heading", {
-            name: "Your history, with memory attached.",
+            name: "Your history",
             exact: true,
           }),
         ).toBeVisible();

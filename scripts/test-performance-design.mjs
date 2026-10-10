@@ -128,11 +128,18 @@ try {
               action: measure(".fl-plan-start, [data-coach-send], .fl-strength-summary > button"),
               dock: measure(".fl-mobile-navigation"),
               command: measure(".fl-today-command"),
+              navigationLabel: measure(".fl-mobile-navigation a > span"),
             };
           });
           // Capture before asserting so a failure remains visually reviewable.
           await page.screenshot({ path: `${artifacts}/${name}.png`, animations: "disabled" });
           expect(geometry.overflow, `${name}: horizontal overflow`).toBeLessThanOrEqual(1);
+          if (width === 390) {
+            expect(
+              geometry.navigationLabel.fontSize,
+              `${name}: readable navigation`,
+            ).toBeGreaterThanOrEqual(11);
+          }
           if (["today", "coach", "futureme"].includes(screen)) {
             expect(geometry.action.height, `${name}: touch target`).toBeGreaterThanOrEqual(44);
             if (width === 390) {
