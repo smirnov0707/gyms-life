@@ -88,7 +88,10 @@ export function createTwinAnatomyMaterial(
         )
         .replace(
           "#include <normal_fragment_maps>",
-          "#include <normal_fragment_maps>\n" + TWIN_SKIN_DETAIL_NORMAL,
+          "#include <normal_fragment_maps>\nfloat twinVesselRelief = " +
+            (skinVeins ? "twinVein*0.00009" : "0.0") +
+            ";\n" +
+            TWIN_SKIN_DETAIL_NORMAL,
         );
     }
     if (regionMask) {
@@ -244,6 +247,6 @@ export function createTwinAnatomyMaterial(
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-skin-selection-v10-${skinDetail ? "detail" : "smooth"}-${skinVeins ? "veins" : "plain-skin"}-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
+    `twin-anatomy-skin-selection-v11-${skinDetail ? "detail" : "smooth"}-${skinVeins ? "veins" : "plain-skin"}-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }
