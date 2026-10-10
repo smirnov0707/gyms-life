@@ -275,10 +275,7 @@ export function Overview() {
             </summary>
             <div className="border-t border-border p-3">
               <Link to="/twin" className="fl-text-link inline-flex">
-                {english
-                  ? "Explore your body and progress"
-                  : "Peržiūrėti kūną ir pažangą"}{" "}
-                →
+                {english ? "Explore your body and progress →" : "Peržiūrėti kūną ir pažangą →"}
               </Link>
             </div>
           </details>
