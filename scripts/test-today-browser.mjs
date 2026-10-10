@@ -642,7 +642,10 @@ try {
         const command = await shown.page.locator(".fl-today-command").boundingBox();
         const plan = await shown.page.locator(".fl-today-plan").boundingBox();
         const greeting = await shown.page.locator(".fl-today-root > .fl-greeting").boundingBox();
-        expect(greeting.y + greeting.height, "Today heading precedes the session").toBeLessThanOrEqual(plan.y);
+        expect(
+          greeting.y + greeting.height,
+          "Today heading precedes the session",
+        ).toBeLessThanOrEqual(plan.y);
         const context = await shown.page.locator(".fl-today-context").boundingBox();
         expect(
           command.width,

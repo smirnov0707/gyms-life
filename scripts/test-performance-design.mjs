@@ -57,17 +57,27 @@ try {
           const offset = NativeDate.parse("2026-09-08T06:05:00Z") - NativeDate.now();
           globalThis.Date = new Proxy(NativeDate, {
             construct(target, args, newTarget) {
-              return Reflect.construct(target, args.length ? args : [NativeDate.now() + offset], newTarget);
+              return Reflect.construct(
+                target,
+                args.length ? args : [NativeDate.now() + offset],
+                newTarget,
+              );
             },
             get(target, key, receiver) {
-              return key === "now" ? () => NativeDate.now() + offset : Reflect.get(target, key, receiver);
+              return key === "now"
+                ? () => NativeDate.now() + offset
+                : Reflect.get(target, key, receiver);
             },
           });
         });
         const name = `${screen}-${theme}-${width}`;
         try {
-          await page.goto(`${origin}/index.html?shell=1&screen=${screen}&scenario=reference&theme=${theme}`);
-          await expect(page.locator(".fl-performance")).toBeVisible({ timeout: 60_000 });
+          await page.goto(
+            `${origin}/index.html?shell=1&screen=${screen}&scenario=reference&theme=${theme}`,
+          );
+          await expect(page.locator(".future-lab-app.fl-performance-shell")).toBeVisible({
+            timeout: 60_000,
+          });
           await page.evaluate(async () => {
             await document.fonts.load('700 16px "Space Grotesk"', "Ąžuolas Žygis");
             await document.fonts.load('500 16px "Manrope"', "Ąžuolas Žygis");
@@ -84,14 +94,23 @@ try {
               if (!element) return null;
               const box = element.getBoundingClientRect();
               const style = getComputedStyle(element);
-              return { x: box.x, y: box.y, width: box.width, height: box.height,
-                bottom: box.bottom, fontSize: parseFloat(style.fontSize),
-                fontWeight: style.fontWeight, radius: style.borderRadius };
+              return {
+                x: box.x,
+                y: box.y,
+                width: box.width,
+                height: box.height,
+                bottom: box.bottom,
+                fontSize: parseFloat(style.fontSize),
+                fontWeight: style.fontWeight,
+                radius: style.borderRadius,
+              };
             };
-            return { overflow: document.documentElement.scrollWidth - innerWidth,
+            return {
+              overflow: document.documentElement.scrollWidth - innerWidth,
               heading: measure(".fl-greeting h1, .fl-world-title, .fl-page-heading h1"),
               action: measure(".fl-plan-start, [data-coach-send]"),
-              dock: measure(".fl-mobile-navigation") };
+              dock: measure(".fl-mobile-navigation"),
+            };
           });
           // Capture before asserting so a failure remains visually reviewable.
           await page.screenshot({ path: `${artifacts}/${name}.png`, animations: "disabled" });
@@ -99,7 +118,9 @@ try {
           if (["today", "coach"].includes(screen)) {
             expect(geometry.action.height, `${name}: touch target`).toBeGreaterThanOrEqual(44);
             if (width === 390) {
-              expect(geometry.action.bottom, `${name}: action above dock`).toBeLessThanOrEqual(geometry.dock.y);
+              expect(geometry.action.bottom, `${name}: action above dock`).toBeLessThanOrEqual(
+                geometry.dock.y,
+              );
             }
           }
           if (screen === "today") {
@@ -111,7 +132,9 @@ try {
           console.log(`PASS ${name}`);
         } catch (error) {
           results.push({ name, status: "failed", error: String(error), errors });
-          await page.screenshot({ path: `${artifacts}/${name}-failure.png`, timeout: 15_000 }).catch(() => {});
+          await page
+            .screenshot({ path: `${artifacts}/${name}-failure.png`, timeout: 15_000 })
+            .catch(() => {});
           console.error(`FAIL ${name}: ${error}`);
         } finally {
           await context.close();
@@ -126,5 +149,7 @@ try {
   server.kill("SIGTERM");
 }
 if (results.length !== 28 || results.some((result) => result.status !== "passed")) {
-  throw new Error(`Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/28 views`);
+  throw new Error(
+    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/28 views`,
+  );
 }
