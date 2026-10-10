@@ -300,13 +300,72 @@ try {
         await expect(content.locator(":scope > p")).toBeVisible();
         await expect(content.locator(".fl-sleep-analysis")).toBeVisible();
         await expect(content.locator(":scope > section")).toHaveCount(2);
-        if (width === 320) {
-          await page.screenshot({
-            path: `${artifacts}/${name}-analysis-open.png`,
-            fullPage: true,
-            animations: "disabled",
+        await expect(content.locator(".fl-analysis-rows > li")).toHaveCount(14);
+        await page.screenshot({
+          path: `${artifacts}/${name}-analysis-open.png`,
+          fullPage: true,
+          animations: "disabled",
+        });
+        const analysis = await content.locator(".fl-analysis-panel").evaluateAll((panels) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 1;
+          const context = canvas.getContext("2d");
+          const luminance = (color) => {
+            context.fillStyle = color;
+            context.fillRect(0, 0, 1, 1);
+            const channels = [...context.getImageData(0, 0, 1, 1).data].slice(0, 3).map((value) => {
+              const channel = value / 255;
+              return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+            });
+            return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+          };
+          const surface = getComputedStyle(
+            document.querySelector(".fl-twin-systems > .fl-live-signals"),
+          ).backgroundColor;
+          return panels.map((panel) => {
+            const bounds = panel.getBoundingClientRect();
+            const background = getComputedStyle(panel).backgroundColor;
+            const ground = luminance(background);
+            const measure = (element) => {
+              const style = getComputedStyle(element);
+              const ink = luminance(style.color);
+              const range = document.createRange();
+              range.selectNodeContents(element);
+              const text = range.getBoundingClientRect();
+              return {
+                size: parseFloat(style.fontSize),
+                contrast: (Math.max(ink, ground) + 0.05) / (Math.min(ink, ground) + 0.05),
+                fits: text.left >= bounds.left && text.right <= bounds.right,
+              };
+            };
+            return {
+              background,
+              surface,
+              title: measure(panel.querySelector("h3")),
+              labels: [...panel.querySelectorAll(".fl-analysis-label")].map(measure),
+              values: [...panel.querySelectorAll(".fl-analysis-value")].map(measure),
+              notes: [...panel.querySelectorAll(":scope > p")].map(measure),
+            };
           });
+        });
+        geometry.analysis = analysis;
+        expect(analysis).toHaveLength(2);
+        for (const panel of analysis) {
+          expect(panel.background).toBe(panel.surface);
+          expect(panel.title.size).toBeGreaterThanOrEqual(18);
+          for (const label of panel.labels) expect(label.size).toBeGreaterThanOrEqual(13);
+          for (const value of panel.values) expect(value.size).toBeGreaterThanOrEqual(14);
+          for (const note of panel.notes) expect(note.size).toBeGreaterThanOrEqual(12);
+          for (const text of [panel.title, ...panel.labels, ...panel.values, ...panel.notes]) {
+            expect(text.contrast).toBeGreaterThanOrEqual(4.5);
+            expect(text.fits).toBe(true);
+          }
         }
+        expect(
+          await content.locator(".fl-sleep-duration").evaluate((element) =>
+            parseFloat(getComputedStyle(element).fontSize),
+          ),
+        ).toBeGreaterThanOrEqual(24);
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
         ).toBeLessThanOrEqual(1);
