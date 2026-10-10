@@ -1483,7 +1483,7 @@ try {
       fullPage: true,
     });
 
-    await twin.page.getByRole("tab", { name: "Timeline" }).click();
+    await twin.page.getByRole("tab", { name: "History" }).click();
 
     await openTwinMemory(twin.page);
     await expect(
@@ -1496,7 +1496,7 @@ try {
         viewport: { width: 390, height: 844 },
       },
     );
-    await baselineMemory.page.getByRole("tab", { name: "Timeline" }).click();
+    await baselineMemory.page.getByRole("tab", { name: "History" }).click();
     await openTwinMemory(baselineMemory.page);
     await expect(
       baselineMemory.page.getByText("There is no earlier saved observation to compare yet", {
@@ -1512,7 +1512,7 @@ try {
         viewport: { width: 390, height: 844 },
       },
     );
-    await changedMemory.page.getByRole("tab", { name: "Timeline" }).click();
+    await changedMemory.page.getByRole("tab", { name: "History" }).click();
     await openTwinMemory(changedMemory.page);
     const latestMemoryChanges = changedMemory.page.getByRole("region", { name: "Latest changes" });
     await expect(latestMemoryChanges.getByText("Strengthened", { exact: true })).toBeVisible();
@@ -1531,7 +1531,7 @@ try {
       "?panel=twin&twin=regions&scenario=reference&uncertainty=training&view=journal",
       { viewport: { width: 390, height: 844 } },
     );
-    await uncertaintyTwin.page.getByRole("tab", { name: "Timeline" }).click();
+    await uncertaintyTwin.page.getByRole("tab", { name: "History" }).click();
     await openTwinMemory(uncertaintyTwin.page);
     await expect(
       uncertaintyTwin.page.getByText("WHAT WOULD REDUCE UNCERTAINTY", { exact: true }),
@@ -1582,7 +1582,7 @@ try {
       fullPage: true,
     });
 
-    await twin.page.getByRole("tab", { name: "Systems" }).click();
+    await twin.page.getByRole("tab", { name: "Signals" }).click();
     await expect(twin.page.getByRole("region", { name: "Live signals" })).toBeVisible({
       timeout: 30000,
     });

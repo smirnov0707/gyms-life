@@ -21,7 +21,9 @@ export async function verifyCommandCenter({ open, record, artifacts }) {
     await expect(drawer.locator(".fl-action-tile")).toHaveCount(3);
     await input.fill("dvynys");
     await expect(drawer.locator("[data-command-result]")).toHaveCount(1);
-    await expect(drawer.getByRole("link", { name: "MY TWIN", exact: true })).toBeVisible();
+    await expect(
+      drawer.getByRole("link", { name: lt ? "DVYNYS" : "MY TWIN", exact: true }),
+    ).toBeVisible();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     ).toBeLessThanOrEqual(1);
@@ -32,7 +34,9 @@ export async function verifyCommandCenter({ open, record, artifacts }) {
       fullPage: true,
     });
     await input.press("ArrowDown");
-    await expect(drawer.getByRole("link", { name: "MY TWIN", exact: true })).toBeFocused();
+    await expect(
+      drawer.getByRole("link", { name: lt ? "DVYNYS" : "MY TWIN", exact: true }),
+    ).toBeFocused();
     await drawer.press("Escape");
     await expect(drawer).toHaveCount(0);
     await expect(trigger).toBeFocused();

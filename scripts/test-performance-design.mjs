@@ -34,155 +34,206 @@ try {
       ? { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] }
       : {},
   );
+  const reviewCases = ["dark", "light"].map((theme) => ({
+    width: 320,
+    screen: "twin",
+    theme,
+    lang: "lt",
+    navigation: true,
+  }));
   for (const width of [1440, 390]) {
     for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal", "coach"]) {
       for (const theme of ["dark", "light"]) {
-        const context = await browser.newContext({
-          viewport: { width, height: width === 390 ? 844 : 1000 },
-          locale: "en-US",
-          reducedMotion: "reduce",
-          colorScheme: theme,
-        });
-        const page = await context.newPage();
-        const errors = [];
-        page.on("pageerror", (error) => errors.push(String(error)));
-        await context.route("**/*", (route) => {
-          const url = new URL(route.request().url());
-          return url.origin === origin || ["data:", "blob:"].includes(url.protocol)
-            ? route.continue()
-            : route.abort();
-        });
-        await page.addInitScript(() => {
-          const NativeDate = Date;
-          const offset = NativeDate.parse("2026-09-08T06:05:00Z") - NativeDate.now();
-          globalThis.Date = new Proxy(NativeDate, {
-            construct(target, args, newTarget) {
-              return Reflect.construct(
-                target,
-                args.length ? args : [NativeDate.now() + offset],
-                newTarget,
-              );
-            },
-            get(target, key, receiver) {
-              return key === "now"
-                ? () => NativeDate.now() + offset
-                : Reflect.get(target, key, receiver);
-            },
-          });
-        });
-        const name = `${screen}-${theme}-${width}`;
-        try {
-          await page.goto(
-            `${origin}/index.html?shell=1&screen=${screen}&scenario=reference&theme=${theme}`,
+        reviewCases.push({ width, screen, theme, lang: "en", navigation: false });
+      }
+    }
+  }
+  for (const { width, screen, theme, lang, navigation } of reviewCases) {
+    const context = await browser.newContext({
+      viewport: { width, height: width <= 390 ? 844 : 1000 },
+      locale: lang === "lt" ? "lt-LT" : "en-US",
+      reducedMotion: "reduce",
+      colorScheme: theme,
+    });
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+    await context.route("**/*", (route) => {
+      const url = new URL(route.request().url());
+      return url.origin === origin || ["data:", "blob:"].includes(url.protocol)
+        ? route.continue()
+        : route.abort();
+    });
+    await page.addInitScript(() => {
+      const NativeDate = Date;
+      const offset = NativeDate.parse("2026-09-08T06:05:00Z") - NativeDate.now();
+      globalThis.Date = new Proxy(NativeDate, {
+        construct(target, args, newTarget) {
+          return Reflect.construct(
+            target,
+            args.length ? args : [NativeDate.now() + offset],
+            newTarget,
           );
-          await expect(page.locator(".future-lab-app.fl-performance-shell")).toBeVisible({
-            timeout: 60_000,
-          });
-          await page.evaluate(async () => {
-            await document.fonts.load('700 16px "Space Grotesk"', "Ąžuolas Žygis");
-            await document.fonts.load('500 16px "Manrope"', "Ąžuolas Žygis");
-            await document.fonts.ready;
-          });
-          await expect(page.locator("#main-content")).not.toBeEmpty();
-          if (screen === "today") await expect(page.locator(".fl-plan-start")).toBeVisible();
-          if (screen === "coach") await expect(page.locator("[data-coach-send]")).toBeVisible();
-          if (screen === "muscle") {
-            // Detail is opened through the real body selector, not a separate route.
-            await page
-              .locator("summary")
-              .filter({ hasText: /^Muscles$/ })
-              .click();
-            await page
-              .getByRole("button", { name: /^Chest(?:\s|$)/ })
-              .first()
-              .click();
-            await expect(page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
-            await page.evaluate(() => scrollTo(0, 0));
-          }
-          // Wait for mounted canvas assets without disabling the fallback renderer.
-          await page.waitForTimeout(1200);
-          const geometry = await page.evaluate(() => {
-            const measure = (selector) => {
-              const element = document.querySelector(selector);
-              if (!element) return null;
-              const box = element.getBoundingClientRect();
-              const style = getComputedStyle(element);
-              return {
-                x: box.x,
-                y: box.y,
-                width: box.width,
-                height: box.height,
-                bottom: box.bottom,
-                fontSize: parseFloat(style.fontSize),
-                fontWeight: style.fontWeight,
-                radius: style.borderRadius,
-                background: style.backgroundColor,
-                backgroundImage: style.backgroundImage,
-              };
-            };
-            return {
-              overflow: document.documentElement.scrollWidth - innerWidth,
-              heading: measure(
-                ".fl-greeting h1, .fl-world-title, .fl-page-heading h1, .fl-future-heading h1",
-              ),
-              action: measure(".fl-plan-start, [data-coach-send], .fl-strength-summary > button"),
-              dock: measure(".fl-mobile-navigation"),
-              command: measure(".fl-today-command"),
-              navigationLabel: measure(".fl-mobile-navigation a > span"),
-            };
-          });
-          // Capture before asserting so a failure remains visually reviewable.
-          await page.screenshot({ path: `${artifacts}/${name}.png`, animations: "disabled" });
-          expect(geometry.overflow, `${name}: horizontal overflow`).toBeLessThanOrEqual(1);
-          if (width === 390) {
-            expect(
-              geometry.navigationLabel.fontSize,
-              `${name}: readable navigation`,
-            ).toBeGreaterThanOrEqual(11);
-          }
-          if (["today", "coach", "futureme"].includes(screen)) {
-            expect(geometry.action.height, `${name}: touch target`).toBeGreaterThanOrEqual(44);
-            if (width === 390) {
-              expect(geometry.action.bottom, `${name}: action above dock`).toBeLessThanOrEqual(
-                geometry.dock.y,
-              );
-            }
-          }
-          if (screen === "today") {
-            expect(Number(geometry.heading.fontWeight)).toBeGreaterThanOrEqual(700);
-            expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width === 390 ? 26 : 36);
-            const exercises = page.locator(".fl-plan-details");
-            await expect(exercises.locator("ul")).toBeHidden();
-            await exercises.locator("summary").press("Enter");
-            await expect(exercises.locator("li")).toHaveCount(5);
-            await expect(exercises.locator("li").first()).toContainText("4 × 6");
-            await exercises.locator("summary").press("Enter");
-            await expect(exercises.locator("ul")).toBeHidden();
-          }
-          if (screen === "lab") {
-            const methods = page.locator(".fl-lab-methods");
-            await expect(methods.locator(".fl-lab-domains")).toBeHidden();
-            await methods.locator(":scope > summary").press("Enter");
-            await expect(methods.locator(".fl-lab-domains")).toBeVisible();
-            await methods.locator(":scope > summary").press("Enter");
-            await expect(methods.locator(".fl-lab-domains")).toBeHidden();
-          }
-          if (screen === "futureme" && width === 390) {
-            expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(28);
-          }
-          expect(errors, `${name}: page errors`).toEqual([]);
-          results.push({ name, ...geometry, status: "passed" });
-          console.log(`PASS ${name}`);
-        } catch (error) {
-          results.push({ name, status: "failed", error: String(error), errors });
-          await page
-            .screenshot({ path: `${artifacts}/${name}-failure.png`, timeout: 15_000 })
-            .catch(() => {});
-          console.error(`FAIL ${name}: ${error}`);
-        } finally {
-          await context.close();
+        },
+        get(target, key, receiver) {
+          return key === "now"
+            ? () => NativeDate.now() + offset
+            : Reflect.get(target, key, receiver);
+        },
+      });
+    });
+    const name = navigation ? `navigation-${lang}-${theme}-${width}` : `${screen}-${theme}-${width}`;
+    try {
+      await page.goto(
+        `${origin}/index.html?shell=1&screen=${screen}&scenario=reference&theme=${theme}&lang=${lang}`,
+      );
+      await expect(page.locator(".future-lab-app.fl-performance-shell")).toBeVisible({
+        timeout: 60_000,
+      });
+      await page.evaluate(async () => {
+        await document.fonts.load('700 16px "Space Grotesk"', "Ąžuolas Žygis");
+        await document.fonts.load('500 16px "Manrope"', "Ąžuolas Žygis");
+        await document.fonts.ready;
+      });
+      await expect(page.locator("#main-content")).not.toBeEmpty();
+      if (screen === "today") await expect(page.locator(".fl-plan-start")).toBeVisible();
+      if (screen === "coach") await expect(page.locator("[data-coach-send]")).toBeVisible();
+      if (screen === "muscle") {
+        // Detail is opened through the real body selector, not a separate route.
+        await page
+          .locator("summary")
+          .filter({ hasText: /^Muscles$/ })
+          .click();
+        await page
+          .getByRole("button", { name: /^Chest(?:\s|$)/ })
+          .first()
+          .click();
+        await expect(page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+        await page.evaluate(() => scrollTo(0, 0));
+      }
+      // Wait for mounted canvas assets without disabling the fallback renderer.
+      await page.waitForTimeout(1200);
+      const geometry = await page.evaluate(() => {
+        const measure = (selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return null;
+          const box = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            x: box.x,
+            y: box.y,
+            width: box.width,
+            height: box.height,
+            bottom: box.bottom,
+            fontSize: parseFloat(style.fontSize),
+            fontWeight: style.fontWeight,
+            radius: style.borderRadius,
+            background: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+          };
+        };
+        return {
+          overflow: document.documentElement.scrollWidth - innerWidth,
+          heading: measure(
+            ".fl-greeting h1, .fl-world-title, .fl-page-heading h1, .fl-future-heading h1",
+          ),
+          action: measure(".fl-plan-start, [data-coach-send], .fl-strength-summary > button"),
+          dock: measure(".fl-mobile-navigation"),
+          command: measure(".fl-today-command"),
+          navigationLabel: measure(".fl-mobile-navigation a > span"),
+        };
+      });
+      // Capture before asserting so a failure remains visually reviewable.
+      await page.screenshot({ path: `${artifacts}/${name}.png`, animations: "disabled" });
+      expect(geometry.overflow, `${name}: horizontal overflow`).toBeLessThanOrEqual(1);
+      if (width <= 390) {
+        expect(
+          geometry.navigationLabel.fontSize,
+          `${name}: readable navigation`,
+        ).toBeGreaterThanOrEqual(11);
+      }
+      if (["today", "coach", "futureme"].includes(screen)) {
+        expect(geometry.action.height, `${name}: touch target`).toBeGreaterThanOrEqual(44);
+        if (width === 390) {
+          expect(geometry.action.bottom, `${name}: action above dock`).toBeLessThanOrEqual(
+            geometry.dock.y,
+          );
         }
       }
+      if (screen === "today") {
+        expect(Number(geometry.heading.fontWeight)).toBeGreaterThanOrEqual(700);
+        expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width === 390 ? 26 : 36);
+        const exercises = page.locator(".fl-plan-details");
+        await expect(exercises.locator("ul")).toBeHidden();
+        await exercises.locator("summary").press("Enter");
+        await expect(exercises.locator("li")).toHaveCount(5);
+        await expect(exercises.locator("li").first()).toContainText("4 × 6");
+        await exercises.locator("summary").press("Enter");
+        await expect(exercises.locator("ul")).toBeHidden();
+      }
+      if (screen === "lab") {
+        const methods = page.locator(".fl-lab-methods");
+        await expect(methods.locator(".fl-lab-domains")).toBeHidden();
+        await methods.locator(":scope > summary").press("Enter");
+        await expect(methods.locator(".fl-lab-domains")).toBeVisible();
+        await methods.locator(":scope > summary").press("Enter");
+        await expect(methods.locator(".fl-lab-domains")).toBeHidden();
+      }
+      if (screen === "futureme" && width === 390) {
+        expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(28);
+      }
+      if (navigation) {
+        await expect(page.locator(".fl-mobile-navigation a")).toHaveText([
+          "ŠIANDIEN",
+          "DVYNYS",
+          "LAB",
+          "TRENERIS",
+        ]);
+        const tabs = page.locator('.twin-screen > [role="tablist"]');
+        const buttons = tabs.getByRole("tab");
+        await expect(buttons).toHaveText(["Kūnas", "Rodikliai", "Prognozė", "Istorija"]);
+        const layout = await tabs.evaluate((element) => {
+          const parent = element.getBoundingClientRect();
+          return [...element.querySelectorAll('[role="tab"]')].map((button) => {
+            const box = button.getBoundingClientRect();
+            return {
+              label: button.textContent.trim(),
+              left: box.left - parent.left,
+              right: box.right - parent.right,
+              width: box.width,
+              height: box.height,
+              textOverflow: button.scrollWidth - button.clientWidth,
+            };
+          });
+        });
+        geometry.navigationTabs = layout;
+        for (const item of layout) {
+          expect(item.left, item.label).toBeGreaterThanOrEqual(0);
+          expect(item.right, item.label).toBeLessThanOrEqual(1);
+          expect(item.width, item.label).toBeGreaterThanOrEqual(44);
+          expect(item.height, item.label).toBeGreaterThanOrEqual(44);
+          expect(item.textOverflow, item.label).toBeLessThanOrEqual(1);
+        }
+        await buttons.first().press("End");
+        await expect(buttons.last()).toBeFocused();
+        await expect(buttons.last()).toHaveAttribute("aria-selected", "true");
+        await expect(page.getByRole("heading", { name: "Tavo istorija", exact: true })).toBeVisible();
+        await buttons.last().press("Home");
+        await expect(buttons.first()).toBeFocused();
+        await expect(buttons.first()).toHaveAttribute("aria-selected", "true");
+        await expect(page.locator("#twin-panel-overview")).toBeVisible();
+      }
+      expect(errors, `${name}: page errors`).toEqual([]);
+      results.push({ name, ...geometry, status: "passed" });
+      console.log(`PASS ${name}`);
+    } catch (error) {
+      results.push({ name, status: "failed", error: String(error), errors });
+      await page
+        .screenshot({ path: `${artifacts}/${name}-failure.png`, timeout: 15_000 })
+        .catch(() => {});
+      console.error(`FAIL ${name}: ${error}`);
+    } finally {
+      await context.close();
     }
   }
 } finally {
@@ -191,8 +242,8 @@ try {
   await browser?.close();
   server.kill("SIGTERM");
 }
-if (results.length !== 28 || results.some((result) => result.status !== "passed")) {
+if (results.length !== 30 || results.some((result) => result.status !== "passed")) {
   throw new Error(
-    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/28 views`,
+    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/30 views`,
   );
 }

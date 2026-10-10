@@ -425,6 +425,19 @@
 }
 
 @media (max-width: 759px) {
+  .future-lab-app.fl-performance-shell .twin-screen > [role="tablist"] {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .future-lab-app.fl-performance-shell .twin-screen > [role="tablist"] [role="tab"] {
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 11px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
   .future-lab-app.fl-performance-shell .fl-shell-header-inner {
     height: 60px;
     padding-inline: 14px;
