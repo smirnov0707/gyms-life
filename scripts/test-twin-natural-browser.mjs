@@ -103,6 +103,11 @@ try {
         "b21543c3c2113a8f95ff6843d4c6ce226352b0b61179144a663353fee2bebe70",
       );
       await expect(stage).toHaveAttribute("data-twin-appearance", "analysis");
+      const backdrop = stage.locator("[data-twin-gym-backdrop]");
+      await expect
+        .poll(() => backdrop.evaluate((img) => img.complete && img.naturalWidth))
+        .toBe(1024);
+      await expect(backdrop).toHaveCSS("pointer-events", "none");
       await expect(page.locator("[data-twin-candidate-status]")).toHaveCount(0);
       const height = (await canvas.boundingBox()).height;
       expect(height).toBeGreaterThanOrEqual(220);
@@ -224,6 +229,7 @@ try {
         .not.toBe(yaw);
       await canvas.screenshot({ path: path.join(out, `${name}-side.png`) });
       if (viewport.width === 390) {
+        await canvas.press("Home");
         const settings = page.getByRole("button", { name: "Vaizdo valdymas", exact: true });
         for (const [preset, label] of [
           ["Kūno viršus", "torso-front"],

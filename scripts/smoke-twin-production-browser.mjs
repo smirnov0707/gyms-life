@@ -64,12 +64,14 @@ try {
   }).toPass({ timeout: 45000, intervals: [500, 1000] });
   await expect(canvas).toHaveAttribute("data-twin-asset-sha256", assetSha256);
   await expect(canvas).toBeVisible();
+  const backdrop = stage.locator("[data-twin-gym-backdrop]");
+  await expect.poll(() => backdrop.evaluate((img) => img.complete && img.naturalWidth)).toBe(1024);
   const breath = async () => Number(await canvas.getAttribute("data-twin-breath"));
   await expect.poll(breath, { timeout: 8000, intervals: [60] }).toBeGreaterThan(0.9);
   await stage.screenshot({ path: path.join(out, "twin-live.png") });
   await expect.poll(breath, { timeout: 8000, intervals: [60] }).toBeLessThan(0.1);
   expect(errors).toEqual([]);
-  report = { ...report, ok: true, assetSha256, breathing: "passed" };
+  report = { ...report, ok: true, assetSha256, breathing: "passed", gymBackdrop: "loaded" };
   console.log("PASS deployed textured human and breathing", JSON.stringify(report));
 } catch (error) {
   await page?.screenshot({ path: path.join(out, "failure.png"), fullPage: true });

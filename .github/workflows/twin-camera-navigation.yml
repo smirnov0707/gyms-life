@@ -13,6 +13,7 @@ on:
       - "scripts/test-twin-camera-*.mjs"
       - "scripts/test-twin-natural-browser.mjs"
       - "public/models/**"
+      - "public/assets/ai/twin-private-gym-*.webp"
       - ".github/workflows/twin-camera-navigation.yml"
   push:
     branches: [main]
@@ -28,6 +29,7 @@ on:
       - "scripts/test-twin-camera-*.mjs"
       - "scripts/test-twin-natural-browser.mjs"
       - "public/models/**"
+      - "public/assets/ai/twin-private-gym-*.webp"
       - ".github/workflows/twin-camera-navigation.yml"
 permissions:
   contents: read
