@@ -1,4 +1,4 @@
-import { Group, Mesh, type Object3D } from "three";
+import { Group, Mesh, MeshStandardMaterial, type Texture, type Object3D } from "three";
 import { createTwinBoundaryField } from "./twin-region-boundary";
 import { createTwinBoundaryMaterial } from "./twin-boundary.material";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -47,7 +47,9 @@ export function twinHumanUrl(
   _variant: TwinHumanVariant,
   appearance: TwinVisualAppearance = "analysis",
 ): string {
-  return appearance === "realistic" ? "/models/twin-body-v2.glb" : "/models/twin-natural-v1.glb";
+  return appearance === "realistic"
+    ? "/models/twin-body-v2.glb"
+    : "/models/twin-natural-skin-v1.glb";
 }
 
 /**
@@ -101,6 +103,10 @@ function build(
   scene.traverse((object) => {
     if (object instanceof Mesh) surfaces.push(object);
   });
+  const texturedSkin =
+    provenance.sha256 ===
+    TWIN_REGISTERED_ASSETS.find((asset) => asset.path === "public/models/twin-natural-skin-v1.glb")
+      ?.sha256;
   for (const object of surfaces) {
     const sourceName = materialName(object);
     const region = sourceName.startsWith(REGION_MATERIAL_PREFIX)
@@ -111,7 +117,15 @@ function build(
     // later tints and disposes, rather than mutating the loader's cache.
     // The kept skin is the one mesh that is not a region: it carries no
     // reading, so it is the silhouette rather than a data surface.
-    const preset = sourceName === "Eyes" ? TWIN_EYE_MATERIAL : TWIN_SKIN_MATERIAL;
+    const sourceMaterial = Array.isArray(object.material) ? object.material[0] : object.material;
+    const map =
+      texturedSkin && sourceMaterial instanceof MeshStandardMaterial ? sourceMaterial.map : null;
+    if (texturedSkin && !map) throw new Error("Registered skin texture did not decode");
+    const preset = map
+      ? { color: 0xffffff, roughness: sourceName === "Eyes" ? 0.32 : 0.76, metalness: 0, map }
+      : sourceName === "Eyes"
+        ? TWIN_EYE_MATERIAL
+        : TWIN_SKIN_MATERIAL;
     const featherBack =
       appearance === "realistic" &&
       region === "back" &&
@@ -126,6 +140,7 @@ function build(
           appearance === "realistic"
             ? {}
             : {
+                neutralColor: preset.color,
                 ...(object.userData["twinSculptContours"] !== undefined &&
                 object.geometry.getAttribute("_twin_sculpt_position")?.itemSize === 3
                   ? {
@@ -195,10 +210,18 @@ function disposeMaterial(mesh: Mesh): void {
 
 /** Frees GPU memory for a subtree; a leaked skinned mesh is megabytes. */
 function disposeObject(root: Object3D): void {
+  const textures = new Set<Texture>();
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
     object.geometry.dispose();
+    for (const material of Array.isArray(object.material) ? object.material : [object.material])
+      if (material instanceof MeshStandardMaterial && material.map) textures.add(material.map);
     disposeMaterial(object);
   });
+  for (const texture of textures) {
+    texture.dispose();
+    if (typeof ImageBitmap !== "undefined" && texture.image instanceof ImageBitmap)
+      texture.image.close();
+  }
   root.clear();
 }
