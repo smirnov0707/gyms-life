@@ -35,7 +35,7 @@ describe("Twin asset provenance", () => {
       "shoulders",
     ]);
     expect(model.provenance.sha256).toBe(
-      "e8c3b61188950be16737c0f205e8bdfcd5c6f3959a3daebfcc66a8eea4a94ed0",
+      "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d",
     );
     expect(model.provenance.candidate).toBe(false);
     for (const meshes of model.regionMeshes.values()) {

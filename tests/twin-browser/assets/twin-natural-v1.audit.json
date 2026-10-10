@@ -1,10 +1,10 @@
 {
-  "assetSha256": "e8c3b61188950be16737c0f205e8bdfcd5c6f3959a3daebfcc66a8eea4a94ed0",
-  "bytes": 1725400,
+  "assetSha256": "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d",
+  "bytes": 1725408,
   "completed": true,
   "vertices": 22898,
   "triangles": 45792,
-  "nonincidentBroadPhasePairs": 26571,
+  "nonincidentBroadPhasePairs": 26182,
   "excludedIncidentPairs": 277273,
   "intersectingPairs": 0,
   "coplanarPairsRequiringReview": 0,
@@ -27,5 +27,6 @@
     ]
   ],
   "restoredVertices": 23903,
-  "maxChestReductionMetres": 0.026
+  "maxChestReductionMetres": 0.026,
+  "maxArmRefinementMetres": 0.0035000000000001046
 }

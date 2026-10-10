@@ -13,7 +13,7 @@ export const TWIN_REGISTERED_ASSETS = [
     path: "public/models/twin-natural-v1.glb",
     source: "makehuman",
     candidate: false,
-    sha256: "e8c3b61188950be16737c0f205e8bdfcd5c6f3959a3daebfcc66a8eea4a94ed0",
+    sha256: "6dba27f71bf62e61eccf3e115ea9e183e37f0c00d6846a13f5a02705d5012c1d",
   },
   {
     path: "public/models/twin-body-v2.glb",

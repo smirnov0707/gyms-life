@@ -109,6 +109,98 @@ for (const mesh of output.getRoot().listMeshes()) {
     }
   }
 }
+// Weld region seams before smoothing; neighboring material primitives must move
+// together. A bounded Taubin pass rounds arm facets without shrinking the limb.
+const welded = [],
+  neighbors = [],
+  indexByPoint = new Map(),
+  primitives = [],
+  faces = [];
+for (const mesh of output.getRoot().listMeshes())
+  for (const primitive of mesh.listPrimitives()) {
+    const positions = primitive.getAttribute("POSITION").getArray(),
+      remap = [];
+    for (let i = 0; i < positions.length; i += 3) {
+      const p = Array.from(positions.slice(i, i + 3)),
+        id = key(p);
+      if (!indexByPoint.has(id)) {
+        indexByPoint.set(id, welded.length);
+        welded.push(p);
+        neighbors.push(new Set());
+      }
+      remap.push(indexByPoint.get(id));
+    }
+    const ids = primitive.getIndices().getArray();
+    for (let i = 0; i < ids.length; i += 3) {
+      const face = [remap[ids[i]], remap[ids[i + 1]], remap[ids[i + 2]]];
+      faces.push(face);
+      for (const [a, b] of [
+        [0, 1],
+        [1, 2],
+        [2, 0],
+      ]) {
+        neighbors[face[a]].add(face[b]);
+        neighbors[face[b]].add(face[a]);
+      }
+    }
+    primitives.push({ primitive, remap });
+  }
+const armWeights = welded.map(
+  ([x, y]) => smooth(0.15, 0.22, Math.abs(x)) * smooth(0.98, 1.08, y) * (1 - smooth(1.48, 1.56, y)),
+);
+let rounded = welded.map((p) => [...p]);
+for (let pass = 0; pass < 6; pass++)
+  for (const strength of [0.5, -0.53]) {
+    rounded = rounded.map((p, i) =>
+      p.map(
+        (value, k) =>
+          value +
+          strength *
+            armWeights[i] *
+            (Array.from(neighbors[i]).reduce((sum, j) => sum + rounded[j][k], 0) /
+              neighbors[i].size -
+              value),
+      ),
+    );
+  }
+rounded = rounded.map((p, i) =>
+  new Vector3()
+    .fromArray(p)
+    .sub(new Vector3().fromArray(welded[i]))
+    .clampLength(0, 0.0035)
+    .add(new Vector3().fromArray(welded[i]))
+    .toArray(),
+);
+const areaNormals = rounded.map(() => new Vector3());
+for (const [a, b, c] of faces) {
+  const normal = new Vector3()
+    .fromArray(rounded[b])
+    .sub(new Vector3().fromArray(rounded[a]))
+    .cross(new Vector3().fromArray(rounded[c]).sub(new Vector3().fromArray(rounded[a])));
+  for (const i of [a, b, c]) areaNormals[i].add(normal);
+}
+areaNormals.forEach((n) => n.normalize());
+let maxArmMovement = 0;
+for (const { primitive, remap } of primitives) {
+  const positions = primitive.getAttribute("POSITION").getArray(),
+    normals = primitive.getAttribute("NORMAL").getArray();
+  for (let i = 0; i < remap.length; i++) {
+    const j = remap[i],
+      weight = armWeights[j];
+    maxArmMovement = Math.max(
+      maxArmMovement,
+      Math.hypot(...rounded[j].map((value, k) => value - welded[j][k])),
+    );
+    for (let k = 0; k < 3; k++) positions[i * 3 + k] = rounded[j][k];
+    if (weight > 0)
+      new Vector3()
+        .fromArray(normals, i * 3)
+        .lerp(areaNormals[j], weight)
+        .normalize()
+        .toArray(normals, i * 3);
+  }
+}
+assert(maxArmMovement < 0.004, "Arm refinement must stay below four millimetres");
 const bytes = Buffer.from(await io.writeBinary(output));
 const audit = await auditNativeGlb(bytes);
 assert(audit.passed, JSON.stringify(audit));
@@ -121,6 +213,7 @@ await writeFile(
       sources: inputs,
       restoredVertices: count,
       maxChestReductionMetres: maxDisplacement,
+      maxArmRefinementMetres: maxArmMovement,
     },
     null,
     2,

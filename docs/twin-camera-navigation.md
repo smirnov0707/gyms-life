@@ -1,5 +1,7 @@
 # Larger Twin and vertical navigation
 
+The original sizing and default touch policy below are superseded by [Natural Twin and mobile navigation](twin-natural-mobile.md). Camera commands, bounded pan and region picking remain.
+
 Based on released main 656f4a6c (PR149); the separate PR150 surface refinement is not replaced.
 
 The full My Twin body canvas receives more height on phones and desktop. Today cockpit and muscle-detail sizing remain unchanged. The actual loaded body is fitted without stretching, inventing measurements, or changing anatomy. Camera pan and zoom let the athlete inspect upper/lower regions rather than shrinking the entire experience to keep every detail above the fold.
