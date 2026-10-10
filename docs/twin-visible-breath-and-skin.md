@@ -37,6 +37,14 @@ The verified natural model's fitted eyes use a separate opaque physical material
 
 Natural-model browser evidence includes front and three-quarter face views. A real render/dispose check loads the model twice, verifies the reflection texture is disposed exactly once per model, and checks that retained GPU texture counts do not grow between cycles. Native eye geometry, UVs, body regions and breathing are unchanged.
 
+## Living idle pose
+
+The verified natural skin asset adds independent low-amplitude stance, head and arm morphs alongside breathing. Feet remain planted; the head and fitted eyes move together. Normals follow the deformation through an inverse-transpose Jacobian. These are decorative rest movements, not measured balance or a medical simulation. No additional animation loop, texture or network request is added; the existing 30 fps cap, offscreen suspension, reduced-motion preference and motion switch govern all movement.
+
+Blinking uses the native CC0 `LeftUpperLidClosed` and `RightUpperLidClosed` face pose units from the same MakeHuman revision as the skin. `scripts/authoring/export-twin-blink.py` reproduces the fitted proxy/pose, applies those units through the source rig and transfers displacements via exact original-vertex/edge-midpoint correspondence. The 380 affected atlas vertices are stored in `twin-blink-data.json`, used only on the exact registered asset's neutral mesh. Eyes are not flattened or scaled. Uneven intervals include an occasional double blink, a fast close and a slower release. Source license/credits: `data/poseunits/face-poseunits.json`, CC0, Data Collection AB, Joel Palmius and Jonas Hauquier (2020).
+
+GPU morphs and Three's raycast share the deformed positions; the near-side selection axis also follows the idle pose. Bounds cover combined positive/negative morph weights. Asset-level tests verify eyelid occlusion, planted feet, position immutability, moving ray hits and reset. Chromium/WebKit evidence includes open/closed/reopened eyelids and two body poses. Production smoke requires live stance changes and a blink as well as breathing.
+
 ## Chest texture fit and gym backdrop
 
 The refined generic body placed the two painted chest landmarks at approximately y=1.331 m, visually below its pectoral form. `fitTwinChestTexture` applies one smooth, local UV correction on this exact registered skin asset, raising both to approximately y=1.38 m. It runs once per geometry; the original GLB, positions, normals, region masks, eyes and breathing remain unchanged. An asset-level test locates both painted atlas landmarks on the actual triangles, checks left/right alignment and rejects inverted UV triangles. This is a visual fit for this generic model, not an athlete measurement or anatomical diagnosis.

@@ -70,8 +70,26 @@ try {
   await expect.poll(breath, { timeout: 8000, intervals: [60] }).toBeGreaterThan(0.9);
   await stage.screenshot({ path: path.join(out, "twin-live.png") });
   await expect.poll(breath, { timeout: 8000, intervals: [60] }).toBeLessThan(0.1);
+  const stance = await canvas.getAttribute("data-twin-stance");
+  assert(stance !== null, "Live model must expose its idle pose");
+  await expect
+    .poll(() => canvas.getAttribute("data-twin-stance"), { timeout: 4000 })
+    .not.toBe(stance);
+  await expect
+    .poll(async () => Number(await canvas.getAttribute("data-twin-blink")), {
+      timeout: 10000,
+      intervals: [40],
+    })
+    .toBeGreaterThan(0.8);
   expect(errors).toEqual([]);
-  report = { ...report, ok: true, assetSha256, breathing: "passed", gymBackdrop: "loaded" };
+  report = {
+    ...report,
+    ok: true,
+    assetSha256,
+    breathing: "passed",
+    idleAndBlink: "passed",
+    gymBackdrop: "loaded",
+  };
   console.log("PASS deployed textured human and breathing", JSON.stringify(report));
 } catch (error) {
   await page?.screenshot({ path: path.join(out, "failure.png"), fullPage: true });
