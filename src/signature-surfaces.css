@@ -573,6 +573,15 @@
   .fl-context-route.fl-workspace {
     gap: 16px;
   }
+  .fl-context-route.fl-nutrition-workspace {
+    gap: 12px;
+  }
+  .fl-context-route.fl-workspace.fl-nutrition-workspace .fl-nutrition-intake {
+    padding-block: 8px 16px;
+  }
+  .fl-context-route.fl-nutrition-workspace .fl-nutrition-metrics {
+    margin-top: 16px;
+  }
   .fl-context-route.fl-workspace .fl-workspace-hero {
     padding: 12px 0 22px;
   }

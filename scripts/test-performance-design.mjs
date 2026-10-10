@@ -15,6 +15,13 @@ const server = spawn(process.execPath, ["scripts/test-today-browser.mjs", "--ser
 });
 let browser;
 const results = [];
+async function waitForTwinFigure(page) {
+  const canvas = page.locator("canvas[data-twin-frames]").first();
+  await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60_000 });
+  await expect
+    .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
+    .toBeGreaterThanOrEqual(1);
+}
 try {
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("Fixture start timed out")), 90_000);
@@ -125,27 +132,22 @@ try {
           page.locator(".fl-twin-systems .fl-live-signals").getByRole("img"),
         ).toHaveCount(7);
       }
+      // Wait for the shipped figure before interacting below its stage. Model
+      // loading can still move a disclosure between pointer-down and pointer-up.
+      if (["twin", "muscle"].includes(screen)) await waitForTwinFigure(page);
       if (screen === "muscle") {
         // Detail is opened through the real body selector, not a separate route.
-        await page
-          .locator("summary")
-          .filter({ hasText: /^Muscles$/ })
-          .click();
+        const muscles = page.locator(".fl-twin-body > details").first();
+        await expect(muscles).toHaveJSProperty("open", false);
+        await muscles.locator(":scope > summary").click();
+        await expect(muscles).toHaveJSProperty("open", true);
         await page
           .getByRole("button", { name: /^Chest(?:\s|$)/ })
           .first()
           .click();
         await expect(page.locator('[data-twin-muscle-detail="chest"]')).toBeVisible();
+        await waitForTwinFigure(page);
         await page.evaluate(() => scrollTo(0, 0));
-      }
-      // Require the shipped figure before capturing Twin evidence. A timer alone
-      // can photograph a blank stage while the first model request is loading.
-      if (["twin", "muscle"].includes(screen)) {
-        const canvas = page.locator("canvas[data-twin-frames]").first();
-        await expect(canvas).toHaveAttribute("data-twin-body", "human", { timeout: 60_000 });
-        await expect
-          .poll(async () => Number(await canvas.getAttribute("data-twin-frames")))
-          .toBeGreaterThanOrEqual(1);
       }
       await page.waitForTimeout(1200);
       const geometry = await page.evaluate(() => {

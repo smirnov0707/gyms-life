@@ -146,7 +146,7 @@ export async function verifyCoreDesign({ open, record, artifacts }) {
               : page.locator(".fl-plan-next > a");
           const box = await action.boundingBox();
           const dock = await page.locator(".fl-mobile-navigation").boundingBox();
-          expect(box.y + box.height).toBeLessThan(dock.y);
+          expect(box.y + box.height).toBeLessThanOrEqual(dock.y - 16);
         }
         const name = `context-${screen}-${theme}-${width}`;
         const png = await page.screenshot({
