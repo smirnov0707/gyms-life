@@ -170,8 +170,17 @@ try {
             .poll(async () => Number(await page.locator("canvas").getAttribute("data-twin-frames")))
             .toBeGreaterThan(0);
         }
-        if (state.name.startsWith("home") && engine === "webkit")
+        if (state.name.startsWith("home") && engine === "webkit") {
           await expect(page.locator("[data-twin-stage='2d']")).toBeVisible({ timeout: 45000 });
+          const viewport = await page.locator("[data-twin-viewport]").boundingBox();
+          const body = await page.getByRole("img", { name: "Body map, front view" }).boundingBox();
+          expect(body.height).toBeGreaterThanOrEqual(viewport.height - 1);
+          expect(body.width).toBeGreaterThanOrEqual(Math.min(320, viewport.width - 1));
+          await page.locator(".fl-landing-preview").screenshot({
+            path: path.join(output, `anatomy-${state.name}-${theme}-${width}.png`),
+            animations: "disabled",
+          });
+        }
         if (state.name === "subscription")
           await expect(page.getByRole("button", { name: "Resume subscription" })).toBeVisible();
         if (state.name === "unavailable")
@@ -457,6 +466,10 @@ try {
     await page.getByRole("button", { name: "View controls", exact: true }).click();
     await page.getByRole("button", { name: "2D", exact: true }).click();
     await expect(page.locator('[data-twin-stage="2d"]')).toBeVisible();
+    const viewport = await page.locator("[data-twin-viewport]").boundingBox();
+    const body = await page.getByRole("img", { name: "Body map, back view" }).boundingBox();
+    expect(body.height).toBeGreaterThanOrEqual(viewport.height - 1);
+    expect(body.width).toBeGreaterThanOrEqual(Math.min(320, viewport.width - 1));
     if (engine === "chromium") {
       await page.getByRole("button", { name: "3D", exact: true }).click();
       await expect(page.locator('[data-twin-stage="3d"]')).toBeVisible({ timeout: 45000 });
