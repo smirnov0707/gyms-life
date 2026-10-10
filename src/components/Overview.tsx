@@ -10,6 +10,7 @@ import { Link } from "@tanstack/react-router";
 import { ReadinessWorkspace } from "@/routes/_authenticated/readiness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { ChevronDown, Footprints, Utensils } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -187,29 +188,37 @@ export function Overview() {
           <div className="fl-today-plan grid min-w-0 content-start gap-3">
             <TodaysPlanPanel />
             <TodayRaceCommand />
-            <details className="fl-surface fl-today-execution group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "I ran today" : "Šiandien bėgau"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickRunLog
-                  onLogged={async () => {
-                    await queryClient.invalidateQueries({ queryKey: ["todays-workout", user?.id] });
-                  }}
-                />
-              </div>
-            </details>
-            <details className="fl-surface fl-today-execution group">
-              <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-                {english ? "Log food" : "Įrašyti maistą"}
-              </summary>
-              <div className="border-t border-border p-4">
-                <QuickFoodLog compact />
-                <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
-                  {english ? "Open Nutrition Intelligence" : "Atidaryti Nutrition Intelligence"} →
-                </Link>
-              </div>
-            </details>
+            <div className="fl-today-quick-actions">
+              <details className="fl-surface fl-today-execution group">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-foreground">
+                  <Footprints aria-hidden="true" size={16} />
+                  <span>{english ? "I ran today" : "Šiandien bėgau"}</span>
+                  <ChevronDown aria-hidden="true" size={14} className="fl-quick-action-chevron" />
+                </summary>
+                <div className="border-t border-border p-4">
+                  <QuickRunLog
+                    onLogged={async () => {
+                      await queryClient.invalidateQueries({
+                        queryKey: ["todays-workout", user?.id],
+                      });
+                    }}
+                  />
+                </div>
+              </details>
+              <details className="fl-surface fl-today-execution group">
+                <summary className="cursor-pointer list-none text-xs font-semibold text-foreground">
+                  <Utensils aria-hidden="true" size={16} />
+                  <span>{english ? "Log food" : "Įrašyti maistą"}</span>
+                  <ChevronDown aria-hidden="true" size={14} className="fl-quick-action-chevron" />
+                </summary>
+                <div className="border-t border-border p-4">
+                  <QuickFoodLog compact />
+                  <Link to="/nutrition" className="fl-text-link mt-3 inline-flex">
+                    {english ? "Nutrition overview" : "Mitybos apžvalga"} →
+                  </Link>
+                </div>
+              </details>
+            </div>
           </div>
           <div className="fl-today-command-copy grid min-w-0 content-start gap-3">
             {readinessScore != null && Number.isFinite(readinessScore) ? (
@@ -262,13 +271,13 @@ export function Overview() {
         <section className="fl-today-world grid min-w-0 items-start gap-4 xl:grid-cols-[1.15fr_.85fr]">
           <details className="fl-today-twin-mobile fl-luxury-disclosure rounded-[1.75rem] border border-border bg-surface/80">
             <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold text-foreground">
-              {english ? "Open My Twin" : "Atidaryti My Twin"}
+              {english ? "Open your Twin" : "Atidaryti dvynį"}
             </summary>
             <div className="border-t border-border p-3">
               <Link to="/twin" className="fl-text-link inline-flex">
                 {english
-                  ? "Explore body, systems & trajectory"
-                  : "Tyrinėti kūną, sistemas ir trajektoriją"}{" "}
+                  ? "Explore your body and progress"
+                  : "Peržiūrėti kūną ir pažangą"}{" "}
                 →
               </Link>
             </div>

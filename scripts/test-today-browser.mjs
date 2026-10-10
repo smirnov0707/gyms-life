@@ -991,8 +991,8 @@ try {
       viewport: { width: 390, height: 844 },
       locale: "en-US",
     });
-    await linked.page.getByText("Open My Twin", { exact: true }).click();
-    await linked.page.getByRole("link", { name: "Explore body, systems & trajectory" }).click();
+    await linked.page.getByText("Open your Twin", { exact: true }).click();
+    await linked.page.getByRole("link", { name: "Explore your body and progress" }).click();
     // The fixture link reloads the document; URL commit is not React readiness.
     // Use the same bounded mount barrier as initial route entry, then keep
     // the original short semantic assertions unchanged.

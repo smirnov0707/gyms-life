@@ -41,6 +41,9 @@ try {
     lang: "lt",
     navigation: true,
   }));
+  for (const theme of ["dark", "light"]) {
+    reviewCases.push({ width: 320, screen: "today", theme, lang: "lt", navigation: false });
+  }
   for (const width of [1440, 390]) {
     for (const screen of ["today", "twin", "muscle", "futureme", "lab", "journal", "coach"]) {
       for (const theme of ["dark", "light"]) {
@@ -164,7 +167,7 @@ try {
       }
       if (["today", "coach", "futureme"].includes(screen)) {
         expect(geometry.action.height, `${name}: touch target`).toBeGreaterThanOrEqual(44);
-        if (width === 390) {
+        if (width <= 390) {
           expect(geometry.action.bottom, `${name}: action above dock`).toBeLessThanOrEqual(
             geometry.dock.y,
           );
@@ -172,7 +175,7 @@ try {
       }
       if (screen === "today") {
         expect(Number(geometry.heading.fontWeight)).toBeGreaterThanOrEqual(700);
-        expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width === 390 ? 26 : 36);
+        expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width <= 390 ? 26 : 36);
         const exercises = page.locator(".fl-plan-details");
         await expect(exercises.locator("ul")).toBeHidden();
         await exercises.locator("summary").press("Enter");
@@ -180,6 +183,43 @@ try {
         await expect(exercises.locator("li").first()).toContainText("4 × 6");
         await exercises.locator("summary").press("Enter");
         await expect(exercises.locator("ul")).toBeHidden();
+        const quick = page.locator(".fl-today-quick-actions");
+        const disclosures = quick.locator(":scope > details");
+        const summaries = quick.locator(":scope > details > summary");
+        await expect(summaries).toHaveText(
+          lang === "lt" ? ["Šiandien bėgau", "Įrašyti maistą"] : ["I ran today", "Log food"],
+        );
+        const closed = await summaries.evaluateAll((elements) =>
+          elements.map((element) => {
+            const box = element.getBoundingClientRect();
+            return { top: box.top, left: box.left, right: box.right, height: box.height };
+          }),
+        );
+        geometry.quickActions = closed;
+        expect(Math.abs(closed[0].top - closed[1].top)).toBeLessThanOrEqual(1);
+        expect(closed[1].left).toBeGreaterThan(closed[0].right);
+        for (const item of closed) expect(item.height).toBeGreaterThanOrEqual(44);
+        for (let index = 0; index < 2; index++) {
+          await summaries.nth(index).press("Enter");
+          await expect(disclosures.nth(index).locator(":scope > div")).toBeVisible();
+          const expanded = await disclosures.nth(index).evaluate((element) => ({
+            width: element.getBoundingClientRect().width,
+            available: element.parentElement.getBoundingClientRect().width,
+            overflow: document.documentElement.scrollWidth - innerWidth,
+          }));
+          expect(Math.abs(expanded.width - expanded.available)).toBeLessThanOrEqual(1);
+          expect(expanded.overflow).toBeLessThanOrEqual(1);
+          if (width === 320) {
+            await page.screenshot({
+              path: `${artifacts}/${name}-${index === 0 ? "run" : "food"}-open.png`,
+              fullPage: true,
+              animations: "disabled",
+            });
+          }
+          await summaries.nth(index).press("Enter");
+          await expect(disclosures.nth(index).locator(":scope > div")).toBeHidden();
+          await expect(summaries.nth(index)).toBeFocused();
+        }
       }
       if (screen === "lab") {
         const methods = page.locator(".fl-lab-methods");
@@ -270,8 +310,8 @@ try {
   await browser?.close();
   server.kill("SIGTERM");
 }
-if (results.length !== 30 || results.some((result) => result.status !== "passed")) {
+if (results.length !== 32 || results.some((result) => result.status !== "passed")) {
   throw new Error(
-    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/30 views`,
+    `Performance design: ${results.filter((result) => result.status === "failed").length} failures across ${results.length}/32 views`,
   );
 }
