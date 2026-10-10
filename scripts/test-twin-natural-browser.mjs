@@ -299,6 +299,22 @@ try {
         await canvas.press("ArrowRight");
         await canvas.evaluate((element) => element.blur());
         await canvas.screenshot({ path: path.join(out, "eye-three-quarter.png") });
+        // Review vessel placement on the actual mesh from both sides, including
+        // the dorsal hands and calves that a torso-only capture cannot show.
+        for (const region of ["hands", "calves"]) {
+          await canvas.press("Home");
+          if (region === "calves") {
+            for (let step = 0; step < 3; step++) await canvas.press("ArrowDown");
+          }
+          for (let step = 0; step < (region === "hands" ? 6 : 8); step++) await canvas.press("+");
+          for (const side of ["front", "back"]) {
+            if (side === "back") {
+              for (let step = 0; step < 8; step++) await canvas.press("ArrowRight");
+            }
+            await canvas.evaluate((element) => element.blur());
+            await canvas.screenshot({ path: path.join(out, `veins-${region}-${side}.png`) });
+          }
+        }
         const eyeTextures = await page.evaluate(async () => {
           const { reviewEyeMaterialLifetime } = await import("/eye-material-review.ts");
           return reviewEyeMaterialLifetime();
