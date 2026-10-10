@@ -178,9 +178,7 @@ export function Overview() {
             {greeting}
             {firstName ? `, ${firstName}` : ""}
           </h1>
-          <p>
-            {planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}
-          </p>
+          <p>{planData ? planData.title : planReadFailed ? t("ov.planReadFailed") : t("ob.sub")}</p>
         </header>
         <section
           className="fl-today-command fl-premium-card grid min-w-0 gap-4 overflow-hidden rounded-[2rem] border border-border bg-surface p-4 sm:p-5 lg:grid-cols-[minmax(0,.72fr)_minmax(0,1.25fr)]"

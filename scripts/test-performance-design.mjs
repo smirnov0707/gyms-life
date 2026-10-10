@@ -107,15 +107,17 @@ try {
             };
             return {
               overflow: document.documentElement.scrollWidth - innerWidth,
-              heading: measure(".fl-greeting h1, .fl-world-title, .fl-page-heading h1"),
-              action: measure(".fl-plan-start, [data-coach-send]"),
+              heading: measure(
+                ".fl-greeting h1, .fl-world-title, .fl-page-heading h1, .fl-future-heading h1",
+              ),
+              action: measure(".fl-plan-start, [data-coach-send], .fl-strength-summary > button"),
               dock: measure(".fl-mobile-navigation"),
             };
           });
           // Capture before asserting so a failure remains visually reviewable.
           await page.screenshot({ path: `${artifacts}/${name}.png`, animations: "disabled" });
           expect(geometry.overflow, `${name}: horizontal overflow`).toBeLessThanOrEqual(1);
-          if (["today", "coach"].includes(screen)) {
+          if (["today", "coach", "futureme"].includes(screen)) {
             expect(geometry.action.height, `${name}: touch target`).toBeGreaterThanOrEqual(44);
             if (width === 390) {
               expect(geometry.action.bottom, `${name}: action above dock`).toBeLessThanOrEqual(
@@ -126,6 +128,9 @@ try {
           if (screen === "today") {
             expect(Number(geometry.heading.fontWeight)).toBeGreaterThanOrEqual(700);
             expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(width === 390 ? 28 : 48);
+          }
+          if (screen === "futureme" && width === 390) {
+            expect(geometry.heading.fontSize).toBeGreaterThanOrEqual(28);
           }
           expect(errors, `${name}: page errors`).toEqual([]);
           results.push({ name, ...geometry, status: "passed" });

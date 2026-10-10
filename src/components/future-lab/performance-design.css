@@ -267,7 +267,8 @@
 }
 
 .future-lab-app.fl-performance-shell .fl-lab-page,
-.future-lab-app.fl-performance-shell .fl-journal-page {
+.future-lab-app.fl-performance-shell .fl-journal-page,
+.future-lab-app.fl-performance-shell .fl-future-page {
   border-radius: 6px;
   background: none;
   box-shadow: none;
@@ -366,6 +367,11 @@
   .future-lab-app.fl-performance-shell :is(.fl-world-title, .fl-context-title,
     .fl-page-heading h1, .fl-future-heading h1) {
     font-size: 32px;
+  }
+  .future-lab-app.fl-performance-shell .fl-future-page .fl-future-heading > div:first-child > h1 {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
   }
   .future-lab-app.fl-performance-shell :is(.fl-page-heading, .fl-world-header) {
     padding-bottom: 12px;
