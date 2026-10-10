@@ -25,6 +25,7 @@ const SHARED = [
   "digital-athlete",
   "athlete-state",
   "twin-snapshot",
+  "twin-experience",
   "lab-overview",
   "daily-brief",
   "future-lab-overview",

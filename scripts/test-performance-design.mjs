@@ -240,6 +240,17 @@ try {
         await expect(buttons.first()).toHaveAttribute("aria-selected", "true");
         await expect(page.locator("#twin-panel-overview")).toBeVisible();
       }
+      if (screen === "muscle") {
+        await page.getByRole("button", { name: "Body", exact: true }).click();
+        await expect(page.locator("#twin-panel-overview")).toBeVisible();
+        await expect(page.locator("[data-twin-muscle-detail]")).toHaveCount(0);
+        await expect(page.locator("canvas[data-twin-frames]").first()).toHaveAttribute(
+          "data-twin-body",
+          "human",
+          { timeout: 60_000 },
+        );
+        expect(new URL(page.url()).searchParams.has("region")).toBe(false);
+      }
       expect(errors, `${name}: page errors`).toEqual([]);
       results.push({ name, ...geometry, status: "passed" });
       console.log(`PASS ${name}`);

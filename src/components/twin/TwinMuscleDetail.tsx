@@ -75,7 +75,7 @@ export function TwinMuscleDetail({
   );
   const timeZone = browserTimeZone();
   const snapshot = useQuery({
-    queryKey: ["twin-snapshot", user?.id, timeZone],
+    queryKey: ["twin-experience", user?.id, timeZone],
     enabled: Boolean(user),
     queryFn: () => getTwinExperience({ data: timeZone }),
     staleTime: 60_000,
