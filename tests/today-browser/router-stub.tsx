@@ -1,5 +1,10 @@
 /* eslint-disable react-refresh/only-export-components -- fixture-only router adapter */
-import type { AnchorHTMLAttributes, ComponentType, ReactNode } from "react";
+import {
+  useSyncExternalStore,
+  type AnchorHTMLAttributes,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 
 const screens: Record<string, string> = {
   "/app": "today",
@@ -65,13 +70,15 @@ const navigate = (
   // not the fixture route. Preserve special Twin reference screens such as
   // "muscle" so the harness exercises the same in-place detail transition as
   // the real router instead of silently remounting the generic Twin screen.
+  // Notify search subscribers without a document reload, preserving tab focus.
   if (typeof options !== "string" && !options.to && target === "/twin") {
     const next = new URL(href, window.location.origin);
     const currentScreen = new URLSearchParams(window.location.search).get("screen");
     if (currentScreen && ["twin", "muscle", "futureme", "journal"].includes(currentScreen)) {
       next.searchParams.set("screen", currentScreen);
     }
-    window.location.assign(`${next.pathname}?${next.searchParams}`);
+    window.history.pushState(null, "", `${next.pathname}?${next.searchParams}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
     return;
   }
   window.location.assign(href);
@@ -85,6 +92,12 @@ export function redirect(options: { to: string; search?: Record<string, unknown>
   });
 }
 export const useRouter = () => ({ navigate, invalidate: async () => {} });
+const subscribeToSearch = (onChange: () => void) => {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+};
+const searchSnapshot = () => window.location.search;
+
 export const createFileRoute =
   () =>
   (options: {
@@ -93,8 +106,9 @@ export const createFileRoute =
     [key: string]: unknown;
   }) => ({
     options,
-    useSearch: () =>
-      options.validateSearch?.(Object.fromEntries(new URLSearchParams(window.location.search))) ??
-      {},
+    useSearch: () => {
+      const search = useSyncExternalStore(subscribeToSearch, searchSnapshot);
+      return options.validateSearch?.(Object.fromEntries(new URLSearchParams(search))) ?? {};
+    },
     useNavigate: () => navigate,
   });

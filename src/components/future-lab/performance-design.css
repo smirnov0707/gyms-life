@@ -435,6 +435,7 @@
     font-size: 11px;
     line-height: 1.25;
     letter-spacing: 0;
+    text-transform: none;
     white-space: normal;
     overflow-wrap: anywhere;
   }

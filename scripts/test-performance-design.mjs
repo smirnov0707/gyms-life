@@ -198,6 +198,8 @@ try {
           const parent = element.getBoundingClientRect();
           return [...element.querySelectorAll('[role="tab"]')].map((button) => {
             const box = button.getBoundingClientRect();
+            const text = document.createRange();
+            text.selectNodeContents(button);
             return {
               label: button.textContent.trim(),
               left: box.left - parent.left,
@@ -205,6 +207,8 @@ try {
               width: box.width,
               height: box.height,
               textOverflow: button.scrollWidth - button.clientWidth,
+              textHeight: text.getBoundingClientRect().height,
+              lineHeight: parseFloat(getComputedStyle(button).lineHeight),
             };
           });
         });
@@ -215,6 +219,7 @@ try {
           expect(item.width, item.label).toBeGreaterThanOrEqual(44);
           expect(item.height, item.label).toBeGreaterThanOrEqual(44);
           expect(item.textOverflow, item.label).toBeLessThanOrEqual(1);
+          expect(item.textHeight, item.label).toBeLessThanOrEqual(item.lineHeight + 2);
         }
         await buttons.first().press("End");
         await expect(buttons.last()).toBeFocused();
