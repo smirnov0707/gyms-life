@@ -8,6 +8,7 @@ import {
 import type { TwinSculptContour, TwinSculptCompetition } from "./twin-sculpt.contours";
 
 import { TWIN_SKIN_COLOR } from "./twin-surface.style";
+import { TWIN_SKIN_VEIN_COLOR, TWIN_SKIN_VEIN_DECLARATIONS } from "./twin-skin-veins";
 
 const selectionWeights = new WeakMap<MeshStandardMaterial, { value: number }>();
 export function setTwinAnatomySelection(material: MeshStandardMaterial, selected: boolean) {
@@ -25,6 +26,7 @@ export function createTwinAnatomyMaterial(
   parameters: MeshStandardMaterialParameters,
   {
     neutralColor = TWIN_SKIN_COLOR,
+    skinVeins = false,
     fibers = false,
     regionMask = false,
     contours = [],
@@ -32,6 +34,7 @@ export function createTwinAnatomyMaterial(
     competition,
   }: {
     neutralColor?: number;
+    skinVeins?: boolean;
     fibers?: boolean;
     regionMask?: boolean;
     contours?: readonly TwinSculptContour[];
@@ -48,6 +51,21 @@ export function createTwinAnatomyMaterial(
       "#include <common>",
       "#include <common>\nuniform float twinSelected;",
     );
+    if (skinVeins) {
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          "#include <common>",
+          "#include <common>\nvarying vec3 vTwinSkinPosition;\nvarying vec3 vTwinSkinNormal;",
+        )
+        .replace(
+          "#include <begin_vertex>",
+          "#include <begin_vertex>\nvTwinSkinPosition = position;\nvTwinSkinNormal = normal;",
+        );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <common>",
+        "#include <common>\n" + TWIN_SKIN_VEIN_DECLARATIONS,
+      );
+    }
     if (regionMask) {
       shader.uniforms["twinNeutral"] = { value: new Color(neutralColor) };
       shader.vertexShader = shader.vertexShader
@@ -180,7 +198,11 @@ export function createTwinAnatomyMaterial(
       : "";
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <color_fragment>",
-      "#include <color_fragment>\n" + contourCode + fiberCode + maskCode,
+      "#include <color_fragment>\n" +
+        contourCode +
+        fiberCode +
+        maskCode +
+        (skinVeins ? TWIN_SKIN_VEIN_COLOR : ""),
     );
     // The mask controls the data glow only. Apply it before the constant studio
     // rim, otherwise neutral material seams lose their silhouette lighting.
@@ -197,6 +219,6 @@ export function createTwinAnatomyMaterial(
     );
   };
   material.customProgramCacheKey = () =>
-    `twin-anatomy-skin-selection-v8-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
+    `twin-anatomy-skin-selection-v9-${skinVeins ? "veins" : "plain-skin"}-${fibers ? "fibers" : "plain"}-${regionMask ? "mask" : "solid"}-${contours.length}-${contourFan ? "fan" : "longitudinal"}-${competition ? competition.rivals.length + "-competition" : "independent"}`;
   return material;
 }

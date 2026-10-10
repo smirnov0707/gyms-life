@@ -224,6 +224,13 @@ try {
         results.push({ name, breathingChangedChannels: changed, reducedMotion: "passed" });
       }
       await page.screenshot({ path: path.join(out, `${name}-page.png`), fullPage: true });
+      if (viewport.width === 1280) {
+        await canvas.press("Home");
+        await canvas.press("ArrowUp");
+        for (let step = 0; step < 6; step++) await canvas.press("+");
+        await canvas.evaluate((element) => element.blur());
+        await canvas.screenshot({ path: path.join(out, "veins-front-detail.png") });
+      }
       results.push({ name, height, scroll: "passed", interaction: "passed" });
     } catch (error) {
       console.log(
