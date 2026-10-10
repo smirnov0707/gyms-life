@@ -74,7 +74,7 @@ try {
     "MakeHuman graphical assets (CC0)",
   );
   await expect(page.locator("[data-twin-stage]")).toHaveAttribute("data-twin-source", "makehuman");
-  const selectedBytes = await readFile(path.join(root, "public/models/twin-selected-v1.glb"));
+  const selectedBytes = await readFile(path.join(root, "public/models/twin-natural-v1.glb"));
   await expect(page.locator("canvas")).toHaveAttribute(
     "data-twin-asset-sha256",
     createHash("sha256").update(selectedBytes).digest("hex"),
@@ -230,6 +230,7 @@ try {
     await layerButton.click();
     await expect(inspect()).toContainText("800 kg");
     await page.locator("canvas").scrollIntoViewIfNeeded();
+    await page.locator("[data-twin-interaction-toggle]").click();
     const box = await page.locator("canvas").boundingBox();
     const before = Number(await page.locator("canvas").getAttribute("data-twin-distance"));
     const cdp = await mobile.newCDPSession(page);

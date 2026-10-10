@@ -15,15 +15,10 @@ afterEach(() => {
 describe("Twin asset provenance", () => {
   it("loads the selected surface with its exact region mapping and keeps Body separate", async () => {
     const url = twinHumanUrl("male");
-    expect(url).toBe("/models/twin-selected-v1.glb");
+    expect(url).toBe("/models/twin-natural-v1.glb");
     expect(twinHumanUrl("female")).toBe(url);
     expect(twinHumanUrl("male", "realistic")).toBe("/models/twin-body-v2.glb");
     const bytes = await bytesOf(`public${url}`);
-    expect(
-      Buffer.from(bytes).equals(
-        await readFile("tests/twin-browser/assets/twin-anatomy-sculpt-candidate.glb"),
-      ),
-    ).toBe(true);
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response(bytes)),
@@ -40,9 +35,9 @@ describe("Twin asset provenance", () => {
       "shoulders",
     ]);
     expect(model.provenance.sha256).toBe(
-      "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31",
+      "e8c3b61188950be16737c0f205e8bdfcd5c6f3959a3daebfcc66a8eea4a94ed0",
     );
-    expect(model.provenance.candidate).toBe(true);
+    expect(model.provenance.candidate).toBe(false);
     for (const meshes of model.regionMeshes.values()) {
       for (const mesh of meshes) {
         expect(mesh.geometry.getAttribute("_twin_mask")?.itemSize).toBe(1);

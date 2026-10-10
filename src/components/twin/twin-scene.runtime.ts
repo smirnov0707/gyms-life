@@ -19,6 +19,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { createTwinBreathing } from "./twin-breathing";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createTwinBody } from "./twin-body.geometry";
 import { createTwinPickingProfile } from "./twin-picking.profile";
@@ -62,6 +63,7 @@ export type TwinSceneHandle = {
   focus: (region: string | null) => void;
   command: (command: TwinCameraCommand) => void;
   setMotion: (enabled: boolean) => void;
+  setInteraction: (enabled: boolean) => void;
   dispose: () => void;
 };
 
@@ -172,6 +174,27 @@ export function mountTwinScene(
     controls.maxPolarAngle = TWIN_CAMERA.maxPitch;
     // No azimuth limits: horizontal orbit stays genuinely 360 degrees.
     controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
+    let interactionEnabled = false;
+    const setInteraction = (enabled: boolean) => {
+      interactionEnabled = enabled;
+      canvas.style.touchAction = enabled ? "none" : "pan-y pinch-zoom";
+      canvas.dataset["twinInteraction"] = enabled ? "orbit" : "scroll";
+      controls.enabled = true;
+    };
+    setInteraction(false);
+    // Capture before OrbitControls: scrolling starts on the canvas as anywhere else.
+    const preparePointer = (event: PointerEvent) => {
+      controls.enabled = event.pointerType !== "touch" || interactionEnabled;
+    };
+    const pageWheel = (event: WheelEvent) => {
+      if (!interactionEnabled) event.stopImmediatePropagation();
+    };
+    canvas.addEventListener("pointerdown", preparePointer, true);
+    canvas.addEventListener("wheel", pageWheel, { capture: true, passive: true });
+    cleanups.push(() => {
+      canvas.removeEventListener("pointerdown", preparePointer, true);
+      canvas.removeEventListener("wheel", pageWheel, true);
+    });
 
     // Broad neutral key and fill preserve warm skin on front AND back views.
     // The apparatus stays cool; it no longer dictates the body's colour.
@@ -237,6 +260,7 @@ export function mountTwinScene(
 
     let model: TwinBodyModel | TwinIdentityShellModel | ReturnType<typeof createTwinBody> =
       createTwinBody();
+    let breathing: ReturnType<typeof createTwinBreathing> | null = null;
     let pickingProfile = createTwinPickingProfile(model.body);
     const pickingAxis = new Vector3();
     // The generated surface is no longer shown while the figure downloads. It
@@ -317,6 +341,7 @@ export function mountTwinScene(
           twinBodyRoot.remove(model.body);
           model.dispose();
           model = human;
+          breathing = "provenance" in human ? createTwinBreathing(human.body) : null;
           twinBodyRoot.add(model.body);
           // Preserve the orbit/zoom when replacing a late fallback; only the
           // frame changes. The geometry itself and its proportions do not.
@@ -380,16 +405,15 @@ export function mountTwinScene(
       frameId = 0;
       if (!visible()) return;
       const moving =
-        shouldAnimateTwin(true, reducedMotion.matches, motionEnabled) &&
-        state.dataAvailable &&
-        state.regions.some((region) => region.display.value !== null);
+        shouldAnimateTwin(true, reducedMotion.matches, motionEnabled) && breathing !== null;
       if (moving && time - lastPaint < 1000 / 30) {
         requestRender();
         return;
       }
       lastPaint = time;
-      // Visual-only micro-sway. The human surface and analytical hit-map move together.
-      twinBodyRoot.rotation.z = moving ? Math.sin(time / 2700) * 0.003 : 0;
+      const breath = moving ? (1 - Math.cos((time * Math.PI * 2) / 5000)) / 2 : 0;
+      breathing?.setPhase(breath);
+      canvas.dataset["twinBreath"] = breath.toFixed(4);
       controls.update();
       try {
         renderer.render(scene, camera);
@@ -699,6 +723,7 @@ export function mountTwinScene(
       },
       command,
       focus,
+      setInteraction,
       setMotion(enabled) {
         motionEnabled = enabled;
         requestRender();

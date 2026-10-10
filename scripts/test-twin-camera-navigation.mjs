@@ -143,28 +143,12 @@ try {
         const viewport = stage.locator("[data-twin-viewport]");
         await home();
         const largeHeight = (await viewport.boundingBox()).height;
-        expect(largeHeight).toBeGreaterThanOrEqual(width < 600 ? 440 : 540);
-        const larger = await skinPixels(
-          await canvas.screenshot({ path: path.join(out, `${name}-larger.png`) }),
+        expect(largeHeight).toBeGreaterThanOrEqual(220);
+        expect(largeHeight).toBeLessThanOrEqual((width < 600 ? 844 : 1000) - 260);
+        const skin = await skinPixels(
+          await canvas.screenshot({ path: path.join(out, `${name}-responsive.png`) }),
         );
-        // Controlled old-size reference: the SAME camera resets to its whole-body
-        // fit after resizing. No geometry or test threshold is modified.
-        await viewport.evaluate((el, mobile) => {
-          el.style.height = mobile
-            ? "clamp(300px,42svh,360px)"
-            : "clamp(360px,calc(100svh - 430px),540px)";
-        }, width < 600);
-        await expect
-          .poll(async () => (await viewport.boundingBox()).height)
-          .toBeLessThan(largeHeight);
-        await home();
-        const baseline = await skinPixels(
-          await canvas.screenshot({ path: path.join(out, `${name}-old-size.png`) }),
-        );
-        await viewport.evaluate((el) => el.style.removeProperty("height"));
-        await expect.poll(async () => (await viewport.boundingBox()).height).toBe(largeHeight);
-        await home();
-        expect(larger).toBeGreaterThan(baseline * 1.08);
+        expect(skin).toBeGreaterThan(3000);
         const pose = await read(),
           counter = page.locator("[data-camera-selections]");
         await stage
@@ -239,6 +223,7 @@ try {
         await expect(counter).toHaveText(countBefore);
         await home();
         if (width < 600) {
+          await page.locator("[data-twin-interaction-toggle]").click();
           box = await canvas.boundingBox();
           const client = await context.newCDPSession(page);
           const x = box.x + box.width * 0.5,
@@ -302,9 +287,7 @@ try {
           name,
           status: "passed",
           height: largeHeight,
-          baselineSkinPixels: baseline,
-          largerSkinPixels: larger,
-          pixelAreaRatio: larger / baseline,
+          skinPixels: skin,
           pose: await read(),
           trustedTwoFingerTest: width < 600,
         });

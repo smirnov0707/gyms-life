@@ -1,0 +1,31 @@
+{
+  "assetSha256": "e8c3b61188950be16737c0f205e8bdfcd5c6f3959a3daebfcc66a8eea4a94ed0",
+  "bytes": 1725400,
+  "completed": true,
+  "vertices": 22898,
+  "triangles": 45792,
+  "nonincidentBroadPhasePairs": 26571,
+  "excludedIncidentPairs": 277273,
+  "intersectingPairs": 0,
+  "coplanarPairsRequiringReview": 0,
+  "duplicateTriangles": 0,
+  "degenerateTriangles": 0,
+  "intersectionExamples": [],
+  "coplanarExamples": [],
+  "passed": true,
+  "toleranceMetres": 1e-8,
+  "method": "Exact GLB world positions; exact-position seam welding; AABB BVH; six segment/triangle tests; coplanar ambiguity fails closed",
+  "scope": "Nonincident triangles only. Shared-vertex pairs are excluded, not proven intersection-free. No anatomical, clinical, or visual approval.",
+  "sources": [
+    [
+      "tests/twin-browser/assets/twin-anatomy-muscular-candidate.glb",
+      "5e965ec985c6eca556bf9059a707c259bcf3c7f7f0802f2388e4051fb4d03158"
+    ],
+    [
+      "public/models/twin-selected-v1.glb",
+      "e94fdf6acf09bf82285d4797a5abef26e2928516ecb5e3a97aad78c32491ca31"
+    ]
+  ],
+  "restoredVertices": 23903,
+  "maxChestReductionMetres": 0.026
+}
